@@ -17,11 +17,7 @@
 package org.springframework.ai.autoconfigure.chat.memory.neo4j;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.autoconfigure.chat.memory.cassandra.CassandraChatMemoryProperties;
-import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
 import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryConfig;
-
-import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,24 +36,6 @@ class Neo4jChatMemoryPropertiesTest {
 		assertThat(props.getSessionLabel()).isEqualTo(Neo4jChatMemoryConfig.DEFAULT_SESSION_LABEL);
 		assertThat(props.getToolCallLabel()).isEqualTo(Neo4jChatMemoryConfig.DEFAULT_TOOL_CALL_LABEL);
 		assertThat(props.getToolResponseLabel()).isEqualTo(Neo4jChatMemoryConfig.DEFAULT_TOOL_RESPONSE_LABEL);
-	}
-
-	@Test
-	void customValues() {
-		var props = new CassandraChatMemoryProperties();
-		props.setKeyspace("my_keyspace");
-		props.setTable("my_table");
-		props.setAssistantColumn("my_assistant_column");
-		props.setUserColumn("my_user_column");
-		props.setTimeToLive(Duration.ofDays(1));
-		props.setInitializeSchema(false);
-
-		assertThat(props.getKeyspace()).isEqualTo("my_keyspace");
-		assertThat(props.getTable()).isEqualTo("my_table");
-		assertThat(props.getAssistantColumn()).isEqualTo("my_assistant_column");
-		assertThat(props.getUserColumn()).isEqualTo("my_user_column");
-		assertThat(props.getTimeToLive()).isEqualTo(Duration.ofDays(1));
-		assertThat(props.isInitializeSchema()).isFalse();
 	}
 
 }

@@ -29,11 +29,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class Neo4jChatMemoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.neo4j";
+
 	private String sessionLabel = Neo4jChatMemoryConfig.DEFAULT_SESSION_LABEL;
+
 	private String toolCallLabel = Neo4jChatMemoryConfig.DEFAULT_TOOL_CALL_LABEL;
+
 	private String metadataLabel = Neo4jChatMemoryConfig.DEFAULT_METADATA_LABEL;
+
 	private String messageLabel = Neo4jChatMemoryConfig.DEFAULT_MESSAGE_LABEL;
+
 	private String toolResponseLabel = Neo4jChatMemoryConfig.DEFAULT_TOOL_RESPONSE_LABEL;
+
 	private String mediaLabel = Neo4jChatMemoryConfig.DEFAULT_MEDIA_LABEL;
 
 	public String getSessionLabel() {
@@ -83,4 +89,5 @@ public class Neo4jChatMemoryProperties {
 	public void setMediaLabel(String mediaLabel) {
 		this.mediaLabel = mediaLabel;
 	}
+
 }

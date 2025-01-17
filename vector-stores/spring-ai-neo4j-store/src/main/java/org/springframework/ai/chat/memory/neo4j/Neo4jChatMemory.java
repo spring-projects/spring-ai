@@ -16,6 +16,7 @@ import java.util.*;
 public class Neo4jChatMemory implements ChatMemory {
 
 	private final Neo4jChatMemoryConfig config;
+
 	private final Driver driver;
 
 	public Neo4jChatMemory(Neo4jChatMemoryConfig config) {
@@ -34,8 +35,8 @@ public class Neo4jChatMemory implements ChatMemory {
 
 	@Override
 	public void add(String conversationId, List<Message> messages) {
-		try(Transaction t = driver.session().beginTransaction()){
-			for(Message m : messages) {
+		try (Transaction t = driver.session().beginTransaction()) {
+			for (Message m : messages) {
 				addMessageToTransaction(t, conversationId, m);
 			}
 			t.commit();
@@ -55,31 +56,31 @@ public class Neo4jChatMemory implements ChatMemory {
 				RETURN m, metadata, collect(tr) as toolResponses, collect(tc) as toolCalls, collect(media) as medias
 				""".formatted(config.getSessionLabel(), config.getMessageLabel(), config.getMetadataLabel(),
 				config.getMediaLabel(), config.getToolResponseLabel(), config.getToolCallLabel());
-		Result res = this.driver.session().run(statementBuilder,
-				Map.of("conversationId", conversationId, "lastN", lastN));
+		Result res = this.driver.session()
+			.run(statementBuilder, Map.of("conversationId", conversationId, "lastN", lastN));
 		return res.list(record -> {
 			Map<String, Object> messageMap = record.get("m").asMap();
 			String msgType = messageMap.get(MessageAttributes.MESSAGE_TYPE.getValue()).toString();
 			Message message = null;
 			List<Media> mediaList = List.of();
-			if(!record.get("medias").isNull()){
+			if (!record.get("medias").isNull()) {
 				mediaList = getMedia(record);
 			}
-			if(msgType.equals(MessageType.USER.getValue())) {
+			if (msgType.equals(MessageType.USER.getValue())) {
 				message = buildUserMessage(record, messageMap, mediaList);
 			}
-			if(msgType.equals(MessageType.ASSISTANT.getValue())){
+			if (msgType.equals(MessageType.ASSISTANT.getValue())) {
 				message = buildAssistantMessage(record, messageMap, mediaList);
 			}
-			if(msgType.equals(MessageType.SYSTEM.getValue())){
+			if (msgType.equals(MessageType.SYSTEM.getValue())) {
 				message = new SystemMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString());
 			}
-			if(msgType.equals(MessageType.TOOL.getValue())){
+			if (msgType.equals(MessageType.TOOL.getValue())) {
 				message = buildToolMessage(record);
 			}
-			if(message == null) {
-				throw new IllegalArgumentException("%s messages are not supported".
-						formatted(record.get(MessageAttributes.MESSAGE_TYPE.getValue()).asString()));
+			if (message == null) {
+				throw new IllegalArgumentException("%s messages are not supported"
+					.formatted(record.get(MessageAttributes.MESSAGE_TYPE.getValue()).asString()));
 			}
 			message.getMetadata().put("messageType", message.getMessageType());
 			return message;
@@ -87,7 +88,7 @@ public class Neo4jChatMemory implements ChatMemory {
 
 	}
 
-	public Neo4jChatMemoryConfig getConfig(){
+	public Neo4jChatMemoryConfig getConfig() {
 		return config;
 	}
 
@@ -102,7 +103,7 @@ public class Neo4jChatMemory implements ChatMemory {
 				DETACH DELETE m, metadata, media, tr, tc
 				""".formatted(config.getSessionLabel(), config.getMessageLabel(), config.getMetadataLabel(),
 				config.getMediaLabel(), config.getToolResponseLabel(), config.getToolCallLabel());
-		try(Transaction t = driver.session().beginTransaction()) {
+		try (Transaction t = driver.session().beginTransaction()) {
 			t.run(statementBuilder, Map.of("conversationId", conversationId));
 			t.commit();
 		}
@@ -125,31 +126,31 @@ public class Neo4jChatMemory implements ChatMemory {
 		attributes.put("id", UUID.randomUUID().toString());
 		queryParameters.put("messageProperties", attributes);
 
-		if(!Optional.ofNullable(message.getMetadata()).orElse(Map.of()).isEmpty()) {
+		if (!Optional.ofNullable(message.getMetadata()).orElse(Map.of()).isEmpty()) {
 			statementBuilder.append("""
 					WITH msg
 					CREATE (metadataNode:%s)
 					CREATE (msg)-[:HAS_METADATA]->(metadataNode)
 					SET metadataNode = $metadata
 					""".formatted(config.getMetadataLabel()));
-			Map<String,Object> metadataCopy = new HashMap<>(message.getMetadata());
+			Map<String, Object> metadataCopy = new HashMap<>(message.getMetadata());
 			metadataCopy.remove("messageType");
 			queryParameters.put("metadata", metadataCopy);
 		}
-		if(message instanceof AssistantMessage assistantMessage){
-			if(assistantMessage.hasToolCalls()){
+		if (message instanceof AssistantMessage assistantMessage) {
+			if (assistantMessage.hasToolCalls()) {
 				statementBuilder.append("""
 						WITH msg
 						FOREACH(tc in $toolCalls | CREATE (toolCall:%s) SET toolCall = tc
 						CREATE (msg)-[:HAS_TOOL_CALL]->(toolCall))
 						""".formatted(config.getToolCallLabel()));
 				List<Map<String, Object>> toolCallMaps = new ArrayList<>();
-				for(int i = 0; i<assistantMessage.getToolCalls().size(); i++){
+				for (int i = 0; i < assistantMessage.getToolCalls().size(); i++) {
 					AssistantMessage.ToolCall tc = assistantMessage.getToolCalls().get(i);
-					toolCallMaps.add(Map.of(ToolCallAttributes.ID.getValue(), tc.id(),
-							ToolCallAttributes.NAME.getValue(), tc.name(),
-							ToolCallAttributes.ARGUMENTS.getValue(), tc.arguments(),
-							ToolCallAttributes.TYPE.getValue(), tc.type(), ToolCallAttributes.IDX.getValue(), i));
+					toolCallMaps
+						.add(Map.of(ToolCallAttributes.ID.getValue(), tc.id(), ToolCallAttributes.NAME.getValue(),
+								tc.name(), ToolCallAttributes.ARGUMENTS.getValue(), tc.arguments(),
+								ToolCallAttributes.TYPE.getValue(), tc.type(), ToolCallAttributes.IDX.getValue(), i));
 				}
 				queryParameters.put("toolCalls", toolCallMaps);
 			}
@@ -174,21 +175,21 @@ public class Neo4jChatMemory implements ChatMemory {
 			queryParameters.put("toolResponses", toolResponseMaps);
 		}
 		if (message instanceof MediaContent messageWithMedia && !messageWithMedia.getMedia().isEmpty()) {
-				List<Map<String, Object>> mediaNodes = convertMediaToMap(messageWithMedia.getMedia());
-				statementBuilder.append("""
-						WITH msg
-						UNWIND $media AS m
-						CREATE (media:%s) SET media = m
-						WITH msg, media CREATE (msg)-[:HAS_MEDIA]->(media)
-						""".formatted(config.getMediaLabel()));
-				queryParameters.put("media", mediaNodes);
+			List<Map<String, Object>> mediaNodes = convertMediaToMap(messageWithMedia.getMedia());
+			statementBuilder.append("""
+					WITH msg
+					UNWIND $media AS m
+					CREATE (media:%s) SET media = m
+					WITH msg, media CREATE (msg)-[:HAS_MEDIA]->(media)
+					""".formatted(config.getMediaLabel()));
+			queryParameters.put("media", mediaNodes);
 		}
 		t.run(statementBuilder.toString(), queryParameters);
 	}
 
 	private List<Map<String, Object>> convertMediaToMap(List<Media> media) {
-		List<Map<String,Object>> mediaMaps = new ArrayList<>();
-		for(int i = 0; i< media.size(); i++){
+		List<Map<String, Object>> mediaMaps = new ArrayList<>();
+		for (int i = 0; i < media.size(); i++) {
 			Map<String, Object> mediaMap = new HashMap<>();
 			Media m = media.get(i);
 			mediaMap.put(MediaAttributes.ID.getValue(), m.getId());
@@ -201,8 +202,6 @@ public class Neo4jChatMemory implements ChatMemory {
 		return mediaMaps;
 	}
 
-
-
 	private Message buildToolMessage(org.neo4j.driver.Record record) {
 		Message message;
 		message = new ToolResponseMessage(record.get("toolResponses").asList(v -> {
@@ -214,7 +213,8 @@ public class Neo4jChatMemory implements ChatMemory {
 		return message;
 	}
 
-	private Message buildAssistantMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap, List<Media> mediaList) {
+	private Message buildAssistantMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
+			List<Media> mediaList) {
 		Message message;
 		message = new AssistantMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(),
 				record.get("metadata").asMap(Map.of()), record.get("toolCalls").asList(v -> {
@@ -222,15 +222,16 @@ public class Neo4jChatMemory implements ChatMemory {
 					return new AssistantMessage.ToolCall((String) toolCallMap.get("id"),
 							(String) toolCallMap.get("type"), (String) toolCallMap.get("name"),
 							(String) toolCallMap.get("arguments"));
-		}), mediaList);
+				}), mediaList);
 		return message;
 	}
 
-	private Message buildUserMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap, List<Media> mediaList) {
+	private Message buildUserMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
+			List<Media> mediaList) {
 		Message message;
-		Map<String,Object> metadata = record.get("metadata").asMap();
-		message = new UserMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(),
-				mediaList, metadata);
+		Map<String, Object> metadata = record.get("metadata").asMap();
+		message = new UserMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(), mediaList,
+				metadata);
 		return message;
 	}
 
@@ -238,17 +239,19 @@ public class Neo4jChatMemory implements ChatMemory {
 		List<Media> mediaList;
 		mediaList = record.get("medias").asList(v -> {
 			Map<String, Object> mediaMap = v.asMap();
-			var mediaBuilder = Media.builder().name((String) mediaMap.get(MediaAttributes.NAME.getValue()))
-					.id(Optional.ofNullable(mediaMap.get(MediaAttributes.ID.getValue())).map(Object::toString)
-					.orElse(null))
-					.mimeType(MimeType.valueOf(mediaMap.get(MediaAttributes.MIME_TYPE.getValue()).toString()));
-			if(mediaMap.get(MediaAttributes.DATA.getValue()) instanceof String stringData){
+			var mediaBuilder = Media.builder()
+				.name((String) mediaMap.get(MediaAttributes.NAME.getValue()))
+				.id(Optional.ofNullable(mediaMap.get(MediaAttributes.ID.getValue())).map(Object::toString).orElse(null))
+				.mimeType(MimeType.valueOf(mediaMap.get(MediaAttributes.MIME_TYPE.getValue()).toString()));
+			if (mediaMap.get(MediaAttributes.DATA.getValue()) instanceof String stringData) {
 				try {
 					mediaBuilder.data(URI.create(stringData).toURL());
-				} catch (MalformedURLException e) {
+				}
+				catch (MalformedURLException e) {
 					throw new IllegalArgumentException("Media data contains an invalid URL");
 				}
-			} else if(mediaMap.get(MediaAttributes.DATA.getValue()).getClass().isArray()) {
+			}
+			else if (mediaMap.get(MediaAttributes.DATA.getValue()).getClass().isArray()) {
 				mediaBuilder.data(mediaMap.get(MediaAttributes.DATA.getValue()));
 			}
 			return mediaBuilder.build();

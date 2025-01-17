@@ -41,11 +41,14 @@ public class Neo4jChatMemoryAutoConfiguration {
 	@ConditionalOnMissingBean
 	public Neo4jChatMemory chatMemory(Neo4jChatMemoryProperties properties, Driver driver) {
 
-		var builder = Neo4jChatMemoryConfig.builder().withMediaLabel(properties.getMediaLabel())
-				.withMessageLabel(properties.getMessageLabel()).withMetadataLabel(properties.getMetadataLabel())
-				.withSessionLabel(properties.getSessionLabel()).withToolCallLabel(properties.getToolCallLabel())
-				.withToolResponseLabel(properties.getToolResponseLabel())
-				.withDriver(driver);
+		var builder = Neo4jChatMemoryConfig.builder()
+			.withMediaLabel(properties.getMediaLabel())
+			.withMessageLabel(properties.getMessageLabel())
+			.withMetadataLabel(properties.getMetadataLabel())
+			.withSessionLabel(properties.getSessionLabel())
+			.withToolCallLabel(properties.getToolCallLabel())
+			.withToolResponseLabel(properties.getToolResponseLabel())
+			.withDriver(driver);
 
 		return Neo4jChatMemory.create(builder.build());
 	}

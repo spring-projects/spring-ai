@@ -32,19 +32,31 @@ public final class Neo4jChatMemoryConfig {
 	// todo – make configurable
 
 	public static final String DEFAULT_SESSION_LABEL = "Session";
+
 	public static final String DEFAULT_TOOL_CALL_LABEL = "ToolCall";
+
 	public static final String DEFAULT_METADATA_LABEL = "Metadata";
+
 	public static final String DEFAULT_MESSAGE_LABEL = "Message";
+
 	public static final String DEFAULT_TOOL_RESPONSE_LABEL = "ToolResponse";
+
 	public static final String DEFAULT_MEDIA_LABEL = "Media";
+
 	private static final Logger logger = LoggerFactory.getLogger(Neo4jChatMemoryConfig.class);
 
 	private final Driver driver;
+
 	private final String sessionLabel;
+
 	private final String toolCallLabel;
+
 	private final String metadataLabel;
+
 	private final String messageLabel;
+
 	private final String toolResponseLabel;
+
 	private final String mediaLabel;
 
 	public String getSessionLabel() {
@@ -92,11 +104,17 @@ public final class Neo4jChatMemoryConfig {
 	public static final class Builder {
 
 		private Driver driver;
+
 		private String sessionLabel = DEFAULT_SESSION_LABEL;
+
 		private String toolCallLabel = DEFAULT_TOOL_CALL_LABEL;
+
 		private String metadataLabel = DEFAULT_METADATA_LABEL;
+
 		private String messageLabel = DEFAULT_MESSAGE_LABEL;
+
 		private String toolResponseLabel = DEFAULT_TOOL_RESPONSE_LABEL;
+
 		private String mediaLabel = DEFAULT_MEDIA_LABEL;
 
 		private Builder() {
@@ -160,7 +178,6 @@ public final class Neo4jChatMemoryConfig {
 			return driver;
 		}
 
-
 		public Builder withDriver(Driver driver) {
 			this.driver = driver;
 			return this;
@@ -169,6 +186,7 @@ public final class Neo4jChatMemoryConfig {
 		public Neo4jChatMemoryConfig build() {
 			return new Neo4jChatMemoryConfig(this);
 		}
+
 	}
 
 }
