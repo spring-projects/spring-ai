@@ -28,21 +28,19 @@ import org.springframework.util.StringUtils;
 public class HunYuanTestConfiguration {
 
 	@Bean
-	public HunYuanApi moonshotApi() {
-		var apiKey = System.getenv("MOONSHOT_API_KEY");
-		if (!StringUtils.hasText(apiKey)) {
+	public HunYuanApi hunYuanApi() {
+		var secretId = System.getenv("HUNYUAN_SECRET_ID");
+		var secretKey = System.getenv("HUNYUAN_SECRET_KEY");
+		if (!StringUtils.hasText(secretId) && !StringUtils.hasText(secretKey)) {
 			throw new IllegalArgumentException(
-					"Missing MOONSHOT_API_KEY environment variable. Please set it to your Moonshot API key.");
+					"Missing HUNYUAN_SECRET_ID & HUNYUAN_SECRET_KEY environment variable. Please set it to your HUNYUAN API info.");
 		}
-		return new HunYuanApi(apiKey,apiKey);
+		return new HunYuanApi(secretId,secretKey);
 	}
 
 	@Bean
-	public HunYuanChatModel moonshotChatModel(HunYuanApi moonshotApi) {
-		return new HunYuanChatModel(moonshotApi);
-	}
-
-	public void tst() {
+	public HunYuanChatModel hunYuanChatModel(HunYuanApi hunYuanApi) {
+		return new HunYuanChatModel(hunYuanApi);
 	}
 
 }

@@ -52,7 +52,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  */
 @SpringBootTest(classes = HunYuanTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
 public class HunYuanChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(HunYuanChatModelIT.class);

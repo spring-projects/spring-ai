@@ -37,8 +37,8 @@ class HunYuanRuntimeHintsTests {
 	@Test
 	void registerHints() {
 		RuntimeHints runtimeHints = new RuntimeHints();
-		HunYuanRuntimeHints moonshotRuntimeHints = new HunYuanRuntimeHints();
-		moonshotRuntimeHints.registerHints(runtimeHints, null);
+		HunYuanRuntimeHints hunYuanRuntimeHints = new HunYuanRuntimeHints();
+		hunYuanRuntimeHints.registerHints(runtimeHints, null);
 
 		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(HunYuanApi.class);
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {

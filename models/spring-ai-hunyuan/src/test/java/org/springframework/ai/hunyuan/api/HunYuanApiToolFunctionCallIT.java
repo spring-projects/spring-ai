@@ -122,7 +122,7 @@ public class HunYuanApiToolFunctionCallIT {
 				MockWeatherService.Response weatherResponse = this.weatherService.apply(weatherRequest);
 
 				// extend conversation with function response.
-				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.tool,
+				messages.add(new ChatCompletionMessage("温度为：" + weatherResponse.temp() + weatherRequest.unit(), Role.tool,
 						null, toolCall.id(), null));
 			}
 		}

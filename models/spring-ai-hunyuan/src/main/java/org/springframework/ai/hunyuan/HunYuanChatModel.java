@@ -85,7 +85,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	/**
 	 * Low-level access to the Hunyuan API.
 	 */
-	private final HunYuanApi moonshotApi;
+	private final HunYuanApi hunYuanApi;
 
 	private final RetryTemplate retryTemplate;
 
@@ -101,40 +101,40 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 
 	/**
 	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param moonshotApi The Hunyuan instance to be used for interacting with the
+	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
 	 * Hunyuan Chat API.
 	 */
-	public HunYuanChatModel(HunYuanApi moonshotApi) {
-		this(moonshotApi, HunYuanChatOptions.builder().model(HunYuanApi.DEFAULT_CHAT_MODEL).build());
+	public HunYuanChatModel(HunYuanApi hunYuanApi) {
+		this(hunYuanApi, HunYuanChatOptions.builder().model(HunYuanApi.DEFAULT_CHAT_MODEL).build());
 	}
 
 	/**
 	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param moonshotApi The Hunyuan instance to be used for interacting with the
+	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
 	 * Hunyuan Chat API.
 	 * @param options The HunyuanChatOptions to configure the chat client.
 	 */
-	public HunYuanChatModel(HunYuanApi moonshotApi, HunYuanChatOptions options) {
-		this(moonshotApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+	public HunYuanChatModel(HunYuanApi hunYuanApi, HunYuanChatOptions options) {
+		this(hunYuanApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	/**
 	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param moonshotApi The Hunyuan instance to be used for interacting with the
+	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
 	 * Hunyuan Chat API.
 	 * @param options The HunyuanChatOptions to configure the chat client.
 	 * @param functionCallbackResolver The function callback resolver to resolve the
 	 * function by its name.
 	 * @param retryTemplate The retry template.
 	 */
-	public HunYuanChatModel(HunYuanApi moonshotApi, HunYuanChatOptions options,
+	public HunYuanChatModel(HunYuanApi hunYuanApi, HunYuanChatOptions options,
 							FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
-		this(moonshotApi, options, functionCallbackResolver, List.of(), retryTemplate, ObservationRegistry.NOOP);
+		this(hunYuanApi, options, functionCallbackResolver, List.of(), retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	/**
 	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param moonshotApi The Hunyuan instance to be used for interacting with the
+	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
 	 * Hunyuan Chat API.
 	 * @param options The HunyuanChatOptions to configure the chat client.
 	 * @param functionCallbackResolver resolves the function by its name.
@@ -142,17 +142,17 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
 	 */
-	public HunYuanChatModel(HunYuanApi moonshotApi, HunYuanChatOptions options,
+	public HunYuanChatModel(HunYuanApi hunYuanApi, HunYuanChatOptions options,
 							FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 							RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		super(functionCallbackResolver, options, toolFunctionCallbacks);
-		Assert.notNull(moonshotApi, "HunyuanApi must not be null");
+		Assert.notNull(hunYuanApi, "HunyuanApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
 				"The default function callbacks must be set via the toolFunctionCallbacks constructor parameter");
 		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
-		this.moonshotApi = moonshotApi;
+		this.hunYuanApi = hunYuanApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
@@ -188,7 +188,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 					this.observationRegistry)
 			.observe(() -> {
 				ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate
-					.execute(ctx -> this.moonshotApi.chatCompletionEntity(request));
+					.execute(ctx -> this.hunYuanApi.chatCompletionEntity(request));
 
 				var chatCompletion = completionEntity.getBody().response();
 
@@ -243,7 +243,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.moonshotApi.chatCompletionStream(request));
+				.execute(ctx -> this.hunYuanApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
