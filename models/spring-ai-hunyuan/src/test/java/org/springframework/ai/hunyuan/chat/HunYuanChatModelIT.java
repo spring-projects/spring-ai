@@ -16,9 +16,9 @@
 
 package org.springframework.ai.hunyuan.chat;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -39,12 +39,23 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.hunyuan.HunYuanChatOptions;
 import org.springframework.ai.hunyuan.HunYuanTestConfiguration;
+import org.springframework.ai.hunyuan.api.HunYuanApi;
+import org.springframework.ai.model.Media;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.StreamUtils;
+import reactor.core.publisher.Flux;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -79,6 +90,70 @@ public class HunYuanChatModelIT {
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
+	@Test
+	void nativePictureTest() {
+		List<Media> media = new ArrayList<>();
+
+		var imageData = new ClassPathResource("/img.png");
+		media.add(new Media(MediaType.IMAGE_PNG, imageData));
+		UserMessage userMessage = new UserMessage(
+				"Which company's logo is in the picture below?",media);
+		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("cloud");
+	}
+	@Test
+	void nativePictureStreamTest() {
+		List<Media> media = new ArrayList<>();
+
+		var imageData = new ClassPathResource("/img.png");
+		media.add(new Media(MediaType.IMAGE_PNG, imageData));
+		UserMessage userMessage = new UserMessage(
+				"Which company's logo is in the picture below?",media);
+		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		Flux<ChatResponse> response = this.chatModel.stream(prompt);
+		String content = Objects.requireNonNull(response.collectList().block())
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getText)
+				.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+		assertThat(content).contains("cloud");
+	}
+	@Test
+	void cloudPictureTest() throws IOException {
+		UserMessage userMessage = new UserMessage(
+				"Which company's logo is in the picture below?",List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(new URL("https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))
+				.build()));
+		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("cloud");
+	}
+	@Test
+	void cloudPictureStreamTest() throws IOException {
+		UserMessage userMessage = new UserMessage(
+				"Which company's logo is in the picture below?",List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(new URL("https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))
+				.build()));
+		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		Flux<ChatResponse> response = this.chatModel.stream(prompt);
+		String content = Objects.requireNonNull(response.collectList().block())
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getText)
+				.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+		assertThat(content).contains("cloud");
+	}
 	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();
@@ -139,18 +214,14 @@ public class HunYuanChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
-
+		assertThat(actorsFilms.getActor()).isNotNull();
+		assertThat(actorsFilms.getMovies()).size().isGreaterThan(0);
 	}
 
 	@Test
 	void beanOutputConverterRecords() {
 
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
-
-		// TODO investigate why standard beanoutput converter text is not working and
-		// additional text to specify
-		// json format is needed. The response without the additional text returns "null"
-		// for actor.
 
 		String format = outputConverter.getFormat();
 		String template = """

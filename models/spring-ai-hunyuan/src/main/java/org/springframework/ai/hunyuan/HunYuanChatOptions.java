@@ -16,16 +16,13 @@
 
 package org.springframework.ai.hunyuan;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.hunyuan.api.HunYuanApi;
@@ -41,71 +38,37 @@ import org.springframework.util.Assert;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HunYuanChatOptions implements FunctionCallingOptions {
 
-	/**
-	 * ID of the model to use
-	 */
-	private @JsonProperty("model") String model;
+	private @JsonProperty("Model") String model;
 
-	/**
-	 * The maximum number of tokens to generate in the chat completion. The total length
-	 * of input tokens and generated tokens is limited by the model's context length.
-	 */
-	private @JsonProperty("max_tokens") Integer maxTokens;
 
-	/**
-	 * What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will
-	 * make the output more random, while lower values like 0.2 will make it more focused
-	 * and deterministic. We generally recommend altering this or top_p but not both.
-	 */
-	private @JsonProperty("temperature") Double temperature;
+	private @JsonProperty("Temperature") Double temperature;
 
-	/**
-	 * An alternative to sampling with temperature, called nucleus sampling, where the
-	 * model considers the results of the tokens with top_p probability mass. So 0.1 means
-	 * only the tokens comprising the top 10% probability mass are considered. We
-	 * generally recommend altering this or temperature but not both.
-	 */
-	private @JsonProperty("top_p") Double topP;
 
-	/**
-	 * How many chat completion choices to generate for each input message. Note that you
-	 * will be charged based on the number of generated tokens across all the choices.
-	 * Keep n as 1 to minimize costs.
-	 */
-	private @JsonProperty("n") Integer n;
+	private @JsonProperty("TopP") Double topP;
 
-	/**
-	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
-	 * they appear in the text so far, increasing the model's likelihood to talk about new
-	 * topics.
-	 */
-	private @JsonProperty("presence_penalty") Double presencePenalty;
 
-	/**
-	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their
-	 * existing frequency in the text so far, decreasing the model's likelihood to repeat
-	 * the same line verbatim.
-	 */
-	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
+	private @JsonProperty("Seed") Integer seed;
 
-	/**
-	 * Up to 5 sequences where the API will stop generating further tokens.
-	 */
-	private @JsonProperty("stop") List<String> stop;
 
-	private @JsonProperty("tools") List<HunYuanApi.FunctionTool> tools;
+	private @JsonProperty("EnableEnhancement") Boolean enableEnhancement;
 
-	/**
-	 * Controls which (if any) function is called by the model. none means the model will
-	 * not call a function and instead generates a message. auto means the model can pick
-	 * between generating a message or calling a function. Specifying a particular
-	 * function via {"type: "function", "function": {"name": "my_function"}} forces the
-	 * model to call that function. none is the default when no functions are present.
-	 * auto is the default if functions are present. Use the
-	 * {@link HunYuanApi.ChatCompletionRequest.ToolChoiceBuilder} to create a tool choice
-	 * object.
-	 */
-	private @JsonProperty("tool_choice") String toolChoice;
+	private @JsonProperty("StreamModeration") Boolean streamModeration;
+
+
+	private @JsonProperty("Stop") List<String> stop;
+
+	private @JsonProperty("Tools") List<HunYuanApi.FunctionTool> tools;
+
+	private @JsonProperty("ToolChoice") String toolChoice;
+	private @JsonProperty("CustomTool") HunYuanApi.FunctionTool customTool;
+	private @JsonProperty("SearchInfo") Boolean searchInfo;
+	private @JsonProperty("Citation") Boolean citation;
+	private @JsonProperty("EnableSpeedSearch") Boolean enableSpeedSearch;
+	private @JsonProperty("EnableMultimedia") Boolean enableMultimedia;
+	private @JsonProperty("EnableDeepSearch") Boolean enableDeepSearch;
+	private @JsonProperty("ForceSearchEnhancement") Boolean ForceSearchEnhancement;
+	private @JsonProperty("EnableRecommendedQuestions") Boolean enableRecommendedQuestions;
+
 
 	/**
 	 * Hunyuan Tool Function Callbacks to register with the ChatModel. For Prompt Options
@@ -130,12 +93,6 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 	 */
 	@JsonIgnore
 	private Set<String> functions = new HashSet<>();
-
-	/**
-	 * A unique identifier representing your end-user, which can help Hunyuan to monitor
-	 * and detect abuse.
-	 */
-	private @JsonProperty("user") String user;
 
 	@JsonIgnore
 	private Boolean proxyToolCalls;
@@ -171,43 +128,31 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
 	public Double getFrequencyPenalty() {
-		return this.frequencyPenalty;
-	}
-
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
+		return null;
 	}
 
 	@Override
 	public Integer getMaxTokens() {
-		return this.maxTokens;
-	}
-
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
-	public Integer getN() {
-		return this.n;
-	}
-
-	public void setN(Integer n) {
-		this.n = n;
+		return null;
 	}
 
 	@Override
 	public Double getPresencePenalty() {
-		return this.presencePenalty;
+		return null;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
+	public void setModel(String model) {
+		this.model = model;
+	}
+
+	public Integer getSeed() {
+		return this.seed;
+	}
+
+	public void setSeed(Integer seed) {
+		this.seed = seed;
 	}
 
 	@Override
@@ -243,16 +188,109 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 		return this.topP;
 	}
 
+	@Override
+	public <T extends ChatOptions> T copy() {
+		return null;
+	}
+
 	public void setTopP(Double topP) {
 		this.topP = topP;
 	}
 
-	public String getUser() {
-		return this.user;
+	public Boolean getEnableEnhancement() {
+		return enableEnhancement;
 	}
 
-	public void setUser(String user) {
-		this.user = user;
+	public void setEnableEnhancement(Boolean enableEnhancement) {
+		this.enableEnhancement = enableEnhancement;
+	}
+
+	public Boolean getStreamModeration() {
+		return streamModeration;
+	}
+
+	public void setStreamModeration(Boolean streamModeration) {
+		this.streamModeration = streamModeration;
+	}
+
+	public List<HunYuanApi.FunctionTool> getTools() {
+		return tools;
+	}
+
+	public void setTools(List<HunYuanApi.FunctionTool> tools) {
+		this.tools = tools;
+	}
+
+	public String getToolChoice() {
+		return toolChoice;
+	}
+
+	public void setToolChoice(String toolChoice) {
+		this.toolChoice = toolChoice;
+	}
+
+	public HunYuanApi.FunctionTool getCustomTool() {
+		return customTool;
+	}
+
+	public void setCustomTool(HunYuanApi.FunctionTool customTool) {
+		this.customTool = customTool;
+	}
+
+	public Boolean getSearchInfo() {
+		return searchInfo;
+	}
+
+	public void setSearchInfo(Boolean searchInfo) {
+		this.searchInfo = searchInfo;
+	}
+
+	public Boolean getCitation() {
+		return citation;
+	}
+
+	public void setCitation(Boolean citation) {
+		this.citation = citation;
+	}
+
+	public Boolean getEnableSpeedSearch() {
+		return enableSpeedSearch;
+	}
+
+	public void setEnableSpeedSearch(Boolean enableSpeedSearch) {
+		this.enableSpeedSearch = enableSpeedSearch;
+	}
+
+	public Boolean getEnableMultimedia() {
+		return enableMultimedia;
+	}
+
+	public void setEnableMultimedia(Boolean enableMultimedia) {
+		this.enableMultimedia = enableMultimedia;
+	}
+
+	public Boolean getEnableDeepSearch() {
+		return enableDeepSearch;
+	}
+
+	public void setEnableDeepSearch(Boolean enableDeepSearch) {
+		this.enableDeepSearch = enableDeepSearch;
+	}
+
+	public Boolean getForceSearchEnhancement() {
+		return ForceSearchEnhancement;
+	}
+
+	public void setForceSearchEnhancement(Boolean forceSearchEnhancement) {
+		ForceSearchEnhancement = forceSearchEnhancement;
+	}
+
+	public Boolean getEnableRecommendedQuestions() {
+		return enableRecommendedQuestions;
+	}
+
+	public void setEnableRecommendedQuestions(Boolean enableRecommendedQuestions) {
+		this.enableRecommendedQuestions = enableRecommendedQuestions;
 	}
 
 	@Override
@@ -281,366 +319,182 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
-	public HunYuanChatOptions copy() {
-		return builder().model(this.model)
-			.maxTokens(this.maxTokens)
-			.temperature(this.temperature)
-			.topP(this.topP)
-			.N(this.n)
-			.presencePenalty(this.presencePenalty)
-			.frequencyPenalty(this.frequencyPenalty)
-			.stop(this.stop)
-			.user(this.user)
-			.tools(this.tools)
-			.toolChoice(this.toolChoice)
-			.functionCallbacks(this.functionCallbacks)
-			.functions(this.functions)
-			.proxyToolCalls(this.proxyToolCalls)
-			.toolContext(this.toolContext)
-			.build();
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		HunYuanChatOptions that = (HunYuanChatOptions) o;
+
+		if (!model.equals(that.model)) return false;
+		if (!Objects.equals(temperature, that.temperature)) return false;
+		if (!Objects.equals(topP, that.topP)) return false;
+		if (!Objects.equals(seed, that.seed)) return false;
+		if (!Objects.equals(enableEnhancement, that.enableEnhancement))
+			return false;
+		if (!Objects.equals(streamModeration, that.streamModeration))
+			return false;
+		if (!Objects.equals(stop, that.stop)) return false;
+		if (!Objects.equals(tools, that.tools)) return false;
+		if (!Objects.equals(toolChoice, that.toolChoice)) return false;
+		if (!Objects.equals(customTool, that.customTool)) return false;
+		if (!Objects.equals(searchInfo, that.searchInfo)) return false;
+		if (!Objects.equals(citation, that.citation)) return false;
+		if (!Objects.equals(enableSpeedSearch, that.enableSpeedSearch))
+			return false;
+		if (!Objects.equals(enableMultimedia, that.enableMultimedia))
+			return false;
+		if (!Objects.equals(enableDeepSearch, that.enableDeepSearch))
+			return false;
+		if (!Objects.equals(ForceSearchEnhancement, that.ForceSearchEnhancement))
+			return false;
+		if (!Objects.equals(enableRecommendedQuestions, that.enableRecommendedQuestions))
+			return false;
+		if (!Objects.equals(functionCallbacks, that.functionCallbacks))
+			return false;
+		if (!Objects.equals(functions, that.functions)) return false;
+		if (!Objects.equals(proxyToolCalls, that.proxyToolCalls))
+			return false;
+		return Objects.equals(toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.n == null) ? 0 : this.n.hashCode());
-		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
-		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
+		result = prime * result + (temperature != null ? temperature.hashCode() : 0);
+		result = prime * result + (topP != null ? topP.hashCode() : 0);
+		result = prime * result + (seed != null ? seed.hashCode() : 0);
+		result = prime * result + (enableEnhancement != null ? enableEnhancement.hashCode() : 0);
+		result = prime * result + (streamModeration != null ? streamModeration.hashCode() : 0);
+		result = prime * result + (stop != null ? stop.hashCode() : 0);
+		result = prime * result + (tools != null ? tools.hashCode() : 0);
+		result = prime * result + (toolChoice != null ? toolChoice.hashCode() : 0);
+		result = prime * result + (customTool != null ? customTool.hashCode() : 0);
+		result = prime * result + (searchInfo != null ? searchInfo.hashCode() : 0);
+		result = prime * result + (citation != null ? citation.hashCode() : 0);
+		result = prime * result + (enableSpeedSearch != null ? enableSpeedSearch.hashCode() : 0);
+		result = prime * result + (enableMultimedia != null ? enableMultimedia.hashCode() : 0);
+		result = prime * result + (enableDeepSearch != null ? enableDeepSearch.hashCode() : 0);
+		result = prime * result + (ForceSearchEnhancement != null ? ForceSearchEnhancement.hashCode() : 0);
+		result = prime * result + (enableRecommendedQuestions != null ? enableRecommendedQuestions.hashCode() : 0);
+		result = prime * result + (functionCallbacks != null ? functionCallbacks.hashCode() : 0);
+		result = prime * result + (functions != null ? functions.hashCode() : 0);
+		result = prime * result + (proxyToolCalls != null ? proxyToolCalls.hashCode() : 0);
+		result = prime * result + (toolContext != null ? toolContext.hashCode() : 0);
 		return result;
 	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		HunYuanChatOptions other = (HunYuanChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.n == null) {
-			if (other.n != null) {
-				return false;
-			}
-		}
-		else if (!this.n.equals(other.n)) {
-			return false;
-		}
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.user == null) {
-			return other.user == null;
-		}
-		else if (!this.user.equals(other.user)) {
-			return false;
-		}
-		if (this.proxyToolCalls == null) {
-			return other.proxyToolCalls == null;
-		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
-			return false;
-		}
-		if (this.toolContext == null) {
-			return other.toolContext == null;
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-		return true;
-	}
-
 	public static class Builder {
 
 		private final HunYuanChatOptions options = new HunYuanChatOptions();
 
 		public Builder model(String model) {
-			this.options.model = model;
-			return this;
-		}
-
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
+			options.setModel(model);
 			return this;
 		}
 
 		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
+			options.setTemperature(temperature);
 			return this;
 		}
 
 		public Builder topP(Double topP) {
-			this.options.topP = topP;
+			options.setTopP(topP);
 			return this;
 		}
 
-		public Builder N(Integer n) {
-			this.options.n = n;
+		public Builder seed(Integer seed) {
+			options.setSeed(seed);
 			return this;
 		}
 
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
+		public Builder enableEnhancement(Boolean enableEnhancement) {
+			options.setEnableEnhancement(enableEnhancement);
 			return this;
 		}
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
+		public Builder streamModeration(Boolean streamModeration) {
+			options.setStreamModeration(streamModeration);
 			return this;
 		}
 
 		public Builder stop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
-		}
-
-		public Builder user(String user) {
-			this.options.user = user;
+			options.setStop(stop);
 			return this;
 		}
 
 		public Builder tools(List<HunYuanApi.FunctionTool> tools) {
-			this.options.tools = tools;
+			options.setTools(tools);
 			return this;
 		}
 
 		public Builder toolChoice(String toolChoice) {
-			this.options.toolChoice = toolChoice;
+			options.setToolChoice(toolChoice);
+			return this;
+		}
+
+		public Builder customTool(HunYuanApi.FunctionTool customTool) {
+			options.setCustomTool(customTool);
+			return this;
+		}
+
+		public Builder searchInfo(Boolean searchInfo) {
+			options.setSearchInfo(searchInfo);
+			return this;
+		}
+
+		public Builder citation(Boolean citation) {
+			options.setCitation(citation);
+			return this;
+		}
+
+		public Builder enableSpeedSearch(Boolean enableSpeedSearch) {
+			options.setEnableSpeedSearch(enableSpeedSearch);
+			return this;
+		}
+
+		public Builder enableMultimedia(Boolean enableMultimedia) {
+			options.setEnableMultimedia(enableMultimedia);
+			return this;
+		}
+
+		public Builder enableDeepSearch(Boolean enableDeepSearch) {
+			options.setEnableDeepSearch(enableDeepSearch);
+			return this;
+		}
+
+		public Builder forceSearchEnhancement(Boolean forceSearchEnhancement) {
+			options.setForceSearchEnhancement(forceSearchEnhancement);
+			return this;
+		}
+
+		public Builder enableRecommendedQuestions(Boolean enableRecommendedQuestions) {
+			options.setEnableRecommendedQuestions(enableRecommendedQuestions);
 			return this;
 		}
 
 		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
+			options.setFunctionCallbacks(functionCallbacks);
 			return this;
 		}
 
-		public Builder functions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
-			return this;
-		}
-
-		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			if (this.options.functions == null) {
-				this.options.functions = new HashSet<>();
-			}
-			this.options.functions.add(functionName);
+		public Builder functions(Set<String> functions) {
+			options.setFunctions(functions);
 			return this;
 		}
 
 		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+			options.setProxyToolCalls(proxyToolCalls);
 			return this;
 		}
 
 		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
-			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
+			options.setToolContext(toolContext);
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #functions(Set)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctions(Set<String> functionNames) {
-			return functions(functionNames);
-		}
-
-		/**
-		 * @deprecated use {@link #function(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunction(String functionName) {
-			return function(functionName);
-		}
-
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			return model(model);
-		}
-
-		/**
-		 * @deprecated use {@link #maxTokens(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMaxTokens(Integer maxTokens) {
-			return maxTokens(maxTokens);
-		}
-
-		/**
-		 * @deprecated use {@link #temperature(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTemperature(Double temperature) {
-			return temperature(temperature);
-		}
-
-		/**
-		 * @deprecated use {@link #topP(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopP(Double topP) {
-			return topP(topP);
-		}
-
-		/**
-		 * @deprecated use {@link #N(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withN(Integer n) {
-			return N(n);
-		}
-
-		/**
-		 * @deprecated use {@link #presencePenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPresencePenalty(Double presencePenalty) {
-			return presencePenalty(presencePenalty);
-		}
-
-		/**
-		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
-			return frequencyPenalty(frequencyPenalty);
-		}
-
-		/**
-		 * @deprecated use {@link #stop(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withStop(List<String> stop) {
-			return stop(stop);
-		}
-
-		/**
-		 * @deprecated use {@link #user(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUser(String user) {
-			return user(user);
-		}
-
-		/**
-		 * @deprecated use {@link #tools(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTools(List<HunYuanApi.FunctionTool> tools) {
-			return tools(tools);
-		}
-
-		/**
-		 * @deprecated use {@link #toolChoice(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withToolChoice(String toolChoice) {
-			return toolChoice(toolChoice);
-		}
-
-		/**
-		 * @deprecated use {@link #functionCallbacks(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return functionCallbacks(functionCallbacks);
-		}
-
-		/**
-		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
-			return proxyToolCalls(proxyToolCalls);
-		}
-
-		/**
-		 * @deprecated use {@link #toolContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withToolContext(Map<String, Object> toolContext) {
-			return toolContext(toolContext);
-		}
-
 		public HunYuanChatOptions build() {
-			return this.options;
+			return options;
 		}
-
 	}
 
 }

@@ -16,22 +16,22 @@
 
 package org.springframework.ai.hunyuan;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.hunyuan.api.HunYuanApi;
 import org.springframework.ai.hunyuan.api.HunYuanApi.*;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionMessage.*;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletion.*;
 import org.springframework.ai.hunyuan.metadata.HunYuanUsage;
+import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -326,27 +326,51 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cc -> {
-			ChatCompletionMessage delta = cc.message();
-			if (delta == null) {
-				delta = new ChatCompletionMessage("", ChatCompletionMessage.Role.assistant);
-			}
-			return new ChatCompletion.Choice(cc.index(), delta, cc.finishReason(),null);
-		}).toList();
+		List<ChatCompletion.Choice> choices = chunk.choices()
+				.stream()
+				.map(chunkChoice -> {
+					ChatCompletionMessage chatCompletionMessage = null;
+					ChatCompletionDelta delta = chunkChoice.delta();
+					if (delta == null) {
+						chatCompletionMessage = new ChatCompletionMessage("", Role.assistant);
+					}else {
+						chatCompletionMessage = new ChatCompletionMessage(delta.content(), delta.role(),delta.toolCalls());
+					}
+					return new ChatCompletion.Choice(chunkChoice.index(), chatCompletionMessage, chunkChoice.finishReason(),delta);
+				})
+				.toList();
 
-		return new ChatCompletion(chunk.id(), null, chunk.created(), chunk.note(), choices, null, null, null, null, null, null);
+		return new ChatCompletion(chunk.id(), chunk.errorMsg(), chunk.created(), chunk.note(), choices, chunk.usage(), chunk.moderationLevel(), chunk.searchInfo(), chunk.replaces(), chunk.recommendedQuestions(), chunk.requestId());
 	}
 
 	/**
 	 * Accessible for testing.
 	 */
 	public HunYuanApi.ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
-
-		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
-			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
+		List<ChatCompletionMessage> systemMessages = new ArrayList<>();
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().filter(message -> {
+			if (message.getMessageType() == MessageType.SYSTEM) {
 				Object content = message.getText();
-				return List.of(new ChatCompletionMessage(content,
-						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
+				systemMessages.add(new ChatCompletionMessage(content, Role.system));
+				return false;
+			}
+			return true;
+		}).map(message -> {
+			if (message.getMessageType() == MessageType.USER) {
+				Object content = message.getText();
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						List<ChatContent> contentList = new ArrayList<>(List.of(new ChatContent(message.getText())));
+
+						contentList.addAll(userMessage.getMedia()
+								.stream()
+								.map(media -> new ChatContent(new ImageUrl(
+										this.fromMediaData(media.getMimeType(), media.getData()))))
+								.toList());
+						return List.of(new ChatCompletionMessage(Role.user,contentList));
+					}
+				}
+				return List.of(new ChatCompletionMessage(content,Role.user));
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				var assistantMessage = (AssistantMessage) message;
@@ -375,8 +399,10 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 			}
-		}).flatMap(List::stream).toList();
-
+		}).flatMap(List::stream).collect(Collectors.toList());
+		systemMessages.stream().forEach(systemMessage -> {
+			chatCompletionMessages.add(0, systemMessage);
+		});
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
 		Set<String> enabledToolsToUse = new HashSet<>();
@@ -413,7 +439,21 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 
 		return request;
 	}
-
+	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
+		if (mediaContentData instanceof byte[] bytes) {
+			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
+			// following the prefix pattern.
+			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
+		}
+		else if (mediaContentData instanceof String text) {
+			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
+			return text;
+		}
+		else {
+			throw new IllegalArgumentException(
+					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
+		}
+	}
 	private ChatOptions buildRequestOptions(HunYuanApi.ChatCompletionRequest request) {
 		return ChatOptions.builder()
 			.model(request.model())

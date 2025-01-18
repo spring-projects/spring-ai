@@ -30,19 +30,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alexandros Pappas
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
 public class HunYuanChatCompletionRequestTest {
 
-	HunYuanChatModel chatModel = new HunYuanChatModel(new HunYuanApi("test","test"));
+	HunYuanChatModel chatModel = new HunYuanChatModel(new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY")));
 
 	@Test
 	void chatCompletionDefaultRequestTest() {
 		var request = this.chatModel.createRequest(new Prompt("test content"), false);
 
 		assertThat(request.messages()).hasSize(1);
-		assertThat(request.topP()).isEqualTo(1);
-		assertThat(request.temperature()).isEqualTo(0.7);
-//		assertThat(request.maxTokens()).isNull();
 		assertThat(request.stream()).isFalse();
 	}
 

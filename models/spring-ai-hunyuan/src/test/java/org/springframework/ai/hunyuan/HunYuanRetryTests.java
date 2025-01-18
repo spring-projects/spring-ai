@@ -57,7 +57,7 @@ public class HunYuanRetryTests {
 
 	private TestRetryListener retryListener;
 
-	private @Mock HunYuanApi moonshotApi;
+	private @Mock HunYuanApi hunYuanApi;
 
 	private HunYuanChatModel chatModel;
 
@@ -67,7 +67,7 @@ public class HunYuanRetryTests {
 		this.retryListener = new TestRetryListener();
 		retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new HunYuanChatModel(this.moonshotApi,
+		this.chatModel = new HunYuanChatModel(this.hunYuanApi,
 				HunYuanChatOptions.builder()
 					.temperature(0.7)
 					.topP(1.0)
@@ -77,7 +77,7 @@ public class HunYuanRetryTests {
 	}
 
 	@Test
-	public void moonshotChatTransientError() {
+	public void hunyuanChatTransientError() {
 
 		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.assistant),
 				ChatCompletionFinishReason.STOP.name(),null);
@@ -85,7 +85,7 @@ public class HunYuanRetryTests {
 				List.of(choice), new HunYuanApi.Usage(10, 10, 10),null,null,null,null,null);
 		HunYuanApi.ChatCompletionResponse chatCompletionResponse = new HunYuanApi.ChatCompletionResponse(expectedChatCompletion);
 
-		given(this.moonshotApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+		given(this.hunYuanApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(chatCompletionResponse)));
@@ -100,20 +100,20 @@ public class HunYuanRetryTests {
 
 	@Test
 	public void moonshotChatNonTransientError() {
-		given(this.moonshotApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+		given(this.hunYuanApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
 	}
 
 	@Test
-	public void moonshotChatStreamTransientError() {
+	public void hunYuanChatStreamTransientError() {
 
 		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.assistant),
 				ChatCompletionFinishReason.STOP.name(), null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", null, 789L,
 				"", List.of(choice),null,null,null,null,null,null);
 
-		given(this.moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+		given(this.hunYuanApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(Flux.just(expectedChatCompletion));
@@ -127,8 +127,8 @@ public class HunYuanRetryTests {
 	}
 
 	@Test
-	public void moonshotChatStreamNonTransientError() {
-		given(this.moonshotApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+	public void hunYuanChatStreamNonTransientError() {
+		given(this.hunYuanApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.stream(new Prompt("text")).collectList().block());
 	}

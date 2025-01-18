@@ -58,7 +58,7 @@ public class HunYuanApiIT {
 
 	@Test
 	void chatCompletionEntity() {
-		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("你好！", Role.user);
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello World！", Role.user);
 		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
 				List.of(chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8,false));
 
@@ -68,7 +68,18 @@ public class HunYuanApiIT {
 		logger.info(response.getBody().response().toString());
 //		System.out.println(response.getBody().response().errorMsg().message());
 	}
+	@Test
+	void chatCompletionEntityByEnhance() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Why is the price of gold rising？", Role.user);
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
+				List.of(chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), false,false,true,true,true,true));
 
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().response()).isNotNull();
+		logger.info(response.getBody().response().toString());
+//		System.out.println(response.getBody().response().errorMsg().message());
+	}
 	@Test
 	void chatCompletionEntityWithSystemMessage() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(

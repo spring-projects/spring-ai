@@ -369,7 +369,7 @@ public class HunYuanApi {
 			@JsonProperty("EnableSpeedSearch") Boolean enableSpeedSearch,
 			@JsonProperty("EnableMultimedia") Boolean enableMultimedia,
 			@JsonProperty("EnableDeepSearch") Boolean enableDeepSearch,
-			@JsonProperty("Seed") Integer customToolOutputSchemaExampleDescription,
+			@JsonProperty("Seed") Integer seed,
 			@JsonProperty("ForceSearchEnhancement") Boolean ForceSearchEnhancement,
 			@JsonProperty("EnableRecommendedQuestions") Boolean enableRecommendedQuestions
 	) {
@@ -426,6 +426,15 @@ public class HunYuanApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 									 String toolChoice) {
 			this(model,messages, null, null, null, null, null, null, tools, toolChoice, null, null, null, null, null, null, null, null, null);
+		}
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
+									 Boolean stream,
+									 Boolean streamModeration,
+									 Boolean enableEnhancement,
+									 Boolean searchInfo,
+									 Boolean citation,
+									 Boolean enableSpeedSearch) {
+			this(model,messages, null, enableEnhancement, null, null, stream, streamModeration, null, null, null, searchInfo, citation, null, null, enableSpeedSearch, null, null, null);
 		}
 
 		/**
@@ -493,7 +502,9 @@ public class HunYuanApi {
 		public ChatCompletionMessage(Object content, Role role) {
 			this(content, role, null, null, null);
 		}
-
+		public ChatCompletionMessage(Object content, Role role,List<ToolCall> toolCalls) {
+			this(content, role, null, null, toolCalls);
+		}
 		public ChatCompletionMessage(Role role,List<ChatContent> chatContent) {
 			this(null, role, chatContent, null, null);
 		}
@@ -562,8 +573,14 @@ public class HunYuanApi {
 			public ChatContent(String type, String text) {
 				this(type, text, null);
 			}
+			public ChatContent(String text) {
+				this("text", text, null);
+			}
 			public ChatContent(String type, ImageUrl imageUrl) {
 				this(type, null, imageUrl);
+			}
+			public ChatContent(ImageUrl imageUrl) {
+				this("image_url", null, imageUrl);
 			}
 
 		}

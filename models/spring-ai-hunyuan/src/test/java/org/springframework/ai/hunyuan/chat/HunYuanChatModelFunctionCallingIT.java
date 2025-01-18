@@ -45,7 +45,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = HunYuanTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
 class HunYuanChatModelFunctionCallingIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(HunYuanChatModelFunctionCallingIT.class);

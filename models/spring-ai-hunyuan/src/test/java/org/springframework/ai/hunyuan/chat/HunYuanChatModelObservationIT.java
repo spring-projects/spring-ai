@@ -53,7 +53,8 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Alexandros Pappas
  */
 @SpringBootTest(classes = HunYuanChatModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
 public class HunYuanChatModelObservationIT {
 
 	@Autowired
@@ -72,9 +73,6 @@ public class HunYuanChatModelObservationIT {
 
 		var options = HunYuanChatOptions.builder()
 			.model(HunYuanApi.ChatModel.HUNYUAN_PRO.getValue())
-			.frequencyPenalty(0.0)
-			.maxTokens(2048)
-			.presencePenalty(0.0)
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topP(1.0)
@@ -95,9 +93,6 @@ public class HunYuanChatModelObservationIT {
 	void observationForStreamingChatOperation() {
 		var options = HunYuanChatOptions.builder()
 			.model(HunYuanApi.ChatModel.HUNYUAN_PRO.getValue())
-			.frequencyPenalty(0.0)
-			.maxTokens(2048)
-			.presencePenalty(0.0)
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topP(1.0)
@@ -133,20 +128,17 @@ public class HunYuanChatModelObservationIT {
 			.hasContextualNameEqualTo("chat " + HunYuanApi.ChatModel.HUNYUAN_PRO.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.MOONSHOT.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.HUNYUAN.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					HunYuanApi.ChatModel.HUNYUAN_PRO.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(), "0.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_TOP_K.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"stop\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
@@ -166,14 +158,14 @@ public class HunYuanChatModelObservationIT {
 		}
 
 		@Bean
-		public HunYuanApi moonshotApi() {
-			return new HunYuanApi(System.getenv("MOONSHOT_API_KEY"),System.getenv("MOONSHOT_API_KEY"));
+		public HunYuanApi hunYuanApi() {
+			return new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY"));
 		}
 
 		@Bean
-		public HunYuanChatModel moonshotChatModel(HunYuanApi moonshotApi,
+		public HunYuanChatModel hunYuanChatModel(HunYuanApi hunYuanApi,
 				TestObservationRegistry observationRegistry) {
-			return new HunYuanChatModel(moonshotApi, HunYuanChatOptions.builder().build(),
+			return new HunYuanChatModel(hunYuanApi, HunYuanChatOptions.builder().build(),
 					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
 					observationRegistry);
 		}
