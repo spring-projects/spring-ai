@@ -112,6 +112,9 @@ public final class JsonSchemaGenerator {
 	public static String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
 		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
+		if ((type == Void.class) && !schema.has("properties")) {
+			schema.putObject("properties");
+		}
 		if (Stream.of(schemaOptions)
 			.noneMatch(option -> option == SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT)) {
 			schema.put("additionalProperties", false);

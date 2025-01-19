@@ -21,6 +21,8 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.util.ParsingUtils;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
@@ -45,6 +47,11 @@ public final class ToolUtils {
 			return method.getName();
 		}
 		return StringUtils.hasText(tool.name()) ? tool.name() : method.getName();
+	}
+
+	public static String getToolDescriptionFromName(@Nullable String toolName) {
+		Assert.hasText(toolName, "toolName cannot be null or empty");
+		return ParsingUtils.reConcatenateCamelCase(toolName, " ");
 	}
 
 	public static String getToolDescription(Method method) {

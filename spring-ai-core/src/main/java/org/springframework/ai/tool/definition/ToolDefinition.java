@@ -40,9 +40,9 @@ public interface ToolDefinition {
 	String description();
 
 	/**
-	 * The JSON Schema of the parameters used to call the tool.
+	 * The schema of the parameters used to call the tool.
 	 */
-	String inputTypeSchema();
+	String inputSchema();
 
 	/**
 	 * Create a default {@link ToolDefinition} builder.
@@ -58,7 +58,7 @@ public interface ToolDefinition {
 		return DefaultToolDefinition.builder()
 			.name(ToolUtils.getToolName(method))
 			.description(ToolUtils.getToolDescription(method))
-			.inputTypeSchema(JsonSchemaGenerator.generateForMethodInput(method))
+			.inputSchema(JsonSchemaGenerator.generateForMethodInput(method))
 			.build();
 	}
 

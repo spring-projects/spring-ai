@@ -14,27 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.execution;
+@NonNullApi
+@NonNullFields
+package org.springframework.ai.tool.function;
 
-import org.springframework.lang.Nullable;
-
-import java.lang.reflect.Type;
-import java.util.function.BiFunction;
-
-/**
- * A functional interface to convert tool call results to a String that can be sent back
- * to the AI model.
- *
- * @author Thomas Vitale
- * @since 1.0.0
- */
-@FunctionalInterface
-public interface ToolCallResultConverter extends BiFunction<Object, Type, String> {
-
-	/**
-	 * Given an Object returned by a tool, convert it to a String compatible with the
-	 * given class type.
-	 */
-	String apply(@Nullable Object result, @Nullable Type returnType);
-
-}
+import org.springframework.lang.NonNullApi;
+import org.springframework.lang.NonNullFields;

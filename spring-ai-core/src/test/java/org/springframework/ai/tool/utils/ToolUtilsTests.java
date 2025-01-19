@@ -9,6 +9,7 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.util.ToolUtils;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,6 +70,12 @@ class ToolUtilsTests {
 	}
 
 	@Test
+	void shouldGetToolDescriptionFromName() {
+		String description = ToolUtils.getToolDescriptionFromName("mySuperSpecialTool");
+		assertThat(description).isEqualTo("my super special tool");
+	}
+
+	@Test
 	void shouldGetMethodNameWhenNoCustomDescriptionInAnnotation() throws Exception {
 		Method method = TestTools.class.getMethod("toolWithoutCustomDescription");
 		assertThat(ToolUtils.getToolDescription(method)).isEqualTo("toolWithoutCustomDescription");
@@ -119,7 +126,7 @@ class ToolUtilsTests {
 		private final ToolDefinition toolDefinition;
 
 		public TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).description(name).inputTypeSchema("{}").build();
+			this.toolDefinition = ToolDefinition.builder().name(name).description(name).inputSchema("{}").build();
 		}
 
 		@Override
@@ -175,8 +182,8 @@ class ToolUtilsTests {
 	public static class CustomToolCallResultConverter implements ToolCallResultConverter {
 
 		@Override
-		public String apply(Object result, Class<?> returnType) {
-			return returnType.getName();
+		public String apply(Object result, Type returnType) {
+			return returnType == null ? "null" : returnType.getTypeName();
 		}
 
 	}
@@ -188,8 +195,8 @@ class ToolUtilsTests {
 		}
 
 		@Override
-		public String apply(Object result, Class<?> returnType) {
-			return returnType.getName();
+		public String apply(Object result, Type returnType) {
+			return returnType == null ? "null" : returnType.getTypeName();
 		}
 
 	}

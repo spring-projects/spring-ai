@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
@@ -51,7 +52,9 @@ import org.springframework.util.ReflectionUtils;
  *
  * @author Christian Tzolov
  * @since 1.0.0
+ * @deprecated in favor of {@link MethodToolCallback}.
  */
+@Deprecated
 public class MethodInvokingFunctionCallback implements FunctionCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodInvokingFunctionCallback.class);

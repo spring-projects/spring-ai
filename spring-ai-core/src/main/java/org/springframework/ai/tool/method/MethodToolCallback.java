@@ -35,6 +35,7 @@ import org.springframework.util.CollectionUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -50,6 +51,8 @@ public class MethodToolCallback implements ToolCallback {
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
+	private static final ToolMetadata DEFAULT_TOOL_METADATA = ToolMetadata.builder().build();
+
 	private final ToolDefinition toolDefinition;
 
 	private final ToolMetadata toolMetadata;
@@ -60,14 +63,13 @@ public class MethodToolCallback implements ToolCallback {
 
 	private final ToolCallResultConverter toolCallResultConverter;
 
-	public MethodToolCallback(ToolDefinition toolDefinition, ToolMetadata toolMetadata, Method toolMethod,
+	public MethodToolCallback(ToolDefinition toolDefinition, @Nullable ToolMetadata toolMetadata, Method toolMethod,
 			Object toolObject, @Nullable ToolCallResultConverter toolCallResultConverter) {
 		Assert.notNull(toolDefinition, "toolDefinition cannot be null");
-		Assert.notNull(toolMetadata, "toolMetadata cannot be null");
 		Assert.notNull(toolMethod, "toolMethod cannot be null");
 		Assert.notNull(toolObject, "toolObject cannot be null");
 		this.toolDefinition = toolDefinition;
-		this.toolMetadata = toolMetadata;
+		this.toolMetadata = toolMetadata != null ? toolMetadata : DEFAULT_TOOL_METADATA;
 		this.toolMethod = toolMethod;
 		this.toolObject = toolObject;
 		this.toolCallResultConverter = toolCallResultConverter != null ? toolCallResultConverter
@@ -105,7 +107,7 @@ public class MethodToolCallback implements ToolCallback {
 
 		logger.debug("Successful execution of tool: {}", toolDefinition.name());
 
-		Class<?> returnType = toolMethod.getReturnType();
+		Type returnType = toolMethod.getGenericReturnType();
 
 		return toolCallResultConverter.apply(result, returnType);
 	}
