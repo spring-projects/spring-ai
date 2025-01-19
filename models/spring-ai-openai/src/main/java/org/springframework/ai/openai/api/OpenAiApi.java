@@ -1675,6 +1675,12 @@ public class OpenAiApi {
 			return this;
 		}
 
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "apiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
 		public Builder headers(MultiValueMap<String, String> headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;

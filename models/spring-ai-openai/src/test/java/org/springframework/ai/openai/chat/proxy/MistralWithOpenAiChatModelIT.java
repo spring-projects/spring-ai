@@ -46,12 +46,16 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.chat.ActorsFilms;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -61,6 +65,7 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -251,8 +256,7 @@ class MistralWithOpenAiChatModelIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			.model(modelName)
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -276,8 +280,7 @@ class MistralWithOpenAiChatModelIT {
 
 		var promptOptions = OpenAiChatOptions.builder()
 			.model(modelName)
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -388,12 +391,16 @@ class MistralWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(MISTRAL_BASE_URL, System.getenv("MISTRAL_AI_API_KEY"));
+			return OpenAiApi.builder().baseUrl(MISTRAL_BASE_URL).apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().model(MISTRAL_DEFAULT_MODEL).build());
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.toolCallingManager(LegacyToolCallingManager.builder().build())
+				.defaultOptions(OpenAiChatOptions.builder().model(MISTRAL_DEFAULT_MODEL).build())
+				.build();
 		}
 
 	}

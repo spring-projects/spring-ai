@@ -23,11 +23,10 @@ import org.springframework.util.Assert;
  * be refreshed or rotated.
  *
  * @author Adib Saikali
+ * @author Christian Tzolov
  * @since 1.0.0
  */
-public final class SimpleApiKey implements ApiKey {
-
-	private final String value;
+public record SimpleApiKey(String value) implements ApiKey {
 
 	/**
 	 * Create a new SimpleApiKey.
@@ -35,34 +34,17 @@ public final class SimpleApiKey implements ApiKey {
 	 * @throws IllegalArgumentException if value is null or empty
 	 */
 	public SimpleApiKey(String value) {
-		Assert.hasText(value, "API key value must not be null or empty");
+		Assert.notNull(value, "API key value must not be null or empty");
 		this.value = value;
 	}
 
 	@Override
 	public String getValue() {
-		return this.value;
+		return this.value();
 	}
 
 	@Override
 	public String toString() {
 		return "SimpleApiKey{value='***'}";
 	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof SimpleApiKey that)) {
-			return false;
-		}
-		return this.value.equals(that.value);
-	}
-
-	@Override
-	public int hashCode() {
-		return this.value.hashCode();
-	}
-
 }
