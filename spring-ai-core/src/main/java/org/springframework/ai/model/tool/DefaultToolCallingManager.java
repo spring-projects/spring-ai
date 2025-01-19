@@ -214,6 +214,12 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			else if (toolCallback instanceof ToolCallback callback) {
 				returnDirect = returnDirect && callback.getToolMetadata().returnDirect();
 			}
+			else if (returnDirect == null) {
+				// This is a temporary solution to ensure backward compatibility with
+				// FunctionCallback.
+				// TODO: remove this block when FunctionCallback is removed.
+				returnDirect = false;
+			}
 
 			String toolResult;
 			try {

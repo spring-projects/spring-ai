@@ -384,7 +384,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
 						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
-						return new ToolCall(toolCall.id(), toolCall.type(), function);
+						return new ToolCall(toolCall.id(), toolCall.type(), function, null);
 					}).toList();
 				}
 
