@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback.FunctionInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.MethodInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
@@ -42,7 +44,10 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @since 1.0.0
+ * @deprecated Use specific builder for the type of tool you need, e.g.
+ * {@link FunctionToolCallback.Builder} and {@link MethodToolCallback.Builder}.
  */
+@Deprecated
 public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);

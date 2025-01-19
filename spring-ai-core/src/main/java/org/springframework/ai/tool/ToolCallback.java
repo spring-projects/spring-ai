@@ -41,18 +41,21 @@ public interface ToolCallback extends FunctionCallback {
 	}
 
 	@Override
+	@Deprecated // Call getToolDefinition().name() instead
 	default String getName() {
 		return getToolDefinition().name();
 	}
 
 	@Override
+	@Deprecated // Call getToolDefinition().description() instead
 	default String getDescription() {
 		return getToolDefinition().description();
 	}
 
 	@Override
+	@Deprecated // Call getToolDefinition().inputTypeSchema() instead
 	default String getInputTypeSchema() {
-		return getToolDefinition().inputTypeSchema();
+		return getToolDefinition().inputSchema();
 	}
 
 }

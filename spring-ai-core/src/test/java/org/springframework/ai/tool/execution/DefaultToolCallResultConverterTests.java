@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link DefaultToolCallResultConverter}.
@@ -18,9 +17,9 @@ class DefaultToolCallResultConverterTests {
 	private final DefaultToolCallResultConverter converter = new DefaultToolCallResultConverter();
 
 	@Test
-	void convertWithNullReturnTypeShouldThrowException() {
-		assertThatThrownBy(() -> converter.apply(null, null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("returnType cannot be null");
+	void convertWithNullReturnTypeShouldReturn() {
+		String result = converter.apply(null, null);
+		assertThat(result).isEqualTo("null");
 	}
 
 	@Test

@@ -16,7 +16,9 @@
 
 package org.springframework.ai.tool.definition;
 
+import org.springframework.ai.tool.util.ToolUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Default implementation of {@link ToolDefinition}.
@@ -24,12 +26,12 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolDefinition(String name, String description, String inputTypeSchema) implements ToolDefinition {
+public record DefaultToolDefinition(String name, String description, String inputSchema) implements ToolDefinition {
 
 	public DefaultToolDefinition {
 		Assert.hasText(name, "name cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
-		Assert.hasText(inputTypeSchema, "inputTypeSchema cannot be null or empty");
+		Assert.hasText(inputSchema, "inputSchema cannot be null or empty");
 	}
 
 	public static Builder builder() {
@@ -42,7 +44,7 @@ public record DefaultToolDefinition(String name, String description, String inpu
 
 		private String description;
 
-		private String inputTypeSchema;
+		private String inputSchema;
 
 		private Builder() {
 		}
@@ -57,13 +59,16 @@ public record DefaultToolDefinition(String name, String description, String inpu
 			return this;
 		}
 
-		public Builder inputTypeSchema(String inputTypeSchema) {
-			this.inputTypeSchema = inputTypeSchema;
+		public Builder inputSchema(String inputSchema) {
+			this.inputSchema = inputSchema;
 			return this;
 		}
 
 		public DefaultToolDefinition build() {
-			return new DefaultToolDefinition(name, description, inputTypeSchema);
+			if (!StringUtils.hasText(description)) {
+				description = ToolUtils.getToolDescriptionFromName(description);
+			}
+			return new DefaultToolDefinition(name, description, inputSchema);
 		}
 
 	}
