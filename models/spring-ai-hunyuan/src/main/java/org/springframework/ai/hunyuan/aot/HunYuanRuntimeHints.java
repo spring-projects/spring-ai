@@ -26,8 +26,8 @@ import org.springframework.lang.Nullable;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 
 /**
- * The MoonshotRuntimeHints class is responsible for registering runtime hints for
- * Moonshot API classes.
+ * The HunYuanRuntimeHints class is responsible for registering runtime hints for
+ * HunYuan API classes.
  *
  * @author Guo Junyu
  */
