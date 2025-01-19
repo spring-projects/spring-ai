@@ -14,41 +14,43 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.hunyuan.chat;
-
-import java.util.List;
+package org.springframework.ai.autoconfigure.hunyuan;
 
 /**
+ * Parent properties for HunYuan.
+ *
  * @author Guo Junyu
  */
-public class ActorsFilms {
+public class HunYuanParentProperties {
 
-	private String actor;
+	private String secretId;
 
-	private List<String> movies;
+	private String secretKey;
 
-	public ActorsFilms() {
+	private String baseUrl;
+
+	public String getSecretKey() {
+		return secretKey;
 	}
 
-	public String getActor() {
-		return this.actor;
+	public void setSecretKey(String secretKey) {
+		this.secretKey = secretKey;
 	}
 
-	public void setActor(String actor) {
-		this.actor = actor;
+	public String getSecretId() {
+		return this.secretId;
 	}
 
-	public List<String> getMovies() {
-		return this.movies;
+	public void setSecretId(String secretId) {
+		this.secretId = secretId;
 	}
 
-	public void setMovies(List<String> movies) {
-		this.movies = movies;
+	public String getBaseUrl() {
+		return this.baseUrl;
 	}
 
-	@Override
-	public String toString() {
-		return "ActorsFilms{" + "actor='" + this.actor + '\'' + ", movies=" + this.movies + '}';
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 }

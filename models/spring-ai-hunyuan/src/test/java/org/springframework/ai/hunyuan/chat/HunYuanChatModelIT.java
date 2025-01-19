@@ -60,7 +60,7 @@ import reactor.core.publisher.Flux;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Geng Rong
+ * @author Guo Junyu
  */
 @SpringBootTest(classes = HunYuanTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")

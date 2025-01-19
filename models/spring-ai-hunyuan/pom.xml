@@ -26,8 +26,8 @@
     </parent>
     <artifactId>spring-ai-hunyuan</artifactId>
     <packaging>jar</packaging>
-    <name>Spring AI Model - Hunyuan</name>
-    <description>Hunyuan support</description>
+    <name>Spring AI Model - HunYuan</name>
+    <description>HunYuan support</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>

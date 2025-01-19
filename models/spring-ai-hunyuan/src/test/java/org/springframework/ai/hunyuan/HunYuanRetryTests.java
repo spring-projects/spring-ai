@@ -48,8 +48,7 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
 
 /**
- * @author Geng Rong
- * @author Alexandros Pappas
+ * @author Guo Junyu
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -99,7 +98,7 @@ public class HunYuanRetryTests {
 	}
 
 	@Test
-	public void moonshotChatNonTransientError() {
+	public void hunYuanChatNonTransientError() {
 		given(this.hunYuanApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));

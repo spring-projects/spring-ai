@@ -49,8 +49,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
 /**
  * Integration tests for observation instrumentation in {@link HunYuanChatModel}.
  *
- * @author Geng Rong
- * @author Alexandros Pappas
+ * @author Guo Junyu
  */
 @SpringBootTest(classes = HunYuanChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")

@@ -30,7 +30,7 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 /**
- * @author Geng Rong
+ * @author Guo Junyu
  */
 class HunYuanRuntimeHintsTests {
 

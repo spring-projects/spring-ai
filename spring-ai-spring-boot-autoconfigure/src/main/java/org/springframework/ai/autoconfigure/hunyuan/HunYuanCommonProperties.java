@@ -14,41 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.hunyuan.chat;
+package org.springframework.ai.autoconfigure.hunyuan;
 
-import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * Parent properties for HunYuan.
+ *
  * @author Guo Junyu
  */
-public class ActorsFilms {
+@ConfigurationProperties(HunYuanCommonProperties.CONFIG_PREFIX)
+public class HunYuanCommonProperties extends HunYuanParentProperties {
 
-	private String actor;
+	public static final String CONFIG_PREFIX = "spring.ai.hunyuan";
 
-	private List<String> movies;
+	public static final String DEFAULT_BASE_URL = "https://hunyuan.tencentcloudapi.com";
 
-	public ActorsFilms() {
-	}
-
-	public String getActor() {
-		return this.actor;
-	}
-
-	public void setActor(String actor) {
-		this.actor = actor;
-	}
-
-	public List<String> getMovies() {
-		return this.movies;
-	}
-
-	public void setMovies(List<String> movies) {
-		this.movies = movies;
-	}
-
-	@Override
-	public String toString() {
-		return "ActorsFilms{" + "actor='" + this.actor + '\'' + ", movies=" + this.movies + '}';
+	public HunYuanCommonProperties() {
+		super.setBaseUrl(DEFAULT_BASE_URL);
 	}
 
 }

@@ -66,10 +66,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * HunyuanChatModel is a {@link ChatModel} implementation that uses the Hunyuan
+ * HunYuanChatModel is a {@link ChatModel} implementation that uses the HunYuan
  *
- * @author Geng Rong
- * @author Alexandros Pappas
+ * @author Guo Junyu
  */
 public class HunYuanChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
@@ -83,7 +82,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	private final HunYuanChatOptions defaultOptions;
 
 	/**
-	 * Low-level access to the Hunyuan API.
+	 * Low-level access to the HunYuan API.
 	 */
 	private final HunYuanApi hunYuanApi;
 
@@ -100,29 +99,29 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
-	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
-	 * Hunyuan Chat API.
+	 * Initializes a new instance of the HunYuanChatModel.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
+	 * HunYuan Chat API.
 	 */
 	public HunYuanChatModel(HunYuanApi hunYuanApi) {
 		this(hunYuanApi, HunYuanChatOptions.builder().model(HunYuanApi.DEFAULT_CHAT_MODEL).build());
 	}
 
 	/**
-	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
-	 * Hunyuan Chat API.
-	 * @param options The HunyuanChatOptions to configure the chat client.
+	 * Initializes a new instance of the HunYuanChatModel.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
+	 * HunYuan Chat API.
+	 * @param options The HunYuanChatOptions to configure the chat client.
 	 */
 	public HunYuanChatModel(HunYuanApi hunYuanApi, HunYuanChatOptions options) {
 		this(hunYuanApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	/**
-	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
-	 * Hunyuan Chat API.
-	 * @param options The HunyuanChatOptions to configure the chat client.
+	 * Initializes a new instance of the HunYuanChatModel.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
+	 * HunYuan Chat API.
+	 * @param options The HunYuanChatOptions to configure the chat client.
 	 * @param functionCallbackResolver The function callback resolver to resolve the
 	 * function by its name.
 	 * @param retryTemplate The retry template.
@@ -133,10 +132,10 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	}
 
 	/**
-	 * Initializes a new instance of the HunyuanChatModel.
-	 * @param hunYuanApi The Hunyuan instance to be used for interacting with the
-	 * Hunyuan Chat API.
-	 * @param options The HunyuanChatOptions to configure the chat client.
+	 * Initializes a new instance of the HunYuanChatModel.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
+	 * HunYuan Chat API.
+	 * @param options The HunYuanChatOptions to configure the chat client.
 	 * @param functionCallbackResolver resolves the function by its name.
 	 * @param toolFunctionCallbacks The tool function callbacks.
 	 * @param retryTemplate The retry template.
@@ -146,7 +145,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 							FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 							RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		super(functionCallbackResolver, options, toolFunctionCallbacks);
-		Assert.notNull(hunYuanApi, "HunyuanApi must not be null");
+		Assert.notNull(hunYuanApi, "HunYuanApi must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
@@ -311,7 +310,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	}
 
 	private ChatResponseMetadata from(ChatCompletionRequest request, ChatCompletion result) {
-		Assert.notNull(result, "Hunyuan ChatCompletionResult must not be null");
+		Assert.notNull(result, "HunYuan ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
 			.usage(result.usage() != null ? HunYuanUsage.from(result.usage()) : new EmptyUsage())

@@ -20,18 +20,13 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.hunyuan.api.auth.HunYuanAuthApi;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -311,6 +306,11 @@ public class HunYuanApi {
 	 * like 0.8 will make the output more random, while lower values like 0.2 will make it
 	 * more focused and deterministic. We generally recommend altering this or top_p but
 	 * not both.
+	 * @param enableEnhancement Enables or disables feature enhancements such as search. This parameter does not affect the security review capability.
+	 * For hunyuan-lite, this parameter is ineffective.
+	 * If not specified, the switch is turned on by default.
+	 * Turning off this switch can reduce response latency, especially for the first character in stream mode, but may slightly degrade the response quality in some scenarios.
+	 * Example: true
 	 * @param topP An alternative to sampling with temperature, called nucleus sampling,
 	 * where the model considers the results of the tokens with top_p probability mass. So
 	 * 0.1 means only the tokens comprising the top 10% probability mass are considered.
@@ -319,12 +319,46 @@ public class HunYuanApi {
 	 * @param stream If set, partial message deltas will be sent.Tokens will be sent as
 	 * data-only server-sent events as they become available, with the stream terminated
 	 * by a data: [DONE] message.
+	 * @param streamModeration Controls whether the output is reviewed in real-time during streaming.
+	 * This field is effective only when Stream is set to true.
+	 * If true, the output is reviewed in real-time, and segments that fail the review will have their FinishReason set to sensitive.
+	 * If false, the entire output is reviewed before being returned.
+	 * If real-time text display is required in your application, you should handle the case where FinishReason is sensitive by撤回已显示的内容 and providing a custom message.
+	 * Example: false
 	 * @param tools A list of tools the model may call. Currently, only functions are
 	 * supported as a tool.
-	 * @param toolChoice Controls which (if any) function is called by the model.
-	 * @param customTool A custom tool to be used by the model.
-	 * @param searchInfo Whether to include search information in the response.
-	 * @param citation Whether to include citation information in the response.
+	 * @param toolChoice Controls which (if any) function is called by the model. Possible values are none, auto, and custom.
+	 *  If not specified, the default is auto.
+	 *  Example: auto
+	 * @param customTool Forces the model to call a specific tool. This parameter is required when ToolChoice is set to custom.
+	 * @param searchInfo If true, the interface will return SearchInfo when a search hit occurs. Example: false
+	 * @param citation Enables or disables citation markers in the response.
+	 * This parameter works in conjunction with EnableEnhancement and SearchInfo.
+	 * If true, search results in the response will be marked with a citation marker corresponding to links in the SearchInfo list.
+	 * If not specified, the default is false.
+	 * Example: false
+	 * @param enableSpeedSearch Enables or disables the fast version of search.
+	 * If true and a search hit occurs, the fast version of search will be used, which can reduce the latency of the first character in the stream.
+	 * Example: false
+	 * @param enableMultimedia  Enables or disables multimedia capabilities.
+	 * This parameter is effective only for whitelisted users and when EnableEnhancement is true and EnableSpeedSearch is false.
+	 * For hunyuan-lite, this parameter is ineffective.
+	 * If not specified, the default is false.
+	 * When enabled and a multimedia hit occurs, the corresponding multimedia address will be output.
+	 * Example: false
+	 * @param enableDeepSearch Enables or disables deep research on the question.
+	 *  If true and a deep research hit occurs, information about the deep research will be returned.
+	 *  Example: false
+	 * @param seed Ensures the model's output is reproducible.
+	 * The value should be a non-zero positive integer, with a maximum value of 10000.
+	 * It is not recommended to use this parameter unless necessary, as improper values can affect the output quality.
+	 * Example: 1
+	 * @param forceSearchEnhancement Forces the use of AI search.
+	 * If true, AI search will be used, and if the AI search result is empty, the large model will provide a fallback response.
+	 * Example: false
+	 * @param enableRecommendedQuestions Enables or disables the recommendation of additional questions.
+	 * If true, the response will include a RecommendedQuestions field with up to 3 recommended questions in the last package.
+	 * Example: false
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -346,7 +380,7 @@ public class HunYuanApi {
 			@JsonProperty("EnableMultimedia") Boolean enableMultimedia,
 			@JsonProperty("EnableDeepSearch") Boolean enableDeepSearch,
 			@JsonProperty("Seed") Integer seed,
-			@JsonProperty("ForceSearchEnhancement") Boolean ForceSearchEnhancement,
+			@JsonProperty("ForceSearchEnhancement") Boolean forceSearchEnhancement,
 			@JsonProperty("EnableRecommendedQuestions") Boolean enableRecommendedQuestions
 	) {
 		 // @formatter:on
@@ -403,6 +437,19 @@ public class HunYuanApi {
 									 String toolChoice) {
 			this(model,messages, null, null, null, null, null, null, tools, toolChoice, null, null, null, null, null, null, null, null, null);
 		}
+
+		/**
+		 *  Shortcut constructor for a chat completion request with the given messages,
+		 *  model, stream, streamModeration, enableEnhancement, searchInfo, citation, enableSpeedSearch.
+		 * @param messages A list of messages comprising the conversation so far.
+		 * @param model	  ID of the model to use.
+		 * @param stream  Whether to stream back partial progress.
+		 * @param streamModeration Whether to stream back partial progress.
+		 * @param enableEnhancement Enables or disables the enhancement feature.
+		 * @param searchInfo Enables or disables the search information feature.
+		 * @param citation Enables or disables the citation feature.
+		 * @param enableSpeedSearch Enables or disables the speed search feature.
+		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 									 Boolean stream,
 									 Boolean streamModeration,
@@ -454,7 +501,7 @@ public class HunYuanApi {
 	 * @param rawContent The raw contents of the message.
 	 * @param role The role of the message's author. Could be one of the {@link Role}
 	 * types.
-	 * @param chatContent The name of the message's author.
+	 * @param chatContents The name of the message's author.
 	 * @param toolCallId The ID of the tool call associated with the message.
 	 * @param toolCalls The list of tool calls associated with the message.
 	 */
@@ -583,14 +630,7 @@ public class HunYuanApi {
 	/**
 	 * Represents a chat completion response returned by model, based on the provided
 	 * input.
-	 *
-	 * @param id A unique identifier for the chat completion.
-	 * @param object The object type, which is always chat.completion.
-	 * @param created The Unix timestamp (in seconds) of when the chat completion was
-	 * created.
-	 * @param model The model used for the chat completion.
-	 * @param choices A list of chat completion choices.
-	 * @param usage Usage statistics for the completion request.
+	 * @param response The response object containing the generated chat completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionResponse(
@@ -754,12 +794,13 @@ public class HunYuanApi {
 	 * on the provided input.
 	 *
 	 * @param id A unique identifier for the chat completion. Each chunk has the same ID.
-	 * @param object The object type, which is always 'chat.completion.chunk'.
+	 * @param errorMsg The error message, if any.
 	 * @param created The Unix timestamp (in seconds) of when the chat completion was
 	 * created. Each chunk has the same timestamp.
-	 * @param model The model used for the chat completion.
+	 * @param note A note about the generated content. Each chunk has the same note.
 	 * @param choices A list of chat completion choices. Can be more than one if n is
 	 * greater than 1.
+	 * @param usage The usage statistics for the chat completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionChunk(

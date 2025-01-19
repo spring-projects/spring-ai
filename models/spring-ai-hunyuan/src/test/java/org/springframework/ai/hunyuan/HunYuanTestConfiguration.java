@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
 /**
- * @author Geng Rong
+ * @author Guo Junyu
  */
 @SpringBootConfiguration
 public class HunYuanTestConfiguration {

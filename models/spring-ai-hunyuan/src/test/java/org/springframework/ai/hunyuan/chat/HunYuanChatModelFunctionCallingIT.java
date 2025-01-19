@@ -44,6 +44,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
+/**
+ * @author Guo Junyu
+ */
 @SpringBootTest(classes = HunYuanTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")

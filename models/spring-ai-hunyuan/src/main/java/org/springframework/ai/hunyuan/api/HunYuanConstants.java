@@ -19,9 +19,9 @@ package org.springframework.ai.hunyuan.api;
 import org.springframework.ai.observation.conventions.AiProvider;
 
 /**
- * Constants for Moonshot API.
+ * Constants for HunYuan API.
  *
- * @author Geng Rong
+ * @author Guo Junyu
  */
 public final class HunYuanConstants {
 

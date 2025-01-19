@@ -16,10 +16,8 @@
 
 package org.springframework.ai.hunyuan.api;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Base64;
 import java.util.List;
 
@@ -27,16 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.util.MimeTypeUtils;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletion;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionChunk;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionMessage;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionMessage.Role;
@@ -46,7 +38,7 @@ import org.springframework.http.ResponseEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Geng Rong
+ * @author Guo Junyu
  */
 
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
@@ -148,6 +140,19 @@ public class HunYuanApiIT {
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
 		logger.info(ModelOptionsUtils.toJsonString(response.collectList().block()));
+	}
+
+	@Test
+	void chatCompletionEntityByEnhanced() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("你好！", Role.user);
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
+				List.of(chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8,false));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().response()).isNotNull();
+		logger.info(response.getBody().response().toString());
+//		System.out.println(response.getBody().response().errorMsg().message());
 	}
 
 	@Test

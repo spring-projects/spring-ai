@@ -28,7 +28,7 @@ import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionMessage.*;
  * Helper class to support Streaming function calling. It can merge the streamed
  * ChatCompletionChunk in case of function calling message.
  *
- * @author Geng Rong
+ * @author Guo Junyu
  */
 public class HunYuanStreamFunctionCallingHelper {
 

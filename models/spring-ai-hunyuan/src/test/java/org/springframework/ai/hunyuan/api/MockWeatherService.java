@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 /**
- * @author Geng Rong
+ * @author Guo Junyu
  */
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 

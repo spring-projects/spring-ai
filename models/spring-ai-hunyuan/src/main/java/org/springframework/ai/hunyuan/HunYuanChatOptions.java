@@ -29,11 +29,9 @@ import org.springframework.ai.hunyuan.api.HunYuanApi;
 import org.springframework.util.Assert;
 
 /**
- * Options for Hunyuan chat completions.
+ * Options for HunYuan chat completions.
  *
- * @author Geng Rong
- * @author Thomas Vitale
- * @author Alexandros Pappas
+ * @author Guo Junyu
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HunYuanChatOptions implements FunctionCallingOptions {
@@ -71,7 +69,7 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 
 
 	/**
-	 * Hunyuan Tool Function Callbacks to register with the ChatModel. For Prompt Options
+	 * HunYuan Tool Function Callbacks to register with the ChatModel. For Prompt Options
 	 * the functionCallbacks are automatically enabled for the duration of the prompt
 	 * execution. For Default Options the functionCallbacks are registered but disabled by
 	 * default. Use the enableFunctions to set the functions from the registry to be used

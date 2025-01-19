@@ -21,9 +21,9 @@ import org.springframework.ai.hunyuan.api.HunYuanApi;
 import org.springframework.util.Assert;
 
 /**
- * Represents the usage of a Hunyuan model.
+ * Represents the usage of a HunYuan model.
  *
- * @author Geng Rong
+ * @author Guo Junyu
  */
 public class HunYuanUsage implements Usage {
 

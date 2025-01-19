@@ -41,7 +41,7 @@ import org.springframework.http.ResponseEntity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Geng Rong
+ * @author Guo Junyu
  */
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
