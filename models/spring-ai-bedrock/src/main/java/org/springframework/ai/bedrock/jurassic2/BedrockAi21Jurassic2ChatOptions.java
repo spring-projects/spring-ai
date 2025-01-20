@@ -29,6 +29,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Ahmed Yousri
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -107,17 +108,17 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 	}
 
 	public static BedrockAi21Jurassic2ChatOptions fromOptions(BedrockAi21Jurassic2ChatOptions fromOptions) {
-		return builder().withPrompt(fromOptions.getPrompt())
-			.withNumResults(fromOptions.getNumResults())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withMinTokens(fromOptions.getMinTokens())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTopK(fromOptions.getTopK())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withFrequencyPenaltyOptions(fromOptions.getFrequencyPenaltyOptions())
-			.withPresencePenaltyOptions(fromOptions.getPresencePenaltyOptions())
-			.withCountPenaltyOptions(fromOptions.getCountPenaltyOptions())
+		return builder().prompt(fromOptions.getPrompt())
+			.numResults(fromOptions.getNumResults())
+			.maxTokens(fromOptions.getMaxTokens())
+			.minTokens(fromOptions.getMinTokens())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.topK(fromOptions.getTopK())
+			.stopSequences(fromOptions.getStopSequences())
+			.frequencyPenaltyOptions(fromOptions.getFrequencyPenaltyOptions())
+			.presencePenaltyOptions(fromOptions.getPresencePenaltyOptions())
+			.countPenaltyOptions(fromOptions.getCountPenaltyOptions())
 			.build();
 	}
 
@@ -345,57 +346,57 @@ public class BedrockAi21Jurassic2ChatOptions implements ChatOptions {
 
 		private final BedrockAi21Jurassic2ChatOptions request = new BedrockAi21Jurassic2ChatOptions();
 
-		public Builder withPrompt(String prompt) {
+		public Builder prompt(String prompt) {
 			this.request.setPrompt(prompt);
 			return this;
 		}
 
-		public Builder withNumResults(Integer numResults) {
+		public Builder numResults(Integer numResults) {
 			this.request.setNumResults(numResults);
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.request.setMaxTokens(maxTokens);
 			return this;
 		}
 
-		public Builder withMinTokens(Integer minTokens) {
+		public Builder minTokens(Integer minTokens) {
 			this.request.setMinTokens(minTokens);
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.request.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.request.setTopP(topP);
 			return this;
 		}
 
-		public Builder withStopSequences(List<String> stopSequences) {
+		public Builder stopSequences(List<String> stopSequences) {
 			this.request.setStopSequences(stopSequences);
 			return this;
 		}
 
-		public Builder withTopK(Integer topKReturn) {
+		public Builder topK(Integer topKReturn) {
 			this.request.setTopK(topKReturn);
 			return this;
 		}
 
-		public Builder withFrequencyPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty frequencyPenalty) {
+		public Builder frequencyPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty frequencyPenalty) {
 			this.request.setFrequencyPenaltyOptions(frequencyPenalty);
 			return this;
 		}
 
-		public Builder withPresencePenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty presencePenalty) {
+		public Builder presencePenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty presencePenalty) {
 			this.request.setPresencePenaltyOptions(presencePenalty);
 			return this;
 		}
 
-		public Builder withCountPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty countPenalty) {
+		public Builder countPenaltyOptions(BedrockAi21Jurassic2ChatOptions.Penalty countPenalty) {
 			this.request.setCountPenaltyOptions(countPenalty);
 			return this;
 		}

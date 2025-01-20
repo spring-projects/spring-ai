@@ -51,6 +51,7 @@ import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.core.KotlinDetector;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -369,6 +370,10 @@ public abstract class ModelOptionsUtils {
 				.with(swaggerModule)
 				.with(jacksonModule);
 
+			if (KotlinDetector.isKotlinReflectPresent()) {
+				configBuilder.with(new KotlinModule());
+			}
+
 			SchemaGeneratorConfig config = configBuilder.build();
 			SchemaGenerator generator = new SchemaGenerator(config);
 			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
@@ -402,6 +407,10 @@ public abstract class ModelOptionsUtils {
 				.with(Option.PLAIN_DEFINITION_KEYS)
 				.with(swaggerModule)
 				.with(jacksonModule);
+
+			if (KotlinDetector.isKotlinReflectPresent()) {
+				configBuilder.with(new KotlinModule());
+			}
 
 			SchemaGeneratorConfig config = configBuilder.build();
 			SchemaGenerator generator = new SchemaGenerator(config);

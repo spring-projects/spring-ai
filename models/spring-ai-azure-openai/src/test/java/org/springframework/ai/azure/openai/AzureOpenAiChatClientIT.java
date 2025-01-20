@@ -162,7 +162,7 @@ public class AzureOpenAiChatClientIT {
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
 			return new AzureOpenAiChatModel(openAIClientBuilder,
-					AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").withMaxTokens(1000).build());
+					AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build());
 
 		}
 

@@ -26,6 +26,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * Chat properties for Watsonx.AI Chat.
  *
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 @ConfigurationProperties(WatsonxAiChatProperties.CONFIG_PREFIX)
@@ -43,15 +44,15 @@ public class WatsonxAiChatProperties {
 	 */
 	@NestedConfigurationProperty
 	private WatsonxAiChatOptions options = WatsonxAiChatOptions.builder()
-		.withModel("google/flan-ul2")
-		.withTemperature(0.7)
-		.withTopP(1.0)
-		.withTopK(50)
-		.withDecodingMethod("greedy")
-		.withMaxNewTokens(20)
-		.withMinNewTokens(0)
-		.withRepetitionPenalty(1.0)
-		.withStopSequences(List.of())
+		.model("google/flan-ul2")
+		.temperature(0.7)
+		.topP(1.0)
+		.topK(50)
+		.decodingMethod("greedy")
+		.maxNewTokens(20)
+		.minNewTokens(0)
+		.repetitionPenalty(1.0)
+		.stopSequences(List.of())
 		.build();
 
 	public boolean isEnabled() {

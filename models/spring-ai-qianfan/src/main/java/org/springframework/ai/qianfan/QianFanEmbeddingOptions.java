@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -81,12 +82,12 @@ public class QianFanEmbeddingOptions implements EmbeddingOptions {
 			this.options = new QianFanEmbeddingOptions();
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.setUser(user);
 			return this;
 		}

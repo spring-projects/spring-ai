@@ -83,6 +83,7 @@ import org.springframework.util.MimeType;
  * @see ChatModel
  * @see StreamingChatModel
  * @see ZhiPuAiApi
+ * @author Alexandros Pappas
  * @since 1.0.0 M1
  */
 public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
@@ -123,8 +124,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @throws IllegalArgumentException if zhiPuAiApi is null
 	 */
 	public ZhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi) {
-		this(zhiPuAiApi,
-				ZhiPuAiChatOptions.builder().withModel(ZhiPuAiApi.DEFAULT_CHAT_MODEL).withTemperature(0.7).build());
+		this(zhiPuAiApi, ZhiPuAiChatOptions.builder().model(ZhiPuAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
 
 	/**
@@ -325,11 +325,11 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 	private ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "ZhiPuAI ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
-			.withId(result.id() != null ? result.id() : "")
-			.withUsage(result.usage() != null ? ZhiPuAiUsage.from(result.usage()) : new EmptyUsage())
-			.withModel(result.model() != null ? result.model() : "")
-			.withKeyValue("created", result.created() != null ? result.created() : 0L)
-			.withKeyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
+			.id(result.id() != null ? result.id() : "")
+			.usage(result.usage() != null ? ZhiPuAiUsage.from(result.usage()) : new EmptyUsage())
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
+			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
 	}
 
@@ -434,7 +434,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
 
 			request = ModelOptionsUtils.merge(
-					ZhiPuAiChatOptions.builder().withTools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					ZhiPuAiChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
 					ChatCompletionRequest.class);
 		}
 

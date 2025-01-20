@@ -47,9 +47,9 @@ public class LlamaChatBedrockApiIT {
 	public void chatCompletion() {
 
 		LlamaChatRequest request = LlamaChatRequest.builder("Hello, my name is")
-			.withTemperature(0.9)
-			.withTopP(0.9)
-			.withMaxGenLen(20)
+			.temperature(0.9)
+			.topP(0.9)
+			.maxGenLen(20)
 			.build();
 
 		LlamaChatResponse response = this.llamaChatApi.chatCompletion(request);

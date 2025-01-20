@@ -67,7 +67,7 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 			this.options = new MiniMaxEmbeddingOptions();
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}

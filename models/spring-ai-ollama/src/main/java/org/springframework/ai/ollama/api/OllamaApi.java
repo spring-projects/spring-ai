@@ -25,11 +25,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonFormat.Feature;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Flux;
@@ -364,40 +362,13 @@ public class OllamaApi {
 				this.role = role;
 			}
 
-			/**
-			 * @deprecated Use {@link #content(String)} instead.
-			 */
-			@Deprecated
-			public Builder withContent(String content) {
-				this.content = content;
-				return this;
-			}
-
 			public Builder content(String content) {
 				this.content = content;
 				return this;
 			}
 
-			/**
-			 * @deprecated Use {@link #images(List)} instead.
-			 */
-			@Deprecated
-			public Builder withImages(List<String> images) {
-				this.images = images;
-				return this;
-			}
-
 			public Builder images(List<String> images) {
 				this.images = images;
-				return this;
-			}
-
-			/**
-			 * @deprecated Use {@link #toolCalls(List)} instead.
-			 */
-			@Deprecated
-			public Builder withToolCalls(List<ToolCall> toolCalls) {
-				this.toolCalls = toolCalls;
 				return this;
 			}
 
@@ -418,7 +389,7 @@ public class OllamaApi {
 	 * @param model The model to use for completion. It should be a name familiar to Ollama from the <a href="https://ollama.com/library">Library</a>.
 	 * @param messages The list of messages in the chat. This can be used to keep a chat memory.
 	 * @param stream Whether to stream the response. If false, the response will be returned as a single response object rather than a stream of objects.
-	 * @param format The format to return the response in. Currently, the only accepted value is "json".
+	 * @param format The format to return the response in. It can either be the String "json" or a Map containing a JSON Schema definition.
 	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
 	 * @param tools List of tools the model has access to.
 	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
@@ -435,7 +406,7 @@ public class OllamaApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("format") String format,
+			@JsonProperty("format") Object format,
 			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("tools") List<Tool> tools,
 			@JsonProperty("options") Map<String, Object> options
@@ -507,7 +478,7 @@ public class OllamaApi {
 			private final String model;
 			private List<Message> messages = List.of();
 			private boolean stream = false;
-			private String format;
+			private Object format;
 			private String keepAlive;
 			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
@@ -517,39 +488,39 @@ public class OllamaApi {
 				this.model = model;
 			}
 
-			public Builder withMessages(List<Message> messages) {
+			public Builder messages(List<Message> messages) {
 				this.messages = messages;
 				return this;
 			}
 
-			public Builder withStream(boolean stream) {
+			public Builder stream(boolean stream) {
 				this.stream = stream;
 				return this;
 			}
 
-			public Builder withFormat(String format) {
+			public Builder format(Object format) {
 				this.format = format;
 				return this;
 			}
 
-			public Builder withKeepAlive(String keepAlive) {
+			public Builder keepAlive(String keepAlive) {
 				this.keepAlive = keepAlive;
 				return this;
 			}
 
-			public Builder withTools(List<Tool> tools) {
+			public Builder tools(List<Tool> tools) {
 				this.tools = tools;
 				return this;
 			}
 
-			public Builder withOptions(Map<String, Object> options) {
+			public Builder options(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 
 				this.options = OllamaOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
-			public Builder withOptions(OllamaOptions options) {
+			public Builder options(OllamaOptions options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
@@ -608,15 +579,15 @@ public class OllamaApi {
 		}
 
 		public Duration getTotalDuration() {
-			return (this.totalDuration() != null)? Duration.ofNanos(this.totalDuration()) : null;
+			return (this.totalDuration() != null) ? Duration.ofNanos(this.totalDuration()) : null;
 		}
 
 		public Duration getLoadDuration() {
-			return (this.loadDuration() != null)? Duration.ofNanos(this.loadDuration()) : null;
+			return (this.loadDuration() != null) ? Duration.ofNanos(this.loadDuration()) : null;
 		}
 
 		public Duration getPromptEvalDuration() {
-			return (this.promptEvalDuration() != null)? Duration.ofNanos(this.promptEvalDuration()) : null;
+			return (this.promptEvalDuration() != null) ? Duration.ofNanos(this.promptEvalDuration()) : null;
 		}
 
 		public Duration getEvalDuration() {

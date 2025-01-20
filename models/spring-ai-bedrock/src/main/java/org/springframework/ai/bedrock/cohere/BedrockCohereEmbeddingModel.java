@@ -58,8 +58,8 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi) {
 		this(cohereEmbeddingBedrockApi,
 				BedrockCohereEmbeddingOptions.builder()
-					.withInputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
-					.withTruncate(CohereEmbeddingRequest.Truncate.NONE)
+					.inputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
+					.truncate(CohereEmbeddingRequest.Truncate.NONE)
 					.build());
 	}
 
@@ -73,7 +73,7 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getContent());
+		return embed(document.getText());
 	}
 
 	@Override
@@ -126,11 +126,11 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 		BedrockCohereEmbeddingOptions options = (this.defaultOptions != null) ? this.defaultOptions
 				: BedrockCohereEmbeddingOptions.builder()
-					.withInputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
-					.withTruncate(CohereEmbeddingRequest.Truncate.NONE)
+					.inputType(CohereEmbeddingRequest.InputType.SEARCH_DOCUMENT)
+					.truncate(CohereEmbeddingRequest.Truncate.NONE)
 					.build();
 
-		if (requestOptions != null && !EmbeddingOptions.EMPTY.equals(requestOptions)) {
+		if (requestOptions != null) {
 			options = ModelOptionsUtils.merge(requestOptions, options, BedrockCohereEmbeddingOptions.class);
 		}
 

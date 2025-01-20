@@ -28,6 +28,7 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
  *
  * @author Ahmed Yousri
  * @author Hyunjoon Choi
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0-M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -186,27 +187,27 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 
 		private final OpenAiAudioSpeechOptions options = new OpenAiAudioSpeechOptions();
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withInput(String input) {
+		public Builder input(String input) {
 			this.options.input = input;
 			return this;
 		}
 
-		public Builder withVoice(Voice voice) {
+		public Builder voice(Voice voice) {
 			this.options.voice = voice;
 			return this;
 		}
 
-		public Builder withResponseFormat(AudioResponseFormat responseFormat) {
+		public Builder responseFormat(AudioResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withSpeed(Float speed) {
+		public Builder speed(Float speed) {
 			this.options.speed = speed;
 			return this;
 		}

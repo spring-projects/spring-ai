@@ -27,6 +27,7 @@ import org.springframework.util.StringUtils;
  * Options for the Vertex AI Text Embedding service.
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -192,32 +193,32 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withModel(VertexAiTextEmbeddingModelName model) {
+		public Builder model(VertexAiTextEmbeddingModelName model) {
 			this.options.setModel(model.getName());
 			return this;
 		}
 
-		public Builder withTaskType(TaskType taskType) {
+		public Builder taskType(TaskType taskType) {
 			this.options.setTaskType(taskType);
 			return this;
 		}
 
-		public Builder withDimensions(Integer dimensions) {
+		public Builder dimensions(Integer dimensions) {
 			this.options.dimensions = dimensions;
 			return this;
 		}
 
-		public Builder withTitle(String user) {
+		public Builder title(String user) {
 			this.options.setTitle(user);
 			return this;
 		}
 
-		public Builder withAutoTruncate(Boolean autoTruncate) {
+		public Builder autoTruncate(Boolean autoTruncate) {
 			this.options.setAutoTruncate(autoTruncate);
 			return this;
 		}

@@ -87,7 +87,7 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 
 		logger.debug("Translating query to target language: {}", this.targetLanguage);
 
-		var translatedQuery = this.chatClient.prompt()
+		var translatedQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
 				.param("targetLanguage", this.targetLanguage)
 				.param("query", query.text()))
@@ -95,12 +95,12 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 			.call()
 			.content();
 
-		if (!StringUtils.hasText(translatedQuery)) {
+		if (!StringUtils.hasText(translatedQueryText)) {
 			logger.warn("Query translation result is null/empty. Returning the input query unchanged.");
 			return query;
 		}
 
-		return new Query(translatedQuery);
+		return query.mutate().text(translatedQueryText).build();
 	}
 
 	public static Builder builder() {

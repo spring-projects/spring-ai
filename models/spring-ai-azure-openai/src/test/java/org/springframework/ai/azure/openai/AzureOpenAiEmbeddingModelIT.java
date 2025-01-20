@@ -76,7 +76,7 @@ class AzureOpenAiEmbeddingModelIT {
 		@Bean
 		public AzureOpenAiEmbeddingModel azureEmbeddingModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiEmbeddingModel(openAIClient, MetadataMode.EMBED,
-					AzureOpenAiEmbeddingOptions.builder().withDeploymentName("text-embedding-ada-002").build());
+					AzureOpenAiEmbeddingOptions.builder().deploymentName("text-embedding-ada-002").build());
 		}
 
 	}

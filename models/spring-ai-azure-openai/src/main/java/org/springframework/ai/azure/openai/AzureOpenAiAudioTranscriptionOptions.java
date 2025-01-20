@@ -31,6 +31,7 @@ import org.springframework.util.Assert;
  * Options for audio transcription using Azure Open AI.
  *
  * @author Piotr Olaszewski
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionOptions {
@@ -266,37 +267,37 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			this.options = options;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withDeploymentName(String deploymentName) {
+		public Builder deploymentName(String deploymentName) {
 			this.options.setDeploymentName(deploymentName);
 			return this;
 		}
 
-		public Builder withLanguage(String language) {
+		public Builder language(String language) {
 			this.options.language = language;
 			return this;
 		}
 
-		public Builder withPrompt(String prompt) {
+		public Builder prompt(String prompt) {
 			this.options.prompt = prompt;
 			return this;
 		}
 
-		public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
+		public Builder responseFormat(TranscriptResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withTemperature(Float temperature) {
+		public Builder temperature(Float temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withGranularityType(List<GranularityType> granularityType) {
+		public Builder granularityType(List<GranularityType> granularityType) {
 			this.options.granularityType = granularityType;
 			return this;
 		}

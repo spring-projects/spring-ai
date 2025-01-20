@@ -33,6 +33,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
+import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
@@ -58,6 +59,7 @@ public class ChromaApi {
 
 	private RestClient restClient;
 
+	@Nullable
 	private String keyToken;
 
 	public ChromaApi(String baseUrl) {
@@ -99,7 +101,7 @@ public class ChromaApi {
 		return this;
 	}
 
-	public List<Embedding> toEmbeddingResponseList(QueryResponse queryResponse) {
+	public List<Embedding> toEmbeddingResponseList(@Nullable QueryResponse queryResponse) {
 		List<Embedding> result = new ArrayList<>();
 
 		if (queryResponse != null && !CollectionUtils.isEmpty(queryResponse.ids())) {
@@ -113,6 +115,7 @@ public class ChromaApi {
 		return result;
 	}
 
+	@Nullable
 	public Collection createCollection(CreateCollectionRequest createCollectionRequest) {
 
 		return this.restClient.post()
@@ -138,6 +141,7 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
+	@Nullable
 	public Collection getCollection(String collectionName) {
 
 		try {
@@ -157,6 +161,7 @@ public class ChromaApi {
 		}
 	}
 
+	@Nullable
 	public List<Collection> listCollections() {
 
 		return this.restClient.get()
@@ -167,7 +172,7 @@ public class ChromaApi {
 			.getBody();
 	}
 
-	public void upsertEmbeddings(String collectionId, AddEmbeddingsRequest embedding) {
+	public void upsertEmbeddings(@Nullable String collectionId, AddEmbeddingsRequest embedding) {
 
 		this.restClient.post()
 			.uri("/api/v1/collections/{collection_id}/upsert", collectionId)
@@ -177,7 +182,7 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
-	public int deleteEmbeddings(String collectionId, DeleteEmbeddingsRequest deleteRequest) {
+	public int deleteEmbeddings(@Nullable String collectionId, DeleteEmbeddingsRequest deleteRequest) {
 		return this.restClient.post()
 			.uri("/api/v1/collections/{collection_id}/delete", collectionId)
 			.headers(this::httpHeaders)
@@ -188,6 +193,7 @@ public class ChromaApi {
 			.value();
 	}
 
+	@Nullable
 	public Long countEmbeddings(String collectionId) {
 
 		return this.restClient.get()
@@ -198,7 +204,8 @@ public class ChromaApi {
 			.getBody();
 	}
 
-	public QueryResponse queryCollection(String collectionId, QueryRequest queryRequest) {
+	@Nullable
+	public QueryResponse queryCollection(@Nullable String collectionId, QueryRequest queryRequest) {
 
 		return this.restClient.post()
 			.uri("/api/v1/collections/{collection_id}/query", collectionId)
@@ -212,7 +219,7 @@ public class ChromaApi {
 	//
 	// Chroma Client API (https://docs.trychroma.com/js_reference/Client)
 	//
-
+	@Nullable
 	public GetEmbeddingResponse getEmbeddings(String collectionId, GetEmbeddingsRequest getEmbeddingsRequest) {
 
 		return this.restClient.post()
@@ -332,7 +339,7 @@ public class ChromaApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record DeleteEmbeddingsRequest(// @formatter:off
 		@JsonProperty("ids") List<String> ids,
-		@JsonProperty("where") Map<String, Object> where) { // @formatter:on
+		@Nullable @JsonProperty("where") Map<String, Object> where) { // @formatter:on
 
 		public DeleteEmbeddingsRequest(List<String> ids) {
 			this(ids, null);
@@ -353,7 +360,7 @@ public class ChromaApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record GetEmbeddingsRequest(// @formatter:off
 		@JsonProperty("ids") List<String> ids,
-		@JsonProperty("where") Map<String, Object> where,
+		@Nullable @JsonProperty("where") Map<String, Object> where,
 		@JsonProperty("limit") Integer limit,
 		@JsonProperty("offset") Integer offset,
 		@JsonProperty("include") List<Include> include) { // @formatter:on
@@ -404,7 +411,7 @@ public class ChromaApi {
 	public record QueryRequest(// @formatter:off
 		@JsonProperty("query_embeddings") List<float[]> queryEmbeddings,
 		@JsonProperty("n_results") Integer nResults,
-		@JsonProperty("where") Map<String, Object> where,
+		@Nullable @JsonProperty("where") Map<String, Object> where,
 		@JsonProperty("include") List<Include> include) { // @formatter:on
 
 		/**
@@ -414,7 +421,7 @@ public class ChromaApi {
 			this(List.of(queryEmbedding), nResults, null, Include.all);
 		}
 
-		public QueryRequest(float[] queryEmbedding, Integer nResults, Map<String, Object> where) {
+		public QueryRequest(float[] queryEmbedding, Integer nResults, @Nullable Map<String, Object> where) {
 			this(List.of(queryEmbedding), nResults, CollectionUtils.isEmpty(where) ? null : where, Include.all);
 		}
 
@@ -471,7 +478,7 @@ public class ChromaApi {
 		@JsonProperty("id") String id,
 		@JsonProperty("embedding") float[] embedding,
 		@JsonProperty("document") String document,
-		@JsonProperty("metadata") Map<String, Object> metadata,
+		@Nullable @JsonProperty("metadata") Map<String, Object> metadata,
 		@JsonProperty("distances") Double distances) { // @formatter:on
 
 	}

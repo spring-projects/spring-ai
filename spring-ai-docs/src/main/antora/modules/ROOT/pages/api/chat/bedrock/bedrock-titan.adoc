@@ -113,7 +113,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         BedrockTitanChatOptions.builder()
-            .withTemperature(0.4)
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -205,9 +205,9 @@ TitanChatBedrockApi titanApi = new TitanChatBedrockApi(
 
 BedrockTitanChatModel chatModel = new BedrockTitanChatModel(this.titanApi,
     BedrockTitanChatOptions.builder()
-        .withTemperature(0.6)
-        .withTopP(0.8)
-        .withMaxTokenCount(100)
+        .temperature(0.6)
+        .topP(0.8)
+        .maxTokenCount(100)
     .build());
 
 ChatResponse response = this.chatModel.call(
@@ -236,10 +236,10 @@ TitanChatBedrockApi titanBedrockApi = new TitanChatBedrockApi(TitanChatCompletio
 		Region.US_EAST_1.id(), Duration.ofMillis(1000L));
 
 TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
-	.withTemperature(0.5)
-	.withTopP(0.9)
-	.withMaxTokenCount(100)
-	.withStopSequences(List.of("|"))
+	.temperature(0.5)
+	.topP(0.9)
+	.maxTokenCount(100)
+	.stopSequences(List.of("|"))
 	.build();
 
 TitanChatResponse response = this.titanBedrockApi.chatCompletion(this.titanChatRequest);

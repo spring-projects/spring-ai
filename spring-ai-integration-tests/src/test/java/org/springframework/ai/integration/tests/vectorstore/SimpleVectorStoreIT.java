@@ -90,12 +90,12 @@ public class SimpleVectorStoreIT {
 
 		vectorStore.add(List.of(document));
 
-		List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+		List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(document.getId());
-		assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+		assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 		assertThat(resultDoc.getMetadata()).containsKey("meta1");
 		assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -107,12 +107,12 @@ public class SimpleVectorStoreIT {
 
 		vectorStore.add(List.of(sameIdDocument));
 
-		results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+		results = vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(document.getId());
-		assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+		assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 		assertThat(resultDoc.getMetadata()).containsKey("meta2");
 		assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 

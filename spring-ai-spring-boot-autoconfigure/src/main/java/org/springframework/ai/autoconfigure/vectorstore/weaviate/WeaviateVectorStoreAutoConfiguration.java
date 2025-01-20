@@ -25,10 +25,8 @@ import io.weaviate.client.v1.auth.exception.AuthException;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.WeaviateVectorStore;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig;
-import org.springframework.ai.vectorstore.WeaviateVectorStore.WeaviateVectorStoreConfig.MetadataField;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -81,18 +79,18 @@ public class WeaviateVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		WeaviateVectorStoreConfig.Builder configBuilder = WeaviateVectorStore.WeaviateVectorStoreConfig.builder()
-			.withObjectClass(properties.getObjectClass())
-			.withFilterableMetadataFields(properties.getFilterField()
+		return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+			.objectClass(properties.getObjectClass())
+			.filterMetadataFields(properties.getFilterField()
 				.entrySet()
 				.stream()
-				.map(e -> new MetadataField(e.getKey(), e.getValue()))
+				.map(e -> new WeaviateVectorStore.MetadataField(e.getKey(), e.getValue()))
 				.toList())
-			.withConsistencyLevel(properties.getConsistencyLevel());
-
-		return new WeaviateVectorStore(configBuilder.build(), embeddingModel, weaviateClient,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null), batchingStrategy);
+			.consistencyLevel(WeaviateVectorStore.ConsistentLevel.valueOf(properties.getConsistencyLevel().name()))
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.build();
 	}
 
 	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {

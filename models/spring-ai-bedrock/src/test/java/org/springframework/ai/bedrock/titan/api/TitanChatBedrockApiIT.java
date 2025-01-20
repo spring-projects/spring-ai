@@ -45,10 +45,10 @@ public class TitanChatBedrockApiIT {
 			Duration.ofMinutes(2));
 
 	TitanChatRequest titanChatRequest = TitanChatRequest.builder("Give me the names of 3 famous pirates?")
-		.withTemperature(0.5)
-		.withTopP(0.9)
-		.withMaxTokenCount(100)
-		.withStopSequences(List.of("|"))
+		.temperature(0.5)
+		.topP(0.9)
+		.maxTokenCount(100)
+		.stopSequences(List.of("|"))
 		.build();
 
 	@Test

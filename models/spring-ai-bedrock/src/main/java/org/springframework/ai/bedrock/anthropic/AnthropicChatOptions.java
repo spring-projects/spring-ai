@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
 public class AnthropicChatOptions implements ChatOptions {
@@ -78,12 +79,12 @@ public class AnthropicChatOptions implements ChatOptions {
 	}
 
 	public static AnthropicChatOptions fromOptions(AnthropicChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withMaxTokensToSample(fromOptions.getMaxTokensToSample())
-			.withTopK(fromOptions.getTopK())
-			.withTopP(fromOptions.getTopP())
-			.withStopSequences(fromOptions.getStopSequences())
-			.withAnthropicVersion(fromOptions.getAnthropicVersion())
+		return builder().temperature(fromOptions.getTemperature())
+			.maxTokensToSample(fromOptions.getMaxTokensToSample())
+			.topK(fromOptions.getTopK())
+			.topP(fromOptions.getTopP())
+			.stopSequences(fromOptions.getStopSequences())
+			.anthropicVersion(fromOptions.getAnthropicVersion())
 			.build();
 	}
 
@@ -177,32 +178,32 @@ public class AnthropicChatOptions implements ChatOptions {
 
 		private final AnthropicChatOptions options = new AnthropicChatOptions();
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withMaxTokensToSample(Integer maxTokensToSample) {
+		public Builder maxTokensToSample(Integer maxTokensToSample) {
 			this.options.setMaxTokensToSample(maxTokensToSample);
 			return this;
 		}
 
-		public Builder withTopK(Integer topK) {
+		public Builder topK(Integer topK) {
 			this.options.setTopK(topK);
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
-		public Builder withStopSequences(List<String> stopSequences) {
+		public Builder stopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
 			return this;
 		}
 
-		public Builder withAnthropicVersion(String anthropicVersion) {
+		public Builder anthropicVersion(String anthropicVersion) {
 			this.options.setAnthropicVersion(anthropicVersion);
 			return this;
 		}

@@ -17,6 +17,7 @@
 package org.springframework.ai.zhipuai;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
@@ -37,6 +39,7 @@ import org.springframework.util.Assert;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -136,20 +139,20 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 
 	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
 		return ZhiPuAiChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withUser(fromOptions.getUser())
-			.withRequestId(fromOptions.getRequestId())
-			.withDoSample(fromOptions.getDoSample())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
+			.model(fromOptions.getModel())
+			.maxTokens(fromOptions.getMaxTokens())
+			.stop(fromOptions.getStop())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.tools(fromOptions.getTools())
+			.toolChoice(fromOptions.getToolChoice())
+			.user(fromOptions.getUser())
+			.requestId(fromOptions.getRequestId())
+			.doSample(fromOptions.getDoSample())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -437,6 +440,67 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 		return fromOptions(this);
 	}
 
+	public FunctionCallingOptions merge(ChatOptions options) {
+		ZhiPuAiChatOptions.Builder builder = ZhiPuAiChatOptions.builder();
+
+		// Merge chat-specific options
+		builder.model(options.getModel() != null ? options.getModel() : this.getModel())
+			.maxTokens(options.getMaxTokens() != null ? options.getMaxTokens() : this.getMaxTokens())
+			.stop(options.getStopSequences() != null ? options.getStopSequences() : this.getStopSequences())
+			.temperature(options.getTemperature() != null ? options.getTemperature() : this.getTemperature())
+			.topP(options.getTopP() != null ? options.getTopP() : this.getTopP());
+
+		// Try to get function-specific properties if options is a FunctionCallingOptions
+		if (options instanceof FunctionCallingOptions functionOptions) {
+			builder.proxyToolCalls(functionOptions.getProxyToolCalls() != null ? functionOptions.getProxyToolCalls()
+					: this.proxyToolCalls);
+
+			Set<String> functions = new HashSet<>();
+			if (this.functions != null) {
+				functions.addAll(this.functions);
+			}
+			if (functionOptions.getFunctions() != null) {
+				functions.addAll(functionOptions.getFunctions());
+			}
+			builder.functions(functions);
+
+			List<FunctionCallback> functionCallbacks = new ArrayList<>();
+			if (this.functionCallbacks != null) {
+				functionCallbacks.addAll(this.functionCallbacks);
+			}
+			if (functionOptions.getFunctionCallbacks() != null) {
+				functionCallbacks.addAll(functionOptions.getFunctionCallbacks());
+			}
+			builder.functionCallbacks(functionCallbacks);
+
+			Map<String, Object> context = new HashMap<>();
+			if (this.toolContext != null) {
+				context.putAll(this.toolContext);
+			}
+			if (functionOptions.getToolContext() != null) {
+				context.putAll(functionOptions.getToolContext());
+			}
+			builder.toolContext(context);
+		}
+		else {
+			// If not a FunctionCallingOptions, preserve current function-specific
+			// properties
+			builder.proxyToolCalls(this.proxyToolCalls);
+			builder.functions(this.functions != null ? new HashSet<>(this.functions) : null);
+			builder.functionCallbacks(this.functionCallbacks != null ? new ArrayList<>(this.functionCallbacks) : null);
+			builder.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null);
+		}
+
+		// Preserve ZhiPuAi-specific properties
+		builder.tools(this.tools)
+			.toolChoice(this.toolChoice)
+			.user(this.user)
+			.requestId(this.requestId)
+			.doSample(this.doSample);
+
+		return builder.build();
+	}
+
 	public static class Builder {
 
 		protected ZhiPuAiChatOptions options;
@@ -449,79 +513,79 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 			this.options = options;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder withTools(List<ZhiPuAiApi.FunctionTool> tools) {
+		public Builder tools(List<ZhiPuAiApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
 
-		public Builder withToolChoice(String toolChoice) {
+		public Builder toolChoice(String toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.user = user;
 			return this;
 		}
 
-		public Builder withRequestId(String requestId) {
+		public Builder requestId(String requestId) {
 			this.options.requestId = requestId;
 			return this;
 		}
 
-		public Builder withDoSample(Boolean doSample) {
+		public Builder doSample(Boolean doSample) {
 			this.options.doSample = doSample;
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
+		public Builder functions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
+		public Builder function(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}

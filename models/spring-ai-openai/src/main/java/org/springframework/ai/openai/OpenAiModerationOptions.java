@@ -26,6 +26,7 @@ import org.springframework.ai.openai.api.OpenAiModerationApi;
  * OpenAI Moderation API options. OpenAiModerationOptions.java
  *
  * @author Ahmed Yousri
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -58,7 +59,7 @@ public class OpenAiModerationOptions implements ModerationOptions {
 			this.options = new OpenAiModerationOptions();
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}

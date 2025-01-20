@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
  * @param adviseContext the context to advise the response
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Object> adviseContext) {
@@ -62,7 +63,7 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 	 */
 	public static Builder from(AdvisedResponse advisedResponse) {
 		Assert.notNull(advisedResponse, "advisedResponse cannot be null");
-		return new Builder().withResponse(advisedResponse.response).withAdviseContext(advisedResponse.adviseContext);
+		return new Builder().response(advisedResponse.response).adviseContext(advisedResponse.adviseContext);
 	}
 
 	/**
@@ -94,7 +95,7 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 		 * @param response the chat response
 		 * @return the builder
 		 */
-		public Builder withResponse(@Nullable ChatResponse response) {
+		public Builder response(@Nullable ChatResponse response) {
 			this.response = response;
 			return this;
 		}
@@ -104,7 +105,7 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 		 * @param adviseContext the context to advise the response
 		 * @return the builder
 		 */
-		public Builder withAdviseContext(Map<String, Object> adviseContext) {
+		public Builder adviseContext(Map<String, Object> adviseContext) {
 			this.adviseContext = adviseContext;
 			return this;
 		}

@@ -36,15 +36,15 @@ import org.springframework.util.Assert;
  */
 public class TokenTextSplitter extends TextSplitter {
 
-	private final static int DEFAULT_CHUNK_SIZE = 800;
+	private static final int DEFAULT_CHUNK_SIZE = 800;
 
-	private final static int MIN_CHUNK_SIZE_CHARS = 350;
+	private static final int MIN_CHUNK_SIZE_CHARS = 350;
 
-	private final static int MIN_CHUNK_LENGTH_TO_EMBED = 5;
+	private static final int MIN_CHUNK_LENGTH_TO_EMBED = 5;
 
-	private final static int MAX_NUM_CHUNKS = 10000;
+	private static final int MAX_NUM_CHUNKS = 10000;
 
-	private final static boolean KEEP_SEPARATOR = true;
+	private static final boolean KEEP_SEPARATOR = true;
 
 	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
 

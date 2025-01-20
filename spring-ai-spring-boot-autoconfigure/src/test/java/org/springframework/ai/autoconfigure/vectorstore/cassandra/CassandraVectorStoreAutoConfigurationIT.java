@@ -86,12 +86,13 @@ class CassandraVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,
@@ -101,7 +102,7 @@ class CassandraVectorStoreAutoConfigurationIT {
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).isEmpty();
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,

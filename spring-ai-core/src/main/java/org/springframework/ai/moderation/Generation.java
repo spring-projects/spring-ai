@@ -45,7 +45,7 @@ public class Generation implements ModelResult<Moderation> {
 		this.moderationGenerationMetadata = moderationGenerationMetadata;
 	}
 
-	public Generation withGenerationMetadata(@Nullable ModerationGenerationMetadata moderationGenerationMetadata) {
+	public Generation generationMetadata(@Nullable ModerationGenerationMetadata moderationGenerationMetadata) {
 		this.moderationGenerationMetadata = moderationGenerationMetadata;
 		return this;
 	}

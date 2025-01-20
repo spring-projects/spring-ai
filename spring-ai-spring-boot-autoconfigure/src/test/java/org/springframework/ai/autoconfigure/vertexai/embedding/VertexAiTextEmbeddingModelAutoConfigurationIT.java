@@ -25,7 +25,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingModel;
@@ -105,7 +105,7 @@ public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 			var document = new Document("Hello World");
 
 			DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(document),
-					EmbeddingOptions.EMPTY);
+					EmbeddingOptionsBuilder.builder().build());
 
 			EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
 			assertThat(embeddingResponse.getResults()).hasSize(1);

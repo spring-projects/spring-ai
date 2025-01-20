@@ -88,7 +88,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 			.applyToEmojis(false)
 			.build();
 		BedrockAi21Jurassic2ChatOptions options = new BedrockAi21Jurassic2ChatOptions.Builder()
-			.withPresencePenaltyOptions(penalty)
+			.presencePenaltyOptions(penalty)
 			.build();
 
 		UserMessage userMessage = new UserMessage("Can you express happiness using an emoji like 😄 ?");
@@ -106,7 +106,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 		// applyToEmojis is by default true
 		BedrockAi21Jurassic2ChatOptions.Penalty penalty = new BedrockAi21Jurassic2ChatOptions.Penalty.Builder().build();
 		BedrockAi21Jurassic2ChatOptions options = new BedrockAi21Jurassic2ChatOptions.Builder()
-			.withPresencePenaltyOptions(penalty)
+			.presencePenaltyOptions(penalty)
 			.build();
 
 		UserMessage userMessage = new UserMessage("Can you express happiness using an emoji like 😄?");
@@ -169,8 +169,8 @@ class BedrockAi21Jurassic2ChatModelIT {
 				Ai21Jurassic2ChatBedrockApi jurassic2ChatBedrockApi) {
 			return new BedrockAi21Jurassic2ChatModel(jurassic2ChatBedrockApi,
 					BedrockAi21Jurassic2ChatOptions.builder()
-						.withTemperature(0.5)
-						.withMaxTokens(500)
+						.temperature(0.5)
+						.maxTokens(500)
 						// .withTopP(0.9)
 						.build());
 		}

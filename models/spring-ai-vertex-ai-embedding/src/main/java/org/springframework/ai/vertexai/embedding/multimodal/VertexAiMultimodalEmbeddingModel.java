@@ -37,7 +37,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
@@ -101,7 +100,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		// merge the runtime and default vertex ai options.
 		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
+		if (request.getOptions() != null) {
 			var defaultOptionsCopy = VertexAiMultimodalEmbeddingOptions.builder().from(this.defaultOptions).build();
 			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
 					VertexAiMultimodalEmbeddingOptions.class);
@@ -138,30 +137,29 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 		// optional dimensions parameter
 		if (mergedOptions.getDimensions() != null) {
-			instanceBuilder.withDimension(mergedOptions.getDimensions());
+			instanceBuilder.dimension(mergedOptions.getDimensions());
 		}
 
 		// optional text parameter
-		if (StringUtils.hasText(document.getContent())) {
-			instanceBuilder.withText(document.getContent());
+		if (StringUtils.hasText(document.getText())) {
+			instanceBuilder.text(document.getText());
 			documentMetadata.put(ModalityType.TEXT,
-					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getContent()));
+					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getText()));
 		}
 
 		Media media = document.getMedia();
 		if (media != null) {
 			if (media.getMimeType().isCompatibleWith(TEXT_MIME_TYPE)) {
-				instanceBuilder.withText(media.getData().toString());
+				instanceBuilder.text(media.getData().toString());
 				documentMetadata.put(ModalityType.TEXT,
 						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-				if (StringUtils.hasText(document.getContent())) {
+				if (StringUtils.hasText(document.getText())) {
 					logger.warn("Media type String overrides the Document text content!");
 				}
 			}
 			else if (media.getMimeType().isCompatibleWith(IMAGE_MIME_TYPE)) {
 				if (SUPPORTED_IMAGE_MIME_SUB_TYPES.contains(media.getMimeType())) {
-					instanceBuilder
-						.withImage(ImageBuilder.of(media.getMimeType()).withImageData(media.getData()).build());
+					instanceBuilder.image(ImageBuilder.of(media.getMimeType()).imageData(media.getData()).build());
 					documentMetadata.put(ModalityType.IMAGE,
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
@@ -171,11 +169,11 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				}
 			}
 			else if (media.getMimeType().isCompatibleWith(VIDEO_MIME_TYPE)) {
-				instanceBuilder.withVideo(VideoBuilder.of(media.getMimeType())
-					.withVideoData(media.getData())
-					.withStartOffsetSec(mergedOptions.getVideoStartOffsetSec())
-					.withEndOffsetSec(mergedOptions.getVideoEndOffsetSec())
-					.withIntervalSec(mergedOptions.getVideoIntervalSec())
+				instanceBuilder.video(VideoBuilder.of(media.getMimeType())
+					.videoData(media.getData())
+					.startOffsetSec(mergedOptions.getVideoStartOffsetSec())
+					.endOffsetSec(mergedOptions.getVideoEndOffsetSec())
+					.intervalSec(mergedOptions.getVideoIntervalSec())
 					.build());
 				documentMetadata.put(ModalityType.VIDEO,
 						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));

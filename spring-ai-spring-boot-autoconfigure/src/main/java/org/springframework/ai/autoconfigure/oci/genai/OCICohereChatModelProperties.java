@@ -38,8 +38,8 @@ public class OCICohereChatModelProperties {
 
 	@NestedConfigurationProperty
 	private OCICohereChatOptions options = OCICohereChatOptions.builder()
-		.withServingMode(DEFAULT_SERVING_MODE)
-		.withTemperature(DEFAULT_TEMPERATURE)
+		.servingMode(DEFAULT_SERVING_MODE)
+		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public boolean isEnabled() {

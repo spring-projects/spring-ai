@@ -82,15 +82,14 @@ class ConcatenationDocumentJoinerTests {
 		documentsForQuery.put(new Query("query1"),
 				List.of(List.of(new Document("1", "Content 1", Map.of()), new Document("2", "Content 2", Map.of())),
 						List.of(new Document("3", "Content 3", Map.of()))));
-		documentsForQuery.put(new Query("query2"), List
-			.of(List.of(new Document("2", "Content 2 Duplicate", Map.of()), new Document("4", "Content 4", Map.of()))));
+		documentsForQuery.put(new Query("query2"),
+				List.of(List.of(new Document("2", "Content 2", Map.of()), new Document("4", "Content 4", Map.of()))));
 
 		List<Document> result = documentJoiner.join(documentsForQuery);
 
 		assertThat(result).hasSize(4);
 		assertThat(result).extracting(Document::getId).containsExactlyInAnyOrder("1", "2", "3", "4");
-		assertThat(result).extracting(Document::getContent).contains("Content 2");
-		assertThat(result).extracting(Document::getContent).doesNotContain("Content 2 Duplicate");
+		assertThat(result).extracting(Document::getText).containsOnlyOnce("Content 2");
 	}
 
 }

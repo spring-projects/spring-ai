@@ -58,6 +58,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
@@ -95,7 +96,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getContent());
+		return embed(document.getText());
 	}
 
 	@Override
@@ -215,7 +216,9 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaModel.MXBAI_EMBED_LARGE.id());
+		private OllamaOptions defaultOptions = OllamaOptions.builder()
+			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
+			.build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
@@ -224,22 +227,22 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		private Builder() {
 		}
 
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
+		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
 			return this;
 		}
 
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+		public Builder defaultOptions(OllamaOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
 			return this;
 		}
 
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
 		}
 
-		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
+		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
 			this.modelManagementOptions = modelManagementOptions;
 			return this;
 		}

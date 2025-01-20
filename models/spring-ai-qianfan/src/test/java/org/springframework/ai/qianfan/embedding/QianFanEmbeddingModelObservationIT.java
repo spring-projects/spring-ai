@@ -63,7 +63,7 @@ public class QianFanEmbeddingModelObservationIT {
 	@Test
 	void observationForEmbeddingOperation() {
 		var options = QianFanEmbeddingOptions.builder()
-			.withModel(QianFanApi.EmbeddingModel.BGE_LARGE_ZH.getValue())
+			.model(QianFanApi.EmbeddingModel.BGE_LARGE_ZH.getValue())
 			.build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);

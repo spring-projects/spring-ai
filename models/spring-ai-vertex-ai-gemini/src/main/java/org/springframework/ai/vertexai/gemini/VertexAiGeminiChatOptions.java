@@ -17,6 +17,7 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +29,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.util.Assert;
 
 /**
@@ -39,6 +42,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Grogdunn
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -66,7 +70,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	/**
 	 * Optional. If specified, top k sampling will be used.
 	 */
-	private @JsonProperty("topK") Float topK;
+	private @JsonProperty("topK") Integer topK;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
@@ -118,6 +122,9 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	private boolean googleSearchRetrieval = false;
 
 	@JsonIgnore
+	private List<VertexAiGeminiSafetySetting> safetySettings = new ArrayList<>();
+
+	@JsonIgnore
 	private Boolean proxyToolCalls;
 
 	@JsonIgnore
@@ -143,6 +150,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		options.setFunctions(fromOptions.getFunctions());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
+		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setProxyToolCalls(fromOptions.getProxyToolCalls());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
@@ -177,16 +185,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public Integer getTopK() {
-		return (this.topK != null) ? this.topK.intValue() : null;
+		return this.topK;
 	}
 
-	public void setTopK(Float topK) {
-		this.topK = topK;
-	}
-
-	@JsonIgnore
 	public void setTopK(Integer topK) {
-		this.topK = (topK != null) ? topK.floatValue() : null;
+		this.topK = topK;
 	}
 
 	public Integer getCandidateCount() {
@@ -269,6 +272,15 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		this.googleSearchRetrieval = googleSearchRetrieval;
 	}
 
+	public List<VertexAiGeminiSafetySetting> getSafetySettings() {
+		return this.safetySettings;
+	}
+
+	public void setSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+		Assert.notNull(safetySettings, "safetySettings must not be null");
+		this.safetySettings = safetySettings;
+	}
+
 	@Override
 	public Boolean getProxyToolCalls() {
 		return this.proxyToolCalls;
@@ -304,6 +316,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
 				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
 				&& Objects.equals(this.functions, that.functions)
+				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
 				&& Objects.equals(this.toolContext, that.toolContext);
 	}
@@ -312,7 +325,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.maxOutputTokens, this.model, this.responseMimeType, this.functionCallbacks, this.functions,
-				this.googleSearchRetrieval, this.proxyToolCalls, this.toolContext);
+				this.googleSearchRetrieval, this.safetySettings, this.proxyToolCalls, this.toolContext);
 	}
 
 	@Override
@@ -322,12 +335,73 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 				+ this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='" + this.model + '\''
 				+ ", responseMimeType='" + this.responseMimeType + '\'' + ", functionCallbacks="
 				+ this.functionCallbacks + ", functions=" + this.functions + ", googleSearchRetrieval="
-				+ this.googleSearchRetrieval + '}';
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + '}';
 	}
 
 	@Override
 	public VertexAiGeminiChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	public FunctionCallingOptions merge(ChatOptions options) {
+		VertexAiGeminiChatOptions.Builder builder = VertexAiGeminiChatOptions.builder();
+
+		// Merge chat-specific options
+		builder.model(options.getModel() != null ? options.getModel() : this.getModel())
+			.maxOutputTokens(options.getMaxTokens() != null ? options.getMaxTokens() : this.getMaxOutputTokens())
+			.stopSequences(options.getStopSequences() != null ? options.getStopSequences() : this.getStopSequences())
+			.temperature(options.getTemperature() != null ? options.getTemperature() : this.getTemperature())
+			.topP(options.getTopP() != null ? options.getTopP() : this.getTopP())
+			.topK(options.getTopK() != null ? options.getTopK() : this.getTopK());
+
+		// Try to get function-specific properties if options is a FunctionCallingOptions
+		if (options instanceof FunctionCallingOptions functionOptions) {
+			builder.proxyToolCalls(functionOptions.getProxyToolCalls() != null ? functionOptions.getProxyToolCalls()
+					: this.proxyToolCalls);
+
+			Set<String> functions = new HashSet<>();
+			if (this.functions != null) {
+				functions.addAll(this.functions);
+			}
+			if (functionOptions.getFunctions() != null) {
+				functions.addAll(functionOptions.getFunctions());
+			}
+			builder.functions(functions);
+
+			List<FunctionCallback> functionCallbacks = new ArrayList<>();
+			if (this.functionCallbacks != null) {
+				functionCallbacks.addAll(this.functionCallbacks);
+			}
+			if (functionOptions.getFunctionCallbacks() != null) {
+				functionCallbacks.addAll(functionOptions.getFunctionCallbacks());
+			}
+			builder.functionCallbacks(functionCallbacks);
+
+			Map<String, Object> context = new HashMap<>();
+			if (this.toolContext != null) {
+				context.putAll(this.toolContext);
+			}
+			if (functionOptions.getToolContext() != null) {
+				context.putAll(functionOptions.getToolContext());
+			}
+			builder.toolContext(context);
+		}
+		else {
+			// If not a FunctionCallingOptions, preserve current function-specific
+			// properties
+			builder.proxyToolCalls(this.proxyToolCalls);
+			builder.functions(this.functions != null ? new HashSet<>(this.functions) : null);
+			builder.functionCallbacks(this.functionCallbacks != null ? new ArrayList<>(this.functionCallbacks) : null);
+			builder.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null);
+		}
+
+		// Preserve Vertex AI Gemini-specific properties
+		builder.candidateCount(this.candidateCount)
+			.responseMimeType(this.responseMimeType)
+			.googleSearchRetrieval(this.googleSearchRetrieval)
+			.safetySettings(this.safetySettings != null ? new ArrayList<>(this.safetySettings) : null);
+
+		return builder.build();
 	}
 
 	public enum TransportType {
@@ -340,80 +414,86 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 		private VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
 
-		public Builder withStopSequences(List<String> stopSequences) {
+		public Builder stopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
-		public Builder withTopK(Float topK) {
+		public Builder topK(Integer topK) {
 			this.options.setTopK(topK);
 			return this;
 		}
 
-		public Builder withCandidateCount(Integer candidateCount) {
+		public Builder candidateCount(Integer candidateCount) {
 			this.options.setCandidateCount(candidateCount);
 			return this;
 		}
 
-		public Builder withMaxOutputTokens(Integer maxOutputTokens) {
+		public Builder maxOutputTokens(Integer maxOutputTokens) {
 			this.options.setMaxOutputTokens(maxOutputTokens);
 			return this;
 		}
 
-		public Builder withModel(String modelName) {
+		public Builder model(String modelName) {
 			this.options.setModel(modelName);
 			return this;
 		}
 
-		public Builder withModel(ChatModel model) {
+		public Builder model(ChatModel model) {
 			this.options.setModel(model.getValue());
 			return this;
 		}
 
-		public Builder withResponseMimeType(String mimeType) {
+		public Builder responseMimeType(String mimeType) {
 			Assert.notNull(mimeType, "mimeType must not be null");
 			this.options.setResponseMimeType(mimeType);
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
+		public Builder functions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
+		public Builder function(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
-		public Builder withGoogleSearchRetrieval(boolean googleSearch) {
+		public Builder googleSearchRetrieval(boolean googleSearch) {
 			this.options.googleSearchRetrieval = googleSearch;
 			return this;
 		}
 
-		public Builder withProxyToolCalls(boolean proxyToolCalls) {
+		public Builder safetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+			Assert.notNull(safetySettings, "safetySettings must not be null");
+			this.options.safetySettings = safetySettings;
+			return this;
+		}
+
+		public Builder proxyToolCalls(boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}

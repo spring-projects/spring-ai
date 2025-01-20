@@ -94,15 +94,16 @@ public class AzureVectorStoreIT {
 			vectorStore.add(this.documents);
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1)),
-						hasSize(1));
+				.until(() -> vectorStore
+					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build()), hasSize(1));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
@@ -111,7 +112,8 @@ public class AzureVectorStoreIT {
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Hello").topK(1).build()),
+						hasSize(0));
 		});
 	}
 
@@ -131,60 +133,75 @@ public class AzureVectorStoreIT {
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("The World").withTopK(5)), hasSize(3));
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("The World").topK(5).build()),
+						hasSize(3));
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'NL'"));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'NL'")
+				.build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG'"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'BG'")
+				.build());
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country == 'BG' && year == 2020"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'BG' && year == 2020")
+				.build());
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country in ['BG']"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country in ['BG']")
+				.build());
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 			assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country in ['BG','NL']"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country in ['BG','NL']")
+				.build());
 
 			assertThat(results).hasSize(3);
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("country not in ['BG']"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country not in ['BG']")
+				.build());
 
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.query("The World")
-				.withTopK(5)
-				.withSimilarityThresholdAll()
-				.withFilterExpression("NOT(country not in ['BG'])"));
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("NOT(country not in ['BG'])")
+				.build());
 
 			assertThat(results).hasSize(2);
 			assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
@@ -215,7 +232,7 @@ public class AzureVectorStoreIT {
 
 			vectorStore.add(List.of(document));
 
-			SearchRequest springSearchRequest = SearchRequest.query("Spring").withTopK(5);
+			SearchRequest springSearchRequest = SearchRequest.builder().query("Spring").topK(5).build();
 
 			Awaitility.await().until(() -> vectorStore.similaritySearch(springSearchRequest), hasSize(1));
 
@@ -224,7 +241,7 @@ public class AzureVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -234,10 +251,10 @@ public class AzureVectorStoreIT {
 
 			vectorStore.add(List.of(sameIdDocument));
 
-			SearchRequest fooBarSearchRequest = SearchRequest.query("FooBar").withTopK(5);
+			SearchRequest fooBarSearchRequest = SearchRequest.builder().query("FooBar").topK(5).build();
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
+				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getText(),
 						equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
 			results = vectorStore.similaritySearch(fooBarSearchRequest);
@@ -245,7 +262,7 @@ public class AzureVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -266,12 +283,12 @@ public class AzureVectorStoreIT {
 			vectorStore.add(this.documents);
 
 			Awaitility.await()
-				.until(() -> vectorStore
-					.similaritySearch(SearchRequest.query("Depression").withTopK(50).withSimilarityThresholdAll()),
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Depression").topK(50).similarityThresholdAll().build()),
 						hasSize(3));
 
 			List<Document> fullResult = vectorStore
-				.similaritySearch(SearchRequest.query("Depression").withTopK(5).withSimilarityThresholdAll());
+				.similaritySearch(SearchRequest.builder().query("Depression").topK(5).similarityThresholdAll().build());
 
 			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
@@ -279,13 +296,16 @@ public class AzureVectorStoreIT {
 
 			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch(
-					SearchRequest.query("Depression").withTopK(5).withSimilarityThreshold(similarityThreshold));
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Depression")
+				.topK(5)
+				.similarityThreshold(similarityThreshold)
+				.build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
@@ -293,7 +313,8 @@ public class AzureVectorStoreIT {
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.query("Hello").withTopK(1)), hasSize(0));
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Hello").topK(1).build()),
+						hasSize(0));
 		});
 	}
 
@@ -310,9 +331,11 @@ public class AzureVectorStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
-			var filterableMetaFields = List.of(MetadataField.text("country"), MetadataField.int64("year"),
-					MetadataField.date("activationDate"));
-			return new AzureVectorStore(searchIndexClient, embeddingModel, true, filterableMetaFields);
+			return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+				.initializeSchema(true)
+				.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.int64("year"),
+						MetadataField.date("activationDate")))
+				.build();
 		}
 
 		@Bean

@@ -43,6 +43,7 @@ import org.springframework.ai.model.ChatModelDescription;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Wei Jiang
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 // @formatter:off
@@ -211,22 +212,22 @@ public class TitanChatBedrockApi extends
 				this.inputText = inputText;
 			}
 
-			public Builder withTemperature(Double temperature) {
+			public Builder temperature(Double temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
-			public Builder withTopP(Double topP) {
+			public Builder topP(Double topP) {
 				this.topP = topP;
 				return this;
 			}
 
-			public Builder withMaxTokenCount(Integer maxTokenCount) {
+			public Builder maxTokenCount(Integer maxTokenCount) {
 				this.maxTokenCount = maxTokenCount;
 				return this;
 			}
 
-			public Builder withStopSequences(List<String> stopSequences) {
+			public Builder stopSequences(List<String> stopSequences) {
 				this.stopSequences = stopSequences;
 				return this;
 			}

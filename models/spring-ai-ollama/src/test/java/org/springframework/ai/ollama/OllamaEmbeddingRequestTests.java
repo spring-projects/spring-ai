@@ -32,9 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OllamaEmbeddingRequestTests {
 
 	OllamaEmbeddingModel embeddingModel = OllamaEmbeddingModel.builder()
-		.withOllamaApi(new OllamaApi())
-		.withDefaultOptions(
-				OllamaOptions.create().withModel("DEFAULT_MODEL").withMainGPU(11).withUseMMap(true).withNumGPU(1))
+		.ollamaApi(new OllamaApi())
+		.defaultOptions(OllamaOptions.builder().model("DEFAULT_MODEL").mainGPU(11).useMMap(true).numGPU(1).build())
 		.build();
 
 	@Test
@@ -52,11 +51,12 @@ public class OllamaEmbeddingRequestTests {
 	@Test
 	public void ollamaEmbeddingRequestRequestOptions() {
 
-		var promptOptions = new OllamaOptions()//
-			.withModel("PROMPT_MODEL")//
-			.withMainGPU(22)//
-			.withUseMMap(true)//
-			.withNumGPU(2);
+		var promptOptions = OllamaOptions.builder()//
+			.model("PROMPT_MODEL")//
+			.mainGPU(22)//
+			.useMMap(true)//
+			.numGPU(2)
+			.build();
 
 		var request = this.embeddingModel.ollamaEmbeddingRequest(List.of("Hello"), promptOptions);
 

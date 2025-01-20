@@ -18,6 +18,7 @@ package org.springframework.ai.vertexai.embedding.multimodal;
 
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -188,13 +189,18 @@ class VertexAiMultimodalEmbeddingModelIT {
 	@Test
 	void textImageAndVideoEmbedding() {
 
-		var document = Document.builder()
-			.text("Hello World")
+		var textDocument = Document.builder().text("Hello World").build();
+
+		var imageDocument = Document.builder()
 			.media(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.image.png")))
+			.build();
+
+		var videoDocument = Document.builder()
 			.media(new Media(new MimeType("video", "mp4"), new ClassPathResource("/test.video.mp4")))
 			.build();
 
-		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(document);
+		DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(
+				List.of(textDocument, imageDocument, videoDocument));
 
 		EmbeddingResponse embeddingResponse = this.multiModelEmbeddingModel.call(embeddingRequest);
 		assertThat(embeddingResponse.getResults()).hasSize(3);
@@ -225,8 +231,8 @@ class VertexAiMultimodalEmbeddingModelIT {
 		@Bean
 		public VertexAiEmbeddingConnectionDetails connectionDetails() {
 			return VertexAiEmbeddingConnectionDetails.builder()
-				.withProjectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
-				.withLocation(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
+				.projectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
+				.location(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 				.build();
 		}
 
@@ -235,7 +241,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 				VertexAiEmbeddingConnectionDetails connectionDetails) {
 
 			VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
-				.withModel(VertexAiMultimodalEmbeddingModelName.MULTIMODAL_EMBEDDING_001)
+				.model(VertexAiMultimodalEmbeddingModelName.MULTIMODAL_EMBEDDING_001)
 				.build();
 
 			return new VertexAiMultimodalEmbeddingModel(connectionDetails, options);

@@ -43,6 +43,7 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
  * </ul>
  *
  * @author Geng Rong
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -142,12 +143,12 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 			this.options = new ZhiPuAiImageOptions();
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.setUser(user);
 			return this;
 		}

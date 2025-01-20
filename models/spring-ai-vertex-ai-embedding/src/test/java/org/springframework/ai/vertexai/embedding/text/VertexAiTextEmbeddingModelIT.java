@@ -47,7 +47,7 @@ class VertexAiTextEmbeddingModelIT {
 	void defaultEmbedding(String modelName) {
 		assertThat(this.embeddingModel).isNotNull();
 
-		var options = VertexAiTextEmbeddingOptions.builder().withModel(modelName).build();
+		var options = VertexAiTextEmbeddingOptions.builder().model(modelName).build();
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.call(new EmbeddingRequest(List.of("Hello World", "World is Big"), options));
@@ -71,8 +71,8 @@ class VertexAiTextEmbeddingModelIT {
 		@Bean
 		public VertexAiEmbeddingConnectionDetails connectionDetails() {
 			return VertexAiEmbeddingConnectionDetails.builder()
-				.withProjectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
-				.withLocation(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
+				.projectId(System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"))
+				.location(System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 				.build();
 		}
 
@@ -80,7 +80,7 @@ class VertexAiTextEmbeddingModelIT {
 		public VertexAiTextEmbeddingModel vertexAiEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails) {
 
 			VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
-				.withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
+				.model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
 				.build();
 
 			return new VertexAiTextEmbeddingModel(connectionDetails, options);

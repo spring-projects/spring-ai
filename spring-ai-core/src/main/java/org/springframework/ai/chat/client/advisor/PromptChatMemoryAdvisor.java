@@ -122,8 +122,8 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 		// 3. Create a new request with the advised system text and parameters.
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
-			.withSystemText(advisedSystemText)
-			.withSystemParams(advisedSystemParams)
+			.systemText(advisedSystemText)
+			.systemParams(advisedSystemParams)
 			.build();
 
 		// 4. Add the new user input to the conversation memory.
@@ -152,7 +152,7 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			super(chatMemory);
 		}
 
-		public Builder withSystemTextAdvise(String systemTextAdvise) {
+		public Builder systemTextAdvise(String systemTextAdvise) {
 			this.systemTextAdvise = systemTextAdvise;
 			return this;
 		}

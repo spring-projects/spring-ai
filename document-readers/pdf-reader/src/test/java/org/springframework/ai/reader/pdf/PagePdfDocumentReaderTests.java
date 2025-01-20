@@ -44,6 +44,7 @@ class PagePdfDocumentReaderTests {
 						.withNumberOfTopTextLinesToDelete(0)
 						.withNumberOfBottomTextLinesToDelete(3)
 						.withNumberOfTopPagesToSkipBeforeDelete(0)
+						.overrideLineSeparator("\n")
 						.build())
 					.withPagesPerDocument(1)
 					.build());
@@ -52,7 +53,7 @@ class PagePdfDocumentReaderTests {
 
 		assertThat(docs).hasSize(4);
 
-		String allText = docs.stream().map(Document::getContent).collect(Collectors.joining(System.lineSeparator()));
+		String allText = docs.stream().map(Document::getText).collect(Collectors.joining(System.lineSeparator()));
 
 		assertThat(allText).doesNotContain(
 				List.of("Page  1 of 4", "Page  2 of 4", "Page  3 of 4", "Page  4 of 4", "PDF  Bookmark   Sample"));

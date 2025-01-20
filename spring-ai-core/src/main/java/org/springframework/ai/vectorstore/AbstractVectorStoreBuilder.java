@@ -18,7 +18,9 @@ package org.springframework.ai.vectorstore;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -33,15 +35,26 @@ import org.springframework.util.Assert;
 public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBuilder<T>>
 		implements VectorStore.Builder<T> {
 
-	protected EmbeddingModel embeddingModel;
+	protected final EmbeddingModel embeddingModel;
 
 	protected ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 	@Nullable
 	protected VectorStoreObservationConvention customObservationConvention;
 
+	protected BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+	public AbstractVectorStoreBuilder(EmbeddingModel embeddingModel) {
+		Assert.notNull(embeddingModel, "EmbeddingModel must be configured");
+		this.embeddingModel = embeddingModel;
+	}
+
 	public EmbeddingModel getEmbeddingModel() {
 		return this.embeddingModel;
+	}
+
+	public BatchingStrategy getBatchingStrategy() {
+		return this.batchingStrategy;
 	}
 
 	public ObservationRegistry getObservationRegistry() {
@@ -71,20 +84,20 @@ public abstract class AbstractVectorStoreBuilder<T extends AbstractVectorStoreBu
 	}
 
 	@Override
-	public T customObservationConvention(VectorStoreObservationConvention convention) {
+	public T customObservationConvention(@Nullable VectorStoreObservationConvention convention) {
 		this.customObservationConvention = convention;
 		return self();
 	}
 
-	@Override
-	public T embeddingModel(EmbeddingModel embeddingModel) {
-		Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
-		this.embeddingModel = embeddingModel;
+	/**
+	 * Sets the batching strategy.
+	 * @param batchingStrategy the strategy to use
+	 * @return the builder instance
+	 */
+	public T batchingStrategy(BatchingStrategy batchingStrategy) {
+		Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
+		this.batchingStrategy = batchingStrategy;
 		return self();
-	}
-
-	protected void validate() {
-		Assert.notNull(this.embeddingModel, "EmbeddingModel must be configured");
 	}
 
 }

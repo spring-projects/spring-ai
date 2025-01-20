@@ -33,32 +33,32 @@ public class StabilityAiImageOptionsTests {
 		StabilityAiApi stabilityAiApi = mock(StabilityAiApi.class);
 		// Default options
 		StabilityAiImageOptions defaultOptions = StabilityAiImageOptions.builder()
-			.withN(1)
-			.withModel("default-model")
-			.withWidth(512)
-			.withHeight(512)
-			.withResponseFormat("image/png")
-			.withCfgScale(7.0f)
-			.withClipGuidancePreset("FAST_BLUE")
-			.withSampler("DDIM")
-			.withSeed(1234L)
-			.withSteps(30)
-			.withStylePreset("3d-model")
+			.N(1)
+			.model("default-model")
+			.width(512)
+			.height(512)
+			.responseFormat("image/png")
+			.cfgScale(7.0f)
+			.clipGuidancePreset("FAST_BLUE")
+			.sampler("DDIM")
+			.seed(1234L)
+			.steps(30)
+			.stylePreset("3d-model")
 			.build();
 
 		// Runtime options with different values
 		StabilityAiImageOptions runtimeOptions = StabilityAiImageOptions.builder()
-			.withN(2)
-			.withModel("runtime-model")
-			.withWidth(1024)
-			.withHeight(768)
-			.withResponseFormat("application/json")
-			.withCfgScale(14.0f)
-			.withClipGuidancePreset("FAST_GREEN")
-			.withSampler("DDPM")
-			.withSeed(5678L)
-			.withSteps(50)
-			.withStylePreset("anime")
+			.N(2)
+			.model("runtime-model")
+			.width(1024)
+			.height(768)
+			.responseFormat("application/json")
+			.cfgScale(14.0f)
+			.clipGuidancePreset("FAST_GREEN")
+			.sampler("DDPM")
+			.seed(5678L)
+			.steps(50)
+			.stylePreset("anime")
 			.build();
 
 		StabilityAiImageModel imageModel = new StabilityAiImageModel(stabilityAiApi, defaultOptions);
@@ -86,9 +86,9 @@ public class StabilityAiImageOptionsTests {
 
 		StabilityAiApi stabilityAiApi = mock(StabilityAiApi.class);
 		StabilityAiImageOptions defaultOptions = StabilityAiImageOptions.builder()
-			.withN(1)
-			.withModel("default-model")
-			.withCfgScale(7.0f)
+			.N(1)
+			.model("default-model")
+			.cfgScale(7.0f)
 			.build();
 
 		StabilityAiImageModel imageModel = new StabilityAiImageModel(stabilityAiApi, defaultOptions);
@@ -107,10 +107,10 @@ public class StabilityAiImageOptionsTests {
 
 		StabilityAiApi stabilityAiApi = mock(StabilityAiApi.class);
 		StabilityAiImageOptions defaultOptions = StabilityAiImageOptions.builder()
-			.withN(1)
-			.withModel("default-model")
-			.withWidth(512)
-			.withCfgScale(7.0f)
+			.N(1)
+			.model("default-model")
+			.width(512)
+			.cfgScale(7.0f)
 			.build();
 
 		// Create a non-StabilityAi ImageOptions implementation

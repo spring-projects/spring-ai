@@ -16,17 +16,16 @@
 
 package org.springframework.ai.document;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.model.Media;
 import org.springframework.util.MimeTypeUtils;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -209,20 +208,6 @@ public class DocumentTests {
 			.build();
 
 		assertThat(document.getMetadata()).containsEntry("key1", "value1").containsEntry("key2", "value2");
-	}
-
-	@Test
-	void testEmbeddingOperations() {
-		float[] embedding = new float[] { 0.1f, 0.2f, 0.3f };
-
-		Document document = Document.builder().text("test").embedding(embedding).build();
-
-		assertThat(document.getEmbedding()).isEqualTo(embedding);
-	}
-
-	@Test
-	void testNullEmbeddingThrowsException() {
-		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("test").embedding(null).build());
 	}
 
 	private static Media getMedia() {

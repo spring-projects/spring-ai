@@ -75,8 +75,8 @@ class PaymentStatusBeanOpenAiIT {
 				ChatResponse response = chatModel
 					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
 							OpenAiChatOptions.builder()
-								.withFunction("retrievePaymentStatus")
-								.withFunction("retrievePaymentDate")
+								.function("retrievePaymentStatus")
+								.function("retrievePaymentDate")
 								.build()));
 
 				logger.info("Response: {}", response);

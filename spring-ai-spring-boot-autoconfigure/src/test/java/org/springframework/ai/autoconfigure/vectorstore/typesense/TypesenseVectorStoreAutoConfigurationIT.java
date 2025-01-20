@@ -87,12 +87,13 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
@@ -107,7 +108,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).hasSize(0);
 			});
 	}

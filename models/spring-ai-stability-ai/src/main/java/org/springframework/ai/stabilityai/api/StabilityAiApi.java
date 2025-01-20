@@ -137,52 +137,52 @@ public class StabilityAiApi {
 
 			}
 
-			public Builder withTextPrompts(List<TextPrompts> textPrompts) {
+			public Builder textPrompts(List<TextPrompts> textPrompts) {
 				this.textPrompts = textPrompts;
 				return this;
 			}
 
-			public Builder withHeight(Integer height) {
+			public Builder height(Integer height) {
 				this.height = height;
 				return this;
 			}
 
-			public Builder withWidth(Integer width) {
+			public Builder width(Integer width) {
 				this.width = width;
 				return this;
 			}
 
-			public Builder withCfgScale(Float cfgScale) {
+			public Builder cfgScale(Float cfgScale) {
 				this.cfgScale = cfgScale;
 				return this;
 			}
 
-			public Builder withClipGuidancePreset(String clipGuidancePreset) {
+			public Builder clipGuidancePreset(String clipGuidancePreset) {
 				this.clipGuidancePreset = clipGuidancePreset;
 				return this;
 			}
 
-			public Builder withSampler(String sampler) {
+			public Builder sampler(String sampler) {
 				this.sampler = sampler;
 				return this;
 			}
 
-			public Builder withSamples(Integer samples) {
+			public Builder samples(Integer samples) {
 				this.samples = samples;
 				return this;
 			}
 
-			public Builder withSeed(Long seed) {
+			public Builder seed(Long seed) {
 				this.seed = seed;
 				return this;
 			}
 
-			public Builder withSteps(Integer steps) {
+			public Builder steps(Integer steps) {
 				this.steps = steps;
 				return this;
 			}
 
-			public Builder withStylePreset(String stylePreset) {
+			public Builder stylePreset(String stylePreset) {
 				this.stylePreset = stylePreset;
 				return this;
 			}

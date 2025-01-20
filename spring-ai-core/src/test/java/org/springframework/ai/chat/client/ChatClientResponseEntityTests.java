@@ -42,6 +42,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientResponseEntityTests {
@@ -55,7 +56,7 @@ public class ChatClientResponseEntityTests {
 	@Test
 	public void responseEntityTest() {
 
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder().withKeyValue("key1", "value1").build();
+		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				{"name":"John", "age":30}

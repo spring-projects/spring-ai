@@ -116,8 +116,8 @@ public class OpenAiRetryTests {
 				OpenAiEmbeddingOptions.builder().build(), this.retryTemplate);
 		this.audioTranscriptionModel = new OpenAiAudioTranscriptionModel(this.openAiAudioApi,
 				OpenAiAudioTranscriptionOptions.builder()
-					.withModel("model")
-					.withResponseFormat(TranscriptResponseFormat.JSON)
+					.model("model")
+					.responseFormat(TranscriptResponseFormat.JSON)
 					.build(),
 				this.retryTemplate);
 		this.imageModel = new OpenAiImageModel(this.openAiImageApi, OpenAiImageOptions.builder().build(),

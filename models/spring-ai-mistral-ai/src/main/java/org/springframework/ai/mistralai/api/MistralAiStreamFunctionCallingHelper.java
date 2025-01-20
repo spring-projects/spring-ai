@@ -63,7 +63,9 @@ public class MistralAiStreamFunctionCallingHelper {
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 
-		return new ChatCompletionChunk(id, object, created, model, List.of(choice));
+		MistralAiApi.Usage usage = (current.usage() != null ? current.usage() : previous.usage());
+
+		return new ChatCompletionChunk(id, object, created, model, List.of(choice), usage);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {

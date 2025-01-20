@@ -54,10 +54,10 @@ class RetrievalAugmentationAdvisorTests {
 	}
 
 	@Test
-	void whenQueryRouterIsNullThenThrow() {
-		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder().queryRouter(null).build())
+	void whenDocumentRetrieverIsNullThenThrow() {
+		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder().documentRetriever(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("queryRouter cannot be null");
+			.hasMessageContaining("documentRetriever cannot be null");
 	}
 
 	@Test

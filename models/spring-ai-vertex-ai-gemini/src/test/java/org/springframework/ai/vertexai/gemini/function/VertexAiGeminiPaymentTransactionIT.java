@@ -57,7 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 public class VertexAiGeminiPaymentTransactionIT {
 
-	private final static Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionIT.class);
 
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
@@ -212,8 +212,8 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-							.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-							.withTemperature(0.1)
+							.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
+							.temperature(0.1)
 							.build(),
 					functionCallbackResolver);
 		}

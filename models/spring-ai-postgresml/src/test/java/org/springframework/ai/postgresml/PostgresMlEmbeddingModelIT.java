@@ -33,7 +33,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -90,8 +90,8 @@ class PostgresMlEmbeddingModelIT {
 	void embedWithPgVector() {
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
 				PostgresMlEmbeddingOptions.builder()
-					.withTransformer("distilbert-base-uncased")
-					.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
+					.transformer("distilbert-base-uncased")
+					.vectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR)
 					.build(),
 				true);
 		embeddingModel.afterPropertiesSet();
@@ -104,7 +104,7 @@ class PostgresMlEmbeddingModelIT {
 	@Test
 	void embedWithDifferentModel() {
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
-				PostgresMlEmbeddingOptions.builder().withTransformer("intfloat/e5-small").build(), true);
+				PostgresMlEmbeddingOptions.builder().transformer("intfloat/e5-small").build(), true);
 		embeddingModel.afterPropertiesSet();
 
 		float[] embed = embeddingModel.embed(new Document("Hello World!"));
@@ -116,10 +116,10 @@ class PostgresMlEmbeddingModelIT {
 	void embedWithKwargs() {
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
 				PostgresMlEmbeddingOptions.builder()
-					.withTransformer("distilbert-base-uncased")
-					.withVectorType(PostgresMlEmbeddingModel.VectorType.PG_ARRAY)
-					.withKwargs(Map.of("device", "cpu"))
-					.withMetadataMode(MetadataMode.EMBED)
+					.transformer("distilbert-base-uncased")
+					.vectorType(PostgresMlEmbeddingModel.VectorType.PG_ARRAY)
+					.kwargs(Map.of("device", "cpu"))
+					.metadataMode(MetadataMode.EMBED)
 					.build(),
 				true);
 		embeddingModel.afterPropertiesSet();
@@ -134,8 +134,8 @@ class PostgresMlEmbeddingModelIT {
 	void embedForResponse(String vectorType) {
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
 				PostgresMlEmbeddingOptions.builder()
-					.withTransformer("distilbert-base-uncased")
-					.withVectorType(VectorType.valueOf(vectorType))
+					.transformer("distilbert-base-uncased")
+					.vectorType(VectorType.valueOf(vectorType))
 					.build(),
 				true);
 		embeddingModel.afterPropertiesSet();
@@ -173,13 +173,14 @@ class PostgresMlEmbeddingModelIT {
 
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(this.jdbcTemplate,
 				PostgresMlEmbeddingOptions.builder()
-					.withTransformer("distilbert-base-uncased")
-					.withVectorType(VectorType.PG_VECTOR)
+					.transformer("distilbert-base-uncased")
+					.vectorType(VectorType.PG_VECTOR)
 					.build(),
 				true);
 		embeddingModel.afterPropertiesSet();
 
-		var request1 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"), EmbeddingOptions.EMPTY);
+		var request1 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"),
+				EmbeddingOptionsBuilder.builder().build());
 
 		EmbeddingResponse embeddingResponse = embeddingModel.call(request1);
 
@@ -211,10 +212,10 @@ class PostgresMlEmbeddingModelIT {
 		// Override the default options in the request
 		var request2 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"),
 				PostgresMlEmbeddingOptions.builder()
-					.withTransformer("intfloat/e5-small")
-					.withVectorType(VectorType.PG_ARRAY)
-					.withMetadataMode(MetadataMode.EMBED)
-					.withKwargs(Map.of("device", "cpu"))
+					.transformer("intfloat/e5-small")
+					.vectorType(VectorType.PG_ARRAY)
+					.metadataMode(MetadataMode.EMBED)
+					.kwargs(Map.of("device", "cpu"))
 					.build());
 
 		embeddingResponse = embeddingModel.call(request2);

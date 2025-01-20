@@ -52,7 +52,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 	void embeddings() {
 		assertThat(this.embeddingModel).isNotNull();
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(
-				List.of("Hello World", "Something else"), OllamaOptions.builder().withTruncate(false).build()));
+				List.of("Hello World", "Something else"), OllamaOptions.builder().truncate(false).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
@@ -75,7 +75,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.call(new EmbeddingRequest(List.of("Hello World", "Something else"),
-					OllamaOptions.builder().withModel(model).withTruncate(false).build()));
+					OllamaOptions.builder().model(model).truncate(false).build()));
 
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
@@ -102,11 +102,11 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		@Bean
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
 			return OllamaEmbeddingModel.builder()
-				.withOllamaApi(ollamaApi)
-				.withDefaultOptions(OllamaOptions.create().withModel(MODEL))
-				.withModelManagementOptions(ModelManagementOptions.builder()
-					.withPullModelStrategy(PullModelStrategy.WHEN_MISSING)
-					.withAdditionalModels(List.of(ADDITIONAL_MODEL))
+				.ollamaApi(ollamaApi)
+				.defaultOptions(OllamaOptions.builder().model(MODEL).build())
+				.modelManagementOptions(ModelManagementOptions.builder()
+					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
+					.additionalModels(List.of(ADDITIONAL_MODEL))
 					.build())
 				.build();
 		}

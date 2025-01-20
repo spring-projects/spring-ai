@@ -43,7 +43,7 @@ import org.springframework.util.Assert;
  */
 public class ZhiPuAiImageModel implements ImageModel {
 
-	private final static Logger logger = LoggerFactory.getLogger(ZhiPuAiImageModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiImageModel.class);
 
 	public final RetryTemplate retryTemplate;
 
@@ -122,11 +122,11 @@ public class ZhiPuAiImageModel implements ImageModel {
 		ZhiPuAiImageOptions.Builder zhiPuAiImageOptionsBuilder = ZhiPuAiImageOptions.builder();
 		if (runtimeImageOptions != null) {
 			if (runtimeImageOptions.getModel() != null) {
-				zhiPuAiImageOptionsBuilder.withModel(runtimeImageOptions.getModel());
+				zhiPuAiImageOptionsBuilder.model(runtimeImageOptions.getModel());
 			}
 			if (runtimeImageOptions instanceof ZhiPuAiImageOptions runtimeZhiPuAiImageOptions) {
 				if (runtimeZhiPuAiImageOptions.getUser() != null) {
-					zhiPuAiImageOptionsBuilder.withUser(runtimeZhiPuAiImageOptions.getUser());
+					zhiPuAiImageOptionsBuilder.user(runtimeZhiPuAiImageOptions.getUser());
 				}
 			}
 		}

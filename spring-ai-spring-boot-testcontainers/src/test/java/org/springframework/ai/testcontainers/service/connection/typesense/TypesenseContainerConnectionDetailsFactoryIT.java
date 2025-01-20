@@ -70,19 +70,20 @@ class TypesenseContainerConnectionDetailsFactoryIT {
 
 		this.vectorStore.add(this.documents);
 
-		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+		List<Document> results = this.vectorStore
+			.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-		assertThat(resultDoc.getContent())
+		assertThat(resultDoc.getText())
 			.contains("Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 		assertThat(resultDoc.getMetadata()).hasSize(2);
 		assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
 		this.vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
-		results = this.vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+		results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 		assertThat(results).hasSize(0);
 	}
 

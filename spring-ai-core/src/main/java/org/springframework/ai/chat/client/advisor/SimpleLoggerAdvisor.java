@@ -42,7 +42,7 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 	public static final Function<AdvisedRequest, String> DEFAULT_REQUEST_TO_STRING = request -> request.toString();
 
 	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = response -> ModelOptionsUtils
-		.toJsonString(response);
+		.toJsonStringPrettyPrinter(response);
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 

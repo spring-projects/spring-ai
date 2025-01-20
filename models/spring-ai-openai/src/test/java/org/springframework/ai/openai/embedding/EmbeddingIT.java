@@ -68,7 +68,7 @@ class EmbeddingIT extends AbstractIT {
 		assertThat(this.embeddingModel).isNotNull();
 		List<float[]> embeddings = this.embeddingModel.embed(
 				List.of(new Document("Hello world"), new Document("Hello Spring"), new Document("Hello Spring AI!")),
-				OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+				OpenAiEmbeddingOptions.builder().model(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 				new TokenCountBatchingStrategy());
 		assertThat(embeddings.size()).isEqualTo(3);
 		embeddings.forEach(embedding -> assertThat(embedding.length).isEqualTo(this.embeddingModel.dimensions()));
@@ -80,7 +80,7 @@ class EmbeddingIT extends AbstractIT {
 		String contentAsString = this.resource.getContentAsString(StandardCharsets.UTF_8);
 		assertThatThrownBy(
 				() -> this.embeddingModel.embed(List.of(new Document("Hello World"), new Document(contentAsString)),
-						OpenAiEmbeddingOptions.builder().withModel(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+						OpenAiEmbeddingOptions.builder().model(OpenAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 						new TokenCountBatchingStrategy()))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
@@ -89,7 +89,7 @@ class EmbeddingIT extends AbstractIT {
 	void embedding3Large() {
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
-				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-large").build()));
+				OpenAiEmbeddingOptions.builder().model("text-embedding-3-large").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(3072);
@@ -104,7 +104,7 @@ class EmbeddingIT extends AbstractIT {
 	void textEmbeddingAda002() {
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
-				OpenAiEmbeddingOptions.builder().withModel("text-embedding-3-small").build()));
+				OpenAiEmbeddingOptions.builder().model("text-embedding-3-small").build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);

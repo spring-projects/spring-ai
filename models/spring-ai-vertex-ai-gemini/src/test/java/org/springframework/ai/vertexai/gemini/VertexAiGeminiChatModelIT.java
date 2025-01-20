@@ -41,6 +41,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -87,9 +88,21 @@ class VertexAiGeminiChatModelIT {
 
 	@Test
 	void googleSearchTool() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().withGoogleSearchRetrieval(true).build());
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
+	void testSafetySettings() {
+		List<VertexAiGeminiSafetySetting> safetySettings = List.of(new VertexAiGeminiSafetySetting.Builder()
+			.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+			.build());
+		Prompt prompt = new Prompt("What are common digital attack vectors?",
+				VertexAiGeminiChatOptions.builder().safetySettings(safetySettings).build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
 
 	@NotNull
@@ -282,7 +295,7 @@ class VertexAiGeminiChatModelIT {
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
 			return new VertexAiGeminiChatModel(vertexAi,
 					VertexAiGeminiChatOptions.builder()
-						.withModel(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
+						.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
 						.build());
 		}
 

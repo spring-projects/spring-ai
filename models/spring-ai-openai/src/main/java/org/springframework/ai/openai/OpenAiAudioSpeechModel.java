@@ -79,10 +79,10 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	public OpenAiAudioSpeechModel(OpenAiAudioApi audioApi) {
 		this(audioApi,
 				OpenAiAudioSpeechOptions.builder()
-					.withModel(OpenAiAudioApi.TtsModel.TTS_1.getValue())
-					.withResponseFormat(AudioResponseFormat.MP3)
-					.withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
-					.withSpeed(SPEED)
+					.model(OpenAiAudioApi.TtsModel.TTS_1.getValue())
+					.responseFormat(AudioResponseFormat.MP3)
+					.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+					.speed(SPEED)
 					.build());
 	}
 
@@ -189,12 +189,12 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	private OpenAiAudioSpeechOptions merge(OpenAiAudioSpeechOptions source, OpenAiAudioSpeechOptions target) {
 		OpenAiAudioSpeechOptions.Builder mergedBuilder = OpenAiAudioSpeechOptions.builder();
 
-		mergedBuilder.withModel(source.getModel() != null ? source.getModel() : target.getModel());
-		mergedBuilder.withInput(source.getInput() != null ? source.getInput() : target.getInput());
-		mergedBuilder.withVoice(source.getVoice() != null ? source.getVoice() : target.getVoice());
-		mergedBuilder.withResponseFormat(
+		mergedBuilder.model(source.getModel() != null ? source.getModel() : target.getModel());
+		mergedBuilder.input(source.getInput() != null ? source.getInput() : target.getInput());
+		mergedBuilder.voice(source.getVoice() != null ? source.getVoice() : target.getVoice());
+		mergedBuilder.responseFormat(
 				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
-		mergedBuilder.withSpeed(source.getSpeed() != null ? source.getSpeed() : target.getSpeed());
+		mergedBuilder.speed(source.getSpeed() != null ? source.getSpeed() : target.getSpeed());
 
 		return mergedBuilder.build();
 	}

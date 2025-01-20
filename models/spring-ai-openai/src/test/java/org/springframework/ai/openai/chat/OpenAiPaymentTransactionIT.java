@@ -58,7 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiPaymentTransactionIT {
 
-	private final static Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);
 
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
@@ -223,10 +223,7 @@ public class OpenAiPaymentTransactionIT {
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackResolver functionCallbackResolver) {
 			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder()
-						.withModel(ChatModel.GPT_4_O_MINI.getName())
-						.withTemperature(0.1)
-						.build(),
+					OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build(),
 					functionCallbackResolver, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 		}
 

@@ -100,17 +100,17 @@ class AwsOpenSearchContainerConnectionDetailsFactoryIT {
 		this.vectorStore.add(this.documents);
 
 		Awaitility.await()
-			.until(() -> this.vectorStore
-				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+			.until(() -> this.vectorStore.similaritySearch(
+					SearchRequest.builder().query("Great Depression").topK(1).similarityThreshold(0).build()),
 					hasSize(1));
 
 		List<Document> results = this.vectorStore
-			.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0));
+			.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).similarityThreshold(0).build());
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-		assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+		assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 		assertThat(resultDoc.getMetadata()).hasSize(2);
 		assertThat(resultDoc.getMetadata()).containsKey("meta2");
 		assertThat(resultDoc.getMetadata()).containsKey("distance");
@@ -119,8 +119,8 @@ class AwsOpenSearchContainerConnectionDetailsFactoryIT {
 		this.vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 		Awaitility.await()
-			.until(() -> this.vectorStore
-				.similaritySearch(SearchRequest.query("Great Depression").withTopK(1).withSimilarityThreshold(0)),
+			.until(() -> this.vectorStore.similaritySearch(
+					SearchRequest.builder().query("Great Depression").topK(1).similarityThreshold(0).build()),
 					hasSize(0));
 	}
 

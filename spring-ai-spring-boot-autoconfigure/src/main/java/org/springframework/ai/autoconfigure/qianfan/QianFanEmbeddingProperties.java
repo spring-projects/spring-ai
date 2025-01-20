@@ -41,7 +41,7 @@ public class QianFanEmbeddingProperties extends QianFanParentProperties {
 
 	@NestedConfigurationProperty
 	private QianFanEmbeddingOptions options = QianFanEmbeddingOptions.builder()
-		.withModel(QianFanApi.DEFAULT_EMBEDDING_MODEL)
+		.model(QianFanApi.DEFAULT_EMBEDDING_MODEL)
 		.build();
 
 	public QianFanEmbeddingOptions getOptions() {

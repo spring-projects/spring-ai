@@ -76,6 +76,8 @@ import org.springframework.util.StringUtils;
  * @author luocongqiu
  * @author Thomas Vitale
  * @author Jihoon Kim
+ * @author Alexandros Pappas
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class OllamaChatModel extends AbstractToolCallSupport implements ChatModel {
@@ -164,16 +166,16 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		DefaultUsage aggregatedUsage = new DefaultUsage(promptTokens, generationTokens, totalTokens);
 
 		return ChatResponseMetadata.builder()
-			.withUsage(aggregatedUsage)
-			.withModel(response.model())
-			.withKeyValue(METADATA_CREATED_AT, response.createdAt())
-			.withKeyValue(METADATA_EVAL_DURATION, evalDuration)
-			.withKeyValue(METADATA_EVAL_COUNT, aggregatedUsage.getGenerationTokens().intValue())
-			.withKeyValue(METADATA_LOAD_DURATION, loadDuration)
-			.withKeyValue(METADATA_PROMPT_EVAL_DURATION, promptEvalDuration)
-			.withKeyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens().intValue())
-			.withKeyValue(METADATA_TOTAL_DURATION, totalDuration)
-			.withKeyValue(DONE, response.done())
+			.usage(aggregatedUsage)
+			.model(response.model())
+			.keyValue(METADATA_CREATED_AT, response.createdAt())
+			.keyValue(METADATA_EVAL_DURATION, evalDuration)
+			.keyValue(METADATA_EVAL_COUNT, aggregatedUsage.getGenerationTokens().intValue())
+			.keyValue(METADATA_LOAD_DURATION, loadDuration)
+			.keyValue(METADATA_PROMPT_EVAL_DURATION, promptEvalDuration)
+			.keyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens().intValue())
+			.keyValue(METADATA_TOTAL_DURATION, totalDuration)
+			.keyValue(DONE, response.done())
 			.build();
 	}
 
@@ -316,7 +318,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions().stream().map(message -> {
 			if (message instanceof UserMessage userMessage) {
-				var messageBuilder = OllamaApi.Message.builder(Role.USER).withContent(message.getText());
+				var messageBuilder = OllamaApi.Message.builder(Role.USER).content(message.getText());
 				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 					messageBuilder.images(
 							userMessage.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
@@ -324,7 +326,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 				return List.of(messageBuilder.build());
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(OllamaApi.Message.builder(Role.SYSTEM).withContent(systemMessage.getText()).build());
+				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(systemMessage.getText()).build());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
 				List<ToolCall> toolCalls = null;
@@ -336,8 +338,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 					}).toList();
 				}
 				return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
-					.withContent(assistantMessage.getText())
-					.withToolCalls(toolCalls)
+					.content(assistantMessage.getText())
+					.toolCalls(toolCalls)
 					.build());
 			}
 			else if (message instanceof ToolResponseMessage toolMessage) {
@@ -377,21 +379,21 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		String model = mergedOptions.getModel();
 		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(model)
-			.withStream(stream)
-			.withMessages(ollamaMessages)
-			.withOptions(mergedOptions);
+			.stream(stream)
+			.messages(ollamaMessages)
+			.options(mergedOptions);
 
 		if (mergedOptions.getFormat() != null) {
-			requestBuilder.withFormat(mergedOptions.getFormat());
+			requestBuilder.format(mergedOptions.getFormat());
 		}
 
 		if (mergedOptions.getKeepAlive() != null) {
-			requestBuilder.withKeepAlive(mergedOptions.getKeepAlive());
+			requestBuilder.keepAlive(mergedOptions.getKeepAlive());
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
-			requestBuilder.withTools(this.getFunctionTools(functionsForThisRequest));
+			requestBuilder.tools(this.getFunctionTools(functionsForThisRequest));
 		}
 
 		return requestBuilder.build();
@@ -459,7 +461,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaModel.MISTRAL.id());
+		private OllamaOptions defaultOptions = OllamaOptions.builder().model(OllamaModel.MISTRAL.id()).build();
 
 		private FunctionCallbackResolver functionCallbackResolver;
 
@@ -472,23 +474,13 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		private Builder() {
 		}
 
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
+		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
 			return this;
 		}
 
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+		public Builder defaultOptions(OllamaOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use the {@link functionCallbackResolver(FunctionCallbackResolver)}
-		 * instead
-		 */
-		@Deprecated
-		public Builder withFunctionCallbackContext(FunctionCallbackResolver functionCallbackContext) {
-			this.functionCallbackResolver = functionCallbackContext;
 			return this;
 		}
 
@@ -497,17 +489,17 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			return this;
 		}
 
-		public Builder withToolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
+		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
 			this.toolFunctionCallbacks = toolFunctionCallbacks;
 			return this;
 		}
 
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
 		}
 
-		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
+		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
 			this.modelManagementOptions = modelManagementOptions;
 			return this;
 		}

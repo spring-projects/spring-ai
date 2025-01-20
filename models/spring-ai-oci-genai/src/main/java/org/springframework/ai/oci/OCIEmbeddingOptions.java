@@ -26,6 +26,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * The configuration information for OCI embedding requests
  *
  * @author Anders Swanson
+ * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OCIEmbeddingOptions implements EmbeddingOptions {
@@ -87,22 +88,22 @@ public class OCIEmbeddingOptions implements EmbeddingOptions {
 
 		private final OCIEmbeddingOptions options = new OCIEmbeddingOptions();
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withCompartment(String compartment) {
+		public Builder compartment(String compartment) {
 			this.options.setCompartment(compartment);
 			return this;
 		}
 
-		public Builder withServingMode(String servingMode) {
+		public Builder servingMode(String servingMode) {
 			this.options.setServingMode(servingMode);
 			return this;
 		}
 
-		public Builder withTruncate(EmbedTextDetails.Truncate truncate) {
+		public Builder truncate(EmbedTextDetails.Truncate truncate) {
 			this.options.truncate = truncate;
 			return this;
 		}

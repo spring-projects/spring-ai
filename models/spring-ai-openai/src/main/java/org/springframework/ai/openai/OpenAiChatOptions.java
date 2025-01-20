@@ -163,7 +163,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	 * the model to call that function. none is the default when no functions are present. auto is the default if
 	 * functions are present. Use the {@link ToolChoiceBuilder} to create a tool choice object.
 	 */
-	private @JsonProperty("tool_choice") String toolChoice;
+	private @JsonProperty("tool_choice") Object toolChoice;
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
 	 */
@@ -220,32 +220,32 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 
 	public static OpenAiChatOptions fromOptions(OpenAiChatOptions fromOptions) {
 		return OpenAiChatOptions.builder()
-			.withModel(fromOptions.getModel())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withLogitBias(fromOptions.getLogitBias())
-			.withLogprobs(fromOptions.getLogprobs())
-			.withTopLogprobs(fromOptions.getTopLogprobs())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withMaxCompletionTokens(fromOptions.getMaxCompletionTokens())
-			.withN(fromOptions.getN())
-			.withOutputModalities(fromOptions.getOutputModalities())
-			.withOutputAudio(fromOptions.getOutputAudio())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withStreamUsage(fromOptions.getStreamUsage())
-			.withSeed(fromOptions.getSeed())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withUser(fromOptions.getUser())
-			.withParallelToolCalls(fromOptions.getParallelToolCalls())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withHttpHeaders(fromOptions.getHttpHeaders())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
+			.model(fromOptions.getModel())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.logitBias(fromOptions.getLogitBias())
+			.logprobs(fromOptions.getLogprobs())
+			.topLogprobs(fromOptions.getTopLogprobs())
+			.maxTokens(fromOptions.getMaxTokens())
+			.maxCompletionTokens(fromOptions.getMaxCompletionTokens())
+			.N(fromOptions.getN())
+			.outputModalities(fromOptions.getOutputModalities())
+			.outputAudio(fromOptions.getOutputAudio())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.responseFormat(fromOptions.getResponseFormat())
+			.streamUsage(fromOptions.getStreamUsage())
+			.seed(fromOptions.getSeed())
+			.stop(fromOptions.getStop())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.tools(fromOptions.getTools())
+			.toolChoice(fromOptions.getToolChoice())
+			.user(fromOptions.getUser())
+			.parallelToolCalls(fromOptions.getParallelToolCalls())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.httpHeaders(fromOptions.getHttpHeaders())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -325,7 +325,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public List<String> getOutputModalities() {
-		return outputModalities;
+		return this.outputModalities;
 	}
 
 	public void setOutputModalities(List<String> modalities) {
@@ -333,7 +333,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public AudioParameters getOutputAudio() {
-		return outputAudio;
+		return this.outputAudio;
 	}
 
 	public void setOutputAudio(AudioParameters audio) {
@@ -418,11 +418,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 		this.tools = tools;
 	}
 
-	public String getToolChoice() {
+	public Object getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(String toolChoice) {
+	public void setToolChoice(Object toolChoice) {
 		this.toolChoice = toolChoice;
 	}
 
@@ -555,144 +555,144 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			this.options = options;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withModel(OpenAiApi.ChatModel openAiChatModel) {
+		public Builder model(OpenAiApi.ChatModel openAiChatModel) {
 			this.options.model = openAiChatModel.getName();
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
-		public Builder withLogitBias(Map<String, Integer> logitBias) {
+		public Builder logitBias(Map<String, Integer> logitBias) {
 			this.options.logitBias = logitBias;
 			return this;
 		}
 
-		public Builder withLogprobs(Boolean logprobs) {
+		public Builder logprobs(Boolean logprobs) {
 			this.options.logprobs = logprobs;
 			return this;
 		}
 
-		public Builder withTopLogprobs(Integer topLogprobs) {
+		public Builder topLogprobs(Integer topLogprobs) {
 			this.options.topLogprobs = topLogprobs;
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withMaxCompletionTokens(Integer maxCompletionTokens) {
+		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
 			this.options.maxCompletionTokens = maxCompletionTokens;
 			return this;
 		}
 
-		public Builder withN(Integer n) {
+		public Builder N(Integer n) {
 			this.options.n = n;
 			return this;
 		}
 
-		public Builder withOutputModalities(List<String> modalities) {
+		public Builder outputModalities(List<String> modalities) {
 			this.options.outputModalities = modalities;
 			return this;
 		}
 
-		public Builder withOutputAudio(AudioParameters audio) {
+		public Builder outputAudio(AudioParameters audio) {
 			this.options.outputAudio = audio;
 			return this;
 		}
 
-		public Builder withPresencePenalty(Double presencePenalty) {
+		public Builder presencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
-		public Builder withResponseFormat(ResponseFormat responseFormat) {
+		public Builder responseFormat(ResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withStreamUsage(boolean enableStreamUsage) {
+		public Builder streamUsage(boolean enableStreamUsage) {
 			this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
 			return this;
 		}
 
-		public Builder withSeed(Integer seed) {
+		public Builder seed(Integer seed) {
 			this.options.seed = seed;
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder withTools(List<OpenAiApi.FunctionTool> tools) {
+		public Builder tools(List<OpenAiApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
 
-		public Builder withToolChoice(String toolChoice) {
+		public Builder toolChoice(Object toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.user = user;
 			return this;
 		}
 
-		public Builder withParallelToolCalls(Boolean parallelToolCalls) {
+		public Builder parallelToolCalls(Boolean parallelToolCalls) {
 			this.options.parallelToolCalls = parallelToolCalls;
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
+		public Builder functions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
+		public Builder function(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
-		public Builder withHttpHeaders(Map<String, String> httpHeaders) {
+		public Builder httpHeaders(Map<String, String> httpHeaders) {
 			this.options.httpHeaders = httpHeaders;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}

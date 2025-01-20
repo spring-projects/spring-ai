@@ -37,9 +37,9 @@ public class VertexAiGeminiChatProperties {
 	 * Vertex AI Gemini API generative options.
 	 */
 	private VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
-		.withTemperature(0.7)
-		.withCandidateCount(1)
-		.withModel(DEFAULT_MODEL)
+		.temperature(0.7)
+		.candidateCount(1)
+		.model(DEFAULT_MODEL)
 		.build();
 
 	public VertexAiGeminiChatOptions getOptions() {

@@ -16,9 +16,6 @@
 
 package org.springframework.ai.vectorstore.mariadb;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -27,14 +24,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+
 import javax.sql.DataSource;
+
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.Assert;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -42,7 +45,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
-import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -56,9 +58,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
-import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Diego Dupin
@@ -123,7 +124,8 @@ public class MariaDBStoreIT {
 		}
 
 		Iterator<Float> iter = distances.iterator();
-		Float current, previous = iter.next();
+		Float current;
+		Float previous = iter.next();
 		while (iter.hasNext()) {
 			current = iter.next();
 			if (previous > current) {
@@ -144,7 +146,7 @@ public class MariaDBStoreIT {
 				vectorStore.add(this.documents);
 
 				List<Document> results = vectorStore
-					.similaritySearch(SearchRequest.query("What is Great Depression").withTopK(1));
+					.similaritySearch(SearchRequest.builder().query("What is Great Depression").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -155,7 +157,7 @@ public class MariaDBStoreIT {
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 				List<Document> results2 = vectorStore
-					.similaritySearch(SearchRequest.query("Great Depression").withTopK(1));
+					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 				assertThat(results2).hasSize(0);
 
 				dropTable(context);
@@ -178,10 +180,12 @@ public class MariaDBStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-			SearchRequest searchRequest = SearchRequest.query("The World")
-				.withFilterExpression(expression)
-				.withTopK(5)
-				.withSimilarityThresholdAll();
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("The World")
+				.filterExpression(expression)
+				.topK(5)
+				.similarityThresholdAll()
+				.build();
 
 			List<Document> results = vectorStore.similaritySearch(searchRequest);
 
@@ -209,51 +213,62 @@ public class MariaDBStoreIT {
 
 				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-				SearchRequest searchRequest = SearchRequest.query("The World").withTopK(5).withSimilarityThresholdAll();
+				SearchRequest searchRequest = SearchRequest.builder()
+					.query("The World")
+					.topK(5)
+					.similarityThresholdAll()
+					.build();
 
 				List<Document> results = vectorStore.similaritySearch(searchRequest);
 
 				assertThat(results).hasSize(3);
 
-				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'NL'"));
+				results = vectorStore
+					.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == 'NL'").build());
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-				results = vectorStore.similaritySearch(searchRequest.withFilterExpression("country == 'BG'"));
+				results = vectorStore
+					.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == 'BG'").build());
 
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), bgDocument2.getId());
 
-				results = vectorStore
-					.similaritySearch(searchRequest.withFilterExpression("country == 'BG' && year == 2020"));
+				results = vectorStore.similaritySearch(
+						SearchRequest.from(searchRequest).filterExpression("country == 'BG' && year == 2020").build());
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-				results = vectorStore.similaritySearch(
-						searchRequest.withFilterExpression("(country == 'BG' && year == 2020) || (country == 'NL')"));
+				results = vectorStore.similaritySearch(SearchRequest.from(searchRequest)
+					.filterExpression("(country == 'BG' && year == 2020) || (country == 'NL')")
+					.build());
 
 				assertThat(results).hasSize(2);
 				assertThat(results.get(0).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 				assertThat(results.get(1).getId()).isIn(bgDocument.getId(), nlDocument.getId());
 
-				results = vectorStore.similaritySearch(searchRequest
-					.withFilterExpression("NOT((country == 'BG' && year == 2020) || (country == 'NL'))"));
+				results = vectorStore.similaritySearch(SearchRequest.from(searchRequest)
+					.filterExpression("NOT((country == 'BG' && year == 2020) || (country == 'NL'))")
+					.build());
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
 
-				results = vectorStore.similaritySearch(SearchRequest.query("The World")
-					.withTopK(5)
-					.withSimilarityThresholdAll()
-					.withFilterExpression("\"foo bar 1\" == 'bar.foo'"));
+				results = vectorStore.similaritySearch(SearchRequest.builder()
+					.query("The World")
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("\"foo bar 1\" == 'bar.foo'")
+					.build());
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 				try {
-					vectorStore.similaritySearch(searchRequest.withFilterExpression("country == NL"));
+					vectorStore
+						.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build());
 					Assert.fail("Invalid filter expression should have been cached!");
 				}
 				catch (FilterExpressionParseException e) {
@@ -278,12 +293,13 @@ public class MariaDBStoreIT {
 
 				vectorStore.add(List.of(document));
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
 				Document sameIdDocument = new Document(document.getId(),
@@ -292,12 +308,12 @@ public class MariaDBStoreIT {
 
 				vectorStore.add(List.of(sameIdDocument));
 
-				results = vectorStore.similaritySearch(SearchRequest.query("FooBar").withTopK(5));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
 
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
 
 				dropTable(context);
@@ -314,8 +330,8 @@ public class MariaDBStoreIT {
 
 				vectorStore.add(this.documents);
 
-				List<Document> fullResult = vectorStore
-					.similaritySearch(SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThresholdAll());
+				List<Document> fullResult = vectorStore.similaritySearch(
+						SearchRequest.builder().query("Time Shelter").topK(5).similarityThresholdAll().build());
 
 				assertThat(fullResult).hasSize(3);
 
@@ -327,8 +343,11 @@ public class MariaDBStoreIT {
 
 				float threshold = (distances.get(0) + distances.get(1)) / 2;
 
-				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.query("Time Shelter").withTopK(5).withSimilarityThreshold(1 - threshold));
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+					.query("Time Shelter")
+					.topK(5)
+					.similarityThreshold(1 - threshold)
+					.build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
@@ -347,8 +366,12 @@ public class MariaDBStoreIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return new MariaDBVectorStore(jdbcTemplate, embeddingModel, MariaDBVectorStore.INVALID_EMBEDDING_DIMENSION,
-					this.distanceType, true, true);
+			return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
+				.dimensions(MariaDBVectorStore.INVALID_EMBEDDING_DIMENSION)
+				.distanceType(this.distanceType)
+				.removeExistingVectorStoreTable(true)
+				.initializeSchema(true)
+				.build();
 		}
 
 		@Bean

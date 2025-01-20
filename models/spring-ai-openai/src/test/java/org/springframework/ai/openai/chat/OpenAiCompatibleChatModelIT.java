@@ -49,7 +49,7 @@ public class OpenAiCompatibleChatModelIT {
 			new UserMessage("Tell me about 3 most famous ones."));
 
 	static OpenAiChatOptions forModelName(String modelName) {
-		return OpenAiChatOptions.builder().withModel(modelName).build();
+		return OpenAiChatOptions.builder().model(modelName).build();
 	}
 
 	static Stream<ChatModel> openAiCompatibleApis() {

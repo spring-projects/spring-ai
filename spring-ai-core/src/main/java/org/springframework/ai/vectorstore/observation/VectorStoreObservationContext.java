@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class VectorStoreObservationContext extends Observation.Context {
@@ -184,37 +185,37 @@ public class VectorStoreObservationContext extends Observation.Context {
 			this.context = new VectorStoreObservationContext(databaseSystem, operationName);
 		}
 
-		public Builder withCollectionName(String collectionName) {
+		public Builder collectionName(String collectionName) {
 			this.context.setCollectionName(collectionName);
 			return this;
 		}
 
-		public Builder withDimensions(Integer dimensions) {
+		public Builder dimensions(Integer dimensions) {
 			this.context.setDimensions(dimensions);
 			return this;
 		}
 
-		public Builder withFieldName(@Nullable String fieldName) {
+		public Builder fieldName(@Nullable String fieldName) {
 			this.context.setFieldName(fieldName);
 			return this;
 		}
 
-		public Builder withNamespace(String namespace) {
+		public Builder namespace(String namespace) {
 			this.context.setNamespace(namespace);
 			return this;
 		}
 
-		public Builder withQueryRequest(SearchRequest request) {
+		public Builder queryRequest(SearchRequest request) {
 			this.context.setQueryRequest(request);
 			return this;
 		}
 
-		public Builder withQueryResponse(List<Document> documents) {
+		public Builder queryResponse(List<Document> documents) {
 			this.context.setQueryResponse(documents);
 			return this;
 		}
 
-		public Builder withSimilarityMetric(String similarityMetric) {
+		public Builder similarityMetric(String similarityMetric) {
 			this.context.setSimilarityMetric(similarityMetric);
 			return this;
 		}
