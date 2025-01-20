@@ -158,12 +158,11 @@ public class HunYuanChatModelObservationIT {
 
 		@Bean
 		public HunYuanApi hunYuanApi() {
-			return new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY"));
+			return new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"), System.getenv("HUNYUAN_SECRET_KEY"));
 		}
 
 		@Bean
-		public HunYuanChatModel hunYuanChatModel(HunYuanApi hunYuanApi,
-				TestObservationRegistry observationRegistry) {
+		public HunYuanChatModel hunYuanChatModel(HunYuanApi hunYuanApi, TestObservationRegistry observationRegistry) {
 			return new HunYuanChatModel(hunYuanApi, HunYuanChatOptions.builder().build(),
 					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
 					observationRegistry);

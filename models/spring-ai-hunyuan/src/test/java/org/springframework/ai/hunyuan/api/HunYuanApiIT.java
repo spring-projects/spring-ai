@@ -44,34 +44,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_ID", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
 public class HunYuanApiIT {
+
 	private static final Logger logger = LoggerFactory.getLogger(HunYuanApiIT.class);
 
-	HunYuanApi hunyuanApi = new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY"));
+	HunYuanApi hunyuanApi = new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"), System.getenv("HUNYUAN_SECRET_KEY"));
 
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello World！", Role.user);
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8,false));
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage),
+					HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().response()).isNotNull();
 		logger.info(response.getBody().response().toString());
-//		System.out.println(response.getBody().response().errorMsg().message());
+		// System.out.println(response.getBody().response().errorMsg().message());
 	}
+
 	@Test
 	void chatCompletionEntityByEnhance() {
-		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Why is the price of gold rising？", Role.user);
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), false,false,true,true,true,true));
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Why is the price of gold rising？",
+				Role.user);
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage),
+					HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), false, false, true, true, true, true));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().response()).isNotNull();
 		logger.info(response.getBody().response().toString());
-//		System.out.println(response.getBody().response().errorMsg().message());
+		// System.out.println(response.getBody().response().errorMsg().message());
 	}
+
 	@Test
 	void chatCompletionEntityWithSystemMessage() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(
@@ -82,55 +88,61 @@ public class HunYuanApiIT {
 				You should reply to the user's request with your name and also in the style of a pirate.
 					""", Role.system);
 
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(systemMessage, userMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8, false));
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(systemMessage, userMessage),
+					HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().response()).isNotNull();
-//		System.out.println(response.getBody().response().choices().get(0).message().content());
+		// System.out.println(response.getBody().response().choices().get(0).message().content());
 	}
+
 	@Test
 	void chatCompletionEntityWithPicture() {
-		ChatCompletionMessage userMessage = new ChatCompletionMessage(
-				Role.user,
-				List.of(new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
-						new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl("https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))));
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(userMessage), HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getValue(), 0.8, false));
+		ChatCompletionMessage userMessage = new ChatCompletionMessage(Role.user, List.of(
+				new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
+				new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl(
+						"https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))));
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(userMessage),
+					HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getValue(), 0.8, false));
 
 		logger.info(response.getBody().response().toString());
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().response()).isNotNull();
-//		System.out.println(response.getBody().response().choices().get(0).message().content());
+		// System.out.println(response.getBody().response().choices().get(0).message().content());
 	}
+
 	@Test
 	void chatCompletionEntityWithNativePicture() {
 		String imageInfo = "data:image/jpeg;base64,";
 		// 读取图片文件
 		var imageData = new ClassPathResource("/img.png");
-		try(InputStream inputStream = imageData.getInputStream()) {
+		try (InputStream inputStream = imageData.getInputStream()) {
 			byte[] imageBytes = inputStream.readAllBytes();
 			// 使用Base64编码图片字节数据
 			String encodedImage = Base64.getEncoder().encodeToString(imageBytes);
 			// 输出编码后的字符串
 			imageInfo += encodedImage;
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			e.printStackTrace();
 		}
-		ChatCompletionMessage userMessage = new ChatCompletionMessage(
-				Role.user,
-				List.of(new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
-						new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl(imageInfo))));
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(userMessage), HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getValue(), 0.8, false));
+		ChatCompletionMessage userMessage = new ChatCompletionMessage(Role.user, List.of(
+				new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
+				new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl(imageInfo))));
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(userMessage),
+					HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getValue(), 0.8, false));
 
 		logger.info(response.getBody().response().toString());
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().response()).isNotNull();
 	}
+
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.user);
@@ -145,14 +157,15 @@ public class HunYuanApiIT {
 	@Test
 	void chatCompletionEntityByEnhanced() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("你好！", Role.user);
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8,false));
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> response = this.hunyuanApi
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage),
+					HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().response()).isNotNull();
 		logger.info(response.getBody().response().toString());
-//		System.out.println(response.getBody().response().errorMsg().message());
+		// System.out.println(response.getBody().response().errorMsg().message());
 	}
 
 	@Test
@@ -174,10 +187,10 @@ public class HunYuanApiIT {
 
 	@Test
 	void chatCompletionStreamWithPicture() {
-		ChatCompletionMessage userMessage = new ChatCompletionMessage(
-				Role.user,
-				List.of(new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
-						new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl("https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))));
+		ChatCompletionMessage userMessage = new ChatCompletionMessage(Role.user, List.of(
+				new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
+				new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl(
+						"https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))));
 		Flux<ChatCompletionChunk> response = this.hunyuanApi.chatCompletionStream(new ChatCompletionRequest(
 				List.of(userMessage), HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getValue(), 0.8, true));
 
@@ -191,19 +204,19 @@ public class HunYuanApiIT {
 		String imageInfo = "data:image/jpeg;base64,";
 		// 读取图片文件
 		var imageData = new ClassPathResource("/img.png");
-		try(InputStream inputStream = imageData.getInputStream()) {
+		try (InputStream inputStream = imageData.getInputStream()) {
 			byte[] imageBytes = inputStream.readAllBytes();
 			// 使用Base64编码图片字节数据
 			String encodedImage = Base64.getEncoder().encodeToString(imageBytes);
 			// 输出编码后的字符串
 			imageInfo += encodedImage;
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			e.printStackTrace();
 		}
-		ChatCompletionMessage userMessage = new ChatCompletionMessage(
-				Role.user,
-				List.of(new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
-						new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl(imageInfo))));
+		ChatCompletionMessage userMessage = new ChatCompletionMessage(Role.user, List.of(
+				new ChatCompletionMessage.ChatContent("text", "Which company's logo is in the picture below?"),
+				new ChatCompletionMessage.ChatContent("image_url", new ChatCompletionMessage.ImageUrl(imageInfo))));
 		Flux<ChatCompletionChunk> response = this.hunyuanApi.chatCompletionStream(new ChatCompletionRequest(
 				List.of(userMessage), HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getValue(), 0.8, true));
 

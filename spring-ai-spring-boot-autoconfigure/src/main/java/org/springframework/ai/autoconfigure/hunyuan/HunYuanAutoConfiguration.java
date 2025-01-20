@@ -56,15 +56,16 @@ public class HunYuanAutoConfiguration {
 	@ConditionalOnProperty(prefix = HunYuanChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public HunYuanChatModel hunyuanChatModel(HunYuanCommonProperties commonProperties,
-                                               HunYuanChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-                                               List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackResolver functionCallbackResolver,
-                                               RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
-                                               ObjectProvider<ObservationRegistry> observationRegistry,
-                                               ObjectProvider<ChatModelObservationConvention> observationConvention) {
+			HunYuanChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			List<FunctionCallback> toolFunctionCallbacks, FunctionCallbackResolver functionCallbackResolver,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		var hunyuanApi = hunyuanApi(chatProperties.getSecretId(),commonProperties.getSecretId(), chatProperties.getSecretKey(),commonProperties.getSecretKey(),
-				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+		var hunyuanApi = hunyuanApi(chatProperties.getSecretId(), commonProperties.getSecretId(),
+				chatProperties.getSecretKey(), commonProperties.getSecretKey(), chatProperties.getBaseUrl(),
+				commonProperties.getBaseUrl(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler);
 
 		var chatModel = new HunYuanChatModel(hunyuanApi, chatProperties.getOptions(), functionCallbackResolver,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
@@ -81,8 +82,9 @@ public class HunYuanAutoConfiguration {
 		return manager;
 	}
 
-	private HunYuanApi hunyuanApi(String secretId, String commonSecretId,String secretKey,String commonSecretKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	private HunYuanApi hunyuanApi(String secretId, String commonSecretId, String secretKey, String commonSecretKey,
+			String baseUrl, String commonBaseUrl, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		var resolvedSecretId = StringUtils.hasText(secretId) ? secretId : commonSecretId;
 		var resolvedSecretKey = StringUtils.hasText(secretKey) ? secretKey : commonSecretKey;
@@ -92,7 +94,8 @@ public class HunYuanAutoConfiguration {
 		Assert.hasText(resolvedSecretKey, "HunYuan SecretKey must be set");
 		Assert.hasText(resoledBaseUrl, "HunYuan base URL must be set");
 
-		return new HunYuanApi(resoledBaseUrl, resolvedSecretId,resolvedSecretKey, restClientBuilder, responseErrorHandler);
+		return new HunYuanApi(resoledBaseUrl, resolvedSecretId, resolvedSecretKey, restClientBuilder,
+				responseErrorHandler);
 	}
 
 }

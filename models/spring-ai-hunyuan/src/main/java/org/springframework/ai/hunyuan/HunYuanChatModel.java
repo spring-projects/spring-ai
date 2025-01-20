@@ -25,7 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.hunyuan.api.HunYuanApi;
 import org.springframework.ai.hunyuan.api.HunYuanApi.*;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionMessage.*;
@@ -35,9 +35,6 @@ import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyUsage;
@@ -100,8 +97,8 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 
 	/**
 	 * Initializes a new instance of the HunYuanChatModel.
-	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
-	 * HunYuan Chat API.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the HunYuan
+	 * Chat API.
 	 */
 	public HunYuanChatModel(HunYuanApi hunYuanApi) {
 		this(hunYuanApi, HunYuanChatOptions.builder().model(HunYuanApi.DEFAULT_CHAT_MODEL).build());
@@ -109,8 +106,8 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 
 	/**
 	 * Initializes a new instance of the HunYuanChatModel.
-	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
-	 * HunYuan Chat API.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the HunYuan
+	 * Chat API.
 	 * @param options The HunYuanChatOptions to configure the chat client.
 	 */
 	public HunYuanChatModel(HunYuanApi hunYuanApi, HunYuanChatOptions options) {
@@ -119,22 +116,22 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 
 	/**
 	 * Initializes a new instance of the HunYuanChatModel.
-	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
-	 * HunYuan Chat API.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the HunYuan
+	 * Chat API.
 	 * @param options The HunYuanChatOptions to configure the chat client.
 	 * @param functionCallbackResolver The function callback resolver to resolve the
 	 * function by its name.
 	 * @param retryTemplate The retry template.
 	 */
 	public HunYuanChatModel(HunYuanApi hunYuanApi, HunYuanChatOptions options,
-							FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
 		this(hunYuanApi, options, functionCallbackResolver, List.of(), retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	/**
 	 * Initializes a new instance of the HunYuanChatModel.
-	 * @param hunYuanApi The HunYuan instance to be used for interacting with the
-	 * HunYuan Chat API.
+	 * @param hunYuanApi The HunYuan instance to be used for interacting with the HunYuan
+	 * Chat API.
 	 * @param options The HunYuanChatOptions to configure the chat client.
 	 * @param functionCallbackResolver resolves the function by its name.
 	 * @param toolFunctionCallbacks The tool function callbacks.
@@ -142,8 +139,8 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
 	 */
 	public HunYuanChatModel(HunYuanApi hunYuanApi, HunYuanChatOptions options,
-							FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-							RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		super(functionCallbackResolver, options, toolFunctionCallbacks);
 		Assert.notNull(hunYuanApi, "HunYuanApi must not be null");
 		Assert.notNull(options, "Options must not be null");
@@ -167,7 +164,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 					.toList();
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
-		String finishReason = (choice.finishReason() != null ? choice.finishReason(): "");
+		String finishReason = (choice.finishReason() != null ? choice.finishReason() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
 	}
@@ -213,7 +210,8 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 					return buildGeneration(choice, metadata);
 				}).toList();
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(request,completionEntity.getBody().response()));
+				ChatResponse chatResponse = new ChatResponse(generations,
+						from(request, completionEntity.getBody().response()));
 
 				observationContext.setResponse(chatResponse);
 
@@ -292,8 +290,9 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 				}));
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
-						Set.of(ChatCompletionFinishReason.TOOL_CALLS.getJsonValue(), ChatCompletionFinishReason.STOP.getJsonValue()))) {
+				if (!isProxyToolCalls(prompt, this.defaultOptions)
+						&& isToolCall(response, Set.of(ChatCompletionFinishReason.TOOL_CALLS.getJsonValue(),
+								ChatCompletionFinishReason.STOP.getJsonValue()))) {
 					var toolCallConversation = handleToolCalls(prompt, response);
 					// Recursively call the stream method with the tool call message
 					// conversation that contains the call responses.
@@ -325,21 +324,22 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-		List<ChatCompletion.Choice> choices = chunk.choices()
-				.stream()
-				.map(chunkChoice -> {
-					ChatCompletionMessage chatCompletionMessage = null;
-					ChatCompletionDelta delta = chunkChoice.delta();
-					if (delta == null) {
-						chatCompletionMessage = new ChatCompletionMessage("", Role.assistant);
-					}else {
-						chatCompletionMessage = new ChatCompletionMessage(delta.content(), delta.role(),delta.toolCalls());
-					}
-					return new ChatCompletion.Choice(chunkChoice.index(), chatCompletionMessage, chunkChoice.finishReason(),delta);
-				})
-				.toList();
+		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(chunkChoice -> {
+			ChatCompletionMessage chatCompletionMessage = null;
+			ChatCompletionDelta delta = chunkChoice.delta();
+			if (delta == null) {
+				chatCompletionMessage = new ChatCompletionMessage("", Role.assistant);
+			}
+			else {
+				chatCompletionMessage = new ChatCompletionMessage(delta.content(), delta.role(), delta.toolCalls());
+			}
+			return new ChatCompletion.Choice(chunkChoice.index(), chatCompletionMessage, chunkChoice.finishReason(),
+					delta);
+		}).toList();
 
-		return new ChatCompletion(chunk.id(), chunk.errorMsg(), chunk.created(), chunk.note(), choices, chunk.usage(), chunk.moderationLevel(), chunk.searchInfo(), chunk.replaces(), chunk.recommendedQuestions(), chunk.requestId());
+		return new ChatCompletion(chunk.id(), chunk.errorMsg(), chunk.created(), chunk.note(), choices, chunk.usage(),
+				chunk.moderationLevel(), chunk.searchInfo(), chunk.replaces(), chunk.recommendedQuestions(),
+				chunk.requestId());
 	}
 
 	/**
@@ -362,14 +362,14 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 						List<ChatContent> contentList = new ArrayList<>(List.of(new ChatContent(message.getText())));
 
 						contentList.addAll(userMessage.getMedia()
-								.stream()
-								.map(media -> new ChatContent(new ImageUrl(
-										this.fromMediaData(media.getMimeType(), media.getData()))))
-								.toList());
-						return List.of(new ChatCompletionMessage(Role.user,contentList));
+							.stream()
+							.map(media -> new ChatContent(
+									new ImageUrl(this.fromMediaData(media.getMimeType(), media.getData()))))
+							.toList());
+						return List.of(new ChatCompletionMessage(Role.user, contentList));
 					}
 				}
-				return List.of(new ChatCompletionMessage(content,Role.user));
+				return List.of(new ChatCompletionMessage(content, Role.user));
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				var assistantMessage = (AssistantMessage) message;
@@ -377,7 +377,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
 						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
-						return new ToolCall(toolCall.id(), toolCall.type(),null, function);
+						return new ToolCall(toolCall.id(), toolCall.type(), null, function);
 					}).toList();
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
@@ -438,6 +438,7 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 
 		return request;
 	}
+
 	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
 		if (mediaContentData instanceof byte[] bytes) {
 			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
@@ -453,12 +454,13 @@ public class HunYuanChatModel extends AbstractToolCallSupport implements ChatMod
 					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
 		}
 	}
+
 	private ChatOptions buildRequestOptions(HunYuanApi.ChatCompletionRequest request) {
 		return ChatOptions.builder()
 			.model(request.model())
-//			.frequencyPenalty(request.frequencyPenalty())
-//			.maxTokens(request.maxTokens())
-//			.presencePenalty(request.presencePenalty())
+			// .frequencyPenalty(request.frequencyPenalty())
+			// .maxTokens(request.maxTokens())
+			// .presencePenalty(request.presencePenalty())
 			.stopSequences(request.stop())
 			.temperature(request.temperature())
 			.topP(request.topP())

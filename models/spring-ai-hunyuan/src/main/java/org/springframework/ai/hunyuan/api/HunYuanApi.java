@@ -43,8 +43,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Single-class, Java Client library for HunYuan platform. Provides implementation for
- * the <a href="https://cloud.tencent.com/document/api/1729/105701">Chat Completion</a> APIs.
+ * Single-class, Java Client library for HunYuan platform. Provides implementation for the
+ * <a href="https://cloud.tencent.com/document/api/1729/105701">Chat Completion</a> APIs.
  * <p>
  * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion.
  * </p>
@@ -94,7 +94,7 @@ public class HunYuanApi {
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public HunYuanApi(String baseUrl, String secretId, String secretKey, RestClient.Builder restClientBuilder,
-					  ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setContentType(MediaType.APPLICATION_JSON);
@@ -119,20 +119,17 @@ public class HunYuanApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		String service = HunYuanConstants.DEFAULT_SERVICE;
 		String host = HunYuanConstants.DEFAULT_CHAT_HOST;
-//		String region = "ap-guangzhou";
+		// String region = "ap-guangzhou";
 		String action = HunYuanConstants.DEFAULT_CHAT_ACTION;
-		MultiValueMap<String, String> jsonContentHeaders = hunyuanAuthApi.getHttpHeadersConsumer(host, action, service, chatRequest);
-		ResponseEntity<String> retrieve = this.restClient.post()
-				.uri("/")
-				.headers(headers -> {
-					headers.addAll(jsonContentHeaders);
-				})
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(String.class);
+		MultiValueMap<String, String> jsonContentHeaders = hunyuanAuthApi.getHttpHeadersConsumer(host, action, service,
+				chatRequest);
+		ResponseEntity<String> retrieve = this.restClient.post().uri("/").headers(headers -> {
+			headers.addAll(jsonContentHeaders);
+		}).body(chatRequest).retrieve().toEntity(String.class);
 		// Compatible Return Position text/plain
 		logger.info("Response body: {}", retrieve.getBody());
-		ChatCompletionResponse chatCompletionResponse = ModelOptionsUtils.jsonToObject(retrieve.getBody(), ChatCompletionResponse.class);
+		ChatCompletionResponse chatCompletionResponse = ModelOptionsUtils.jsonToObject(retrieve.getBody(),
+				ChatCompletionResponse.class);
 		return ResponseEntity.ok(chatCompletionResponse);
 	}
 
@@ -148,14 +145,13 @@ public class HunYuanApi {
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 		String service = HunYuanConstants.DEFAULT_SERVICE;
 		String host = HunYuanConstants.DEFAULT_CHAT_HOST;
-//		String region = "ap-guangzhou";
+		// String region = "ap-guangzhou";
 		String action = HunYuanConstants.DEFAULT_CHAT_ACTION;
-		MultiValueMap<String, String> jsonContentHeaders = hunyuanAuthApi.getHttpHeadersConsumer(host, action, service, chatRequest);
-		return this.webClient.post()
-			.uri("/")
-			.headers(headers -> {
-				headers.addAll(jsonContentHeaders);
-			})
+		MultiValueMap<String, String> jsonContentHeaders = hunyuanAuthApi.getHttpHeadersConsumer(host, action, service,
+				chatRequest);
+		return this.webClient.post().uri("/").headers(headers -> {
+			headers.addAll(jsonContentHeaders);
+		})
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -163,8 +159,8 @@ public class HunYuanApi {
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content ->{
-//				logger.info(content);
+			.map(content -> {
+				// logger.info(content);
 				return ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class);
 			})
 			// Detect is the chunk is part of a streaming function call.
@@ -189,7 +185,7 @@ public class HunYuanApi {
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null,null,null,null,null,null,null, null, null, null),
+						new ChatCompletionChunk(null, null, null, null, null, null, null, null, null, null, null),
 						(previous, current) -> this.chunkMerger.merge(previous, current));
 				return List.of(monoChunk);
 			})
@@ -218,9 +214,11 @@ public class HunYuanApi {
 		ChatCompletionFinishReason() {
 			this.jsonValue = this.name().toLowerCase();
 		}
+
 		public String getJsonValue() {
 			return this.jsonValue;
 		}
+
 	}
 
 	/**
@@ -306,11 +304,12 @@ public class HunYuanApi {
 	 * like 0.8 will make the output more random, while lower values like 0.2 will make it
 	 * more focused and deterministic. We generally recommend altering this or top_p but
 	 * not both.
-	 * @param enableEnhancement Enables or disables feature enhancements such as search. This parameter does not affect the security review capability.
-	 * For hunyuan-lite, this parameter is ineffective.
-	 * If not specified, the switch is turned on by default.
-	 * Turning off this switch can reduce response latency, especially for the first character in stream mode, but may slightly degrade the response quality in some scenarios.
-	 * Example: true
+	 * @param enableEnhancement Enables or disables feature enhancements such as search.
+	 * This parameter does not affect the security review capability. For hunyuan-lite,
+	 * this parameter is ineffective. If not specified, the switch is turned on by
+	 * default. Turning off this switch can reduce response latency, especially for the
+	 * first character in stream mode, but may slightly degrade the response quality in
+	 * some scenarios. Example: true
 	 * @param topP An alternative to sampling with temperature, called nucleus sampling,
 	 * where the model considers the results of the tokens with top_p probability mass. So
 	 * 0.1 means only the tokens comprising the top 10% probability mass are considered.
@@ -319,46 +318,48 @@ public class HunYuanApi {
 	 * @param stream If set, partial message deltas will be sent.Tokens will be sent as
 	 * data-only server-sent events as they become available, with the stream terminated
 	 * by a data: [DONE] message.
-	 * @param streamModeration Controls whether the output is reviewed in real-time during streaming.
-	 * This field is effective only when Stream is set to true.
-	 * If true, the output is reviewed in real-time, and segments that fail the review will have their FinishReason set to sensitive.
-	 * If false, the entire output is reviewed before being returned.
-	 * If real-time text display is required in your application, you should handle the case where FinishReason is sensitive by撤回已显示的内容 and providing a custom message.
-	 * Example: false
+	 * @param streamModeration Controls whether the output is reviewed in real-time during
+	 * streaming. This field is effective only when Stream is set to true. If true, the
+	 * output is reviewed in real-time, and segments that fail the review will have their
+	 * FinishReason set to sensitive. If false, the entire output is reviewed before being
+	 * returned. If real-time text display is required in your application, you should
+	 * handle the case where FinishReason is sensitive by撤回已显示的内容 and providing a custom
+	 * message. Example: false
 	 * @param tools A list of tools the model may call. Currently, only functions are
 	 * supported as a tool.
-	 * @param toolChoice Controls which (if any) function is called by the model. Possible values are none, auto, and custom.
-	 *  If not specified, the default is auto.
-	 *  Example: auto
-	 * @param customTool Forces the model to call a specific tool. This parameter is required when ToolChoice is set to custom.
-	 * @param searchInfo If true, the interface will return SearchInfo when a search hit occurs. Example: false
-	 * @param citation Enables or disables citation markers in the response.
-	 * This parameter works in conjunction with EnableEnhancement and SearchInfo.
-	 * If true, search results in the response will be marked with a citation marker corresponding to links in the SearchInfo list.
-	 * If not specified, the default is false.
-	 * Example: false
-	 * @param enableSpeedSearch Enables or disables the fast version of search.
-	 * If true and a search hit occurs, the fast version of search will be used, which can reduce the latency of the first character in the stream.
-	 * Example: false
-	 * @param enableMultimedia  Enables or disables multimedia capabilities.
-	 * This parameter is effective only for whitelisted users and when EnableEnhancement is true and EnableSpeedSearch is false.
-	 * For hunyuan-lite, this parameter is ineffective.
-	 * If not specified, the default is false.
-	 * When enabled and a multimedia hit occurs, the corresponding multimedia address will be output.
-	 * Example: false
-	 * @param enableDeepSearch Enables or disables deep research on the question.
-	 *  If true and a deep research hit occurs, information about the deep research will be returned.
-	 *  Example: false
-	 * @param seed Ensures the model's output is reproducible.
-	 * The value should be a non-zero positive integer, with a maximum value of 10000.
-	 * It is not recommended to use this parameter unless necessary, as improper values can affect the output quality.
-	 * Example: 1
-	 * @param forceSearchEnhancement Forces the use of AI search.
-	 * If true, AI search will be used, and if the AI search result is empty, the large model will provide a fallback response.
-	 * Example: false
-	 * @param enableRecommendedQuestions Enables or disables the recommendation of additional questions.
-	 * If true, the response will include a RecommendedQuestions field with up to 3 recommended questions in the last package.
-	 * Example: false
+	 * @param toolChoice Controls which (if any) function is called by the model. Possible
+	 * values are none, auto, and custom. If not specified, the default is auto. Example:
+	 * auto
+	 * @param customTool Forces the model to call a specific tool. This parameter is
+	 * required when ToolChoice is set to custom.
+	 * @param searchInfo If true, the interface will return SearchInfo when a search hit
+	 * occurs. Example: false
+	 * @param citation Enables or disables citation markers in the response. This
+	 * parameter works in conjunction with EnableEnhancement and SearchInfo. If true,
+	 * search results in the response will be marked with a citation marker corresponding
+	 * to links in the SearchInfo list. If not specified, the default is false. Example:
+	 * false
+	 * @param enableSpeedSearch Enables or disables the fast version of search. If true
+	 * and a search hit occurs, the fast version of search will be used, which can reduce
+	 * the latency of the first character in the stream. Example: false
+	 * @param enableMultimedia Enables or disables multimedia capabilities. This parameter
+	 * is effective only for whitelisted users and when EnableEnhancement is true and
+	 * EnableSpeedSearch is false. For hunyuan-lite, this parameter is ineffective. If not
+	 * specified, the default is false. When enabled and a multimedia hit occurs, the
+	 * corresponding multimedia address will be output. Example: false
+	 * @param enableDeepSearch Enables or disables deep research on the question. If true
+	 * and a deep research hit occurs, information about the deep research will be
+	 * returned. Example: false
+	 * @param seed Ensures the model's output is reproducible. The value should be a
+	 * non-zero positive integer, with a maximum value of 10000. It is not recommended to
+	 * use this parameter unless necessary, as improper values can affect the output
+	 * quality. Example: 1
+	 * @param forceSearchEnhancement Forces the use of AI search. If true, AI search will
+	 * be used, and if the AI search result is empty, the large model will provide a
+	 * fallback response. Example: false
+	 * @param enableRecommendedQuestions Enables or disables the recommendation of
+	 * additional questions. If true, the response will include a RecommendedQuestions
+	 * field with up to 3 recommended questions in the last package. Example: false
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -393,7 +394,8 @@ public class HunYuanApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model,messages,null, null, null, null, null, null, null, null, null,null,null,null,null,null,null,null,null);
+			this(model, messages, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null, null);
 		}
 
 		/**
@@ -408,7 +410,8 @@ public class HunYuanApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				Boolean stream) {
-			this(model,messages, temperature, null, null, null, stream, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(model, messages, temperature, null, null, null, stream, null, null, null, null, null, null, null, null,
+					null, null, null, null);
 		}
 
 		/**
@@ -420,7 +423,8 @@ public class HunYuanApi {
 		 * @param temperature What sampling temperature to use, between 0.0 and 1.0.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(model,messages, temperature, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(model, messages, temperature, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null, null, null);
 		}
 
 		/**
@@ -434,30 +438,29 @@ public class HunYuanApi {
 		 * @param toolChoice Controls which (if any) function is called by the model.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
-									 String toolChoice) {
-			this(model,messages, null, null, null, null, null, null, tools, toolChoice, null, null, null, null, null, null, null, null, null);
+				String toolChoice) {
+			this(model, messages, null, null, null, null, null, null, tools, toolChoice, null, null, null, null, null,
+					null, null, null, null);
 		}
 
 		/**
-		 *  Shortcut constructor for a chat completion request with the given messages,
-		 *  model, stream, streamModeration, enableEnhancement, searchInfo, citation, enableSpeedSearch.
+		 * Shortcut constructor for a chat completion request with the given messages,
+		 * model, stream, streamModeration, enableEnhancement, searchInfo, citation,
+		 * enableSpeedSearch.
 		 * @param messages A list of messages comprising the conversation so far.
-		 * @param model	  ID of the model to use.
-		 * @param stream  Whether to stream back partial progress.
+		 * @param model ID of the model to use.
+		 * @param stream Whether to stream back partial progress.
 		 * @param streamModeration Whether to stream back partial progress.
 		 * @param enableEnhancement Enables or disables the enhancement feature.
 		 * @param searchInfo Enables or disables the search information feature.
 		 * @param citation Enables or disables the citation feature.
 		 * @param enableSpeedSearch Enables or disables the speed search feature.
 		 */
-		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
-									 Boolean stream,
-									 Boolean streamModeration,
-									 Boolean enableEnhancement,
-									 Boolean searchInfo,
-									 Boolean citation,
-									 Boolean enableSpeedSearch) {
-			this(model,messages, null, enableEnhancement, null, null, stream, streamModeration, null, null, null, searchInfo, citation, null, null, enableSpeedSearch, null, null, null);
+		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Boolean stream,
+				Boolean streamModeration, Boolean enableEnhancement, Boolean searchInfo, Boolean citation,
+				Boolean enableSpeedSearch) {
+			this(model, messages, null, enableEnhancement, null, null, stream, streamModeration, null, null, null,
+					searchInfo, citation, null, null, enableSpeedSearch, null, null, null);
 		}
 
 		/**
@@ -465,7 +468,8 @@ public class HunYuanApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(DEFAULT_CHAT_MODEL, messages, null, null, null, null, stream, null, null, null, null, null, null, null, null, null, null, null, null);
+			this(DEFAULT_CHAT_MODEL, messages, null, null, null, null, stream, null, null, null, null, null, null, null,
+					null, null, null, null, null);
 		}
 
 		/**
@@ -525,10 +529,12 @@ public class HunYuanApi {
 		public ChatCompletionMessage(Object content, Role role) {
 			this(content, role, null, null, null);
 		}
-		public ChatCompletionMessage(Object content, Role role,List<ToolCall> toolCalls) {
+
+		public ChatCompletionMessage(Object content, Role role, List<ToolCall> toolCalls) {
 			this(content, role, null, null, toolCalls);
 		}
-		public ChatCompletionMessage(Role role,List<ChatContent> chatContent) {
+
+		public ChatCompletionMessage(Role role, List<ChatContent> chatContent) {
 			this(null, role, chatContent, null, null);
 		}
 
@@ -585,28 +591,32 @@ public class HunYuanApi {
 		 * @param function The function definition.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ToolCall(@JsonProperty("Id") String id, @JsonProperty("Type") String type, @JsonProperty("Index") Integer index,
-				@JsonProperty("Function") ChatCompletionFunction function) {
+		public record ToolCall(@JsonProperty("Id") String id, @JsonProperty("Type") String type,
+				@JsonProperty("Index") Integer index, @JsonProperty("Function") ChatCompletionFunction function) {
 
 		}
 
 		@JsonInclude(Include.NON_NULL)
 		public record ChatContent(@JsonProperty("Type") String type, @JsonProperty("Text") String text,
-							   @JsonProperty("ImageUrl") ImageUrl imageUrl) {
+				@JsonProperty("ImageUrl") ImageUrl imageUrl) {
 			public ChatContent(String type, String text) {
 				this(type, text, null);
 			}
+
 			public ChatContent(String text) {
 				this("text", text, null);
 			}
+
 			public ChatContent(String type, ImageUrl imageUrl) {
 				this(type, null, imageUrl);
 			}
+
 			public ChatContent(ImageUrl imageUrl) {
 				this("image_url", null, imageUrl);
 			}
 
 		}
+
 		@JsonInclude(Include.NON_NULL)
 		public record ImageUrl(@JsonProperty("Url") String url) {
 
@@ -630,15 +640,17 @@ public class HunYuanApi {
 	/**
 	 * Represents a chat completion response returned by model, based on the provided
 	 * input.
+	 *
 	 * @param response The response object containing the generated chat completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionResponse(
-			// @formatter:off
+	// @formatter:off
 			@JsonProperty("Response") ChatCompletion response
 	) {
 		// @formatter:on
 	}
+
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletion(
 	// @formatter:off
@@ -666,9 +678,10 @@ public class HunYuanApi {
 		) {
 			// @formatter:on
 		}
+
 		@JsonInclude(Include.NON_NULL)
 		public record Multimedia(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("Type") String type,
 				@JsonProperty("Url") String url,
 				@JsonProperty("JumpUrl") String jumpUrl,
@@ -679,19 +692,21 @@ public class HunYuanApi {
 		) {
 			// @formatter:on
 		}
+
 		@JsonInclude(Include.NON_NULL)
 		public record SongExt(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("SongId") Integer songId,
 				@JsonProperty("SongMid") String SongMid,
 				@JsonProperty("Vip") Integer Vip
 		) {
 			// @formatter:on
 		}
-		 // @formatter:on
-		 @JsonInclude(Include.NON_NULL)
-		 public record SearchInfo(
-				 // @formatter:off
+
+		// @formatter:on
+		@JsonInclude(Include.NON_NULL)
+		public record SearchInfo(
+		// @formatter:off
 				 @JsonProperty("SearchResults") List<SearchResults> searchResults,
 				 @JsonProperty("Mindmap") Mindmap mindmap,
 				 @JsonProperty("RelevantEvents") List<RelevantEvent> relevantEvents,
@@ -701,28 +716,31 @@ public class HunYuanApi {
 				 @JsonProperty("Outline") List<String> outlines
 		 ) {
 			 // @formatter:on
-		 }
+		}
+
 		@JsonInclude(Include.NON_NULL)
 		public record Timeline(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("Title") String title,
 				@JsonProperty("Datetime") String datetime,
 				@JsonProperty("Url") String  url
 		) {
 			// @formatter:on
 		}
+
 		@JsonInclude(Include.NON_NULL)
 		public record RelevantEntity(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("Name") String name,
 				@JsonProperty("Content") String content,
 				@JsonProperty("Reference") List<Integer>  reference
 		) {
 			// @formatter:on
 		}
+
 		@JsonInclude(Include.NON_NULL)
 		public record RelevantEvent(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("Title") String title,
 				@JsonProperty("Content") String content,
 				@JsonProperty("Datetime") String datetime,
@@ -733,15 +751,16 @@ public class HunYuanApi {
 
 		@JsonInclude(Include.NON_NULL)
 		public record Mindmap(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("ThumbUrl") String thumbUrl,
 				@JsonProperty("Url") String url
 		) {
 			// @formatter:on
 		}
+
 		@JsonInclude(Include.NON_NULL)
 		public record SearchResults(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("Index") Integer index,
 				@JsonProperty("Title") String title,
 				@JsonProperty("Url") String url
@@ -769,7 +788,7 @@ public class HunYuanApi {
 
 		@JsonInclude(Include.NON_NULL)
 		public record ChatCompletionDelta(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("Role") ChatCompletionMessage.Role role,
 				@JsonProperty("Content") String content,
 				@JsonProperty("ToolCalls") List<ChatCompletionMessage.ToolCall> toolCalls
@@ -779,13 +798,11 @@ public class HunYuanApi {
 
 		@JsonInclude(Include.NON_NULL)
 		public record ErrorMsg(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("Code") String index,
 				@JsonProperty("Message") String message) {
 			// @formatter:on
 		}
-
-
 
 	}
 

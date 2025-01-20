@@ -35,7 +35,7 @@ public final class HunYuanConstants {
 
 	public static final String DEFAULT_VERSION = "2023-09-01";
 
-	public static final String DEFAULT_SERVICE  = "hunyuan";
+	public static final String DEFAULT_SERVICE = "hunyuan";
 
 	public static final String DEFAULT_ALGORITHM = "TC3-HMAC-SHA256";
 

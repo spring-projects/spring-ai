@@ -35,7 +35,7 @@ public class HunYuanTestConfiguration {
 			throw new IllegalArgumentException(
 					"Missing HUNYUAN_SECRET_ID & HUNYUAN_SECRET_KEY environment variable. Please set it to your HUNYUAN API info.");
 		}
-		return new HunYuanApi(secretId,secretKey);
+		return new HunYuanApi(secretId, secretKey);
 	}
 
 	@Bean

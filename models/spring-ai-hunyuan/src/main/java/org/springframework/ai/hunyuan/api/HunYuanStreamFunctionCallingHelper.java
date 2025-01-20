@@ -23,6 +23,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.ai.hunyuan.api.HunYuanApi.*;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionChunk.*;
 import org.springframework.ai.hunyuan.api.HunYuanApi.ChatCompletionMessage.*;
+import org.springframework.util.StringUtils;
 
 /**
  * Helper class to support Streaming function calling. It can merge the streamed
@@ -42,12 +43,14 @@ public class HunYuanStreamFunctionCallingHelper {
 		Long created = (current.created() != null ? current.created() : previous.created());
 		String note = (current.note() != null ? current.note() : previous.note());
 
-		ChatCompletion.Choice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
-		ChatCompletion.Choice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
+		ChatCompletion.Choice previousChoice = (CollectionUtils.isEmpty(previous.choices()) ? null
+				: previous.choices().get(0));
+		ChatCompletion.Choice currentChoice = (CollectionUtils.isEmpty(current.choices()) ? null
+				: current.choices().get(0));
 		Usage usage = (current.usage() != null ? current.usage() : previous.usage());
-		ChatCompletion.Choice choice = mergeChoice(previousChoice0, currentChoice0);
+		ChatCompletion.Choice choice = mergeChoice(previousChoice, currentChoice);
 		List<ChatCompletion.Choice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, null, created,note, chunkChoices,usage,null, null,null,null,null);
+		return new ChatCompletionChunk(id, null, created, note, chunkChoices, usage, null, null, null, null, null);
 	}
 
 	private ChatCompletion.Choice mergeChoice(ChatCompletion.Choice previous, ChatCompletion.Choice current) {
@@ -55,20 +58,20 @@ public class HunYuanStreamFunctionCallingHelper {
 			return current;
 		}
 
-		String finishReason = (current.finishReason() != null ? current.finishReason()
-				: previous.finishReason());
+		String finishReason = (current.finishReason() != null ? current.finishReason() : previous.finishReason());
 		Integer index = (current.index() != null ? current.index() : previous.index());
 
-		ChatCompletion.ChatCompletionDelta delta =  merge(previous.delta(), current.delta());
-		return new ChatCompletion.Choice(index, null , finishReason, delta);
+		ChatCompletion.ChatCompletionDelta delta = merge(previous.delta(), current.delta());
+		return new ChatCompletion.Choice(index, null, finishReason, delta);
 	}
 
-	private ChatCompletion.ChatCompletionDelta merge(ChatCompletion.ChatCompletionDelta previous, ChatCompletion.ChatCompletionDelta current) {
+	private ChatCompletion.ChatCompletionDelta merge(ChatCompletion.ChatCompletionDelta previous,
+			ChatCompletion.ChatCompletionDelta current) {
 		String content = (current.content() != null ? current.content()
 				: "" + ((previous.content() != null) ? previous.content() : ""));
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.assistant); // default to ASSISTANT (if null
-//		String name = (current.name() != null ? current.name() : previous.name());
+		// String name = (current.name() != null ? current.name() : previous.name());
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
 		if (previous.toolCalls() != null) {
@@ -82,7 +85,7 @@ public class HunYuanStreamFunctionCallingHelper {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (currentToolCall.id() != null) {
+			if (!currentToolCall.id().equals(lastPreviousTooCall.id())) {
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
@@ -97,7 +100,7 @@ public class HunYuanStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletion.ChatCompletionDelta(role,content,toolCalls);
+		return new ChatCompletion.ChatCompletionDelta(role, content, toolCalls);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
@@ -108,19 +111,19 @@ public class HunYuanStreamFunctionCallingHelper {
 		String type = (current.type() != null ? current.type() : previous.type());
 		Integer index = (current.index() != null ? current.index() : previous.index());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
-		return new ToolCall(id, type,index, function);
+		return new ToolCall(id, type, index, function);
 	}
 
 	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
 		if (previous == null) {
 			return current;
 		}
-		String name = (current.name() != null ? current.name() : previous.name());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
 		StringBuilder arguments = new StringBuilder();
-		if (previous.arguments() != null) {
+		if (StringUtils.hasText(previous.arguments())) {
 			arguments.append(previous.arguments());
 		}
-		if (current.arguments() != null) {
+		if (StringUtils.hasText(current.arguments())) {
 			arguments.append(current.arguments());
 		}
 		return new ChatCompletionFunction(name, arguments.toString());

@@ -96,64 +96,72 @@ public class HunYuanChatModelIT {
 
 		var imageData = new ClassPathResource("/img.png");
 		media.add(new Media(MediaType.IMAGE_PNG, imageData));
-		UserMessage userMessage = new UserMessage(
-				"Which company's logo is in the picture below?",media);
-		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		UserMessage userMessage = new UserMessage("Which company's logo is in the picture below?", media);
+		Prompt prompt = new Prompt(List.of(userMessage),
+				HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("cloud");
 	}
+
 	@Test
 	void nativePictureStreamTest() {
 		List<Media> media = new ArrayList<>();
 
 		var imageData = new ClassPathResource("/img.png");
 		media.add(new Media(MediaType.IMAGE_PNG, imageData));
-		UserMessage userMessage = new UserMessage(
-				"Which company's logo is in the picture below?",media);
-		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		UserMessage userMessage = new UserMessage("Which company's logo is in the picture below?", media);
+		Prompt prompt = new Prompt(List.of(userMessage),
+				HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
 		Flux<ChatResponse> response = this.chatModel.stream(prompt);
 		String content = Objects.requireNonNull(response.collectList().block())
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getText)
-				.collect(Collectors.joining());
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("cloud");
 	}
+
 	@Test
 	void cloudPictureTest() throws IOException {
-		UserMessage userMessage = new UserMessage(
-				"Which company's logo is in the picture below?",List.of(Media.builder()
-				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))
-				.build()));
-		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		UserMessage userMessage = new UserMessage("Which company's logo is in the picture below?", List.of(Media
+			.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(new URL(
+					"https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))
+			.build()));
+		Prompt prompt = new Prompt(List.of(userMessage),
+				HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("cloud");
 	}
+
 	@Test
 	void cloudPictureStreamTest() throws IOException {
-		UserMessage userMessage = new UserMessage(
-				"Which company's logo is in the picture below?",List.of(Media.builder()
-				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))
-				.build()));
-		Prompt prompt = new Prompt(List.of(userMessage), HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
+		UserMessage userMessage = new UserMessage("Which company's logo is in the picture below?", List.of(Media
+			.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(new URL(
+					"https://cloudcache.tencent-cloud.com/qcloud/ui/portal-set/build/About/images/bg-product-series_87d.png"))
+			.build()));
+		Prompt prompt = new Prompt(List.of(userMessage),
+				HunYuanChatOptions.builder().model(HunYuanApi.ChatModel.HUNYUAN_TURBO_VISION.getName()).build());
 		Flux<ChatResponse> response = this.chatModel.stream(prompt);
 		String content = Objects.requireNonNull(response.collectList().block())
-				.stream()
-				.map(ChatResponse::getResults)
-				.flatMap(List::stream)
-				.map(Generation::getOutput)
-				.map(AssistantMessage::getText)
-				.collect(Collectors.joining());
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).contains("cloud");
 	}
+
 	@Test
 	void listOutputConverter() {
 		DefaultConversionService conversionService = new DefaultConversionService();

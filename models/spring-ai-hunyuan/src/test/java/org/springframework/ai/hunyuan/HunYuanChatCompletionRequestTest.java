@@ -33,7 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "HUNYUAN_SECRET_KEY", matches = ".+")
 public class HunYuanChatCompletionRequestTest {
 
-	HunYuanChatModel chatModel = new HunYuanChatModel(new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY")));
+	HunYuanChatModel chatModel = new HunYuanChatModel(
+			new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"), System.getenv("HUNYUAN_SECRET_KEY")));
 
 	@Test
 	void chatCompletionDefaultRequestTest() {

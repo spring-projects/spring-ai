@@ -78,11 +78,12 @@ public class HunYuanRetryTests {
 	@Test
 	public void hunyuanChatTransientError() {
 
-		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.assistant),
-				ChatCompletionFinishReason.STOP.name(),null);
-		ChatCompletion expectedChatCompletion = new ChatCompletion("id", null, 789L, "model",
-				List.of(choice), new HunYuanApi.Usage(10, 10, 10),null,null,null,null,null);
-		HunYuanApi.ChatCompletionResponse chatCompletionResponse = new HunYuanApi.ChatCompletionResponse(expectedChatCompletion);
+		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response123", Role.assistant),
+				ChatCompletionFinishReason.STOP.name(), null);
+		ChatCompletion expectedChatCompletion = new ChatCompletion("id", null, 789L, "model", List.of(choice),
+				new HunYuanApi.Usage(10, 10, 10), null, null, null, null, null);
+		HunYuanApi.ChatCompletionResponse chatCompletionResponse = new HunYuanApi.ChatCompletionResponse(
+				expectedChatCompletion);
 
 		given(this.hunYuanApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
@@ -92,7 +93,7 @@ public class HunYuanRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isSameAs("Response123");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
@@ -107,11 +108,10 @@ public class HunYuanRetryTests {
 	@Test
 	public void hunYuanChatStreamTransientError() {
 
-		var choice = new ChatCompletion.Choice(0, new ChatCompletionMessage("Response", Role.assistant),
-				ChatCompletionFinishReason.STOP.name(), null);
-		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", null, 789L,
-				"", List.of(choice),null,null,null,null,null,null);
-
+		var choice = new ChatCompletion.Choice(0, null, ChatCompletionFinishReason.STOP.name(),
+				new ChatCompletion.ChatCompletionDelta(Role.assistant, "Response123", null));
+		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", null, 789L, "model", List.of(choice),
+				null, null, null, null, null, null);
 		given(this.hunYuanApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
 			.willThrow(new TransientAiException("Transient Error 2"))
@@ -120,7 +120,7 @@ public class HunYuanRetryTests {
 		var result = this.chatModel.stream(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
+		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response123");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

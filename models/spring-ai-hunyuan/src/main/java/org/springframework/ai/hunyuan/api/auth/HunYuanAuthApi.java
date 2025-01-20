@@ -20,10 +20,12 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 import static org.springframework.ai.hunyuan.api.HunYuanConstants.CT_JSON;
+
 /**
  * The HunYuanAuthApi class is responsible for handling authentication-related operations
  * for the HunYuan API. It provides methods to generate necessary headers and signatures
  * required for authenticated requests.
+ *
  * @author Your Name
  */
 public class HunYuanAuthApi {
@@ -34,7 +36,7 @@ public class HunYuanAuthApi {
 
 	private final String secretId;
 
-	private  final String secretKey;
+	private final String secretKey;
 
 	/**
 	 * Constructs a HunYuanAuthApi instance with the specified secret ID and secret key.
@@ -52,28 +54,31 @@ public class HunYuanAuthApi {
 	 * @param msg The message to be signed.
 	 * @return The byte array of the generated HMAC-SHA256 signature.
 	 */
-	public  byte[] hmac256(byte[] key, String msg){
+	public byte[] hmac256(byte[] key, String msg) {
 		Mac mac = null;
 		try {
 			mac = Mac.getInstance("HmacSHA256");
 			SecretKeySpec secretKeySpec = new SecretKeySpec(key, mac.getAlgorithm());
 			mac.init(secretKeySpec);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		return mac.doFinal(msg.getBytes(UTF8));
 	}
 
 	/**
-	 * Computes the SHA-256 hash of the provided string and returns it as a hexadecimal string.
+	 * Computes the SHA-256 hash of the provided string and returns it as a hexadecimal
+	 * string.
 	 * @param s The string to be hashed.
 	 * @return The SHA-256 hash of the input string in hexadecimal format.
 	 */
-	public  String sha256Hex(String s) {
+	public String sha256Hex(String s) {
 		MessageDigest md = null;
 		try {
 			md = MessageDigest.getInstance("SHA-256");
-		} catch (NoSuchAlgorithmException e) {
+		}
+		catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
 		}
 		byte[] d = md.digest(s.getBytes(UTF8));
@@ -81,17 +86,20 @@ public class HunYuanAuthApi {
 	}
 
 	/**
-	 * Generates the HTTP headers required for making authenticated requests to the HunYuan API.
+	 * Generates the HTTP headers required for making authenticated requests to the
+	 * HunYuan API.
 	 * @param host The host address of the API endpoint.
 	 * @param action The action to be performed (e.g., "ChatCompletion").
 	 * @param service The service name associated with the request.
 	 * @param payload The request payload containing the necessary parameters.
-	 * @return A MultiValueMap containing the HTTP headers needed for the authenticated request.
+	 * @return A MultiValueMap containing the HTTP headers needed for the authenticated
+	 * request.
 	 */
-	public MultiValueMap<String, String> getHttpHeadersConsumer(String host, String action, String service, HunYuanApi.ChatCompletionRequest payload){
+	public MultiValueMap<String, String> getHttpHeadersConsumer(String host, String action, String service,
+			HunYuanApi.ChatCompletionRequest payload) {
 		String version = HunYuanConstants.DEFAULT_VERSION;
 		String algorithm = HunYuanConstants.DEFAULT_ALGORITHM;
-//		String timestamp = "1551113065";
+		// String timestamp = "1551113065";
 		String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 		// Pay attention to the time zone, otherwise it will be easy to make mistakes
@@ -102,11 +110,12 @@ public class HunYuanAuthApi {
 		String httpRequestMethod = "POST";
 		String canonicalUri = "/";
 		String canonicalQueryString = "";
-		String canonicalHeaders = "content-type:application/json; charset=utf-8\n"
-				+ "host:" + host + "\n" + "x-tc-action:" + action.toLowerCase() + "\n";
+		String canonicalHeaders = "content-type:application/json; charset=utf-8\n" + "host:" + host + "\n"
+				+ "x-tc-action:" + action.toLowerCase() + "\n";
 		String signedHeaders = "content-type;host;x-tc-action";
 
-//		String payload = "{\"Limit\": 1, \"Filters\": [{\"Values\": [\"\\u672a\\u547d\\u540d\"], \"Name\": \"instance-name\"}]}";
+		// String payload = "{\"Limit\": 1, \"Filters\": [{\"Values\":
+		// [\"\\u672a\\u547d\\u540d\"], \"Name\": \"instance-name\"}]}";
 		String payloadString = ModelOptionsUtils.toJsonString(payload);
 		String hashedRequestPayload = sha256Hex(payloadString);
 		String canonicalRequest = httpRequestMethod + "\n" + canonicalUri + "\n" + canonicalQueryString + "\n"
@@ -127,21 +136,34 @@ public class HunYuanAuthApi {
 		TreeMap<String, String> headers = new TreeMap<String, String>();
 		headers.put("Authorization", authorization);
 		headers.put("Content-Type", CT_JSON);
-//		headers.put("Host", host);
+		// headers.put("Host", host);
 		headers.put("X-TC-Action", action);
 		headers.put("X-TC-Timestamp", timestamp);
 		headers.put("X-TC-Version", version);
 
-		if (logger.isDebugEnabled()){
+		if (logger.isDebugEnabled()) {
 			StringBuilder sb = new StringBuilder();
-			sb.append("curl -X POST https://").append(host)
-					.append(" -H \"Authorization: ").append(authorization).append("\"")
-					.append(" -H \"Content-Type: application/json; charset=utf-8\"")
-					.append(" -H \"Host: ").append(host).append("\"")
-					.append(" -H \"X-TC-Action: ").append(action).append("\"")
-					.append(" -H \"X-TC-Timestamp: ").append(timestamp).append("\"")
-					.append(" -H \"X-TC-Version: ").append(version).append("\"")
-					.append(" -d '").append(payloadString).append("'");
+			sb.append("curl -X POST https://")
+				.append(host)
+				.append(" -H \"Authorization: ")
+				.append(authorization)
+				.append("\"")
+				.append(" -H \"Content-Type: application/json; charset=utf-8\"")
+				.append(" -H \"Host: ")
+				.append(host)
+				.append("\"")
+				.append(" -H \"X-TC-Action: ")
+				.append(action)
+				.append("\"")
+				.append(" -H \"X-TC-Timestamp: ")
+				.append(timestamp)
+				.append("\"")
+				.append(" -H \"X-TC-Version: ")
+				.append(version)
+				.append("\"")
+				.append(" -d '")
+				.append(payloadString)
+				.append("'");
 			logger.debug(sb.toString());
 		}
 		return CollectionUtils.toMultiValueMap(

@@ -77,7 +77,8 @@ public class HunYuanApiToolFunctionCallIT {
 
 	private final MockWeatherService weatherService = new MockWeatherService();
 
-	private final HunYuanApi hunyuanApi = new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY"));
+	private final HunYuanApi hunyuanApi = new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),
+			System.getenv("HUNYUAN_SECRET_KEY"));
 
 	@SuppressWarnings("null")
 	@Test
@@ -100,7 +101,8 @@ public class HunYuanApiToolFunctionCallIT {
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages,
 				HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), List.of(FUNCTION_TOOL), ToolChoiceBuilder.AUTO);
 
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion = this.hunyuanApi.chatCompletionEntity(chatCompletionRequest);
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion = this.hunyuanApi
+			.chatCompletionEntity(chatCompletionRequest);
 
 		assertThat(chatCompletion.getBody()).isNotNull();
 		assertThat(chatCompletion.getBody().response().choices()).isNotEmpty();
@@ -116,21 +118,22 @@ public class HunYuanApiToolFunctionCallIT {
 		for (ToolCall toolCall : responseMessage.toolCalls()) {
 			var functionName = toolCall.function().name();
 			if ("getCurrentWeather".equals(functionName)) {
-				MockWeatherService.Request weatherRequest = ModelOptionsUtils.jsonToObject(toolCall.function().arguments(),
-						MockWeatherService.Request.class);
+				MockWeatherService.Request weatherRequest = ModelOptionsUtils
+					.jsonToObject(toolCall.function().arguments(), MockWeatherService.Request.class);
 
 				MockWeatherService.Response weatherResponse = this.weatherService.apply(weatherRequest);
 
 				// extend conversation with function response.
-				messages.add(new ChatCompletionMessage("温度为：" + weatherResponse.temp() + weatherRequest.unit(), Role.tool,
-						null, toolCall.id(), null));
+				messages.add(new ChatCompletionMessage("温度为：" + weatherResponse.temp() + weatherRequest.unit(),
+						Role.tool, null, toolCall.id(), null));
 			}
 		}
 
-		var functionResponseRequest = new ChatCompletionRequest(messages,
-				HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.5);
+		var functionResponseRequest = new ChatCompletionRequest(messages, HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(),
+				0.5);
 
-		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion2 = this.hunyuanApi.chatCompletionEntity(functionResponseRequest);
+		ResponseEntity<HunYuanApi.ChatCompletionResponse> chatCompletion2 = this.hunyuanApi
+			.chatCompletionEntity(functionResponseRequest);
 
 		logger.info("Final response: " + chatCompletion2.getBody());
 

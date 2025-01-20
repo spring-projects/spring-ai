@@ -44,7 +44,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 /**
  * @author Guo Junyu
  */
@@ -94,6 +93,7 @@ class HunYuanChatModelFunctionCallingIT {
 			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 

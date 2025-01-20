@@ -38,35 +38,37 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 
 	private @JsonProperty("Model") String model;
 
-
 	private @JsonProperty("Temperature") Double temperature;
-
 
 	private @JsonProperty("TopP") Double topP;
 
-
 	private @JsonProperty("Seed") Integer seed;
-
 
 	private @JsonProperty("EnableEnhancement") Boolean enableEnhancement;
 
 	private @JsonProperty("StreamModeration") Boolean streamModeration;
-
 
 	private @JsonProperty("Stop") List<String> stop;
 
 	private @JsonProperty("Tools") List<HunYuanApi.FunctionTool> tools;
 
 	private @JsonProperty("ToolChoice") String toolChoice;
-	private @JsonProperty("CustomTool") HunYuanApi.FunctionTool customTool;
-	private @JsonProperty("SearchInfo") Boolean searchInfo;
-	private @JsonProperty("Citation") Boolean citation;
-	private @JsonProperty("EnableSpeedSearch") Boolean enableSpeedSearch;
-	private @JsonProperty("EnableMultimedia") Boolean enableMultimedia;
-	private @JsonProperty("EnableDeepSearch") Boolean enableDeepSearch;
-	private @JsonProperty("ForceSearchEnhancement") Boolean ForceSearchEnhancement;
-	private @JsonProperty("EnableRecommendedQuestions") Boolean enableRecommendedQuestions;
 
+	private @JsonProperty("CustomTool") HunYuanApi.FunctionTool customTool;
+
+	private @JsonProperty("SearchInfo") Boolean searchInfo;
+
+	private @JsonProperty("Citation") Boolean citation;
+
+	private @JsonProperty("EnableSpeedSearch") Boolean enableSpeedSearch;
+
+	private @JsonProperty("EnableMultimedia") Boolean enableMultimedia;
+
+	private @JsonProperty("EnableDeepSearch") Boolean enableDeepSearch;
+
+	private @JsonProperty("ForceSearchEnhancement") Boolean ForceSearchEnhancement;
+
+	private @JsonProperty("EnableRecommendedQuestions") Boolean enableRecommendedQuestions;
 
 	/**
 	 * HunYuan Tool Function Callbacks to register with the ChatModel. For Prompt Options
@@ -318,25 +320,37 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 
 		HunYuanChatOptions that = (HunYuanChatOptions) o;
 
-		if (!model.equals(that.model)) return false;
-		if (!Objects.equals(temperature, that.temperature)) return false;
-		if (!Objects.equals(topP, that.topP)) return false;
-		if (!Objects.equals(seed, that.seed)) return false;
+		if (!model.equals(that.model))
+			return false;
+		if (!Objects.equals(temperature, that.temperature))
+			return false;
+		if (!Objects.equals(topP, that.topP))
+			return false;
+		if (!Objects.equals(seed, that.seed))
+			return false;
 		if (!Objects.equals(enableEnhancement, that.enableEnhancement))
 			return false;
 		if (!Objects.equals(streamModeration, that.streamModeration))
 			return false;
-		if (!Objects.equals(stop, that.stop)) return false;
-		if (!Objects.equals(tools, that.tools)) return false;
-		if (!Objects.equals(toolChoice, that.toolChoice)) return false;
-		if (!Objects.equals(customTool, that.customTool)) return false;
-		if (!Objects.equals(searchInfo, that.searchInfo)) return false;
-		if (!Objects.equals(citation, that.citation)) return false;
+		if (!Objects.equals(stop, that.stop))
+			return false;
+		if (!Objects.equals(tools, that.tools))
+			return false;
+		if (!Objects.equals(toolChoice, that.toolChoice))
+			return false;
+		if (!Objects.equals(customTool, that.customTool))
+			return false;
+		if (!Objects.equals(searchInfo, that.searchInfo))
+			return false;
+		if (!Objects.equals(citation, that.citation))
+			return false;
 		if (!Objects.equals(enableSpeedSearch, that.enableSpeedSearch))
 			return false;
 		if (!Objects.equals(enableMultimedia, that.enableMultimedia))
@@ -349,7 +363,8 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 			return false;
 		if (!Objects.equals(functionCallbacks, that.functionCallbacks))
 			return false;
-		if (!Objects.equals(functions, that.functions)) return false;
+		if (!Objects.equals(functions, that.functions))
+			return false;
 		if (!Objects.equals(proxyToolCalls, that.proxyToolCalls))
 			return false;
 		return Objects.equals(toolContext, that.toolContext);
@@ -381,6 +396,7 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 		result = prime * result + (toolContext != null ? toolContext.hashCode() : 0);
 		return result;
 	}
+
 	public static class Builder {
 
 		private final HunYuanChatOptions options = new HunYuanChatOptions();
@@ -480,6 +496,15 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
+		public Builder function(String functionName) {
+			Assert.hasText(functionName, "Function name must not be empty");
+			if (this.options.functions == null) {
+				this.options.functions = new HashSet<>();
+			}
+			this.options.functions.add(functionName);
+			return this;
+		}
+
 		public Builder proxyToolCalls(Boolean proxyToolCalls) {
 			options.setProxyToolCalls(proxyToolCalls);
 			return this;
@@ -493,6 +518,7 @@ public class HunYuanChatOptions implements FunctionCallingOptions {
 		public HunYuanChatOptions build() {
 			return options;
 		}
+
 	}
 
 }
