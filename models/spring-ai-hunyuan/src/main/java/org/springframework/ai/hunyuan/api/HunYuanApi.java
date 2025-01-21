@@ -323,8 +323,8 @@ public class HunYuanApi {
 	 * output is reviewed in real-time, and segments that fail the review will have their
 	 * FinishReason set to sensitive. If false, the entire output is reviewed before being
 	 * returned. If real-time text display is required in your application, you should
-	 * handle the case where FinishReason is sensitive by撤回已显示的内容 and providing a custom
-	 * message. Example: false
+	 * handle the case where FinishReason is sensitive and providing a custom message.
+	 * Example: false
 	 * @param tools A list of tools the model may call. Currently, only functions are
 	 * supported as a tool.
 	 * @param toolChoice Controls which (if any) function is called by the model. Possible
