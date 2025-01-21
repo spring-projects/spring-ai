@@ -65,13 +65,6 @@ public class AzureOpenAiAutoConfiguration {
 	private static final String APPLICATION_ID = "spring-ai";
 
 	@Bean
-	@ConditionalOnMissingBean
-	public OpenAIClientBuilderCustomizer openAIClientBuilderCustomizer() {
-		return clientBuilder -> {
-		};
-	}
-
-	@Bean
 	@ConditionalOnMissingBean // ({ OpenAIClient.class, TokenCredential.class })
 	public OpenAIClientBuilder openAIClientBuilder(AzureOpenAiConnectionProperties connectionProperties,
 			ObjectProvider<OpenAIClientBuilderCustomizer> customizers) {
