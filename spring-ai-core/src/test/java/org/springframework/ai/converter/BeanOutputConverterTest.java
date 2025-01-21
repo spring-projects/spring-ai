@@ -158,7 +158,8 @@ class BeanOutputConverterTest {
 		void failToConvertInvalidJson() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			assertThatThrownBy(() -> converter.convert("{invalid json")).hasCauseInstanceOf(JsonParseException.class);
-			final var loggingEvent = logAppender.list.getFirst();
+			assertThat(logAppender.list).hasSize(1);
+			final var loggingEvent = logAppender.list.get(0);
 			assertThat(loggingEvent.getMessage()).isEqualTo(
 					"Could not parse the given text to the desired target type:{invalid json into " + TestClass.class);
 			assertThat(loggingEvent.getMarkerList()).contains(PII_MARKER);
