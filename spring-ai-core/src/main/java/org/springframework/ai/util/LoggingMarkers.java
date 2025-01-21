@@ -20,7 +20,7 @@ public class LoggingMarkers {
 	 * <li>Business processes and logic</li>
 	 * <li>etc.</li>
 	 * </ul>
-	 * Typically, logging this information should be avoided
+	 * Typically, logging this information should be avoided.
 	 */
 	public static final Marker SENSITIVE_DATA_MARKER = MarkerFactory.getMarker("SENSITIVE");
 
@@ -35,7 +35,7 @@ public class LoggingMarkers {
 	 * <li>Trade secrets</li>
 	 * <li>etc.</li>
 	 * </ul>
-	 * Logging of such information is usually prohibited in any circumstances
+	 * Logging of such information is usually prohibited in any circumstances.
 	 */
 	public static final Marker RESTRICTED_DATA_MARKER = MarkerFactory.getMarker("RESTRICTED");
 
@@ -50,7 +50,7 @@ public class LoggingMarkers {
 	 * <li>Compliance-controlled data</li>
 	 * <li>etc.</li>
 	 * </ul>
-	 * Logging of such information should be avoided
+	 * Logging of such information should be avoided.
 	 */
 	public static final Marker REGULATED_DATA_MARKER = MarkerFactory.getMarker("REGULATED");
 
@@ -62,7 +62,7 @@ public class LoggingMarkers {
 	 * <li>Marketing materials</li>
 	 * <li>etc.</li>
 	 * </ul>
-	 * There are no restriction for
+	 * There are no restriction for logging such information.
 	 */
 	public static final Marker PUBLIC_DATA_MARKER = MarkerFactory.getMarker("PUBLIC");
 
