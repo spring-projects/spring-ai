@@ -41,7 +41,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.springframework.ai.util.LoggingMarkers.PII_MARKER;
+import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
 /**
  * @author Sebastian Ullrich
@@ -160,9 +160,11 @@ class BeanOutputConverterTest {
 			assertThatThrownBy(() -> converter.convert("{invalid json")).hasCauseInstanceOf(JsonParseException.class);
 			assertThat(logAppender.list).hasSize(1);
 			final var loggingEvent = logAppender.list.get(0);
-			assertThat(loggingEvent.getMessage()).isEqualTo(
-					"Could not parse the given text to the desired target type:{invalid json into " + TestClass.class);
-			assertThat(loggingEvent.getMarkerList()).contains(PII_MARKER);
+			assertThat(loggingEvent.getFormattedMessage())
+				.isEqualTo("Could not parse the given text to the desired target type: \"{invalid json\" into "
+						+ TestClass.class);
+
+			assertThat(loggingEvent.getMarkerList()).contains(SENSITIVE_DATA_MARKER);
 		}
 
 		@Test

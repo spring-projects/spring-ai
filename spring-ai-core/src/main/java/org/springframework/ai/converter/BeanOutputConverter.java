@@ -41,7 +41,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 
-import static org.springframework.ai.util.LoggingMarkers.PII_MARKER;
+import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
@@ -182,8 +182,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			return (T) this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
 		}
 		catch (JsonProcessingException e) {
-			logger.error(PII_MARKER,
-					"Could not parse the given text to the desired target type:" + text + " into " + this.type);
+			logger.error(SENSITIVE_DATA_MARKER,
+					"Could not parse the given text to the desired target type: \"{}\" into {}", text, this.type);
 			throw new RuntimeException(e);
 		}
 	}
