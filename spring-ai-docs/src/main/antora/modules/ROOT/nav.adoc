@@ -23,6 +23,8 @@
 ***** xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Gemini Function Calling]
 *** xref:api/chat/groq-chat.adoc[Groq]
 *** xref:api/chat/huggingface.adoc[Hugging Face]
+*** xref:api/chat/hunyuan-chat.adoc[HunYuan AI]
+**** xref:api/chat/functions/hunyuan-chat-functions.adoc[HunYuanFunction Calling]
 *** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral Function Calling]
 *** xref:api/chat/minimax-chat.adoc[MiniMax]
