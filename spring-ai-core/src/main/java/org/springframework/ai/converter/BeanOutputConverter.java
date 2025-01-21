@@ -145,7 +145,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
 		}
 		catch (JsonProcessingException e) {
-			logger.error("Could not pretty print json schema for jsonNode: " + jsonNode);
+			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
 			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
 		}
 	}
