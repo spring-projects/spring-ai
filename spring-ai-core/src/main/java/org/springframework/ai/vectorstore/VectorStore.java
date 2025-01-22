@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,11 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
 import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * The {@code VectorStore} interface defines the operations for managing and querying
@@ -61,6 +63,28 @@ public interface VectorStore extends DocumentWriter {
 	 */
 	@Nullable
 	Optional<Boolean> delete(List<String> idList);
+
+	/**
+	 * Deletes documents from the vector store based on filter criteria.
+	 * @param filterExpression Filter expression to identify documents to delete
+	 * @throws IllegalStateException if the underlying delete causes an exception
+	 */
+	void delete(Filter.Expression filterExpression);
+
+	/**
+	 * Deletes documents from the vector store using a string filter expression. Converts
+	 * the string filter to an Expression object and delegates to
+	 * {@link #delete(Filter.Expression)}.
+	 * @param filterExpression String representation of the filter criteria
+	 * @throws IllegalArgumentException if the filter expression is null
+	 * @throws IllegalStateException if the underlying delete causes an exception
+	 */
+	default void delete(String filterExpression) {
+		SearchRequest searchRequest = SearchRequest.builder().filterExpression(filterExpression).build();
+		Filter.Expression textExpression = searchRequest.getFilterExpression();
+		Assert.notNull(textExpression, "Filter expression must not be null");
+		this.delete(textExpression);
+	}
 
 	/**
 	 * Retrieves documents by query embedding similarity and metadata filters to retrieve

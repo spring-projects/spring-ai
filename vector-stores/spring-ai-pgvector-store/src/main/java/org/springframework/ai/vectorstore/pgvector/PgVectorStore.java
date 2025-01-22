@@ -45,6 +45,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -313,6 +314,22 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		return Optional.of(updateCount == idList.size());
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE metadata::jsonb @@ '"
+				+ nativeFilterExpression + "'::jsonpath";
+
+		// Execute the delete
+		try {
+			this.jdbcTemplate.update(sql);
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
