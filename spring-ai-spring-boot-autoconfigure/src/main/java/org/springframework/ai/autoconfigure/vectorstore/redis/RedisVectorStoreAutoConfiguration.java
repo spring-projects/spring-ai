@@ -17,6 +17,9 @@
 package org.springframework.ai.autoconfigure.vectorstore.redis;
 
 import io.micrometer.observation.ObservationRegistry;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -40,6 +43,7 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Jihoon Kim
  */
 @AutoConfiguration(after = RedisAutoConfiguration.class)
 @ConditionalOnClass({ JedisPooled.class, JedisConnectionFactory.class, RedisVectorStore.class, EmbeddingModel.class })
@@ -60,8 +64,7 @@ public class RedisVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		JedisPooled jedisPooled = new JedisPooled(jedisConnectionFactory.getHostName(),
-				jedisConnectionFactory.getPort());
+		JedisPooled jedisPooled = this.jedisPooled(jedisConnectionFactory);
 		return RedisVectorStore.builder(jedisPooled, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
@@ -70,6 +73,21 @@ public class RedisVectorStoreAutoConfiguration {
 			.indexName(properties.getIndex())
 			.prefix(properties.getPrefix())
 			.build();
+	}
+
+	private JedisPooled jedisPooled(JedisConnectionFactory jedisConnectionFactory) {
+
+		String host = jedisConnectionFactory.getHostName();
+		int port = jedisConnectionFactory.getPort();
+
+		JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
+			.ssl(jedisConnectionFactory.isUseSsl())
+			.clientName(jedisConnectionFactory.getClientName())
+			.timeoutMillis(jedisConnectionFactory.getTimeout())
+			.password(jedisConnectionFactory.getPassword())
+			.build();
+
+		return new JedisPooled(new HostAndPort(host, port), clientConfig);
 	}
 
 }
