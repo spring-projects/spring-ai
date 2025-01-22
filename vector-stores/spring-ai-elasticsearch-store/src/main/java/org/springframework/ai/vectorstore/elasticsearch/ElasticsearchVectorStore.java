@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -219,6 +220,23 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
+	}
+
+	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
+
+		try {
+			this.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())
+				.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	private BulkResponse bulkRequest(BulkRequest bulkRequest) {

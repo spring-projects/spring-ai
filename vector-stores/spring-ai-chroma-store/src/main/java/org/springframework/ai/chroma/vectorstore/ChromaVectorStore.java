@@ -25,6 +25,8 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
@@ -40,6 +42,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -80,6 +83,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	private final ObjectMapper objectMapper;
 
 	private boolean initialized = false;
+
+	private static final Logger logger = LoggerFactory.getLogger(ChromaVectorStore.class);
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
@@ -162,7 +167,29 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public @NonNull List<Document> doSimilaritySearch(@NonNull SearchRequest request) {
+	protected void doDelete(Filter.Expression expression) {
+		Assert.notNull(expression, "Filter expression must not be null");
+
+		try {
+			ChromaFilterExpressionConverter converter = new ChromaFilterExpressionConverter();
+			String whereClauseStr = converter.convertExpression(expression);
+
+			Map<String, Object> whereClause = this.chromaApi.where(whereClauseStr);
+
+			logger.debug("Deleting with where clause: {}", whereClause);
+
+			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
+			this.chromaApi.deleteEmbeddings(this.collectionId, deleteRequest);
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
+	@Override
+	@NonNull
+	public List<Document> doSimilaritySearch(@NonNull SearchRequest request) {
 
 		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");

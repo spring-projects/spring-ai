@@ -27,11 +27,19 @@ Spring AI offers an abstracted API for interacting with vector databases through
 Here is the `VectorStore` interface definition:
 
 ```java
-public interface VectorStore {
+public interface VectorStore extends DocumentWriter {
+
+    default String getName() {
+		return this.getClass().getSimpleName();
+	}
 
     void add(List<Document> documents);
 
     Optional<Boolean> delete(List<String> idList);
+
+    void delete(Filter.Expression filterExpression);
+
+    default void delete(String filterExpression) { ... };
 
     List<Document> similaritySearch(String query);
 

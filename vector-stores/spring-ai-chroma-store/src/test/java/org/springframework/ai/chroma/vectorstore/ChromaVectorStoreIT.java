@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -166,6 +167,69 @@ public class ChromaVectorStoreIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(List.of(bgDocument, nlDocument).stream().map(doc -> doc.getId()).toList());
+		});
+	}
+
+	@Test
+	public void deleteWithFilterExpression() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			// Create test documents with different metadata
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "Bulgaria"));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "Netherlands"));
+
+			// Add documents to the store
+			vectorStore.add(List.of(bgDocument, nlDocument));
+
+			// Verify initial state
+			var request = SearchRequest.builder().query("The World").topK(5).build();
+			List<Document> results = vectorStore.similaritySearch(request);
+			assertThat(results).hasSize(2);
+
+			// Delete document with country = Bulgaria
+			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
+					new Filter.Key("country"), new Filter.Value("Bulgaria"));
+
+			vectorStore.delete(filterExpression);
+
+			// Verify Bulgaria document was deleted
+			results = vectorStore
+				.similaritySearch(SearchRequest.from(request).filterExpression("country == 'Bulgaria'").build());
+			assertThat(results).isEmpty();
+
+			// Verify Netherlands document still exists
+			results = vectorStore
+				.similaritySearch(SearchRequest.from(request).filterExpression("country == 'Netherlands'").build());
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata().get("country")).isEqualTo("Netherlands");
+
+			// Clean up
+			vectorStore.delete(List.of(nlDocument.getId()));
+		});
+	}
+
+	@Test
+	public void deleteWithStringFilterExpression() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big", Map.of("country", "Bulgaria"));
+			var nlDocument = new Document("The World is Big", Map.of("country", "Netherlands"));
+			vectorStore.add(List.of(bgDocument, nlDocument));
+
+			var request = SearchRequest.builder().query("World").topK(5).build();
+			assertThat(vectorStore.similaritySearch(request)).hasSize(2);
+
+			vectorStore.delete("country == 'Bulgaria'");
+
+			var results = vectorStore.similaritySearch(request);
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata().get("country")).isEqualTo("Netherlands");
+
+			vectorStore.delete(List.of(nlDocument.getId()));
 		});
 	}
 
