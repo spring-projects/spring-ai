@@ -43,7 +43,7 @@ import org.springframework.util.Assert;
  */
 public class ZhiPuAiImageModel implements ImageModel {
 
-	private final static Logger logger = LoggerFactory.getLogger(ZhiPuAiImageModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiImageModel.class);
 
 	public final RetryTemplate retryTemplate;
 

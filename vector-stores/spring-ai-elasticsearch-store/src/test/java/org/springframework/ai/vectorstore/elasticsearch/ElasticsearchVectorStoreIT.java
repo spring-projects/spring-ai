@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -396,6 +397,45 @@ class ElasticsearchVectorStoreIT {
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(50).similarityThresholdAll().build()),
+						hasSize(0));
+		});
+	}
+
+	@Test
+	public void overDefaultSizeTest() {
+
+		var overDefaultSize = 12;
+
+		getContextRunner().run(context -> {
+
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			var testDocs = new ArrayList<Document>();
+			for (int i = 0; i < overDefaultSize; i++) {
+				testDocs.add(new Document(String.valueOf(i), "Great Depression " + i, Map.of()));
+			}
+			vectorStore.add(testDocs);
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
+						hasSize(1));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Great Depression")
+				.topK(overDefaultSize)
+				.similarityThresholdAll()
+				.build());
+
+			assertThat(results).hasSize(overDefaultSize);
+
+			// Remove all documents from the store
+			vectorStore.delete(testDocs.stream().map(Document::getId).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
 						hasSize(0));
 		});
 	}

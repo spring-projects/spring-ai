@@ -7,7 +7,7 @@ The `Spring AI` project aims to streamline the development of applications that 
 The project draws inspiration from notable Python projects, such as LangChain and LlamaIndex, but Spring AI is not a direct port of those projects.
 The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
 
-NOTE: Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with the AI Models`.
+NOTE: Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with AI Models`.
 
 image::spring-ai-integration-diagram-3.svg[Interactive,500,opts=interactive]
 
@@ -29,14 +29,14 @@ Spring AI provides the following features:
 * Portable API across Vector Store providers, including a novel SQL-like metadata filter API.
 * xref:api/functions.adoc[Tools/Function Calling] - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
 * xref:observability/index.adoc[Observability] - Provides insights into AI-related operations.
-* Document injection xref:api/etl-pipeline.adoc[ETL framework] for Data Engineering.
+* Document ingestion xref:api/etl-pipeline.adoc[ETL framework] for Data Engineering.
 * xref:api/testing.adoc[AI Model Evaluation] - Utilities to help evaluate generated content and protect against hallucinated response.
 * Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
 * xref:api/chatclient.adoc[ChatClient API] - Fluent API for communicating with AI Chat Models, idiomatically similar to the WebClient and RestClient APIs.
 * xref:api/advisors.adoc[Advisors API] - Encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases.
 * Support for xref:api/chatclient.adoc#_chat_memory[Chat Conversation Memory] and xref:api/chatclient.adoc#_retrieval_augmented_generation[Retrieval Augmented Generation (RAG)].
 
-This feature set lets you implement common use cases such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
+This feature set lets you implement common use cases, such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
 
 
 The xref:concepts.adoc[concepts section] provides a high-level overview of AI concepts and their representation in Spring AI.

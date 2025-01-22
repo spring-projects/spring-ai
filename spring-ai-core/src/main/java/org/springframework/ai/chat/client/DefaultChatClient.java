@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.springframework.ai.tool.ToolCallbacks;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -47,11 +49,13 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConte
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
 import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -492,11 +496,11 @@ public class DefaultChatClient implements ChatClient {
 
 		@Nullable
 		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
-			if (chatResponse == null || chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null
-					|| chatResponse.getResult().getOutput().getText() == null) {
-				return null;
-			}
-			return chatResponse.getResult().getOutput().getText();
+			return Optional.ofNullable(chatResponse)
+				.map(ChatResponse::getResult)
+				.map(Generation::getOutput)
+				.map(AbstractMessage::getText)
+				.orElse(null);
 		}
 
 		@Override
@@ -782,10 +786,9 @@ public class DefaultChatClient implements ChatClient {
 				builder.defaultOptions(this.chatOptions);
 			}
 
-			// workaround to set the missing fields.
-			builder.defaultRequest.getMessages().addAll(this.messages);
-			builder.defaultRequest.getFunctionCallbacks().addAll(this.functionCallbacks);
-			builder.defaultRequest.getToolContext().putAll(this.toolContext);
+			builder.addMessages(this.messages);
+			builder.addToolCallbacks(this.functionCallbacks);
+			builder.addToolContext(this.toolContext);
 
 			return builder;
 		}
@@ -833,6 +836,30 @@ public class DefaultChatClient implements ChatClient {
 		public <T extends ChatOptions> ChatClientRequestSpec options(T options) {
 			Assert.notNull(options, "options cannot be null");
 			this.chatOptions = options;
+			return this;
+		}
+
+		@Override
+		public ChatClientRequestSpec tools(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+			this.functionNames.addAll(List.of(toolNames));
+			return this;
+		}
+
+		@Override
+		public ChatClientRequestSpec tools(Object... toolObjects) {
+			Assert.notNull(toolObjects, "toolObjects cannot be null");
+			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+			this.functionCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+			return this;
+		}
+
+		@Override
+		public ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+			this.functionCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
@@ -888,10 +915,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		public ChatClientRequestSpec functions(String... functionBeanNames) {
-			Assert.notNull(functionBeanNames, "functionBeanNames cannot be null");
-			Assert.noNullElements(functionBeanNames, "functionBeanNames cannot contain null elements");
-			this.functionNames.addAll(List.of(functionBeanNames));
-			return this;
+			return tools(functionBeanNames);
 		}
 
 		public ChatClientRequestSpec functions(FunctionCallback... functionCallbacks) {

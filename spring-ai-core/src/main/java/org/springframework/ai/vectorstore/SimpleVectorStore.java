@@ -207,14 +207,12 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private String getVectorDbAsJson() {
 		ObjectWriter objectWriter = this.objectMapper.writerWithDefaultPrettyPrinter();
-		String json;
 		try {
-			json = objectWriter.writeValueAsString(this.store);
+			return objectWriter.writeValueAsString(this.store);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException("Error serializing documentMap to JSON.", e);
 		}
-		return json;
 	}
 
 	private float[] getUserQueryEmbedding(String query) {
