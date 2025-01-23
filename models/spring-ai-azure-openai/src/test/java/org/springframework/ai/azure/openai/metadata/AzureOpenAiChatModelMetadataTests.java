@@ -115,7 +115,7 @@ class AzureOpenAiChatModelMetadataTests {
 
 		assertThat(usage).isNotNull();
 		assertThat(usage.getPromptTokens()).isEqualTo(58);
-		assertThat(usage.getGenerationTokens()).isEqualTo(68);
+		assertThat(usage.getCompletionTokens()).isEqualTo(68);
 		assertThat(usage.getTotalTokens()).isEqualTo(126);
 	}
 

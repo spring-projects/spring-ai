@@ -104,7 +104,7 @@ public class QuestionAnswerAdvisorTests {
 						public Duration getTokensReset() {
 							return Duration.ofSeconds(9);
 						}
-					}).usage(new DefaultUsage(6L, 7L))
+					}).usage(new DefaultUsage(6, 7))
 					.build()));
 		// @formatter:on
 
@@ -137,7 +137,7 @@ public class QuestionAnswerAdvisorTests {
 		assertThat(response.getMetadata().getRateLimit().getTokensRemaining()).isEqualTo(8L);
 		assertThat(response.getMetadata().getRateLimit().getTokensReset()).isEqualTo(Duration.ofSeconds(9));
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(6L);
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isEqualTo(7L);
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(7L);
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(6L + 7L);
 		assertThat(response.getMetadata().get("key6").toString()).isEqualTo("value6");
 		assertThat(response.getMetadata().get("key1").toString()).isEqualTo("value1");

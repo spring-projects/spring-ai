@@ -249,11 +249,11 @@ class BedrockConverseChatClientIT {
 		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(500);
 		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(3500);
 
-		assertThat(metadata.getUsage().getGenerationTokens()).isGreaterThan(0);
-		assertThat(metadata.getUsage().getGenerationTokens()).isLessThan(1500);
+		assertThat(metadata.getUsage().getCompletionTokens()).isGreaterThan(0);
+		assertThat(metadata.getUsage().getCompletionTokens()).isLessThan(1500);
 
 		assertThat(metadata.getUsage().getTotalTokens())
-			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getGenerationTokens());
+			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getCompletionTokens());
 
 		logger.info("Response: {}", response);
 
@@ -330,11 +330,11 @@ class BedrockConverseChatClientIT {
 		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(1500);
 		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(3500);
 
-		assertThat(metadata.getUsage().getGenerationTokens()).isGreaterThan(0);
-		assertThat(metadata.getUsage().getGenerationTokens()).isLessThan(1500);
+		assertThat(metadata.getUsage().getCompletionTokens()).isGreaterThan(0);
+		assertThat(metadata.getUsage().getCompletionTokens()).isLessThan(1500);
 
 		assertThat(metadata.getUsage().getTotalTokens())
-			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getGenerationTokens());
+			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getCompletionTokens());
 
 		String content = chatResponses.stream()
 			.filter(cr -> cr.getResult() != null)

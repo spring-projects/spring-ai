@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,30 @@
 
 package org.springframework.ai.chat.metadata;
 
+import java.util.Map;
+
 /**
  * A EmpytUsage implementation that returns zero for all property getters
  *
  * @author John Blum
+ * @author Ilayaperumal Gopinathan
  * @since 0.7.0
  */
 public class EmptyUsage implements Usage {
 
 	@Override
-	public Long getPromptTokens() {
-		return 0L;
+	public Integer getPromptTokens() {
+		return 0;
 	}
 
 	@Override
-	public Long getGenerationTokens() {
-		return 0L;
+	public Integer getCompletionTokens() {
+		return 0;
+	}
+
+	@Override
+	public Object getNativeUsage() {
+		return Map.of();
 	}
 
 }

@@ -126,11 +126,11 @@ class GroqWithOpenAiChatModelIT {
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
+		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
 		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
 
 	}
@@ -371,7 +371,7 @@ class GroqWithOpenAiChatModelIT {
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 

@@ -27,73 +27,75 @@ public class DefaultUsageTests {
 
 	@Test
 	void testSerializationWithAllFields() throws Exception {
-		DefaultUsage usage = new DefaultUsage(100L, 50L, 150L);
+		DefaultUsage usage = new DefaultUsage(100, 50, 150);
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertEquals("{\"promptTokens\":100,\"generationTokens\":50,\"totalTokens\":150}", json);
+		assertEquals("{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"generationTokens\":50}",
+				json);
 	}
 
 	@Test
 	void testDeserializationWithAllFields() throws Exception {
-		String json = "{\"promptTokens\":100,\"generationTokens\":50,\"totalTokens\":150}";
+		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"generationTokens\":50}";
 		DefaultUsage usage = this.objectMapper.readValue(json, DefaultUsage.class);
-		assertEquals(100L, usage.getPromptTokens());
-		assertEquals(50L, usage.getGenerationTokens());
-		assertEquals(150L, usage.getTotalTokens());
+		assertEquals(100, usage.getPromptTokens());
+		assertEquals(50, usage.getCompletionTokens());
+		assertEquals(150, usage.getTotalTokens());
 	}
 
 	@Test
 	void testSerializationWithNullFields() throws Exception {
 		DefaultUsage usage = new DefaultUsage(null, null, null);
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertEquals("{\"promptTokens\":0,\"generationTokens\":0,\"totalTokens\":0}", json);
+		assertEquals("{\"promptTokens\":0,\"completionTokens\":0,\"totalTokens\":0,\"generationTokens\":0}", json);
 	}
 
 	@Test
 	void testDeserializationWithMissingFields() throws Exception {
 		String json = "{\"promptTokens\":100}";
 		DefaultUsage usage = this.objectMapper.readValue(json, DefaultUsage.class);
-		assertEquals(100L, usage.getPromptTokens());
-		assertEquals(0L, usage.getGenerationTokens());
-		assertEquals(100L, usage.getTotalTokens());
+		assertEquals(100, usage.getPromptTokens());
+		assertEquals(0, usage.getCompletionTokens());
+		assertEquals(100, usage.getTotalTokens());
 	}
 
 	@Test
 	void testDeserializationWithNullFields() throws Exception {
-		String json = "{\"promptTokens\":null,\"generationTokens\":null,\"totalTokens\":null}";
+		String json = "{\"promptTokens\":null,\"completionTokens\":null,\"totalTokens\":null}";
 		DefaultUsage usage = this.objectMapper.readValue(json, DefaultUsage.class);
-		assertEquals(0L, usage.getPromptTokens());
-		assertEquals(0L, usage.getGenerationTokens());
-		assertEquals(0L, usage.getTotalTokens());
+		assertEquals(0, usage.getPromptTokens());
+		assertEquals(0, usage.getCompletionTokens());
+		assertEquals(0, usage.getTotalTokens());
 	}
 
 	@Test
 	void testRoundTripSerialization() throws Exception {
-		DefaultUsage original = new DefaultUsage(100L, 50L, 150L);
+		DefaultUsage original = new DefaultUsage(100, 50, 150);
 		String json = this.objectMapper.writeValueAsString(original);
 		DefaultUsage deserialized = this.objectMapper.readValue(json, DefaultUsage.class);
 		assertEquals(original.getPromptTokens(), deserialized.getPromptTokens());
-		assertEquals(original.getGenerationTokens(), deserialized.getGenerationTokens());
+		assertEquals(original.getCompletionTokens(), deserialized.getCompletionTokens());
 		assertEquals(original.getTotalTokens(), deserialized.getTotalTokens());
 	}
 
 	@Test
 	void testTwoArgumentConstructorAndSerialization() throws Exception {
-		DefaultUsage usage = new DefaultUsage(100L, 50L);
+		DefaultUsage usage = new DefaultUsage(100, 50);
 
 		// Test that the fields are set correctly
-		assertEquals(100L, usage.getPromptTokens());
-		assertEquals(50L, usage.getGenerationTokens());
-		assertEquals(150L, usage.getTotalTokens()); // 100 + 50 = 150
+		assertEquals(100, usage.getPromptTokens());
+		assertEquals(50, usage.getCompletionTokens());
+		assertEquals(150, usage.getTotalTokens()); // 100 + 50 = 150
 
 		// Test serialization
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertEquals("{\"promptTokens\":100,\"generationTokens\":50,\"totalTokens\":150}", json);
+		assertEquals("{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"generationTokens\":50}",
+				json);
 
 		// Test deserialization
 		DefaultUsage deserializedUsage = this.objectMapper.readValue(json, DefaultUsage.class);
-		assertEquals(100L, deserializedUsage.getPromptTokens());
-		assertEquals(50L, deserializedUsage.getGenerationTokens());
-		assertEquals(150L, deserializedUsage.getTotalTokens());
+		assertEquals(100, deserializedUsage.getPromptTokens());
+		assertEquals(50, deserializedUsage.getCompletionTokens());
+		assertEquals(150, deserializedUsage.getTotalTokens());
 	}
 
 	@Test
@@ -101,19 +103,19 @@ public class DefaultUsageTests {
 		DefaultUsage usage = new DefaultUsage(null, null);
 
 		// Test that null values are converted to 0
-		assertEquals(0L, usage.getPromptTokens());
-		assertEquals(0L, usage.getGenerationTokens());
-		assertEquals(0L, usage.getTotalTokens());
+		assertEquals(0, usage.getPromptTokens());
+		assertEquals(0, usage.getCompletionTokens());
+		assertEquals(0, usage.getTotalTokens());
 
 		// Test serialization
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertEquals("{\"promptTokens\":0,\"generationTokens\":0,\"totalTokens\":0}", json);
+		assertEquals("{\"promptTokens\":0,\"completionTokens\":0,\"totalTokens\":0,\"generationTokens\":0}", json);
 
 		// Test deserialization
 		DefaultUsage deserializedUsage = this.objectMapper.readValue(json, DefaultUsage.class);
-		assertEquals(0L, deserializedUsage.getPromptTokens());
-		assertEquals(0L, deserializedUsage.getGenerationTokens());
-		assertEquals(0L, deserializedUsage.getTotalTokens());
+		assertEquals(0, deserializedUsage.getPromptTokens());
+		assertEquals(0, deserializedUsage.getCompletionTokens());
+		assertEquals(0, deserializedUsage.getTotalTokens());
 	}
 
 }
