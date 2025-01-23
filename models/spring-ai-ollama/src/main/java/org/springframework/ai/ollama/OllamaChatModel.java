@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import io.micrometer.observation.Observation;
@@ -60,7 +61,6 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-import org.springframework.ai.ollama.metadata.OllamaChatUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -132,10 +132,10 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	static ChatResponseMetadata from(OllamaApi.ChatResponse response, ChatResponse previousChatResponse) {
 		Assert.notNull(response, "OllamaApi.ChatResponse must not be null");
 
-		OllamaChatUsage newUsage = OllamaChatUsage.from(response);
-		Long promptTokens = newUsage.getPromptTokens();
-		Long generationTokens = newUsage.getGenerationTokens();
-		Long totalTokens = newUsage.getTotalTokens();
+		DefaultUsage newUsage = getDefaultUsage(response);
+		Integer promptTokens = newUsage.getPromptTokens();
+		Integer generationTokens = newUsage.getCompletionTokens();
+		int totalTokens = newUsage.getTotalTokens();
 
 		Duration evalDuration = response.getEvalDuration();
 		Duration promptEvalDuration = response.getPromptEvalDuration();
@@ -158,7 +158,7 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			}
 			if (previousChatResponse.getMetadata().getUsage() != null) {
 				promptTokens += previousChatResponse.getMetadata().getUsage().getPromptTokens();
-				generationTokens += previousChatResponse.getMetadata().getUsage().getGenerationTokens();
+				generationTokens += previousChatResponse.getMetadata().getUsage().getCompletionTokens();
 				totalTokens += previousChatResponse.getMetadata().getUsage().getTotalTokens();
 			}
 		}
@@ -170,13 +170,18 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			.model(response.model())
 			.keyValue(METADATA_CREATED_AT, response.createdAt())
 			.keyValue(METADATA_EVAL_DURATION, evalDuration)
-			.keyValue(METADATA_EVAL_COUNT, aggregatedUsage.getGenerationTokens().intValue())
+			.keyValue(METADATA_EVAL_COUNT, aggregatedUsage.getCompletionTokens().intValue())
 			.keyValue(METADATA_LOAD_DURATION, loadDuration)
 			.keyValue(METADATA_PROMPT_EVAL_DURATION, promptEvalDuration)
 			.keyValue(METADATA_PROMPT_EVAL_COUNT, aggregatedUsage.getPromptTokens().intValue())
 			.keyValue(METADATA_TOTAL_DURATION, totalDuration)
 			.keyValue(DONE, response.done())
 			.build();
+	}
+
+	private static DefaultUsage getDefaultUsage(OllamaApi.ChatResponse response) {
+		return new DefaultUsage(Optional.ofNullable(response.promptEvalCount()).orElse(0),
+				Optional.ofNullable(response.evalCount()).orElse(0));
 	}
 
 	@Override

@@ -60,13 +60,13 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.azure.openai.metadata.AzureOpenAiUsage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
@@ -194,13 +194,14 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	}
 
 	public static ChatResponseMetadata from(ChatCompletions chatCompletions, PromptMetadata promptFilterMetadata) {
-		Usage usage = (chatCompletions.getUsage() != null) ? AzureOpenAiUsage.from(chatCompletions) : new EmptyUsage();
+		Usage usage = (chatCompletions.getUsage() != null) ? getDefaultUsage(chatCompletions.getUsage())
+				: new EmptyUsage();
 		return from(chatCompletions, promptFilterMetadata, usage);
 	}
 
 	public static ChatResponseMetadata from(ChatCompletions chatCompletions, PromptMetadata promptFilterMetadata,
 			CompletionsUsage usage) {
-		return from(chatCompletions, promptFilterMetadata, AzureOpenAiUsage.from(usage));
+		return from(chatCompletions, promptFilterMetadata, getDefaultUsage(usage));
 	}
 
 	public static ChatResponseMetadata from(ChatResponse chatResponse, Usage usage) {
@@ -215,6 +216,10 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			builder.keyValue("system-fingerprint", chatResponseMetadata.get("system-fingerprint"));
 		}
 		return builder.build();
+	}
+
+	private static DefaultUsage getDefaultUsage(CompletionsUsage usage) {
+		return new DefaultUsage(usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens(), usage);
 	}
 
 	public AzureOpenAiChatOptions getDefaultOptions() {
@@ -321,7 +326,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 				}
 				// Accumulate the usage from the previous chat response
 				CompletionsUsage usage = chatCompletion.getUsage();
-				Usage currentChatResponseUsage = usage != null ? AzureOpenAiUsage.from(usage) : new EmptyUsage();
+				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				return toChatResponse(chatCompletion, accumulatedUsage);
 			}).buffer(2, 1).map(bufferList -> {
@@ -412,7 +417,7 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		PromptMetadata promptFilterMetadata = generatePromptMetadata(chatCompletions);
 		Usage currentUsage = null;
 		if (chatCompletions.getUsage() != null) {
-			currentUsage = AzureOpenAiUsage.from(chatCompletions);
+			currentUsage = getDefaultUsage(chatCompletions.getUsage());
 		}
 		Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
 		return new ChatResponse(generations, from(chatCompletions, promptFilterMetadata, cumulativeUsage));

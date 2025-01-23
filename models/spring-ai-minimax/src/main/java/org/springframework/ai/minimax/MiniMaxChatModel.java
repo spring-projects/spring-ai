@@ -36,6 +36,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
@@ -60,7 +61,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
-import org.springframework.ai.minimax.metadata.MiniMaxUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
@@ -388,11 +388,15 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 		Assert.notNull(result, "MiniMax ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
-			.usage(result.usage() != null ? MiniMaxUsage.from(result.usage()) : new EmptyUsage())
+			.usage(result.usage() != null ? getDefaultUsage(result.usage()) : new EmptyUsage())
 			.model(result.model() != null ? result.model() : "")
 			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
+	}
+
+	private DefaultUsage getDefaultUsage(MiniMaxApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	private Generation buildGeneration(ChatCompletionMessage message, ChatCompletionFinishReason completionFinishReason,

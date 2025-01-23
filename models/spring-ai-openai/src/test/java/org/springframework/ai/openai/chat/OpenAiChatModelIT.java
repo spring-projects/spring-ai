@@ -214,12 +214,12 @@ public class OpenAiChatModelIT extends AbstractIT {
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isCloseTo(referenceTokenUsage.getPromptTokens(),
 				Percentage.withPercentage(25));
-		assertThat(streamingTokenUsage.getGenerationTokens()).isCloseTo(referenceTokenUsage.getGenerationTokens(),
+		assertThat(streamingTokenUsage.getCompletionTokens()).isCloseTo(referenceTokenUsage.getCompletionTokens(),
 				Percentage.withPercentage(25));
 		assertThat(streamingTokenUsage.getTotalTokens()).isCloseTo(referenceTokenUsage.getTotalTokens(),
 				Percentage.withPercentage(25));
@@ -413,9 +413,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450L).isLessThan(600L);
-		assertThat(usage.getGenerationTokens()).isGreaterThan(230L).isLessThan(360L);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680L).isLessThan(900L);
+		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
+		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(900);
 	}
 
 	@Test
@@ -442,9 +442,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450L).isLessThan(600L);
-		assertThat(usage.getGenerationTokens()).isGreaterThan(230L).isLessThan(360L);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680L).isLessThan(960L);
+		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
+		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(960);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -596,7 +596,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 

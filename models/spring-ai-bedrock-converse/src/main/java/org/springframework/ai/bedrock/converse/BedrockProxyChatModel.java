@@ -547,15 +547,15 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			allGenerations.add(toolCallGeneration);
 		}
 
-		Long promptTokens = response.usage().inputTokens().longValue();
-		Long generationTokens = response.usage().outputTokens().longValue();
-		Long totalTokens = response.usage().totalTokens().longValue();
+		Integer promptTokens = response.usage().inputTokens();
+		Integer generationTokens = response.usage().outputTokens();
+		int totalTokens = response.usage().totalTokens();
 
 		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
 				&& perviousChatResponse.getMetadata().getUsage() != null) {
 
 			promptTokens += perviousChatResponse.getMetadata().getUsage().getPromptTokens();
-			generationTokens += perviousChatResponse.getMetadata().getUsage().getGenerationTokens();
+			generationTokens += perviousChatResponse.getMetadata().getUsage().getCompletionTokens();
 			totalTokens += perviousChatResponse.getMetadata().getUsage().getTotalTokens();
 		}
 

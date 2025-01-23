@@ -77,7 +77,7 @@ class BedrockProxyChatModelIT {
 		// assertThat(response.getMetadata().getId()).isNotEmpty();
 		// assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
@@ -93,11 +93,11 @@ class BedrockProxyChatModelIT {
 				FunctionCallingOptions.builder().model(modelName).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isGreaterThan(0);
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isGreaterThan(0);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0);
 		assertThat(response.getMetadata().getUsage().getTotalTokens())
 			.isEqualTo(response.getMetadata().getUsage().getPromptTokens()
-					+ response.getMetadata().getUsage().getGenerationTokens());
+					+ response.getMetadata().getUsage().getCompletionTokens());
 		Generation generation = response.getResults().get(0);
 		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
@@ -133,11 +133,11 @@ class BedrockProxyChatModelIT {
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
+		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
 		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
 
 	}

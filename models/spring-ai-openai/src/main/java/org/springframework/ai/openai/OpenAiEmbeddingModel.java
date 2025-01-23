@@ -22,6 +22,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -38,7 +39,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
-import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
@@ -168,7 +168,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-						OpenAiUsage.from(apiEmbeddingResponse.usage()));
+						getDefaultUsage(apiEmbeddingResponse.usage()));
 
 				List<Embedding> embeddings = apiEmbeddingResponse.data()
 					.stream()
@@ -181,6 +181,10 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	private OpenAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request,

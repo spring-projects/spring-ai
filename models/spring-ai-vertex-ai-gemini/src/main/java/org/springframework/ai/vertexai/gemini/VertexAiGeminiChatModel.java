@@ -57,6 +57,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -77,7 +78,6 @@ import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
-import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.support.RetryTemplate;
@@ -428,7 +428,12 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
-		return ChatResponseMetadata.builder().usage(new VertexAiUsage(response.getUsageMetadata())).build();
+		return ChatResponseMetadata.builder().usage(getDefaultUsage(response.getUsageMetadata())).build();
+	}
+
+	private DefaultUsage getDefaultUsage(GenerateContentResponse.UsageMetadata usageMetadata) {
+		return new DefaultUsage(usageMetadata.getPromptTokenCount(), usageMetadata.getCandidatesTokenCount(),
+				usageMetadata.getTotalTokenCount(), usageMetadata);
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {

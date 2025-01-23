@@ -40,13 +40,13 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.anthropic.metadata.AnthropicUsage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.metadata.UsageUtils;
@@ -237,7 +237,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
 				AnthropicApi.Usage usage = completionResponse.usage();
 
-				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(completionResponse.usage())
+				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(completionResponse.usage())
 						: new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 
@@ -254,6 +254,11 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		}
 
 		return response;
+	}
+
+	private DefaultUsage getDefaultUsage(AnthropicApi.Usage usage) {
+		return new DefaultUsage(usage.inputTokens(), usage.outputTokens(), usage.inputTokens() + usage.outputTokens(),
+				usage);
 	}
 
 	@Override
@@ -282,7 +287,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
 				AnthropicApi.Usage usage = chatCompletionResponse.usage();
-				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(chatCompletionResponse.usage()) : new EmptyUsage();
+				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
@@ -352,7 +357,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
-		return from(result, AnthropicUsage.from(result.usage()));
+		return from(result, this.getDefaultUsage(result.usage()));
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result, Usage usage) {

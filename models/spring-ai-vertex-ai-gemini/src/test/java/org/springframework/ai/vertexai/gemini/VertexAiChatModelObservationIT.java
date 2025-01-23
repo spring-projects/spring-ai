@@ -148,7 +148,7 @@ public class VertexAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
+					String.valueOf(responseMetadata.getUsage().getCompletionTokens()))
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))

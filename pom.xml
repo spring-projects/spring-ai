@@ -879,6 +879,28 @@
 					<skip>true</skip>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>${maven-checkstyle-plugin.version}</version>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>checkstyle</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+				<configuration>
+					<configLocation>src/checkstyle/checkstyle.xml</configLocation>
+					<headerLocation>src/checkstyle/checkstyle-header.txt</headerLocation>
+					<propertyExpansion>
+						checkstyle.build.directory=${project.build.directory}
+						checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
+						checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
+						checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
+					</propertyExpansion>
+				</configuration>
+			</plugin>
 		</plugins>
 	</reporting>
 
