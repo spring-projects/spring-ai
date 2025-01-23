@@ -457,27 +457,72 @@ public class OpenAiAudioApi {
 
 			private Float speed;
 
+			/**
+			 * @deprecated use {@link #model(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withModel(String model) {
 				this.model = model;
 				return this;
 			}
 
+			public Builder model(String model) {
+				this.model = model;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #input(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withInput(String input) {
 				this.input = input;
 				return this;
 			}
 
+			public Builder input(String input) {
+				this.input = input;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #voice(Voice)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withVoice(Voice voice) {
 				this.voice = voice;
 				return this;
 			}
 
+			public Builder voice(Voice voice) {
+				this.voice = voice;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #responseFormat(AudioResponseFormat)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withResponseFormat(AudioResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
 				return this;
 			}
 
+			public Builder responseFormat(AudioResponseFormat responseFormat) {
+				this.responseFormat = responseFormat;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #speed(Float)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withSpeed(Float speed) {
+				this.speed = speed;
+				return this;
+			}
+
+			public Builder speed(Float speed) {
 				this.speed = speed;
 				return this;
 			}
@@ -569,37 +614,100 @@ public class OpenAiAudioApi {
 
 			private GranularityType granularityType;
 
+			/**
+			 * @deprecated use {@link #file(byte[])} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withFile(byte[] file) {
 				this.file = file;
 				return this;
 			}
 
+			public Builder file(byte[] file) {
+				this.file = file;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #model(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withModel(String model) {
 				this.model = model;
 				return this;
 			}
 
+			public Builder model(String model) {
+				this.model = model;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #language(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withLanguage(String language) {
 				this.language = language;
 				return this;
 			}
 
+			public Builder language(String language) {
+				this.language = language;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #prompt(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withPrompt(String prompt) {
 				this.prompt = prompt;
 				return this;
 			}
 
+			public Builder prompt(String prompt) {
+				this.prompt = prompt;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #responseFormat(TranscriptResponseFormat)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withResponseFormat(TranscriptResponseFormat response_format) {
 				this.responseFormat = response_format;
 				return this;
 			}
 
+			public Builder responseFormat(TranscriptResponseFormat responseFormat) {
+				this.responseFormat = responseFormat;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #temperature(Float)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withTemperature(Float temperature) {
 				this.temperature = temperature;
 				return this;
 			}
 
+			public Builder temperature(Float temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #granularityType(GranularityType)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withGranularityType(GranularityType granularityType) {
+				this.granularityType = granularityType;
+				return this;
+			}
+
+			public Builder granularityType(GranularityType granularityType) {
 				this.granularityType = granularityType;
 				return this;
 			}
@@ -658,27 +766,72 @@ public class OpenAiAudioApi {
 
 			private Float temperature;
 
+			/**
+			 * @deprecated use {@link #file(byte[])} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withFile(byte[] file) {
 				this.file = file;
 				return this;
 			}
 
+			public Builder file(byte[] file) {
+				this.file = file;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #model(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withModel(String model) {
 				this.model = model;
 				return this;
 			}
 
+			public Builder model(String model) {
+				this.model = model;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #prompt(String)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withPrompt(String prompt) {
 				this.prompt = prompt;
 				return this;
 			}
 
+			public Builder prompt(String prompt) {
+				this.prompt = prompt;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #responseFormat(TranscriptResponseFormat)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
 				return this;
 			}
 
+			public Builder responseFormat(TranscriptResponseFormat responseFormat) {
+				this.responseFormat = responseFormat;
+				return this;
+			}
+
+			/**
+			 * @deprecated use {@link #temperature(Float)} instead.
+			 */
+			@Deprecated(forRemoval = true, since = "1.0.0-M6")
 			public Builder withTemperature(Float temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			public Builder temperature(Float temperature) {
 				this.temperature = temperature;
 				return this;
 			}
