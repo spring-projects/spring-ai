@@ -168,13 +168,13 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 		}
 
 		return OpenAiAudioApi.TranscriptionRequest.builder()
-			.withFile(toBytes(transcriptionPrompt.getInstructions()))
-			.withResponseFormat(options.getResponseFormat())
-			.withPrompt(options.getPrompt())
-			.withTemperature(options.getTemperature())
-			.withLanguage(options.getLanguage())
-			.withModel(options.getModel())
-			.withGranularityType(options.getGranularityType())
+			.file(toBytes(transcriptionPrompt.getInstructions()))
+			.responseFormat(options.getResponseFormat())
+			.prompt(options.getPrompt())
+			.temperature(options.getTemperature())
+			.language(options.getLanguage())
+			.model(options.getModel())
+			.granularityType(options.getGranularityType())
 			.build();
 	}
 
