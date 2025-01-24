@@ -29,7 +29,6 @@ import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.Assert;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -68,7 +67,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  * @author Thomas Vitale
- * @author Jihoon Kim
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -163,19 +161,6 @@ public class PgVectorStoreIT {
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 				assertThat(results2).hasSize(0);
-
-				dropTable(context);
-			});
-	}
-
-	@Test
-	public void shouldAllowNonUuidFormat() {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
-			.run(context -> {
-
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-
-				vectorStore.add(List.of(new Document("NOT_UUID", "TEXT")));
 
 				dropTable(context);
 			});
