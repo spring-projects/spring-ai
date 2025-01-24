@@ -16,7 +16,6 @@
 
 package org.springframework.ai.zhipuai;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -33,6 +32,12 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  */
 @JsonInclude(Include.NON_NULL)
 public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
+
+	/**
+	 * The default vector dimension is 2048. The model supports custom vector dimensions,
+	 * and it is recommended to choose dimensions of 256, 512, 1024, or 2048.
+	 */
+	private @JsonProperty("dimensions") Integer dimensions;
 
 	// @formatter:off
 	/**
@@ -55,9 +60,12 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getDimensions() {
-		return null;
+		return this.dimensions;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 	public static class Builder {
@@ -70,6 +78,11 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder model(String model) {
 			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder withDimensions(Integer dimensions) {
+			this.options.setDimensions(dimensions);
 			return this;
 		}
 
