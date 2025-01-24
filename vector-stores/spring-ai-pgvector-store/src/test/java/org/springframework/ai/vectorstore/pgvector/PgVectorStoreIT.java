@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.pgvector;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,14 +43,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIdType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
-import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -70,6 +73,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jihoon Kim
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -104,6 +108,27 @@ public class PgVectorStoreIT {
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private static void initSchema(ApplicationContext context) {
+		PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
+		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
+		// Enable the PGVector, JSONB and UUID support.
+		jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
+		jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
+		jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+
+		jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", PgVectorStore.DEFAULT_SCHEMA_NAME));
+
+		jdbcTemplate.execute(String.format("""
+				CREATE TABLE IF NOT EXISTS %s.%s (
+					id text PRIMARY KEY,
+					content text,
+					metadata json,
+					embedding vector(%d)
+				)
+				""", PgVectorStore.DEFAULT_SCHEMA_NAME, PgVectorStore.DEFAULT_TABLE_NAME,
+				vectorStore.embeddingDimensions()));
 	}
 
 	private static void dropTable(ApplicationContext context) {
@@ -164,6 +189,35 @@ public class PgVectorStoreIT {
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 				assertThat(results2).hasSize(0);
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithUuidIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(List.of(new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithNonUuidIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.initializeSchema=" + false)
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "TEXT")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				initSchema(context);
+
+				vectorStore.add(List.of(new Document("NOT_UUID", "TEXT", new HashMap<>())));
 
 				dropTable(context);
 			});
@@ -498,12 +552,19 @@ public class PgVectorStoreIT {
 		@Value("${test.spring.ai.vectorstore.pgvector.distanceType}")
 		PgVectorStore.PgDistanceType distanceType;
 
+		@Value("${test.spring.ai.vectorstore.pgvector.initializeSchema:true}")
+		boolean initializeSchema;
+
+		@Value("${test.spring.ai.vectorstore.pgvector.idType:UUID}")
+		PgIdType idType;
+
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 				.dimensions(PgVectorStore.INVALID_EMBEDDING_DIMENSION)
+				.idType(idType)
 				.distanceType(this.distanceType)
-				.initializeSchema(true)
+				.initializeSchema(initializeSchema)
 				.indexType(PgIndexType.HNSW)
 				.removeExistingVectorStoreTable(true)
 				.build();
