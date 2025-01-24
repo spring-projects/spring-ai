@@ -27,12 +27,6 @@ import org.springframework.lang.Nullable;
  */
 public interface EmbeddingOptions extends ModelOptions {
 
-	/**
-	 * Use the {@link EmbeddingOptionsBuilder} instead.
-	 */
-	@Deprecated(since = "1.0.0", forRemoval = true)
-	EmbeddingOptions EMPTY = EmbeddingOptionsBuilder.builder().build();
-
 	@Nullable
 	String getModel();
 

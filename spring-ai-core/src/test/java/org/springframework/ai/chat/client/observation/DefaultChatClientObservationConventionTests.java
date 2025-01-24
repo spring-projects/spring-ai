@@ -29,12 +29,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
-import org.springframework.ai.chat.client.RequestResponseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
+import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
@@ -57,8 +58,8 @@ class DefaultChatClientObservationConventionTests {
 
 	DefaultChatClientRequestSpec request;
 
-	static RequestResponseAdvisor dummyAdvisor(String name) {
-		return new RequestResponseAdvisor() {
+	static CallAroundAdvisor dummyAdvisor(String name) {
+		return new CallAroundAdvisor() {
 
 			@Override
 			public String getName() {
@@ -71,13 +72,8 @@ class DefaultChatClientObservationConventionTests {
 			}
 
 			@Override
-			public AdvisedRequest adviseRequest(AdvisedRequest request, Map<String, Object> context) {
-				return request;
-			}
-
-			@Override
-			public ChatResponse adviseResponse(ChatResponse response, Map<String, Object> adviseContext) {
-				return response;
+			public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+				return null;
 			}
 
 		};

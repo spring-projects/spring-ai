@@ -168,13 +168,15 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
-		this.defaultRequest.function(name, description, function);
+		this.defaultRequest
+			.functions(FunctionCallback.builder().function(name, function).description(description).build());
 		return this;
 	}
 
 	public <I, O> Builder defaultFunction(String name, String description,
 			java.util.function.BiFunction<I, ToolContext, O> biFunction) {
-		this.defaultRequest.function(name, description, biFunction);
+		this.defaultRequest
+			.functions(FunctionCallback.builder().function(name, biFunction).description(description).build());
 		return this;
 	}
 

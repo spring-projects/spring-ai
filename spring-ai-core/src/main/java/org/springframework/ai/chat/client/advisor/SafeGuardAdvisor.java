@@ -97,7 +97,7 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 
 	private AdvisedResponse createFailureResponse(AdvisedRequest advisedRequest) {
 		return new AdvisedResponse(ChatResponse.builder()
-			.withGenerations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
+			.generations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
 			.build(), advisedRequest.adviseContext());
 	}
 

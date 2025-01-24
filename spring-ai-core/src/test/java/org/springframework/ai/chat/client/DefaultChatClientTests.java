@@ -1427,25 +1427,22 @@ class DefaultChatClientTests {
 	void whenFunctionDescriptionIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "", input -> "hello"))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("description cannot be null or empty");
-	}
-
-	@Test
-	void whenFunctionLambdaIsNullThenThrow() {
-		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
-		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "description", (Function) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("function cannot be null");
+		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
+			.description("")
+			.inputType(String.class)
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
 	}
 
 	@Test
 	void whenFunctionThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.function("name", "description", String.class, input -> "hello");
+		spec = spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
+			.inputType(String.class)
+			.description("description")
+			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
@@ -1454,7 +1451,11 @@ class DefaultChatClientTests {
 	void whenFunctionAndInputTypeThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.function("name", "description", String.class, input -> "hello");
+		spec = spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
+			.inputType(String.class)
+			.description("description")
+			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
@@ -1463,52 +1464,51 @@ class DefaultChatClientTests {
 	void whenBiFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function(null, "description", (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec.functions(
+				FunctionCallback.builder().function(null, (input, ctx) -> "hello").description("description").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("name cannot be null or empty");
+			.hasMessage("Name must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionNameIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("", "description", (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec.functions(
+				FunctionCallback.builder().function("", (input, ctx) -> "hello").description("description").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("name cannot be null or empty");
+			.hasMessage("Name must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionDescriptionIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", null, (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec
+			.functions(FunctionCallback.builder().function("name", (input, ctx) -> "hello").description(null).build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("description cannot be null or empty");
+			.hasMessage("Description must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionDescriptionIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "", (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec
+			.functions(FunctionCallback.builder().function("name", (input, ctx) -> "hello").description("").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("description cannot be null or empty");
-	}
-
-	@Test
-	void whenBiFunctionLambdaIsNullThenThrow() {
-		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
-		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "description", (BiFunction) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("biFunction cannot be null");
+			.hasMessage("Description must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.function("name", "description", (input, ctx) -> "hello");
+		spec = spec.functions(FunctionCallback.builder()
+			.function("name", (input, ctx) -> "hello")
+			.description("description")
+			.inputType(String.class)
+			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
