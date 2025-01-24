@@ -136,10 +136,6 @@ public class Document {
 		this(new RandomIdGenerator().generateId(), text, null, metadata, null);
 	}
 
-	public Document(String id, String text) {
-		this(id, text, new HashMap<>());
-	}
-
 	public Document(String id, String text, Map<String, Object> metadata) {
 		this(id, text, null, metadata, null);
 	}
