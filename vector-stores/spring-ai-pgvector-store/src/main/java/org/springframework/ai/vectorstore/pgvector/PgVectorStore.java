@@ -495,14 +495,14 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	 */
 	public enum PgDistanceType {
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
 		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
