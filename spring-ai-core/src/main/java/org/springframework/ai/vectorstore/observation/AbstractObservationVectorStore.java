@@ -18,7 +18,6 @@ package org.springframework.ai.vectorstore.observation;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
 
@@ -150,7 +149,6 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * logic.
 	 * @param filterExpression Filter expression to identify documents to delete
 	 */
-	@Nullable
 	protected void doDelete(Filter.Expression filterExpression) {
 		// this is temporary until we implement this method in all concrete vector stores,
 		// at which point
