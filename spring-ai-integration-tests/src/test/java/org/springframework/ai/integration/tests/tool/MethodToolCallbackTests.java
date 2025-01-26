@@ -86,9 +86,9 @@ public class MethodToolCallbackTests {
 			.call()
 			.content();
 		assertThat(content).isNotEmpty()
-			.contains("The Hobbit")
-			.contains("The Lord of The Rings")
-			.contains("The Silmarillion");
+			.containsIgnoringCase("The Hobbit")
+			.containsIgnoringCase("The Lord of The Rings")
+			.containsIgnoringCase("The Silmarillion");
 	}
 
 	@Test
@@ -109,7 +109,7 @@ public class MethodToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
-			.toolCallbacks(ToolCallbacks.from(tools))
+			.tools(ToolCallbacks.from(tools))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");

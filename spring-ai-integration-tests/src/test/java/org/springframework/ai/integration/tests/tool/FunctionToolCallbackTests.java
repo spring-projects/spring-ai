@@ -76,7 +76,7 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome the users to the library")
-			.toolCallbacks(FunctionToolCallback.builder("sayWelcome", (input) -> {
+			.tools(FunctionToolCallback.builder("sayWelcome", (input) -> {
 						logger.info("CALLBACK - Welcoming users to the library");
 					})
 					.description("Welcome users to the library")
@@ -105,8 +105,8 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.toolCallbacks(FunctionToolCallback.builder("welcomeUser", (user) -> {
-						logger.info("CALLBACK - Welcoming "+ ((User) user).name() +" to the library");
+			.tools(FunctionToolCallback.builder("welcomeUser", (user) -> {
+						logger.info("CALLBACK - Welcoming " + ((User) user).name() + " to the library");
 					})
 					.description("Welcome a specific user to the library")
 					.inputType(User.class)
@@ -141,7 +141,7 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
-			.toolCallbacks(FunctionToolCallback.builder("availableBooksByAuthor", function)
+			.tools(FunctionToolCallback.builder("availableBooksByAuthor", function)
 				.description("Get the list of books written by the given author available in the library")
 				.inputType(Author.class)
 				.build())
@@ -175,7 +175,7 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
-			.toolCallbacks(FunctionToolCallback.builder("authorsByAvailableBooks", function)
+			.tools(FunctionToolCallback.builder("authorsByAvailableBooks", function)
 				.description("Get the list of authors who wrote the given books available in the library")
 				.inputType(Books.class)
 				.build())

@@ -29,8 +29,8 @@ import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -145,8 +145,7 @@ public class BedrockNovaChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.function("getCurrentWeather", (WeatherRequest request) -> {
+				.tools(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
 						if (request.location().contains("Paris")) {
 							return new WeatherResponse(15, request.unit());
 						}
@@ -183,7 +182,7 @@ public class BedrockNovaChatClientIT {
 				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.withRegion(Region.US_EAST_1)
 				.withTimeout(Duration.ofSeconds(120))
-				.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
+				.withDefaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

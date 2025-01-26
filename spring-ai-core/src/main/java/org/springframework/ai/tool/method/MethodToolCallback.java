@@ -38,6 +38,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * A {@link ToolCallback} implementation to invoke methods as tools.
@@ -64,10 +65,11 @@ public class MethodToolCallback implements ToolCallback {
 	private final ToolCallResultConverter toolCallResultConverter;
 
 	public MethodToolCallback(ToolDefinition toolDefinition, @Nullable ToolMetadata toolMetadata, Method toolMethod,
-			Object toolObject, @Nullable ToolCallResultConverter toolCallResultConverter) {
+			@Nullable Object toolObject, @Nullable ToolCallResultConverter toolCallResultConverter) {
 		Assert.notNull(toolDefinition, "toolDefinition cannot be null");
 		Assert.notNull(toolMethod, "toolMethod cannot be null");
-		Assert.notNull(toolObject, "toolObject cannot be null");
+		Assert.isTrue(Modifier.isStatic(toolMethod.getModifiers()) || toolObject != null,
+				"toolObject cannot be null for non-static methods");
 		this.toolDefinition = toolDefinition;
 		this.toolMetadata = toolMetadata != null ? toolMetadata : DEFAULT_TOOL_METADATA;
 		this.toolMethod = toolMethod;
@@ -165,7 +167,7 @@ public class MethodToolCallback implements ToolCallback {
 	}
 
 	private boolean isObjectNotPublic() {
-		return !Modifier.isPublic(toolObject.getClass().getModifiers());
+		return toolObject != null && !Modifier.isPublic(toolObject.getClass().getModifiers());
 	}
 
 	private boolean isMethodNotPublic() {

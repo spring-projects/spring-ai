@@ -157,13 +157,7 @@ public class DefaultChatClientBuilder implements Builder {
 
 	@Override
 	public Builder defaultTools(Object... toolObjects) {
-		this.defaultRequest.functions(ToolCallbacks.from(toolObjects));
-		return this;
-	}
-
-	@Override
-	public Builder defaultToolCallbacks(FunctionCallback... toolCallbacks) {
-		this.defaultRequest.functions(toolCallbacks);
+		this.defaultRequest.tools(toolObjects);
 		return this;
 	}
 
@@ -201,7 +195,7 @@ public class DefaultChatClientBuilder implements Builder {
 
 	void addToolCallbacks(List<FunctionCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		this.defaultRequest.toolCallbacks(toolCallbacks.toArray(FunctionCallback[]::new));
+		this.defaultRequest.tools(toolCallbacks.toArray(FunctionCallback[]::new));
 	}
 
 	void addToolContext(Map<String, Object> toolContext) {

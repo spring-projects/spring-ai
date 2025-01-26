@@ -28,7 +28,7 @@ import org.springframework.ai.autoconfigure.anthropic.AnthropicAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.log.LogAccessor;
@@ -57,11 +57,11 @@ public class FunctionCallWithPromptFunctionIT {
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Return the temperature in Celsius.");
 
 				var promptOptions = AnthropicChatOptions.builder()
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function("CurrentWeatherService", new MockWeatherService())
-						.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-						.inputType(MockWeatherService.Request.class)
-						.build()))
+					.functionCallbacks(
+							List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
+								.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+								.inputType(MockWeatherService.Request.class)
+								.build()))
 					.build();
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));

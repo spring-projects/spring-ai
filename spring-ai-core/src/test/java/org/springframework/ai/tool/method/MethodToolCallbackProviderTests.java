@@ -55,15 +55,17 @@ class MethodToolCallbackProviderTests {
 
 		assertThat(callbacks).hasSize(2);
 
-		var callback1 = Stream.of(callbacks).filter(c -> c.getName().equals("testMethod")).findFirst();
+		var callback1 = Stream.of(callbacks).filter(c -> c.getToolDefinition().name().equals("testMethod")).findFirst();
 		assertThat(callback1).isPresent();
-		assertThat(callback1.get().getName()).isEqualTo("testMethod");
-		assertThat(callback1.get().getDescription()).isEqualTo("Test description");
+		assertThat(callback1.get().getToolDefinition().name()).isEqualTo("testMethod");
+		assertThat(callback1.get().getToolDefinition().description()).isEqualTo("Test description");
 
-		var callback2 = Stream.of(callbacks).filter(c -> c.getName().equals("testStaticMethod")).findFirst();
+		var callback2 = Stream.of(callbacks)
+			.filter(c -> c.getToolDefinition().name().equals("testStaticMethod"))
+			.findFirst();
 		assertThat(callback2).isPresent();
-		assertThat(callback2.get().getName()).isEqualTo("testStaticMethod");
-		assertThat(callback2.get().getDescription()).isEqualTo("Test description");
+		assertThat(callback2.get().getToolDefinition().name()).isEqualTo("testStaticMethod");
+		assertThat(callback2.get().getToolDefinition().description()).isEqualTo("Test description");
 	}
 
 	@Test

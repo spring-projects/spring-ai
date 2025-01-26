@@ -122,7 +122,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 
 			chatResponse = chatClient.prompt()
 				.messages(messages)
-				.functions(this.functionDefinition)
+				.tools(this.functionDefinition)
 				.options(OpenAiChatOptions.builder().proxyToolCalls(true).build())
 				.call()
 				.chatResponse();

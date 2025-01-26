@@ -218,10 +218,12 @@ public interface ChatClient {
 
 		ChatClientRequestSpec tools(Object... toolObjects);
 
-		ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks);
+		// ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks);
 
+		@Deprecated
 		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
 
+		@Deprecated
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
@@ -281,10 +283,17 @@ public interface ChatClient {
 
 		Builder defaultTools(Object... toolObjects);
 
-		Builder defaultToolCallbacks(FunctionCallback... toolCallbacks);
-
+		/**
+		 * @deprecated in favor of {@link #defaultTools(String...)}
+		 */
+		@Deprecated
 		Builder defaultFunctions(String... functionNames);
 
+		/**
+		 * @deprecated in favor of {@link #defaultTools(FunctionCallback...)} or
+		 * {@link #defaultToolCallbacks(FunctionCallback...)}
+		 */
+		@Deprecated
 		Builder defaultFunctions(FunctionCallback... functionCallbacks);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);

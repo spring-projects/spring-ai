@@ -52,14 +52,20 @@ public interface ToolDefinition {
 	}
 
 	/**
-	 * Create a default {@link ToolDefinition} instance from a {@link Method}.
+	 * Create a default {@link ToolDefinition} builder from a {@link Method}.
 	 */
-	static ToolDefinition from(Method method) {
+	static DefaultToolDefinition.Builder builder(Method method) {
 		return DefaultToolDefinition.builder()
 			.name(ToolUtils.getToolName(method))
 			.description(ToolUtils.getToolDescription(method))
-			.inputSchema(JsonSchemaGenerator.generateForMethodInput(method))
-			.build();
+			.inputSchema(JsonSchemaGenerator.generateForMethodInput(method));
+	}
+
+	/**
+	 * Create a default {@link ToolDefinition} instance from a {@link Method}.
+	 */
+	static ToolDefinition from(Method method) {
+		return ToolDefinition.builder(method).build();
 	}
 
 }

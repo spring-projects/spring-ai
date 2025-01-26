@@ -30,7 +30,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.log.LogAccessor;
@@ -63,8 +63,8 @@ public class PaymentStatusPromptIT {
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
 				var promptOptions = MistralAiChatOptions.builder()
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function("retrievePaymentStatus",
+					.functionCallbacks(List.of(FunctionToolCallback
+						.builder("retrievePaymentStatus",
 								(Transaction transaction) -> new Status(DATA.get(transaction).status()))
 						.description("Get payment status of a transaction")
 						.inputType(Transaction.class)
