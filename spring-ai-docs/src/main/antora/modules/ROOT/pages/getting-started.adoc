@@ -136,6 +136,10 @@ access tools (Java methods) to perform actions (Function Calling) and uses an LL
 * https://github.com/rd-1-2022/ai-azure-openai-helloworld
 * https://github.com/Azure-Samples/spring-ai-azure-workshop
 
+=== QianFan
+
+* https://gitee.com/dino9527/spring-ai-examples.git
+
 // * https://github.com/rd-1-2022/ai-azure-stuff-prompt
 // * https://github.com/rd-1-2022/ai-azure-prompt-template
 // * https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
