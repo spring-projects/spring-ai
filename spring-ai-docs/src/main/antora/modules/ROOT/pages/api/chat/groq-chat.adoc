@@ -24,7 +24,7 @@ The Spring AI project defines a configuration property named `spring.ai.openai.a
 * Set the Groq URL. 
 You have to set the `spring.ai.openai.base-url` property to `https://api.groq.com/openai`.
 * Select a https://console.groq.com/docs/models[Groq Model].
-Use the `spring.ai.openai.chat.model=<model name>` property to set the Model.
+Use the `spring.ai.openai.chat.options.model=<model name>` property to set the Model.
 
 Exporting an environment variable is one way to set that configuration property:
 
