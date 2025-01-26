@@ -138,7 +138,11 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.functions(FunctionCallback.builder().function("CurrentWeatherService", new MockWeatherService()).description("Get the weather in location").build())
+					.functions(FunctionCallback.builder()
+						.function("CurrentWeatherService", new MockWeatherService())
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.build())
 					.stream().content()
 					.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
