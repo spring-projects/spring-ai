@@ -171,7 +171,7 @@ class BedrockAi21Jurassic2ChatModelIT {
 					BedrockAi21Jurassic2ChatOptions.builder()
 						.temperature(0.5)
 						.maxTokens(500)
-						// .withTopP(0.9)
+						// .topP(0.9)
 						.build());
 		}
 

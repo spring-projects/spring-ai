@@ -62,10 +62,10 @@ public class BedrockTitanChatOptions implements ChatOptions {
 	}
 
 	public static BedrockTitanChatOptions fromOptions(BedrockTitanChatOptions fromOptions) {
-		return builder().withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withMaxTokenCount(fromOptions.getMaxTokenCount())
-			.withStopSequences(fromOptions.getStopSequences())
+		return builder().temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.maxTokenCount(fromOptions.getMaxTokenCount())
+			.stopSequences(fromOptions.getStopSequences())
 			.build();
 	}
 
@@ -148,21 +148,57 @@ public class BedrockTitanChatOptions implements ChatOptions {
 
 		private BedrockTitanChatOptions options = new BedrockTitanChatOptions();
 
+		public Builder temperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder maxTokenCount(Integer maxTokenCount) {
+			this.options.maxTokenCount = maxTokenCount;
+			return this;
+		}
+
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.stopSequences = stopSequences;
+			return this;
+		}
+
+		/**
+		 * @deprecated see {@link #temperature(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		public Builder withTemperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
+		/**
+		 * @deprecated see {@link #topP(Double)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		public Builder withTopP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
+		/**
+		 * @deprecated see {@link #maxTokenCount(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		public Builder withMaxTokenCount(Integer maxTokenCount) {
 			this.options.maxTokenCount = maxTokenCount;
 			return this;
 		}
 
+		/**
+		 * @deprecated see {@link #stopSequences(List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		public Builder withStopSequences(List<String> stopSequences) {
 			this.options.stopSequences = stopSequences;
 			return this;

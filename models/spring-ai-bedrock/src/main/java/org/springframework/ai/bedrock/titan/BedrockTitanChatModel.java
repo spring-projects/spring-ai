@@ -54,7 +54,7 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 	private final BedrockTitanChatOptions defaultOptions;
 
 	public BedrockTitanChatModel(TitanChatBedrockApi chatApi) {
-		this(chatApi, BedrockTitanChatOptions.builder().withTemperature(0.8).build());
+		this(chatApi, BedrockTitanChatOptions.builder().temperature(0.8).build());
 	}
 
 	public BedrockTitanChatModel(TitanChatBedrockApi chatApi, BedrockTitanChatOptions defaultOptions) {

@@ -44,10 +44,10 @@ public class BedrockTitanChatModelCreateRequestTests {
 
 		var model = new BedrockTitanChatModel(this.api,
 				BedrockTitanChatOptions.builder()
-					.withTemperature(66.6)
-					.withTopP(0.66)
-					.withMaxTokenCount(666)
-					.withStopSequences(List.of("stop1", "stop2"))
+					.temperature(66.6)
+					.topP(0.66)
+					.maxTokenCount(666)
+					.stopSequences(List.of("stop1", "stop2"))
 					.build());
 
 		var request = model.createRequest(new Prompt("Test message content"));
@@ -60,10 +60,10 @@ public class BedrockTitanChatModelCreateRequestTests {
 
 		request = model.createRequest(new Prompt("Test message content",
 				BedrockTitanChatOptions.builder()
-					.withTemperature(99.9)
-					.withTopP(0.99)
-					.withMaxTokenCount(999)
-					.withStopSequences(List.of("stop3", "stop4"))
+					.temperature(99.9)
+					.topP(0.99)
+					.maxTokenCount(999)
+					.stopSequences(List.of("stop3", "stop4"))
 					.build()
 
 		));

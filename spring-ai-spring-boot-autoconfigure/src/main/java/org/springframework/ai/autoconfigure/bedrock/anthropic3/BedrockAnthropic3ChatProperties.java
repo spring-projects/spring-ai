@@ -51,7 +51,7 @@ public class BedrockAnthropic3ChatProperties {
 		.maxTokens(300)
 		.topK(10)
 		.anthropicVersion(Anthropic3ChatBedrockApi.DEFAULT_ANTHROPIC_VERSION)
-		// .withStopSequences(List.of("\n\nHuman:"))
+		// .stopSequences(List.of("\n\nHuman:"))
 		.build();
 
 	public boolean isEnabled() {

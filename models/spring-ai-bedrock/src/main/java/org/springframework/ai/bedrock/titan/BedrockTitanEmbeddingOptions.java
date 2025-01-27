@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.titan;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -66,6 +68,17 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 
 		private BedrockTitanEmbeddingOptions options = new BedrockTitanEmbeddingOptions();
 
+		public Builder inputType(InputType inputType) {
+			Assert.notNull(inputType, "input type can not be null.");
+
+			this.options.setInputType(inputType);
+			return this;
+		}
+
+		/**
+		 * @deprecated see {@link #inputType(InputType)} (List)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		public Builder withInputType(InputType inputType) {
 			Assert.notNull(inputType, "input type can not be null.");
 
