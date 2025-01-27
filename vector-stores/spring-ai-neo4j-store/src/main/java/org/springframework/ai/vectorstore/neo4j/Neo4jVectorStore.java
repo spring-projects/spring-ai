@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.apache.commons.logging.LogFactory;
 import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
@@ -28,18 +29,18 @@ import org.neo4j.driver.Values;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -132,6 +133,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(Neo4jVectorStore.class));
 
 	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
@@ -232,6 +235,29 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 						Map.of("ids", idList, "transactionSize", DEFAULT_TRANSACTION_SIZE))
 				.consume();
 			return Optional.of(idList.size() == summary.counters().nodesDeleted());
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try (var session = this.driver.session(this.sessionConfig)) {
+			String whereClause = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			// Create Cypher query with transaction batching
+			String cypher = """
+					MATCH (node:%s) WHERE %s
+					CALL { WITH node DETACH DELETE node } IN TRANSACTIONS OF $transactionSize ROWS
+					""".formatted(this.label, whereClause);
+
+			var summary = session.run(cypher, Map.of("transactionSize", DEFAULT_TRANSACTION_SIZE)).consume();
+
+			logger.debug("Deleted " + summary.counters().nodesDeleted() + " nodes matching filter expression");
+		}
+		catch (Exception e) {
+			logger.error(e, "Failed to delete nodes by filter: " + e.getMessage());
+			throw new IllegalStateException("Failed to delete nodes by filter", e);
 		}
 	}
 

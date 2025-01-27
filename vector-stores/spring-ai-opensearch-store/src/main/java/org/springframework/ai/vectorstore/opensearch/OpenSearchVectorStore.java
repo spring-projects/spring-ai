@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.LogFactory;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -32,6 +33,8 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
@@ -39,10 +42,8 @@ import org.opensearch.client.transport.endpoints.BooleanResponse;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -52,6 +53,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -138,6 +140,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(OpenSearchVectorStore.class));
 
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
@@ -227,6 +231,31 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			// Create delete by query request
+			DeleteByQueryRequest request = new DeleteByQueryRequest.Builder().index(this.index)
+				.query(q -> q.queryString(qs -> qs.query(filterStr)))
+				.build();
+
+			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
+			logger.debug("Deleted " + response.deleted() + " documents matching filter expression");
+
+			if (!response.failures().isEmpty()) {
+				throw new IllegalStateException("Failed to delete some documents: " + response.failures());
+			}
+		}
+		catch (Exception e) {
+			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 

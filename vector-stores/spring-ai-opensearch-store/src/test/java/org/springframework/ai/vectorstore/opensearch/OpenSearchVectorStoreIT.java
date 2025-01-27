@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,16 @@ package org.springframework.ai.vectorstore.opensearch;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
@@ -49,6 +52,7 @@ import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -410,6 +414,113 @@ class OpenSearchVectorStoreIT {
 
 			assertThat(resultInIndex2).hasSize(1);
 			assertThat(resultInIndex2.get(0).getId()).isEqualTo(docInIndex2.getId());
+		});
+	}
+
+	@Test
+	void deleteByFilter() {
+		getContextRunner().run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
+
+			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
+			var nlDocument = new Document("2", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL", "activationDate", new Date(2000)));
+			var bgDocument2 = new Document("3", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023, "activationDate", new Date(3000)));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("The World").topK(5).build()),
+						hasSize(3));
+
+			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
+					new Filter.Key("country"), new Filter.Value("BG"));
+
+			vectorStore.delete(filterExpression);
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("The World").topK(5).build()),
+						hasSize(1));
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+		});
+	}
+
+	@Test
+	void deleteWithStringFilterExpression() {
+		getContextRunner().run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
+
+			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
+			var nlDocument = new Document("2", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL", "activationDate", new Date(2000)));
+			var bgDocument2 = new Document("3", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023, "activationDate", new Date(3000)));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("The World").topK(5).build()),
+						hasSize(3));
+
+			vectorStore.delete("country == 'BG'");
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("The World").topK(5).build()),
+						hasSize(1));
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+		});
+	}
+
+	@Test
+	void deleteWithComplexFilterExpression() {
+		getContextRunner().run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
+
+			var doc1 = new Document("1", "Content 1", Map.of("type", "A", "priority", 1));
+			var doc2 = new Document("2", "Content 2", Map.of("type", "A", "priority", 2));
+			var doc3 = new Document("3", "Content 3", Map.of("type", "B", "priority", 1));
+
+			vectorStore.add(List.of(doc1, doc2, doc3));
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Content").topK(5).build()),
+						hasSize(3));
+
+			// Complex filter expression: (type == 'A' AND priority > 1)
+			Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
+					new Filter.Key("priority"), new Filter.Value(1));
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("A"));
+			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+					priorityFilter);
+
+			vectorStore.delete(complexFilter);
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Content").topK(5).build()),
+						hasSize(2));
+
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(2);
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder("A", "B");
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder(1, 1);
 		});
 	}
 
