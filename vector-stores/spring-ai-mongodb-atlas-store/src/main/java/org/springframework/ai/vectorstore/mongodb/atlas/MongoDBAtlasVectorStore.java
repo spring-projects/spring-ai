@@ -23,23 +23,25 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.mongodb.MongoCommandException;
+import com.mongodb.client.result.DeleteResult;
+import org.springframework.core.log.LogAccessor;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
@@ -124,6 +126,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final LogAccessor logger = new LogAccessor(MongoDBAtlasVectorStore.class);
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -270,6 +274,22 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		long deleteCount = deleteRes.getDeletedCount();
 
 		return Optional.of(deleteCount == idList.size());
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+			BasicQuery query = new BasicQuery(nativeFilterExpression);
+			DeleteResult deleteResult = this.mongoTemplate.remove(query, this.collectionName);
+
+			logger.debug("Deleted " + deleteResult.getDeletedCount() + " documents matching filter expression");
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
