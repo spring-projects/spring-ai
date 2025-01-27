@@ -87,6 +87,11 @@ public enum AiProvider {
 	ZHIPUAI("zhipuai"),
 
 	/**
+	 * AI system provided by DeepSeek.
+	 */
+	DEEPSEEK("deepseek"),
+
+	/**
 	 * AI system provided by Spring AI.
 	 */
 	SPRING_AI("spring_ai"),

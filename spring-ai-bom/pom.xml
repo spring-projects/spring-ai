@@ -176,6 +176,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-deepseek</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <!-- Vector Databases -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -578,6 +584,12 @@
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-qianfan-spring-boot-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-deepseek-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

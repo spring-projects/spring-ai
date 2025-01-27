@@ -366,6 +366,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- DeepSeek -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-deepseek</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Moonshot AI  -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

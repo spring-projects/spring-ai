@@ -91,6 +91,7 @@
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-bedrock-converse</module>
+		<module>models/spring-ai-deepseek</module>
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
@@ -111,6 +112,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-deepseek</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
