@@ -23,8 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
@@ -34,6 +32,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,8 +43,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @ActiveProfiles("logging-test")
 class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
-	private static final Logger logger = LoggerFactory
-		.getLogger(AnthropicChatClientMethodInvokingFunctionCallbackIT.class);
+	private static final LogAccessor logger = new LogAccessor(
+			AnthropicChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
 
@@ -68,7 +67,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -88,7 +87,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -110,7 +109,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(arguments).containsEntry("roomName", "living room");
 		assertThat(arguments).containsEntry("on", true);
@@ -133,7 +132,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -156,7 +155,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 		assertThat(arguments).containsEntry("tool", "value");
@@ -203,7 +202,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
 	}
@@ -264,7 +263,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		public void turnLight(String roomName, boolean on) {
 			arguments.put("roomName", roomName);
 			arguments.put("on", on);
-			logger.info("Turn light in room: {} to: {}", roomName, on);
+			logger.info("Turn light in room: " + roomName + " to: " + on);
 		}
 
 		public void turnLivingRoomLightOn() {

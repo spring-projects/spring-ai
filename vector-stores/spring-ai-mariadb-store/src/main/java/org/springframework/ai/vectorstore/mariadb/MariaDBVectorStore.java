@@ -28,14 +28,11 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -45,6 +42,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -147,7 +145,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
-	private static final Logger logger = LoggerFactory.getLogger(MariaDBVectorStore.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(MariaDBVectorStore.class));
 
 	public static final String DEFAULT_TABLE_NAME = "vector_store";
 
@@ -213,8 +211,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		this.vectorTableName = builder.vectorTableName.isEmpty() ? DEFAULT_TABLE_NAME
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.vectorTableName.trim(), false);
 
-		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
-				builder.vectorTableName.isEmpty());
+		logger.info(() -> "Using the vector table name: " + this.vectorTableName + ". Is empty: "
+				+ builder.vectorTableName.isEmpty());
 
 		this.schemaName = builder.schemaName == null ? null
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.schemaName, false);
@@ -359,10 +357,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public void afterPropertiesSet() {
 
-		logger.info("Initializing MariaDBVectorStore schema for table: {} in schema: {}", this.vectorTableName,
-				this.schemaName);
+		logger.info(() -> "Initializing MariaDBVectorStore schema for table: " + this.vectorTableName + " in schema: "
+				+ this.schemaName);
 
-		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
+		logger.info(() -> "vectorTableValidationsEnabled " + this.schemaValidation);
 
 		if (this.schemaValidation) {
 			this.schemaValidator.validateTableSchema(this.schemaName, this.vectorTableName, this.idFieldName,
@@ -370,7 +368,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		}
 
 		if (!this.initializeSchema) {
-			logger.debug("Skipping the schema initialization for the table: {}", this.getFullyQualifiedTableName());
+			logger
+				.debug(() -> "Skipping the schema initialization for the table: " + this.getFullyQualifiedTableName());
 			return;
 		}
 
@@ -417,8 +416,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to"
-					+ " default:" + OPENAI_EMBEDDING_DIMENSION_SIZE, e);
+			logger.warn(e, () -> "Failed to obtain the embedding dimensions from the embedding model and fall backs to"
+					+ " default:" + OPENAI_EMBEDDING_DIMENSION_SIZE);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

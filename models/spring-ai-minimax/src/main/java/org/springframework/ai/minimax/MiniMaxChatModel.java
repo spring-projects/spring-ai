@@ -26,8 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -66,6 +64,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -84,7 +83,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(MiniMaxChatModel.class);
+	private static final LogAccessor logger = new LogAccessor(MiniMaxChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -229,14 +228,14 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: " + prompt);
 					return new ChatResponse(List.of());
 				}
 
 				List<Choice> choices = chatCompletion.choices();
 				if (choices == null) {
-					logger.warn("No choices returned for prompt: {}, because: {}}", prompt,
-							chatCompletion.baseResponse().message());
+					logger.warn("No choices returned for prompt: " + prompt + ", because: "
+							+ chatCompletion.baseResponse().message());
 					return new ChatResponse(List.of());
 				}
 
@@ -329,7 +328,7 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 							return new ChatResponse(generations, from(chatCompletion2));
 					}
 					catch (Exception e) {
-							logger.error("Error processing chat completion", e);
+							logger.error(e, "Error processing chat completion");
 							return new ChatResponse(List.of());
 						}
 					}));

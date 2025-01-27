@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -36,6 +34,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class MiniMaxChatOptionsTests {
 
-	private static final Logger logger = LoggerFactory.getLogger(MiniMaxChatOptionsTests.class);
+	private static final LogAccessor logger = new LogAccessor(MiniMaxChatOptionsTests.class);
 
 	private final MiniMaxChatModel chatModel = new MiniMaxChatModel(new MiniMaxApi(System.getenv("MINIMAX_API_KEY")));
 
@@ -135,7 +134,7 @@ public class MiniMaxChatOptionsTests {
 			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(content).contains("40");
 	}

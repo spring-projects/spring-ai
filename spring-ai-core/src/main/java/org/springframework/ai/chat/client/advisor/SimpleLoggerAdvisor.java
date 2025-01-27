@@ -18,8 +18,6 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.function.Function;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
@@ -31,6 +29,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.core.log.LogAccessor;
 
 /**
  * A simple logger advisor that logs the request and response messages.
@@ -44,7 +43,7 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = response -> ModelOptionsUtils
 		.toJsonStringPrettyPrinter(response);
 
-	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
+	private static final LogAccessor logger = new LogAccessor(SimpleLoggerAdvisor.class);
 
 	private final Function<AdvisedRequest, String> requestToString;
 
@@ -78,12 +77,12 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 	}
 
 	private AdvisedRequest before(AdvisedRequest request) {
-		logger.debug("request: {}", this.requestToString.apply(request));
+		logger.debug("request: " + this.requestToString.apply(request));
 		return request;
 	}
 
 	private void observeAfter(AdvisedResponse advisedResponse) {
-		logger.debug("response: {}", this.responseToString.apply(advisedResponse.response()));
+		logger.debug("response: " + this.responseToString.apply(advisedResponse.response()));
 	}
 
 	@Override

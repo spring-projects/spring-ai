@@ -62,11 +62,6 @@
             <version>${jackson.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-logging</artifactId>
-        </dependency>
-
         <!-- test dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

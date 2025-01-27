@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -41,6 +39,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -53,7 +52,7 @@ import org.springframework.util.Assert;
  */
 public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(ZhiPuAiEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -175,7 +174,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 					ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding> response = this.retryTemplate
 						.execute(ctx -> this.zhiPuAiApi.embeddings(apiRequest).getBody());
 					if (response == null || response.data() == null || response.data().isEmpty()) {
-						logger.warn("No embeddings returned for input: {}", inputContent);
+						logger.warn("No embeddings returned for input: " + inputContent);
 						embeddingList.add(new float[0]);
 					}
 					else {

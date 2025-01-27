@@ -42,8 +42,7 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -58,6 +57,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -80,7 +80,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	public static final String DEFAULT_INDEX_NAME = "spring_ai_azure_vector_store";
 
-	private static final Logger logger = LoggerFactory.getLogger(AzureVectorStore.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(AzureVectorStore.class));
 
 	private static final String SPRING_AI_VECTOR_CONFIG = "spring-ai-vector-config";
 

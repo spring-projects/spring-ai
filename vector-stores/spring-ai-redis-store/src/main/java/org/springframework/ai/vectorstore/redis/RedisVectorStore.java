@@ -27,8 +27,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.LogFactory;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -47,10 +46,8 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -60,6 +57,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -200,7 +198,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final String JSON_PATH_PREFIX = "$.";
 
-	private static final Logger logger = LoggerFactory.getLogger(RedisVectorStore.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(RedisVectorStore.class));
 
 	private static final Predicate<Object> RESPONSE_OK = Predicate.isEqual("OK");
 
@@ -290,7 +288,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
 			if (errResponse.isPresent()) {
 				if (logger.isErrorEnabled()) {
-					logger.error("Could not delete document: {}", errResponse.get());
+					logger.error("Could not delete document: " + errResponse.get());
 				}
 				return Optional.of(false);
 			}

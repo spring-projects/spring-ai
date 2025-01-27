@@ -27,8 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -69,6 +67,7 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -88,7 +87,7 @@ import org.springframework.util.MimeType;
  */
 public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiChatModel.class);
+	private static final LogAccessor logger = new LogAccessor(ZhiPuAiChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -212,7 +211,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: " + prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -297,7 +296,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 						return new ChatResponse(generations, from(chatCompletion2));
 					}
 					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
+						logger.error(e, "Error processing chat completion");
 						return new ChatResponse(List.of());
 					}
 

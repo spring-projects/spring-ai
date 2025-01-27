@@ -27,8 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -66,6 +64,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -88,7 +87,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final LogAccessor logger = new LogAccessor(getClass());
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -203,7 +202,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 				ChatCompletion chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: " + prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -300,7 +299,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 						}
 					}
 					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
+						logger.error(e, "Error processing chat completion");
 						return new ChatResponse(List.of());
 					}
 				}));

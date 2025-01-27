@@ -27,8 +27,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -54,6 +52,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 class BedrockProxyChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModelIT.class);
+	private static final LogAccessor logger = new LogAccessor(BedrockProxyChatModelIT.class);
 
 	@Autowired
 	protected ChatModel chatModel;
@@ -262,7 +261,7 @@ class BedrockProxyChatModelIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		Generation generation = response.getResult();
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
@@ -297,7 +296,7 @@ class BedrockProxyChatModelIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 		assertThat(content).contains("30", "10", "15");
 	}
 

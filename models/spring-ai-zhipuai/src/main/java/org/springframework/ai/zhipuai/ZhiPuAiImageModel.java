@@ -18,9 +18,6 @@ package org.springframework.ai.zhipuai;
 
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
@@ -30,6 +27,7 @@ import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -43,7 +41,7 @@ import org.springframework.util.Assert;
  */
 public class ZhiPuAiImageModel implements ImageModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiImageModel.class);
+	private static final LogAccessor logger = new LogAccessor(ZhiPuAiImageModel.class);
 
 	public final RetryTemplate retryTemplate;
 
@@ -101,7 +99,7 @@ public class ZhiPuAiImageModel implements ImageModel {
 			ZhiPuAiImageApi.ZhiPuAiImageRequest zhiPuAiImageRequest) {
 		ZhiPuAiImageApi.ZhiPuAiImageResponse imageApiResponse = imageResponseEntity.getBody();
 		if (imageApiResponse == null) {
-			logger.warn("No image response returned for request: {}", zhiPuAiImageRequest);
+			logger.warn("No image response returned for request: " + zhiPuAiImageRequest);
 			return new ImageResponse(List.of());
 		}
 

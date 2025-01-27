@@ -51,11 +51,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-logging</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>com.ibm.cloud</groupId>
 			<artifactId>sdk-core</artifactId>
 			<version>${ibm.sdk.version}</version>

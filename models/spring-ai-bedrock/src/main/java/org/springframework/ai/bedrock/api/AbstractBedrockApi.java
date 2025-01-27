@@ -27,8 +27,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
@@ -45,6 +43,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelWithRespo
 import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
 
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -67,7 +66,7 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractBedrockApi<I, O, SO> {
 
-	private static final Logger logger = LoggerFactory.getLogger(AbstractBedrockApi.class);
+	private static final LogAccessor logger = new LogAccessor(AbstractBedrockApi.class);
 
 	/**
 	 * Default emit failure handler.
@@ -290,7 +289,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 						eventSink.emitNext(response, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
 					catch (Exception e) {
-						logger.error("Failed to unmarshall", e);
+						logger.error(e, "Failed to unmarshall");
 						eventSink.emitError(e, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
 				})

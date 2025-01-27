@@ -21,16 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
+import org.springframework.core.log.LogAccessor;
 
 public abstract class TextSplitter implements DocumentTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(TextSplitter.class);
+	private static final LogAccessor logger = new LogAccessor(TextSplitter.class);
 
 	/**
 	 * If true the children documents inherit the content-type of the parent they were

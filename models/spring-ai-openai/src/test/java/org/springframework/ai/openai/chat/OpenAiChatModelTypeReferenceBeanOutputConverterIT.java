@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -35,6 +33,7 @@ import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,8 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory
-		.getLogger(OpenAiChatModelTypeReferenceBeanOutputConverterIT.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiChatModelTypeReferenceBeanOutputConverterIT.class);
 
 	@Test
 	void typeRefOutputConverterRecords() {

@@ -27,8 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -59,6 +57,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
@@ -69,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModelIT.class);
+	private static final LogAccessor logger = new LogAccessor(AnthropicChatModelIT.class);
 
 	@Autowired
 	protected ChatModel chatModel;
@@ -284,7 +283,7 @@ class AnthropicChatModelIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		Generation generation = response.getResult();
 		assertThat(generation).isNotNull();
@@ -324,7 +323,7 @@ class AnthropicChatModelIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 		assertThat(content).contains("30", "10", "15");
 	}
 
@@ -350,7 +349,7 @@ class AnthropicChatModelIT {
 
 		ChatResponse chatResponse = responseFlux.last().block();
 
-		logger.info("Response: {}", chatResponse);
+		logger.info("Response: " + chatResponse);
 		Usage usage = chatResponse.getMetadata().getUsage();
 
 		assertThat(usage).isNotNull();

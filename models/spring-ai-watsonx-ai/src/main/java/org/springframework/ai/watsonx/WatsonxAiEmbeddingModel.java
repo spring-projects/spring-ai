@@ -19,9 +19,6 @@ package org.springframework.ai.watsonx;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
@@ -32,6 +29,7 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
 import org.springframework.ai.watsonx.api.WatsonxAiEmbeddingRequest;
 import org.springframework.ai.watsonx.api.WatsonxAiEmbeddingResponse;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -51,7 +49,7 @@ import org.springframework.util.StringUtils;
  */
 public class WatsonxAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final LogAccessor logger = new LogAccessor(WatsonxAiEmbeddingModel.class);
 
 	private final WatsonxAiApi watsonxAiApi;
 

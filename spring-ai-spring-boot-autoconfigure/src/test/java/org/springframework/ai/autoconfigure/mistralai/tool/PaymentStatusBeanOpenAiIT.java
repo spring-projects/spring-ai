@@ -23,8 +23,6 @@ import java.util.function.Function;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -38,6 +36,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,7 +54,7 @@ class PaymentStatusBeanOpenAiIT {
 			new StatusDate("Unpaid", "2021-10-06"), "T1003", new StatusDate("Paid", "2021-10-07"), "T1004",
 			new StatusDate("Paid", "2021-10-05"), "T1005", new StatusDate("Pending", "2021-10-08"));
 
-	private final Logger logger = LoggerFactory.getLogger(PaymentStatusBeanIT.class);
+	private static final LogAccessor logger = new LogAccessor(PaymentStatusBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"),
@@ -79,7 +78,7 @@ class PaymentStatusBeanOpenAiIT {
 								.function("retrievePaymentDate")
 								.build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
 				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");

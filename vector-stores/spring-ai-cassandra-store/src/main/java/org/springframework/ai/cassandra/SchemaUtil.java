@@ -21,8 +21,9 @@ import java.time.Duration;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.LogFactory;
+
+import org.springframework.core.log.LogAccessor;
 
 /**
  * Utility class for working with Cassandra schema.
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class SchemaUtil {
 
-	private static final Logger logger = LoggerFactory.getLogger(SchemaUtil.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(SchemaUtil.class));
 
 	private SchemaUtil() {
 
@@ -61,7 +62,7 @@ public final class SchemaUtil {
 				.withSimpleStrategy(1)
 				.build();
 
-			logger.debug("Executing {}", keyspaceStmt.getQuery());
+			logger.debug(() -> "Executing " + keyspaceStmt.getQuery());
 			session.execute(keyspaceStmt);
 		}
 	}

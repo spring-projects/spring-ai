@@ -19,8 +19,6 @@ package org.springframework.ai.mistralai;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -39,6 +37,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -52,7 +51,7 @@ import org.springframework.util.Assert;
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(MistralAiEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(MistralAiEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -126,7 +125,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 					.execute(ctx -> this.mistralAiApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
-					logger.warn("No embeddings returned for request: {}", request);
+					logger.warn("No embeddings returned for request: " + request);
 					return new EmbeddingResponse(List.of());
 				}
 

@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -55,6 +53,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -77,7 +76,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Disabled("Requires Perplexity credits")
 class PerplexityWithOpenAiChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(PerplexityWithOpenAiChatModelIT.class);
+	private static final LogAccessor logger = new LogAccessor(PerplexityWithOpenAiChatModelIT.class);
 
 	private static final String PERPLEXITY_BASE_URL = "https://api.perplexity.ai";
 
@@ -267,7 +266,7 @@ class PerplexityWithOpenAiChatModelIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResults().stream().mapToLong(r -> r.getOutput().getToolCalls().size()).sum()).isZero();
 	}
@@ -297,7 +296,7 @@ class PerplexityWithOpenAiChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(content).doesNotContain("toolCalls");
 	}

@@ -19,8 +19,6 @@ package org.springframework.ai.qianfan;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
@@ -36,6 +34,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.qianfan.api.QianFanConstants;
 import org.springframework.ai.qianfan.api.QianFanImageApi;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
@@ -50,7 +49,7 @@ import org.springframework.util.Assert;
  */
 public class QianFanImageModel implements ImageModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(QianFanImageModel.class);
+	private static final LogAccessor logger = new LogAccessor(QianFanImageModel.class);
 
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
@@ -175,7 +174,7 @@ public class QianFanImageModel implements ImageModel {
 			QianFanImageApi.QianFanImageRequest qianFanImageRequest) {
 		QianFanImageApi.QianFanImageResponse imageApiResponse = imageResponseEntity.getBody();
 		if (imageApiResponse == null) {
-			logger.warn("No image response returned for request: {}", qianFanImageRequest);
+			logger.warn("No image response returned for request: " + qianFanImageRequest);
 			return new ImageResponse(List.of());
 		}
 

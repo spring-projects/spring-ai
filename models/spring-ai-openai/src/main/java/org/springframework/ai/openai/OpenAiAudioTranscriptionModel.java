@@ -16,9 +16,6 @@
 
 package org.springframework.ai.openai;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
@@ -30,6 +27,7 @@ import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResp
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -47,7 +45,7 @@ import org.springframework.util.Assert;
  */
 public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPrompt, AudioTranscriptionResponse> {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final LogAccessor logger = new LogAccessor(OpenAiAudioTranscriptionModel.class);
 
 	private final OpenAiAudioTranscriptionOptions defaultOptions;
 
@@ -118,7 +116,7 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			var transcription = transcriptionEntity.getBody();
 
 			if (transcription == null) {
-				logger.warn("No transcription returned for request: {}", audioResource);
+				logger.warn("No transcription returned for request: " + audioResource);
 				return new AudioTranscriptionResponse(null);
 			}
 
@@ -139,7 +137,7 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			var transcription = transcriptionEntity.getBody();
 
 			if (transcription == null) {
-				logger.warn("No transcription returned for request: {}", audioResource);
+				logger.warn("No transcription returned for request: " + audioResource);
 				return new AudioTranscriptionResponse(null);
 			}
 

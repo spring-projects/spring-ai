@@ -18,14 +18,13 @@ package org.springframework.ai.ollama.management;
 
 import java.time.Duration;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.util.retry.Retry;
 
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.DeleteModelRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ListModelResponse;
 import org.springframework.ai.ollama.api.OllamaApi.PullModelRequest;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -38,7 +37,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class OllamaModelManager {
 
-	private final Logger logger = LoggerFactory.getLogger(OllamaModelManager.class);
+	private static final LogAccessor logger = new LogAccessor(OllamaModelManager.class);
 
 	private final OllamaApi ollamaApi;
 
@@ -81,13 +80,13 @@ public class OllamaModelManager {
 	}
 
 	public void deleteModel(String modelName) {
-		logger.info("Start deletion of model: {}", modelName);
+		logger.info("Start deletion of model: " + modelName);
 		if (!isModelAvailable(modelName)) {
-			logger.info("Model {} not found", modelName);
+			logger.info("Model " + modelName + " not found");
 			return;
 		}
 		this.ollamaApi.deleteModel(new DeleteModelRequest(modelName));
-		logger.info("Completed deletion of model: {}", modelName);
+		logger.info("Completed deletion of model: " + modelName);
 	}
 
 	public void pullModel(String modelName) {
@@ -101,20 +100,20 @@ public class OllamaModelManager {
 
 		if (PullModelStrategy.WHEN_MISSING.equals(pullModelStrategy)) {
 			if (isModelAvailable(modelName)) {
-				logger.debug("Model '{}' already available. Skipping pull operation.", modelName);
+				logger.debug("Model '" + modelName + "' already available. Skipping pull operation.");
 				return;
 			}
 		}
 
 		// @formatter:off
 
-		logger.info("Start pulling model: {}", modelName);
+		logger.info("Start pulling model: "+ modelName);
 		this.ollamaApi.pullModel(new PullModelRequest(modelName))
 				.bufferUntilChanged(OllamaApi.ProgressResponse::status)
 				.doOnEach(signal -> {
 					var progressResponses = signal.get();
 					if (!CollectionUtils.isEmpty(progressResponses) && progressResponses.get(progressResponses.size() - 1) != null) {
-						logger.info("Pulling the '{}' model - Status: {}", modelName, progressResponses.get(progressResponses.size() - 1).status());
+						logger.info("Pulling the '"+ modelName +"' model - Status: "+ progressResponses.get(progressResponses.size() - 1).status());
 					}
 				})
 				.takeUntil(progressResponses ->
@@ -122,7 +121,7 @@ public class OllamaModelManager {
 				.timeout(this.options.timeout())
 				.retryWhen(Retry.backoff(this.options.maxRetries(), Duration.ofSeconds(5)))
 				.blockLast();
-		logger.info("Completed pulling the '{}' model", modelName);
+		logger.info("Completed pulling the '"+ modelName +"' model");
 
 		// @formatter:on
 	}

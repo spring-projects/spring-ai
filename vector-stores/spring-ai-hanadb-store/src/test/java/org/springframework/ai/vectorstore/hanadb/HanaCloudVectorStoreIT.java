@@ -22,11 +22,10 @@ import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -39,6 +38,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -54,7 +54,7 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 @EnabledIfEnvironmentVariable(named = "HANA_DATASOURCE_PASSWORD", matches = ".+")
 public class HanaCloudVectorStoreIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(HanaCloudVectorStoreIT.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(HanaCloudVectorStoreIT.class));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(HanaTestApplication.class);
@@ -65,7 +65,7 @@ public class HanaCloudVectorStoreIT {
 
 			VectorStore vectorStore = context.getBean(HanaCloudVectorStore.class);
 			int deleteCount = ((HanaCloudVectorStore) vectorStore).purgeEmbeddings();
-			logger.info("Purged all embeddings: count={}", deleteCount);
+			logger.info("Purged all embeddings: count=" + deleteCount);
 
 			Supplier<List<Document>> reader = new PagePdfDocumentReader("classpath:Cricket_World_Cup.pdf");
 			Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();

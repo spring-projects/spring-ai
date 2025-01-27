@@ -32,8 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -67,6 +65,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,7 +75,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiChatModelIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -349,7 +348,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
@@ -382,7 +381,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
@@ -406,10 +405,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.build();
 
 		ChatResponse chatResponse = this.chatModel.call(new Prompt(messages, promptOptions));
-		logger.info("Response: {}", chatResponse);
+		logger.info("Response: " + chatResponse);
 		Usage usage = chatResponse.getMetadata().getUsage();
 
-		logger.info("Usage: {}", usage);
+		logger.info("Usage: " + usage);
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
@@ -438,7 +437,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
 		Usage usage = response.last().block().getMetadata().getUsage();
 
-		logger.info("Usage: {}", usage);
+		logger.info("Usage: " + usage);
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
@@ -502,7 +501,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -577,7 +576,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 		assertThat(content).containsIgnoringCase("hobbits");
 	}
 

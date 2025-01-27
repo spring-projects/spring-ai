@@ -28,8 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -50,6 +48,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
@@ -60,7 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("logging-test")
 class OpenAiChatClientIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientIT.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiChatClientIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -260,7 +259,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -280,7 +279,7 @@ class OpenAiChatClientIT extends AbstractIT {
 			.prompt().call().content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -301,7 +300,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(content).contains("30", "10", "15");
 	}
@@ -363,7 +362,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");
 	}

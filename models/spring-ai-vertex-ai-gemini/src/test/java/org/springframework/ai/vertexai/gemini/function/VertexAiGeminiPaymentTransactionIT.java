@@ -26,8 +26,6 @@ import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -46,6 +44,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 public class VertexAiGeminiPaymentTransactionIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionIT.class);
+	private static final LogAccessor logger = new LogAccessor(VertexAiGeminiPaymentTransactionIT.class);
 
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
@@ -117,7 +116,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 
 	private static class LoggingAdvisor implements CallAroundAdvisor {
 
-		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
+		private static final LogAccessor logger = new LogAccessor(LoggingAdvisor.class);
 
 		@Override
 		public String getName() {

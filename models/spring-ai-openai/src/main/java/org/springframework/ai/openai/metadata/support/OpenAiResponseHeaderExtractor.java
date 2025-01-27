@@ -23,11 +23,9 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.metadata.OpenAiRateLimit;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -49,7 +47,7 @@ import static org.springframework.ai.openai.metadata.support.OpenAiApiResponseHe
  */
 public final class OpenAiResponseHeaderExtractor {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiResponseHeaderExtractor.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiResponseHeaderExtractor.class);
 
 	private OpenAiResponseHeaderExtractor() {
 
@@ -98,8 +96,8 @@ public final class OpenAiResponseHeaderExtractor {
 				return Long.parseLong(headerValue.trim());
 			}
 			catch (NumberFormatException e) {
-				logger.warn("Value [{}] for HTTP header [{}] is not valid: {}", headerName, headerValue,
-						e.getMessage());
+				logger.warn("Value [" + headerName + "] for HTTP header [" + headerValue + "] is not valid: "
+						+ e.getMessage());
 			}
 		}
 

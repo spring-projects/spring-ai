@@ -32,8 +32,6 @@ import java.util.Set;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -101,6 +99,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
@@ -134,7 +133,7 @@ import org.springframework.util.StringUtils;
  */
 public class BedrockProxyChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModel.class);
+	private static final LogAccessor logger = new LogAccessor(BedrockProxyChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -200,7 +199,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 				ConverseResponse converseResponse = this.bedrockRuntimeClient.converse(converseRequest);
 
-				logger.debug("ConverseResponse: {}", converseResponse);
+				logger.debug("ConverseResponse: " + converseResponse);
 
 				var response = this.toChatResponse(converseResponse, perviousChatResponse);
 
@@ -655,7 +654,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 		ConverseStreamResponseHandler.Visitor visitor = ConverseStreamResponseHandler.Visitor.builder()
 			.onDefault(output -> {
-				logger.debug("Received converse stream output:{}", output);
+				logger.debug("Received converse stream output: " + output);
 				eventSink.emitNext(output, DEFAULT_EMIT_FAILURE_HANDLER);
 			})
 			.build();
@@ -667,7 +666,7 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 				logger.info("Completed streaming response.");
 			})
 			.onError(error -> {
-				logger.error("Error handling Bedrock converse stream response", error);
+				logger.error(error, "Error handling Bedrock converse stream response");
 				eventSink.emitError(error, DEFAULT_EMIT_FAILURE_HANDLER);
 			})
 			.build();

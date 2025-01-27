@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -40,13 +38,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = OllamaChatModelFunctionCallingIT.Config.class)
 class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
+	private static final LogAccessor logger = new LogAccessor(OllamaChatModelFunctionCallingIT.class);
 
 	private static final String MODEL = "qwen2.5:3b";
 
@@ -72,7 +71,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -104,7 +103,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(content).contains("30", "10", "15");
 	}

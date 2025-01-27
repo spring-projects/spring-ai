@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.moonshot.MoonshotAutoConfiguration;
@@ -41,6 +39,7 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".*")
 public class MoonshotFunctionCallbackIT {
 
-	private final Logger logger = LoggerFactory.getLogger(MoonshotFunctionCallbackIT.class);
+	private static final LogAccessor logger = new LogAccessor(MoonshotFunctionCallbackIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.moonshot.apiKey=" + System.getenv("MOONSHOT_API_KEY"))
@@ -71,7 +70,7 @@ public class MoonshotFunctionCallbackIT {
 			ChatResponse response = chatModel
 				.call(new Prompt(List.of(userMessage), MoonshotChatOptions.builder().function("WeatherInfo").build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -99,7 +98,7 @@ public class MoonshotFunctionCallbackIT {
 				.map(AssistantMessage::getText)
 				.filter(Objects::nonNull)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+			logger.info("Response: " + content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

@@ -29,16 +29,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.pgvector.PGvector;
+import org.apache.commons.logging.LogFactory;
 import org.postgresql.util.PGobject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -50,6 +47,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -171,7 +169,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
-	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(PgVectorSchemaValidator.class));
 
 	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
@@ -218,8 +216,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
-		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
-				this.vectorTableName.isEmpty());
+		logger.info("Using the vector table name: " + this.vectorTableName + " Is empty: "
+				+ this.vectorTableName.isEmpty());
 
 		this.vectorIndexName = this.vectorTableName.equals(DEFAULT_TABLE_NAME) ? DEFAULT_VECTOR_INDEX_NAME
 				: this.vectorTableName + "_index";
@@ -382,17 +380,17 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	@Override
 	public void afterPropertiesSet() {
 
-		logger.info("Initializing PGVectorStore schema for table: {} in schema: {}", this.getVectorTableName(),
-				this.getSchemaName());
+		logger.info("Initializing PGVectorStore schema for table: " + this.getVectorTableName() + " in schema: "
+				+ this.getSchemaName());
 
-		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
+		logger.info("vectorTableValidationsEnabled " + this.schemaValidation);
 
 		if (this.schemaValidation) {
 			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName());
 		}
 
 		if (!this.initializeSchema) {
-			logger.debug("Skipping the schema initialization for the table: {}", this.getFullyQualifiedTableName());
+			logger.debug("Skipping the schema initialization for the table: " + this.getFullyQualifiedTableName());
 			return;
 		}
 
@@ -454,8 +452,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ OPENAI_EMBEDDING_DIMENSION_SIZE, e);
+			logger.warn(e,
+					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
+							+ OPENAI_EMBEDDING_DIMENSION_SIZE);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

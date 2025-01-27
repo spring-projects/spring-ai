@@ -16,9 +16,15 @@
 
 package org.springframework.ai.tool.method;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.stream.Stream;
+
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -27,17 +33,11 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.stream.Stream;
 
 /**
  * A {@link ToolCallback} implementation to invoke methods as tools.
@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  */
 public class MethodToolCallback implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallback.class);
+	private static final LogAccessor logger = new LogAccessor(MethodToolCallback.class);
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
@@ -95,7 +95,7 @@ public class MethodToolCallback implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", toolDefinition.name());
+		logger.debug("Starting execution of tool: " + toolDefinition.name());
 
 		validateToolContextSupport(toolContext);
 
@@ -105,7 +105,7 @@ public class MethodToolCallback implements ToolCallback {
 
 		Object result = callMethod(methodArguments);
 
-		logger.debug("Successful execution of tool: {}", toolDefinition.name());
+		logger.debug("Successful execution of tool: " + toolDefinition.name());
 
 		Type returnType = toolMethod.getGenericReturnType();
 

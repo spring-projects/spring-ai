@@ -29,8 +29,6 @@ import com.google.cloud.aiplatform.v1.PredictResponse;
 import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -49,6 +47,7 @@ import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.MultimodalInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.VideoBuilder;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
@@ -64,7 +63,7 @@ import org.springframework.util.StringUtils;
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(VertexAiMultimodalEmbeddingModel.class);
 
 	private static final MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
@@ -164,7 +163,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
 				else {
-					logger.warn("Unsupported image mime type: {}", media.getMimeType());
+					logger.warn("Unsupported image mime type: " + media.getMimeType());
 					throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
 				}
 			}
@@ -179,7 +178,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 			}
 			else {
-				logger.warn("Unsupported media type: {}", media.getMimeType());
+				logger.warn("Unsupported media type: " + media.getMimeType());
 				throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
 			}
 		}

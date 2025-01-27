@@ -37,8 +37,6 @@ import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import io.micrometer.observation.ObservationRegistry;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
@@ -55,6 +53,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -89,7 +88,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 	public static final String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
-	private static final Log logger = LogFactory.getLog(TransformersEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(TransformersEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 

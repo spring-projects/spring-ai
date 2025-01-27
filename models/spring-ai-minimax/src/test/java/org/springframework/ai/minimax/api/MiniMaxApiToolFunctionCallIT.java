@@ -24,8 +24,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletion;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage;
@@ -33,6 +31,7 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest.ToolChoiceBuilder;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class MiniMaxApiToolFunctionCallIT {
 
-	private final Logger logger = LoggerFactory.getLogger(MiniMaxApiToolFunctionCallIT.class);
+	private static final LogAccessor logger = new LogAccessor(MiniMaxApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
 

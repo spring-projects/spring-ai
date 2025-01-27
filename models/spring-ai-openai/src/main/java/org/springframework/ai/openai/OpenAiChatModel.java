@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -76,6 +74,7 @@ import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtrac
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -108,7 +107,7 @@ import org.springframework.util.StringUtils;
  */
 public class OpenAiChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -241,13 +240,13 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: " + prompt);
 					return new ChatResponse(List.of());
 				}
 
 				List<Choice> choices = chatCompletion.choices();
 				if (choices == null) {
-					logger.warn("No choices returned for prompt: {}", prompt);
+					logger.warn("No choices returned for prompt: " + prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -358,7 +357,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
 					}
 					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
+						logger.error(e, "Error processing chat completion");
 						return new ChatResponse(List.of());
 					}
 					// When in stream mode and enabled to include the usage, the OpenAI

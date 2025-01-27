@@ -16,14 +16,12 @@
 
 package org.springframework.ai.rag.preretrieval.query.transformation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.util.PromptAssert;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -50,7 +48,7 @@ import org.springframework.util.StringUtils;
  */
 public final class TranslationQueryTransformer implements QueryTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(TranslationQueryTransformer.class);
+	private static final LogAccessor logger = new LogAccessor(TranslationQueryTransformer.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			Given a user query, translate it to {targetLanguage}.
@@ -85,7 +83,7 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 	public Query transform(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
-		logger.debug("Translating query to target language: {}", this.targetLanguage);
+		logger.debug("Translating query to target language: " + this.targetLanguage);
 
 		var translatedQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
