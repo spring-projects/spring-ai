@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.function
+package org.springframework.ai.tool.resolution
 
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import org.junit.jupiter.api.Test
+class StandaloneWeatherKotlinFunction : Function1<WeatherRequest, WeatherResponse> {
 
-class FunctionCallbackExtensionsTests {
-
-	private val spec = mockk<FunctionCallback.FunctionInvokingSpec<WeatherRequest, WeatherResponse>>()
-
-	@Test
-	fun inputType() {
-		every { spec.inputType(any<Class<*>>()) } returns spec
-		spec.inputType<WeatherRequest, WeatherResponse>()
-		verify { spec.inputType(WeatherRequest::class.java) }
+	override fun invoke(weatherRequest: WeatherRequest): WeatherResponse {
+		return WeatherResponse(42.0f)
 	}
 }

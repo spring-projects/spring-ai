@@ -16,11 +16,12 @@
 
 package org.springframework.ai.model.tool;
 
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Map;
@@ -35,20 +36,17 @@ import java.util.Set;
  */
 public interface ToolCallingChatOptions extends FunctionCallingOptions {
 
+	boolean DEFAULT_TOOL_EXECUTION_ENABLED = true;
+
 	/**
 	 * ToolCallbacks to be registered with the ChatModel.
 	 */
-	List<ToolCallback> getToolCallbacks();
+	List<FunctionCallback> getToolCallbacks();
 
 	/**
 	 * Set the ToolCallbacks to be registered with the ChatModel.
 	 */
-	void setToolCallbacks(List<ToolCallback> toolCallbacks);
-
-	/**
-	 * Set the ToolCallbacks to be registered with the ChatModel.
-	 */
-	void setToolCallbacks(ToolCallback... toolCallbacks);
+	void setToolCallbacks(List<FunctionCallback> toolCallbacks);
 
 	/**
 	 * Names of the tools to register with the ChatModel.
@@ -58,27 +56,20 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 	/**
 	 * Set the names of the tools to register with the ChatModel.
 	 */
-	void setTools(Set<String> tools);
+	void setTools(Set<String> toolNames);
 
 	/**
-	 * Set the names of the tools to register with the ChatModel.
-	 */
-	void setTools(String... tools);
-
-	/**
-	 * Whether the result of each tool call should be returned directly or passed back to
-	 * the model. It can be overridden for each {@link ToolCallback} instance via
-	 * {@link ToolMetadata#returnDirect()}.
+	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
+	 * the model or if the tools should be executed directly by the caller.
 	 */
 	@Nullable
-	Boolean getToolCallReturnDirect();
+	Boolean isInternalToolExecutionEnabled();
 
 	/**
-	 * Set whether the result of each tool call should be returned directly or passed back
-	 * to the model. It can be overridden for each {@link ToolCallback} instance via
-	 * {@link ToolMetadata#returnDirect()}.
+	 * Set whether the {@link ChatModel} is responsible for executing the tools requested
+	 * by the model or if the tools should be executed directly by the caller.
 	 */
-	void setToolCallReturnDirect(@Nullable Boolean toolCallReturnDirect);
+	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.
@@ -95,12 +86,12 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		/**
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
-		Builder toolCallbacks(List<ToolCallback> functionCallbacks);
+		Builder toolCallbacks(List<FunctionCallback> functionCallbacks);
 
 		/**
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
-		Builder toolCallbacks(ToolCallback... functionCallbacks);
+		Builder toolCallbacks(FunctionCallback... functionCallbacks);
 
 		/**
 		 * Names of the tools to register with the ChatModel.
@@ -113,11 +104,10 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		Builder tools(String... toolNames);
 
 		/**
-		 * Whether the result of each tool call should be returned directly or passed back
-		 * to the model. It can be overridden for each {@link ToolCallback} instance via
-		 * {@link ToolMetadata#returnDirect()}.
+		 * Whether the {@link ChatModel} is responsible for executing the tools requested
+		 * by the model or if the tools should be executed directly by the caller.
 		 */
-		Builder toolCallReturnDirect(@Nullable Boolean toolCallReturnDirect);
+		Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 		// FunctionCallingOptions.Builder methods
 
@@ -144,7 +134,7 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		Builder function(String function);
 
 		@Override
-		@Deprecated // Use toolCallReturnDirect() instead
+		@Deprecated // Use internalToolExecutionEnabled() instead
 		Builder proxyToolCalls(@Nullable Boolean proxyToolCalls);
 
 		// ChatOptions.Builder methods
@@ -176,6 +166,23 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		@Override
 		ToolCallingChatOptions build();
 
+	}
+
+	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions) {
+		Assert.notNull(chatOptions, "chatOptions cannot be null");
+		boolean internalToolExecutionEnabled;
+		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
+				&& toolCallingChatOptions.isInternalToolExecutionEnabled() != null) {
+			internalToolExecutionEnabled = Boolean.TRUE.equals(toolCallingChatOptions.isInternalToolExecutionEnabled());
+		}
+		else if (chatOptions instanceof FunctionCallingOptions functionCallingOptions
+				&& functionCallingOptions.getProxyToolCalls() != null) {
+			internalToolExecutionEnabled = Boolean.TRUE.equals(!functionCallingOptions.getProxyToolCalls());
+		}
+		else {
+			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
+		}
+		return internalToolExecutionEnabled;
 	}
 
 }

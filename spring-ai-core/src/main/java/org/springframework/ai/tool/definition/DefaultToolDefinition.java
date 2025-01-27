@@ -64,9 +64,9 @@ public record DefaultToolDefinition(String name, String description, String inpu
 			return this;
 		}
 
-		public DefaultToolDefinition build() {
+		public ToolDefinition build() {
 			if (!StringUtils.hasText(description)) {
-				description = ToolUtils.getToolDescriptionFromName(description);
+				description = ToolUtils.getToolDescriptionFromName(name);
 			}
 			return new DefaultToolDefinition(name, description, inputSchema);
 		}

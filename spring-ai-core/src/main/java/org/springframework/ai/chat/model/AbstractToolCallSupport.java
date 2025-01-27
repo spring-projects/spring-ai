@@ -32,6 +32,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -44,7 +45,9 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @author Jihoon Kim
  * @since 1.0.0
+ * @deprecated Use {@link ToolCallingManager} instead.
  */
+@Deprecated
 public abstract class AbstractToolCallSupport {
 
 	protected static final boolean IS_RUNTIME_CALL = true;

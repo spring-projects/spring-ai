@@ -25,6 +25,9 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
+import org.springframework.ai.integration.tests.tool.domain.Author;
+import org.springframework.ai.integration.tests.tool.domain.Book;
+import org.springframework.ai.integration.tests.tool.domain.BookService;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
@@ -154,38 +157,6 @@ public class MethodToolCallbackTests {
 		List<Author> authorsByBooks(List<String> books) {
 			logger.info("Getting authors by books: " + String.join(", ", books));
 			return bookService.getAuthorsByBook(books.stream().map(b -> new Book(b, "")).toList());
-		}
-
-	}
-
-	public record Author(String name) {
-	}
-
-	public record Book(String title, String author) {
-	}
-
-	static class BookService {
-
-		private static final Map<Integer, Book> books = new ConcurrentHashMap<>();
-
-		static {
-			books.put(1, new Book("His Dark Materials", "Philip Pullman"));
-			books.put(2, new Book("Narnia", "C.S. Lewis"));
-			books.put(3, new Book("The Hobbit", "J.R.R. Tolkien"));
-			books.put(4, new Book("The Lord of The Rings", "J.R.R. Tolkien"));
-			books.put(5, new Book("The Silmarillion", "J.R.R. Tolkien"));
-		}
-
-		public List<Book> getBooksByAuthor(Author author) {
-			return books.values().stream().filter(book -> author.name().equals(book.author())).toList();
-		}
-
-		public List<Author> getAuthorsByBook(List<Book> booksToSearch) {
-			return books.values()
-				.stream()
-				.filter(book -> booksToSearch.stream().anyMatch(b -> b.title().equals(book.title())))
-				.map(book -> new Author(book.author()))
-				.toList();
 		}
 
 	}

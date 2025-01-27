@@ -18,13 +18,11 @@ package org.springframework.ai.model.tool;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,14 +37,14 @@ import java.util.Set;
  */
 public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
 	private Set<String> tools = new HashSet<>();
 
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	@Nullable
-	private Boolean toolCallReturnDirect;
+	private Boolean internalToolExecutionEnabled;
 
 	@Nullable
 	private String model;
@@ -73,21 +71,15 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	private Double topP;
 
 	@Override
-	public List<ToolCallback> getToolCallbacks() {
+	public List<FunctionCallback> getToolCallbacks() {
 		return List.copyOf(this.toolCallbacks);
 	}
 
 	@Override
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = new ArrayList<>(toolCallbacks);
-	}
-
-	@Override
-	public void setToolCallbacks(ToolCallback... toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		setToolCallbacks(List.of(toolCallbacks));
 	}
 
 	@Override
@@ -104,12 +96,6 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setTools(String... tools) {
-		Assert.notNull(tools, "tools cannot be null");
-		setTools(Set.of(tools));
-	}
-
-	@Override
 	public Map<String, Object> getToolContext() {
 		return Map.copyOf(this.toolContext);
 	}
@@ -123,23 +109,23 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@Nullable
-	public Boolean getToolCallReturnDirect() {
-		return this.toolCallReturnDirect;
+	public Boolean isInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
-	public void setToolCallReturnDirect(@Nullable Boolean toolCallReturnDirect) {
-		this.toolCallReturnDirect = toolCallReturnDirect;
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return getToolCallbacks().stream().map(FunctionCallback.class::cast).toList();
+		return getToolCallbacks();
 	}
 
 	@Override
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		throw new UnsupportedOperationException("Not supported. Call setToolCallbacks instead.");
+		setToolCallbacks(functionCallbacks);
 	}
 
 	@Override
@@ -155,12 +141,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	public Boolean getProxyToolCalls() {
-		return getToolCallReturnDirect();
+		return isInternalToolExecutionEnabled() != null ? !isInternalToolExecutionEnabled() : null;
 	}
 
 	@Override
 	public void setProxyToolCalls(@Nullable Boolean proxyToolCalls) {
-		setToolCallReturnDirect(proxyToolCalls != null && proxyToolCalls);
+		setInternalToolExecutionEnabled(proxyToolCalls == null || !proxyToolCalls);
 	}
 
 	@Override
@@ -250,7 +236,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		options.setToolCallbacks(getToolCallbacks());
 		options.setTools(getTools());
 		options.setToolContext(getToolContext());
-		options.setToolCallReturnDirect(getToolCallReturnDirect());
+		options.setInternalToolExecutionEnabled(isInternalToolExecutionEnabled());
 		options.setModel(getModel());
 		options.setFrequencyPenalty(getFrequencyPenalty());
 		options.setMaxTokens(getMaxTokens());
@@ -260,55 +246,6 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		options.setTopK(getTopK());
 		options.setTopP(getTopP());
 		return (T) options;
-	}
-
-	/**
-	 * Merge the given {@link ChatOptions} into this instance.
-	 */
-	public ToolCallingChatOptions merge(ChatOptions options) {
-		ToolCallingChatOptions.Builder builder = ToolCallingChatOptions.builder();
-		builder.model(StringUtils.hasText(options.getModel()) ? options.getModel() : this.getModel());
-		builder.frequencyPenalty(
-				options.getFrequencyPenalty() != null ? options.getFrequencyPenalty() : this.getFrequencyPenalty());
-		builder.maxTokens(options.getMaxTokens() != null ? options.getMaxTokens() : this.getMaxTokens());
-		builder.presencePenalty(
-				options.getPresencePenalty() != null ? options.getPresencePenalty() : this.getPresencePenalty());
-		builder.stopSequences(options.getStopSequences() != null ? new ArrayList<>(options.getStopSequences())
-				: this.getStopSequences());
-		builder.temperature(options.getTemperature() != null ? options.getTemperature() : this.getTemperature());
-		builder.topK(options.getTopK() != null ? options.getTopK() : this.getTopK());
-		builder.topP(options.getTopP() != null ? options.getTopP() : this.getTopP());
-
-		if (options instanceof ToolCallingChatOptions toolOptions) {
-			List<ToolCallback> toolCallbacks = new ArrayList<>(this.toolCallbacks);
-			if (!CollectionUtils.isEmpty(toolOptions.getToolCallbacks())) {
-				toolCallbacks.addAll(toolOptions.getToolCallbacks());
-			}
-			builder.toolCallbacks(toolCallbacks);
-
-			Set<String> tools = new HashSet<>(this.tools);
-			if (!CollectionUtils.isEmpty(toolOptions.getTools())) {
-				tools.addAll(toolOptions.getTools());
-			}
-			builder.tools(tools);
-
-			Map<String, Object> toolContext = new HashMap<>(this.toolContext);
-			if (!CollectionUtils.isEmpty(toolOptions.getToolContext())) {
-				toolContext.putAll(toolOptions.getToolContext());
-			}
-			builder.toolContext(toolContext);
-
-			builder.toolCallReturnDirect(toolOptions.getToolCallReturnDirect() != null
-					? toolOptions.getToolCallReturnDirect() : this.getToolCallReturnDirect());
-		}
-		else {
-			builder.toolCallbacks(this.toolCallbacks);
-			builder.tools(this.tools);
-			builder.toolContext(this.toolContext);
-			builder.toolCallReturnDirect(this.toolCallReturnDirect);
-		}
-
-		return builder.build();
 	}
 
 	public static Builder builder() {
@@ -323,14 +260,15 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		private final DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
 		@Override
-		public ToolCallingChatOptions.Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+		public ToolCallingChatOptions.Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
 			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
+		public ToolCallingChatOptions.Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.setToolCallbacks(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
@@ -342,7 +280,8 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 		@Override
 		public ToolCallingChatOptions.Builder tools(String... toolNames) {
-			this.options.setTools(toolNames);
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setTools(Set.of(toolNames));
 			return this;
 		}
 
@@ -363,16 +302,16 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolCallReturnDirect(@Nullable Boolean toolCallReturnDirect) {
-			this.options.setToolCallReturnDirect(toolCallReturnDirect);
+		public ToolCallingChatOptions.Builder internalToolExecutionEnabled(
+				@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
 		}
 
 		@Override
 		@Deprecated // Use toolCallbacks() instead
 		public ToolCallingChatOptions.Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
-			return toolCallbacks(functionCallbacks.stream().map(ToolCallback.class::cast).toList());
+			return toolCallbacks(functionCallbacks);
 		}
 
 		@Override
@@ -395,9 +334,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		@Deprecated // Use toolCallReturnDirect() instead
+		@Deprecated // Use internalToolExecutionEnabled() instead
 		public ToolCallingChatOptions.Builder proxyToolCalls(@Nullable Boolean proxyToolCalls) {
-			return toolCallReturnDirect(proxyToolCalls != null && proxyToolCalls);
+			return internalToolExecutionEnabled(proxyToolCalls == null || !proxyToolCalls);
 		}
 
 		@Override

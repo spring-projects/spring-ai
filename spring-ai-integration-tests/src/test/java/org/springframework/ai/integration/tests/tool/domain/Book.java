@@ -14,36 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.metadata;
+package org.springframework.ai.integration.tests.tool.domain;
 
 /**
- * Default implementation of {@link ToolMetadata}.
- *
  * @author Thomas Vitale
- * @since 1.0.0
  */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		private boolean returnDirect = false;
-
-		private Builder() {
-		}
-
-		public Builder returnDirect(boolean returnDirect) {
-			this.returnDirect = returnDirect;
-			return this;
-		}
-
-		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
-		}
-
-	}
-
+public record Book(String title, String author) {
 }

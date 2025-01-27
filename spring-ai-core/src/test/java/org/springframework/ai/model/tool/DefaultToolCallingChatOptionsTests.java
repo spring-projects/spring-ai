@@ -17,7 +17,6 @@
 package org.springframework.ai.model.tool;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 
@@ -32,6 +31,8 @@ import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for {@link DefaultToolCallingChatOptions}.
+ *
+ * @author Thomas Vitale
  */
 class DefaultToolCallingChatOptionsTests {
 
@@ -40,7 +41,7 @@ class DefaultToolCallingChatOptionsTests {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
-		List<ToolCallback> callbacks = List.of(callback1, callback2);
+		List<FunctionCallback> callbacks = List.of(callback1, callback2);
 
 		options.setToolCallbacks(callbacks);
 
@@ -53,7 +54,7 @@ class DefaultToolCallingChatOptionsTests {
 		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
 
-		options.setToolCallbacks(callback1, callback2);
+		options.setToolCallbacks(List.of(callback1, callback2));
 
 		assertThat(options.getToolCallbacks()).hasSize(2).containsExactly(callback1, callback2);
 	}
@@ -62,8 +63,7 @@ class DefaultToolCallingChatOptionsTests {
 	void setToolCallbacksShouldRejectNullList() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
-		assertThatThrownBy(() -> options.setToolCallbacks((List<ToolCallback>) null))
-			.isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> options.setToolCallbacks(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolCallbacks cannot be null");
 	}
 
@@ -81,7 +81,7 @@ class DefaultToolCallingChatOptionsTests {
 	void setToolsWithVarargsShouldStoreTools() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
-		options.setTools("tool1", "tool2");
+		options.setTools(Set.of("tool1", "tool2"));
 
 		assertThat(options.getTools()).hasSize(2).containsExactlyInAnyOrder("tool1", "tool2");
 	}
@@ -139,7 +139,7 @@ class DefaultToolCallingChatOptionsTests {
 		original.setToolCallbacks(List.of(callback));
 		original.setTools(Set.of("tool1"));
 		original.setToolContext(Map.of("key", "value"));
-		original.setToolCallReturnDirect(true);
+		original.setInternalToolExecutionEnabled(true);
 		original.setModel("gpt-4");
 		original.setTemperature(0.7);
 
@@ -149,7 +149,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(c.getToolCallbacks()).isEqualTo(original.getToolCallbacks());
 			assertThat(c.getTools()).isEqualTo(original.getTools());
 			assertThat(c.getToolContext()).isEqualTo(original.getToolContext());
-			assertThat(c.getToolCallReturnDirect()).isEqualTo(original.getToolCallReturnDirect());
+			assertThat(c.isInternalToolExecutionEnabled()).isEqualTo(original.isInternalToolExecutionEnabled());
 			assertThat(c.getModel()).isEqualTo(original.getModel());
 			assertThat(c.getTemperature()).isEqualTo(original.getTemperature());
 		});
@@ -171,45 +171,6 @@ class DefaultToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void mergeShouldCombineWithNonToolCallingChatOptions() {
-		DefaultToolCallingChatOptions original = new DefaultToolCallingChatOptions();
-		original.setToolCallbacks(List.of(mock(ToolCallback.class)));
-		original.setTools(Set.of("tool1"));
-		original.setModel("gpt-3.5");
-
-		ChatOptions toMerge = ChatOptions.builder().model("gpt-4").build();
-
-		ToolCallingChatOptions merged = original.merge(toMerge);
-
-		assertThat(merged.getToolCallbacks()).hasSize(1);
-		assertThat(merged.getTools()).containsExactly("tool1");
-		assertThat(merged.getModel()).isEqualTo("gpt-4");
-	}
-
-	@Test
-	void mergeShouldCombineOptionsCorrectly() {
-		DefaultToolCallingChatOptions original = new DefaultToolCallingChatOptions();
-		original.setToolCallbacks(List.of(mock(ToolCallback.class)));
-		original.setTools(Set.of("tool1"));
-		original.setToolContext(Map.of("key1", "value1"));
-		original.setModel("gpt-3.5");
-
-		DefaultToolCallingChatOptions toMerge = new DefaultToolCallingChatOptions();
-		toMerge.setToolCallbacks(List.of(mock(ToolCallback.class)));
-		toMerge.setTools(Set.of("tool2"));
-		toMerge.setToolContext(Map.of("key2", "value2"));
-		toMerge.setTemperature(0.8);
-
-		ToolCallingChatOptions merged = original.merge(toMerge);
-
-		assertThat(merged.getToolCallbacks()).hasSize(2);
-		assertThat(merged.getTools()).containsExactlyInAnyOrder("tool1", "tool2");
-		assertThat(merged.getToolContext()).containsEntry("key1", "value1").containsEntry("key2", "value2");
-		assertThat(merged.getModel()).isEqualTo("gpt-3.5");
-		assertThat(merged.getTemperature()).isEqualTo(0.8);
-	}
-
-	@Test
 	void builderShouldCreateOptionsWithAllProperties() {
 		ToolCallback callback = mock(ToolCallback.class);
 		Map<String, Object> context = Map.of("key", "value");
@@ -218,7 +179,7 @@ class DefaultToolCallingChatOptionsTests {
 			.toolCallbacks(List.of(callback))
 			.tools(Set.of("tool1"))
 			.toolContext(context)
-			.toolCallReturnDirect(true)
+			.internalToolExecutionEnabled(true)
 			.model("gpt-4")
 			.temperature(0.7)
 			.maxTokens(100)
@@ -233,7 +194,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(o.getToolCallbacks()).containsExactly(callback);
 			assertThat(o.getTools()).containsExactly("tool1");
 			assertThat(o.getToolContext()).isEqualTo(context);
-			assertThat(o.getToolCallReturnDirect()).isTrue();
+			assertThat(o.isInternalToolExecutionEnabled()).isTrue();
 			assertThat(o.getModel()).isEqualTo("gpt-4");
 			assertThat(o.getTemperature()).isEqualTo(0.7);
 			assertThat(o.getMaxTokens()).isEqualTo(100);
@@ -258,11 +219,11 @@ class DefaultToolCallingChatOptionsTests {
 	@Test
 	void deprecatedMethodsShouldWorkCorrectly() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		FunctionCallback callback = mock(FunctionCallback.class);
 
-		assertThatThrownBy(() -> options.setFunctionCallbacks(List.of(callback)))
-			.isInstanceOf(UnsupportedOperationException.class)
-			.hasMessage("Not supported. Call setToolCallbacks instead.");
+		FunctionCallback callback1 = mock(FunctionCallback.class);
+		ToolCallback callback2 = mock(ToolCallback.class);
+		options.setFunctionCallbacks(List.of(callback1, callback2));
+		assertThat(options.getFunctionCallbacks()).hasSize(2);
 
 		options.setTools(Set.of("tool1"));
 		assertThat(options.getFunctions()).containsExactly("tool1");
@@ -270,11 +231,11 @@ class DefaultToolCallingChatOptionsTests {
 		options.setFunctions(Set.of("function1"));
 		assertThat(options.getTools()).containsExactly("function1");
 
-		options.setToolCallReturnDirect(true);
-		assertThat(options.getProxyToolCalls()).isTrue();
+		options.setInternalToolExecutionEnabled(true);
+		assertThat(options.getProxyToolCalls()).isFalse();
 
 		options.setProxyToolCalls(true);
-		assertThat(options.getToolCallReturnDirect()).isTrue();
+		assertThat(options.isInternalToolExecutionEnabled()).isFalse();
 	}
 
 }

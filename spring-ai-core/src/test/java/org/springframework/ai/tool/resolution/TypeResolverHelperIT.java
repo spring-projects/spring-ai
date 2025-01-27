@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.function;
+package org.springframework.ai.tool.resolution;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
@@ -71,8 +70,8 @@ public class TypeResolverHelperIT {
 	}
 
 	@Configuration
-	@ComponentScan({ "org.springframework.ai.model.function.config",
-			"org.springframework.ai.model.function.component" })
+	@ComponentScan({ "org.springframework.ai.tool.resolution.config",
+			"org.springframework.ai.tool.resolution.component" })
 	public static class TypeResolverHelperConfiguration {
 
 		@Bean

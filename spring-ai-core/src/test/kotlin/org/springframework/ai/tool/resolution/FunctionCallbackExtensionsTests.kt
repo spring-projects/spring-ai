@@ -14,36 +14,23 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.metadata;
+package org.springframework.ai.tool.resolution
 
-/**
- * Default implementation of {@link ToolMetadata}.
- *
- * @author Thomas Vitale
- * @since 1.0.0
- */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import org.junit.jupiter.api.Test
+import org.springframework.ai.model.function.FunctionCallback
+import org.springframework.ai.model.function.inputType
 
-	public static Builder builder() {
-		return new Builder();
+class FunctionCallbackExtensionsTests {
+
+	private val spec = mockk<FunctionCallback.FunctionInvokingSpec<WeatherRequest, WeatherResponse>>()
+
+	@Test
+	fun inputType() {
+		every { spec.inputType(any<Class<*>>()) } returns spec
+		spec.inputType<WeatherRequest, WeatherResponse>()
+		verify { spec.inputType(WeatherRequest::class.java) }
 	}
-
-	public static class Builder {
-
-		private boolean returnDirect = false;
-
-		private Builder() {
-		}
-
-		public Builder returnDirect(boolean returnDirect) {
-			this.returnDirect = returnDirect;
-			return this;
-		}
-
-		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
-		}
-
-	}
-
 }

@@ -14,36 +14,23 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.metadata;
+package org.springframework.ai.tool.resolution;
+
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 
 /**
- * Default implementation of {@link ToolMetadata}.
+ * A resolver for {@link ToolCallback} instances.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+public interface ToolCallbackResolver {
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		private boolean returnDirect = false;
-
-		private Builder() {
-		}
-
-		public Builder returnDirect(boolean returnDirect) {
-			this.returnDirect = returnDirect;
-			return this;
-		}
-
-		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
-		}
-
-	}
+	/**
+	 * Resolve the {@link ToolCallback} for the given tool name.
+	 */
+	@Nullable
+	ToolCallback resolve(String toolName);
 
 }
