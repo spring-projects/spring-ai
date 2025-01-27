@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.function;
 
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.lang.NonNull;
 
 /**
@@ -23,7 +24,9 @@ import org.springframework.lang.NonNull;
  *
  * @author Christian Tzolov
  * @since 1.0.0
+ * @deprecated Use {@link ToolCallbackResolver} instead.
  */
+@Deprecated
 public interface FunctionCallbackResolver {
 
 	/**

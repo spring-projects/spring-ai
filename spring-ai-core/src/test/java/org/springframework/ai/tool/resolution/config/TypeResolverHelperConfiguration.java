@@ -14,36 +14,18 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.metadata;
+package org.springframework.ai.tool.resolution.config;
 
-/**
- * Default implementation of {@link ToolMetadata}.
- *
- * @author Thomas Vitale
- * @since 1.0.0
- */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+import org.springframework.ai.tool.resolution.StandaloneWeatherFunction;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-	public static Builder builder() {
-		return new Builder();
-	}
+@Configuration
+public class TypeResolverHelperConfiguration {
 
-	public static class Builder {
-
-		private boolean returnDirect = false;
-
-		private Builder() {
-		}
-
-		public Builder returnDirect(boolean returnDirect) {
-			this.returnDirect = returnDirect;
-			return this;
-		}
-
-		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
-		}
-
+	@Bean
+	StandaloneWeatherFunction scannedStandaloneWeatherFunction() {
+		return new StandaloneWeatherFunction();
 	}
 
 }

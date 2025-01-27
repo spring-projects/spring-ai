@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.function.component;
+package org.springframework.ai.tool.resolution;
 
 import java.util.function.Function;
 
-import org.springframework.ai.model.function.TypeResolverHelperIT.WeatherRequest;
-import org.springframework.ai.model.function.TypeResolverHelperIT.WeatherResponse;
-import org.springframework.stereotype.Component;
+import org.springframework.ai.tool.resolution.TypeResolverHelperIT.WeatherRequest;
+import org.springframework.ai.tool.resolution.TypeResolverHelperIT.WeatherResponse;
 
 /**
- * @author Sebastien Deleuze
+ * @author Christian Tzolov
  */
-@Component
-public class ComponentWeatherFunction implements Function<WeatherRequest, WeatherResponse> {
+public class StandaloneWeatherFunction implements Function<WeatherRequest, WeatherResponse> {
 
 	@Override
 	public WeatherResponse apply(WeatherRequest weatherRequest) {

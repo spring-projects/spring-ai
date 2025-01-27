@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.function;
+package org.springframework.ai.tool.resolution;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -45,7 +45,7 @@ import org.springframework.util.ReflectionUtils;
  * @author Christian Tzolov
  * @author Sebastien Dekeuze
  */
-public abstract class TypeResolverHelper {
+public final class TypeResolverHelper {
 
 	/**
 	 * Returns the input class of a given Consumer class.

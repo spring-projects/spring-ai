@@ -14,36 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.metadata;
+package org.springframework.ai.tool.resolution.kotlinconfig
 
-/**
- * Default implementation of {@link ToolMetadata}.
- *
- * @author Thomas Vitale
- * @since 1.0.0
- */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+import org.springframework.ai.tool.resolution.StandaloneWeatherKotlinFunction
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-	public static Builder builder() {
-		return new Builder();
+@Configuration
+open class TypeResolverHelperKotlinConfiguration {
+
+	@Bean
+	open fun scannedStandaloneWeatherFunction(): StandaloneWeatherKotlinFunction {
+		return StandaloneWeatherKotlinFunction()
 	}
-
-	public static class Builder {
-
-		private boolean returnDirect = false;
-
-		private Builder() {
-		}
-
-		public Builder returnDirect(boolean returnDirect) {
-			this.returnDirect = returnDirect;
-			return this;
-		}
-
-		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
-		}
-
-	}
-
 }

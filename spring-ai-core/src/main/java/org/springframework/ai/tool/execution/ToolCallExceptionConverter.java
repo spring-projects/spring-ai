@@ -14,36 +14,22 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.metadata;
+package org.springframework.ai.tool.execution;
 
 /**
- * Default implementation of {@link ToolMetadata}.
+ * A functional interface to convert a tool call exception to a String that can be sent
+ * back to the AI model.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+@FunctionalInterface
+public interface ToolCallExceptionConverter {
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		private boolean returnDirect = false;
-
-		private Builder() {
-		}
-
-		public Builder returnDirect(boolean returnDirect) {
-			this.returnDirect = returnDirect;
-			return this;
-		}
-
-		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
-		}
-
-	}
+	/**
+	 * Convert an exception thrown by a tool to a String that can be sent back to the AI
+	 * model.
+	 */
+	String convert(ToolExecutionException exception);
 
 }

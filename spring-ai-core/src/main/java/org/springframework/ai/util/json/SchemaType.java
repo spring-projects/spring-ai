@@ -14,36 +14,24 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.metadata;
+package org.springframework.ai.util.json;
 
 /**
- * Default implementation of {@link ToolMetadata}.
+ * The type of schema to generate for a given Java type.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+public enum SchemaType {
 
-	public static Builder builder() {
-		return new Builder();
-	}
+	/**
+	 * JSON schema.
+	 */
+	JSON_SCHEMA,
 
-	public static class Builder {
-
-		private boolean returnDirect = false;
-
-		private Builder() {
-		}
-
-		public Builder returnDirect(boolean returnDirect) {
-			this.returnDirect = returnDirect;
-			return this;
-		}
-
-		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
-		}
-
-	}
+	/**
+	 * Open API schema.
+	 */
+	OPEN_API_SCHEMA;
 
 }

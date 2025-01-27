@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.springframework.util.CollectionUtils;
  * @author Soby Chacko
  * @author John Blum
  * @author Alexandros Pappas
+ * @author Thomas Vitale
  */
 public class ChatResponse implements ModelResponse<Generation> {
 
@@ -98,6 +99,16 @@ public class ChatResponse implements ModelResponse<Generation> {
 	@Override
 	public ChatResponseMetadata getMetadata() {
 		return this.chatResponseMetadata;
+	}
+
+	/**
+	 * Whether the model has requested the execution of a tool.
+	 */
+	public boolean hasToolCalls() {
+		if (CollectionUtils.isEmpty(generations)) {
+			return false;
+		}
+		return generations.stream().anyMatch(generation -> generation.getOutput().hasToolCalls());
 	}
 
 	@Override
