@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -289,6 +290,32 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		}
 
 		return Optional.of(status.getStatus() == Status.Success.getCode());
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
+				.withDatabaseName(this.databaseName)
+				.withCollectionName(this.collectionName)
+				.withExpr(nativeFilterExpression)
+				.build());
+
+			if (status.getStatus() != Status.Success.getCode()) {
+				throw new IllegalStateException("Failed to delete documents by filter: " + status.getMessage());
+			}
+
+			long deleteCount = status.getData().getDeleteCnt();
+			logger.debug("Deleted {} documents matching filter expression", deleteCount);
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
