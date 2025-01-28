@@ -242,20 +242,16 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
 
 			// Create delete by query request
-			DeleteByQueryRequest request = new DeleteByQueryRequest.Builder()
-					.index(this.index)
-					.query(q -> q
-							.queryString(qs -> qs
-									.query(filterStr)
-							))
-					.build();
+			DeleteByQueryRequest request = new DeleteByQueryRequest.Builder().index(this.index)
+				.query(q -> q.queryString(qs -> qs.query(filterStr)))
+				.build();
 
-				DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
-				logger.debug("Deleted {} documents matching filter expression", response.deleted());
+			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
+			logger.debug("Deleted {} documents matching filter expression", response.deleted());
 
-				if (!response.failures().isEmpty()) {
-					throw new IllegalStateException("Failed to delete some documents: " + response.failures());
-				}
+			if (!response.failures().isEmpty()) {
+				throw new IllegalStateException("Failed to delete some documents: " + response.failures());
+			}
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);

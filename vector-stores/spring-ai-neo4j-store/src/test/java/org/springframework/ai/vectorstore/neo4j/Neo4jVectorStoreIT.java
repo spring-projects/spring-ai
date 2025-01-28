@@ -319,10 +319,10 @@ class Neo4jVectorStoreIT {
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
 			SearchRequest searchRequest = SearchRequest.builder()
-					.query("The World")
-					.topK(5)
-					.similarityThresholdAll()
-					.build();
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.build();
 
 			List<Document> results = vectorStore.similaritySearch(searchRequest);
 			assertThat(results).hasSize(3);
@@ -352,11 +352,7 @@ class Neo4jVectorStoreIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
-			var searchRequest = SearchRequest.builder()
-					.query("The World")
-					.topK(5)
-					.similarityThresholdAll()
-					.build();
+			var searchRequest = SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build();
 
 			List<Document> results = vectorStore.similaritySearch(searchRequest);
 			assertThat(results).hasSize(3);
@@ -383,28 +379,21 @@ class Neo4jVectorStoreIT {
 			// Complex filter expression: (type == 'A' AND priority > 1)
 			Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
 					new Filter.Key("priority"), new Filter.Value(1));
-			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("type"), new Filter.Value("A"));
-			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND,
-					typeFilter, priorityFilter);
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("A"));
+			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+					priorityFilter);
 
 			vectorStore.delete(complexFilter);
 
-			var results = vectorStore.similaritySearch(SearchRequest.builder()
-					.query("Content")
-					.topK(5)
-					.similarityThresholdAll()
-					.build());
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
 
 			assertThat(results).hasSize(2);
-			assertThat(results.stream()
-					.map(doc -> doc.getMetadata().get("type"))
-					.collect(Collectors.toList()))
-					.containsExactlyInAnyOrder("A", "B");
-			assertThat(results.stream()
-					.map(doc -> doc.getMetadata().get("priority"))
-					.collect(Collectors.toList()))
-					.containsExactlyInAnyOrder(1L, 1L);
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder("A", "B");
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder(1L, 1L);
 		});
 	}
 

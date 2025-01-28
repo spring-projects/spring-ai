@@ -247,13 +247,11 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 			// Create Cypher query with transaction batching
 			String cypher = """
-            MATCH (node:%s) WHERE %s
-            CALL { WITH node DETACH DELETE node } IN TRANSACTIONS OF $transactionSize ROWS
-            """.formatted(this.label, whereClause);
+					MATCH (node:%s) WHERE %s
+					CALL { WITH node DETACH DELETE node } IN TRANSACTIONS OF $transactionSize ROWS
+					""".formatted(this.label, whereClause);
 
-			var summary = session.run(cypher,
-							Map.of("transactionSize", DEFAULT_TRANSACTION_SIZE))
-					.consume();
+			var summary = session.run(cypher, Map.of("transactionSize", DEFAULT_TRANSACTION_SIZE)).consume();
 
 			logger.debug("Deleted {} nodes matching filter expression", summary.counters().nodesDeleted());
 		}
