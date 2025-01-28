@@ -272,10 +272,10 @@ class MongoDBAtlasVectorStoreIT {
 			Thread.sleep(5000); // Wait for indexing
 
 			SearchRequest searchRequest = SearchRequest.builder()
-					.query("The World")
-					.topK(5)
-					.similarityThresholdAll()
-					.build();
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.build();
 
 			List<Document> results = vectorStore.similaritySearch(searchRequest);
 			assertThat(results).hasSize(3);
@@ -307,11 +307,7 @@ class MongoDBAtlasVectorStoreIT {
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 			Thread.sleep(5000); // Wait for indexing
 
-			var searchRequest = SearchRequest.builder()
-					.query("The World")
-					.topK(5)
-					.similarityThresholdAll()
-					.build();
+			var searchRequest = SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build();
 
 			List<Document> results = vectorStore.similaritySearch(searchRequest);
 			assertThat(results).hasSize(3);
@@ -340,29 +336,22 @@ class MongoDBAtlasVectorStoreIT {
 			// Complex filter expression: (type == 'A' AND priority > 1)
 			Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
 					new Filter.Key("priority"), new Filter.Value(1));
-			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("type"), new Filter.Value("A"));
-			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND,
-					typeFilter, priorityFilter);
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("A"));
+			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+					priorityFilter);
 
 			vectorStore.delete(complexFilter);
 			Thread.sleep(1000); // Wait for deletion to be processed
 
-			var results = vectorStore.similaritySearch(SearchRequest.builder()
-					.query("Content")
-					.topK(5)
-					.similarityThresholdAll()
-					.build());
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
 
 			assertThat(results).hasSize(2);
-			assertThat(results.stream()
-					.map(doc -> doc.getMetadata().get("type"))
-					.collect(Collectors.toList()))
-					.containsExactlyInAnyOrder("A", "B");
-			assertThat(results.stream()
-					.map(doc -> doc.getMetadata().get("priority"))
-					.collect(Collectors.toList()))
-					.containsExactlyInAnyOrder(1, 1);
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder("A", "B");
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder(1, 1);
 		});
 	}
 
