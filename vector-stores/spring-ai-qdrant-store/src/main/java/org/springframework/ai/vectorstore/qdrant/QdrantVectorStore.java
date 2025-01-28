@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,12 @@ import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import io.qdrant.client.grpc.Points.UpdateStatus;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -46,6 +45,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -122,9 +122,11 @@ import org.springframework.util.Assert;
  * @author Josh Long
  * @author Soby Chacko
  * @author Thomas Vitale
- * @since 0.8.1
+ * @since 1.0.0
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(QdrantVectorStore.class));
 
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
@@ -211,6 +213,29 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		}
 		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doDelete(org.springframework.ai.vectorstore.filter.Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			Filter filter = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			io.qdrant.client.grpc.Points.UpdateResult response = this.qdrantClient
+				.deleteAsync(this.collectionName, filter)
+				.get();
+
+			if (response.getStatus() != io.qdrant.client.grpc.Points.UpdateStatus.Completed) {
+				throw new IllegalStateException("Failed to delete documents by filter: " + response.getStatus());
+			}
+
+			logger.debug("Deleted documents matching filter expression");
+		}
+		catch (Exception e) {
+			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
