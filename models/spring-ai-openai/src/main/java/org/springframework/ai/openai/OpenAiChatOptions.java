@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Mariusz Bernacki
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -173,7 +174,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	 * Defaults to true.
 	 */
 	private @JsonProperty("parallel_tool_calls") Boolean parallelToolCalls;
-
+	/**
+	 * Whether to store the output of this chat completion request for use in our model <a href="https://platform.openai.com/docs/guides/distillation">distillation</a> or <a href="https://platform.openai.com/docs/guides/evals">evals</a> products.
+	 */
+	private @JsonProperty("store") Boolean store;
+	/**
+	 * Developer-defined tags and values used for filtering completions in the <a href="https://platform.openai.com/chat-completions">dashboard</a>.
+	 */
+	private @JsonProperty("metadata") Map<String, String> metadata = new HashMap<>();
 	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
@@ -246,6 +254,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			.httpHeaders(fromOptions.getHttpHeaders())
 			.proxyToolCalls(fromOptions.getProxyToolCalls())
 			.toolContext(fromOptions.getToolContext())
+			.store(fromOptions.getStore())
+			.metadata(fromOptions.getMetadata())
 			.build();
 	}
 
@@ -494,6 +504,22 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 		this.toolContext = toolContext;
 	}
 
+	public Boolean getStore() {
+		return this.store;
+	}
+
+	public void setStore(Boolean store) {
+		this.store = store;
+	}
+
+	public Map<String, String> getMetadata() {
+		return this.metadata;
+	}
+
+	public void setMetadata(Map<String, String> metadata) {
+		this.metadata = metadata;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -505,7 +531,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
-				this.proxyToolCalls, this.toolContext, this.outputModalities, this.outputAudio);
+				this.proxyToolCalls, this.toolContext, this.outputModalities, this.outputAudio, this.store,
+				this.metadata);
 	}
 
 	@Override
@@ -535,7 +562,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.toolContext, other.toolContext)
 				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
 				&& Objects.equals(this.outputModalities, other.outputModalities)
-				&& Objects.equals(this.outputAudio, other.outputAudio);
+				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
+				&& Objects.equals(this.metadata, other.metadata);
 	}
 
 	@Override
@@ -699,6 +727,16 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder store(Boolean store) {
+			this.options.store = store;
+			return this;
+		}
+
+		public Builder metadata(Map<String, String> metadata) {
+			this.options.metadata = metadata;
 			return this;
 		}
 
