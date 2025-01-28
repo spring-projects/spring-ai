@@ -310,10 +310,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 
 			long deleteCount = status.getData().getDeleteCnt();
-			logger.debug("Deleted {} documents matching filter expression", deleteCount);
+			logger.debug("Deleted " + deleteCount + " documents matching filter expression");
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

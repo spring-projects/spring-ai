@@ -336,12 +336,12 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 			String sql = String.format("DELETE FROM %s WHERE %s", getFullyQualifiedTableName(), nativeFilterExpression);
 
-			logger.debug("Executing delete with filter: {}", sql);
+			logger.debug("Executing delete with filter: " + sql);
 
 			this.jdbcTemplate.update(sql);
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
