@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -804,7 +804,7 @@ public class OpenAiApi {
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("store") Boolean store,
-			@JsonProperty("metadata") Object metadata,
+			@JsonProperty("metadata") Map<String, String> metadata,
 			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("logprobs") Boolean logprobs,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -597,6 +597,15 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	@Test
+	void validateStoreAndMetadata() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().store(true).metadata(Map.of("type", "dev")).build();
+
+		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke", options));
+
+		assertThat(response).isNotNull();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
