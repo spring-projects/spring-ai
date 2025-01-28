@@ -181,7 +181,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	/**
 	 * Developer-defined tags and values used for filtering completions in the <a href="https://platform.openai.com/chat-completions">dashboard</a>.
 	 */
-	private @JsonProperty("metadata") Map<String, String> metadata = new HashMap<>();
+	private @JsonProperty("metadata") Map<String, String> metadata;
 	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
