@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,13 @@ import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import io.qdrant.client.grpc.Points.UpdateStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -126,6 +126,8 @@ import org.springframework.util.Assert;
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	private static final Logger logger = LoggerFactory.getLogger(QdrantVectorStore.class);
+
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
 	private static final String CONTENT_FIELD_NAME = "doc_content";
@@ -211,6 +213,29 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		}
 		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doDelete(org.springframework.ai.vectorstore.filter.Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			Filter filter = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			io.qdrant.client.grpc.Points.UpdateResult response = this.qdrantClient
+				.deleteAsync(this.collectionName, filter)
+				.get();
+
+			if (response.getStatus() != io.qdrant.client.grpc.Points.UpdateStatus.Completed) {
+				throw new IllegalStateException("Failed to delete documents by filter: " + response.getStatus());
+			}
+
+			logger.debug("Deleted documents matching filter expression");
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
