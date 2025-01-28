@@ -262,6 +262,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Vertex AI Imagen -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vertex-ai-imagen</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Stability AI LLM -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
