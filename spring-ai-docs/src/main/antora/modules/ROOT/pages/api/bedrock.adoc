@@ -2,8 +2,8 @@
 
 [NOTE]
 ====
-Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI. 
-While the existing `InvokeModel API` supports conversation applications, we strongly recommend adopting the xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] for several key benefits:
+Following the Bedrock recommendations, Spring AI transitioned to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI.
+The xref:api/chat/bedrock-converse.adoc[Bedrock Converse API] has the following key benefits:
 
 - Unified Interface: Write your code once and use it with any supported Amazon Bedrock model
 - Model Flexibility: Seamlessly switch between different conversation models without code changes
@@ -18,7 +18,7 @@ The Converse API does not support embedding operations, so these will remain in 
 
 link:https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html[Amazon Bedrock] is a managed service that provides foundation models from various AI providers, available through a unified API.
 
-Spring AI supports https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[all the Chat and Embedding AI models] available through Amazon Bedrock by implementing the Spring interfaces `ChatModel`, `StreamingChatModel`, and  `EmbeddingModel`.
+Spring AI supports https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids-arns.html[the Embedding AI models] available through Amazon Bedrock by implementing the Spring `EmbeddingModel` interface.
 
 Additionally, Spring AI provides Spring Auto-Configurations and Boot Starters for all clients, making it easy to bootstrap and configure for the Bedrock models.
 
@@ -93,34 +93,22 @@ NOTE: For example, using Spring-AI and https://spring.io/projects/spring-cloud-a
 
 === Enable selected Bedrock model
 
-NOTE: By default, all models are disabled. You have to enable the chosen Bedrock models explicitly using the `spring.ai.bedrock.<model>.<chat|embedding>.enabled=true` property.
+NOTE: By default, all models are disabled. You have to enable the chosen Bedrock models explicitly using the `spring.ai.bedrock.<model>.embedding.enabled=true` property.
 
-Here are the supported `<model>` and `<chat|embedding>` combinations:
+Here are the supported `<model>`s:
 
 [cols="|,|,|,|"]
 |====
-| Model      | Chat | Chat Streaming | Embedding
-
-| llama     | Yes  | Yes            | No
-| jurassic2  | Yes  | No             | No
-| cohere     | Yes  | Yes            | Yes
-| anthropic 2 | Yes  | Yes            | No
-| anthropic 3  | Yes  | Yes            | No
-| jurassic2 (WIP)  | Yes  | No             | No
-| titan      | Yes  | Yes            | Yes (however, no batch support)
+| Model
+| cohere
+| titan (no batch support yet)
 |====
 
-For example, to enable the Bedrock Llama chat model, you need to set `spring.ai.bedrock.llama.chat.enabled=true`.
+For example, to enable the Bedrock Cohere embedding model, you need to set `spring.ai.bedrock.cohere.embedding.enabled=true`.
 
-Next, you can use the `spring.ai.bedrock.<model>.<chat|embedding>.*` properties to configure each model as provided.
+Next, you can use the `spring.ai.bedrock.<model>.embedding.*` properties to configure each model as provided.
 
 For more information, refer to the documentation below for each supported model.
 
-* xref:api/chat/bedrock/bedrock-anthropic.adoc[Spring AI Bedrock Anthropic 2 Chat]: `spring.ai.bedrock.anthropic.chat.enabled=true`
-* xref:api/chat/bedrock/bedrock-anthropic3.adoc[Spring AI Bedrock Anthropic 3 Chat]: `spring.ai.bedrock.anthropic3.chat.enabled=true`
-* xref:api/chat/bedrock/bedrock-llama.adoc[Spring AI Bedrock Llama Chat]: `spring.ai.bedrock.llama.chat.enabled=true`
-* xref:api/chat/bedrock/bedrock-cohere.adoc[Spring AI Bedrock Cohere Chat]: `spring.ai.bedrock.cohere.chat.enabled=true`
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
-* xref:api/chat/bedrock/bedrock-titan.adoc[Spring AI Bedrock Titan Chat]: `spring.ai.bedrock.titan.chat.enabled=true`
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.bedrock.titan.embedding.enabled=true`
-* xref:api/chat/bedrock/bedrock-jurassic2.adoc[Spring AI Bedrock Ai21 Jurassic2 Chat]: `spring.ai.bedrock.jurassic2.chat.enabled=true`
