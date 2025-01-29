@@ -16,9 +16,15 @@
 package org.springframework.ai.model.tool;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import java.util.List;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link ToolCallingChatOptions}.
@@ -65,6 +71,94 @@ class ToolCallingChatOptionsTests {
 	void whenFunctionCallingOptionsAndExecutionEnabledDefault() {
 		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
+	}
+
+	@Test
+	void whenMergeRuntimeAndDefaultToolNames() {
+		Set<String> runtimeToolNames = Set.of("toolA");
+		Set<String> defaultToolNames = Set.of("toolB");
+		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
+		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA", "toolB");
+	}
+
+	@Test
+	void whenMergeRuntimeAndEmptyDefaultToolNames() {
+		Set<String> runtimeToolNames = Set.of("toolA");
+		Set<String> defaultToolNames = Set.of();
+		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
+		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA");
+	}
+
+	@Test
+	void whenMergeEmptyRuntimeAndDefaultToolNames() {
+		Set<String> runtimeToolNames = Set.of();
+		Set<String> defaultToolNames = Set.of("toolB");
+		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
+		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolB");
+	}
+
+	@Test
+	void whenMergeEmptyRuntimeAndEmptyDefaultToolNames() {
+		Set<String> runtimeToolNames = Set.of();
+		Set<String> defaultToolNames = Set.of();
+		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
+		assertThat(mergedToolNames).containsExactlyInAnyOrder();
+	}
+
+	@Test
+	void whenMergeRuntimeAndDefaultToolCallbacks() {
+		List<FunctionCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
+		List<FunctionCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
+		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+				defaultToolCallbacks);
+		assertThat(mergedToolCallbacks).hasSize(2);
+	}
+
+	@Test
+	void whenMergeRuntimeAndEmptyDefaultToolCallbacks() {
+		List<FunctionCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
+		List<FunctionCallback> defaultToolCallbacks = List.of();
+		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+				defaultToolCallbacks);
+		assertThat(mergedToolCallbacks).hasSize(1);
+	}
+
+	@Test
+	void whenMergeEmptyRuntimeAndDefaultToolCallbacks() {
+		List<FunctionCallback> runtimeToolCallbacks = List.of();
+		List<FunctionCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
+		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+				defaultToolCallbacks);
+		assertThat(mergedToolCallbacks).hasSize(1);
+	}
+
+	@Test
+	void whenMergeEmptyRuntimeAndEmptyDefaultToolCallbacks() {
+		List<FunctionCallback> runtimeToolCallbacks = List.of();
+		List<FunctionCallback> defaultToolCallbacks = List.of();
+		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+				defaultToolCallbacks);
+		assertThat(mergedToolCallbacks).hasSize(0);
+	}
+
+	static class TestToolCallback implements ToolCallback {
+
+		private final ToolDefinition toolDefinition;
+
+		public TestToolCallback(String name) {
+			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return toolDefinition;
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return "Mission accomplished!";
+		}
+
 	}
 
 }

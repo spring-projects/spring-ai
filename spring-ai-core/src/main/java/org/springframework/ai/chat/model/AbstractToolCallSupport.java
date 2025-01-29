@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,10 +64,12 @@ public abstract class AbstractToolCallSupport {
 	 */
 	protected final FunctionCallbackResolver functionCallbackResolver;
 
+	@Deprecated
 	protected AbstractToolCallSupport(FunctionCallbackResolver functionCallbackResolver) {
 		this(functionCallbackResolver, FunctionCallingOptions.builder().build(), List.of());
 	}
 
+	@Deprecated
 	protected AbstractToolCallSupport(FunctionCallbackResolver functionCallbackResolver,
 			FunctionCallingOptions functionCallingOptions, List<FunctionCallback> toolFunctionCallbacks) {
 
@@ -97,6 +99,7 @@ public abstract class AbstractToolCallSupport {
 		return toolFunctionCallbacksCopy;
 	}
 
+	@Deprecated
 	public Map<String, FunctionCallback> getFunctionCallbackRegister() {
 		return this.functionCallbackRegister;
 	}
@@ -107,6 +110,7 @@ public abstract class AbstractToolCallSupport {
 	 * @param runtimeFunctionOptions FunctionCallingOptions to handle.
 	 * @return Set of function names to call.
 	 */
+	@Deprecated
 	protected Set<String> runtimeFunctionCallbackConfigurations(FunctionCallingOptions runtimeFunctionOptions) {
 
 		Set<String> enabledFunctionsToCall = new HashSet<>();
@@ -133,6 +137,7 @@ public abstract class AbstractToolCallSupport {
 		return enabledFunctionsToCall;
 	}
 
+	@Deprecated
 	protected List<Message> handleToolCalls(Prompt prompt, ChatResponse response) {
 		Optional<Generation> toolCallGeneration = response.getResults()
 			.stream()
@@ -165,6 +170,7 @@ public abstract class AbstractToolCallSupport {
 		return toolConversationHistory;
 	}
 
+	@Deprecated
 	protected List<Message> buildToolCallConversation(List<Message> previousMessages, AssistantMessage assistantMessage,
 			ToolResponseMessage toolResponseMessage) {
 		List<Message> messages = new ArrayList<>(previousMessages);
@@ -179,6 +185,7 @@ public abstract class AbstractToolCallSupport {
 	 * @param functionNames Name of function callbacks to retrieve.
 	 * @return list of resolved FunctionCallbacks.
 	 */
+	@Deprecated
 	protected List<FunctionCallback> resolveFunctionCallbacks(Set<String> functionNames) {
 
 		List<FunctionCallback> retrievedFunctionCallbacks = new ArrayList<>();
@@ -208,6 +215,7 @@ public abstract class AbstractToolCallSupport {
 		return retrievedFunctionCallbacks;
 	}
 
+	@Deprecated
 	protected ToolResponseMessage executeFunctions(AssistantMessage assistantMessage, ToolContext toolContext) {
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
@@ -230,6 +238,7 @@ public abstract class AbstractToolCallSupport {
 		return new ToolResponseMessage(toolResponses, Map.of());
 	}
 
+	@Deprecated
 	protected boolean isToolCall(ChatResponse chatResponse, Set<String> toolCallFinishReasons) {
 		Assert.isTrue(!CollectionUtils.isEmpty(toolCallFinishReasons), "Tool call finish reasons cannot be empty!");
 
@@ -252,6 +261,7 @@ public abstract class AbstractToolCallSupport {
 	 * @param toolCallFinishReasons the tool call finish reasons to check.
 	 * @return true if the generation is a tool call, false otherwise.
 	 */
+	@Deprecated
 	protected boolean isToolCall(Generation generation, Set<String> toolCallFinishReasons) {
 		var finishReason = (generation.getMetadata().getFinishReason() != null)
 				? generation.getMetadata().getFinishReason() : "";
@@ -271,6 +281,7 @@ public abstract class AbstractToolCallSupport {
 	 * @param defaultOptions the default tool call options to check.
 	 * @return true if the proxyToolCalls is enabled, false otherwise.
 	 */
+	@Deprecated
 	protected boolean isProxyToolCalls(Prompt prompt, FunctionCallingOptions defaultOptions) {
 		if (prompt.getOptions() instanceof FunctionCallingOptions functionCallOptions
 				&& functionCallOptions.getProxyToolCalls() != null) {

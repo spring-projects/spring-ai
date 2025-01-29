@@ -41,6 +41,7 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 			return "Done";
 		}
 		else {
+			logger.debug("Converting tool result to JSON.");
 			return JsonParser.toJson(result);
 		}
 	}

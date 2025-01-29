@@ -17,6 +17,7 @@
 package org.springframework.ai.tool.metadata;
 
 import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.util.Assert;
 
 import java.lang.reflect.Method;
 
@@ -46,6 +47,7 @@ public interface ToolMetadata {
 	 * Create a default {@link ToolMetadata} instance from a {@link Method}.
 	 */
 	static ToolMetadata from(Method method) {
+		Assert.notNull(method, "method cannot be null");
 		return DefaultToolMetadata.builder().returnDirect(ToolUtils.getToolReturnDirect(method)).build();
 	}
 
