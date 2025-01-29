@@ -17,9 +17,11 @@
 package org.springframework.ai.vectorstore.pinecone;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,10 +33,12 @@ import io.pinecone.PineconeClientConfig;
 import io.pinecone.PineconeConnection;
 import io.pinecone.PineconeConnectionConfig;
 import io.pinecone.proto.DeleteRequest;
+import io.pinecone.proto.DeleteResponse;
 import io.pinecone.proto.QueryRequest;
 import io.pinecone.proto.QueryResponse;
 import io.pinecone.proto.UpsertRequest;
 import io.pinecone.proto.Vector;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -46,10 +50,12 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -81,6 +87,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private final String pineconeDistanceMetadataFieldName;
 
 	private final ObjectMapper objectMapper;
+
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(PineconeVectorStore.class));
 
 	/**
 	 * Creates a new PineconeVectorStore using the builder pattern.
@@ -246,6 +254,43 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 					.build();
 			})
 			.toList();
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			// Direct filter based deletion is not working in pinecone, so we are
+			// retrieving the documents
+			// by doing a similarity search with an empty query and then passing the ID's
+			// of the documents to the delete(Id) API method.
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("") // empty query since we only want filter matches
+				.filterExpression(filterExpression)
+				.topK(10000) // large enough to get all matches
+				.similarityThresholdAll()
+				.build();
+
+			List<Document> matchingDocs = similaritySearch(searchRequest, this.pineconeNamespace);
+
+			if (!matchingDocs.isEmpty()) {
+				// Then delete those documents by ID
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+
+				Optional<Boolean> result = delete(idsToDelete, this.pineconeNamespace);
+
+				if (result.isPresent() && !result.get()) {
+					throw new IllegalStateException("Failed to delete some documents");
+				}
+
+				logger.debug(() -> "Deleted " + idsToDelete.size() + " documents matching filter expression");
+			}
+		}
+		catch (Exception e) {
+			logger.error(e, () -> "Failed to delete documents by filter");
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
