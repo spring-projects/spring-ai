@@ -495,8 +495,6 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>${maven-javadoc-plugin.version}</version>
 				<configuration>
-					<excludePackageNames>
-						org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
 					<overview>
 						${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 					<detectJavaApiLink>false</detectJavaApiLink>
