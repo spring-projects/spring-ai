@@ -490,6 +490,30 @@
 				<artifactId>maven-deploy-plugin</artifactId>
 				<version>${maven-deploy-plugin.version}</version>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>${maven-javadoc-plugin.version}</version>
+				<configuration>
+					<excludePackageNames>
+						org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
+					<overview>
+						${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+					<detectJavaApiLink>false</detectJavaApiLink>
+					<failOnError>false</failOnError>
+					<doclint>none</doclint>
+				</configuration>
+				<executions>
+					<execution>
+						<id>generate-javadocs</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 
@@ -564,46 +588,6 @@
 						</configuration>
 					</plugin>
 
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>javadoc</id>
-			<activation>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>${maven-javadoc-plugin.version}</version>
-						<configuration>
-							<excludePackageNames>
-								org.springframework.ai.sample.*,org.springframework.ai.testcontainers.service.connection.*</excludePackageNames>
-							<overview>
-								${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
-							<detectJavaApiLink>false</detectJavaApiLink>
-							<failOnError>false</failOnError>
-							<doclint>none</doclint>
-						</configuration>
-						<executions>
-							<execution>
-								<id>generate-javadocs</id>
-								<phase>package</phase>
-								<goals>
-									<goal>jar</goal>
-								</goals>
-							</execution>
-							<execution>
-								<id>generate-aggregate-javadocs</id>
-								<phase>package</phase>
-								<goals>
-									<goal>aggregate</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
 				</plugins>
 			</build>
 		</profile>
