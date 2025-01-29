@@ -16,25 +16,23 @@
 
 package org.springframework.ai.model.tool;
 
-import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallExceptionConverter;
 import org.springframework.ai.tool.execution.ToolCallExceptionConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
-import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -45,43 +43,31 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Default implementation of {@link ToolCallingManager}.
+ * Implementation of {@link ToolCallingManager} supporting the migration from
+ * {@link AbstractToolCallSupport} to {@link ToolCallingManager} and ensuring AI
+ * compatibility for all the ChatModel implementations.
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated Only to help moving away from {@link AbstractToolCallSupport}. It will be
+ * removed in the next milestone.
  */
-public class DefaultToolCallingManager implements ToolCallingManager {
+@Deprecated
+public class LegacyToolCallingManager implements ToolCallingManager {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallingManager.class);
+	private final FunctionCallbackResolver functionCallbackResolver;
 
-	// @formatter:off
+	private final Map<String, FunctionCallback> functionCallbacks = new HashMap<>();
 
-	private static final ObservationRegistry DEFAULT_OBSERVATION_REGISTRY
-			= ObservationRegistry.NOOP;
+	private final ToolCallExceptionConverter toolCallExceptionConverter = DefaultToolCallExceptionConverter.builder()
+		.build();
 
-	private static final ToolCallbackResolver DEFAULT_TOOL_CALLBACK_RESOLVER
-			= new DelegatingToolCallbackResolver(List.of());
-
-	private static final ToolCallExceptionConverter DEFAULT_TOOL_CALL_EXCEPTION_CONVERTER
-			= DefaultToolCallExceptionConverter.builder().build();
-
-	// @formatter:on
-
-	private final ObservationRegistry observationRegistry;
-
-	private final ToolCallbackResolver toolCallbackResolver;
-
-	private final ToolCallExceptionConverter toolCallExceptionConverter;
-
-	public DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
-			ToolCallExceptionConverter toolCallExceptionConverter) {
-		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		Assert.notNull(toolCallbackResolver, "toolCallbackResolver cannot be null");
-		Assert.notNull(toolCallExceptionConverter, "toolCallExceptionConverter cannot be null");
-
-		this.observationRegistry = observationRegistry;
-		this.toolCallbackResolver = toolCallbackResolver;
-		this.toolCallExceptionConverter = toolCallExceptionConverter;
+	public LegacyToolCallingManager(@Nullable FunctionCallbackResolver functionCallbackResolver,
+			List<FunctionCallback> functionCallbacks) {
+		Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
+		Assert.noNullElements(functionCallbacks.toArray(), "functionCallbacks cannot contain null elements");
+		this.functionCallbackResolver = functionCallbackResolver;
+		functionCallbacks.forEach(toolCallback -> this.functionCallbacks.put(toolCallback.getName(), toolCallback));
 	}
 
 	@Override
@@ -90,7 +76,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 		List<FunctionCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
 		for (String toolName : chatOptions.getTools()) {
-			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
+			FunctionCallback toolCallback = resolveFunctionCallback(toolName);
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
@@ -109,6 +95,15 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 					.build();
 			}
 		}).toList();
+	}
+
+	@Nullable
+	private FunctionCallback resolveFunctionCallback(String toolName) {
+		Assert.hasText(toolName, "toolName cannot be null or empty");
+		if (functionCallbacks.get(toolName) != null) {
+			return functionCallbacks.get(toolName);
+		}
+		return functionCallbackResolver != null ? functionCallbackResolver.resolve(toolName) : null;
 	}
 
 	@Override
@@ -180,15 +175,13 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
-			logger.debug("Executing tool call: {}", toolCall.name());
-
 			String toolName = toolCall.name();
 			String toolInputArguments = toolCall.arguments();
 
 			FunctionCallback toolCallback = toolCallbacks.stream()
 				.filter(tool -> toolName.equals(tool.getName()))
 				.findFirst()
-				.orElseGet(() -> toolCallbackResolver.resolve(toolName));
+				.orElseGet(() -> resolveFunctionCallback(toolName));
 
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
@@ -222,32 +215,25 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 	public static class Builder {
 
-		private ObservationRegistry observationRegistry = DEFAULT_OBSERVATION_REGISTRY;
+		private FunctionCallbackResolver functionCallbackResolver;
 
-		private ToolCallbackResolver toolCallbackResolver = DEFAULT_TOOL_CALLBACK_RESOLVER;
-
-		private ToolCallExceptionConverter toolCallExceptionConverter = DEFAULT_TOOL_CALL_EXCEPTION_CONVERTER;
+		private List<FunctionCallback> functionCallbacks = new ArrayList<>();
 
 		private Builder() {
 		}
 
-		public Builder observationRegistry(ObservationRegistry observationRegistry) {
-			this.observationRegistry = observationRegistry;
+		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
+			this.functionCallbackResolver = functionCallbackResolver;
 			return this;
 		}
 
-		public Builder toolCallbackResolver(ToolCallbackResolver toolCallbackResolver) {
-			this.toolCallbackResolver = toolCallbackResolver;
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			this.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder toolCallExceptionConverter(ToolCallExceptionConverter toolCallExceptionConverter) {
-			this.toolCallExceptionConverter = toolCallExceptionConverter;
-			return this;
-		}
-
-		public DefaultToolCallingManager build() {
-			return new DefaultToolCallingManager(observationRegistry, toolCallbackResolver, toolCallExceptionConverter);
+		public LegacyToolCallingManager build() {
+			return new LegacyToolCallingManager(functionCallbackResolver, functionCallbacks);
 		}
 
 	}

@@ -105,6 +105,11 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		return toolCallResultConverter.apply(response, null);
 	}
 
+	@Override
+	public String toString() {
+		return "FunctionToolCallback{" + "toolDefinition=" + toolDefinition + ", toolMetadata=" + toolMetadata + '}';
+	}
+
 	/**
 	 * Build a {@link FunctionToolCallback} from a {@link BiFunction}.
 	 */

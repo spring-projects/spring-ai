@@ -60,6 +60,7 @@ public class MethodToolCallback implements ToolCallback {
 
 	private final Method toolMethod;
 
+	@Nullable
 	private final Object toolObject;
 
 	private final ToolCallResultConverter toolCallResultConverter;
@@ -172,6 +173,11 @@ public class MethodToolCallback implements ToolCallback {
 
 	private boolean isMethodNotPublic() {
 		return !Modifier.isPublic(toolMethod.getModifiers());
+	}
+
+	@Override
+	public String toString() {
+		return "MethodToolCallback{" + "toolDefinition=" + toolDefinition + ", toolMetadata=" + toolMetadata + '}';
 	}
 
 	public static Builder builder() {

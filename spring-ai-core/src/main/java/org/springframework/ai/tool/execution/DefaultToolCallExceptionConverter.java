@@ -16,6 +16,8 @@
 
 package org.springframework.ai.tool.execution;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 /**
@@ -25,6 +27,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public class DefaultToolCallExceptionConverter implements ToolCallExceptionConverter {
+
+	private final static Logger logger = LoggerFactory.getLogger(DefaultToolCallExceptionConverter.class);
 
 	private static final boolean DEFAULT_ALWAYS_THROW = false;
 
@@ -40,6 +44,8 @@ public class DefaultToolCallExceptionConverter implements ToolCallExceptionConve
 		if (alwaysThrow) {
 			throw exception;
 		}
+		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(),
+				exception.getMessage());
 		return exception.getMessage();
 	}
 

@@ -290,8 +290,7 @@ public interface ChatClient {
 		Builder defaultFunctions(String... functionNames);
 
 		/**
-		 * @deprecated in favor of {@link #defaultTools(FunctionCallback...)} or
-		 * {@link #defaultToolCallbacks(FunctionCallback...)}
+		 * @deprecated in favor of {@link #defaultTools(Object...)}
 		 */
 		@Deprecated
 		Builder defaultFunctions(FunctionCallback... functionCallbacks);

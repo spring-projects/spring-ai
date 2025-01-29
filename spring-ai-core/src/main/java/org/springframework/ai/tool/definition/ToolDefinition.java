@@ -18,6 +18,7 @@ package org.springframework.ai.tool.definition;
 
 import org.springframework.ai.tool.util.ToolUtils;
 import org.springframework.ai.util.json.JsonSchemaGenerator;
+import org.springframework.util.Assert;
 
 import java.lang.reflect.Method;
 
@@ -55,6 +56,7 @@ public interface ToolDefinition {
 	 * Create a default {@link ToolDefinition} builder from a {@link Method}.
 	 */
 	static DefaultToolDefinition.Builder builder(Method method) {
+		Assert.notNull(method, "method cannot be null");
 		return DefaultToolDefinition.builder()
 			.name(ToolUtils.getToolName(method))
 			.description(ToolUtils.getToolDescription(method))

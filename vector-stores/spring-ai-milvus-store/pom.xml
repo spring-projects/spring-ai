@@ -54,6 +54,15 @@
 			<version>${milvus.version}</version>
 		</dependency>
 
+		<!-- This is HORRIBLE! But IntelliJ doesn't want to work without it -->
+		<!-- The scope is "provided", so it won't end up in the final artifact -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.36</version>
+			<scope>provided</scope>
+		</dependency>
+
 		<!-- TESTING -->
 
 		<dependency>

@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -55,6 +57,8 @@ import java.util.function.Supplier;
  */
 public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 
+	private static final Logger logger = LoggerFactory.getLogger(SpringBeanToolCallbackResolver.class);
+
 	private static final Map<String, ToolCallback> toolCallbacksCache = new HashMap<>();
 
 	private static final SchemaType DEFAULT_SCHEMA_TYPE = SchemaType.JSON_SCHEMA;
@@ -74,6 +78,8 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 	@Override
 	public ToolCallback resolve(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
+
+		logger.debug("ToolCallback resolution attempt from Spring application context");
 
 		ToolCallback resolvedToolCallback = toolCallbacksCache.get(toolName);
 

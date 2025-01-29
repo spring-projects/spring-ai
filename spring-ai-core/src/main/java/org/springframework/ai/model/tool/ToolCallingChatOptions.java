@@ -23,6 +23,8 @@ import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -183,6 +185,23 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
 		}
 		return internalToolExecutionEnabled;
+	}
+
+	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
+		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
+		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
+		var mergedToolNames = new HashSet<>(runtimeToolNames);
+		mergedToolNames.addAll(defaultToolNames);
+		return mergedToolNames;
+	}
+
+	static List<FunctionCallback> mergeToolCallbacks(List<FunctionCallback> runtimeToolCallbacks,
+			List<FunctionCallback> defaultToolCallbacks) {
+		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
+		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
+		var mergedToolCallbacks = new ArrayList<>(runtimeToolCallbacks);
+		mergedToolCallbacks.addAll(defaultToolCallbacks);
+		return mergedToolCallbacks;
 	}
 
 }

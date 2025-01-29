@@ -76,7 +76,7 @@ class OllamaWithOpenAiChatModelIT {
 	private static final String DEFAULT_OLLAMA_MODEL = "mistral";
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.5.1");
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.5.7");
 
 	static String baseUrl = "http://localhost:11434";
 

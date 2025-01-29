@@ -17,6 +17,7 @@
 package org.springframework.ai.tool.resolution;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
@@ -42,7 +43,7 @@ class StaticToolCallbackResolverTests {
 
 	@Test
 	void whenToolCallbacksContainNullElementsThenThrowException() {
-		var toolCallbacks = new ArrayList<ToolCallback>();
+		var toolCallbacks = new ArrayList<FunctionCallback>();
 		toolCallbacks.add(null);
 		assertThatThrownBy(() -> new StaticToolCallbackResolver(toolCallbacks))
 			.isInstanceOf(IllegalArgumentException.class);

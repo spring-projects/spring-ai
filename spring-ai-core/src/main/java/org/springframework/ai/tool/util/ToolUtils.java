@@ -42,6 +42,7 @@ public final class ToolUtils {
 	}
 
 	public static String getToolName(Method method) {
+		Assert.notNull(method, "method cannot be null");
 		var tool = method.getAnnotation(Tool.class);
 		if (tool == null) {
 			return method.getName();
@@ -49,12 +50,13 @@ public final class ToolUtils {
 		return StringUtils.hasText(tool.name()) ? tool.name() : method.getName();
 	}
 
-	public static String getToolDescriptionFromName(@Nullable String toolName) {
+	public static String getToolDescriptionFromName(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 		return ParsingUtils.reConcatenateCamelCase(toolName, " ");
 	}
 
 	public static String getToolDescription(Method method) {
+		Assert.notNull(method, "method cannot be null");
 		var tool = method.getAnnotation(Tool.class);
 		if (tool == null) {
 			return ParsingUtils.reConcatenateCamelCase(method.getName(), " ");
@@ -63,11 +65,13 @@ public final class ToolUtils {
 	}
 
 	public static boolean getToolReturnDirect(Method method) {
+		Assert.notNull(method, "method cannot be null");
 		var tool = method.getAnnotation(Tool.class);
 		return tool != null && tool.returnDirect();
 	}
 
 	public static ToolCallResultConverter getToolCallResultConverter(Method method) {
+		Assert.notNull(method, "method cannot be null");
 		var tool = method.getAnnotation(Tool.class);
 		if (tool == null) {
 			return new DefaultToolCallResultConverter();
@@ -81,8 +85,9 @@ public final class ToolUtils {
 		}
 	}
 
-	public static List<String> getDuplicateToolNames(FunctionCallback... functionCallbacks) {
-		return Stream.of(functionCallbacks)
+	public static List<String> getDuplicateToolNames(FunctionCallback... toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		return Stream.of(toolCallbacks)
 			.collect(Collectors.groupingBy(FunctionCallback::getName, Collectors.counting()))
 			.entrySet()
 			.stream()
