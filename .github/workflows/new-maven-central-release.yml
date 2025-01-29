@@ -37,12 +37,3 @@ jobs:
         run: |
           ./mvnw -B clean install -DskipTests
           ./mvnw -B clean deploy -Psonatype -s settings.xml
-
-      - name: Setup Graphviz
-        uses: ts-graphviz/setup-graphviz@v1
-
-      - name: Deploy documentation
-        env:
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        run: ./mvnw -B clean deploy -Pdocumentation
