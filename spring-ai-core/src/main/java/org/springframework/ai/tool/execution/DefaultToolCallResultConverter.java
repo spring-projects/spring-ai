@@ -16,12 +16,13 @@
 
 package org.springframework.ai.tool.execution;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
-
 import java.lang.reflect.Type;
+
+import org.apache.commons.logging.LogFactory;
+
+import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.log.LogAccessor;
+import org.springframework.lang.Nullable;
 
 /**
  * A default implementation of {@link ToolCallResultConverter}.
@@ -31,7 +32,7 @@ import java.lang.reflect.Type;
  */
 public final class DefaultToolCallResultConverter implements ToolCallResultConverter {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallResultConverter.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(DefaultToolCallResultConverter.class));
 
 	@Override
 	public String apply(@Nullable Object result, @Nullable Type returnType) {

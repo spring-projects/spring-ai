@@ -25,18 +25,14 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.Embedding;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -47,6 +43,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -84,7 +81,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private boolean initialized = false;
 
-	private static final Logger logger = LoggerFactory.getLogger(ChromaVectorStore.class);
+	private static final LogAccessor logger = new LogAccessor(ChromaVectorStore.class);
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
@@ -176,13 +173,13 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 			Map<String, Object> whereClause = this.chromaApi.where(whereClauseStr);
 
-			logger.debug("Deleting with where clause: {}", whereClause);
+			logger.debug("Deleting with where clause: " + whereClause);
 
 			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
 			this.chromaApi.deleteEmbeddings(this.collectionId, deleteRequest);
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

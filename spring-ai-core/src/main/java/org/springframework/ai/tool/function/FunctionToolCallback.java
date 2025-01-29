@@ -16,8 +16,14 @@
 
 package org.springframework.ai.tool.function;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.lang.reflect.Type;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -28,15 +34,10 @@ import org.springframework.ai.tool.util.ToolUtils;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import java.lang.reflect.Type;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * A {@link ToolCallback} implementation to invoke functions as tools.
@@ -46,7 +47,7 @@ import java.util.function.Supplier;
  */
 public class FunctionToolCallback<I, O> implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(FunctionToolCallback.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(FunctionToolCallback.class));
 
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
@@ -94,12 +95,12 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", toolDefinition.name());
+		logger.debug("Starting execution of tool: " + toolDefinition.name());
 
 		I request = JsonParser.fromJson(toolInput, toolInputType);
 		O response = toolFunction.apply(request, toolContext);
 
-		logger.debug("Successful execution of tool: {}", toolDefinition.name());
+		logger.debug("Successful execution of tool: " + toolDefinition.name());
 
 		return toolCallResultConverter.apply(response, null);
 	}

@@ -16,10 +16,14 @@
 
 package org.springframework.ai.integration.tests.tool;
 
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.integration.tests.tool.domain.Author;
@@ -33,10 +37,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 import org.springframework.context.annotation.Import;
-
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,7 +53,7 @@ public class FunctionToolCallbackTests {
 
 	// @formatter:off
 
-	private static final Logger logger = LoggerFactory.getLogger(FunctionToolCallbackTests.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(FunctionToolCallbackTests.class));
 
 	@Autowired
 	OpenAiChatModel openAiChatModel;
@@ -105,7 +106,7 @@ public class FunctionToolCallbackTests {
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
 			.toolCallbacks(FunctionToolCallback.builder("welcomeUser", (user) -> {
-						logger.info("CALLBACK - Welcoming {} to the library", ((User) user).name());
+						logger.info("CALLBACK - Welcoming "+ ((User) user).name() +" to the library");
 					})
 					.description("Welcome a specific user to the library")
 					.inputType(User.class)
@@ -133,7 +134,7 @@ public class FunctionToolCallbackTests {
 	@Test
 	void chatSingleFromCallback() {
 		Function<Author, List<Book>> function = author -> {
-			logger.info("CALLBACK - Getting books by author: {}", author.name());
+			logger.info("CALLBACK - Getting books by author: "+ author.name());
 			return new BookService().getBooksByAuthor(author);
 		};
 		var content = ChatClient.builder(this.openAiChatModel)
@@ -167,7 +168,7 @@ public class FunctionToolCallbackTests {
 	@Test
 	void chatListFromCallback() {
 		Function<Books, List<Author>> function = books -> {
-			logger.info("CALLBACK - Getting authors by books: {}", books.books().stream().map(Book::title).toList());
+			logger.info("CALLBACK - Getting authors by books: "+ books.books().stream().map(Book::title).toList());
 			return new BookService().getAuthorsByBook(books.books());
 		};
 		var content = ChatClient.builder(this.openAiChatModel)
@@ -194,7 +195,7 @@ public class FunctionToolCallbackTests {
 
 		public static final String WELCOME_USER = "welcomeUser";
 
-		private static final Logger logger = LoggerFactory.getLogger(Tools.class);
+		private static final LogAccessor logger = new LogAccessor(Tools.class);
 
 		private final BookService bookService = new BookService();
 
@@ -207,14 +208,14 @@ public class FunctionToolCallbackTests {
 		@Bean(WELCOME_USER)
 		@Description("Welcome a specific user to the library")
 		Consumer<User> welcomeUser() {
-			return user -> logger.info("Welcoming {} to the library", user.name());
+			return user -> logger.info("Welcoming "+ user.name() +" to the library");
 		}
 
 		@Bean(BOOKS_BY_AUTHOR)
 		@Description("Get the list of books written by the given author available in the library")
 		Function<Author, List<Book>> booksByAuthor() {
 			return author -> {
-				logger.info("Getting books by author: {}", author.name());
+				logger.info("Getting books by author: "+ author.name());
 				return bookService.getBooksByAuthor(author);
 			};
 		}
@@ -223,7 +224,7 @@ public class FunctionToolCallbackTests {
 		@Description("Get the list of authors who wrote the given books available in the library")
 		Function<Books, List<Author>> authorsByBooks() {
 			return books -> {
-				logger.info("Getting authors by books: {}", books.books().stream().map(Book::title).toList());
+				logger.info("Getting authors by books: "+ books.books().stream().map(Book::title).toList());
 				return bookService.getAuthorsByBook(books.books());
 			};
 		}
