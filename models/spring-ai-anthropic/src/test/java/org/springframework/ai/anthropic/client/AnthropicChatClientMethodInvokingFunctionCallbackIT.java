@@ -256,7 +256,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response:" + response);
 
 		assertThat(arguments).containsEntry("roomName", "living room")
 			.containsEntry("color", TestFunctionClass.LightColor.RED);
@@ -335,7 +335,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		public void changeRoomLightColor(String roomName, LightColor color) {
 			arguments.put("roomName", roomName);
 			arguments.put("color", color);
-			logger.info("Change light colur in room: {} to color: {}", roomName, color);
+			logger.info("Change light colur in room: " + roomName + " to color: " + color);
 		}
 
 	}
