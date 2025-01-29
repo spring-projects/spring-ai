@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -40,6 +41,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -241,6 +243,95 @@ public class TypesenseVectorStoreIT {
 
 			((TypesenseVectorStore) vectorStore).dropCollection();
 
+		});
+	}
+
+	@Test
+	void deleteByFilter() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
+					new Filter.Key("country"), new Filter.Value("BG"));
+
+			vectorStore.delete(filterExpression);
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
+		});
+	}
+
+	@Test
+	void deleteWithStringFilterExpression() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			vectorStore.delete("country == 'BG'");
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
+		});
+	}
+
+	@Test
+	void deleteWithComplexFilterExpression() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var doc1 = new Document("Content 1", Map.of("type", "A", "priority", 1));
+			var doc2 = new Document("Content 2", Map.of("type", "A", "priority", 2));
+			var doc3 = new Document("Content 3", Map.of("type", "B", "priority", 1));
+
+			vectorStore.add(List.of(doc1, doc2, doc3));
+
+			// Complex filter expression: (type == 'A' AND priority > 1)
+			Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
+					new Filter.Key("priority"), new Filter.Value(1));
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("A"));
+			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+					priorityFilter);
+
+			vectorStore.delete(complexFilter);
+
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(2);
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder("A", "B");
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder(1, 1);
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
 		});
 	}
 

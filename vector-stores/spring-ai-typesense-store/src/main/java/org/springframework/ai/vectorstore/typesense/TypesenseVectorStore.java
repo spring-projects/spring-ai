@@ -43,6 +43,7 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -69,6 +70,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Mark Pollack
+ * @author Soby Chacko
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see org.springframework.ai.embedding.EmbeddingModel
  */
@@ -184,6 +186,33 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		catch (Exception e) {
 			logger.error(e, "Failed to delete documents");
 			return Optional.of(Boolean.FALSE);
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+			DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
+			deleteDocumentsParameters.filterBy(filterStr);
+
+			Map<String, Object> response = this.client.collections(this.collectionName)
+				.documents()
+				.delete(deleteDocumentsParameters);
+
+			int deletedDocs = (Integer) response.getOrDefault("num_deleted", 0);
+			if (deletedDocs == 0) {
+				logger.warn(() -> "No documents were deleted matching filter expression");
+			}
+			else {
+				logger.debug(() -> "Deleted " + deletedDocs + " documents matching filter expression");
+			}
+		}
+		catch (Exception e) {
+			logger.error(e, () -> "Failed to delete documents by filter");
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
