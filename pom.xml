@@ -103,6 +103,7 @@
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
+		<module>models/spring-ai-vertex-ai-imagen</module>
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
@@ -123,6 +124,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-imagen</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
@@ -665,6 +667,7 @@
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.vertexai.imagen/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.watsonx/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.zhipuai/**/*IT.java</exclude>
 
