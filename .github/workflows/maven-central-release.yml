@@ -1,4 +1,4 @@
-name: Maven Central Release
+name: Release to Maven Central
 
 on:
   workflow_dispatch:
@@ -9,68 +9,40 @@ on:
 
 jobs:
   build:
+    name: Release project
     runs-on: ubuntu-latest
+
     steps:
 
-      - name: Capture release version
-        run: echo RELEASE_VERSION=${{ github.event.inputs.releaseVersion }} >> $GITHUB_ENV
+      - name: Check out sources
+        uses: actions/checkout@v4
 
-      - name: Prepare directory structure
-        run: |
-          mkdir -p nexus/org/springframework/ai/spring-ai-core/$RELEASE_VERSION
-          mkdir -p nexus/org/springframework/ai/spring-ai-openai/$RELEASE_VERSION
-          mkdir -p nexus/org/springframework/ai/spring-ai-azure-openai/$RELEASE_VERSION
-          mkdir -p nexus/org/springframework/ai/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION
-
-      - name: Download release files from Artifactory
-        env:
-          ARTIFACTORY_URL: "https://repo.spring.io/libs-staging-local/org/springframework/ai"
-        run: |          
-          echo "Downloading core artifacts"
-          cd ../../../../../..
-          cd nexus/org/springframework/ai/spring-ai-core/$RELEASE_VERSION
-          wget $ARTIFACTORY_URL/spring-ai-core/$RELEASE_VERSION/spring-ai-core-$RELEASE_VERSION.pom
-          wget $ARTIFACTORY_URL/spring-ai-core/$RELEASE_VERSION/spring-ai-core-$RELEASE_VERSION.jar
-          wget $ARTIFACTORY_URL/spring-ai-core/$RELEASE_VERSION/spring-ai-core-$RELEASE_VERSION-javadoc.jar
-          wget $ARTIFACTORY_URL/spring-ai-core/$RELEASE_VERSION/spring-ai-core-$RELEASE_VERSION-sources.jar
-
-          echo "Downloading openai artifacts"
-          cd ../../../../../..
-          cd nexus/org/springframework/batch/spring-ai-openai/$RELEASE_VERSION
-          wget $ARTIFACTORY_URL/spring-ai-openai/$RELEASE_VERSION/spring-ai-openai-$RELEASE_VERSION.pom
-          wget $ARTIFACTORY_URL/spring-ai-openai/$RELEASE_VERSION/spring-ai-openai-$RELEASE_VERSION.jar
-          wget $ARTIFACTORY_URL/spring-ai-openai/$RELEASE_VERSION/spring-ai-openai-$RELEASE_VERSION-javadoc.jar
-          wget $ARTIFACTORY_URL/spring-ai-openai/$RELEASE_VERSION/spring-ai-openai-$RELEASE_VERSION-sources.jar
-
-          echo "Downloading azure openai artifacts"
-          cd ../../../../../..
-          cd nexus/org/springframework/batch/spring-ai-azure-openai/$RELEASE_VERSION
-          wget $ARTIFACTORY_URL/spring-ai-azure-openai/$RELEASE_VERSION/spring-ai-azure-openai-$RELEASE_VERSION.pom
-          wget $ARTIFACTORY_URL/spring-ai-azure-openai/$RELEASE_VERSION/spring-ai-azure-openai-$RELEASE_VERSION.jar
-          wget $ARTIFACTORY_URL/spring-ai-azure-openai/$RELEASE_VERSION/spring-ai-azure-openai-$RELEASE_VERSION-javadoc.jar
-          wget $ARTIFACTORY_URL/spring-ai-azure-openai/$RELEASE_VERSION/spring-ai-azure-openai-$RELEASE_VERSION-sources.jar
-
-          echo "Downloading autoconfiguration artifacts"
-          cd ../../../../../..
-          cd nexus/org/springframework/batch/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION
-          wget $ARTIFACTORY_URL/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION/spring-ai-spring-boot-autoconfigure-$RELEASE_VERSION.pom
-          wget $ARTIFACTORY_URL/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION/spring-ai-spring-boot-autoconfigure-$RELEASE_VERSION.jar
-          wget $ARTIFACTORY_URL/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION/spring-ai-spring-boot-autoconfigure-$RELEASE_VERSION-javadoc.jar
-          wget $ARTIFACTORY_URL/spring-ai-spring-boot-autoconfigure/$RELEASE_VERSION/spring-ai-spring-boot-autoconfigure-$RELEASE_VERSION-sources.jar
-
-      - name: Sign artifacts and release them to Maven Central
-        uses: jvalkeal/nexus-sync@v0
-        id: nexus
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          url: ${{ secrets.OSSRH_URL }}
-          username: ${{ secrets.OSSRH_S01_TOKEN_USERNAME }}
-          password: ${{ secrets.OSSRH_S01_TOKEN_PASSWORD }}
-          staging-profile-name: ${{ secrets.OSSRH_STAGING_PROFILE_NAME }}
-          create: true
-          upload: true
-          close: true
-          release: true
-          generate-checksums: true
-          pgp-sign: true
-          pgp-sign-passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          pgp-sign-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          distribution: 'temurin'
+          java-version: 17
+          cache: 'maven'
+
+      - name: Install GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" > gpg.asc
+          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --import gpg.asc
+
+      - name: Release to Sonatype OSSRH
+        env:
+          SONATYPE_USER: ${{ secrets.OSSRH_S01_TOKEN_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.OSSRH_S01_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          ./mvnw -B clean install -DskipTests
+          ./mvnw -B clean deploy -Psonatype -s settings.xml
+
+      - name: Setup Graphviz
+        uses: ts-graphviz/setup-graphviz@v1
+
+      - name: Deploy documentation
+        env:
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        run: ./mvnw -B clean deploy -Pdocumentation
