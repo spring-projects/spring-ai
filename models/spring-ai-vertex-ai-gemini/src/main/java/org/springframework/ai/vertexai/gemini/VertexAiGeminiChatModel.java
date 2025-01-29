@@ -396,7 +396,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			.finishReason(candidateFinishReason.name())
 			.build();
 
-		boolean isFunctionCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
+		boolean isFunctionCall = candidate.getContent().getPartsList().stream().anyMatch(Part::hasFunctionCall);
 
 		if (isFunctionCall) {
 			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.getContent()
