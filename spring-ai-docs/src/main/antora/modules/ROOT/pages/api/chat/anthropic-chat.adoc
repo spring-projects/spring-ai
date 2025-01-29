@@ -5,8 +5,8 @@ For developers and businesses, you can leverage the API access and build directl
 
 Spring AI supports the Anthropic link:https://docs.anthropic.com/claude/reference/messages_post[Messaging API] for sync and streaming text generations.
 
-TIP: Anthropic’s Claude models are also available through Amazon Bedrock.
-Spring AI provides dedicated xref:api/chat/bedrock/bedrock-anthropic.adoc[Amazon Bedrock Anthropic] client implementations as well.
+TIP: Anthropic’s Claude models are also available through Amazon Bedrock Converse.
+Spring AI provides dedicated xref:api/chat/bedrock-converse.adoc[Amazon Bedrock Converse Anthropic] client implementations as well.
 
 == Prerequisites
 

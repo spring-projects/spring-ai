@@ -36,6 +36,16 @@
 3. When constructing link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], use the parameter name `completionTokens` instead of `generationTokens`
 4. If you're serializing `DefaultUsage` objects to JSON, update your code to use the new field names
 
+
+=== Removal of deprecated Amazon Bedrock chat models
+
+Starting 1.0.0-M6, Spring AI transitioned to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI.
+All the Amazon Bedrock Chat models are removed except the Embedding models for Cohere and Titan.
+
+=== Migration Guide
+
+Refer to xref:api/chat/bedrock-converse.adoc[Bedrock Converse] documentation for using the chat models.
+
 == Upgrading to 1.0.0.M5
 
 * Vector Builders have been refactored for consistency.
