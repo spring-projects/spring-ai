@@ -35,6 +35,12 @@
             <username>${env.ARTIFACTORY_USERNAME}</username>
             <password>${env.ARTIFACTORY_PASSWORD}</password>
         </server>
+
+		<server>
+			<id>sonatype-new</id>
+			<username>${env.SONATYPE_USER}</username>
+			<password>${env.SONATYPE_PASSWORD}</password>
+		</server>
     </servers>
 
 </settings>
