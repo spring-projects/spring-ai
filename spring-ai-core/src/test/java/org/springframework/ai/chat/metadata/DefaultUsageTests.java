@@ -184,7 +184,7 @@ public class DefaultUsageTests {
 		assertThat(deserialized.getPromptTokens()).isEqualTo(usage.getPromptTokens());
 		assertThat(deserialized.getCompletionTokens()).isEqualTo(usage.getCompletionTokens());
 		assertThat(deserialized.getTotalTokens()).isEqualTo(usage.getTotalTokens());
-		assertThat(deserialized.getGenerationTokens()).isEqualTo(usage.getGenerationTokens());
+		assertThat(deserialized.getCompletionTokens()).isEqualTo(usage.getCompletionTokens());
 
 		@SuppressWarnings("unchecked")
 		Map<String, Object> deserializedMap = (Map<String, Object>) deserialized.getNativeUsage();
