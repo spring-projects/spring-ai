@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -73,6 +74,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -313,6 +315,44 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		}
 		CompletableFuture.allOf(futures).join();
 		return Optional.of(Boolean.TRUE);
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			// TODO - Investigate why we can't do a direct filter based delete in
+			// Cassandra
+			// This SO thread seems to indicate that this is not possible in Cassandra
+			// https://stackoverflow.com/questions/70953262/unable-to-delete-multiple-rows-getting-some-partition-key-parts-are-missing-i
+			// Needs more research into this matter.
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("") // empty query since we only want filter matches
+				.filterExpression(filterExpression)
+				.topK(1000) // large enough to get all matches
+				.similarityThresholdAll()
+				.build();
+
+			List<Document> matchingDocs = similaritySearch(searchRequest);
+
+			if (!matchingDocs.isEmpty()) {
+				// Then delete those documents by ID
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+
+				Optional<Boolean> result = delete(idsToDelete);
+
+				if (result.isPresent() && !result.get()) {
+					throw new IllegalStateException("Failed to delete some documents");
+				}
+
+				logger.debug(() -> "Deleted " + idsToDelete.size() + " documents matching filter expression");
+			}
+		}
+		catch (Exception e) {
+			logger.error(e, () -> "Failed to delete documents by filter");
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
