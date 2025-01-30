@@ -3,23 +3,41 @@
 
 == Upgrading to 1.0.0.M6
 
+
 === Changes to Usage Interface and DefaultUsage Implementation
 
-* In the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/Usage.java[Usage] interface, changed the method name from `getGenerationTokens` to `getCompletionTokens` as that is more common terminology in the industry.
-* In link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], changed parameter types from `Long` to `Integer` for all token-related fields:
+The `Usage` interface and its default implementation `DefaultUsage` have undergone the following changes:
+
+1. Method Rename:
+* `getGenerationTokens()` is now `getCompletionTokens()`
+
+2. Type Changes:
+* All token count fields in `DefaultUsage` changed from `Long` to `Integer`:
 ** `promptTokens`
 ** `completionTokens` (formerly `generationTokens`)
 ** `totalTokens`
-* Constructor changes in link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage]:
-** Changed parameter types from `Long` to `Integer`
-** Renamed `generationTokens` parameter to `completionTokens`
-** Removed constructors that used `Long` parameters
 
-=== JSON Serialization Changes
+==== Required Actions
 
-* The JSON format now uses `completionTokens` instead of `generationTokens`
-* For backward compatibility, JSON deserialization still supports the old format with `generationTokens`
-* Example of new JSON format:
+* Replace all calls to `getGenerationTokens()` with `getCompletionTokens()`
+
+* Update `DefaultUsage` constructor calls:
+[source,java]
+----
+// Old (M5)
+new DefaultUsage(Long promptTokens, Long generationTokens, Long totalTokens)
+
+// New (M6)
+new DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens)
+----
+
+
+NOTE: For more information on handling Usage, refer xref:api/usage-handling.adoc[here]
+
+==== JSON Ser/Deser changes
+While M6 maintains backward compatibility for JSON deserialization of the `generationTokens` field, this field will be removed in M7. Any persisted JSON documents using the old field name should be updated to use `completionTokens`.
+
+Example of the new JSON format:
 [source,json]
 ----
 {
@@ -29,22 +47,15 @@
 }
 ----
 
-=== Migration Guide
-
-1. Update your code to use `getCompletionTokens()` instead of `getGenerationTokens()`
-2. When creating new instances of link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], use `Integer` instead of `Long` for token counts. This is a breaking change and requires updating all constructor calls.
-3. When constructing link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], use the parameter name `completionTokens` instead of `generationTokens`
-4. If you're serializing `DefaultUsage` objects to JSON, update your code to use the new field names
-
 
 === Removal of deprecated Amazon Bedrock chat models
 
 Starting 1.0.0-M6, Spring AI transitioned to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI.
 All the Amazon Bedrock Chat models are removed except the Embedding models for Cohere and Titan.
 
-=== Migration Guide
+NOTE: Refer to xref:api/chat/bedrock-converse.adoc[Bedrock Converse] documentation for using the chat models.
 
-Refer to xref:api/chat/bedrock-converse.adoc[Bedrock Converse] documentation for using the chat models.
+
 
 == Upgrading to 1.0.0.M5
 
