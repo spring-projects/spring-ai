@@ -2,10 +2,6 @@ name: Release to Maven Central
 
 on:
   workflow_dispatch:
-    inputs:
-      releaseVersion:
-        description: "Release version"
-        required: true
 
 jobs:
   build:
