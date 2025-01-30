@@ -43,13 +43,12 @@ import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder.GetBuilderBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -57,6 +56,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -92,6 +92,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
+
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(WeaviateVectorStore.class));
 
 	private static final String METADATA_FIELD_PREFIX = "meta_";
 
@@ -294,6 +296,43 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 
 		return Optional.of(!result.hasErrors());
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			// Use similarity search with empty query to find documents matching the
+			// filter
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("") // empty query since we only want filter matches
+				.filterExpression(filterExpression)
+				.topK(10000) // large enough to get all matches
+				.similarityThresholdAll()
+				.build();
+
+			List<Document> matchingDocs = similaritySearch(searchRequest);
+
+			if (!matchingDocs.isEmpty()) {
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+
+				Optional<Boolean> result = delete(idsToDelete);
+
+				if (result.isPresent() && !result.get()) {
+					throw new IllegalStateException("Failed to delete some documents");
+				}
+
+				logger.debug(() -> "Deleted " + idsToDelete.size() + " documents matching filter expression");
+			}
+			else {
+				logger.debug(() -> "No documents found matching filter expression");
+			}
+		}
+		catch (Exception e) {
+			logger.error(e, () -> "Failed to delete documents by filter");
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
