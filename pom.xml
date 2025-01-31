@@ -127,7 +127,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
 
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp</module>
+
 		<module>spring-ai-integration-tests</module>
+
+		<module>mcp/common</module>
 	</modules>
 
 	<organization>
@@ -248,6 +252,9 @@
 		version 2.3.9 -->
 		<asciidoctorj-epub.version>1.5.1</asciidoctorj-epub.version>
 		<spring-asciidoctor-backends.version>0.0.6</spring-asciidoctor-backends.version>
+
+		<!-- MCP-->
+		<mcp.sdk.version>0.7.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
@@ -851,10 +858,21 @@
 
 	<repositories>
 		<repository>
+			<name>Central Portal Snapshots</name>
+			<id>central-portal-snapshots</id>
+			<url>https://central.sonatype.com/repository/maven-snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
 			<id>maven-central</id>
 			<url>https://repo.maven.apache.org/maven2/</url>
 			<snapshots>
-				<enabled>false</enabled>
+				<enabled>true</enabled>
 			</snapshots>
 			<releases>
 				<enabled>true</enabled>
