@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -251,6 +252,62 @@ public class WeaviateVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
+		});
+	}
+
+	@Test
+	void deleteByFilter() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
+					new Filter.Key("country"), new Filter.Value("BG"));
+
+			vectorStore.delete(filterExpression);
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+
+			vectorStore.delete(List.of(nlDocument.getId()));
+
+		});
+	}
+
+	@Test
+	void deleteWithStringFilterExpression() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			vectorStore.delete("country == 'BG'");
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+
+			vectorStore.delete(List.of(nlDocument.getId()));
 		});
 	}
 
