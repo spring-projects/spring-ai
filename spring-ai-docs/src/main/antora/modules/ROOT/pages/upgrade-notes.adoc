@@ -36,6 +36,8 @@
 3. When constructing link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], use the parameter name `completionTokens` instead of `generationTokens`
 4. If you're serializing `DefaultUsage` objects to JSON, update your code to use the new field names
 
+For more information on handling Usage, refer xref:api/usage-handling.adoc[here]
+
 == Upgrading to 1.0.0.M5
 
 * Vector Builders have been refactored for consistency.

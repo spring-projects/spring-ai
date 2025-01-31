@@ -1,0 +1,100 @@
+= Using Chat/Embedding Response Usage
+
+== Overview
+Spring AI has enhanced its Model Usage handling by introducing `getNativeUsage()` method in the Usage interface and providing a `DefaultUsage` implementation.
+This change simplifies how different AI models can track and report their usage metrics while maintaining consistency across the framework.
+
+== Key Changes
+
+=== Usage Interface Enhancement
+The `Usage` interface now includes a new method:
+```java
+Object getNativeUsage();
+```
+This method allows access to the model-specific native usage data, enabling more detailed usage tracking when needed.
+
+=== Using with ChatClient
+
+Here's a complete example showing how to track usage with OpenAI's ChatClient:
+
+```java
+@SpringBootConfiguration
+public class Configuration {
+
+        @Bean
+        public OpenAiApi chatCompletionApi() {
+            return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+        }
+
+        @Bean
+        public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+            return new OpenAiChatModel(openAiApi);
+        }
+
+    }
+
+@Service
+public class ChatService {
+
+    private final OpenAiChatModel chatModel;
+
+    public ChatService(OpenAiChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    public void demonstrateUsage() {
+        // Create a chat prompt
+        Prompt prompt = new Prompt("What is the weather like today?");
+
+        ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+        // Get the chat response
+        ChatResponse response = chatClient.call(prompt);
+
+        // Access the usage information
+        Usage usage = response.getMetadata().getUsage();
+
+        // Get standard usage metrics
+        System.out.println("Prompt Tokens: " + usage.getPromptTokens());
+        System.out.println("Completion Tokens: " + usage.getCompletionTokens());
+        System.out.println("Total Tokens: " + usage.getTotalTokens());
+
+        // Access native OpenAI usage data with detailed token information
+        if (usage.getNativeUsage() instanceof org.springframework.ai.openai.api.OpenAiApi.Usage) {
+            org.springframework.ai.openai.api.OpenAiApi.Usage nativeUsage =
+                (org.springframework.ai.openai.api.OpenAiApi.Usage) usage.getNativeUsage();
+
+            // Detailed prompt token information
+            System.out.println("Prompt Tokens Details:");
+            System.out.println("- Audio Tokens: " + nativeUsage.promptTokensDetails().audioTokens());
+            System.out.println("- Cached Tokens: " + nativeUsage.promptTokensDetails().cachedTokens());
+
+            // Detailed completion token information
+            System.out.println("Completion Tokens Details:");
+            System.out.println("- Reasoning Tokens: " + nativeUsage.completionTokenDetails().reasoningTokens());
+            System.out.println("- Accepted Prediction Tokens: " + nativeUsage.completionTokenDetails().acceptedPredictionTokens());
+            System.out.println("- Audio Tokens: " + nativeUsage.completionTokenDetails().audioTokens());
+            System.out.println("- Rejected Prediction Tokens: " + nativeUsage.completionTokenDetails().rejectedPredictionTokens());
+        }
+    }
+}
+```
+
+== Benefits
+
+**Standardization**: Provides a consistent way to handle usage across different AI models
+**Flexibility**: Supports model-specific usage data through the native usage feature
+**Simplification**: Reduces boilerplate code with the default implementation
+**Extensibility**: Easy to extend for specific model requirements while maintaining compatibility
+
+=== Type Safety Considerations
+
+When working with native usage data, consider type casting carefully:
+```java
+// Safe way to access native usage
+if (usage.getNativeUsage() instanceof org.springframework.ai.openai.api.OpenAiApi.Usage) {
+    org.springframework.ai.openai.api.OpenAiApi.Usage nativeUsage =
+        (org.springframework.ai.openai.api.OpenAiApi.Usage) usage.getNativeUsage();
+    // Work with native usage data
+}
+```
