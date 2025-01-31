@@ -16,10 +16,7 @@
 
 package org.springframework.ai.mistralai.api;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk.ChunkChoice;
@@ -74,16 +71,16 @@ public class MistralAiStreamFunctionCallingHelper {
 				Optional<String> id = current.delta()
 					.toolCalls()
 					.stream()
-					.filter(tool -> tool.id() != null)
-					.map(tool -> tool.id())
+					.map(ToolCall::id)
+					.filter(Objects::nonNull)
 					.findFirst();
-				if (!id.isPresent()) {
+				if (id.isEmpty()) {
 					var newId = UUID.randomUUID().toString();
 
 					var toolCallsWithID = current.delta()
 						.toolCalls()
 						.stream()
-						.map(toolCall -> new ToolCall(newId, "function", toolCall.function()))
+						.map(toolCall -> new ToolCall(newId, "function", toolCall.function(), toolCall.index()))
 						.toList();
 
 					var role = current.delta().role() != null ? current.delta().role() : Role.ASSISTANT;
@@ -151,7 +148,8 @@ public class MistralAiStreamFunctionCallingHelper {
 		String id = (current.id() != null ? current.id() : previous.id());
 		String type = (current.type() != null ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
-		return new ToolCall(id, type, function);
+		Integer index = (current.index() != null ? current.index() : previous.index());
+		return new ToolCall(id, type, function, index);
 	}
 
 	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
