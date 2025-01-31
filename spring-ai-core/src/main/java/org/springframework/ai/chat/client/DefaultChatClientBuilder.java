@@ -35,6 +35,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -156,6 +157,12 @@ public class DefaultChatClientBuilder implements Builder {
 
 	@Override
 	public Builder defaultTools(FunctionCallback... toolCallbacks) {
+		this.defaultRequest.tools(toolCallbacks);
+		return this;
+	}
+
+	@Override
+	public Builder defaultTools(List<ToolCallback> toolCallbacks) {
 		this.defaultRequest.tools(toolCallbacks);
 		return this;
 	}

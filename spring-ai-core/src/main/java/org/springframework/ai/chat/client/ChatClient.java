@@ -35,6 +35,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -218,6 +219,8 @@ public interface ChatClient {
 
 		ChatClientRequestSpec tools(FunctionCallback... toolCallbacks);
 
+		ChatClientRequestSpec tools(List<ToolCallback> toolCallbacks);
+
 		ChatClientRequestSpec tools(Object... toolObjects);
 
 		@Deprecated
@@ -282,6 +285,8 @@ public interface ChatClient {
 		Builder defaultTools(String... toolNames);
 
 		Builder defaultTools(FunctionCallback... toolCallbacks);
+
+		Builder defaultTools(List<ToolCallback> toolCallbacks);
 
 		Builder defaultTools(Object... toolObjects);
 

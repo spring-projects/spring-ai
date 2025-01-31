@@ -1,5 +1,5 @@
 [[upgrade-notes]]
-= Upgrading Notes
+= Upgrade Notes
 
 == Upgrading to 1.0.0.M6
 
