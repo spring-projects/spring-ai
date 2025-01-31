@@ -1,6 +1,6 @@
 = DeepSeek Chat
 
-https://www.deepseek.com/[DeepSeek AI] provides the open-source DeepSeek R3 model, renowned for its cutting-edge reasoning and problem-solving capabilities.
+https://www.deepseek.com/[DeepSeek AI] provides the open-source DeepSeek V3 model, renowned for its cutting-edge reasoning and problem-solving capabilities.
 
 Spring AI integrates with DeepSeek AI by reusing the existing xref::api/chat/openai-chat.adoc[OpenAI] client. To get started, you'll need to obtain a https://api-docs.deepseek.com/[DeepSeek API Key], configure the base URL, and select one of the supported models.
 
