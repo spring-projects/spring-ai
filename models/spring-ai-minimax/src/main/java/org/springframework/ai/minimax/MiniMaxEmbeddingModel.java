@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -38,7 +40,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -52,7 +53,7 @@ import org.springframework.util.Assert;
  */
 public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final LogAccessor logger = new LogAccessor(MiniMaxEmbeddingModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(MiniMaxEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -166,7 +167,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 					.execute(ctx -> this.miniMaxApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
-					logger.warn("No embeddings returned for request: " + request);
+					logger.warn("No embeddings returned for request: {}", request);
 					return new EmbeddingResponse(List.of());
 				}
 

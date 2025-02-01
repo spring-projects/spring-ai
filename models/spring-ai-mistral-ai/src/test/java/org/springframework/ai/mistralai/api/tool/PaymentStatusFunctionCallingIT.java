@@ -26,6 +26,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -36,7 +38,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool.Type;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,7 +64,7 @@ public class PaymentStatusFunctionCallingIT {
 	static Map<String, Function<Transaction, ?>> functions = Map.of("retrieve_payment_status",
 			new RetrievePaymentStatus(), "retrieve_payment_date", new RetrievePaymentDate());
 
-	private final LogAccessor logger = new LogAccessor(PaymentStatusFunctionCallingIT.class);
+	private final Logger logger = LoggerFactory.getLogger(PaymentStatusFunctionCallingIT.class);
 
 	private static <T> T jsonToObject(String json, Class<T> targetClass) {
 		try {

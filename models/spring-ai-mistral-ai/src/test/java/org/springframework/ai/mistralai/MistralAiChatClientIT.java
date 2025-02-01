@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -39,7 +41,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralAiChatClientIT {
 
-	private static final LogAccessor logger = new LogAccessor(MistralAiChatClientIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatClientIT.class);
 
 	@Autowired
 	MistralAiChatModel chatModel;
@@ -232,7 +233,7 @@ class MistralAiChatClientIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).containsAnyOf("30.0", "30");
 		assertThat(response).containsAnyOf("10.0", "10");
@@ -254,7 +255,7 @@ class MistralAiChatClientIT {
 			.prompt().call().content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).containsAnyOf("30.0", "30");
 		assertThat(response).containsAnyOf("10.0", "10");
@@ -277,7 +278,7 @@ class MistralAiChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: " + content);
+		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");

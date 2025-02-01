@@ -22,6 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -31,7 +33,6 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.ReflectionUtils;
 
@@ -43,7 +44,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @ActiveProfiles("logging-test")
 class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiChatClientMethodInvokingFunctionCallbackIT.class);
+	private static final Logger logger = LoggerFactory
+		.getLogger(OpenAiChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
 
@@ -74,7 +76,7 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -100,7 +102,7 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(arguments).containsEntry("roomName", "living room");
 		assertThat(arguments).containsEntry("on", true);
@@ -128,7 +130,7 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -156,7 +158,7 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 		assertThat(arguments).containsEntry("tool", "value");
@@ -209,7 +211,7 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
 	}
@@ -262,7 +264,7 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		public void turnLight(String roomName, boolean on) {
 			arguments.put("roomName", roomName);
 			arguments.put("on", on);
-			logger.info("Turn light in room: " + roomName + " to: " + on);
+			logger.info("Turn light in room: {} to: {}", roomName, on);
 		}
 
 		public void turnLivingRoomLightOn() {

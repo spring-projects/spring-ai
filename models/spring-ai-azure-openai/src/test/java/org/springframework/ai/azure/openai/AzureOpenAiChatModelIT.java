@@ -29,6 +29,8 @@ import com.azure.ai.openai.OpenAIServiceVersion;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -49,7 +51,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,7 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAzureCredentials
 class AzureOpenAiChatModelIT {
 
-	private static final LogAccessor logger = new LogAccessor(AzureOpenAiChatModelIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelIT.class);
 
 	@Autowired
 	private AzureOpenAiChatModel chatModel;

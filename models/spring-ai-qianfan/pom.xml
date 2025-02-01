@@ -60,6 +60,12 @@
             <artifactId>spring-context-support</artifactId>
         </dependency>
 
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
+
         <!-- test dependencies -->
         <dependency>
             <groupId>org.springframework.ai</groupId>

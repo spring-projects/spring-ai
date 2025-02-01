@@ -58,6 +58,11 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>com.ibm.cloud</groupId>
 			<artifactId>sdk-core</artifactId>
 			<version>${ibm.sdk.version}</version>

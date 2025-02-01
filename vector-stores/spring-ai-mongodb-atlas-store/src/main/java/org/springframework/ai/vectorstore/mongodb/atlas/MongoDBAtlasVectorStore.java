@@ -24,7 +24,8 @@ import java.util.Optional;
 
 import com.mongodb.MongoCommandException;
 import com.mongodb.client.result.DeleteResult;
-import org.springframework.core.log.LogAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -127,7 +128,7 @@ import org.springframework.util.Assert;
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final LogAccessor logger = new LogAccessor(MongoDBAtlasVectorStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(MongoDBAtlasVectorStore.class);
 
 	public static final String ID_FIELD_NAME = "_id";
 

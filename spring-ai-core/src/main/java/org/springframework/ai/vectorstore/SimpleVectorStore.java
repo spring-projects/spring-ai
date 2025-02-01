@@ -38,6 +38,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -47,7 +49,6 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -69,7 +70,7 @@ import org.springframework.core.log.LogAccessor;
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
-	private static final LogAccessor logger = new LogAccessor(SimpleVectorStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
 
 	private final ObjectMapper objectMapper;
 
@@ -96,7 +97,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		}
 
 		for (Document document : documents) {
-			logger.info("Calling EmbeddingModel for document id = " + document.getId());
+			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
 			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(), document.getText(),
 					document.getMetadata(), embedding);
@@ -138,7 +139,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		String json = getVectorDbAsJson();
 		try {
 			if (!file.exists()) {
-				logger.info("Creating new vector store file: " + file);
+				logger.info("Creating new vector store file: {}", file);
 				try {
 					Files.createFile(file.toPath());
 				}
@@ -150,7 +151,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 				}
 			}
 			else {
-				logger.info("Overwriting existing vector store file: " + file);
+				logger.info("Overwriting existing vector store file: {}", file);
 			}
 			try (OutputStream stream = new FileOutputStream(file);
 					Writer writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8)) {
@@ -159,15 +160,15 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 			}
 		}
 		catch (IOException ex) {
-			logger.error(ex, "IOException occurred while saving vector store file.");
+			logger.error("IOException occurred while saving vector store file.", ex);
 			throw new RuntimeException(ex);
 		}
 		catch (SecurityException ex) {
-			logger.error(ex, "SecurityException occurred while saving vector store file.");
+			logger.error("SecurityException occurred while saving vector store file.", ex);
 			throw new RuntimeException(ex);
 		}
 		catch (NullPointerException ex) {
-			logger.error(ex, "NullPointerException occurred while saving vector store file.");
+			logger.error("NullPointerException occurred while saving vector store file.", ex);
 			throw new RuntimeException(ex);
 		}
 	}

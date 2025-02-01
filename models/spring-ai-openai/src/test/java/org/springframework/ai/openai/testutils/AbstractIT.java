@@ -19,6 +19,9 @@ package org.springframework.ai.openai.testutils;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -35,14 +38,13 @@ import org.springframework.ai.openai.OpenAiModerationModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public abstract class AbstractIT {
 
-	private static final LogAccessor logger = new LogAccessor(AbstractIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(AbstractIT.class);
 
 	@Autowired
 	protected ChatModel chatModel;

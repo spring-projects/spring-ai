@@ -21,6 +21,8 @@ import java.util.List;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.Tracer;
 import io.micrometer.tracing.otel.bridge.OtelTracer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
@@ -45,7 +47,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.log.LogAccessor;
 
 /**
  * Auto-configuration for Spring AI chat model observations.
@@ -59,7 +60,7 @@ import org.springframework.core.log.LogAccessor;
 @EnableConfigurationProperties({ ChatObservationProperties.class })
 public class ChatObservationAutoConfiguration {
 
-	private static final LogAccessor logger = new LogAccessor(ChatObservationAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatObservationAutoConfiguration.class);
 
 	private static void logPromptContentWarning() {
 		logger.warn(
