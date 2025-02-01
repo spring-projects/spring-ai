@@ -126,8 +126,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
 
 		<module>spring-ai-integration-tests</module>
+
+		<module>mcp/common</module>
 	</modules>
 
 	<organization>
@@ -247,6 +250,9 @@
 		version 2.3.9 -->
 		<asciidoctorj-epub.version>1.5.1</asciidoctorj-epub.version>
 		<spring-asciidoctor-backends.version>0.0.6</spring-asciidoctor-backends.version>
+
+		<!-- MCP-->
+		<mcp.sdk.version>0.7.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
