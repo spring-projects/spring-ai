@@ -1,0 +1,261 @@
+= HunYuan AI Chat
+
+Spring AI supports the various AI language models from HunYuan AI. You can interact with HunYuan AI language models and create a multilingual conversational assistant based on HunYuan models.
+
+== Prerequisites
+
+You will need to create an API with HunYuan to access HunYuan AI language models.
+
+Create an account at https://console.cloud.tencent.com/hunyuan/start[HunYuan AI registration page] and generate the token on the https://console.cloud.tencent.com/cam/capi[API Keys page].
+The Spring AI project defines two configuration properties named `spring.ai.hunyuan.secret-id` and `spring.ai.hunyuan.secret-key` that you should set to the value of the `API Key` obtained from https://console.cloud.tencent.com/cam/capi[API Keys page].
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_HUNYUAN_SECRET_ID=<INSERT SECRET_ID HERE>
+export SPRING_AI_HUNYUAN_SECRET_KEY=<INSERT SECRET_KEY HERE>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the HunYuan Chat Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-hunyuan-spring-boot-starter</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-hunyuan-spring-boot-starter'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the HunYuan AI Chat model.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.hunyuan` is used as the property prefix that lets you connect to HunYuan.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.hunyuan.base-url   | The URL to connect to |  https://hunyuan.tencentcloudapi.com
+| spring.ai.hunyuan.secret-id    | The API SECRET ID           |  -
+| spring.ai.hunyuan.secret-key    | The API SECRET Key           |  -
+|====
+
+==== Configuration Properties
+
+The prefix `spring.ai.hunyuan.chat` is the property prefix that lets you configure the chat model implementation for HunYuan.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.hunyuan.chat.enabled | Enable HunYuan chat model.  | true
+| spring.ai.hunyuan.chat.base-url | Optional overrides the spring.ai.hunyuan.base-url to provide chat specific url |  -
+| spring.ai.hunyuan.chat.secret-id | Optional overrides the spring.ai.hunyuan.secret-id to provide chat specific api-secret-id |  -
+| spring.ai.hunyuan.chat.secret-key | Optional overrides the spring.ai.hunyuan.secret-key to provide chat specific api-secret-key |  -
+| spring.ai.hunyuan.chat.options.model | This is the HunYuan Chat model to use | `hunyuan-pro` (the `hunyuan-lite`, `hunyuan-standard`, `hunyuan-standard-256K`, `hunyuan-pro`, ` hunyuan-code`, `hunyuan-role`, `hunyuan-functioncall`, `hunyuan-vision`, `hunyuan-turbo`, `hunyuan-large`, `hunyuan-large-longcontext`, `hunyuan-turbo-vision`, and ` hunyuan-standard-vision` point to the latest model versions)
+| spring.ai.hunyuan.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
+| spring.ai.hunyuan.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both. | 1.0
+| spring.ai.hunyuan.chat.options.enableEnhancement | Enables or disables feature enhancements such as search. This parameter does not affect the security review capability. For hunyuan-lite, this parameter is ineffective. If not specified, the switch is turned on by default. Turning off this switch can reduce response latency, especially for the first character in stream mode, but may slightly degrade the response quality in some scenarios.| true
+| spring.ai.hunyuan.chat.options.stop | Up to 5 sequences where the API will stop generating further tokens. Each string must not exceed 32 bytes | -
+| spring.ai.hunyuan.chat.options.streamModeration | Controls whether the output is reviewed in real-time during streaming. This field is effective only when Stream is set to true. If true, the output is reviewed in real-time, and segments that fail the review will have their FinishReason set to sensitive. If false, the entire output is reviewed before being returned. If real-time text display is required in your application, you should handle the case where FinishReason is sensitive  and providing a custom message.  | false
+| spring.ai.hunyuan.chat.options.searchInfo | If true, the interface will return SearchInfo when a search hit occurs.  | false
+| spring.ai.hunyuan.chat.options.citation | Enables or disables citation markers in the response. This parameter works in conjunction with EnableEnhancement and SearchInfo. If true, search results in the response will be marked with a citation marker corresponding to links in the SearchInfo list. If not specified, the default is false.  | false
+| spring.ai.hunyuan.chat.options.enableSpeedSearch | Enables or disables the fast version of search. If true and a search hit occurs, the fast version of search will be used, which can reduce the latency of the first character in the stream.  | false
+| spring.ai.hunyuan.chat.options.enableMultimedia | Enables or disables multimedia capabilities. This parameter is effective only for whitelisted users and when EnableEnhancement is true and EnableSpeedSearch is false. For hunyuan-lite, this parameter is ineffective. If not specified, the default is false. When enabled and a multimedia hit occurs, the corresponding multimedia address will be output.  | false
+| spring.ai.hunyuan.chat.options.enableDeepSearch | Enables or disables deep research on the question. If true and a deep research hit occurs, information about the deep research will be returned.  | false
+| spring.ai.hunyuan.chat.options.enableSpeedSearch | Enables or disables the fast version of search. If true and a search hit occurs, the fast version of search will be used, which can reduce the latency of the first character in the stream.  | false
+| spring.ai.hunyuan.chat.options.seed | Ensures the model's output is reproducible. The value should be a non-zero positive integer, with a maximum value of 10000. It is not recommended to use this parameter unless necessary, as improper values can affect the output quality. | 1
+| spring.ai.hunyuan.chat.options.forceSearchEnhancement | Forces the use of AI search. If true, AI search will be used, and if the AI search result is empty, the large model will provide a fallback response. | false
+| spring.ai.hunyuan.chat.options.enableRecommendedQuestions | Enables or disables the recommendation of additional questions. If true, the response will include a RecommendedQuestions field with up to 3 recommended questions in the last package. | false
+|====
+
+NOTE: You can override the common `spring.ai.hunyuan.base-url` and `spring.ai.hunyuan.secret-id` and `spring.ai.hunyuan.secret-key` for the `ChatModel` implementations.
+The `spring.ai.hunyuan.chat.base-url` and `spring.ai.hunyuan.chat.secret-id` and `spring.ai.hunyuan.chat.secret-key` properties if set take precedence over the common properties.
+This is useful if you want to use different HunYuan accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.hunyuan.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime Options [[chat-options]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-hunyuan/src/main/java/org/springframework/ai/hunyuan/HunYuanChatOptions.java[HunYuanChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `HunYuanChatModel(api, options)` constructor or the `spring.ai.hunyuan.chat.options.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        HunYuanChatOptions.builder()
+            .model(HunYuanApi.ChatModel.HUNYUAN_PRO.getValue())
+            .temperature(0.5)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-hunyuan/src/main/java/org/springframework/ai/hunyuan/HunYuanChatOptions.java[HunYuanChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+
+== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-hunyuan-spring-boot-starter` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the HunYuan Chat model:
+
+[source,application.properties]
+----
+spring.ai.hunyuan.secret-id=YOUR_API_SECRET_ID
+spring.ai.hunyuan.secret-key=YOUR_API_SECRET_KEY
+spring.ai.hunyuan.chat.options.model=hunyuan-pro
+spring.ai.hunyuan.chat.options.temperature=0.7
+----
+
+TIP: replace the `secret-id` and `secret-key` with your HunYuan credentials.
+
+This will create a `HunYuanChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final HunYuanChatModel chatModel;
+
+    @Autowired
+    public ChatController(HunYuanChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", this.chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        var prompt = new Prompt(new UserMessage(message));
+        return this.chatModel.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-hunyuan/src/main/java/org/springframework/ai/hunyuan/HunYuanChatModel.java[HunYuanChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the HunYuan service.
+
+Add the `spring-ai-hunyuan` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-hunyuan</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-hunyuan'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `HunYuanChatModel` and use it for text generations:
+
+[source,java]
+----
+var hunyuanApi = new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY"));
+
+var chatModel = new HunYuanChatModel(this.hunyuanApi, HunYuanChatOptions.builder()
+                .model(HunYuanApi.ChatModel.HUNYUAN_PRO.getValue())
+                .temperature(0.4)
+                .maxTokens(200)
+                .build());
+
+ChatResponse response = this.chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> streamResponse = this.chatModel.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `HunYuanChatOptions` provides the configuration information for the chat requests.
+The `HunYuanChatOptions.Builder` is fluent options builder.
+
+=== Low-level HunYuan Api Client [[low-level-api]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-hunyuan/src/main/java/org/springframework/ai/hunyuan/api/HunYuanApi.java[HunYuanApi] provides is lightweight Java client for link:https://cloud.tencent.com/document/product/1729/101848[HunYuan AI API].
+
+Here is a simple snippet how to use the api programmatically:
+
+[source,java]
+----
+HunYuanApi hunyuanApi = new HunYuanApi(System.getenv("HUNYUAN_SECRET_ID"),System.getenv("HUNYUAN_SECRET_KEY"));
+
+ChatCompletionMessage chatCompletionMessage =
+    new ChatCompletionMessage("Hello world", Role.USER);
+
+// Sync request
+ResponseEntity<ChatCompletion> response = this.hunyuanApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.7, false));
+
+// Streaming request
+Flux<ChatCompletionChunk> streamResponse = this.hunyuanApi.chatCompletionStream(
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), HunYuanApi.ChatModel.HUNYUAN_PRO.getValue(), 0.7, true));
+----
+
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-hunyuan/src/main/java/org/springframework/ai/hunyuan/api/HunYuanApi.java[HunYuanApi.java]'s JavaDoc for further information.
+
+==== HunYuanApi Samples
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-hunyuan/src/test/java/org/springframework/ai/hunyuan/api/HunYuanApiIT.java[HunYuanApiIT.java] test provides some general examples how to use the lightweight library.
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-hunyuan/src/test/java/org/springframework/ai/hunyuan/api/HunYuanApiToolFunctionCallIT.java[HunYuanApiToolFunctionCallIT.java] test shows how to use the low-level API to call tool functions.

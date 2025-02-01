@@ -374,6 +374,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- HunYuan AI  -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-hunyuan</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-qianfan</artifactId>
