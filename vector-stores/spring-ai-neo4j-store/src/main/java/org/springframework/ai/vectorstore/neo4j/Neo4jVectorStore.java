@@ -21,11 +21,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.commons.logging.LogFactory;
 import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -40,7 +41,6 @@ import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressi
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -134,7 +134,7 @@ import org.springframework.util.StringUtils;
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(Neo4jVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(Neo4jVectorStore.class);
 
 	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
@@ -253,10 +253,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 			var summary = session.run(cypher, Map.of("transactionSize", DEFAULT_TRANSACTION_SIZE)).consume();
 
-			logger.debug("Deleted " + summary.counters().nodesDeleted() + " nodes matching filter expression");
+			logger.debug("Deleted {} nodes matching filter expression", summary.counters().nodesDeleted());
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to delete nodes by filter: " + e.getMessage());
+			logger.error("Failed to delete nodes by filter: {}", e.getMessage(), e);
 			throw new IllegalStateException("Failed to delete nodes by filter", e);
 		}
 	}

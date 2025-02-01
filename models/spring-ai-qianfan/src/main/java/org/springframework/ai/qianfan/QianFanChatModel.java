@@ -23,6 +23,8 @@ import java.util.Map;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -50,7 +52,6 @@ import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage.Role;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionRequest;
 import org.springframework.ai.qianfan.api.QianFanConstants;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -68,7 +69,7 @@ import org.springframework.util.Assert;
  */
 public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
-	private static final LogAccessor logger = new LogAccessor(QianFanChatModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(QianFanChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -168,7 +169,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
 				var chatCompletion = completionEntity.getBody();
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: " + prompt);
+					logger.warn("No chat completion returned for prompt: {}", prompt);
 					return new ChatResponse(List.of());
 				}
 

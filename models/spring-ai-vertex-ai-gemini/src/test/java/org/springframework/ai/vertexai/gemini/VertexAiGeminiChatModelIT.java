@@ -189,7 +189,7 @@ class VertexAiGeminiChatModelIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
-		// logger.info("" + actorsFilms);
+		// logger.info("{}", actorsFilms);
 		assertThat(generationTextFromStream).isNotEmpty();
 	}
 
@@ -218,7 +218,7 @@ class VertexAiGeminiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		// logger.info("" + actorsFilms);
+		// logger.info("{}", actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}

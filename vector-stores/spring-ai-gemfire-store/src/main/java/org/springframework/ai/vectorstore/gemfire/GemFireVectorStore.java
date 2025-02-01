@@ -27,12 +27,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -40,7 +43,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.lang.Nullable;
@@ -63,7 +65,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(GemFireVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(GemFireVectorStore.class);
 
 	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
 
@@ -239,7 +241,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 				.block();
 		}
 		catch (Exception e) {
-			logger.warn(e, "Error removing embedding: " + e.getMessage());
+			logger.warn("Error removing embedding: {}", e.getMessage(), e);
 			return Optional.of(false);
 		}
 		return Optional.of(true);

@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -65,7 +67,6 @@ import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest;
 import org.springframework.ai.moonshot.api.MoonshotApi.FunctionTool;
 import org.springframework.ai.moonshot.api.MoonshotConstants;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -80,7 +81,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class MoonshotChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
-	private static final LogAccessor logger = new LogAccessor(MoonshotChatModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(MoonshotChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -204,13 +205,13 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: " + prompt);
+					logger.warn("No chat completion returned for prompt: {}", prompt);
 					return new ChatResponse(List.of());
 				}
 
 				List<Choice> choices = chatCompletion.choices();
 				if (choices == null) {
-					logger.warn("No choices returned for prompt: " + prompt);
+					logger.warn("No choices returned for prompt: {}", prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -311,7 +312,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
 					}
 					catch (Exception e) {
-						logger.error(e, "Error processing chat completion");
+						logger.error("Error processing chat completion", e);
 						return new ChatResponse(List.of());
 					}
 

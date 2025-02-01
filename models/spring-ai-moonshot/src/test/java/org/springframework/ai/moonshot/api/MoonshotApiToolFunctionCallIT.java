@@ -24,6 +24,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletion;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionMessage;
@@ -33,7 +35,6 @@ import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest;
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.moonshot.api.MoonshotApi.FunctionTool;
 import org.springframework.ai.moonshot.api.MoonshotApi.FunctionTool.Type;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +71,7 @@ public class MoonshotApiToolFunctionCallIT {
 					}
 					"""));
 
-	private static final LogAccessor logger = new LogAccessor(MoonshotApiToolFunctionCallIT.class);
+	private final Logger logger = LoggerFactory.getLogger(MoonshotApiToolFunctionCallIT.class);
 
 	private final MockWeatherService weatherService = new MockWeatherService();
 

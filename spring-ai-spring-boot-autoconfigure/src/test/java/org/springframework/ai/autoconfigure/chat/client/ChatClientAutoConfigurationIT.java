@@ -18,6 +18,8 @@ package org.springframework.ai.autoconfigure.chat.client;
 
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -30,7 +32,6 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class ChatClientAutoConfigurationIT {
 
-	private static final LogAccessor logger = new LogAccessor(ChatClientAutoConfigurationIT.class);
+	private static final Log logger = LogFactory.getLog(ChatClientAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),

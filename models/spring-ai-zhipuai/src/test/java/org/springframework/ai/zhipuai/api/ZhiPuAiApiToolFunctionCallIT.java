@@ -24,6 +24,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletion;
@@ -32,7 +34,6 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest.ToolChoiceBuilder;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".+")
 public class ZhiPuAiApiToolFunctionCallIT {
 
-	private static final LogAccessor logger = new LogAccessor(ZhiPuAiApiToolFunctionCallIT.class);
+	private final Logger logger = LoggerFactory.getLogger(ZhiPuAiApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
 

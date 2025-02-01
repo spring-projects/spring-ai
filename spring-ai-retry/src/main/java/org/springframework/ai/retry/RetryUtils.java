@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.RetryCallback;
@@ -40,8 +40,6 @@ import org.springframework.web.client.ResponseErrorHandler;
  * @since 0.8.1
  */
 public abstract class RetryUtils {
-
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(RetryUtils.class));
 
 	public static final ResponseErrorHandler DEFAULT_RESPONSE_ERROR_HANDLER = new ResponseErrorHandler() {
 
@@ -69,6 +67,8 @@ public abstract class RetryUtils {
 		}
 	};
 
+	private static final Logger logger = LoggerFactory.getLogger(RetryUtils.class);
+
 	public static final RetryTemplate DEFAULT_RETRY_TEMPLATE = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(TransientAiException.class)
@@ -78,7 +78,7 @@ public abstract class RetryUtils {
 			@Override
 			public <T extends Object, E extends Throwable> void onError(RetryContext context,
 					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn(throwable, "Retry error. Retry count:" + context.getRetryCount());
+				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
 			}
 		})
 		.build();

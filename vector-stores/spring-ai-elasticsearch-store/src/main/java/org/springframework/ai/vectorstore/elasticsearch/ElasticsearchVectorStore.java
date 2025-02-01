@@ -35,13 +35,16 @@ import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.client.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -52,7 +55,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -147,7 +149,7 @@ import org.springframework.util.Assert;
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(ElasticsearchVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchVectorStore.class);
 
 	private static final Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,

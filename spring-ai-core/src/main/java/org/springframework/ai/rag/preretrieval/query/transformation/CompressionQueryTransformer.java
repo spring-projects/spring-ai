@@ -19,6 +19,9 @@ package org.springframework.ai.rag.preretrieval.query.transformation;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -26,7 +29,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.util.PromptAssert;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -43,7 +45,7 @@ import org.springframework.util.StringUtils;
  */
 public class CompressionQueryTransformer implements QueryTransformer {
 
-	private static final LogAccessor logger = new LogAccessor(CompressionQueryTransformer.class);
+	private static final Logger logger = LoggerFactory.getLogger(CompressionQueryTransformer.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			Given the following conversation history and a follow-up query, your task is to synthesize

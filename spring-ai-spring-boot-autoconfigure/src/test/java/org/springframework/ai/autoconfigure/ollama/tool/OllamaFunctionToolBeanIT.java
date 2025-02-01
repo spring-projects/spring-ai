@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT;
@@ -41,7 +43,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
-	private static final LogAccessor logger = new LogAccessor(OllamaFunctionToolBeanIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionToolBeanIT.class);
 
 	private static final String MODEL_NAME = "qwen2.5:3b";
 
@@ -85,7 +86,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OllamaOptions.builder().toolCallbacks(ToolCallbacks.from(myTools)).build()));
 
-			logger.info("Response: " + response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
@@ -104,7 +105,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			ChatResponse response = chatModel
 				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().tools("weatherInfo").build()));
 
-			logger.info("Response: " + response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
@@ -130,7 +131,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: " + content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});
@@ -150,7 +151,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: " + response.getResult().getOutput().getText());
+			logger.info("Response: {}", response.getResult().getOutput().getText());
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});

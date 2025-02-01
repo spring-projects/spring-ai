@@ -30,6 +30,8 @@ import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import okio.Buffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
@@ -37,7 +39,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
@@ -205,7 +206,7 @@ public class MockAiTestConfiguration {
 	 */
 	static class MockWebServerFactoryBean implements FactoryBean<MockWebServer>, InitializingBean, DisposableBean {
 
-		private final LogAccessor logger = new LogAccessor(getClass().getName());
+		private final Logger logger = LoggerFactory.getLogger(getClass().getName());
 
 		private final Queue<MockResponse> queuedResponses = new ConcurrentLinkedDeque<>();
 
@@ -221,7 +222,7 @@ public class MockAiTestConfiguration {
 			this.dispatcher = dispatcher;
 		}
 
-		protected LogAccessor getLogger() {
+		protected Logger getLogger() {
 			return logger;
 		}
 
@@ -255,8 +256,8 @@ public class MockAiTestConfiguration {
 				this.mockWebServer.shutdown();
 			}
 			catch (IOException e) {
-				getLogger().warn("MockWebServer was not shutdown correctly: " + e.getMessage());
-				getLogger().trace(e, "MockWebServer shutdown failure");
+				getLogger().warn("MockWebServer was not shutdown correctly: {}", e.getMessage());
+				getLogger().trace("MockWebServer shutdown failure", e);
 			}
 		}
 

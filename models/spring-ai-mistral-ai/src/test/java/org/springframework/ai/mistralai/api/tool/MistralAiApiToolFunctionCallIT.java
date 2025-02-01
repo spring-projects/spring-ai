@@ -23,6 +23,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -33,7 +35,6 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool.Type;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 
@@ -48,7 +49,7 @@ public class MistralAiApiToolFunctionCallIT {
 
 	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.LARGE.getValue();
 
-	private final LogAccessor logger = new LogAccessor(MistralAiApiToolFunctionCallIT.class);
+	private final Logger logger = LoggerFactory.getLogger(MistralAiApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
 

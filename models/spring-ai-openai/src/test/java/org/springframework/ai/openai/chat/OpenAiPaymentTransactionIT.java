@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -46,7 +48,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,7 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiPaymentTransactionIT {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiPaymentTransactionIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiPaymentTransactionIT.class);
 
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
@@ -131,7 +132,7 @@ public class OpenAiPaymentTransactionIT {
 
 	private static class LoggingAdvisor implements CallAroundAdvisor {
 
-		private static final LogAccessor logger = new LogAccessor(LoggingAdvisor.class);
+		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
 
 		public String getName() {
 			return this.getClass().getSimpleName();

@@ -17,7 +17,8 @@
 package org.springframework.ai.autoconfigure.vectorstore.observation;
 
 import io.micrometer.tracing.otel.bridge.OtelTracer;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationFilter;
@@ -31,7 +32,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.log.LogAccessor;
 
 /**
  * Auto-configuration for Spring AI vector store observations.
@@ -46,8 +46,7 @@ import org.springframework.core.log.LogAccessor;
 @EnableConfigurationProperties({ VectorStoreObservationProperties.class })
 public class VectorStoreObservationAutoConfiguration {
 
-	private static final LogAccessor logger = new LogAccessor(
-			LogFactory.getLog(VectorStoreObservationAutoConfiguration.class));
+	private static final Logger logger = LoggerFactory.getLogger(VectorStoreObservationAutoConfiguration.class);
 
 	private static void logQueryResponseContentWarning() {
 		logger.warn(

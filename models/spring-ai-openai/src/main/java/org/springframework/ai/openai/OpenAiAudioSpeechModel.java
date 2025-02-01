@@ -17,6 +17,8 @@
 package org.springframework.ai.openai;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.RateLimit;
@@ -30,7 +32,6 @@ import org.springframework.ai.openai.audio.speech.StreamingSpeechModel;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -52,7 +53,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	 */
 	private static final Float SPEED = 1.0f;
 
-	private final LogAccessor logger = new LogAccessor(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	/**
 	 * The default options used for the audio completion requests.
@@ -131,7 +132,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 		var speech = speechEntity.getBody();
 
 		if (speech == null) {
-			logger.warn("No speech response returned for speechRequest: " + speechRequest);
+			logger.warn("No speech response returned for speechRequest: {}", speechRequest);
 			return new SpeechResponse(new Speech(new byte[0]));
 		}
 

@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
@@ -38,14 +40,13 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiFunctionCallbackIT {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiFunctionCallbackIT.class);
+	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallbackIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
@@ -64,7 +65,7 @@ public class OpenAiFunctionCallbackIT {
 			ChatResponse response = chatModel
 				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("WeatherInfo").build()));
 
-			logger.info("Response: " + response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -91,7 +92,7 @@ public class OpenAiFunctionCallbackIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: " + content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

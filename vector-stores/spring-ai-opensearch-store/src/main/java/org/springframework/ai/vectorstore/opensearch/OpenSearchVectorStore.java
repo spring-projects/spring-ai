@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.LogFactory;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -39,6 +38,8 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -53,7 +54,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -141,7 +141,7 @@ import org.springframework.util.Assert;
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(OpenSearchVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
 
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
@@ -254,7 +254,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			}
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
+			logger.error("Failed to delete documents by filter: {}", e.getMessage());
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
