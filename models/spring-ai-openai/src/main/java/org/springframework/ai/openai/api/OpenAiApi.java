@@ -326,119 +326,326 @@ public class OpenAiApi {
 	}
 
 	/**
-	 * OpenAI Chat Completion Models:
-	 *
+	 * OpenAI Chat Completion Models.
+	 * <p>
+	 * This enum provides a comprehensive list of chat completion models available through
+	 * the OpenAI API, along with their key features and links to the official OpenAI
+	 * documentation for further details.
+	 * <p>
+	 * The models are grouped by their capabilities and intended use cases. For each
+	 * model, a brief description is provided, highlighting its strengths, limitations,
+	 * and any specific features. When available, the description also includes
+	 * information about the model's context window, maximum output tokens, and knowledge
+	 * cutoff date.
+	 * <p>
+	 * <b>References:</b>
 	 * <ul>
-	 * <li><a href="https://platform.openai.com/docs/models/gpt-4o">GPT-4o</a></li>
-	 * <li><a href="https://platform.openai.com/docs/models/gpt-4o-mini">GPT-4o
-	 * mini</a></li>
-	 * <li><a href="https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo">GPT-4
+	 * <li><a href="https://platform.openai.com/docs/models#gpt-4o">GPT-4o</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models#gpt-4-and-gpt-4-turbo">GPT-4
 	 * and GPT-4 Turbo</a></li>
-	 * <li><a href="https://platform.openai.com/docs/models/gpt-3-5-turbo">GPT-3.5
+	 * <li><a href="https://platform.openai.com/docs/models#gpt-3-5-turbo">GPT-3.5
 	 * Turbo</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models#o1-and-o1-mini">o1 and
+	 * o1-mini</a></li>
+	 * <li><a href="https://platform.openai.com/docs/models#o3-mini">o3-mini</a></li>
 	 * </ul>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
 		/**
-		 * Points to the most recent snapshot of the o1 model:o1-2024-12-17
+		 * <b>o1</b> is trained with reinforcement learning to perform complex reasoning.
+		 * It thinks before it answers, producing a long internal chain of thought before
+		 * responding to the user.
+		 * <p>
+		 * The latest o1 model supports both text and image inputs, and produces text
+		 * outputs (including Structured Outputs).
+		 * <p>
+		 * The knowledge cutoff for o1 is October, 2023.
+		 * <p>
+		 * Currently points to {@link #O1_2024_12_17}.
 		 */
 		O1("o1"),
 		/**
-		 * Latest o1 model snapshot
+		 * Latest o1 model snapshot. Supports both text and image inputs, and produces
+		 * text outputs (including Structured Outputs).
+		 * <p>
+		 * Context window: 200,000 tokens. Max output tokens: 100,000 tokens. Knowledge
+		 * cutoff: October, 2023.
 		 */
 		O1_2024_12_17("o1-2024-12-17"),
 		/**
-		 * Points to the most recent snapshot of the o1 preview
-		 * model:o1-preview-2024-09-12
+		 * <b>o1-preview</b> is trained with reinforcement learning to perform complex
+		 * reasoning. It thinks before it answers, producing a long internal chain of
+		 * thought before responding to the user.
+		 * <p>
+		 * The latest o1-preview model supports both text and image inputs, and produces
+		 * text outputs (including Structured Outputs).
+		 * <p>
+		 * The knowledge cutoff for o1-preview is October, 2023.
+		 * <p>
+		 * Currently points to {@link #O1_PREVIEW_2024_09_12}.
 		 */
 		O1_PREVIEW("o1-preview"),
 		/**
-		 * Latest o1 preview model snapshot
+		 * Latest o1-preview model snapshot. Supports both text and image inputs, and
+		 * produces text outputs (including Structured Outputs).
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 32,768 tokens. Knowledge
+		 * cutoff: October, 2023.
 		 */
 		O1_PREVIEW_2024_09_12("o1-preview-2024-09-12"),
 		/**
-		 * Points to the most recent o1-mini snapshot:o1-mini-2024-09-12
+		 * <b>o1-mini</b> is a faster and more affordable reasoning model compared to o1.
+		 * o1-mini currently only supports text inputs and outputs.
+		 * <p>
+		 * The knowledge cutoff for o1-mini is October, 2023.
+		 * <p>
+		 * Currently points to {@link #O1_MINI_2024_09_12}.
 		 */
 		O1_MINI("o1-mini"),
 		/**
-		 * Latest o1-mini model snapshot
+		 * Latest o1-mini model snapshot. Supports only text inputs and outputs.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 65,536 tokens. Knowledge
+		 * cutoff: October, 2023.
 		 */
 		O1_MINI_2024_09_12("o1-mini-2024-09-12"),
 
 		/**
-		 * Multimodal flagship model that’s cheaper and faster than GPT-4 Turbo. Currently
-		 * points to gpt-4o-2024-05-13.
+		 * <b>o3-mini</b> is our most recent small reasoning model, providing high
+		 * intelligence at the same cost and latency targets of o1-mini. o3-mini also
+		 * supports key developer features, like Structured Outputs, function calling,
+		 * Batch API, and more. Like other models in the o-series, it is designed to excel
+		 * at science, math, and coding tasks.
+		 * <p>
+		 * The knowledge cutoff for o3-mini models is October, 2023.
+		 * <p>
+		 * Currently points to {@link #O3_MINI_2025_01_31}.
 		 */
-		GPT_4_O("gpt-4o"),
+		O3_MINI("o3-mini"),
+		/**
+		 * Latest o3-mini model snapshot.
+		 * <p>
+		 * Context window: 200,000 tokens. Max output tokens: 100,000 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		O3_MINI_2025_01_31("o3-mini-2025-01-31"),
 
 		/**
-		 * Preview release for audio inputs in chat completions.
+		 * <b>GPT-4o ("omni")</b> is our versatile, high-intelligence flagship model. It
+		 * accepts both text and image inputs and produces text outputs (including
+		 * Structured Outputs).
+		 * <p>
+		 * The knowledge cutoff for GPT-4o models is October, 2023.
+		 * <p>
+		 * Currently points to {@link #GPT_4_O_2024_08_06}.
+		 */
+		GPT_4_O("gpt-4o"),
+		/**
+		 * The <b>chatgpt-4o-latest</b> model ID continuously points to the version of
+		 * GPT-4o used in ChatGPT. It is updated frequently when there are significant
+		 * changes to ChatGPT's GPT-4o model.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		CHATGPT_4_O_LATEST("chatgpt-4o-latest"),
+		/**
+		 * GPT-4o model snapshot.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		GPT_4_O_2024_11_20("gpt-4o-2024-11-20"),
+		/**
+		 * GPT-4o model snapshot.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		GPT_4_O_2024_08_06("gpt-4o-2024-08-06"),
+		/**
+		 * GPT-4o model snapshot.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		GPT_4_O_2024_05_13("gpt-4o-2024-05-13"),
+
+		/**
+		 * <b>GPT-4o Audio</b> is a preview release model that accepts audio inputs and
+		 * outputs and can be used in the Chat Completions REST API.
+		 * <p>
+		 * The knowledge cutoff for GPT-4o Audio models is October, 2023.
+		 * <p>
+		 * Currently points to {@link #GPT_4_O_AUDIO_PREVIEW_2024_12_17}.
 		 */
 		GPT_4_O_AUDIO_PREVIEW("gpt-4o-audio-preview"),
 
 		/**
-		 * Affordable and intelligent small model for fast, lightweight tasks. GPT-4o mini
-		 * is cheaper and more capable than GPT-3.5 Turbo. Currently points to
-		 * gpt-4o-mini-2024-07-18.
+		 * GPT-4o Audio model snapshot.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		GPT_4_O_AUDIO_PREVIEW_2024_12_17("gpt-4o-audio-preview-2024-12-17"),
+
+		/**
+		 * GPT-4o Audio model snapshot.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		GPT_4_O_AUDIO_PREVIEW_2024_10_01("gpt-4o-audio-preview-2024-10-01"),
+
+		/**
+		 * <b>GPT-4o-mini Audio</b> is a preview release model that accepts audio inputs
+		 * and outputs and can be used in the Chat Completions REST API.
+		 * <p>
+		 * The knowledge cutoff for GPT-4o-mini Audio models is October, 2023.
+		 * <p>
+		 * Currently points to {@link #GPT_4_O_MINI_AUDIO_PREVIEW_2024_12_17}.
+		 */
+		GPT_4_O_MINI_AUDIO_PREVIEW("gpt-4o-mini-audio-preview"),
+
+		/**
+		 * GPT-4o-mini Audio model snapshot.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		GPT_4_O_MINI_AUDIO_PREVIEW_2024_12_17("gpt-4o-mini-audio-preview-2024-12-17"),
+
+		/**
+		 * <b>GPT-4o-mini</b> is a fast, affordable small model for focused tasks. It
+		 * accepts both text and image inputs and produces text outputs (including
+		 * Structured Outputs). It is ideal for fine-tuning, and model outputs from a
+		 * larger model like GPT-4o can be distilled to GPT-4o-mini to produce similar
+		 * results at lower cost and latency.
+		 * <p>
+		 * The knowledge cutoff for GPT-4o-mini models is October, 2023.
+		 * <p>
+		 * Currently points to {@link #GPT_4_O_MINI_2024_07_18}.
 		 */
 		GPT_4_O_MINI("gpt-4o-mini"),
 
 		/**
-		 * GPT-4 Turbo with Vision The latest GPT-4 Turbo model with vision capabilities.
-		 * Vision requests can now use JSON mode and function calling. Currently points to
-		 * gpt-4-turbo-2024-04-09.
+		 * GPT-4o-mini model snapshot.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October, 2023.
+		 */
+		GPT_4_O_MINI_2024_07_18("gpt-4o-mini-2024-07-18"),
+
+		/**
+		 * <b>GPT-4 Turbo</b> is a high-intelligence GPT model with vision capabilities,
+		 * usable in Chat Completions. Vision requests can now use JSON mode and function
+		 * calling.
+		 * <p>
+		 * The knowledge cutoff for the latest GPT-4 Turbo version is December, 2023.
+		 * <p>
+		 * Currently points to {@link #GPT_4_TURBO_2024_04_09}.
 		 */
 		GPT_4_TURBO("gpt-4-turbo"),
 
 		/**
-		 * GPT-4 Turbo with Vision model. Vision requests can now use JSON mode and
-		 * function calling.
+		 * GPT-4 Turbo model snapshot with vision capabilities.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: December, 2023.
 		 */
 		GPT_4_TURBO_2024_04_09("gpt-4-turbo-2024-04-09"),
 
 		/**
-		 * (New) GPT-4 Turbo - latest GPT-4 model intended to reduce cases of “laziness”
-		 * where the model doesn’t complete a task. Returns a maximum of 4,096 output
-		 * tokens. Context window: 128k tokens
+		 * <b>GPT-4-0125-preview</b> is the latest GPT-4 model intended to reduce cases of
+		 * “laziness” where the model doesn’t complete a task.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens.
 		 */
 		GPT_4_0125_PREVIEW("gpt-4-0125-preview"),
 
 		/**
-		 * Currently points to gpt-4-0125-preview - model featuring improved instruction
-		 * following, JSON mode, reproducible outputs, parallel function calling, and
-		 * more. Returns a maximum of 4,096 output tokens Context window: 128k tokens
+		 * Currently points to {@link #GPT_4_0125_PREVIEW}.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens.
+		 */
+		GPT_4_1106_PREVIEW("gpt-4-1106-preview"),
+
+		/**
+		 * <b>GPT-4 Turbo Preview</b> is a high-intelligence GPT model usable in Chat
+		 * Completions.
+		 * <p>
+		 * Currently points to {@link #GPT_4_0125_PREVIEW}.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens.
 		 */
 		GPT_4_TURBO_PREVIEW("gpt-4-turbo-preview"),
 
 		/**
-		 * Currently points to gpt-4-0613. Snapshot of gpt-4 from June 13th 2023 with
-		 * improved function calling support. Context window: 8k tokens
+		 * <b>GPT-4</b> is an older version of a high-intelligence GPT model, usable in
+		 * Chat Completions.
+		 * <p>
+		 * Currently points to {@link #GPT_4_0613}.
+		 * <p>
+		 * Context window: 8,192 tokens. Max output tokens: 8,192 tokens.
 		 */
 		GPT_4("gpt-4"),
+		/**
+		 * GPT-4 model snapshot.
+		 * <p>
+		 * Context window: 8,192 tokens. Max output tokens: 8,192 tokens.
+		 */
+		GPT_4_0613("gpt-4-0613"),
+		/**
+		 * GPT-4 model snapshot.
+		 * <p>
+		 * Context window: 8,192 tokens. Max output tokens: 8,192 tokens.
+		 */
+		GPT_4_0314("gpt-4-0314"),
 
 		/**
-		 * Currently points to gpt-3.5-turbo-0125. model with higher accuracy at
-		 * responding in requested formats and a fix for a bug which caused a text
-		 * encoding issue for non-English language function calls. Returns a maximum of
-		 * 4,096 Context window: 16k tokens
+		 * <b>GPT-3.5 Turbo</b> models can understand and generate natural language or
+		 * code and have been optimized for chat using the Chat Completions API but work
+		 * well for non-chat tasks as well.
+		 * <p>
+		 * As of July 2024, {@link #GPT_4_O_MINI} should be used in place of
+		 * gpt-3.5-turbo, as it is cheaper, more capable, multimodal, and just as fast.
+		 * gpt-3.5-turbo is still available for use in the API.
+		 * <p>
+		 * Currently points to {@link #GPT_3_5_TURBO_0125}.
+		 * <p>
+		 * Context window: 16,385 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: September, 2021.
 		 */
 		GPT_3_5_TURBO("gpt-3.5-turbo"),
 
 		/**
-		 * (new) The latest GPT-3.5 Turbo model with higher accuracy at responding in
-		 * requested formats and a fix for a bug which caused a text encoding issue for
-		 * non-English language function calls. Returns a maximum of 4,096 Context window:
-		 * 16k tokens
+		 * The latest GPT-3.5 Turbo model with higher accuracy at responding in requested
+		 * formats and a fix for a bug that caused a text encoding issue for non-English
+		 * language function calls.
+		 * <p>
+		 * Context window: 16,385 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: September, 2021.
 		 */
 		GPT_3_5_TURBO_0125("gpt-3.5-turbo-0125"),
 
 		/**
 		 * GPT-3.5 Turbo model with improved instruction following, JSON mode,
-		 * reproducible outputs, parallel function calling, and more. Returns a maximum of
-		 * 4,096 output tokens. Context window: 16k tokens.
+		 * reproducible outputs, parallel function calling, and more.
+		 * <p>
+		 * Context window: 16,385 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: September, 2021.
 		 */
-		GPT_3_5_TURBO_1106("gpt-3.5-turbo-1106");
+		GPT_3_5_TURBO_1106("gpt-3.5-turbo-1106"),
+
+		/**
+		 * <b>GPT-3.5 Turbo Instruct</b> has similar capabilities to GPT-3 era models.
+		 * Compatible with the legacy Completions endpoint and not Chat Completions.
+		 * <p>
+		 * Context window: 4,096 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: September, 2021.
+		 */
+		GPT_3_5_TURBO_INSTRUCT("gpt-3.5-turbo-instruct");
 
 		public final String value;
 
