@@ -67,7 +67,7 @@ This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 NOTE: The property `spring.ai.azure.openai.chat.options.model` has been renamed to `spring.ai.azure.openai.chat.options.deployment-name`.
 
 NOTE: If you decide to connect to `OpenAI` instead of `Azure OpenAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property, 
-then the `spring.ai.azure.openai.chat.options.deployment-name` is treathed as an link:https://platform.openai.com/docs/models[OpenAI model] name.
+then the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an link:https://platform.openai.com/docs/models[OpenAI model] name.
 
 ==== Access the OpenAI Model
 
@@ -146,7 +146,11 @@ Deployments model name to provide as part of this completions request. | gpt-4o
 | spring.ai.azure.openai.chat.options.n | The number of chat completions choices that should be generated for a chat completions response. | -
 | spring.ai.azure.openai.chat.options.stop | A collection of textual sequences that will end completions generation. | -
 | spring.ai.azure.openai.chat.options.presencePenalty |  A value that influences the probability of generated tokens appearing based on their existing presence in generated text. Positive values will make tokens less likely to appear when they already exist and increase the model's likelihood to output new topics. | -
-| spring.ai.azure.openai.chat.options.responseFormat | An object specifying the format that the model must output. Using `AzureOpenAiResponseFormat.JSON` enables JSON mode, which guarantees the message the model generates is valid JSON.  Using AzureOpenAiResponseFormat.TEXT enables TEXT mode.| -
+| spring.ai.azure.openai.chat.options.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
+The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] which guarantees the model will match your supplied JSON schema. The JSON_SCHEMA type requires setting the `responseFormat.schema` property as well. | -
+| spring.ai.azure.openai.chat.options.responseFormat.name | Response format schema name. Applicable only for `responseFormat.type=JSON_SCHEMA` | custom_schema
+| spring.ai.azure.openai.chat.options.responseFormat.schema | Response format JSON schema. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
+| spring.ai.azure.openai.chat.options.responseFormat.strict | Response format JSON schema adherence strictness. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
 | spring.ai.azure.openai.chat.options.frequencyPenalty | A value that influences the probability of generated tokens appearing based on their cumulative frequency in generated text. Positive values will make tokens less likely to appear as their frequency increases and decrease the likelihood of the model repeating the same statements verbatim. | -
 | spring.ai.azure.openai.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 |====
@@ -235,6 +239,152 @@ String response = ChatClient.create(chatModel).prompt()
     .call()
     .content();
 ----
+
+== Structured Outputs
+
+OpenAI provides custom https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`.
+In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
+
+NOTE: Currently, OpenAI supports a link:https://platform.openai.com/docs/guides/structured-outputs/supported-schemas[subset of the JSON Schema language] format.
+
+=== Configuration
+
+Spring AI allows you to configure your response format either programmatically using the `OpenAiChatOptions` builder or through application properties.
+
+==== Using the Chat Options Builder
+
+You can set the response format programmatically with the `OpenAiChatOptions` builder as shown below:
+
+[source,java]
+----
+String jsonSchema = """
+        {
+            "type": "object",
+            "properties": {
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "explanation": { "type": "string" },
+                            "output": { "type": "string" }
+                        },
+                        "required": ["explanation", "output"],
+                        "additionalProperties": false
+                    }
+                },
+                "final_answer": { "type": "string" }
+            },
+            "required": ["steps", "final_answer"],
+            "additionalProperties": false
+        }
+        """;
+
+Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
+        OpenAiChatOptions.builder()
+            .model(ChatModel.GPT_4_O_MINI)
+            .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
+            .build());
+
+ChatResponse response = this.openAiChatModel.call(this.prompt);
+----
+
+NOTE: Adhere to the OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/supported-schemas[subset of the JSON Schema language] format.
+
+==== Integrating with BeanOutputConverter Utilities
+
+You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
+
+--
+[tabs]
+======
+Java::
++
+[source,java]
+----
+record MathReasoning(
+    @JsonProperty(required = true, value = "steps") Steps steps,
+    @JsonProperty(required = true, value = "final_answer") String finalAnswer) {
+
+    record Steps(
+        @JsonProperty(required = true, value = "items") Items[] items) {
+
+        record Items(
+            @JsonProperty(required = true, value = "explanation") String explanation,
+            @JsonProperty(required = true, value = "output") String output) {
+        }
+    }
+}
+
+var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
+
+var jsonSchema = this.outputConverter.getJsonSchema();
+
+Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
+        OpenAiChatOptions.builder()
+            .model(ChatModel.GPT_4_O_MINI)
+            .responseFormat(new ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this.jsonSchema))
+            .build());
+
+ChatResponse response = this.openAiChatModel.call(this.prompt);
+String content = this.response.getResult().getOutput().getContent();
+
+MathReasoning mathReasoning = this.outputConverter.convert(this.content);
+----
+Kotlin::
++
+[source,kotlin]
+----
+data class MathReasoning(
+	@get:JsonProperty(required = true, value = "steps") val steps: Steps,
+	@get:JsonProperty(required = true, value = "final_answer") val finalAnswer: String) {
+
+	data class Steps(@get:JsonProperty(required = true, value = "items") val items: Array<Items>) {
+
+		data class Items(
+			@get:JsonProperty(required = true, value = "explanation") val explanation: String,
+			@get:JsonProperty(required = true, value = "output") val output: String)
+	}
+}
+
+val outputConverter = BeanOutputConverter(MathReasoning::class.java)
+
+val jsonSchema = outputConverter.jsonSchema;
+
+val prompt = Prompt("how can I solve 8x + 7 = -23",
+	OpenAiChatOptions.builder()
+		.model(ChatModel.GPT_4_O_MINI)
+		.responseFormat(ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, jsonSchema))
+		.build())
+
+val response = openAiChatModel.call(prompt)
+val content = response.getResult().getOutput().getContent()
+
+val mathReasoning = outputConverter.convert(content)
+----
+======
+--
+
+NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation (`@get:JsonProperty(required = true,...)` with Kotlin in order to generate the annotation on the related getters, see link:https://kotlinlang.org/docs/annotations.html#annotation-use-site-targets[related documentation]).
+This is crucial for generating a schema that accurately marks fields as `required`.
+Although this is optional for JSON Schema, OpenAI link:https://platform.openai.com/docs/guides/structured-outputs/all-fields-must-be-required[mandates] it for the structured response to function correctly.
+
+==== Configuring via Application Properties
+
+Alternatively, when using the OpenAI auto-configuration, you can configure the desired response format through the following application properties:
+
+[source,application.properties]
+----
+spring.ai.openai.api-key=YOUR_API_KEY
+spring.ai.openai.chat.options.model=gpt-4o-mini
+
+spring.ai.openai.chat.options.response-format.type=JSON_SCHEMA
+spring.ai.openai.chat.options.response-format.name=MySchemaName
+spring.ai.openai.chat.options.response-format.schema={"type":"object","properties":{"steps":{"type":"array","items":{"type":"object","properties":{"explanation":{"type":"string"},"output":{"type":"string"}},"required":["explanation","output"],"additionalProperties":false}},"final_answer":{"type":"string"}},"required":["steps","final_answer"],"additionalProperties":false}
+spring.ai.openai.chat.options.response-format.strict=true
+----
+
+
 
 == Sample Controller
 
