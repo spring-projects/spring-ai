@@ -23,7 +23,11 @@ import org.springframework.ai.chat.model.ChatResponse;
  *
  * @author Ilayaperumal Gopinathan
  */
-public class UsageUtils {
+public final class UsageUtils {
+
+	private UsageUtils() {
+		throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+	}
 
 	/**
 	 * Accumulate usage tokens from the previous chat response to the current usage
@@ -46,12 +50,12 @@ public class UsageUtils {
 		// For a valid usage from previous chat response, accumulate it to the current
 		// usage.
 		if (!isEmpty(currentUsage)) {
-			Long promptTokens = currentUsage.getPromptTokens().longValue();
-			Long generationTokens = currentUsage.getGenerationTokens().longValue();
-			Long totalTokens = currentUsage.getTotalTokens().longValue();
+			Integer promptTokens = currentUsage.getPromptTokens();
+			Integer generationTokens = currentUsage.getCompletionTokens();
+			Integer totalTokens = currentUsage.getTotalTokens();
 			// Make sure to accumulate the usage from the previous chat response.
 			promptTokens += usageFromPreviousChatResponse.getPromptTokens();
-			generationTokens += usageFromPreviousChatResponse.getGenerationTokens();
+			generationTokens += usageFromPreviousChatResponse.getCompletionTokens();
 			totalTokens += usageFromPreviousChatResponse.getTotalTokens();
 			return new DefaultUsage(promptTokens, generationTokens, totalTokens);
 		}

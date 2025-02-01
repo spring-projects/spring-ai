@@ -23,13 +23,12 @@ import java.util.Map;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -50,8 +49,8 @@ import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage.Role;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionRequest;
 import org.springframework.ai.qianfan.api.QianFanConstants;
-import org.springframework.ai.qianfan.metadata.QianFanUsage;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -69,7 +68,7 @@ import org.springframework.util.Assert;
  */
 public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(QianFanChatModel.class);
+	private static final LogAccessor logger = new LogAccessor(QianFanChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -169,7 +168,7 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 
 				var chatCompletion = completionEntity.getBody();
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: " + prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -292,10 +291,14 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 		Assert.notNull(result, "QianFan ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
-			.usage(result.usage() != null ? QianFanUsage.from(result.usage()) : new EmptyUsage())
+			.usage(result.usage() != null ? getDefaultUsage(result.usage()) : new EmptyUsage())
 			.model(model)
 			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
+	}
+
+	private DefaultUsage getDefaultUsage(QianFanApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.StructuredOutputConverter;
@@ -215,29 +214,16 @@ public interface ChatClient {
 
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
-		/**
-		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
-		 */
-		@Deprecated
-		<I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.Function<I, O> function);
+		ChatClientRequestSpec tools(String... toolNames);
 
-		/**
-		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
-		 */
-		@Deprecated
-		<I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.BiFunction<I, ToolContext, O> function);
+		ChatClientRequestSpec tools(Object... toolObjects);
 
+		// ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks);
+
+		@Deprecated
 		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
 
-		/**
-		 * @deprecated use {@link #functions(FunctionCallback...)} instead.
-		 */
 		@Deprecated
-		<I, O> ChatClientRequestSpec function(String name, String description, Class<I> inputType,
-				java.util.function.Function<I, O> function);
-
 		ChatClientRequestSpec functions(String... functionBeanNames);
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
@@ -293,21 +279,20 @@ public interface ChatClient {
 
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
-		/**
-		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
-		 */
-		@Deprecated
-		<I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function);
+		Builder defaultTools(String... toolNames);
+
+		Builder defaultTools(Object... toolObjects);
 
 		/**
-		 * @deprecated use {@link #defaultFunctions(FunctionCallback...)} instead.
+		 * @deprecated in favor of {@link #defaultTools(String...)}
 		 */
 		@Deprecated
-		<I, O> Builder defaultFunction(String name, String description,
-				java.util.function.BiFunction<I, ToolContext, O> function);
-
 		Builder defaultFunctions(String... functionNames);
 
+		/**
+		 * @deprecated in favor of {@link #defaultTools(Object...)}
+		 */
+		@Deprecated
 		Builder defaultFunctions(FunctionCallback... functionCallbacks);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);

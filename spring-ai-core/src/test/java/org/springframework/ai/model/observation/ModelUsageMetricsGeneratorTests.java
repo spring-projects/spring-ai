@@ -16,6 +16,9 @@
 
 package org.springframework.ai.model.observation;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.Observation;
@@ -38,7 +41,7 @@ class ModelUsageMetricsGeneratorTests {
 	@Test
 	void whenTokenUsageThenMetrics() {
 		var meterRegistry = new SimpleMeterRegistry();
-		var usage = new TestUsage(1000L, 500L, 1500L);
+		var usage = new TestUsage(1000, 500, 1500);
 		ModelUsageMetricsGenerator.generate(usage, buildContext(), meterRegistry);
 
 		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(3);
@@ -59,7 +62,7 @@ class ModelUsageMetricsGeneratorTests {
 	@Test
 	void whenPartialTokenUsageThenMetrics() {
 		var meterRegistry = new SimpleMeterRegistry();
-		var usage = new TestUsage(1000L, null, 1000L);
+		var usage = new TestUsage(1000, null, 1000);
 		ModelUsageMetricsGenerator.generate(usage, buildContext(), meterRegistry);
 
 		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(2);
@@ -82,31 +85,40 @@ class ModelUsageMetricsGeneratorTests {
 
 	static class TestUsage implements Usage {
 
-		private final Long promptTokens;
+		private final Integer promptTokens;
 
-		private final Long generationTokens;
+		private final Integer generationTokens;
 
-		private final Long totalTokens;
+		private final int totalTokens;
 
-		TestUsage(Long promptTokens, Long generationTokens, Long totalTokens) {
+		TestUsage(Integer promptTokens, Integer generationTokens, int totalTokens) {
 			this.promptTokens = promptTokens;
 			this.generationTokens = generationTokens;
 			this.totalTokens = totalTokens;
 		}
 
 		@Override
-		public Long getPromptTokens() {
+		public Integer getPromptTokens() {
 			return this.promptTokens;
 		}
 
 		@Override
-		public Long getGenerationTokens() {
+		public Integer getCompletionTokens() {
 			return this.generationTokens;
 		}
 
 		@Override
-		public Long getTotalTokens() {
+		public Integer getTotalTokens() {
 			return this.totalTokens;
+		}
+
+		@Override
+		public Map<String, Integer> getNativeUsage() {
+			Map<String, Integer> usage = new HashMap<>();
+			usage.put("promptTokens", getPromptTokens());
+			usage.put("completionTokens", getCompletionTokens());
+			usage.put("totalTokens", getTotalTokens());
+			return usage;
 		}
 
 	}

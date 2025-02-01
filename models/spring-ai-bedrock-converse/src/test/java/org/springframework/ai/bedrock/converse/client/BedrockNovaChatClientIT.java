@@ -21,8 +21,6 @@ import java.time.Duration;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -31,13 +29,14 @@ import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -50,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockNovaChatClientIT.class);
+	private static final LogAccessor logger = new LogAccessor(BedrockNovaChatClientIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -146,8 +145,7 @@ public class BedrockNovaChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.function("getCurrentWeather", (WeatherRequest request) -> {
+				.tools(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
 						if (request.location().contains("Paris")) {
 							return new WeatherResponse(15, request.unit());
 						}
@@ -167,7 +165,7 @@ public class BedrockNovaChatClientIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -184,7 +182,7 @@ public class BedrockNovaChatClientIT {
 				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.withRegion(Region.US_EAST_1)
 				.withTimeout(Duration.ofSeconds(120))
-				.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
+				.withDefaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

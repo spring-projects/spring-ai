@@ -22,8 +22,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
@@ -36,6 +34,7 @@ import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools;
 import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools.ToolDescription;
 import org.springframework.ai.anthropic.api.tool.XmlHelper.Tools.ToolDescription.Parameter;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -81,7 +80,7 @@ public class AnthropicApiLegacyToolIT {
 
 	public static final ConcurrentHashMap<String, Function> FUNCTIONS = new ConcurrentHashMap<>();
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiLegacyToolIT.class);
+	private static final LogAccessor logger = new LogAccessor(AnthropicApiLegacyToolIT.class);
 
 	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
 

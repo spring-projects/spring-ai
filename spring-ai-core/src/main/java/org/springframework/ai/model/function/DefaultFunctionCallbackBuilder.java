@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,16 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback.FunctionInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.MethodInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
@@ -42,10 +42,13 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @since 1.0.0
+ * @deprecated Use specific builder for the type of tool you need, e.g.
+ * {@link FunctionToolCallback.Builder} and {@link MethodToolCallback.Builder}.
  */
+@Deprecated
 public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder {
 
-	private final static Logger logger = LoggerFactory.getLogger(DefaultFunctionCallbackBuilder.class);
+	private static final LogAccessor logger = new LogAccessor(DefaultFunctionCallbackBuilder.class);
 
 	@Override
 	public <I, O> FunctionInvokingSpec<I, O> function(String name, Function<I, O> function) {
@@ -80,8 +83,8 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 
 		String generatedDescription = ParsingUtils.reConcatenateCamelCase(fromName, " ");
 
-		logger.info("Description is not set! A best effort attempt to generate a description:'{}' from the:'{}'",
-				generatedDescription, fromName);
+		logger.info("Description is not set! A best effort attempt to generate a description:'" + generatedDescription
+				+ "' from the:'" + fromName + "'");
 		logger.info("It is recommended to set the Description explicitly! Use the 'description()' method!");
 
 		return generatedDescription;
@@ -144,9 +147,9 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			BiFunction<I, ToolContext, O> finalBiFunction = (this.biFunction != null) ? this.biFunction
 					: (request, context) -> this.function.apply(request);
 
-			return new FunctionInvokingFunctionCallback(this.name, this.getDescriptionExt(), this.getInputTypeSchema(),
-					this.inputType, (Function<I, String>) this.getResponseConverter(), this.getObjectMapper(),
-					finalBiFunction);
+			return new FunctionInvokingFunctionCallback<>(this.name, this.getDescriptionExt(),
+					this.getInputTypeSchema(), this.inputType, (Function<O, String>) this.getResponseConverter(),
+					this.getObjectMapper(), finalBiFunction);
 		}
 
 		private String getDescriptionExt() {

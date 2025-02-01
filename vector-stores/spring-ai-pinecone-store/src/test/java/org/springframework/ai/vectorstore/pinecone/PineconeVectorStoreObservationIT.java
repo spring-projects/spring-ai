@@ -39,7 +39,6 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore.PineconeVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
@@ -189,9 +188,11 @@ public class PineconeVectorStoreObservationIT {
 
 		@Bean
 		public VectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
-			return PineconeVectorStore
-				.builder(embeddingModel, System.getenv("PINECONE_API_KEY"), PINECONE_PROJECT_ID, PINECONE_ENVIRONMENT,
-						PINECONE_INDEX_NAME)
+			return PineconeVectorStore.builder(embeddingModel)
+				.apiKey(System.getenv("PINECONE_API_KEY"))
+				.projectId(PINECONE_PROJECT_ID)
+				.environment(PINECONE_ENVIRONMENT)
+				.indexName(PINECONE_INDEX_NAME)
 				.namespace(PINECONE_NAMESPACE)
 				.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)
 				.observationRegistry(observationRegistry)

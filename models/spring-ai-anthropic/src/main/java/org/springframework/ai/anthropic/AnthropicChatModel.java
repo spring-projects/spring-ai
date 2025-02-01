@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -41,13 +39,13 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.anthropic.metadata.AnthropicUsage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.metadata.UsageUtils;
@@ -68,6 +66,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -93,7 +92,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 	public static final Double DEFAULT_TEMPERATURE = 0.8;
 
-	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
+	private static final LogAccessor logger = new LogAccessor(AnthropicChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -238,7 +237,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
 				AnthropicApi.Usage usage = completionResponse.usage();
 
-				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(completionResponse.usage())
+				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(completionResponse.usage())
 						: new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 
@@ -255,6 +254,11 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		}
 
 		return response;
+	}
+
+	private DefaultUsage getDefaultUsage(AnthropicApi.Usage usage) {
+		return new DefaultUsage(usage.inputTokens(), usage.outputTokens(), usage.inputTokens() + usage.outputTokens(),
+				usage);
 	}
 
 	@Override
@@ -284,7 +288,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			AtomicReference<String> toolCallId = new AtomicReference<>("");
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
 				AnthropicApi.Usage usage = chatCompletionResponse.usage();
-				Usage currentChatResponseUsage = usage != null ? AnthropicUsage.from(chatCompletionResponse.usage()) : new EmptyUsage();
+				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
@@ -359,7 +363,7 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
-		return from(result, AnthropicUsage.from(result.usage()));
+		return from(result, this.getDefaultUsage(result.usage()));
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result, Usage usage) {

@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -40,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,7 +52,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 	private static ObjectMapper MAPPER = new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final LogAccessor logger = new LogAccessor(getClass());
 
 	@Autowired
 	private OpenAiChatModel openAiChatModel;
@@ -91,7 +90,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getText();
 
-		logger.info("Response content: {}", content);
+		logger.info("Response content: " + content);
 
 		assertThat(isValidJson(content)).isTrue();
 	}
@@ -134,7 +133,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getText();
 
-		logger.info("Response content: {}", content);
+		logger.info("Response content: " + content);
 
 		assertThat(isValidJson(content)).isTrue();
 	}
@@ -215,7 +214,7 @@ public class OpenAiChatModelResponseFormatIT {
 
 		String content = response.getResult().getOutput().getText();
 
-		logger.info("Response content: {}", content);
+		logger.info("Response content: " + content);
 
 		assertThat(isValidJson(content)).isTrue();
 

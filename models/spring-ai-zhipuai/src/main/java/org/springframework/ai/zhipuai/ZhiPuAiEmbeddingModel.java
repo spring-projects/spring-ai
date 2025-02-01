@@ -21,9 +21,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -40,7 +39,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
-import org.springframework.ai.zhipuai.metadata.ZhiPuAiUsage;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -53,7 +52,7 @@ import org.springframework.util.Assert;
  */
 public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(ZhiPuAiEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -175,7 +174,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 					ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding> response = this.retryTemplate
 						.execute(ctx -> this.zhiPuAiApi.embeddings(apiRequest).getBody());
 					if (response == null || response.data() == null || response.data().isEmpty()) {
-						logger.warn("No embeddings returned for input: {}", inputContent);
+						logger.warn("No embeddings returned for input: " + inputContent);
 						embeddingList.add(new float[0]);
 					}
 					else {
@@ -190,7 +189,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 				String model = (request.getOptions() != null && request.getOptions().getModel() != null)
 						? request.getOptions().getModel() : "unknown";
 
-				var metadata = new EmbeddingResponseMetadata(model, ZhiPuAiUsage.from(totalUsage));
+				var metadata = new EmbeddingResponseMetadata(model, getDefaultUsage(totalUsage));
 
 				var indexCounter = new AtomicInteger(0);
 
@@ -204,6 +203,10 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(ZhiPuAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	/**
@@ -221,11 +224,13 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 		return ZhiPuAiEmbeddingOptions.builder()
 			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
+					defaultOptions.getDimensions()))
 			.build();
 	}
 
 	private ZhiPuAiApi.EmbeddingRequest<String> createEmbeddingRequest(String text, EmbeddingOptions requestOptions) {
-		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel());
+		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel(), requestOptions.getDimensions());
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {

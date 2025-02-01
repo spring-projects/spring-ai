@@ -22,7 +22,6 @@ import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore;
-import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore.PineconeVectorStoreConfig;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -55,9 +54,11 @@ public class PineconeVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return PineconeVectorStore
-			.builder(embeddingModel, properties.getApiKey(), properties.getProjectId(), properties.getEnvironment(),
-					properties.getIndexName())
+		return PineconeVectorStore.builder(embeddingModel)
+			.apiKey(properties.getApiKey())
+			.projectId(properties.getProjectId())
+			.environment(properties.getEnvironment())
+			.indexName(properties.getIndexName())
 			.namespace(properties.getNamespace())
 			.contentFieldName(properties.getContentFieldName())
 			.distanceMetadataFieldName(properties.getDistanceMetadataFieldName())

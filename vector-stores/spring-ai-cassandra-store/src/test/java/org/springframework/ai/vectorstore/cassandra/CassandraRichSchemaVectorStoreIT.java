@@ -33,11 +33,9 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -45,6 +43,7 @@ import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
 import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -56,6 +55,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,7 +69,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class CassandraRichSchemaVectorStoreIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraRichSchemaVectorStoreIT.class);
+	private static final LogAccessor logger = new LogAccessor(
+			LogFactory.getLog(CassandraRichSchemaVectorStoreIT.class));
 
 	private static final List<Document> documents = List.of(
 
@@ -227,7 +228,7 @@ class CassandraRichSchemaVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
 
-				assertThat(resultDoc.getContent()).contains("Neptunes gravity makes its atmosphere");
+				assertThat(resultDoc.getText()).contains("Neptunes gravity makes its atmosphere");
 
 				assertThat(resultDoc.getMetadata()).hasSize(3);
 
@@ -282,7 +283,7 @@ class CassandraRichSchemaVectorStoreIT {
 					}
 					CompletableFuture.allOf(futures).join();
 					long time = System.nanoTime() - start;
-					logger.info("add+search took an average of {} ms", Duration.ofNanos(time / runs).toMillis());
+					logger.info(() -> "add+search took an average of {} ms" + Duration.ofNanos(time / runs).toMillis());
 				}
 			}
 		});
@@ -490,7 +491,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getContent()).contains(URANUS_ORBIT_QUERY);
+				assertThat(resultDoc.getText()).contains(URANUS_ORBIT_QUERY);
 				assertThat(resultDoc.getMetadata()).containsKey("revision");
 
 				String newContent = "The World is Big and Salvation Lurks Around the Corner";
@@ -523,7 +524,7 @@ class CassandraRichSchemaVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isNotEqualTo(sameIdDocument.getId());
-				assertThat(resultDoc.getContent()).doesNotContain(newContent);
+				assertThat(resultDoc.getText()).doesNotContain(newContent);
 
 				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 			}
@@ -555,7 +556,7 @@ class CassandraRichSchemaVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
 
-				assertThat(resultDoc.getContent()).contains(URANUS_ORBIT_QUERY);
+				assertThat(resultDoc.getText()).contains(URANUS_ORBIT_QUERY);
 
 				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
@@ -600,7 +601,7 @@ class CassandraRichSchemaVectorStoreIT {
 	}
 
 	private void executeCqlFile(ApplicationContext context, String filename) throws IOException {
-		logger.info("executing {}", filename);
+		logger.info(() -> "executing " + filename);
 
 		CqlSession session = context.getBean(CqlSession.class);
 

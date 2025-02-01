@@ -18,12 +18,14 @@ package org.springframework.ai.ollama;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
@@ -45,7 +47,6 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-import org.springframework.ai.ollama.metadata.OllamaEmbeddingUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -96,7 +97,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getContent());
+		return embed(document.getText());
 	}
 
 	@Override
@@ -126,7 +127,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 					.toList();
 
 				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
-						OllamaEmbeddingUsage.from(response));
+						getDefaultUsage(response));
 
 				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 
@@ -134,6 +135,10 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(OllamaApi.EmbeddingsResponse response) {
+		return new DefaultUsage(Optional.ofNullable(response.promptEvalCount()).orElse(0), 0);
 	}
 
 	/**
@@ -243,43 +248,6 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
-			this.modelManagementOptions = modelManagementOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #ollamaApi(OllamaApi)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
-			this.ollamaApi = ollamaApi;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #defaultOptions(OllamaOptions)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
-			this.defaultOptions = defaultOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #observationRegistry(ObservationRegistry)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
-			this.observationRegistry = observationRegistry;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #modelManagementOptions(ModelManagementOptions)}
-		 * instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
 			this.modelManagementOptions = modelManagementOptions;
 			return this;
 		}

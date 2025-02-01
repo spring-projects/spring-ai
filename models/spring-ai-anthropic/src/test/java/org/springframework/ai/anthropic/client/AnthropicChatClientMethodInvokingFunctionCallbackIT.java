@@ -23,18 +23,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -42,10 +44,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
+@SuppressWarnings("null")
 class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
-	private static final Logger logger = LoggerFactory
-		.getLogger(AnthropicChatClientMethodInvokingFunctionCallbackIT.class);
+	private static final LogAccessor logger = new LogAccessor(
+			AnthropicChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
 
@@ -58,17 +61,20 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 	void methodGetWeatherGeneratedDescription() {
 
 		// @formatter:off
+		var toolMethod = ReflectionUtils.findMethod(
+			TestFunctionClass.class, "getWeatherInLocation", String.class, Unit.class);
+
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.method("getWeatherInLocation", String.class, Unit.class)
-					.targetClass(TestFunctionClass.class)
+				.tools(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinition.builder(toolMethod).build())
+					.toolMethod(toolMethod)
 					.build())
 				.call()
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -77,18 +83,22 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 	void methodGetWeatherStatic() {
 
 		// @formatter:off
+		var toolMethod = ReflectionUtils.findMethod(
+			TestFunctionClass.class, "getWeatherStatic", String.class, Unit.class);
+
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.method("getWeatherStatic", String.class, Unit.class)
-					.description("Get the weather in location")
-					.targetClass(TestFunctionClass.class)
+				.tools(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Get the weather in location")
+						.build())
+					.toolMethod(toolMethod)
 					.build())
 				.call()
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -99,18 +109,24 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		TestFunctionClass targetObject = new TestFunctionClass();
 
 		// @formatter:off
+
+		var turnLightMethod = ReflectionUtils.findMethod(
+			TestFunctionClass.class, "turnLight", String.class, boolean.class);
+
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.functions(FunctionCallback.builder()
-					.method("turnLight", String.class, boolean.class)
-					.description("Turn light on in the living room.")
-					.targetObject(targetObject)
+				.tools(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinition.builder(turnLightMethod)
+						.description("Turn light on in the living room.")
+						.build())
+					.toolMethod(turnLightMethod)
+					.toolObject(targetObject)
 					.build())
 				.call()
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(arguments).containsEntry("roomName", "living room");
 		assertThat(arguments).containsEntry("on", true);
@@ -122,18 +138,23 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		TestFunctionClass targetObject = new TestFunctionClass();
 
 		// @formatter:off
+		var toolMethod = ReflectionUtils.findMethod(
+			TestFunctionClass.class, "getWeatherNonStatic", String.class, Unit.class);
+
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.method("getWeatherNonStatic", String.class, Unit.class)
-					.description("Get the weather in location")
-					.targetObject(targetObject)
+				.tools(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Get the weather in location")
+						.build())
+					.toolMethod(toolMethod)
+					.toolObject(targetObject)
 					.build())
 				.call()
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -144,19 +165,23 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		TestFunctionClass targetObject = new TestFunctionClass();
 
 		// @formatter:off
+		var toolMethod = ReflectionUtils.findMethod(
+			TestFunctionClass.class, "getWeatherWithContext", String.class, Unit.class, ToolContext.class);
+
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.method("getWeatherWithContext", String.class, Unit.class, ToolContext.class)
-					.description("Get the weather in location")
-					.targetObject(targetObject)
+				.tools(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Get the weather in location")
+						.build())
+					.toolMethod(toolMethod)
+					.toolObject(targetObject)
 					.build())
 				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content();
-		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 		assertThat(arguments).containsEntry("tool", "value");
@@ -171,18 +196,23 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		TestFunctionClass targetObject = new TestFunctionClass();
 
 		// @formatter:off
+		var toolMethod = ReflectionUtils.findMethod(
+			TestFunctionClass.class, "getWeatherNonStatic", String.class, Unit.class);
+
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.functions(FunctionCallback.builder()
-					.method("getWeatherNonStatic", String.class, Unit.class)
-					.description("Get the weather in location")
-					.targetObject(targetObject)
+				.tools(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Get the weather in location")
+						.build())
+					.toolMethod(toolMethod)
+					.toolObject(targetObject)
 					.build())
 				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content())
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Configured method does not accept ToolContext as input parameter!");
+				.hasMessage("ToolContext is not supported by the method as an argument");
 		// @formatter:on
 	}
 
@@ -191,21 +221,45 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		// @formatter:off
+		// @formatter:off		
+		var toolMethod = ReflectionUtils.findMethod(
+			TestFunctionClass.class, "turnLivingRoomLightOn");
+
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.functions(FunctionCallback.builder()
-					.method("turnLivingRoomLightOn")
-					.description("Can turn lights on in the Living Room")
-					.targetObject(targetObject)
+				.tools(MethodToolCallback.builder()
+					.toolMethod(toolMethod)
+					.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Can turn lights on in the Living Room")
+						.build())					
+					.toolObject(targetObject)
 					.build())
 				.call()
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(arguments).containsEntry("turnLivingRoomLightOn", true);
+	}
+
+	@Test
+	void toolAnnotation() {
+
+		TestFunctionClass targetObject = new TestFunctionClass();
+
+		// @formatter:off		
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn light red in the living room.")
+				.tools(targetObject)
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response:" + response);
+
+		assertThat(arguments).containsEntry("roomName", "living room")
+			.containsEntry("color", TestFunctionClass.LightColor.RED);
 	}
 
 	@Autowired
@@ -264,11 +318,24 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		public void turnLight(String roomName, boolean on) {
 			arguments.put("roomName", roomName);
 			arguments.put("on", on);
-			logger.info("Turn light in room: {} to: {}", roomName, on);
+			logger.info("Turn light in room: " + roomName + " to: " + on);
 		}
 
 		public void turnLivingRoomLightOn() {
 			arguments.put("turnLivingRoomLightOn", true);
+		}
+
+		enum LightColor {
+
+			RED, GREEN, BLUE
+
+		}
+
+		@Tool(description = "Change the lamp color in a room.")
+		public void changeRoomLightColor(String roomName, LightColor color) {
+			arguments.put("roomName", roomName);
+			arguments.put("color", color);
+			logger.info("Change light colur in room: " + roomName + " to color: " + color);
 		}
 
 	}

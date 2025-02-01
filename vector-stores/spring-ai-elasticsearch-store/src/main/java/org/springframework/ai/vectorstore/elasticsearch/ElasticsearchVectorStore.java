@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -34,17 +35,13 @@ import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.client.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -54,8 +51,8 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -83,9 +80,7 @@ import org.springframework.util.Assert;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder()
- *     .restClient(restClient)
- *     .embeddingModel(embeddingModel)
+ * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder(restClient, embeddingModel)
  *     .initializeSchema(true)
  *     .build();
  *
@@ -113,9 +108,7 @@ import org.springframework.util.Assert;
  * options.setSimilarity(SimilarityFunction.dot_product);
  * options.setDimensions(1536);
  *
- * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder()
- *     .restClient(restClient)
- *     .embeddingModel(embeddingModel)
+ * ElasticsearchVectorStore vectorStore = ElasticsearchVectorStore.builder(restClient, embeddingModel)
  *     .options(options)
  *     .initializeSchema(true)
  *     .batchingStrategy(new TokenCountBatchingStrategy())
@@ -154,7 +147,7 @@ import org.springframework.util.Assert;
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchVectorStore.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(ElasticsearchVectorStore.class));
 
 	private static final Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
@@ -168,32 +161,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ElasticsearchVectorStore(RestClient restClient, EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(new ElasticsearchVectorStoreOptions(), restClient, embeddingModel, initializeSchema);
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
-			EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(options, restClient, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ElasticsearchVectorStore(ElasticsearchVectorStoreOptions options, RestClient restClient,
-			EmbeddingModel embeddingModel, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(restClient, embeddingModel).options(options)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
-
 	protected ElasticsearchVectorStore(Builder builder) {
 		super(builder);
 
@@ -202,7 +169,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		this.initializeSchema = builder.initializeSchema;
 		this.options = builder.options;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
-		this.batchingStrategy = builder.batchingStrategy;
 
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
 		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(builder.restClient,
@@ -254,6 +220,23 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
 
+	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
+
+		try {
+			this.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())
+				.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
 	private BulkResponse bulkRequest(BulkRequest bulkRequest) {
 		try {
 			return this.elasticsearchClient.bulk(bulkRequest);
@@ -275,16 +258,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			final float finalThreshold = threshold;
 			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
-			SearchResponse<Document> res = this.elasticsearchClient.search(
-					sr -> sr.index(this.options.getIndexName())
-						.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
-							.similarity(finalThreshold)
-							.k((long) searchRequest.getTopK())
-							.field("embedding")
-							.numCandidates((long) (1.5 * searchRequest.getTopK()))
-							.filter(fl -> fl.queryString(
-									qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression()))))),
-					Document.class);
+			SearchResponse<Document> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
+				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
+					.similarity(finalThreshold)
+					.k((long) searchRequest.getTopK())
+					.field("embedding")
+					.numCandidates((long) (1.5 * searchRequest.getTopK()))
+					.filter(fl -> fl
+						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
+				.size(searchRequest.getTopK()), Document.class);
 
 			return res.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
 		}
@@ -373,6 +355,14 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	/**
+	 * Creates a new builder instance for ElasticsearchVectorStore.
+	 * @return a new ElasticsearchBuilder instance
+	 */
+	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
+		return new Builder(restClient, embeddingModel);
+	}
+
+	/**
 	 * The representation of {@link Document} along with its embedding.
 	 *
 	 * @param id The id of the document
@@ -383,14 +373,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
-	/**
-	 * Creates a new builder instance for ElasticsearchVectorStore.
-	 * @return a new ElasticsearchBuilder instance
-	 */
-	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
-		return new Builder(restClient, embeddingModel);
-	}
-
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final RestClient restClient;
@@ -398,8 +380,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		private ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 
 		private boolean initializeSchema = false;
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		private FilterExpressionConverter filterExpressionConverter = new ElasticsearchAiSearchFilterExpressionConverter();
 
@@ -433,18 +413,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy for vector operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

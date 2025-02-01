@@ -20,9 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -37,9 +36,9 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
-import org.springframework.ai.minimax.metadata.MiniMaxUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -53,7 +52,7 @@ import org.springframework.util.Assert;
  */
 public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(MiniMaxEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(MiniMaxEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -167,12 +166,11 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 					.execute(ctx -> this.miniMaxApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
-					logger.warn("No embeddings returned for request: {}", request);
+					logger.warn("No embeddings returned for request: " + request);
 					return new EmbeddingResponse(List.of());
 				}
 
-				var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
-						MiniMaxUsage.from(new MiniMaxApi.Usage(0, 0, apiEmbeddingResponse.totalTokens())));
+				var metadata = new EmbeddingResponseMetadata(apiRequest.model(), getDefaultUsage(apiEmbeddingResponse));
 
 				List<Embedding> embeddings = new ArrayList<>();
 				for (int i = 0; i < apiEmbeddingResponse.vectors().size(); i++) {
@@ -183,6 +181,10 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 				observationContext.setResponse(embeddingResponse);
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(MiniMaxApi.EmbeddingList apiEmbeddingList) {
+		return new DefaultUsage(0, 0, apiEmbeddingList.totalTokens());
 	}
 
 	/**

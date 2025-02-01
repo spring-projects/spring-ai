@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Mariusz Bernacki
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -173,7 +174,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	 * Defaults to true.
 	 */
 	private @JsonProperty("parallel_tool_calls") Boolean parallelToolCalls;
-
+	/**
+	 * Whether to store the output of this chat completion request for use in our model <a href="https://platform.openai.com/docs/guides/distillation">distillation</a> or <a href="https://platform.openai.com/docs/guides/evals">evals</a> products.
+	 */
+	private @JsonProperty("store") Boolean store;
+	/**
+	 * Developer-defined tags and values used for filtering completions in the <a href="https://platform.openai.com/chat-completions">dashboard</a>.
+	 */
+	private @JsonProperty("metadata") Map<String, String> metadata;
 	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
@@ -246,6 +254,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			.httpHeaders(fromOptions.getHttpHeaders())
 			.proxyToolCalls(fromOptions.getProxyToolCalls())
 			.toolContext(fromOptions.getToolContext())
+			.store(fromOptions.getStore())
+			.metadata(fromOptions.getMetadata())
 			.build();
 	}
 
@@ -325,7 +335,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public List<String> getOutputModalities() {
-		return outputModalities;
+		return this.outputModalities;
 	}
 
 	public void setOutputModalities(List<String> modalities) {
@@ -333,7 +343,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	public AudioParameters getOutputAudio() {
-		return outputAudio;
+		return this.outputAudio;
 	}
 
 	public void setOutputAudio(AudioParameters audio) {
@@ -494,6 +504,22 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 		this.toolContext = toolContext;
 	}
 
+	public Boolean getStore() {
+		return this.store;
+	}
+
+	public void setStore(Boolean store) {
+		this.store = store;
+	}
+
+	public Map<String, String> getMetadata() {
+		return this.metadata;
+	}
+
+	public void setMetadata(Map<String, String> metadata) {
+		this.metadata = metadata;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -505,7 +531,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
-				this.proxyToolCalls, this.toolContext, this.outputModalities, this.outputAudio);
+				this.proxyToolCalls, this.toolContext, this.outputModalities, this.outputAudio, this.store,
+				this.metadata);
 	}
 
 	@Override
@@ -535,7 +562,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.toolContext, other.toolContext)
 				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
 				&& Objects.equals(this.outputModalities, other.outputModalities)
-				&& Objects.equals(this.outputAudio, other.outputAudio);
+				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
+				&& Objects.equals(this.metadata, other.metadata);
 	}
 
 	@Override
@@ -702,262 +730,13 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			this.options.model = model;
+		public Builder store(Boolean store) {
+			this.options.store = store;
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model(OpenAiApi.ChatModel)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(OpenAiApi.ChatModel openAiChatModel) {
-			this.options.model = openAiChatModel.getName();
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #logitBias(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withLogitBias(Map<String, Integer> logitBias) {
-			this.options.logitBias = logitBias;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #logprobs(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withLogprobs(Boolean logprobs) {
-			this.options.logprobs = logprobs;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #topLogprobs(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopLogprobs(Integer topLogprobs) {
-			this.options.topLogprobs = topLogprobs;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #maxTokens(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMaxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #maxCompletionTokens(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMaxCompletionTokens(Integer maxCompletionTokens) {
-			this.options.maxCompletionTokens = maxCompletionTokens;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #N(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withN(Integer n) {
-			this.options.n = n;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #outputModalities(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOutputModalities(List<String> modalities) {
-			this.options.outputModalities = modalities;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #outputAudio(AudioParameters)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOutputAudio(AudioParameters audio) {
-			this.options.outputAudio = audio;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #presencePenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPresencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #responseFormat(ResponseFormat)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withResponseFormat(ResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #streamUsage(boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withStreamUsage(boolean enableStreamUsage) {
-			this.options.streamOptions = (enableStreamUsage) ? StreamOptions.INCLUDE_USAGE : null;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #seed(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withSeed(Integer seed) {
-			this.options.seed = seed;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #stop(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withStop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #temperature(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTemperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #topP(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #tools(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTools(List<OpenAiApi.FunctionTool> tools) {
-			this.options.tools = tools;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #toolChoice(Object)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withToolChoice(Object toolChoice) {
-			this.options.toolChoice = toolChoice;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #user(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUser(String user) {
-			this.options.user = user;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #parallelToolCalls(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withParallelToolCalls(Boolean parallelToolCalls) {
-			this.options.parallelToolCalls = parallelToolCalls;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #functionCallbacks(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #functions(Set)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #function(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunction(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #httpHeaders(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withHttpHeaders(Map<String, String> httpHeaders) {
-			this.options.httpHeaders = httpHeaders;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #toolContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withToolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
-			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
+		public Builder metadata(Map<String, String> metadata) {
+			this.options.metadata = metadata;
 			return this;
 		}
 

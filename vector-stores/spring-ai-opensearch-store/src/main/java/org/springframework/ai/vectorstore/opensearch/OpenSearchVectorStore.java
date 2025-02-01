@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.LogFactory;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -33,6 +33,8 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
@@ -40,10 +42,8 @@ import org.opensearch.client.transport.endpoints.BooleanResponse;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -52,8 +52,8 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -82,9 +82,7 @@ import org.springframework.util.Assert;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder()
- *     .openSearchClient(openSearchClient)
- *     .embeddingModel(embeddingModel)
+ * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
  *     .initializeSchema(true)
  *     .build();
  *
@@ -107,9 +105,7 @@ import org.springframework.util.Assert;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder()
- *     .openSearchClient(openSearchClient)
- *     .embeddingModel(embeddingModel)
+ * OpenSearchVectorStore vectorStore = OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
  *     .index("custom-index")
  *     .mappingJson(customMapping)
  *     .similarityFunction("l2")
@@ -145,6 +141,8 @@ import org.springframework.util.Assert;
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(OpenSearchVectorStore.class));
+
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
@@ -170,81 +168,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private String similarityFunction;
-
-	/**
-	 * Creates a new OpenSearchVectorStore with default mapping and collection name.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(openSearchClient, embeddingModel, DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION, initializeSchema);
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with custom mapping.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel, String mappingJson,
-			boolean initializeSchema) {
-		this(DEFAULT_INDEX_NAME, openSearchClient, embeddingModel, mappingJson, initializeSchema);
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with custom index name and mapping.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param index The name of the index
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson, boolean initializeSchema) {
-		this(index, openSearchClient, embeddingModel, mappingJson, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new OpenSearchVectorStore with all configuration options.
-	 * @deprecated Use {@link #builder(OpenSearchClient, EmbeddingModel)} ()} instead
-	 * @param index The name of the index
-	 * @param openSearchClient The OpenSearch client
-	 * @param embeddingModel The embedding model to use
-	 * @param mappingJson The JSON mapping for the index
-	 * @param initializeSchema Whether to initialize the schema
-	 * @param observationRegistry The observation registry for metrics
-	 * @param customObservationConvention Custom observation convention
-	 * @param batchingStrategy The strategy for batching operations
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public OpenSearchVectorStore(String index, OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
-			String mappingJson, boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(openSearchClient, embeddingModel).index(index)
-			.mappingJson(mappingJson)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Creates a new OpenSearchVectorStore using the builder pattern.
@@ -263,7 +187,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		// https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
 		this.similarityFunction = builder.similarityFunction;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	/**
@@ -308,6 +231,31 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			// Create delete by query request
+			DeleteByQueryRequest request = new DeleteByQueryRequest.Builder().index(this.index)
+				.query(q -> q.queryString(qs -> qs.query(filterStr)))
+				.build();
+
+			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
+			logger.debug("Deleted " + response.deleted() + " documents matching filter expression");
+
+			if (!response.failures().isEmpty()) {
+				throw new IllegalStateException("Failed to delete some documents: " + response.failures());
+			}
+		}
+		catch (Exception e) {
+			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
@@ -456,8 +404,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 		private boolean initializeSchema = false;
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private FilterExpressionConverter filterExpressionConverter = new OpenSearchAiSearchFilterExpressionConverter();
 
 		private String similarityFunction = COSINE_SIMILARITY_FUNCTION;
@@ -465,7 +411,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		/**
 		 * Sets the OpenSearch client.
 		 * @param openSearchClient The OpenSearch client to use
-		 * @return The builder instance
 		 * @throws IllegalArgumentException if openSearchClient is null
 		 */
 		private Builder(OpenSearchClient openSearchClient, EmbeddingModel embeddingModel) {
@@ -505,18 +450,6 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy The batching strategy to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

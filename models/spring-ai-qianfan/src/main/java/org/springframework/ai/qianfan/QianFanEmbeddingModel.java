@@ -19,9 +19,8 @@ package org.springframework.ai.qianfan;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -38,8 +37,8 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.qianfan.api.QianFanApi;
 import org.springframework.ai.qianfan.api.QianFanApi.EmbeddingList;
 import org.springframework.ai.qianfan.api.QianFanConstants;
-import org.springframework.ai.qianfan.metadata.QianFanUsage;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -53,7 +52,7 @@ import org.springframework.util.Assert;
  */
 public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(QianFanEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(QianFanEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -165,18 +164,18 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 					.execute(ctx -> this.qianFanApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
-					logger.warn("No embeddings returned for request: {}", request);
+					logger.warn("No embeddings returned for request: " + request);
 					return new EmbeddingResponse(List.of());
 				}
 
 				if (apiEmbeddingResponse.errorNsg() != null) {
-					logger.error("Error message returned for request: {}", apiEmbeddingResponse.errorNsg());
+					logger.error("Error message returned for request: " + apiEmbeddingResponse.errorNsg());
 					throw new RuntimeException("Embedding failed: error code:" + apiEmbeddingResponse.errorCode()
 							+ ", message:" + apiEmbeddingResponse.errorNsg());
 				}
 
 				var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
-						QianFanUsage.from(apiEmbeddingResponse.usage()));
+						getDefaultUsage(apiEmbeddingResponse.usage()));
 
 				List<Embedding> embeddings = apiEmbeddingResponse.data()
 					.stream()
@@ -190,6 +189,10 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 				return embeddingResponse;
 			});
 
+	}
+
+	private DefaultUsage getDefaultUsage(QianFanApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	/**

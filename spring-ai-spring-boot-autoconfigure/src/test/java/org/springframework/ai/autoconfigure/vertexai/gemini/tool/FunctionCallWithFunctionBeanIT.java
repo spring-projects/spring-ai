@@ -21,8 +21,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -36,6 +34,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 class FunctionCallWithFunctionBeanIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
+	private static final LogAccessor logger = new LogAccessor(FunctionCallWithFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
@@ -71,21 +70,21 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						VertexAiGeminiChatOptions.builder().function("weatherFunction").build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						VertexAiGeminiChatOptions.builder().function("weatherFunction3").build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel
 					.call(new Prompt(List.of(userMessage), VertexAiGeminiChatOptions.builder().build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).doesNotContain("30", "10", "15");
 
@@ -111,14 +110,14 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						FunctionCallingOptions.builder().function("weatherFunction").build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						VertexAiGeminiChatOptions.builder().function("weatherFunction3").build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 

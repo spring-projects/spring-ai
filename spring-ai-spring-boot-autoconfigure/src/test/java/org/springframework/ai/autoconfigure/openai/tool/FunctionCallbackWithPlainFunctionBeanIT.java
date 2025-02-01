@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
@@ -40,7 +38,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
@@ -49,13 +47,14 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
+	private static final LogAccessor logger = new LogAccessor(FunctionCallbackWithPlainFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
@@ -82,7 +81,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().function("turnLivingRoomLightOn").build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 			assertThat(feedback).hasSize(1);
 			assertThat(feedback.get("turnLivingRoomLightOn")).isEqualTo(Boolean.valueOf(true));
 		});
@@ -100,7 +99,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().function("turnLivingRoomLightOnSupplier").build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 			assertThat(feedback).hasSize(1);
 			assertThat(feedback.get("turnLivingRoomLightOnSupplier")).isEqualTo(Boolean.valueOf(true));
 		});
@@ -118,7 +117,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ChatResponse response = chatModel
 				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("turnLight").build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 			assertThat(feedback).hasSize(2);
 			assertThat(feedback.get("kitchen")).isEqualTo(Boolean.valueOf(true));
 			assertThat(feedback.get("living room")).isEqualTo(Boolean.valueOf(true));
@@ -137,7 +136,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().function("turnLightConsumer").build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 			assertThat(feedback).hasSize(2);
 			assertThat(feedback.get("kitchen")).isEqualTo(Boolean.valueOf(true));
 			assertThat(feedback.get("living room")).isEqualTo(Boolean.valueOf(true));
@@ -155,13 +154,11 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"Please schedule a train from San Francisco to Los Angeles on 2023-12-25");
 
-			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.function("trainReservation")
-				.build();
+			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().tools("trainReservation").build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: {}", response.getResult().getOutput().getText());
+			logger.info("Response: " + response.getResult().getOutput().getText());
 		});
 	}
 
@@ -190,7 +187,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 						.toolContext(Map.of("sessionId", "123"))
 						.build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -222,7 +219,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 						.toolContext(Map.of("sessionId", "123"))
 						.build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -242,7 +239,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ChatResponse response = chatModel.call(
 					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("weatherFunction").build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -250,7 +247,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			response = chatModel.call(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder().function("weatherFunctionTwo").build()));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -266,13 +263,11 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.function("weatherFunction")
-				.build();
+			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().tools("weatherFunction").build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: {}", response.getResult().getOutput().getText());
+			logger.info("Response: " + response.getResult().getOutput().getText());
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
@@ -299,7 +294,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+			logger.info("Response: " + content);
 
 			assertThat(content).contains("30", "10", "15");
 
@@ -315,7 +310,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+			logger.info("Response: " + content);
 
 			assertThat(content).isNotEmpty().withFailMessage("Content returned from OpenAI model is empty");
 			assertThat(content).contains("30", "10", "15");

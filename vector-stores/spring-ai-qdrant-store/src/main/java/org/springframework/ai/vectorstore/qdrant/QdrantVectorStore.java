@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import io.micrometer.observation.ObservationRegistry;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
@@ -33,21 +32,20 @@ import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
 import io.qdrant.client.grpc.Points.UpdateStatus;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -101,8 +99,7 @@ import org.springframework.util.Assert;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient)
- *     .embeddingModel(embeddingModel)
+ * QdrantVectorStore vectorStore = QdrantVectorStore.builder(qdrantClient, embeddingModel)
  *     .collectionName("custom-collection")
  *     .initializeSchema(true)
  *     .batchingStrategy(new TokenCountBatchingStrategy())
@@ -125,9 +122,11 @@ import org.springframework.util.Assert;
  * @author Josh Long
  * @author Soby Chacko
  * @author Thomas Vitale
- * @since 0.8.1
+ * @since 1.0.0
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(QdrantVectorStore.class));
 
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
@@ -140,45 +139,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private final QdrantFilterExpressionConverter filterExpressionConverter = new QdrantFilterExpressionConverter();
 
 	private final boolean initializeSchema;
-
-	private final BatchingStrategy batchingStrategy;
-
-	/**
-	 * Constructs a new QdrantVectorStore.
-	 * @param qdrantClient A {@link QdrantClient} instance for interfacing with Qdrant.
-	 * @param collectionName The name of the collection to use in Qdrant.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param initializeSchema A boolean indicating whether to initialize the schema.
-	 * @deprecated Use {@link #builder(QdrantClient, EmbeddingModel)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
-			boolean initializeSchema) {
-		this(qdrantClient, collectionName, embeddingModel, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Constructs a new QdrantVectorStore.
-	 * @param qdrantClient A {@link QdrantClient} instance for interfacing with Qdrant.
-	 * @param collectionName The name of the collection to use in Qdrant.
-	 * @param embeddingModel The client for embedding operations.
-	 * @param initializeSchema A boolean indicating whether to initialize the schema.
-	 * @param observationRegistry The observation registry to use.
-	 * @param customObservationConvention The custom search observation convention to use.
-	 * @deprecated Use {@link #builder(QdrantClient, EmbeddingModel)}
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public QdrantVectorStore(QdrantClient qdrantClient, String collectionName, EmbeddingModel embeddingModel,
-			boolean initializeSchema, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(qdrantClient, embeddingModel).collectionName(collectionName)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Protected constructor for creating a QdrantVectorStore instance using the builder
@@ -196,7 +156,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		this.qdrantClient = builder.qdrantClient;
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	/**
@@ -254,6 +213,29 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		}
 		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doDelete(org.springframework.ai.vectorstore.filter.Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			Filter filter = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			io.qdrant.client.grpc.Points.UpdateResult response = this.qdrantClient
+				.deleteAsync(this.collectionName, filter)
+				.get();
+
+			if (response.getStatus() != io.qdrant.client.grpc.Points.UpdateStatus.Completed) {
+				throw new IllegalStateException("Failed to delete documents by filter: " + response.getStatus());
+			}
+
+			logger.debug("Deleted documents matching filter expression");
+		}
+		catch (Exception e) {
+			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
@@ -369,15 +351,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 *
 	 * @since 1.0.0
 	 */
-	public static final class Builder extends AbstractVectorStoreBuilder<Builder> {
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final QdrantClient qdrantClient;
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
 		private boolean initializeSchema = false;
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		/**
 		 * Creates a new builder instance with the required QdrantClient and
@@ -411,18 +391,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Configures the strategy for batching operations.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

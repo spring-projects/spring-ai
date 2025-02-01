@@ -19,9 +19,8 @@ package org.springframework.ai.openai;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -38,8 +37,8 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
-import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -52,7 +51,7 @@ import org.springframework.util.Assert;
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -163,12 +162,12 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 					.execute(ctx -> this.openAiApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
-					logger.warn("No embeddings returned for request: {}", request);
+					logger.warn("No embeddings returned for request: " + request);
 					return new EmbeddingResponse(List.of());
 				}
 
 				var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-						OpenAiUsage.from(apiEmbeddingResponse.usage()));
+						getDefaultUsage(apiEmbeddingResponse.usage()));
 
 				List<Embedding> embeddings = apiEmbeddingResponse.data()
 					.stream()
@@ -181,6 +180,10 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	private OpenAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request,

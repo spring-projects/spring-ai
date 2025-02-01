@@ -29,9 +29,8 @@ import com.google.cloud.aiplatform.v1.PredictResponse;
 import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
@@ -44,11 +43,11 @@ import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.MultimodalInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.VideoBuilder;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
@@ -64,7 +63,7 @@ import org.springframework.util.StringUtils;
  */
 public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiMultimodalEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(VertexAiMultimodalEmbeddingModel.class);
 
 	private static final MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
@@ -141,10 +140,10 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		}
 
 		// optional text parameter
-		if (StringUtils.hasText(document.getContent())) {
-			instanceBuilder.text(document.getContent());
+		if (StringUtils.hasText(document.getText())) {
+			instanceBuilder.text(document.getText());
 			documentMetadata.put(ModalityType.TEXT,
-					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getContent()));
+					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getText()));
 		}
 
 		Media media = document.getMedia();
@@ -153,7 +152,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				instanceBuilder.text(media.getData().toString());
 				documentMetadata.put(ModalityType.TEXT,
 						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-				if (StringUtils.hasText(document.getContent())) {
+				if (StringUtils.hasText(document.getText())) {
 					logger.warn("Media type String overrides the Document text content!");
 				}
 			}
@@ -164,7 +163,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 							new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 				}
 				else {
-					logger.warn("Unsupported image mime type: {}", media.getMimeType());
+					logger.warn("Unsupported image mime type: " + media.getMimeType());
 					throw new IllegalArgumentException("Unsupported image mime type: " + media.getMimeType());
 				}
 			}
@@ -179,7 +178,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 						new DocumentMetadata(document.getId(), media.getMimeType(), media.getData()));
 			}
 			else {
-				logger.warn("Unsupported media type: {}", media.getMimeType());
+				logger.warn("Unsupported media type: " + media.getMimeType());
 				throw new IllegalArgumentException("Unsupported media type: " + media.getMimeType());
 			}
 		}
@@ -242,8 +241,12 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens,
 			Map<String, Object> metadataToUse) {
-		Usage usage = new VertexAiEmbeddingUsage(totalTokens);
+		Usage usage = getDefaultUsage(totalTokens);
 		return new EmbeddingResponseMetadata(model, usage, metadataToUse);
+	}
+
+	private DefaultUsage getDefaultUsage(Integer totalTokens) {
+		return new DefaultUsage(0, 0, totalTokens);
 	}
 
 	@Override

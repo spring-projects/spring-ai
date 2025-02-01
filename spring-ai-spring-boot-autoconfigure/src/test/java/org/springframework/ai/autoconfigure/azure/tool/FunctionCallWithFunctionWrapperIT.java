@@ -20,8 +20,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
@@ -29,11 +27,13 @@ import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_ENDPOINT", matches = ".+")
 public class FunctionCallWithFunctionWrapperIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionWrapperIT.class);
+	private static final LogAccessor logger = new LogAccessor(FunctionCallWithFunctionWrapperIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -66,7 +66,7 @@ public class FunctionCallWithFunctionWrapperIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						AzureOpenAiChatOptions.builder().function("WeatherInfo").build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).containsAnyOf("30", "10", "15");
 
@@ -77,10 +77,9 @@ public class FunctionCallWithFunctionWrapperIT {
 	static class Config {
 
 		@Bean
-		public FunctionCallback weatherFunctionInfo() {
+		public ToolCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder()
-				.function("WeatherInfo", new MockWeatherService())
+			return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
 				.build();

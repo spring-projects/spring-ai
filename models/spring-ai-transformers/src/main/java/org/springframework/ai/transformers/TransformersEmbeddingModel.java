@@ -37,8 +37,6 @@ import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import io.micrometer.observation.ObservationRegistry;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
@@ -55,6 +53,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -81,19 +80,19 @@ import org.springframework.util.StringUtils;
 public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
 
 	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
-	public final static String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
+	public static final String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
 
 	// ONNX generative for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-	public final static String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects/spring-ai/raw/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
+	public static final String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects/spring-ai/raw/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
 
-	public final static String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
+	public static final String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
-	private static final Log logger = LogFactory.getLog(TransformersEmbeddingModel.class);
+	private static final LogAccessor logger = new LogAccessor(TransformersEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private final static int EMBEDDING_AXIS = 1;
+	private static final int EMBEDDING_AXIS = 1;
 
 	/**
 	 * Specifies what parts of the {@link Document}'s content and metadata will be used

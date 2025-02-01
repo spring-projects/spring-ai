@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  */
-public class OllamaChatRequestTests {
+class OllamaChatRequestTests {
 
 	OllamaChatModel chatModel = OllamaChatModel.builder()
 		.ollamaApi(new OllamaApi())
@@ -37,9 +37,10 @@ public class OllamaChatRequestTests {
 		.build();
 
 	@Test
-	public void createRequestWithDefaultOptions() {
+	void createRequestWithDefaultOptions() {
+		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content"));
 
-		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content"), false);
+		var request = this.chatModel.ollamaChatRequest(prompt, false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
@@ -52,12 +53,12 @@ public class OllamaChatRequestTests {
 	}
 
 	@Test
-	public void createRequestWithPromptOllamaOptions() {
-
+	void createRequestWithPromptOllamaOptions() {
 		// Runtime options should override the default options.
 		OllamaOptions promptOptions = OllamaOptions.builder().temperature(0.8).topP(0.5).numGPU(2).build();
+		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
 
-		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		var request = this.chatModel.ollamaChatRequest(prompt, true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
@@ -74,11 +75,11 @@ public class OllamaChatRequestTests {
 
 	@Test
 	public void createRequestWithPromptPortableChatOptions() {
-
 		// Ollama runtime options.
 		ChatOptions portablePromptOptions = ChatOptions.builder().temperature(0.9).topK(100).topP(0.6).build();
+		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", portablePromptOptions));
 
-		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content", portablePromptOptions), true);
+		var request = this.chatModel.ollamaChatRequest(prompt, true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
@@ -92,31 +93,33 @@ public class OllamaChatRequestTests {
 
 	@Test
 	public void createRequestWithPromptOptionsModelOverride() {
-
 		// Ollama runtime options.
 		OllamaOptions promptOptions = OllamaOptions.builder().model("PROMPT_MODEL").build();
+		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
 
-		var request = this.chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		var request = this.chatModel.ollamaChatRequest(prompt, true);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 	}
 
 	@Test
 	public void createRequestWithDefaultOptionsModelOverride() {
-
 		OllamaChatModel chatModel = OllamaChatModel.builder()
 			.ollamaApi(new OllamaApi())
 			.defaultOptions(OllamaOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
 			.build();
 
-		var request = chatModel.ollamaChatRequest(new Prompt("Test message content"), true);
+		var prompt1 = chatModel.buildRequestPrompt(new Prompt("Test message content"));
+
+		var request = chatModel.ollamaChatRequest(prompt1, true);
 
 		assertThat(request.model()).isEqualTo("DEFAULT_OPTIONS_MODEL");
 
 		// Prompt options should override the default options.
 		OllamaOptions promptOptions = OllamaOptions.builder().model("PROMPT_MODEL").build();
+		var prompt2 = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
 
-		request = chatModel.ollamaChatRequest(new Prompt("Test message content", promptOptions), true);
+		request = chatModel.ollamaChatRequest(prompt2, true);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 	}

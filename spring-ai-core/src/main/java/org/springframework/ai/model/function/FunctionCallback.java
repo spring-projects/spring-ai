@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,9 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 
 /**
@@ -31,7 +34,9 @@ import org.springframework.core.ParameterizedTypeReference;
  * Models and called on prompts that trigger the function call.
  *
  * @author Christian Tzolov
+ * @deprecated in favor of {@link ToolCallback}.
  */
+@Deprecated
 public interface FunctionCallback {
 
 	/**
@@ -115,7 +120,11 @@ public interface FunctionCallback {
 	 * <li>{@link FunctionInvokingSpec} - The function invoking builder interface.
 	 * <li>{@link MethodInvokingSpec} - The method invoking builder interface.
 	 * </ul>
+	 *
+	 * @deprecated Use specific builder for the type of tool you need, e.g.
+	 * {@link FunctionToolCallback.Builder} and {@link MethodToolCallback.Builder}.
 	 */
+	@Deprecated
 	interface Builder {
 
 		/**

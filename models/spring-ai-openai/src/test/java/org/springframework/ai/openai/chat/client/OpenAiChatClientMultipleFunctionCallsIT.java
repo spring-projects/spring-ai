@@ -25,21 +25,20 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.api.tool.MockWeatherService.Request;
 import org.springframework.ai.openai.api.tool.MockWeatherService.Response;
 import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("logging-test")
 class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientMultipleFunctionCallsIT.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiChatClientMultipleFunctionCallsIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -77,15 +76,14 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).doesNotContain("30", "10", "15");
 
 		// @formatter:off
 		response = chatClientBuilder.build().prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
-				.functions(FunctionCallback.builder()
-					.function("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -93,7 +91,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 
@@ -104,7 +102,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).doesNotContain("30", "10", "15");
 
@@ -115,8 +113,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunctions(FunctionCallback.builder()
-					.function("getCurrentWeather", new MockWeatherService())
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -125,7 +122,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 			.prompt().call().content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -158,8 +155,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunctions(FunctionCallback.builder()
-					.function("getCurrentWeather", biFunction)
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", biFunction)
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -169,7 +165,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 			.prompt().call().content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -202,8 +198,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunctions(FunctionCallback.builder()
-					.function("getCurrentWeather", biFunction)
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", biFunction)
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -214,7 +209,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 			.call().content();
 		// @formatter:on
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -225,8 +220,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-				.functions(FunctionCallback.builder()
-					.function("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -235,7 +229,7 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(content).contains("30", "10", "15");
 
@@ -255,7 +249,10 @@ class OpenAiChatClientMultipleFunctionCallsIT extends AbstractIT {
 
 		String content = chatClient.prompt()
 			.user("What's the weather like in Shanghai?")
-			.function("currentTemp", "get current temp", MyFunction.Req.class, function)
+			.tools(FunctionToolCallback.builder("currentTemp", function)
+				.description("get current temp")
+				.inputType(MyFunction.Req.class)
+				.build())
 			.call()
 			.content();
 

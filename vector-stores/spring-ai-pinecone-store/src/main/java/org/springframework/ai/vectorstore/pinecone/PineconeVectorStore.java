@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,28 @@
 package org.springframework.ai.vectorstore.pinecone;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
-import io.micrometer.observation.ObservationRegistry;
 import io.pinecone.PineconeClient;
 import io.pinecone.PineconeClientConfig;
 import io.pinecone.PineconeConnection;
 import io.pinecone.PineconeConnectionConfig;
 import io.pinecone.proto.DeleteRequest;
+import io.pinecone.proto.DeleteResponse;
 import io.pinecone.proto.QueryRequest;
 import io.pinecone.proto.QueryResponse;
 import io.pinecone.proto.UpsertRequest;
 import io.pinecone.proto.Vector;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -47,11 +50,12 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -84,44 +88,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private final ObjectMapper objectMapper;
 
-	private final BatchingStrategy batchingStrategy;
-
-	/**
-	 * Constructs a new PineconeVectorStore.
-	 * @deprecated Use {@link #builder(EmbeddingModel, String, String, String, String)}
-	 * ()} instead
-	 * @param config The configuration for the store
-	 * @param embeddingModel The client for embedding operations
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public PineconeVectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel) {
-		this(config, embeddingModel, ObservationRegistry.NOOP, null, new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Constructs a new PineconeVectorStore.
-	 * @deprecated Use {@link #builder(EmbeddingModel, String, String, String, String)}
-	 * ()} instead
-	 * @param config The configuration for the store
-	 * @param embeddingModel The client for embedding operations
-	 * @param observationRegistry The registry for observations
-	 * @param customObservationConvention The custom observation convention
-	 * @param batchingStrategy The strategy for batching operations
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public PineconeVectorStore(PineconeVectorStoreConfig config, EmbeddingModel embeddingModel,
-			ObservationRegistry observationRegistry, VectorStoreObservationConvention customObservationConvention,
-			BatchingStrategy batchingStrategy) {
-		this(builder(embeddingModel, config.clientConfig.getApiKey(), config.clientConfig.getProjectName(),
-				config.clientConfig.getEnvironment(), config.connectionConfig.getIndexName())
-			.namespace(config.namespace)
-			.contentFieldName(config.contentFieldName)
-			.distanceMetadataFieldName(config.distanceMetadataFieldName)
-			.serverSideTimeout(Duration.ofSeconds(config.clientConfig.getServerSideTimeoutSec()))
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(PineconeVectorStore.class));
 
 	/**
 	 * Creates a new PineconeVectorStore using the builder pattern.
@@ -149,16 +116,51 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		this.pineconeConnection = new PineconeClient(clientConfig).connect(connectionConfig);
 		this.objectMapper = new ObjectMapper();
-		this.batchingStrategy = builder.batchingStrategy;
 	}
 
 	/**
 	 * Creates a new builder instance for configuring a PineconeVectorStore.
 	 * @return A new PineconeBuilder instance
+	 * @deprecated use {@link #builder(EmbeddingModel)} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public static Builder builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
 			String indexName) {
 		return new Builder(embeddingModel, apiKey, projectId, environment, indexName);
+	}
+
+	/**
+	 * Creates a new builder for constructing a PineconeVectorStore instance. This builder
+	 * implements a type-safe step pattern that guides users through the required
+	 * configuration fields in a specific order, followed by optional configurations.
+	 *
+	 * Required fields must be provided in this sequence:
+	 * <ol>
+	 * <li>embeddingModel (provided to this method)</li>
+	 * <li>apiKey</li>
+	 * <li>projectId</li>
+	 * <li>environment</li>
+	 * <li>indexName</li>
+	 * </ol>
+	 *
+	 * After all required fields are set, optional configurations can be added using the
+	 * fluent builder pattern.
+	 *
+	 * Example usage: <pre>{@code
+	 * PineconeVectorStore store = PineconeVectorStore.builder(embeddingModel)
+	 *     .apiKey("your-api-key")
+	 *     .projectId("your-project")
+	 *     .environment("your-env")
+	 *     .indexName("your-index")
+	 *     .namespace("optional")  // optional configuration
+	 *     .build();
+	 * }</pre>
+	 * @param embeddingModel the embedding model to use for vector transformations
+	 * @return the first step of the builder requiring API key configuration
+	 * @throws IllegalArgumentException if embeddingModel is null
+	 */
+	public static Builder.BuilderWithApiKey builder(EmbeddingModel embeddingModel) {
+		return Builder.StepBuilder.start(embeddingModel);
 	}
 
 	/**
@@ -291,6 +293,43 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			// Direct filter based deletion is not working in pinecone, so we are
+			// retrieving the documents
+			// by doing a similarity search with an empty query and then passing the ID's
+			// of the documents to the delete(Id) API method.
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("") // empty query since we only want filter matches
+				.filterExpression(filterExpression)
+				.topK(10000) // large enough to get all matches
+				.similarityThresholdAll()
+				.build();
+
+			List<Document> matchingDocs = similaritySearch(searchRequest, this.pineconeNamespace);
+
+			if (!matchingDocs.isEmpty()) {
+				// Then delete those documents by ID
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+
+				Optional<Boolean> result = delete(idsToDelete, this.pineconeNamespace);
+
+				if (result.isPresent() && !result.get()) {
+					throw new IllegalStateException("Failed to delete some documents");
+				}
+
+				logger.debug(() -> "Deleted " + idsToDelete.size() + " documents matching filter expression");
+			}
+		}
+		catch (Exception e) {
+			logger.error(e, () -> "Failed to delete documents by filter");
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		return similaritySearch(request, this.pineconeNamespace);
 	}
@@ -336,18 +375,41 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	}
 
 	/**
-	 * Builder class for creating PineconeVectorStore instances.
+	 * Builder class for creating {@link PineconeVectorStore} instances. This implements a
+	 * type-safe step builder pattern to ensure all required fields are provided in a
+	 * specific order before optional configuration.
+	 *
+	 * The required fields must be provided in this sequence: 1. embeddingModel (via
+	 * builder method) 2. apiKey 3. projectId 4. environment 5. indexName
+	 *
+	 * After all required fields are set, optional configurations can be provided using
+	 * the fluent builder pattern.
+	 *
+	 * Example usage: <pre>{@code
+	 * PineconeVectorStore store = PineconeVectorStore.builder(embeddingModel)
+	 *     .apiKey("your-api-key")
+	 *     .projectId("your-project")
+	 *     .environment("your-env")
+	 *     .indexName("your-index")
+	 *     .namespace("optional")  // optional configuration
+	 *     .build();
+	 * }</pre>
 	 */
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
+		/** Required field for Pinecone API authentication */
 		private final String apiKey;
 
+		/** Required field identifying the Pinecone project */
 		private final String projectId;
 
+		/** Required field specifying the Pinecone environment (e.g. "gcp-starter") */
 		private final String environment;
 
+		/** Required field specifying the Pinecone index name */
 		private final String indexName;
 
+		// Optional fields with default values
 		private String namespace = "";
 
 		private String contentFieldName = CONTENT_FIELD_NAME;
@@ -356,21 +418,128 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		private Duration serverSideTimeout = Duration.ofSeconds(20);
 
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
 		private Builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
 				String indexName) {
 			super(embeddingModel);
-
-			Assert.hasText(apiKey, "ApiKey must not be null or empty");
-			Assert.hasText(projectId, "ProjectId must not be null or empty");
-			Assert.hasText(environment, "Environment must not be null or empty");
-			Assert.hasText(indexName, "IndexName must not be null or empty");
-
 			this.apiKey = apiKey;
 			this.projectId = projectId;
 			this.environment = environment;
 			this.indexName = indexName;
+		}
+
+		/**
+		 * First step interface requiring API key configuration.
+		 */
+		public interface BuilderWithApiKey {
+
+			/**
+			 * Sets the Pinecone API key and moves to project ID configuration.
+			 * @param apiKey The Pinecone API key
+			 * @return The next builder step for project ID
+			 * @throws IllegalArgumentException if apiKey is null or empty
+			 */
+			BuilderWithProjectId apiKey(String apiKey);
+
+		}
+
+		/**
+		 * Second step interface requiring project ID configuration.
+		 */
+		public interface BuilderWithProjectId {
+
+			/**
+			 * Sets the project ID and moves to environment configuration.
+			 * @param projectId The Pinecone project ID
+			 * @return The next builder step for environment
+			 * @throws IllegalArgumentException if projectId is null or empty
+			 */
+			BuilderWithEnvironment projectId(String projectId);
+
+		}
+
+		/**
+		 * Third step interface requiring environment configuration.
+		 */
+		public interface BuilderWithEnvironment {
+
+			/**
+			 * Sets the environment and moves to index name configuration.
+			 * @param environment The Pinecone environment
+			 * @return The next builder step for index name
+			 * @throws IllegalArgumentException if environment is null or empty
+			 */
+			BuilderWithIndexName environment(String environment);
+
+		}
+
+		/**
+		 * Final step interface requiring index name configuration.
+		 */
+		public interface BuilderWithIndexName {
+
+			/**
+			 * Sets the index name and returns the builder for optional configuration.
+			 * @param indexName The Pinecone index name
+			 * @return The builder for optional configurations
+			 * @throws IllegalArgumentException if indexName is null or empty
+			 */
+			Builder indexName(String indexName);
+
+		}
+
+		/**
+		 * Internal implementation of the step builder pattern using records for
+		 * immutability. Each step maintains the state from previous steps and implements
+		 * the corresponding interface to ensure type safety and proper sequencing of the
+		 * build steps.
+		 */
+		public static class StepBuilder {
+
+			private record ApiKeyStep(EmbeddingModel embeddingModel) implements BuilderWithApiKey {
+				@Override
+				public BuilderWithProjectId apiKey(String apiKey) {
+					Assert.hasText(apiKey, "ApiKey must not be null or empty");
+					return new ProjectIdStep(embeddingModel, apiKey);
+				}
+			}
+
+			private record ProjectIdStep(EmbeddingModel embeddingModel, String apiKey) implements BuilderWithProjectId {
+				@Override
+				public BuilderWithEnvironment projectId(String projectId) {
+					Assert.hasText(projectId, "ProjectId must not be null or empty");
+					return new EnvironmentStep(embeddingModel, apiKey, projectId);
+				}
+			}
+
+			private record EnvironmentStep(EmbeddingModel embeddingModel, String apiKey,
+					String projectId) implements BuilderWithEnvironment {
+				@Override
+				public BuilderWithIndexName environment(String environment) {
+					Assert.hasText(environment, "Environment must not be null or empty");
+					return new IndexNameStep(embeddingModel, apiKey, projectId, environment);
+				}
+			}
+
+			private record IndexNameStep(EmbeddingModel embeddingModel, String apiKey, String projectId,
+					String environment) implements BuilderWithIndexName {
+				@Override
+				public Builder indexName(String indexName) {
+					Assert.hasText(indexName, "IndexName must not be null or empty");
+					return new Builder(embeddingModel, apiKey, projectId, environment, indexName);
+				}
+			}
+
+			/**
+			 * Initiates the step builder sequence with the embedding model.
+			 * @param embeddingModel The embedding model to use
+			 * @return The first step for API key configuration
+			 * @throws IllegalArgumentException if embeddingModel is null
+			 */
+			static BuilderWithApiKey start(EmbeddingModel embeddingModel) {
+				Assert.notNull(embeddingModel, "EmbeddingModel must not be null");
+				return new ApiKeyStep(embeddingModel);
+			}
+
 		}
 
 		/**
@@ -416,18 +585,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		}
 
 		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy The batching strategy to use
-		 * @return The builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
-			return this;
-		}
-
-		/**
 		 * Builds a new PineconeVectorStore instance with the configured properties.
 		 * @return A new PineconeVectorStore instance
 		 * @throws IllegalStateException if the builder is in an invalid state
@@ -435,238 +592,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		@Override
 		public PineconeVectorStore build() {
 			return new PineconeVectorStore(this);
-		}
-
-	}
-
-	/**
-	 * Configuration for PineconeVectorStore.
-	 *
-	 * @deprecated Use
-	 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-	 * ()} instead. This class will be removed in a future release as part of the
-	 * migration to the builder pattern.
-	 * @since 1.0.0
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public static final class PineconeVectorStoreConfig {
-
-		// The free tier (gcp-starter) doesn't support Namespaces.
-		// Leave the namespace empty (e.g. "") for the free tier.
-		private final String namespace;
-
-		private final String contentFieldName;
-
-		// TODO: Why is this field configurable? Can we remove this after standardizing
-		// the key?
-		private final String distanceMetadataFieldName;
-
-		private final PineconeConnectionConfig connectionConfig;
-
-		private final PineconeClientConfig clientConfig;
-
-		/**
-		 * Constructor using the builder.
-		 * @param builder The configuration builder
-		 * @deprecated Use
-		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-		 * ()} instead
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public PineconeVectorStoreConfig(Builder builder) {
-			this.namespace = builder.namespace;
-			this.contentFieldName = builder.contentFieldName;
-			this.distanceMetadataFieldName = builder.distanceMetadataFieldName;
-
-			this.connectionConfig = new PineconeConnectionConfig().withIndexName(builder.indexName);
-			this.clientConfig = new PineconeClientConfig().withApiKey(builder.apiKey)
-				.withEnvironment(builder.environment)
-				.withProjectName(builder.projectId)
-				.withServerSideTimeoutSec((int) builder.serverSideTimeout.toSeconds());
-		}
-
-		/**
-		 * Start building a new configuration.
-		 * @return The entry point for creating a new configuration
-		 * @deprecated Use
-		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-		 * ()} instead
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public static Builder builder() {
-			return new Builder();
-		}
-
-		/**
-		 * {@return the default config}
-		 * @deprecated Use
-		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-		 * ()} instead
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public static PineconeVectorStoreConfig defaultConfig() {
-			return builder().build();
-		}
-
-		/**
-		 * Builder for PineconeVectorStoreConfig.
-		 *
-		 * @deprecated Use
-		 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-		 * ()} instead. This class will be removed in a future release as part of the
-		 * migration to the builder pattern.
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public static final class Builder {
-
-			private String apiKey;
-
-			private String projectId;
-
-			private String environment;
-
-			private String indexName;
-
-			// The free-tier (gcp-starter) doesn't support Namespaces!
-			private String namespace = "";
-
-			private String contentFieldName = CONTENT_FIELD_NAME;
-
-			private String distanceMetadataFieldName = DocumentMetadata.DISTANCE.value();
-
-			/**
-			 * Optional server-side timeout in seconds for all operations. Default: 20
-			 * seconds.
-			 */
-			private Duration serverSideTimeout = Duration.ofSeconds(20);
-
-			private Builder() {
-			}
-
-			/**
-			 * Pinecone api key.
-			 * @param apiKey key to use
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withApiKey(String apiKey) {
-				this.apiKey = apiKey;
-				return this;
-			}
-
-			/**
-			 * Pinecone project id.
-			 * @param projectId Project id to use
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withProjectId(String projectId) {
-				this.projectId = projectId;
-				return this;
-			}
-
-			/**
-			 * Pinecone environment name.
-			 * @param environment Environment name (e.g. gcp-starter)
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withEnvironment(String environment) {
-				this.environment = environment;
-				return this;
-			}
-
-			/**
-			 * Pinecone index name.
-			 * @param indexName Pinecone index name to use
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withIndexName(String indexName) {
-				this.indexName = indexName;
-				return this;
-			}
-
-			/**
-			 * Pinecone Namespace. The free-tier (gcp-starter) doesn't support Namespaces.
-			 * For free-tier leave the namespace empty.
-			 * @param namespace Pinecone namespace to use
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withNamespace(String namespace) {
-				this.namespace = namespace;
-				return this;
-			}
-
-			/**
-			 * Content field name.
-			 * @param contentFieldName content field name to use
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withContentFieldName(String contentFieldName) {
-				this.contentFieldName = contentFieldName;
-				return this;
-			}
-
-			/**
-			 * Distance metadata field name.
-			 * @param distanceMetadataFieldName distance metadata field name to use
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withDistanceMetadataFieldName(String distanceMetadataFieldName) {
-				this.distanceMetadataFieldName = distanceMetadataFieldName;
-				return this;
-			}
-
-			/**
-			 * Pinecone server side timeout.
-			 * @param serverSideTimeout server timeout to use
-			 * @return this builder
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public Builder withServerSideTimeout(Duration serverSideTimeout) {
-				this.serverSideTimeout = serverSideTimeout;
-				return this;
-			}
-
-			/**
-			 * {@return the immutable configuration}
-			 * @deprecated Use
-			 * {@link PineconeVectorStore#builder(EmbeddingModel, String, String, String, String)}
-			 * ()} instead
-			 */
-			@Deprecated(since = "1.0.0-M5", forRemoval = true)
-			public PineconeVectorStoreConfig build() {
-				return new PineconeVectorStoreConfig(this);
-			}
-
 		}
 
 	}

@@ -22,23 +22,22 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class FunctionCallbackInPrompt2IT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
+	private static final LogAccessor logger = new LogAccessor(FunctionCallbackInPromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
@@ -59,16 +58,16 @@ public class FunctionCallbackInPrompt2IT {
 					.call().content();
 
 			String content = ChatClient.builder(chatModel).build().prompt()
-					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.functions(FunctionCallback.builder()
-							.function("CurrentWeatherService", new MockWeatherService())
-							.description("Get the weather in location")
-							.inputType(MockWeatherService.Request.class)
-							.build())
+					.user("What's the weather like in San Francisco, Tokyo, and Paris?")					
+					.functions(FunctionToolCallback
+						.builder("CurrentWeatherService", new MockWeatherService())
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.build())
 					.call().content();
 			// @formatter:on
 
-				logger.info("Response: {}", content);
+				logger.info("Response: " + content);
 
 				assertThat(content).contains("30", "10", "15");
 			});
@@ -88,8 +87,8 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("Turn the light on in the kitchen and in the living room!")
-					.functions(FunctionCallback.builder()
-						.function("turnLight", (LightInfo lightInfo) -> {
+					.functions(FunctionToolCallback
+						.builder("turnLight", (LightInfo lightInfo) -> {
 							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
 							state.put(lightInfo.roomName(), lightInfo.isOn());
 						})
@@ -98,7 +97,7 @@ public class FunctionCallbackInPrompt2IT {
 						.build())
 					.call().content();
 			// @formatter:on
-			logger.info("Response: {}", content);
+			logger.info("Response: " + content);
 			assertThat(state).containsEntry("kitchen", Boolean.TRUE);
 			assertThat(state).containsEntry("living room", Boolean.TRUE);
 		});
@@ -114,14 +113,14 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
-					.functions(FunctionCallback.builder()
-						.function("CurrentWeatherService", input -> "18 degrees Celsius")
+					.functions(FunctionToolCallback
+						.builder("CurrentWeatherService", input -> "18 degrees Celsius")
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 					.build())
 					.call().content();
 			// @formatter:on
-				logger.info("Response: {}", content);
+				logger.info("Response: " + content);
 
 				assertThat(content).contains("18");
 			});
@@ -138,12 +137,16 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.function("CurrentWeatherService", "Get the weather in location", new MockWeatherService())
+					.functions(FunctionToolCallback
+						.builder("CurrentWeatherService", new MockWeatherService())
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.build())
 					.stream().content()
 					.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-				logger.info("Response: {}", content);
+				logger.info("Response: " + content);
 
 				assertThat(content).contains("30", "10", "15");
 			});

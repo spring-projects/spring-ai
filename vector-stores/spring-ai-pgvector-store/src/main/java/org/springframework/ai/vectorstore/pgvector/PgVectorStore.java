@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,34 +29,30 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.pgvector.PGvector;
-import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.LogFactory;
 import org.postgresql.util.PGobject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlTypeValue;
 import org.springframework.jdbc.core.StatementCreatorUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -85,9 +81,7 @@ import org.springframework.util.StringUtils;
  * Basic usage example:
  * </p>
  * <pre>{@code
- * PgVectorStore vectorStore = PgVectorStore.builder()
- *     .jdbcTemplate(jdbcTemplate)
- *     .embeddingModel(embeddingModel)
+ * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .dimensions(1536) // Optional: defaults to model dimensions or 1536
  *     .distanceType(PgDistanceType.COSINE_DISTANCE)
  *     .indexType(PgIndexType.HNSW)
@@ -112,9 +106,7 @@ import org.springframework.util.StringUtils;
  * Advanced configuration example:
  * </p>
  * <pre>{@code
- * PgVectorStore vectorStore = PgVectorStore.builder()
- *     .jdbcTemplate(jdbcTemplate)
- *     .embeddingModel(embeddingModel)
+ * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .schemaName("custom_schema")
  *     .vectorTableName("custom_vectors")
  *     .distanceType(PgDistanceType.NEGATIVE_INNER_PRODUCT)
@@ -177,7 +169,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
-	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(PgVectorSchemaValidator.class));
 
 	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
@@ -210,44 +202,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final PgVectorSchemaValidator schemaValidator;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final int maxDocumentBatchSize;
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-		this(jdbcTemplate, embeddingModel, INVALID_EMBEDDING_DIMENSION, PgDistanceType.COSINE_DISTANCE, false,
-				PgIndexType.NONE, false);
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions) {
-		this(jdbcTemplate, embeddingModel, dimensions, PgDistanceType.COSINE_DISTANCE, false, PgIndexType.NONE, false);
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public PgVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, int dimensions,
-			PgDistanceType distanceType, boolean removeExistingVectorStoreTable, PgIndexType createIndexMethod,
-			boolean initializeSchema) {
-
-		this(DEFAULT_TABLE_NAME, jdbcTemplate, embeddingModel, dimensions, distanceType, removeExistingVectorStoreTable,
-				createIndexMethod, initializeSchema);
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public PgVectorStore(String vectorTableName, JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
-			int dimensions, PgDistanceType distanceType, boolean removeExistingVectorStoreTable,
-			PgIndexType createIndexMethod, boolean initializeSchema) {
-
-		this(builder(jdbcTemplate, embeddingModel).schemaName(DEFAULT_SCHEMA_NAME)
-			.vectorTableName(vectorTableName)
-			.vectorTableValidationsEnabled(DEFAULT_SCHEMA_VALIDATION)
-			.dimensions(dimensions)
-			.distanceType(distanceType)
-			.removeExistingVectorStoreTable(removeExistingVectorStoreTable)
-			.indexType(createIndexMethod)
-			.initializeSchema(initializeSchema));
-	}
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for pg vector store
@@ -261,8 +216,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
-		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
-				this.vectorTableName.isEmpty());
+		logger.info("Using the vector table name: " + this.vectorTableName + " Is empty: "
+				+ this.vectorTableName.isEmpty());
 
 		this.vectorIndexName = this.vectorTableName.equals(DEFAULT_TABLE_NAME) ? DEFAULT_VECTOR_INDEX_NAME
 				: this.vectorTableName + "_index";
@@ -277,7 +232,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.createIndexMethod = builder.indexType;
 		this.initializeSchema = builder.initializeSchema;
 		this.schemaValidator = new PgVectorSchemaValidator(this.jdbcTemplate);
-		this.batchingStrategy = builder.batchingStrategy;
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
 	}
 
@@ -361,6 +315,22 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE metadata::jsonb @@ '"
+				+ nativeFilterExpression + "'::jsonpath";
+
+		// Execute the delete
+		try {
+			this.jdbcTemplate.update(sql);
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
@@ -410,17 +380,17 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	@Override
 	public void afterPropertiesSet() {
 
-		logger.info("Initializing PGVectorStore schema for table: {} in schema: {}", this.getVectorTableName(),
-				this.getSchemaName());
+		logger.info("Initializing PGVectorStore schema for table: " + this.getVectorTableName() + " in schema: "
+				+ this.getSchemaName());
 
-		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
+		logger.info("vectorTableValidationsEnabled " + this.schemaValidation);
 
 		if (this.schemaValidation) {
 			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName());
 		}
 
 		if (!this.initializeSchema) {
-			logger.debug("Skipping the schema initialization for the table: {}", this.getFullyQualifiedTableName());
+			logger.debug("Skipping the schema initialization for the table: " + this.getFullyQualifiedTableName());
 			return;
 		}
 
@@ -482,8 +452,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ OPENAI_EMBEDDING_DIMENSION_SIZE, e);
+			logger.warn(e,
+					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
+							+ OPENAI_EMBEDDING_DIMENSION_SIZE);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
@@ -540,14 +511,14 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	 */
 	public enum PgDistanceType {
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
 		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
@@ -621,7 +592,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	}
 
-	public static class PgVectorStoreBuilder extends AbstractVectorStoreBuilder<PgVectorStoreBuilder> {
+	public static final class PgVectorStoreBuilder extends AbstractVectorStoreBuilder<PgVectorStoreBuilder> {
 
 		private final JdbcTemplate jdbcTemplate;
 
@@ -640,8 +611,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		private PgIndexType indexType = PgIndexType.HNSW;
 
 		private boolean initializeSchema;
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
@@ -691,11 +660,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return this;
 		}
 
-		public PgVectorStoreBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
-			this.batchingStrategy = batchingStrategy;
-			return this;
-		}
-
 		public PgVectorStoreBuilder maxDocumentBatchSize(int maxDocumentBatchSize) {
 			this.maxDocumentBatchSize = maxDocumentBatchSize;
 			return this;
@@ -703,123 +667,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStore build() {
 			return new PgVectorStore(this);
-		}
-
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public static class Builder {
-
-		private final JdbcTemplate jdbcTemplate;
-
-		private final EmbeddingModel embeddingModel;
-
-		private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
-
-		private String vectorTableName;
-
-		private boolean vectorTableValidationsEnabled = PgVectorStore.DEFAULT_SCHEMA_VALIDATION;
-
-		private int dimensions = PgVectorStore.INVALID_EMBEDDING_DIMENSION;
-
-		private PgDistanceType distanceType = PgDistanceType.COSINE_DISTANCE;
-
-		private boolean removeExistingVectorStoreTable = false;
-
-		private PgIndexType indexType = PgIndexType.HNSW;
-
-		private boolean initializeSchema;
-
-		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
-
-		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
-
-		@Nullable
-		private VectorStoreObservationConvention searchObservationConvention;
-
-		public Builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			if (jdbcTemplate == null || embeddingModel == null) {
-				throw new IllegalArgumentException("JdbcTemplate and EmbeddingModel must not be null");
-			}
-			this.jdbcTemplate = jdbcTemplate;
-			this.embeddingModel = embeddingModel;
-		}
-
-		public Builder withSchemaName(String schemaName) {
-			this.schemaName = schemaName;
-			return this;
-		}
-
-		public Builder withVectorTableName(String vectorTableName) {
-			this.vectorTableName = vectorTableName;
-			return this;
-		}
-
-		public Builder withVectorTableValidationsEnabled(boolean vectorTableValidationsEnabled) {
-			this.vectorTableValidationsEnabled = vectorTableValidationsEnabled;
-			return this;
-		}
-
-		public Builder withDimensions(int dimensions) {
-			this.dimensions = dimensions;
-			return this;
-		}
-
-		public Builder withDistanceType(PgDistanceType distanceType) {
-			this.distanceType = distanceType;
-			return this;
-		}
-
-		public Builder withRemoveExistingVectorStoreTable(boolean removeExistingVectorStoreTable) {
-			this.removeExistingVectorStoreTable = removeExistingVectorStoreTable;
-			return this;
-		}
-
-		public Builder withIndexType(PgIndexType indexType) {
-			this.indexType = indexType;
-			return this;
-		}
-
-		public Builder withInitializeSchema(boolean initializeSchema) {
-			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
-			this.observationRegistry = observationRegistry;
-			return this;
-		}
-
-		public Builder withSearchObservationConvention(VectorStoreObservationConvention customObservationConvention) {
-			this.searchObservationConvention = customObservationConvention;
-			return this;
-		}
-
-		public Builder withBatchingStrategy(BatchingStrategy batchingStrategy) {
-			this.batchingStrategy = batchingStrategy;
-			return this;
-		}
-
-		public Builder withMaxDocumentBatchSize(int maxDocumentBatchSize) {
-			this.maxDocumentBatchSize = maxDocumentBatchSize;
-			return this;
-		}
-
-		public PgVectorStore build() {
-			return PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
-				.schemaName(this.schemaName)
-				.vectorTableName(this.vectorTableName)
-				.vectorTableValidationsEnabled(this.vectorTableValidationsEnabled)
-				.dimensions(this.dimensions)
-				.distanceType(this.distanceType)
-				.removeExistingVectorStoreTable(this.removeExistingVectorStoreTable)
-				.indexType(this.indexType)
-				.initializeSchema(this.initializeSchema)
-				.batchingStrategy(this.batchingStrategy)
-				.maxDocumentBatchSize(this.maxDocumentBatchSize)
-				.build();
 		}
 
 	}
