@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.qdrant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -341,6 +342,15 @@ public class QdrantVectorStoreIT {
 				.containsExactlyInAnyOrder(1L, 1L);
 
 			vectorStore.delete(List.of(doc1.getId(), doc3.getId()));
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			QdrantVectorStore vectorStore = context.getBean(QdrantVectorStore.class);
+			Optional<QdrantClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

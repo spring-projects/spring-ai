@@ -530,6 +530,13 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			.similarityMetric(getSimilarityMetric());
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
+	}
+
 	private String getSimilarityMetric() {
 		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.distanceType)) {
 			return this.distanceType.name();

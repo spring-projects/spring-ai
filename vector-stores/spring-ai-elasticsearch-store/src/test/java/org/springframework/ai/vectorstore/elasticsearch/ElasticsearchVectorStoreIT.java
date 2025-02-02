@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -526,6 +527,26 @@ class ElasticsearchVectorStoreIT {
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void getNativeClientTest() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			// Test successful native client retrieval
+			Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+
+			// Verify client functionality
+			ElasticsearchClient client = nativeClient.get();
+			IndicesStats stats = client.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats).isNotNull();
 		});
 	}
 

@@ -460,6 +460,13 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
+	}
+
 	public enum MariaDBDistanceType {
 
 		EUCLIDEAN, COSINE

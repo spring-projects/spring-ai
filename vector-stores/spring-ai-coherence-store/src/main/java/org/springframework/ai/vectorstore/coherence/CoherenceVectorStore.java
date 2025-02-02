@@ -275,6 +275,13 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 			.dimensions(this.embeddingModel.dimensions());
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.session;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Builder class for creating {@link CoherenceVectorStore} instances.
 	 * <p>

@@ -25,6 +25,7 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -521,6 +522,15 @@ class OpenSearchVectorStoreIT {
 				.containsExactlyInAnyOrder("A", "B");
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
 				.containsExactlyInAnyOrder(1, 1);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		getContextRunner().run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
+			Optional<OpenSearchClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

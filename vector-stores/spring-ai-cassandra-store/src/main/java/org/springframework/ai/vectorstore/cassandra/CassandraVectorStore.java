@@ -712,6 +712,13 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		}
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.session;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Indexes are automatically created with COSINE. This can be changed manually via
 	 * cqlsh

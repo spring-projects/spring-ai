@@ -443,6 +443,13 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			.collectionName(this.weaviateObjectClass);
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.weaviateClient;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Defines the consistency levels for Weaviate operations.
 	 *

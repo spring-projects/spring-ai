@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -417,6 +418,18 @@ public class OracleVectorStoreIT {
 					.collect(Collectors.toList())).containsExactlyInAnyOrder(1, 1);
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
+			});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+				Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+				assertThat(nativeClient).isPresent();
 			});
 	}
 

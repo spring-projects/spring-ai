@@ -374,6 +374,13 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			.fieldName(this.pineconeContentFieldName);
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.pineconeConnection;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Builder class for creating {@link PineconeVectorStore} instances. This implements a
 	 * type-safe step builder pattern to ensure all required fields are provided in a

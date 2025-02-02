@@ -466,6 +466,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jedis;
+		return Optional.of(client);
+	}
+
 	public static Builder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
 		return new Builder(jedis, embeddingModel);
 	}

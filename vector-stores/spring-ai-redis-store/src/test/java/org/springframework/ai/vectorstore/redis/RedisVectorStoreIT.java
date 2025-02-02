@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -344,6 +345,15 @@ class RedisVectorStoreIT {
 			assertThat(results.stream()
 				.map(doc -> Integer.parseInt(doc.getMetadata().get("priority").toString()))
 				.collect(Collectors.toList())).containsExactlyInAnyOrder(1, 1);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+			Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -375,6 +376,15 @@ public class MilvusVectorStoreIT {
 				.containsExactlyInAnyOrder("A", "B");
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
 				.containsExactlyInAnyOrder(1, 1);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=COSINE").run(context -> {
+			MilvusVectorStore vectorStore = context.getBean(MilvusVectorStore.class);
+			Optional<MilvusServiceClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

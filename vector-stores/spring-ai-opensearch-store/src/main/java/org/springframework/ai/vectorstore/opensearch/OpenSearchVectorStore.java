@@ -380,6 +380,13 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		return this.similarityFunction;
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.openSearchClient;
+		return Optional.of(client);
+	}
+
 	/**
 	 * The representation of {@link Document} along with its embedding.
 	 *
