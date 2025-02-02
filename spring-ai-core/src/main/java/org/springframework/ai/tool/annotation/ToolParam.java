@@ -14,24 +14,33 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.util.json;
+package org.springframework.ai.tool.annotation;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * The type of schema to generate for a given Java type.
+ * Marks a tool argument.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public enum SchemaType {
+@Target({ ElementType.PARAMETER, ElementType.FIELD, ElementType.ANNOTATION_TYPE })
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface ToolParam {
 
 	/**
-	 * JSON schema.
+	 * Whether the tool argument is required.
 	 */
-	JSON_SCHEMA,
+	boolean required() default true;
 
 	/**
-	 * Open API schema.
+	 * The description of the tool argument.
 	 */
-	OPEN_API_SCHEMA;
+	String description() default "";
 
 }

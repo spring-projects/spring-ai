@@ -89,7 +89,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 
 		List<FunctionCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
-		for (String toolName : chatOptions.getTools()) {
+		for (String toolName : chatOptions.getToolNames()) {
 			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
@@ -112,7 +112,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	}
 
 	@Override
-	public List<Message> executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
+	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
 		Assert.notNull(prompt, "prompt cannot be null");
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 
@@ -129,10 +129,16 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 		ToolContext toolContext = buildToolContext(prompt, assistantMessage);
 
-		ToolResponseMessage toolMessageResponse = executeToolCall(prompt, assistantMessage, toolContext);
+		InternalToolExecutionResult internalToolExecutionResult = executeToolCall(prompt, assistantMessage,
+				toolContext);
 
-		return buildConversationHistoryAfterToolExecution(prompt.getInstructions(), assistantMessage,
-				toolMessageResponse);
+		List<Message> conversationHistory = buildConversationHistoryAfterToolExecution(prompt.getInstructions(),
+				assistantMessage, internalToolExecutionResult.toolResponseMessage());
+
+		return ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.returnDirect(internalToolExecutionResult.returnDirect())
+			.build();
 	}
 
 	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
@@ -166,7 +172,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	 * compatibility, both {@link ToolCallback} and {@link FunctionCallback} are
 	 * supported.
 	 */
-	private ToolResponseMessage executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
+	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
 			ToolContext toolContext) {
 		List<FunctionCallback> toolCallbacks = List.of();
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
@@ -177,6 +183,8 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 		}
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+
+		Boolean returnDirect = null;
 
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
@@ -194,6 +202,13 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 
+			if (returnDirect == null && toolCallback instanceof ToolCallback callback) {
+				returnDirect = callback.getToolMetadata().returnDirect();
+			}
+			else if (toolCallback instanceof ToolCallback callback) {
+				returnDirect = returnDirect && callback.getToolMetadata().returnDirect();
+			}
+
 			String toolResult;
 			try {
 				toolResult = toolCallback.call(toolInputArguments, toolContext);
@@ -205,7 +220,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
 		}
 
-		return new ToolResponseMessage(toolResponses, Map.of());
+		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()), returnDirect);
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
@@ -214,6 +229,9 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 		messages.add(assistantMessage);
 		messages.add(toolResponseMessage);
 		return messages;
+	}
+
+	private record InternalToolExecutionResult(ToolResponseMessage toolResponseMessage, boolean returnDirect) {
 	}
 
 	public static Builder builder() {

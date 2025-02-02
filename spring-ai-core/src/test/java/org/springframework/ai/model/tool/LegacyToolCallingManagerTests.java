@@ -18,7 +18,6 @@ package org.springframework.ai.model.tool;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -60,7 +59,7 @@ class LegacyToolCallingManagerTests {
 			.build();
 
 		List<ToolDefinition> toolDefinitions = toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().tools("toolA").build());
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolA").build());
 
 		assertThat(toolDefinitions).containsExactly(toolCallback.getToolDefinition());
 	}
@@ -70,7 +69,7 @@ class LegacyToolCallingManagerTests {
 		ToolCallingManager toolCallingManager = LegacyToolCallingManager.builder().functionCallbacks(List.of()).build();
 
 		assertThatThrownBy(() -> toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().tools("toolB").build()))
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolB").build()))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessage("No ToolCallback found for tool name: toolB");
 	}
@@ -118,9 +117,10 @@ class LegacyToolCallingManagerTests {
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
 				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!")));
 
-		List<Message> toolCallHistory = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-		assertThat(toolCallHistory).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.returnDirect()).isFalse();
 	}
 
 	@Test
@@ -142,9 +142,10 @@ class LegacyToolCallingManagerTests {
 				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!"),
 						new ToolResponseMessage.ToolResponse("toolB", "toolB", "Mission accomplished!")));
 
-		List<Message> toolCallHistory = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-		assertThat(toolCallHistory).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.returnDirect()).isFalse();
 	}
 
 	@Test
@@ -163,9 +164,10 @@ class LegacyToolCallingManagerTests {
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
 				List.of(new ToolResponseMessage.ToolResponse("toolC", "toolC", "You failed this city!")));
 
-		List<Message> toolCallHistory = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-		assertThat(toolCallHistory).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.returnDirect()).isFalse();
 	}
 
 	static class TestToolCallback implements ToolCallback {

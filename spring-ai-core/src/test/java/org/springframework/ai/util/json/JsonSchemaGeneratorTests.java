@@ -1,9 +1,29 @@
+/*
+ * Copyright 2023-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.util.json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
+import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -22,6 +42,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class JsonSchemaGeneratorTests {
 
+	// METHODS
+
 	@Test
 	void generateSchemaForMethodWithSimpleParameters() throws Exception {
 		Method method = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
@@ -37,7 +59,7 @@ class JsonSchemaGeneratorTests {
 				        },
 				        "age": {
 				            "type": "integer",
-				            "format" : "int32"
+				            "format": "int32"
 				        }
 				    },
 				    "required": [
@@ -52,11 +74,121 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
-	void generateSchemaForMethodWithJsonPropertyAnnotations() throws Exception {
+	void generateSchemaForMethodWithToolParamAnnotations() throws Exception {
 		Method method = TestMethods.class.getDeclaredMethod("annotatedMethod", String.class, String.class);
 
-		String schema = JsonSchemaGenerator.generateForMethodInput(method,
-				JsonSchemaGenerator.SchemaOption.RESPECT_JSON_PROPERTY_REQUIRED);
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string",
+				            "description": "The username of the customer"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWhenParameterRequiredByDefault() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("anotherAnnotatedMethod", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				    	"username",
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithOpenApiSchemaAnnotations() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("openApiMethod", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string",
+				            "description": "The username of the customer"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithJacksonAnnotations() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("jacksonMethod", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithNullableAnnotations() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("nullableMethod", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
 		String expectedJsonSchema = """
 				{
 				    "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -106,7 +238,7 @@ class JsonSchemaGeneratorTests {
 				        },
 				        "age": {
 				            "type": "INTEGER",
-				            "format" : "int32"
+				            "format": "int32"
 				        }
 				    },
 				    "required": [
@@ -122,7 +254,8 @@ class JsonSchemaGeneratorTests {
 
 	@Test
 	void generateSchemaForMethodWithComplexParameters() throws Exception {
-		Method method = TestMethods.class.getDeclaredMethod("complexMethod", List.class, TestData.class);
+		Method method = TestMethods.class.getDeclaredMethod("complexMethod", List.class, TestData.class,
+				MoreTestData.class);
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method);
 
@@ -142,18 +275,31 @@ class JsonSchemaGeneratorTests {
 				            "properties": {
 				                "id": {
 				                    "type": "integer",
-				                    "format" : "int32"
+				                    "format": "int32"
 				                },
 				                "name": {
-				                    "type": "string"
+				                    "type": "string",
+				                    "description": "The special name"
 				                }
-				            }
+				            },
+				            "required": [ "id", "name" ]
+				        },
+				        "moreData": {
+				            "type": "object",
+				            "properties": {
+				                "id": {
+				                	"type": "integer",
+				                    "format": "int32"
+				                },
+				                "name": {
+									"type": "string",
+									"description": "Even more special name"
+							  	}
+				            },
+				            "required": [ "id", "name" ]
 				        }
 				    },
-				    "required": [
-				        "items",
-				        "data"
-				    ],
+				    "required": [ "items", "data", "moreData" ],
 				    "additionalProperties": false
 				}
 				""";
@@ -174,7 +320,7 @@ class JsonSchemaGeneratorTests {
 				    "properties": {
 				        "duration": {
 				            "type": "string",
-				            "format" : "duration"
+				            "format": "duration"
 				        },
 				        "localDateTime": {
 				            "type": "string",
@@ -197,11 +343,14 @@ class JsonSchemaGeneratorTests {
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
 	}
 
+	// TYPES
+
 	@Test
 	void generateSchemaForSimpleType() {
 		String schema = JsonSchemaGenerator.generateForType(Person.class);
 		String expectedJsonSchema = """
 				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
 				    "type": "object",
 				    "properties": {
 				        "email": {
@@ -209,12 +358,13 @@ class JsonSchemaGeneratorTests {
 				        },
 				        "id": {
 				            "type": "integer",
-				            "format" : "int32"
+				            "format": "int32"
 				        },
 				        "name": {
 				            "type": "string"
 				        }
 				    },
+				    "required": [ "email", "id", "name" ],
 				    "additionalProperties": false
 				}
 				""";
@@ -232,11 +382,165 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaWhenParameterRequiredByDefault() {
+		String schema = JsonSchemaGenerator.generateForType(Person.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				    	"email",
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithToolArgAnnotation() {
+		String schema = JsonSchemaGenerator.generateForType(AnnotatedPerson.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string",
+				            "description": "The email of the person"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithOpenApiAnnotation() {
+		String schema = JsonSchemaGenerator.generateForType(OpenApiPerson.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string",
+				            "description": "The email of the person"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithJacksonAnnotation() {
+		String schema = JsonSchemaGenerator.generateForType(JacksonPerson.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithNullableAnnotation() {
+		String schema = JsonSchemaGenerator.generateForType(JacksonPerson.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
 	void generateSchemaForTypeWithUpperCaseValues() {
 		String schema = JsonSchemaGenerator.generateForType(Person.class,
 				JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES);
 		String expectedJsonSchema = """
 				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
 				    "type": "OBJECT",
 				    "properties": {
 				        "email": {
@@ -244,12 +548,13 @@ class JsonSchemaGeneratorTests {
 				        },
 				        "id": {
 				            "type": "INTEGER",
-				            "format" : "int32"
+				            "format": "int32"
 				        },
 				        "name": {
 				            "type": "STRING"
 				        }
 				    },
+				    "required": [ "email", "id", "name" ],
 				    "additionalProperties": false
 				}
 				""";
@@ -262,16 +567,19 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForType(TestData.class);
 		String expectedJsonSchema = """
 				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
 				    "type": "object",
 				    "properties": {
 				        "id": {
 				            "type": "integer",
-				            "format" : "int32"
+				            "format": "int32"
 				        },
 				        "name": {
-				            "type": "string"
+				            "type": "string",
+				            "description": "The special name"
 				        }
 				    },
+				    "required": [ "id", "name" ],
 				    "additionalProperties": false
 				}
 				""";
@@ -284,6 +592,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForType(Month.class);
 		String expectedJsonSchema = """
 				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
 				    "type": "string",
 				    "enum": [
 				        "JANUARY",
@@ -317,10 +626,27 @@ class JsonSchemaGeneratorTests {
 		public void simpleMethod(String name, int age) {
 		}
 
-		public void annotatedMethod(String username, @JsonProperty(required = true) String password) {
+		public void annotatedMethod(
+				@ToolParam(required = false, description = "The username of the customer") String username,
+				@ToolParam(required = true) String password) {
 		}
 
-		public void complexMethod(List<String> items, TestData data) {
+		public void anotherAnnotatedMethod(String username, @ToolParam String password) {
+		}
+
+		public void openApiMethod(
+				@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+						description = "The username of the customer") String username,
+				@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String password) {
+		}
+
+		public void jacksonMethod(@JsonProperty String username, @JsonProperty(required = true) String password) {
+		}
+
+		public void nullableMethod(@Nullable String username, String password) {
+		}
+
+		public void complexMethod(List<String> items, TestData data, MoreTestData moreData) {
 		}
 
 		public void timeMethod(Duration duration, LocalDateTime localDateTime, Instant instant) {
@@ -328,7 +654,27 @@ class JsonSchemaGeneratorTests {
 
 	}
 
-	record TestData(int id, String name) {
+	record TestData(int id, @ToolParam(description = "The special name") String name) {
+	}
+
+	record MoreTestData(int id, @Schema(description = "Even more special name") String name) {
+	}
+
+	record AnnotatedPerson(@ToolParam int id, @ToolParam String name,
+			@ToolParam(required = false, description = "The email of the person") String email) {
+	}
+
+	record JacksonPerson(@JsonProperty(required = true) int id, @JsonProperty(required = true) String name,
+			@JsonProperty String email) {
+	}
+
+	record OpenApiPerson(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) int id,
+			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
+			@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+					description = "The email of the person") String email) {
+	}
+
+	record NullablePerson(int id, String name, @Nullable String email) {
 	}
 
 	static class Person {

@@ -53,12 +53,12 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 	/**
 	 * Names of the tools to register with the ChatModel.
 	 */
-	Set<String> getTools();
+	Set<String> getToolNames();
 
 	/**
 	 * Set the names of the tools to register with the ChatModel.
 	 */
-	void setTools(Set<String> toolNames);
+	void setToolNames(Set<String> toolNames);
 
 	/**
 	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
@@ -98,12 +98,12 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		/**
 		 * Names of the tools to register with the ChatModel.
 		 */
-		Builder tools(Set<String> toolNames);
+		Builder toolNames(Set<String> toolNames);
 
 		/**
 		 * Names of the tools to register with the ChatModel.
 		 */
-		Builder tools(String... toolNames);
+		Builder toolNames(String... toolNames);
 
 		/**
 		 * Whether the {@link ChatModel} is responsible for executing the tools requested
