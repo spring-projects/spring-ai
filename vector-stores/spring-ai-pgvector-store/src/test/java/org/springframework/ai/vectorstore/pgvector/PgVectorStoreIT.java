@@ -482,6 +482,15 @@ public class PgVectorStoreIT {
 		});
 	}
 
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
+			Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {

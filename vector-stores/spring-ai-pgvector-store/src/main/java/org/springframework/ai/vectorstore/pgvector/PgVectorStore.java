@@ -476,6 +476,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
+	}
+
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
 	 * recall. You can add an index to use approximate nearest neighbor search, which

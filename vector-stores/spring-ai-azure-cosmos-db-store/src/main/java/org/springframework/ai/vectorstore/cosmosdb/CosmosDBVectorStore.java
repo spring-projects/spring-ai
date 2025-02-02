@@ -372,6 +372,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			.similarityMetric("cosine");
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.container;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Builder class for creating {@link CosmosDBVectorStore} instances.
 	 * <p>

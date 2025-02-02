@@ -204,3 +204,20 @@ vectorStore.similaritySearch(SearchRequest.builder()
 ----
 
 NOTE: These filter expressions are automatically converted into the equivalent MariaDB JSON path expressions.
+
+== Accessing the Native Client
+
+The MariaDB Vector Store implementation provides access to the underlying native JDBC client (`JdbcTemplate`) through the `getNativeClient()` method:
+
+[source,java]
+----
+MariaDBVectorStore vectorStore = context.getBean(MariaDBVectorStore.class);
+Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    JdbcTemplate jdbc = nativeClient.get();
+    // Use the native client for MariaDB-specific operations
+}
+----
+
+The native client gives you access to MariaDB-specific features and operations that might not be exposed through the `VectorStore` interface.

@@ -368,6 +368,13 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.driver;
+		return Optional.of(client);
+	}
+
 	/**
 	 * An enum to configure the distance function used in the Neo4j vector index.
 	 */

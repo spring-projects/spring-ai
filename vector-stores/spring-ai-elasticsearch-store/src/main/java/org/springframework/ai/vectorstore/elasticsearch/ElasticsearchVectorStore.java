@@ -354,6 +354,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		return SIMILARITY_TYPE_MAPPING.get(this.options.getSimilarity()).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.elasticsearchClient;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Creates a new builder instance for ElasticsearchVectorStore.
 	 * @return a new ElasticsearchBuilder instance

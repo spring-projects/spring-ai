@@ -109,6 +109,24 @@ public interface VectorStore extends DocumentWriter {
 	}
 
 	/**
+	 * Returns the native client if available in this vector store implementation.
+	 *
+	 * Note on usage: 1. Returns empty Optional when no native client is available 2. Due
+	 * to Java type erasure, runtime type checking is not possible
+	 *
+	 * Example usage: When working with implementation with known native client:
+	 * Optional<NativeClientType> client = vectorStore.getNativeClient();
+	 *
+	 * Note: Using Optional<?> will return the native client if one exists, rather than an
+	 * empty Optional. For type safety, prefer using the specific client type.
+	 * @return Optional containing native client if available, empty Optional otherwise
+	 * @param <T> The type of the native client
+	 */
+	default <T> Optional<T> getNativeClient() {
+		return Optional.empty();
+	}
+
+	/**
 	 * Builder interface for creating VectorStore instances. Implements a fluent builder
 	 * pattern for configuring observation-related settings.
 	 *

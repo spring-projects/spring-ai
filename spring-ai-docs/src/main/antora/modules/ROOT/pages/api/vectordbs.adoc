@@ -44,6 +44,10 @@ public interface VectorStore extends DocumentWriter {
     List<Document> similaritySearch(String query);
 
     List<Document> similaritySearch(SearchRequest request);
+
+    default <T> Optional<T> getNativeClient() {
+		return Optional.empty();
+	}
 }
 ```
 

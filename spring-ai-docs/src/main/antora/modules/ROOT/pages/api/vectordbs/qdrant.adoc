@@ -194,3 +194,20 @@ vectorStore.similaritySearch(SearchRequest.builder()
 ----
 
 NOTE: These (portable) filter expressions get automatically converted into the proprietary Qdrant link:https://qdrant.tech/documentation/concepts/filtering/[filter expressions].
+
+== Accessing the Native Client
+
+The Qdrant Vector Store implementation provides access to the underlying native Qdrant client (`QdrantClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+QdrantVectorStore vectorStore = context.getBean(QdrantVectorStore.class);
+Optional<QdrantClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    QdrantClient client = nativeClient.get();
+    // Use the native client for Qdrant-specific operations
+}
+----
+
+The native client gives you access to Qdrant-specific features and operations that might not be exposed through the `VectorStore` interface.

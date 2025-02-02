@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -458,6 +459,15 @@ public class MariaDBStoreIT {
 				.containsExactlyInAnyOrder(1, 1);
 
 			dropTable(context);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			MariaDBVectorStore vectorStore = context.getBean(MariaDBVectorStore.class);
+			Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

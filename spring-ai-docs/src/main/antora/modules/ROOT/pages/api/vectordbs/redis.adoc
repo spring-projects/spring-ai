@@ -212,3 +212,20 @@ public EmbeddingModel embeddingModel() {
 You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expressions.
 The `metadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
 ====
+
+== Accessing the Native Client
+
+The Redis Vector Store implementation provides access to the underlying native Redis client (`JedisPooled`) through the `getNativeClient()` method:
+
+[source,java]
+----
+RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    JedisPooled jedis = nativeClient.get();
+    // Use the native client for Redis-specific operations
+}
+----
+
+The native client gives you access to Redis-specific features and operations that might not be exposed through the `VectorStore` interface.

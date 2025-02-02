@@ -229,3 +229,20 @@ If Docker complains about resources, then execute:
 ----
 docker system prune --all --force --volumes
 ----
+
+== Accessing the Native Client
+
+The Milvus Vector Store implementation provides access to the underlying native Milvus client (`MilvusServiceClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+MilvusVectorStore vectorStore = context.getBean(MilvusVectorStore.class);
+Optional<MilvusServiceClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    MilvusServiceClient client = nativeClient.get();
+    // Use the native client for Milvus-specific operations
+}
+----
+
+The native client gives you access to Milvus-specific features and operations that might not be exposed through the `VectorStore` interface.
