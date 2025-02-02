@@ -21,6 +21,8 @@ import java.time.Duration;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -36,7 +38,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -49,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
 
-	private static final LogAccessor logger = new LogAccessor(BedrockNovaChatClientIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(BedrockNovaChatClientIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -165,7 +166,7 @@ public class BedrockNovaChatClientIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}

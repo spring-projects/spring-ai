@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
@@ -31,7 +32,6 @@ import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -47,7 +47,7 @@ import org.springframework.util.Assert;
  */
 public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(BedrockTitanEmbeddingModel.class));
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final TitanEmbeddingBedrockApi embeddingApi;
 

@@ -19,6 +19,9 @@ package org.springframework.ai.autoconfigure.retry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
@@ -27,7 +30,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.RetryCallback;
@@ -48,7 +50,7 @@ import org.springframework.web.client.ResponseErrorHandler;
 @EnableConfigurationProperties({ SpringAiRetryProperties.class })
 public class SpringAiRetryAutoConfiguration {
 
-	private static final LogAccessor logger = new LogAccessor(SpringAiRetryAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(SpringAiRetryAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -63,7 +65,7 @@ public class SpringAiRetryAutoConfiguration {
 				@Override
 				public <T extends Object, E extends Throwable> void onError(RetryContext context,
 						RetryCallback<T, E> callback, Throwable throwable) {
-					logger.warn(throwable, "Retry error. Retry count:" + context.getRetryCount());
+					logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
 				}
 			})
 			.build();

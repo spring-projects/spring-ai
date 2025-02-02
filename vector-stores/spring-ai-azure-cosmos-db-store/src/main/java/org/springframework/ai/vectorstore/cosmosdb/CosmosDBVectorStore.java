@@ -52,9 +52,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -63,7 +66,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -77,7 +79,7 @@ import org.springframework.util.Assert;
  */
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
 
-	private static final LogAccessor logger = new LogAccessor(CosmosDBVectorStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(CosmosDBVectorStore.class);
 
 	private final CosmosAsyncClient cosmosClient;
 
@@ -251,19 +253,19 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 						// for status code 409
 					}
 					else {
-						logger.info("Document added with status: " + statusCode);
+						logger.info("Document added with status: {}", statusCode);
 					}
 				}
 				else {
 					logger.warn("Received a null response or null status code for a document operation.");
 				}
 			})
-				.doOnError(error -> logger.error("Error adding document: " + error.getMessage()))
+				.doOnError(error -> logger.error("Error adding document: {}", error.getMessage()))
 				.doOnComplete(() -> logger.info("Bulk operation completed successfully."))
 				.blockLast(); // Block until the last item of the Flux is processed
 		}
 		catch (Exception e) {
-			logger.error(e, "Exception occurred during bulk add operation: " + e.getMessage());
+			logger.error("Exception occurred during bulk add operation: {}", e.getMessage(), e);
 			throw e; // Rethrow the exception after logging
 		}
 	}
@@ -279,15 +281,15 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			// Execute bulk delete operations synchronously by using blockLast() on the
 			// Flux
 			this.container.executeBulkOperations(Flux.fromIterable(itemOperations))
-				.doOnNext(response -> logger
-					.info("Document deleted with status: " + response.getResponse().getStatusCode()))
-				.doOnError(error -> logger.error("Error deleting document: " + error.getMessage()))
+				.doOnNext(response -> logger.info("Document deleted with status: {}",
+						response.getResponse().getStatusCode()))
+				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
 				.blockLast(); // This will block until all operations have finished
 
 			return Optional.of(true);
 		}
 		catch (Exception e) {
-			logger.error("Exception while deleting documents: " + e.getMessage());
+			logger.error("Exception while deleting documents: {}", e.getMessage());
 			return Optional.of(false);
 		}
 	}
@@ -307,7 +309,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		// Convert query into vector embedding
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
-		logger.info("similarity threshold: " + request.getSimilarityThreshold());
+		logger.info("similarity threshold: {}", request.getSimilarityThreshold());
 
 		List<Float> embeddingList = IntStream.range(0, embedding.length)
 			.mapToObj(i -> embedding[i])
@@ -343,7 +345,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		CosmosPagedFlux<JsonNode> pagedFlux = this.container.queryItems(sqlQuerySpec, options, JsonNode.class);
 
-		logger.info("Executing similarity search query: " + query);
+		logger.info("Executing similarity search query: {}", query);
 		try {
 			// Collect documents from the paged flux
 			List<JsonNode> documents = pagedFlux.byPage()
@@ -358,7 +360,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			return docs != null ? docs : List.of();
 		}
 		catch (Exception e) {
-			logger.error("Error during similarity search: " + e.getMessage());
+			logger.error("Error during similarity search: {}", e.getMessage());
 			return List.of();
 		}
 	}

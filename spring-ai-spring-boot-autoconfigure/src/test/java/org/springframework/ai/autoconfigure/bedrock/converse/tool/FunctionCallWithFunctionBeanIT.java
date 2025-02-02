@@ -21,6 +21,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockTestUtils;
@@ -36,14 +38,13 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiresAwsCredentials
 class FunctionCallWithFunctionBeanIT {
 
-	private static final LogAccessor logger = new LogAccessor(FunctionCallWithFunctionBeanIT.class);
+	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
@@ -65,14 +66,14 @@ class FunctionCallWithFunctionBeanIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						ToolCallingChatOptions.builder().tools("weatherFunction").build()));
 
-				logger.info("Response: " + response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
 						ToolCallingChatOptions.builder().tools("weatherFunction3").build()));
 
-				logger.info("Response: " + response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});
@@ -101,7 +102,7 @@ class FunctionCallWithFunctionBeanIT {
 					.map(cr -> cr.getResult().getOutput().getText())
 					.collect(Collectors.joining());
 
-				logger.info("Response: " + content);
+				logger.info("Response: {}", content);
 				assertThat(content).contains("30", "10", "15");
 
 			});

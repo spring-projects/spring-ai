@@ -17,7 +17,6 @@
 package org.springframework.ai.vectorstore.pinecone;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,19 +32,17 @@ import io.pinecone.PineconeClientConfig;
 import io.pinecone.PineconeConnection;
 import io.pinecone.PineconeConnectionConfig;
 import io.pinecone.proto.DeleteRequest;
-import io.pinecone.proto.DeleteResponse;
 import io.pinecone.proto.QueryRequest;
 import io.pinecone.proto.QueryResponse;
 import io.pinecone.proto.UpsertRequest;
 import io.pinecone.proto.Vector;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -55,7 +52,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -88,7 +84,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private final ObjectMapper objectMapper;
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(PineconeVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(PineconeVectorStore.class);
 
 	/**
 	 * Creates a new PineconeVectorStore using the builder pattern.
@@ -320,11 +316,11 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 					throw new IllegalStateException("Failed to delete some documents");
 				}
 
-				logger.debug(() -> "Deleted " + idsToDelete.size() + " documents matching filter expression");
+				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}
 		}
 		catch (Exception e) {
-			logger.error(e, () -> "Failed to delete documents by filter");
+			logger.error("Failed to delete documents by filter", e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

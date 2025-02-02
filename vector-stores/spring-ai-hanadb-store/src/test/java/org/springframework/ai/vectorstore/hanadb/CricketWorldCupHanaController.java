@@ -23,7 +23,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -35,7 +36,6 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,7 +50,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 public class CricketWorldCupHanaController {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(CricketWorldCupHanaController.class));
+	private static final Logger logger = LoggerFactory.getLogger(CricketWorldCupHanaController.class);
 
 	private final VectorStore hanaCloudVectorStore;
 
@@ -65,7 +65,7 @@ public class CricketWorldCupHanaController {
 	@PostMapping("/ai/hana-vector-store/cricket-world-cup/purge-embeddings")
 	public ResponseEntity<String> purgeEmbeddings() {
 		int deleteCount = ((HanaCloudVectorStore) this.hanaCloudVectorStore).purgeEmbeddings();
-		logger.info(deleteCount + " embeddings purged from CRICKET_WORLD_CUP table in Hana DB");
+		logger.info("{} embeddings purged from CRICKET_WORLD_CUP table in Hana DB", deleteCount);
 		return ResponseEntity.ok()
 			.body(String.format("%d embeddings purged from CRICKET_WORLD_CUP table in Hana DB", deleteCount));
 	}
@@ -76,7 +76,7 @@ public class CricketWorldCupHanaController {
 		Supplier<List<Document>> reader = new PagePdfDocumentReader(pdf);
 		Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
 		List<Document> documents = splitter.apply(reader.get());
-		logger.info(documents.size() + " documents created from pdf file: " + pdf.getFilename());
+		logger.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
 		this.hanaCloudVectorStore.accept(documents);
 		return ResponseEntity.ok()
 			.body(String.format("%d documents created from pdf file: %s", documents.size(), pdf.getFilename()));
@@ -92,7 +92,7 @@ public class CricketWorldCupHanaController {
 		var userMessage = new UserMessage(message);
 		Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
 		String generation = this.chatModel.call(prompt).getResult().getOutput().getText();
-		logger.info("Generation: " + generation);
+		logger.info("Generation: {}", generation);
 		return Map.of("generation", generation);
 	}
 

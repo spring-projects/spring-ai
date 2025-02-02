@@ -29,6 +29,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageGenerationMetadata;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageResponseMetadata;
@@ -40,7 +42,6 @@ import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -57,7 +58,7 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private static final String DEFAULT_DEPLOYMENT_NAME = AzureOpenAiImageOptions.DEFAULT_IMAGE_MODEL;
 
-	private final LogAccessor logger = new LogAccessor(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final OpenAIClient openAIClient;
 
@@ -90,14 +91,14 @@ public class AzureOpenAiImageModel implements ImageModel {
 		ImageGenerationOptions imageGenerationOptions = toOpenAiImageOptions(imagePrompt);
 		String deploymentOrModelName = getDeploymentName(imagePrompt);
 		if (logger.isTraceEnabled()) {
-			logger.trace("Azure ImageGenerationOptions call " + deploymentOrModelName + " with the following options : "
-					+ toPrettyJson(imageGenerationOptions));
+			logger.trace("Azure ImageGenerationOptions call {} with the following options : {} ", deploymentOrModelName,
+					toPrettyJson(imageGenerationOptions));
 		}
 
 		var images = this.openAIClient.getImageGenerations(deploymentOrModelName, imageGenerationOptions);
 
 		if (logger.isTraceEnabled()) {
-			logger.trace("Azure ImageGenerations: " + toPrettyJson(images));
+			logger.trace("Azure ImageGenerations: {}", toPrettyJson(images));
 		}
 
 		List<ImageGeneration> imageGenerations = images.getData().stream().map(entry -> {

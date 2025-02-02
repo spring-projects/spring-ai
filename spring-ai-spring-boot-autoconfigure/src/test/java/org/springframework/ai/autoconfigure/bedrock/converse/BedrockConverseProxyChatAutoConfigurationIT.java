@@ -19,6 +19,8 @@ package org.springframework.ai.autoconfigure.bedrock.converse;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
@@ -32,14 +34,13 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiresAwsCredentials
 public class BedrockConverseProxyChatAutoConfigurationIT {
 
-	private static final LogAccessor logger = new LogAccessor(BedrockConverseProxyChatAutoConfigurationIT.class);
+	private static final Log logger = LogFactory.getLog(BedrockConverseProxyChatAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withPropertyValues(

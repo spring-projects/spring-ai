@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
@@ -32,7 +34,6 @@ import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.StringUtils;
 
 /**
@@ -45,7 +46,7 @@ import org.springframework.util.StringUtils;
  */
 public class MessageAggregator {
 
-	private static final LogAccessor logger = new LogAccessor(MessageAggregator.class);
+	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
 
 	public Flux<AdvisedResponse> aggregateAdvisedResponse(Flux<AdvisedResponse> advisedResponses,
 			Consumer<AdvisedResponse> aggregationHandler) {
@@ -167,7 +168,7 @@ public class MessageAggregator {
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
-		}).doOnError(e -> logger.error(e, "Aggregation Error"));
+		}).doOnError(e -> logger.error("Aggregation Error", e));
 	}
 
 	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) implements Usage {

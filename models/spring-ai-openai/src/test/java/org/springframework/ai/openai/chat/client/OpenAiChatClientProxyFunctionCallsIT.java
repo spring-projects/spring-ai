@@ -27,6 +27,8 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -47,7 +49,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.CollectionUtils;
 
@@ -58,7 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("logging-test")
 class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiChatClientMultipleFunctionCallsIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatClientMultipleFunctionCallsIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -176,7 +177,7 @@ class OpenAiChatClientProxyFunctionCallsIT extends AbstractIT {
 		}
 		while (isToolCall);
 
-		logger.info("Response: " + chatResponse);
+		logger.info("Response: {}", chatResponse);
 
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}

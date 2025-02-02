@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -43,7 +45,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 class BedrockConverseChatClientIT {
 
-	private static final LogAccessor logger = new LogAccessor(BedrockConverseChatClientIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(BedrockConverseChatClientIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -218,7 +219,7 @@ class BedrockConverseChatClientIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -252,7 +253,7 @@ class BedrockConverseChatClientIT {
 		assertThat(metadata.getUsage().getTotalTokens())
 			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getCompletionTokens());
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -272,7 +273,7 @@ class BedrockConverseChatClientIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -293,7 +294,7 @@ class BedrockConverseChatClientIT {
 			.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 	}
@@ -334,7 +335,7 @@ class BedrockConverseChatClientIT {
 			.filter(cr -> cr.getResult() != null)
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
-		logger.info("Response: " + content);
+		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}
@@ -354,7 +355,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:on
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
-		logger.info("Response: " + content);
+		logger.info("Response: {}", content);
 
 		assertThat(content).contains("15");
 	}
@@ -414,7 +415,7 @@ class BedrockConverseChatClientIT {
 
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 
-		logger.info("Response: " + content);
+		logger.info("Response: {}", content);
 		assertThat(content).contains("bananas", "apple");
 		assertThat(content).containsAnyOf("bowl", "basket");
 	}

@@ -49,12 +49,15 @@ import io.milvus.param.index.DescribeIndexParam;
 import io.milvus.param.index.DropIndexParam;
 import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -66,7 +69,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -161,7 +163,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	// Metadata, automatically assigned by Milvus.
 	private static final String DISTANCE_FIELD_NAME = "distance";
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(MilvusVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
 	private static final Map<MetricType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			MetricType.COSINE, VectorStoreSimilarityMetric.COSINE, MetricType.L2, VectorStoreSimilarityMetric.EUCLIDEAN,
@@ -310,10 +312,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 
 			long deleteCount = status.getData().getDeleteCnt();
-			logger.debug("Deleted " + deleteCount + " documents matching filter expression");
+			logger.debug("Deleted {} documents matching filter expression", deleteCount);
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -507,9 +509,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 		}
 		catch (Exception e) {
-			logger.warn(e,
-					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-							+ this.embeddingDimension);
+			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
+					+ this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

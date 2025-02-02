@@ -20,6 +20,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -31,7 +33,6 @@ import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 public class FunctionCallWithPromptFunctionIT {
 
-	private static final LogAccessor logger = new LogAccessor(FunctionCallWithPromptFunctionIT.class);
+	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithPromptFunctionIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
@@ -77,7 +78,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-				logger.info("Response: " + response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -85,7 +86,7 @@ public class FunctionCallWithPromptFunctionIT {
 				response = chatModel
 					.call(new Prompt(List.of(userMessage), VertexAiGeminiChatOptions.builder().build()));
 
-				logger.info("Response: " + response);
+				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).doesNotContain("30", "10", "15");
 

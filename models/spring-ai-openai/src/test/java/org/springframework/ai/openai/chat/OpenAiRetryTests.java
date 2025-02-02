@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
@@ -62,7 +64,6 @@ import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageResponse;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
@@ -83,7 +84,7 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 public class OpenAiRetryTests {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiRetryTests.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiRetryTests.class);
 
 	private TestRetryListener retryListener;
 

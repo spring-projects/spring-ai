@@ -33,9 +33,10 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -55,7 +56,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,8 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 class CassandraRichSchemaVectorStoreIT {
 
-	private static final LogAccessor logger = new LogAccessor(
-			LogFactory.getLog(CassandraRichSchemaVectorStoreIT.class));
+	private static final Logger logger = LoggerFactory.getLogger(CassandraRichSchemaVectorStoreIT.class);
 
 	private static final List<Document> documents = List.of(
 
@@ -283,7 +282,7 @@ class CassandraRichSchemaVectorStoreIT {
 					}
 					CompletableFuture.allOf(futures).join();
 					long time = System.nanoTime() - start;
-					logger.info(() -> "add+search took an average of {} ms" + Duration.ofNanos(time / runs).toMillis());
+					logger.info("add+search took an average of {} ms", Duration.ofNanos(time / runs).toMillis());
 				}
 			}
 		});
@@ -601,7 +600,7 @@ class CassandraRichSchemaVectorStoreIT {
 	}
 
 	private void executeCqlFile(ApplicationContext context, String filename) throws IOException {
-		logger.info(() -> "executing " + filename);
+		logger.info("executing {}", filename);
 
 		CqlSession session = context.getBean(CqlSession.class);
 

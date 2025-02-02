@@ -22,10 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
@@ -33,7 +34,6 @@ import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import org.springframework.ai.reader.pdf.layout.PDFLayoutTextStripperByArea;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -55,9 +55,9 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 	private static final String PDF_PAGE_REGION = "pdfPageRegion";
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(PagePdfDocumentReader.class));
-
 	protected final PDDocument document;
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected String resourceFileName;
 
@@ -112,7 +112,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
 				lastPage = page;
 				if (counter % logFrequency == 0 && counter / logFrequency < 10) {
-					logger.info("Processing PDF page: " + (counter + 1));
+					logger.info("Processing PDF page: {}", (counter + 1));
 				}
 				counter++;
 
@@ -154,7 +154,7 @@ public class PagePdfDocumentReader implements DocumentReader {
 				readDocuments.add(toDocument(lastPage, pageTextGroupList.stream().collect(Collectors.joining()),
 						startPageNumber, pageNumber));
 			}
-			logger.info("Processing " + totalPages + " pages");
+			logger.info("Processing {} pages", totalPages);
 			return readDocuments;
 
 		}

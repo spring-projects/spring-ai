@@ -25,6 +25,8 @@ import com.azure.ai.openai.models.Embeddings;
 import com.azure.ai.openai.models.EmbeddingsOptions;
 import com.azure.ai.openai.models.EmbeddingsUsage;
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -40,7 +42,6 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -54,7 +55,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final LogAccessor logger = new LogAccessor(AzureOpenAiEmbeddingModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiEmbeddingModel.class);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 

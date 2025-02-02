@@ -19,9 +19,11 @@ package org.springframework.ai.chat.metadata;
 import java.util.Map;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
-import org.springframework.core.log.LogAccessor;
 
 /**
  * Models common AI provider metadata returned in an AI response.
@@ -34,7 +36,7 @@ import org.springframework.core.log.LogAccessor;
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	private static final LogAccessor logger = new LogAccessor(ChatResponseMetadata.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
 
 	private String id = ""; // Set to blank to preserve backward compat with previous
 
@@ -138,7 +140,7 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 				this.chatResponseMetadata.map.put(key, value);
 			}
 			else {
-				logger.debug("Ignore null value for key [" + key + "]");
+				logger.debug("Ignore null value for key [{}]", key);
 			}
 			return this;
 		}

@@ -23,7 +23,8 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
 import org.typesense.model.CollectionResponse;
@@ -48,7 +49,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -94,7 +94,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(TypesenseVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(TypesenseVectorStore.class);
 
 	public final FilterExpressionConverter filterExpressionConverter = new TypesenseFilterExpressionConverter();
 
@@ -159,10 +159,10 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		try {
 			this.client.collections(this.collectionName).documents().import_(documentList, importDocumentsParameters);
 
-			logger.info(() -> "Added " + documentList.size() + " documents");
+			logger.info("Added {} documents", documentList.size());
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to add documents");
+			logger.error("Failed to add documents", e);
 		}
 	}
 
@@ -184,7 +184,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			return Optional.of(deletedDocs > 0);
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to delete documents");
+			logger.error("Failed to delete documents", e);
 			return Optional.of(Boolean.FALSE);
 		}
 	}
@@ -204,14 +204,14 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 			int deletedDocs = (Integer) response.getOrDefault("num_deleted", 0);
 			if (deletedDocs == 0) {
-				logger.warn(() -> "No documents were deleted matching filter expression");
+				logger.warn("No documents were deleted matching filter expression");
 			}
 			else {
-				logger.debug(() -> "Deleted " + deletedDocs + " documents matching filter expression");
+				logger.debug("Deleted {} documents matching filter expression", deletedDocs);
 			}
 		}
 		catch (Exception e) {
-			logger.error(e, () -> "Failed to delete documents by filter");
+			logger.error("Failed to delete documents by filter", e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -223,7 +223,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
-		logger.info("Filter expression: " + nativeFilterExpressions);
+		logger.info("Filter expression: {}", nativeFilterExpressions);
 
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
@@ -265,11 +265,11 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 				}))
 				.toList();
 
-			logger.info("Found " + documents.size() + " documents");
+			logger.info("Found {} documents", documents.size());
 			return documents;
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to search documents");
+			logger.error("Failed to search documents", e);
 			return List.of();
 		}
 	}
@@ -285,9 +285,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			}
 		}
 		catch (Exception e) {
-			logger.warn(e,
-					() -> "Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-							+ this.embeddingDimension);
+			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
+					+ this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}
@@ -314,7 +313,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	void createCollection() {
 		if (this.hasCollection()) {
-			logger.info("Collection " + this.collectionName + " already exists");
+			logger.info("Collection {} already exists", this.collectionName);
 			return;
 		}
 
@@ -332,25 +331,25 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 		try {
 			this.client.collections().create(collectionSchema);
-			logger.info("Collection " + this.collectionName + " created");
+			logger.info("Collection {} created", this.collectionName);
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to create collection " + this.collectionName);
+			logger.error("Failed to create collection {}", this.collectionName, e);
 		}
 	}
 
 	void dropCollection() {
 		if (!this.hasCollection()) {
-			logger.info("Collection " + this.collectionName + " does not exist");
+			logger.info("Collection {} does not exist", this.collectionName);
 			return;
 		}
 
 		try {
 			this.client.collections(this.collectionName).delete();
-			logger.info("Collection " + this.collectionName + " dropped");
+			logger.info("Collection {} dropped", this.collectionName);
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to drop collection " + this.collectionName);
+			logger.error("Failed to drop collection {}", this.collectionName, e);
 		}
 	}
 
@@ -362,7 +361,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 					retrievedCollection.getNumDocuments());
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to retrieve collection info");
+			logger.error("Failed to retrieve collection info", e);
 			return null;
 		}
 

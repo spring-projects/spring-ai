@@ -30,6 +30,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -50,7 +52,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,7 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatModelProxyToolCallsIT {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiChatModelProxyToolCallsIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelProxyToolCallsIT.class);
 
 	private static final String DEFAULT_MODEL = "gpt-4o-mini";
 
@@ -185,7 +186,7 @@ class OpenAiChatModelProxyToolCallsIT {
 		}
 		while (isToolCall);
 
-		logger.info("Response: " + chatResponse);
+		logger.info("Response: {}", chatResponse);
 
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -222,7 +223,7 @@ class OpenAiChatModelProxyToolCallsIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 
@@ -303,7 +304,7 @@ class OpenAiChatModelProxyToolCallsIT {
 					return functionResponse;
 				});
 
-		logger.info("Response: " + chatResponse);
+		logger.info("Response: {}", chatResponse);
 
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -343,7 +344,7 @@ class OpenAiChatModelProxyToolCallsIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
 

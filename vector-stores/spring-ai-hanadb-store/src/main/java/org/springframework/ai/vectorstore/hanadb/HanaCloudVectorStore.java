@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -36,7 +37,6 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -77,7 +77,7 @@ import org.springframework.util.Assert;
  */
 public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(HanaCloudVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(HanaCloudVectorStore.class);
 
 	private final HanaVectorRepository<? extends HanaVectorEntity> repository;
 
@@ -116,25 +116,25 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	public void doAdd(List<Document> documents) {
 		int count = 1;
 		for (Document document : documents) {
-			logger.info("[" + count++ + "/" + documents.size() + "] Calling EmbeddingModel for document id = "
-					+ document.getId());
+			logger.info("[{}/{}] Calling EmbeddingModel for document id = {}", count++, documents.size(),
+					document.getId());
 			String content = document.getText().replaceAll("\\s+", " ");
 			String embedding = getEmbedding(document);
 			this.repository.save(this.tableName, document.getId(), embedding, content);
 		}
-		logger.info("Embeddings saved in HanaCloudVectorStore for " + (count - 1) + " documents");
+		logger.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
 	}
 
 	@Override
 	public Optional<Boolean> doDelete(List<String> idList) {
 		int deleteCount = this.repository.deleteEmbeddingsById(this.tableName, idList);
-		logger.info(deleteCount + " embeddings deleted");
+		logger.info("{} embeddings deleted", deleteCount);
 		return Optional.of(deleteCount == idList.size());
 	}
 
 	public int purgeEmbeddings() {
 		int deleteCount = this.repository.deleteAllEmbeddings(this.tableName);
-		logger.info(deleteCount + " embeddings deleted");
+		logger.info("{} embeddings deleted", deleteCount);
 		return deleteCount;
 	}
 
@@ -153,8 +153,8 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		String queryEmbedding = getEmbedding(request);
 		List<? extends HanaVectorEntity> searchResult = this.repository.cosineSimilaritySearch(this.tableName,
 				request.getTopK(), queryEmbedding);
-		logger.info("Hana cosine-similarity for query=" + request.getQuery() + ", with topK=" + request.getTopK()
-				+ " returned " + searchResult.size() + " results");
+		logger.info("Hana cosine-similarity for query={}, with topK={} returned {} results", request.getQuery(),
+				request.getTopK(), searchResult.size());
 
 		return searchResult.stream().map(c -> {
 			try {

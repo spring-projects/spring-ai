@@ -23,10 +23,11 @@ import java.util.List;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.StreamEvent;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class EventParsingTests {
 
-	private static final LogAccessor logger = new LogAccessor(EventParsingTests.class);
+	private static final Logger logger = LoggerFactory.getLogger(EventParsingTests.class);
 
 	@Test
 	public void readEvents() throws IOException {

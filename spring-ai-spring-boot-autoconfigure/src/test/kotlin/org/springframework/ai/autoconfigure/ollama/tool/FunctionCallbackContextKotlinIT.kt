@@ -19,19 +19,21 @@ package org.springframework.ai.autoconfigure.ollama.tool
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.slf4j.LoggerFactory
+
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.ai.model.function.FunctionCallingOptions
 import org.springframework.ai.ollama.OllamaChatModel
+import org.springframework.ai.ollama.api.OllamaModel
 import org.springframework.ai.ollama.api.OllamaOptions
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Description
-import org.springframework.core.log.LogAccessor
 
 class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 
@@ -46,7 +48,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 		}
 	}
 
-	private val logger = LogAccessor(FunctionCallbackResolverKotlinIT::class.java)
+	private val logger = LoggerFactory.getLogger(FunctionCallbackResolverKotlinIT::class.java)
 
 	private val contextRunner = ApplicationContextRunner()
 		.withPropertyValues(

@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -40,7 +42,6 @@ import org.springframework.ai.moonshot.api.MockWeatherService;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
 class MoonshotChatModelFunctionCallingIT {
 
-	private static final LogAccessor logger = new LogAccessor(MoonshotChatModelFunctionCallingIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(MoonshotChatModelFunctionCallingIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -99,7 +100,7 @@ class MoonshotChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -131,7 +132,7 @@ class MoonshotChatModelFunctionCallingIT {
 			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
-		logger.info("Response: " + content);
+		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}

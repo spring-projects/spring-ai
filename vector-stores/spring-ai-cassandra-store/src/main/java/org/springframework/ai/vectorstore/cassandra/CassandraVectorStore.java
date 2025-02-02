@@ -61,7 +61,8 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.cassandra.SchemaUtil;
 import org.springframework.ai.document.Document;
@@ -78,7 +79,6 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 
 /**
@@ -193,7 +193,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private static final String QUERY_FORMAT = "select %s,%s,%s%s from %s.%s ? order by %s ann of ? limit ?";
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(CassandraVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
 
 	private static final Map<Similarity, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			Similarity.COSINE, VectorStoreSimilarityMetric.COSINE, Similarity.EUCLIDEAN,
@@ -346,11 +346,11 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 					throw new IllegalStateException("Failed to delete some documents");
 				}
 
-				logger.debug(() -> "Deleted " + idsToDelete.size() + " documents matching filter expression");
+				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}
 		}
 		catch (Exception e) {
-			logger.error(e, () -> "Failed to delete documents by filter");
+			logger.error("Failed to delete documents by filter", e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -371,7 +371,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		String query = String.format(this.similarityStmt, cqlVector, whereClause, cqlVector, request.getTopK());
 		List<Document> documents = new ArrayList<>();
-		logger.trace(() -> "Executing " + query);
+		logger.trace("Executing {}", query);
 		SimpleStatement s = SimpleStatement.newInstance(query).setExecutionProfileName(DRIVER_PROFILE_SEARCH);
 
 		for (Row row : this.session.execute(s)) {
@@ -483,8 +483,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				extraSelectFields.toString(), this.schema.keyspace(), this.schema.table(), this.schema.embedding());
 
 		query = query.replace("?", "%s");
-		String finalQuery = query;
-		logger.debug("preparing " + finalQuery);
+		logger.debug("preparing {}", query);
 		return query;
 	}
 
@@ -594,7 +593,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			.andColumn(this.schema.embedding)
 			.build();
 
-		logger.debug(() -> "Executing " + indexStmt.getQuery());
+		logger.debug("Executing {}", indexStmt.getQuery());
 		this.session.execute(indexStmt);
 
 		Stream
@@ -610,7 +609,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 					.andColumn(metadata.name())
 					.build();
 
-				logger.debug(() -> "Executing " + indexStatement.getQuery());
+				logger.debug("Executing {}", indexStatement.getQuery());
 				this.session.execute(indexStatement);
 			});
 	}
@@ -648,7 +647,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				.append(" vector<float,")
 				.append(vectorDimension)
 				.append(">)");
-			logger.debug(() -> "Executing " + tableStmt);
+			logger.debug("Executing {}", tableStmt.toString());
 			this.session.execute(tableStmt.toString());
 		}
 	}
@@ -701,12 +700,12 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 					.append(vectorDimension)
 					.append(">)");
 
-				logger.debug(() -> "Executing " + alterTableStmt.toString());
+				logger.debug("Executing {}", alterTableStmt.toString());
 				this.session.execute(alterTableStmt.toString());
 			}
 			else {
 				SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
-				logger.debug("Executing " + stmt.getQuery());
+				logger.debug("Executing {}", stmt.getQuery());
 				this.session.execute(stmt);
 			}
 		}

@@ -24,8 +24,9 @@ import java.util.StringJoiner;
 
 import io.micrometer.tracing.handler.TracingObservationHandler;
 import io.opentelemetry.api.trace.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 
 /**
@@ -35,7 +36,7 @@ import org.springframework.lang.Nullable;
  */
 public final class TracingHelper {
 
-	private static final LogAccessor logger = new LogAccessor(TracingHelper.class);
+	private static final Logger logger = LoggerFactory.getLogger(TracingHelper.class);
 
 	private TracingHelper() {
 	}
@@ -58,7 +59,7 @@ public final class TracingHelper {
 			}
 		}
 		catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
-			logger.warn(ex, "It wasn't possible to extract the OpenTelemetry Span object from Micrometer");
+			logger.warn("It wasn't possible to extract the OpenTelemetry Span object from Micrometer", ex);
 			return null;
 		}
 

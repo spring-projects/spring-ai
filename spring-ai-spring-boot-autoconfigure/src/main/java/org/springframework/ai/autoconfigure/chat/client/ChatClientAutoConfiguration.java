@@ -17,6 +17,8 @@
 package org.springframework.ai.autoconfigure.chat.client;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
@@ -32,7 +34,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.log.LogAccessor;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link ChatClient}.
@@ -55,7 +56,7 @@ import org.springframework.core.log.LogAccessor;
 		matchIfMissing = true)
 public class ChatClientAutoConfiguration {
 
-	private static final LogAccessor logger = new LogAccessor(ChatClientAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatClientAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean

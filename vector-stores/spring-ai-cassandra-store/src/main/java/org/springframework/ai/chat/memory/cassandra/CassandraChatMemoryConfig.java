@@ -40,10 +40,10 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.cassandra.SchemaUtil;
-import org.springframework.core.log.LogAccessor;
 
 /**
  * Configuration for the Cassandra Chat Memory store.
@@ -67,7 +67,7 @@ public final class CassandraChatMemoryConfig {
 
 	public static final String DEFAULT_USER_COLUMN_NAME = "user";
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(CassandraChatMemoryConfig.class));
+	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryConfig.class);
 
 	final CqlSession session;
 
@@ -193,7 +193,7 @@ public final class CassandraChatMemoryConfig {
 				alterTable = alterTable.addColumn(this.userColumn, DataTypes.TEXT);
 			}
 			SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
-			logger.debug(() -> "Executing " + stmt.getQuery());
+			logger.debug("Executing {}", stmt.getQuery());
 			this.session.execute(stmt);
 		}
 	}

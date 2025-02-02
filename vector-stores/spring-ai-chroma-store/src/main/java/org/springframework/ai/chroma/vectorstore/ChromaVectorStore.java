@@ -25,6 +25,8 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
@@ -43,7 +45,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -81,7 +82,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private boolean initialized = false;
 
-	private static final LogAccessor logger = new LogAccessor(ChromaVectorStore.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChromaVectorStore.class);
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
@@ -179,7 +180,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			this.chromaApi.deleteEmbeddings(this.collectionId, deleteRequest);
 		}
 		catch (Exception e) {
-			logger.error(e, "Failed to delete documents by filter: " + e.getMessage());
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

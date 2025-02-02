@@ -27,7 +27,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -58,7 +59,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -199,7 +199,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final String JSON_PATH_PREFIX = "$.";
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(RedisVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(RedisVectorStore.class);
 
 	private static final Predicate<Object> RESPONSE_OK = Predicate.isEqual("OK");
 
@@ -289,7 +289,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
 			if (errResponse.isPresent()) {
 				if (logger.isErrorEnabled()) {
-					logger.error("Could not delete document: " + errResponse.get());
+					logger.error("Could not delete document: {}", errResponse.get());
 				}
 				return Optional.of(false);
 			}
@@ -322,16 +322,16 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
 
 					if (errResponse.isPresent()) {
-						logger.error(() -> "Could not delete document: " + errResponse.get());
+						logger.error("Could not delete document: {}", errResponse.get());
 						throw new IllegalStateException("Failed to delete some documents");
 					}
 				}
 
-				logger.debug(() -> "Deleted " + matchingIds.size() + " documents matching filter expression");
+				logger.debug("Deleted {} documents matching filter expression", matchingIds.size());
 			}
 		}
 		catch (Exception e) {
-			logger.error(e, () -> "Failed to delete documents by filter");
+			logger.error("Failed to delete documents by filter", e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

@@ -43,7 +43,8 @@ import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder.GetBuilderBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -56,7 +57,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -93,7 +93,7 @@ import org.springframework.util.StringUtils;
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
-	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(WeaviateVectorStore.class));
+	private static final Logger logger = LoggerFactory.getLogger(WeaviateVectorStore.class);
 
 	private static final String METADATA_FIELD_PREFIX = "meta_";
 
@@ -323,14 +323,14 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 					throw new IllegalStateException("Failed to delete some documents");
 				}
 
-				logger.debug(() -> "Deleted " + idsToDelete.size() + " documents matching filter expression");
+				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}
 			else {
-				logger.debug(() -> "No documents found matching filter expression");
+				logger.debug("No documents found matching filter expression");
 			}
 		}
 		catch (Exception e) {
-			logger.error(e, () -> "Failed to delete documents by filter");
+			logger.error("Failed to delete documents by filter", e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}

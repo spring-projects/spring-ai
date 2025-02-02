@@ -20,11 +20,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.util.PromptAssert;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -49,7 +51,7 @@ import org.springframework.util.StringUtils;
  */
 public final class MultiQueryExpander implements QueryExpander {
 
-	private static final LogAccessor logger = new LogAccessor(MultiQueryExpander.class);
+	private static final Logger logger = LoggerFactory.getLogger(MultiQueryExpander.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			You are an expert at information retrieval and search optimization.
@@ -95,7 +97,7 @@ public final class MultiQueryExpander implements QueryExpander {
 	public List<Query> expand(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
-		logger.debug("Generating " + this.numberOfQueries + " query variants");
+		logger.debug("Generating {} query variants", this.numberOfQueries);
 
 		var response = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
@@ -112,8 +114,9 @@ public final class MultiQueryExpander implements QueryExpander {
 		var queryVariants = Arrays.asList(response.split("\n"));
 
 		if (CollectionUtils.isEmpty(queryVariants) || this.numberOfQueries != queryVariants.size()) {
-			logger.warn("Query expansion result does not contain the requested " + this.numberOfQueries
-					+ " variants. Returning the input query unchanged.");
+			logger.warn(
+					"Query expansion result does not contain the requested {} variants. Returning the input query unchanged.",
+					this.numberOfQueries);
 			return List.of(query);
 		}
 

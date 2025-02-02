@@ -23,6 +23,8 @@ import java.util.List;
 
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
@@ -32,7 +34,6 @@ import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import org.springframework.ai.reader.pdf.layout.PDFLayoutTextStripperByArea;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -61,7 +62,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 	protected final PDDocument document;
 
-	private static final LogAccessor logger = new LogAccessor(ParagraphPdfDocumentReader.class);
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final ParagraphManager paragraphTextExtractor;
 

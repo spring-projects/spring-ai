@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.BaseOllamaIT;
@@ -31,7 +33,6 @@ import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +44,7 @@ public class OllamaApiToolFunctionCallIT extends BaseOllamaIT {
 
 	private static final String MODEL = "qwen2.5:3b";
 
-	private static final LogAccessor logger = new LogAccessor(OllamaApiToolFunctionCallIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OllamaApiToolFunctionCallIT.class);
 
 	static OllamaApi ollamaApi;
 

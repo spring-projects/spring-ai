@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
@@ -31,14 +33,13 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 public class OpenAiFunctionCallback2IT {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiFunctionCallback2IT.class);
+	private final Logger logger = LoggerFactory.getLogger(OpenAiFunctionCallback2IT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
@@ -63,7 +64,7 @@ public class OpenAiFunctionCallback2IT {
 				.call().content();
 			// @formatter:on
 
-			logger.info("Response: " + content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});
@@ -83,7 +84,7 @@ public class OpenAiFunctionCallback2IT {
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-			logger.info("Response: " + content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
 		});

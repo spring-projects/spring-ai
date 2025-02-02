@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -47,7 +49,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -55,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatModelFunctionCallingIT {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiChatModelFunctionCallingIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelFunctionCallingIT.class);
 
 	@Autowired
 	ChatModel chatModel;
@@ -75,7 +76,7 @@ class OpenAiChatModelFunctionCallingIT {
 				.content();
 		// @formatter:on
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 		assertThat(state).containsEntry("Light", "ON");
 	}
 
@@ -136,7 +137,7 @@ class OpenAiChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: " + response);
+		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -208,7 +209,7 @@ class OpenAiChatModelFunctionCallingIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: " + content);
+		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
 	}

@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.moonshot.MoonshotAutoConfiguration;
@@ -40,7 +42,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
-import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {
 
-	private static final LogAccessor logger = new LogAccessor(FunctionCallbackWithPlainFunctionBeanIT.class);
+	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.moonshot.apiKey=" + System.getenv("MOONSHOT_API_KEY"))
@@ -72,7 +73,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 					MoonshotChatOptions.builder().function("weatherFunction").build()));
 
-			logger.info("Response: " + response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -80,7 +81,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			response = chatModel.call(new Prompt(List.of(userMessage),
 					MoonshotChatOptions.builder().function("weatherFunctionTwo").build()));
 
-			logger.info("Response: " + response);
+			logger.info("Response: {}", response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
@@ -103,7 +104,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: " + response);
+			logger.info("Response: {}", response);
 		});
 	}
 
@@ -128,7 +129,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: " + content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");
@@ -146,7 +147,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: " + content);
+			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

@@ -19,6 +19,8 @@ package org.springframework.ai.openai;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
@@ -36,7 +38,6 @@ import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
@@ -54,7 +55,7 @@ import org.springframework.util.Assert;
  */
 public class OpenAiImageModel implements ImageModel {
 
-	private static final LogAccessor logger = new LogAccessor(OpenAiImageModel.class);
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
 
 	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
@@ -164,7 +165,7 @@ public class OpenAiImageModel implements ImageModel {
 			OpenAiImageApi.OpenAiImageRequest openAiImageRequest) {
 		OpenAiImageApi.OpenAiImageResponse imageApiResponse = imageResponseEntity.getBody();
 		if (imageApiResponse == null) {
-			logger.warn("No image response returned for request: " + openAiImageRequest);
+			logger.warn("No image response returned for request: {}", openAiImageRequest);
 			return new ImageResponse(List.of());
 		}
 
