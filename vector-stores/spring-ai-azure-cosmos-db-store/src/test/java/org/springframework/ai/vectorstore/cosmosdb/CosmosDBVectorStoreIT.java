@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ package org.springframework.ai.vectorstore.cosmosdb;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.azure.cosmos.CosmosAsyncClient;
+import com.azure.cosmos.CosmosAsyncContainer;
 import com.azure.cosmos.CosmosClientBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -167,6 +169,15 @@ public class CosmosDBVectorStoreIT {
 
 		// Verify the search results
 		assertThat(results4).isEmpty();
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			CosmosDBVectorStore vectorStore = context.getBean(CosmosDBVectorStore.class);
+			Optional<CosmosAsyncContainer> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+		});
 	}
 
 	@SpringBootConfiguration

@@ -330,6 +330,13 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			.fieldName(this.pathName);
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.mongoTemplate;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Creates a new builder instance for MongoDBAtlasVectorStore.
 	 * @return a new MongoDBBuilder instance

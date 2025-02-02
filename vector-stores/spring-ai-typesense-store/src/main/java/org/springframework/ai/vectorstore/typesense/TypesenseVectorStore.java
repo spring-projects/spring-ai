@@ -378,6 +378,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.client;
+		return Optional.of(client);
+	}
+
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;

@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import io.weaviate.client.Config;
@@ -308,6 +309,15 @@ public class WeaviateVectorStoreIT {
 			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
 
 			vectorStore.delete(List.of(nlDocument.getId()));
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			WeaviateVectorStore vectorStore = context.getBean(WeaviateVectorStore.class);
+			Optional<WeaviateClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

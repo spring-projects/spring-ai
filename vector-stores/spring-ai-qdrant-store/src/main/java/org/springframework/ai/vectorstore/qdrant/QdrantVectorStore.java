@@ -345,6 +345,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.qdrantClient;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Builder for creating instances of {@link QdrantVectorStore}. This builder provides
 	 * a fluent API for configuring all aspects of the vector store.

@@ -21,10 +21,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import io.pinecone.PineconeConnection;
 import org.awaitility.Awaitility;
 import org.awaitility.Duration;
 import org.junit.jupiter.api.BeforeAll;
@@ -366,6 +368,15 @@ public class PineconeVectorStoreIT {
 																								// and
 																								// doc3
 			awaitDocumentsCount(vectorStore, "Content", 0);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+			Optional<PineconeConnection> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

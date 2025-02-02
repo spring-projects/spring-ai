@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.neo4j;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -394,6 +395,15 @@ class Neo4jVectorStoreIT {
 				.containsExactlyInAnyOrder("A", "B");
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
 				.containsExactlyInAnyOrder(1L, 1L);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			Neo4jVectorStore vectorStore = context.getBean(Neo4jVectorStore.class);
+			Optional<Driver> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

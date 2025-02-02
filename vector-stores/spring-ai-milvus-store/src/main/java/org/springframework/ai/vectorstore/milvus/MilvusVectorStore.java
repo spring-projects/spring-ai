@@ -559,6 +559,13 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		return SIMILARITY_TYPE_MAPPING.get(this.metricType).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.milvusClient;
+		return Optional.of(client);
+	}
+
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final MilvusServiceClient milvusClient;

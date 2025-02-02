@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -332,6 +333,15 @@ public class TypesenseVectorStoreIT {
 				.containsExactlyInAnyOrder(1, 1);
 
 			((TypesenseVectorStore) vectorStore).dropCollection();
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+			Optional<TypesenseVectorStore> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 
