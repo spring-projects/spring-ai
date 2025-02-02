@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ class FunctionCallWithFunctionBeanIT {
 						"What's the weather like in San Francisco, Paris and in Tokyo? Use Multi-turn function calling.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						ToolCallingChatOptions.builder().tools("weatherFunction").build()));
+						ToolCallingChatOptions.builder().toolNames("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 

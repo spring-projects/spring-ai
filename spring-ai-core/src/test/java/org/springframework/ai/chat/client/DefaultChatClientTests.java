@@ -1375,7 +1375,7 @@ class DefaultChatClientTests {
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.tools(mock(ToolCallback.class), null))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("toolObjects cannot contain null elements");
+			.hasMessage("toolCallbacks cannot contain null elements");
 	}
 
 	@Test

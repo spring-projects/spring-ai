@@ -383,7 +383,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.mirostatEta(fromOptions.getMirostatEta())
 				.penalizeNewline(fromOptions.getPenalizeNewline())
 				.stop(fromOptions.getStop())
-				.tools(fromOptions.getTools())
+				.toolNames(fromOptions.getToolNames())
 				.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
 				.toolCallbacks(fromOptions.getToolCallbacks())
 				.toolContext(fromOptions.getToolContext()).build();
@@ -700,13 +700,13 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@Override
 	@JsonIgnore
-	public Set<String> getTools() {
+	public Set<String> getToolNames() {
     	return this.toolNames;
     }
 
 	@Override
 	@JsonIgnore
-	public void setTools(Set<String> toolNames) {
+	public void setToolNames(Set<String> toolNames) {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
 		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
@@ -744,14 +744,14 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	@Deprecated
 	@JsonIgnore
 	public Set<String> getFunctions() {
-		return this.getTools();
+		return this.getToolNames();
 	}
 
 	@Override
 	@Deprecated
 	@JsonIgnore
 	public void setFunctions(Set<String> functions) {
-		this.setTools(functions);
+		this.setToolNames(functions);
 	}
 
 	@Override
@@ -1028,12 +1028,12 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		public Builder tools(Set<String> toolNames) {
-			this.options.setTools(toolNames);
+		public Builder toolNames(Set<String> toolNames) {
+			this.options.setToolNames(toolNames);
 			return this;
 		}
 
-		public Builder tools(String... toolNames) {
+		public Builder toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
 			this.options.toolNames.addAll(Set.of(toolNames));
 			return this;
@@ -1051,12 +1051,12 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 		@Deprecated
 		public Builder functions(Set<String> functions) {
-			return tools(functions);
+			return toolNames(functions);
 		}
 
 		@Deprecated
 		public Builder function(String functionName) {
-			return tools(functionName);
+			return toolNames(functionName);
 		}
 
 		@Deprecated

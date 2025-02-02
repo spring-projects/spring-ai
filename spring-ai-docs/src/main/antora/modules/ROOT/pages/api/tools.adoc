@@ -1,0 +1,318 @@
+[[Tools]]
+= Tool Calling
+
+_Tool calling_ (also known as _function calling_) is a common pattern in AI applications allowing a model to interact with a set of APIs, or _tools_, augmenting its capabilities.
+
+Tools are mainly used for:
+
+* **Information Retrieval**. Tools in this category can be used to retrieve information from external sources, such as a database, a web service, a file system, or a web search engine. The goal is to augment the knowledge of the model, allowing it to answer questions that it would not be able to answer otherwise. As such, they can be used in Retrieval Augmented Generation (RAG) scenarios. For example, a tool can be used to retrieve the current weather for a given location, to retrieve the latest news articles, or to query a database for a specific record.
+* **Taking Action**. Tools in this category can be used to take action in a software system, such as sending an email, creating a new record in a database, submitting a form, or triggering a workflow. The goal is to automate tasks that would otherwise require human intervention or explicit programming. For example, a tool can be used to book a flight for a customer interacting with a chatbot, to fill out a form on a web page, or to implement a Java class based on an automated test (TDD) in a code generation scenario.
+
+Even though we typically refer to _tool calling_ as a model capability, it is actually up to the client application to provide the tool calling logic. The model can only request a tool call and provide the input arguments, whereas the application is responsible for executing the tool call from the input arguments and returning the result. The model never gets access to any of the APIs provided as tools, which is a critical security consideration.
+
+Spring AI provides convenient APIs to define tools, resolve tool call requests from a model, and execute the tool calls. The following sections provide an overview of the tool calling capabilities in Spring AI.
+
+== Quick Start
+
+Let's see how to start using tool calling in Spring AI. We'll implement two simple tools: one for information retrieval and one for taking action. The information retrieval tool will be used to get the current date and time in the user's time zone. The action tool will be used to set an alarm for a specified time.
+
+=== Information Retrieval
+
+AI models don't have access to real-time information. Any question that assumes awareness of information such as the current date or weather forecast cannot be answered by the model. However, we can provide a tool that can retrieve this information, and let the model call this tool when access to real-time information is needed.
+
+Let's implement a tool to get the current date and time in the user's time zone in a `DateTimeTools` class. The tool will take no argument. The `LocaleContextHolder` from Spring Framework can provide the user's time zone. The tool will be defined as a method annotated with `@Tool`. To help the model understand if and when to call this tool, we'll provide a detailed description of what the tools does.
+
+[source,java]
+----
+import java.time.LocalDateTime;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.context.i18n.LocaleContextHolder;
+
+class DateTimeTools {
+
+    @Tool(description = "Get the current date and time in the user's timezone")
+    String getCurrentDateTime() {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString();
+    }
+
+}
+----
+
+Next, let's make the tool available to the model. In this example, we'll use the `ChatClient` to interact with the model. We'll provide the tool to the model by passing an instance of `DateTimeTools` via the `tools()` method. When the model needs to know the current date and time, it will request the tool to be called. Internally, the `ChatClient` will call the tool and return the result to the model, which will then use the tool call result to generate the final response to the original question.
+
+[source,java]
+----
+ChatModel chatModel = ...
+
+String response = ChatClient.create(chatModel)
+        .prompt("What day is tomorrow?")
+        .tools(new DateTimeTools())
+        .call()
+        .content();
+
+System.out.println(response);
+----
+
+The output will be something like:
+
+[source]
+----
+Tomorrow is 2015-10-21.
+----
+
+You can retry asking the same question again. This time, don't provide the tool to the model. The output will be something like:
+
+[source]
+----
+I am an AI and do not have access to real-time information. Please provide the current date so I can accurately determine what day tomorrow will be.
+----
+
+Without the tool, the model doesn't know how to answer the question because it doesn't have the ability to determine the current date and time.
+
+=== Taking Actions
+
+AI models can be used to generate plans for accomplishing certain goals. For example, a model can generate a plan for booking a trip to Denmark. However, the model doesn't have the ability to execute the plan. That's where tools come in: they can be used to execute the plan that a model generates.
+
+In the previous example, we used a tool to determine the current date and time. In this example, we'll define a second tool for setting an alarm at a specific time. The goal is to set an alarm for 10 minutes from now, so we need to provide both tools to the model to accomplish this task.
+
+We'll add the new tool to the same `DateTimeTools` class as before. The new tool will take a single parameter, which is the time in ISO-8601 format. The tool will then print a message to the console indicating that the alarm has been set for the given time. Like before, the tool is defined as a method annotated with `@Tool`, which we also use to provide a detailed description to help the model understand when and how to use the tool.
+
+[source,java]
+----
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.context.i18n.LocaleContextHolder;
+
+class DateTimeTools {
+
+    @Tool(description = "Get the current date and time in the user's timezone")
+    String getCurrentDateTime() {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString();
+    }
+
+    @Tool(description = "Set a user alarm for the given time, provided in ISO-8601 format")
+    void setAlarm(String time) {
+        LocalDateTime alarmTime = LocalDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME);
+        System.out.println("Alarm set for " + alarmTime);
+    }
+
+}
+----
+
+Next, let's make both tools available to the model. We'll use the `ChatClient` to interact with the model. We'll provide the tools to the model by passing an instance of `DateTimeTools` via the `tools()` method. When we ask to set up an alarm 10 minutes from now, the model will first need to know the current date and time. Then, it will use the current date and time to calculate the alarm time. Finally, it will use the alarm time to set up the alarm. Internally, the `ChatClient` will handle any tool call request from the model and send back to it any tool call execution result, so that the model can generate the final response.
+
+[source,java]
+----
+ChatModel chatModel = ...
+
+String response = ChatClient.create(chatModel)
+        .prompt("Can you set an alarm 10 minutes from now?")
+        .tools(new DateTimeTools())
+        .call()
+        .content();
+
+System.out.println(response);
+----
+
+In the application logs, you can check the alarm has been set at the correct time.
+
+== Overview
+
+Spring AI supports tool calling through a set of flexible abstractions that allow you to define, resolve, and execute tools in a consistent way. This section provides an overview of the main concepts and components of tool calling in Spring AI.
+
+image::tools/tool-calling-01.jpg[The main sequence of actions for tool calling, width=700, align="center"]
+
+1. When we want to make a tool available to the model, we include its definition in the chat request. Each tool definition comprises of a name, a description, and the schema of the input parameters.
+2. When the model decides to call a tool, it sends a response with the tool name and the input parameters modeled after the defined schema.
+3. The application is responsible for using the tool name to identify and execute the tool with the provided input parameters.
+4. The result of the tool call is processed by the application.
+5. The application sends the tool call result back to the model.
+6. The model generates the final response using the tool call result as additional context.
+
+Tools are the building blocks of tool calling and they are modeled by the `ToolCallback` interface. Spring AI provides built-in support for specifying `ToolCallback`s from methods and functions, but you can always define your own `ToolCallback` implementations to support more use cases.
+
+`ChatModel` implementations transparently dispatch tool call requests to the corresponding `ToolCallback` implementations and will send the tool call results back to the model, which will ultimately generate the final response. They do so using the `ToolCallingManager` interface, which is responsible for managing the tool execution lifecycle.
+
+Both `ChatClient` and `ChatModel` accept a list of `ToolCallback` objects to make the tools available to the model and the `ToolCallingManager` that will eventually execute them. 
+
+Besides passing the `ToolCallback` objects directly, you can also pass a list of tool names, that will be resolved using the `ToolCallbackResolver` interface.
+
+The following sections will go into more details about all these concepts and APIs, including how to customize and extend them to support more use cases.
+
+== Tool Specification
+
+In Spring AI, tools are modeled via the `ToolCallback` interface, which provides a way to define the tool name, description, input schema, and the actual tool execution logic.
+
+This section describes how to:
+
+- build `ToolCallback`(s) from methods and functions;
+- define the schema for the tool input parameters;
+- provide additional context to tools;
+- return the tool call result directly.
+
+=== Methods as Tools
+
+Spring AI provides built-in support for specifying tools (i.e. `ToolCallback`(s)) from methods, either declaratively using the `@Tool` annotation or programmatically using the low-level `MethodToolCallback` implementation.
+
+==== Declarative Specification: `@Tool`
+
+You can turn a method into a tool by annotating it with `@Tool`. The annotation allows you to provide a description for the tool, which can be used by the model to understand when and how to call the tool. If you don't provide a description, the method name will be used as the tool description.
+However, it's strongly recommended to provide a detailed description because that's paramount for the model to understand the tool's purpose and how to use it. Failing in providing a good description can lead to the model not using the tool when it should or using it incorrectly.
+
+[source,java]
+----
+class DateTimeTools {
+
+    @Tool(description = "Get the current date and time in the user's timezone")
+    String getCurrentDateTime() {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString();
+    }
+
+}
+----
+
+The method can be either static or instance, and it can have any visibility (public, protected, package-private, or private). The class that contains the method can be either a top-level class or a nested class, and it can also have any visibility (as long as it's accessible where you're planning to instantiate it).
+
+You can define any number of arguments for the method (including no argument) with any type (primitives, POJOs, enums, lists, arrays, maps, and so on). Similarly, the method can return any type, including `void`. If the method returns a value, the return type must be a serializable type, as the result will be serialized and sent back to the model. 
+
+NOTE: Some types are not supported. See: <<limitations>>.
+
+===== Adding Tools to `ChatClient`
+
+When using the declarative specification approach, there are a few options for adding tools to a `ChatClient`.
+Such tools will only be available for the specific chat request they are added to.
+
+* Pass the tool class instance directly to the `tools()` method.
+
+[source,java]
+----
+ChatClient.create(chatModel)
+    .prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .call()
+    .content();
+----
+
+* Generate `ToolCallback`(s) from the tool class instance and pass them to the `tools()` method.
+
+[source,java]
+----
+ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
+ChatClient.create(chatModel)
+    .prompt("What day is tomorrow?")
+    .tools(dateTimeTools)
+    .call()
+    .content();
+----
+
+===== Adding Default Tools to `ChatClient`
+
+When using the declarative specification approach, you can add default tools to a `ChatClient` by adding them to the `ChatClient.Builder` used to instantiate it.
+Such tools will be available for ALL the chat requests performed by ALL the `ChatClient` instances built from that specific `ChatClient.Builder`.
+They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+* Pass the tool class instance directly to the `tools()` method.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools(new DateTimeTools())
+    .build();
+----
+
+* Generate `ToolCallback`s from the tool class instance and pass them to the `tools()` method.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools(dateTimeTools)
+    .build();
+----
+
+===== Adding Tools to `ChatModel`
+
+When using the declarative specification approach, there are a few options for adding tools to a `ChatModel`.
+Such tools will only be available for the specific chat request they are added to.
+
+* Generate `ToolCallback`(s) from the tool class instance and pass them to the `toolCallbacks()` method of `ToolCallingChatOptions`.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(dateTimeTools)
+    .build():
+Prompt prompt = new Prompt("What day is tomorrow?", chatOptions);
+chatModel.call(prompt);
+----
+
+==== Programmatic Specification: `MethodToolCallback`
+
+===== Adding Tools to `ChatClient`
+
+===== Adding Tools to `ChatModel`
+
+==== Limitations
+
+Methods using `Optional`, asynchronous (e.g. `CompletableFuture`, `Future`) or reactive types (e.g. `Flow`, `Mono`, `Flux`) as parameters or return types are not currently supported to be used as tools.
+
+Furthermore, methods returning a functional type (e.g. `Function`, `Supplier`, `Consumer`) are not supported to be used as tools using this approach, but they are supported using the function-based approach described in the next section.
+
+=== Functions as Tools
+
+Spring AI provides built-in support for specifying tools from functions, either programmatically using the low-level `FunctionToolCallback` implementation or dynamic using the `ToolCallbackResolver` interface for resolution at run-time.
+
+==== Programmatic Specification: `FunctionToolCallback`
+
+===== Adding Tools to `ChatClient`
+
+===== Adding Tools to `ChatModel`
+
+==== Dynamic Specification: `@Bean`
+
+===== Adding Tools to `ChatClient`
+
+===== Adding Tools to `ChatModel`
+
+==== Limitations
+
+* Only POJOs.
+* Only public.
+* No primitives.
+* No lists or arrays.
+
+=== JSON Schema
+
+==== Description
+
+==== Required
+
+=== Result Conversion
+
+=== Exception Handling
+
+=== Tool Context
+
+=== Return Direct
+
+== Tool Execution
+
+=== Framework-Controlled Tool Execution
+
+=== User-Controlled Tool Execution
+
+== Tool Resolution
+
+=== Resolution from Application Context
+
+== Structured Outputs
+
+== Observability
+
+=== Logging

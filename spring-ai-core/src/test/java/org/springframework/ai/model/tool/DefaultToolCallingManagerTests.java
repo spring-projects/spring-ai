@@ -19,7 +19,6 @@ package org.springframework.ai.model.tool;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -29,6 +28,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolCallExceptionConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
@@ -101,7 +101,7 @@ class DefaultToolCallingManagerTests {
 			.build();
 
 		List<ToolDefinition> toolDefinitions = toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().tools("toolA").build());
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolA").build());
 
 		assertThat(toolDefinitions).containsExactly(toolCallback.getToolDefinition());
 	}
@@ -114,7 +114,7 @@ class DefaultToolCallingManagerTests {
 			.build();
 
 		assertThatThrownBy(() -> toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().tools("toolB").build()))
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolB").build()))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessage("No ToolCallback found for tool name: toolB");
 	}
@@ -163,9 +163,32 @@ class DefaultToolCallingManagerTests {
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
 				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!")));
 
-		List<Message> toolCallHistory = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-		assertThat(toolCallHistory).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+	}
+
+	@Test
+	void whenSingleToolCallWithReturnDirectInChatResponseThenExecute() {
+		ToolCallback toolCallback = new TestToolCallback("toolA", true);
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
+					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.build();
+
+		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
+				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!")));
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.returnDirect()).isTrue();
 	}
 
 	@Test
@@ -189,9 +212,63 @@ class DefaultToolCallingManagerTests {
 				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!"),
 						new ToolResponseMessage.ToolResponse("toolB", "toolB", "Mission accomplished!")));
 
-		List<Message> toolCallHistory = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-		assertThat(toolCallHistory).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+	}
+
+	@Test
+	void whenMultipleToolCallsWithReturnDirectInChatResponseThenExecute() {
+		ToolCallback toolCallbackA = new TestToolCallback("toolA", true);
+		ToolCallback toolCallbackB = new TestToolCallback("toolB", true);
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(
+				List.of(toolCallbackA, toolCallbackB));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
+					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.build();
+
+		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
+				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!"),
+						new ToolResponseMessage.ToolResponse("toolB", "toolB", "Mission accomplished!")));
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.returnDirect()).isTrue();
+	}
+
+	@Test
+	void whenMultipleToolCallsWithMixedReturnDirectInChatResponseThenExecute() {
+		ToolCallback toolCallbackA = new TestToolCallback("toolA", true);
+		ToolCallback toolCallbackB = new TestToolCallback("toolB", false);
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(
+				List.of(toolCallbackA, toolCallbackB));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
+					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.build();
+
+		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
+				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!"),
+						new ToolResponseMessage.ToolResponse("toolB", "toolB", "Mission accomplished!")));
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.returnDirect()).isFalse();
 	}
 
 	@Test
@@ -211,22 +288,35 @@ class DefaultToolCallingManagerTests {
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
 				List.of(new ToolResponseMessage.ToolResponse("toolC", "toolC", "You failed this city!")));
 
-		List<Message> toolCallHistory = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-		assertThat(toolCallHistory).contains(expectedToolResponse);
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
 	}
 
 	static class TestToolCallback implements ToolCallback {
 
 		private final ToolDefinition toolDefinition;
 
+		private final ToolMetadata toolMetadata;
+
 		public TestToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolMetadata = ToolMetadata.builder().build();
+		}
+
+		public TestToolCallback(String name, boolean returnDirect) {
+			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
 			return toolDefinition;
+		}
+
+		@Override
+		public ToolMetadata getToolMetadata() {
+			return toolMetadata;
 		}
 
 		@Override

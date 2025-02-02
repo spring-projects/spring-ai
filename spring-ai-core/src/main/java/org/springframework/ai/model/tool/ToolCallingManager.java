@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model.tool;
 
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -39,7 +38,7 @@ public interface ToolCallingManager {
 	/**
 	 * Execute the tool calls requested by the model.
 	 */
-	List<Message> executeToolCalls(Prompt prompt, ChatResponse chatResponse);
+	ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse);
 
 	/**
 	 * Create a default {@link ToolCallingManager} builder.

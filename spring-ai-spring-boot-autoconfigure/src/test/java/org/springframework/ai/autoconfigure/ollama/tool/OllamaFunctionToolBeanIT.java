@@ -103,7 +103,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().tools("weatherInfo").build()));
+				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().toolNames("weatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -147,7 +147,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().tools("weatherInfo").build();
+			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 

@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -102,12 +102,13 @@ public class ToolCallingManagerTests {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.hasToolCalls()).isTrue();
 
-		List<Message> messages = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-		assertThat(messages).isNotEmpty();
-		assertThat(messages.stream().anyMatch(m -> m instanceof ToolResponseMessage)).isTrue();
+		assertThat(toolExecutionResult.conversationHistory()).isNotEmpty();
+		assertThat(toolExecutionResult.conversationHistory().stream().anyMatch(m -> m instanceof ToolResponseMessage))
+			.isTrue();
 
-		Prompt secondPrompt = new Prompt(messages, chatOptions);
+		Prompt secondPrompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
 
 		ChatResponse secondChatResponse = openAiChatModel.call(secondPrompt);
 
@@ -121,12 +122,14 @@ public class ToolCallingManagerTests {
 	private void runExplicitToolCallingExecutionWithOptionsStream(ChatOptions chatOptions, Prompt prompt) {
 		ChatResponse chatResponse = openAiChatModel.stream(prompt).flatMap(response -> {
 			if (response.hasToolCalls()) {
-				List<Message> messages = toolCallingManager.executeToolCalls(prompt, response);
+				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
 
-				assertThat(messages).isNotEmpty();
-				assertThat(messages.stream().anyMatch(m -> m instanceof ToolResponseMessage)).isTrue();
+				assertThat(toolExecutionResult.conversationHistory()).isNotEmpty();
+				assertThat(toolExecutionResult.conversationHistory()
+					.stream()
+					.anyMatch(m -> m instanceof ToolResponseMessage)).isTrue();
 
-				Prompt secondPrompt = new Prompt(messages, chatOptions);
+				Prompt secondPrompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
 				// return openAiChatModel.stream(secondPrompt);
 				return Flux.just(openAiChatModel.call(secondPrompt));
 			}

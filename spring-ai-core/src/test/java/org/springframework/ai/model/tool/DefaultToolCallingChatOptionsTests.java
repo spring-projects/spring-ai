@@ -68,50 +68,50 @@ class DefaultToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void setToolsShouldStoreTools() {
+	void setToolNamesShouldStoreToolNames() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		Set<String> tools = Set.of("tool1", "tool2");
+		Set<String> toolNames = Set.of("tool1", "tool2");
 
-		options.setTools(tools);
+		options.setToolNames(toolNames);
 
-		assertThat(options.getTools()).hasSize(2).containsExactlyInAnyOrderElementsOf(tools);
+		assertThat(options.getToolNames()).hasSize(2).containsExactlyInAnyOrderElementsOf(toolNames);
 	}
 
 	@Test
-	void setToolsWithVarargsShouldStoreTools() {
+	void setToolNamesWithVarargsShouldStoreToolNames() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
-		options.setTools(Set.of("tool1", "tool2"));
+		options.setToolNames(Set.of("tool1", "tool2"));
 
-		assertThat(options.getTools()).hasSize(2).containsExactlyInAnyOrder("tool1", "tool2");
+		assertThat(options.getToolNames()).hasSize(2).containsExactlyInAnyOrder("tool1", "tool2");
 	}
 
 	@Test
-	void setToolsShouldRejectNullSet() {
+	void setToolNamesShouldRejectNullSet() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
-		assertThatThrownBy(() -> options.setTools((Set<String>) null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("tools cannot be null");
+		assertThatThrownBy(() -> options.setToolNames(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolNames cannot be null");
 	}
 
 	@Test
-	void setToolsShouldRejectNullElements() {
+	void setToolNamesShouldRejectNullElements() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		Set<String> tools = new HashSet<>();
-		tools.add(null);
+		Set<String> toolNames = new HashSet<>();
+		toolNames.add(null);
 
-		assertThatThrownBy(() -> options.setTools(tools)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("tools cannot contain null elements");
+		assertThatThrownBy(() -> options.setToolNames(toolNames)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolNames cannot contain null elements");
 	}
 
 	@Test
-	void setToolsShouldRejectEmptyElements() {
+	void setToolNamesShouldRejectEmptyElements() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		Set<String> tools = new HashSet<>();
-		tools.add("");
+		Set<String> toolNames = new HashSet<>();
+		toolNames.add("");
 
-		assertThatThrownBy(() -> options.setTools(tools)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("tools cannot contain empty elements");
+		assertThatThrownBy(() -> options.setToolNames(toolNames)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolNames cannot contain empty elements");
 	}
 
 	@Test
@@ -137,7 +137,7 @@ class DefaultToolCallingChatOptionsTests {
 		DefaultToolCallingChatOptions original = new DefaultToolCallingChatOptions();
 		ToolCallback callback = mock(ToolCallback.class);
 		original.setToolCallbacks(List.of(callback));
-		original.setTools(Set.of("tool1"));
+		original.setToolNames(Set.of("tool1"));
 		original.setToolContext(Map.of("key", "value"));
 		original.setInternalToolExecutionEnabled(true);
 		original.setModel("gpt-4");
@@ -147,7 +147,7 @@ class DefaultToolCallingChatOptionsTests {
 
 		assertThat(copy).isNotSameAs(original).satisfies(c -> {
 			assertThat(c.getToolCallbacks()).isEqualTo(original.getToolCallbacks());
-			assertThat(c.getTools()).isEqualTo(original.getTools());
+			assertThat(c.getToolNames()).isEqualTo(original.getToolNames());
 			assertThat(c.getToolContext()).isEqualTo(original.getToolContext());
 			assertThat(c.isInternalToolExecutionEnabled()).isEqualTo(original.isInternalToolExecutionEnabled());
 			assertThat(c.getModel()).isEqualTo(original.getModel());
@@ -160,12 +160,12 @@ class DefaultToolCallingChatOptionsTests {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		ToolCallback callback = mock(ToolCallback.class);
 		options.setToolCallbacks(List.of(callback));
-		options.setTools(Set.of("tool1"));
+		options.setToolNames(Set.of("tool1"));
 		options.setToolContext(Map.of("key", "value"));
 
 		assertThatThrownBy(() -> options.getToolCallbacks().add(mock(ToolCallback.class)))
 			.isInstanceOf(UnsupportedOperationException.class);
-		assertThatThrownBy(() -> options.getTools().add("tool2")).isInstanceOf(UnsupportedOperationException.class);
+		assertThatThrownBy(() -> options.getToolNames().add("tool2")).isInstanceOf(UnsupportedOperationException.class);
 		assertThatThrownBy(() -> options.getToolContext().put("key2", "value2"))
 			.isInstanceOf(UnsupportedOperationException.class);
 	}
@@ -177,7 +177,7 @@ class DefaultToolCallingChatOptionsTests {
 
 		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder()
 			.toolCallbacks(List.of(callback))
-			.tools(Set.of("tool1"))
+			.toolNames(Set.of("tool1"))
 			.toolContext(context)
 			.internalToolExecutionEnabled(true)
 			.model("gpt-4")
@@ -192,7 +192,7 @@ class DefaultToolCallingChatOptionsTests {
 
 		assertThat(options).satisfies(o -> {
 			assertThat(o.getToolCallbacks()).containsExactly(callback);
-			assertThat(o.getTools()).containsExactly("tool1");
+			assertThat(o.getToolNames()).containsExactly("tool1");
 			assertThat(o.getToolContext()).isEqualTo(context);
 			assertThat(o.isInternalToolExecutionEnabled()).isTrue();
 			assertThat(o.getModel()).isEqualTo("gpt-4");
@@ -225,11 +225,11 @@ class DefaultToolCallingChatOptionsTests {
 		options.setFunctionCallbacks(List.of(callback1, callback2));
 		assertThat(options.getFunctionCallbacks()).hasSize(2);
 
-		options.setTools(Set.of("tool1"));
+		options.setToolNames(Set.of("tool1"));
 		assertThat(options.getFunctions()).containsExactly("tool1");
 
 		options.setFunctions(Set.of("function1"));
-		assertThat(options.getTools()).containsExactly("function1");
+		assertThat(options.getToolNames()).containsExactly("function1");
 
 		options.setInternalToolExecutionEnabled(true);
 		assertThat(options.getProxyToolCalls()).isFalse();

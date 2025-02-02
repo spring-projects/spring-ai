@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"Please schedule a train from San Francisco to Los Angeles on 2023-12-25");
 
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().tools("trainReservation").build();
+			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
+				.toolNames("trainReservation")
+				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
@@ -264,7 +266,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			// Test weatherFunction
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().tools("weatherFunction").build();
+			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
+				.toolNames("weatherFunction")
+				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 

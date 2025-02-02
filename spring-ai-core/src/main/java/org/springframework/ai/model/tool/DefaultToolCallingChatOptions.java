@@ -39,7 +39,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
-	private Set<String> tools = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
 
 	private Map<String, Object> toolContext = new HashMap<>();
 
@@ -83,16 +83,16 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Set<String> getTools() {
-		return Set.copyOf(this.tools);
+	public Set<String> getToolNames() {
+		return Set.copyOf(this.toolNames);
 	}
 
 	@Override
-	public void setTools(Set<String> tools) {
-		Assert.notNull(tools, "tools cannot be null");
-		Assert.noNullElements(tools, "tools cannot contain null elements");
-		tools.forEach(tool -> Assert.hasText(tool, "tools cannot contain empty elements"));
-		this.tools = new HashSet<>(tools);
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(toolName -> Assert.hasText(toolName, "toolNames cannot contain empty elements"));
+		this.toolNames = new HashSet<>(toolNames);
 	}
 
 	@Override
@@ -130,12 +130,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public Set<String> getFunctions() {
-		return getTools();
+		return getToolNames();
 	}
 
 	@Override
 	public void setFunctions(Set<String> functions) {
-		setTools(functions);
+		setToolNames(functions);
 	}
 
 	@Override
@@ -234,7 +234,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	public <T extends ChatOptions> T copy() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		options.setToolCallbacks(getToolCallbacks());
-		options.setTools(getTools());
+		options.setToolNames(getToolNames());
 		options.setToolContext(getToolContext());
 		options.setInternalToolExecutionEnabled(isInternalToolExecutionEnabled());
 		options.setModel(getModel());
@@ -273,15 +273,15 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder tools(Set<String> toolNames) {
-			this.options.setTools(toolNames);
+		public ToolCallingChatOptions.Builder toolNames(Set<String> toolNames) {
+			this.options.setToolNames(toolNames);
 			return this;
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder tools(String... toolNames) {
+		public ToolCallingChatOptions.Builder toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setTools(Set.of(toolNames));
+			this.options.setToolNames(Set.of(toolNames));
 			return this;
 		}
 
@@ -322,15 +322,15 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		@Deprecated // Use tools() instead
+		@Deprecated // Use toolNames() instead
 		public ToolCallingChatOptions.Builder functions(Set<String> functions) {
-			return tools(functions);
+			return toolNames(functions);
 		}
 
 		@Override
-		@Deprecated // Use tools() instead
+		@Deprecated // Use toolNames() instead
 		public ToolCallingChatOptions.Builder function(String function) {
-			return tools(function);
+			return toolNames(function);
 		}
 
 		@Override
