@@ -846,41 +846,27 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(Object... toolObjects) {
-			Assert.notNull(toolObjects, "toolObjects cannot be null");
-			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
-
-			List<FunctionCallback> functionCallbacks = new ArrayList<>();
-			List<Object> nonFunctinCallbacks = new ArrayList<>();
-			for (Object toolObject : toolObjects) {
-				if (toolObject instanceof FunctionCallback) {
-					functionCallbacks.add((FunctionCallback) toolObject);
-				}
-				else {
-					nonFunctinCallbacks.add(toolObject);
-				}
-			}
-			this.functionCallbacks.addAll(functionCallbacks);
-			this.functionCallbacks.addAll(Arrays
-				.asList(ToolCallbacks.from(nonFunctinCallbacks.toArray(new Object[nonFunctinCallbacks.size()]))));
+		public ChatClientRequestSpec tools(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+			this.functionCallbacks.addAll(List.of(toolCallbacks));
 			return this;
 		}
 
-		// @Override
-		// public ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks) {
-		// Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		// Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null
-		// elements");
-		// this.functionCallbacks.addAll(Arrays.asList(toolCallbacks));
-		// return this;
-		// }
+		@Override
+		public ChatClientRequestSpec tools(Object... toolObjects) {
+			Assert.notNull(toolObjects, "toolObjects cannot be null");
+			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+			this.functionCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+			return this;
+		}
 
-		@Deprecated
+		@Deprecated // Use tools()
 		public ChatClientRequestSpec functions(String... functionBeanNames) {
 			return tools(functionBeanNames);
 		}
 
-		@Deprecated
+		@Deprecated // Use tools()
 		public ChatClientRequestSpec functions(FunctionCallback... functionCallbacks) {
 			Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
 			Assert.noNullElements(functionCallbacks, "functionCallbacks cannot contain null elements");

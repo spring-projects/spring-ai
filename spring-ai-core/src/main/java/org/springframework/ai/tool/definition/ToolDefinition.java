@@ -17,7 +17,7 @@
 package org.springframework.ai.tool.definition;
 
 import org.springframework.ai.tool.util.ToolUtils;
-import org.springframework.ai.util.json.JsonSchemaGenerator;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.Method;

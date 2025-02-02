@@ -18,7 +18,7 @@ package org.springframework.ai.tool.resolution;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.util.json.SchemaType;
+import org.springframework.ai.util.json.schema.SchemaType;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

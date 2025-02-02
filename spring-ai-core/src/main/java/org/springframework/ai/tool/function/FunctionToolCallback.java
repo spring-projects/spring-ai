@@ -32,7 +32,7 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.util.ToolUtils;
 import org.springframework.ai.util.json.JsonParser;
-import org.springframework.ai.util.json.JsonSchemaGenerator;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.Nullable;

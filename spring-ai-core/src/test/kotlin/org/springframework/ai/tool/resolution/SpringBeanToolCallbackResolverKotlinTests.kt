@@ -18,7 +18,7 @@ package org.springframework.ai.tool.resolution
 
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import org.springframework.ai.util.json.SchemaType
+import org.springframework.ai.util.json.schema.SchemaType
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -73,13 +73,13 @@ class SpringBeanToolCallbackResolverKotlinTests {
 		@Bean(WELCOME_TOOL_NAME)
 		@Description(WELCOME_TOOL_DESCRIPTION)
 		open fun welcome(): Consumer<Void> {
-			return Consumer { input: Void? -> }
+			return Consumer { _: Void? -> }
 		}
 
 		@Bean(WELCOME_USER_TOOL_NAME)
 		@Description(WELCOME_USER_TOOL_DESCRIPTION)
 		open fun welcomeUser(): Consumer<User> {
-			return Consumer { user: User? -> }
+			return Consumer { _: User? -> }
 		}
 
 		@Bean(BOOKS_BY_AUTHOR_TOOL_NAME)

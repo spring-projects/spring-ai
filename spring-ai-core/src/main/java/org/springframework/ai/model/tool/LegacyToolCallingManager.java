@@ -75,7 +75,7 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 
 		List<FunctionCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
-		for (String toolName : chatOptions.getTools()) {
+		for (String toolName : chatOptions.getToolNames()) {
 			FunctionCallback toolCallback = resolveFunctionCallback(toolName);
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
@@ -107,7 +107,7 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 	}
 
 	@Override
-	public List<Message> executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
+	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
 		Assert.notNull(prompt, "prompt cannot be null");
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 
@@ -126,8 +126,10 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 
 		ToolResponseMessage toolMessageResponse = executeToolCall(prompt, assistantMessage, toolContext);
 
-		return buildConversationHistoryAfterToolExecution(prompt.getInstructions(), assistantMessage,
-				toolMessageResponse);
+		List<Message> conversationHistory = buildConversationHistoryAfterToolExecution(prompt.getInstructions(),
+				assistantMessage, toolMessageResponse);
+
+		return ToolExecutionResult.builder().conversationHistory(conversationHistory).returnDirect(false).build();
 	}
 
 	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {

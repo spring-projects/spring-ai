@@ -216,9 +216,9 @@ public interface ChatClient {
 
 		ChatClientRequestSpec tools(String... toolNames);
 
-		ChatClientRequestSpec tools(Object... toolObjects);
+		ChatClientRequestSpec tools(FunctionCallback... toolCallbacks);
 
-		// ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks);
+		ChatClientRequestSpec tools(Object... toolObjects);
 
 		@Deprecated
 		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
@@ -280,6 +280,8 @@ public interface ChatClient {
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
 		Builder defaultTools(String... toolNames);
+
+		Builder defaultTools(FunctionCallback... toolCallbacks);
 
 		Builder defaultTools(Object... toolObjects);
 

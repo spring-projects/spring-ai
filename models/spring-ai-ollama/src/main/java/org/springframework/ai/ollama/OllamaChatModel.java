@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
 import reactor.core.publisher.Flux;
@@ -271,10 +272,19 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response != null
 				&& response.hasToolCalls()) {
-			var toolCallConversation = this.toolCallingManager.executeToolCalls(prompt, response);
-			// Recursively call the call method with the tool call message
-			// conversation that contains the call responses.
-			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
+			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			if (toolExecutionResult.returnDirect()) {
+				// Return tool execution result directly to the client.
+				return ChatResponse.builder()
+					.from(response)
+					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					.build();
+			}
+			else {
+				// Send the tool execution result back to the model.
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+						response);
+			}
 		}
 
 		return response;
@@ -335,10 +345,17 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
 				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response.hasToolCalls()) {
-					var toolCallConversation = this.toolCallingManager.executeToolCalls(prompt, response);
-					// Recursively call the stream method with the tool call message
-					// conversation that contains the call responses.
-					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), response);
+					var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+					if (toolExecutionResult.returnDirect()) {
+						// Return tool execution result directly to the client.
+						return Flux.just(ChatResponse.builder().from(response)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
+					} else {
+						// Send the tool execution result back to the model.
+						return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+								response);
+					}
 				}
 				else {
 					return Flux.just(response);
@@ -379,13 +396,13 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		// Merge tool names and tool callbacks explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
-			requestOptions.setTools(
-					ToolCallingChatOptions.mergeToolNames(runtimeOptions.getTools(), this.defaultOptions.getTools()));
+			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
+					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
 					this.defaultOptions.getToolCallbacks()));
 		}
 		else {
-			requestOptions.setTools(this.defaultOptions.getTools());
+			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 		}
 
