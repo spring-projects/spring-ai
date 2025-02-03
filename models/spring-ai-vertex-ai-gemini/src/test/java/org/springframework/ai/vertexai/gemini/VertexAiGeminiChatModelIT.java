@@ -254,8 +254,8 @@ class VertexAiGeminiChatModelIT {
 		// List.of(new Media(MimeTypeDetector.getMimeType(imageUrl), imageUrl)));
 		// response = client.call(new Prompt(List.of(userMessage)));
 
-		// assertThat(response.getResult().getOutput().getContent()).contains("bananas",
-		// "apple", "basket");
+		// assertThat(response.getResult().getOutput().getContent())..containsAnyOf("bananas",
+		// "apple", "bowl", "basket", "fruit stand");
 
 		// https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/use-cases/intro_multimodal_use_cases.ipynb
 	}

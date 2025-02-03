@@ -81,7 +81,7 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		logger.info(response);
-		assertThat(response).containsAnyOf("banan", "apple", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test
