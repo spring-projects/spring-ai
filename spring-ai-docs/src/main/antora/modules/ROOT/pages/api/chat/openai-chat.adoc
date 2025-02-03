@@ -550,3 +550,46 @@ Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-
 
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] tests show how to use the low-level API to call tool functions.
 Based on the link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling] tutorial.
+
+== API Key Management
+
+Spring AI provides flexible API key management through the `ApiKey` interface and its implementations. The default implementation, `SimpleApiKey`, is suitable for most use cases, but you can also create custom implementations for more complex scenarios.
+
+=== Default Configuration
+
+By default, Spring Boot auto-configuration will create an API key bean using the `spring.ai.openai.api-key` property:
+
+[source,properties]
+----
+spring.ai.openai.api-key=your-api-key-here
+----
+
+=== Custom API Key Configuration
+
+You can provide your own `ApiKey` implementation by creating a bean with the `@OpenAiApiKey` qualifier:
+
+[source,java]
+----
+@Configuration
+class OpenAiConfig {
+    @Bean
+    @OpenAiApiKey
+    public ApiKey customOpenAiKey() {
+        return new ApiKey() {
+            @Override
+            public String getValue() {
+                // Custom logic to retrieve API key
+                return "your-api-key-here";
+            }
+        };
+    }
+}
+----
+
+This is useful when you need to:
+
+* Retrieve the API key from a secure key store
+* Rotate API keys dynamically
+* Implement custom API key selection logic
+
+NOTE: If you provide multiple `ApiKey` beans, make sure to use the `@OpenAiApiKey` qualifier to specify which one should be used for OpenAI operations. Without proper qualification, Spring will fail to start due to ambiguous bean definitions.
