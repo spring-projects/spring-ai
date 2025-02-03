@@ -58,6 +58,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author David Frizelle
+ * @author Alexandros Pappas
  */
 public class OpenAiApi {
 
@@ -913,7 +914,8 @@ public class OpenAiApi {
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
-			@JsonProperty("user") String user) {
+			@JsonProperty("user") String user,
+			@JsonProperty("reasoning_effort") String reasoningEffort) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -925,7 +927,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -939,7 +941,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -954,7 +956,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -970,7 +972,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null);
+					tools, toolChoice, null, null, null);
 		}
 
 		/**
@@ -983,7 +985,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -996,7 +998,7 @@ public class OpenAiApi {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user);
+			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort);
 		}
 
 		/**

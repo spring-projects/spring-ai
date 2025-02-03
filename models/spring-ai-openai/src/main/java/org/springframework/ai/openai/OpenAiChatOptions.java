@@ -182,6 +182,15 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 	 * Developer-defined tags and values used for filtering completions in the <a href="https://platform.openai.com/chat-completions">dashboard</a>.
 	 */
 	private @JsonProperty("metadata") Map<String, String> metadata;
+
+	/**
+	 * Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high.
+	 * Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
+	 * Optional. Defaults to medium.
+	 * Only for 'o1' models.
+	 */
+	private @JsonProperty("reasoning_effort") String reasoningEffort;
+
 	/**
 	 * OpenAI Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
@@ -256,6 +265,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 			.toolContext(fromOptions.getToolContext())
 			.store(fromOptions.getStore())
 			.metadata(fromOptions.getMetadata())
+			.reasoningEffort(fromOptions.getReasoningEffort())
 			.build();
 	}
 
@@ -520,6 +530,14 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 		this.metadata = metadata;
 	}
 
+	public String getReasoningEffort() {
+		return this.reasoningEffort;
+	}
+
+	public void setReasoningEffort(String reasoningEffort) {
+		this.reasoningEffort = reasoningEffort;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -532,7 +550,7 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.functionCallbacks, this.functions, this.httpHeaders,
 				this.proxyToolCalls, this.toolContext, this.outputModalities, this.outputAudio, this.store,
-				this.metadata);
+				this.metadata, this.reasoningEffort);
 	}
 
 	@Override
@@ -563,7 +581,8 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
 				&& Objects.equals(this.outputModalities, other.outputModalities)
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
-				&& Objects.equals(this.metadata, other.metadata);
+				&& Objects.equals(this.metadata, other.metadata)
+				&& Objects.equals(this.reasoningEffort, other.reasoningEffort);
 	}
 
 	@Override
@@ -737,6 +756,11 @@ public class OpenAiChatOptions implements FunctionCallingOptions {
 
 		public Builder metadata(Map<String, String> metadata) {
 			this.options.metadata = metadata;
+			return this;
+		}
+
+		public Builder reasoningEffort(String reasoningEffort) {
+			this.options.reasoningEffort = reasoningEffort;
 			return this;
 		}
 
