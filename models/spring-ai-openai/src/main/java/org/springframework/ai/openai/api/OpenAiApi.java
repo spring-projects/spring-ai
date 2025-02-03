@@ -31,8 +31,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
@@ -62,6 +64,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class OpenAiApi {
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public static final OpenAiApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.GPT_4_O;
 
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.TEXT_EMBEDDING_ADA_002.getValue();
@@ -81,7 +87,9 @@ public class OpenAiApi {
 	/**
 	 * Create a new chat completion api with base URL set to https://api.openai.com
 	 * @param apiKey OpenAI apiKey.
+	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String apiKey) {
 		this(OpenAiApiConstants.DEFAULT_BASE_URL, apiKey);
 	}
@@ -90,7 +98,9 @@ public class OpenAiApi {
 	 * Create a new chat completion api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
+	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String baseUrl, String apiKey) {
 		this(baseUrl, apiKey, RestClient.builder(), WebClient.builder());
 	}
@@ -101,7 +111,9 @@ public class OpenAiApi {
 	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
+	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder) {
 		this(baseUrl, apiKey, restClientBuilder, webClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
@@ -114,7 +126,9 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
+	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		this(baseUrl, apiKey, "/v1/chat/completions", "/v1/embeddings", restClientBuilder, webClientBuilder,
@@ -130,7 +144,9 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
+	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String baseUrl, String apiKey, String completionsPath, String embeddingsPath,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
@@ -149,8 +165,30 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
+	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
+	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers, String completionsPath,
+			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, new SimpleApiKey(apiKey), headers, completionsPath, embeddingsPath, restClientBuilder,
+				webClientBuilder, responseErrorHandler);
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param embeddingsPath the path to the embeddings endpoint.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
+	 */
+	@Deprecated(since = "1.0.0.M6")
+	public OpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -162,7 +200,7 @@ public class OpenAiApi {
 		this.embeddingsPath = embeddingsPath;
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			h.setBearerAuth(apiKey);
+			h.setBearerAuth(apiKey.getValue());
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
@@ -1605,6 +1643,80 @@ public class OpenAiApi {
 			@JsonProperty("data") List<T> data,
 			@JsonProperty("model") String model,
 			@JsonProperty("usage") Usage usage) { // @formatter:on
+	}
+
+	public static class Builder {
+
+		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		private String completionsPath = "/v1/chat/completions";
+
+		private String embeddingsPath = "/v1/embeddings";
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			Assert.notNull(headers, "headers cannot be null");
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder completionsPath(String completionsPath) {
+			Assert.hasText(completionsPath, "completionsPath cannot be null or empty");
+			this.completionsPath = completionsPath;
+			return this;
+		}
+
+		public Builder embeddingsPath(String embeddingsPath) {
+			Assert.hasText(embeddingsPath, "embeddingsPath cannot be null or empty");
+			this.embeddingsPath = embeddingsPath;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public OpenAiApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new OpenAiApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath, this.embeddingsPath,
+					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+		}
+
 	}
 
 }
