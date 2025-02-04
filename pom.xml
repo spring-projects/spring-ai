@@ -177,7 +177,7 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.3.6</spring-boot.version>
+		<spring-boot.version>3.4.2</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.13</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
@@ -207,7 +207,6 @@
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<coherence.version>24.09</coherence.version>
 		<milvus.version>2.3.5</milvus.version>
-		<oracle.free.version>1.19.8</oracle.free.version>
 		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
 		<pinecone.version>0.8.0</pinecone.version>
 		<fastjson.version>2.0.46</fastjson.version>
@@ -223,40 +222,15 @@
 		<mariadb.version>3.5.1</mariadb.version>
 		<commonmark.version>0.22.0</commonmark.version>
 
-		<!-- also managed by boot bom -->
-		<oracle.version>23.4.0.24.05</oracle.version>
-		<postgresql.version>42.7.2</postgresql.version>
-		<cassandra.java-driver.version>4.18.1</cassandra.java-driver.version>
-		<elasticsearch-java.version>8.13.3</elasticsearch-java.version>
-		<spring-retry.version>2.0.9</spring-retry.version>
-		<jackson.version>2.16.1</jackson.version>
-		<!-- not sure if jsonSchema is also managed by boot bom -->
-		<jackson-module-jsonSchema.version>2.17.2</jackson-module-jsonSchema.version>
-		<!-- check on kotlin version as managed by boot bom -->
-		<kotlin.version>1.9.25</kotlin.version>
-
-
-		<!-- testing dependencies also managed by boot bom-->
-		<httpclient5.version>5.3.1</httpclient5.version>
-		<testcontainers.version>1.20.1</testcontainers.version>
-
 
 		<!-- testing dependencies -->
-		<testcontainers.opensearch.version>2.0.1</testcontainers.opensearch.version>
 		<okhttp3.version>4.12.0</okhttp3.version>
-
-		<!-- documentation dependencies -->
-		<io.spring.maven.antora-version>0.0.4</io.spring.maven.antora-version>
-		<org.maven.antora-version>1.0.0-alpha.4</org.maven.antora-version>
-		<asciidoctorj-pdf.version>1.6.2</asciidoctorj-pdf.version>		<!-- FIXME build failure with
-		version 2.3.9 -->
-		<asciidoctorj-epub.version>1.5.1</asciidoctorj-epub.version>
-		<spring-asciidoctor-backends.version>0.0.6</spring-asciidoctor-backends.version>
 
 		<!-- MCP-->
 		<mcp.sdk.version>0.7.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
+		<antlr.version>4.13.1</antlr.version>
 		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
@@ -268,7 +242,6 @@
 		<asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
 		<maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
 		<maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
-		<!-- <maven-site-plugin.version>3.12.1</maven-site-plugin.version> -->
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
 		<maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>

@@ -55,6 +55,14 @@ All the Amazon Bedrock Chat models are removed except the Embedding models for C
 
 NOTE: Refer to xref:api/chat/bedrock-converse.adoc[Bedrock Converse] documentation for using the chat models.
 
+=== Changes to use Spring Boot 3.4.2 for dependency management
+
+Spring AI updates to use Spring Boot 3.4.2 for the dependency management. You can refer https://github.com/spring-projects/spring-boot/blob/v3.4.2/spring-boot-project/spring-boot-dependencies/build.gradle[here] for the dependencies which Spring Boot 3.4.2
+
+==== Required Actions
+
+* If you are upgrading to Spring Boot 3.4.2, please make sure to refer to https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.4-Release-Notes#upgrading-from-spring-boot-33[this] documentation for the changes required to configure the REST Client. Notably, if you don’t have an HTTP client library on the classpath, this will likely result in the use of `JdkClientHttpRequestFactory` where `SimpleClientHttpRequestFactory` would have been used previously. To switch to use `SimpleClientHttpRequestFactory`, you need to set `spring.http.client.factory=simple`.
+* If you are using a different version of Spring Boot (say Spring Boot 3.3.x) and need a specific version of a dependency, you can override it in your build configuration.
 
 
 == Upgrading to 1.0.0.M5
