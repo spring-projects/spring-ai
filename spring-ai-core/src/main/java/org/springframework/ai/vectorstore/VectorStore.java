@@ -59,10 +59,8 @@ public interface VectorStore extends DocumentWriter {
 	/**
 	 * Deletes documents from the vector store.
 	 * @param idList list of document ids for which documents will be removed.
-	 * @return Returns true if the documents were successfully deleted.
 	 */
-	@Nullable
-	Optional<Boolean> delete(List<String> idList);
+	void delete(List<String> idList);
 
 	/**
 	 * Deletes documents from the vector store based on filter criteria.

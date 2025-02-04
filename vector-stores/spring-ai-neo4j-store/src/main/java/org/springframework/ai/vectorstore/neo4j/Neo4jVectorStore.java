@@ -221,20 +221,19 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 
 		try (var session = this.driver.session(this.sessionConfig)) {
 
 			// Those queries with internal, cypher based transaction management cannot be
 			// run with executeWrite
-			var summary = session
+			session
 				.run("""
 						MATCH (n:%s) WHERE n.%s IN $ids
 						CALL { WITH n DETACH DELETE n } IN TRANSACTIONS OF $transactionSize ROWS
 						""".formatted(this.label, this.idProperty),
 						Map.of("ids", idList, "transactionSize", DEFAULT_TRANSACTION_SIZE))
 				.consume();
-			return Optional.of(idList.size() == summary.counters().nodesDeleted());
 		}
 	}
 

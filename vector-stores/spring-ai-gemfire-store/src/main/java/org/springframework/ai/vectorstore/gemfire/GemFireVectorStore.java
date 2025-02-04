@@ -231,7 +231,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		try {
 			this.client.method(HttpMethod.DELETE)
 				.uri("/" + this.indexName + EMBEDDINGS)
@@ -242,9 +242,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		}
 		catch (Exception e) {
 			logger.warn("Error removing embedding: {}", e.getMessage(), e);
-			return Optional.of(false);
 		}
-		return Optional.of(true);
 	}
 
 	@Override

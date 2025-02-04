@@ -167,7 +167,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
 		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
 
@@ -180,12 +180,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			if (deletedDocs < idList.size()) {
 				logger.warn("Failed to delete all documents");
 			}
-
-			return Optional.of(deletedDocs > 0);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents", e);
-			return Optional.of(Boolean.FALSE);
 		}
 	}
 

@@ -158,10 +158,9 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(@NonNull List<String> idList) {
+	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
-		int status = this.chromaApi.deleteEmbeddings(this.collectionId, new DeleteEmbeddingsRequest(idList));
-		return Optional.of(status == 200);
+		this.chromaApi.deleteEmbeddings(this.collectionId, new DeleteEmbeddingsRequest(idList));
 	}
 
 	@Override

@@ -198,20 +198,16 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	/**
 	 * Deletes a list of documents by their IDs.
 	 * @param documentIds The list of document IDs to be deleted.
-	 * @return An optional boolean indicating the deletion status.
 	 */
 	@Override
-	public Optional<Boolean> doDelete(List<String> documentIds) {
+	public void doDelete(List<String> documentIds) {
 		try {
 			List<PointId> ids = documentIds.stream()
 				.map(id -> io.qdrant.client.PointIdFactory.id(UUID.fromString(id)))
 				.toList();
-			var result = this.qdrantClient.deleteAsync(this.collectionName, ids)
-				.get()
-				.getStatus() == UpdateStatus.Completed;
-			return Optional.of(result);
+			this.qdrantClient.deleteAsync(this.collectionName, ids).get();
 		}
-		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
+		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}

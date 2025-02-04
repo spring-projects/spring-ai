@@ -305,7 +305,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		CompletableFuture[] futures = new CompletableFuture[idList.size()];
 		int i = 0;
 		for (String id : idList) {
@@ -314,7 +314,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			futures[i++] = this.session.executeAsync(s).toCompletableFuture();
 		}
 		CompletableFuture.allOf(futures).join();
-		return Optional.of(Boolean.TRUE);
 	}
 
 	@Override
@@ -339,13 +338,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			if (!matchingDocs.isEmpty()) {
 				// Then delete those documents by ID
 				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
-
-				Optional<Boolean> result = delete(idsToDelete);
-
-				if (result.isPresent() && !result.get()) {
-					throw new IllegalStateException("Failed to delete some documents");
-				}
-
+				delete(idsToDelete);
 				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}
 		}

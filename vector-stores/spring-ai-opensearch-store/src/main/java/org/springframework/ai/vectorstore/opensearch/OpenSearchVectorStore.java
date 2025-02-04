@@ -217,12 +217,11 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
 		}
-		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
 
 	private BulkResponse bulkRequest(BulkRequest bulkRequest) {

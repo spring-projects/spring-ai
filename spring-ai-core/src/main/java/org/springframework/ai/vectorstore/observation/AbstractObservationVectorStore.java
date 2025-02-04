@@ -87,14 +87,13 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
-	@Nullable
-	public Optional<Boolean> delete(List<String> deleteDocIds) {
+	public void delete(List<String> deleteDocIds) {
 
 		VectorStoreObservationContext observationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.DELETE.value())
 			.build();
 
-		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
+		VectorStoreObservationDocumentation.AI_VECTOR_STORE
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> this.doDelete(deleteDocIds));
@@ -140,9 +139,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	/**
 	 * Perform the actual delete operation.
 	 * @param idList the list of document IDs to delete
-	 * @return true if the documents were successfully deleted
 	 */
-	public abstract Optional<Boolean> doDelete(List<String> idList);
+	public abstract void doDelete(List<String> idList);
 
 	/**
 	 * Template method for concrete implementations to provide filter-based deletion

@@ -318,15 +318,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		int updateCount = 0;
 		for (String id : idList) {
 			int count = this.jdbcTemplate.update("DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?",
 					UUID.fromString(id));
 			updateCount = updateCount + count;
 		}
-
-		return Optional.of(updateCount == idList.size());
 	}
 
 	@Override

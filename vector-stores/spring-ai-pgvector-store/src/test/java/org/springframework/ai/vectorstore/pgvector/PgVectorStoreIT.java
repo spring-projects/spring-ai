@@ -449,9 +449,7 @@ public class PgVectorStoreIT {
 				assertThat(results).hasSize(3);
 
 				// Delete two documents by ID
-				Optional<Boolean> deleteResult = vectorStore.delete(List.of(bgDocument.getId(), nlDocument.getId()));
-
-				assertThat(deleteResult).isPresent().contains(true);
+				vectorStore.delete(List.of(bgDocument.getId(), nlDocument.getId()));
 
 				// Verify deletion
 				results = vectorStore.similaritySearch(searchRequest);
