@@ -280,7 +280,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 			for (String id : idList) {
 				pipeline.jsonDel(key(id));
@@ -291,9 +291,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				if (logger.isErrorEnabled()) {
 					logger.error("Could not delete document: {}", errResponse.get());
 				}
-				return Optional.of(false);
 			}
-			return Optional.of(true);
 		}
 	}
 

@@ -126,10 +126,9 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		int deleteCount = this.repository.deleteEmbeddingsById(this.tableName, idList);
 		logger.info("{} embeddings deleted", deleteCount);
-		return Optional.of(deleteCount == idList.size());
 	}
 
 	public int purgeEmbeddings() {

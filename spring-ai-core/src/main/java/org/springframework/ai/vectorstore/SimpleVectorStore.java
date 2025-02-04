@@ -106,11 +106,10 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		for (String id : idList) {
 			this.store.remove(id);
 		}
-		return Optional.of(true);
 	}
 
 	@Override

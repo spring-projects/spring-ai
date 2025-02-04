@@ -209,7 +209,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
@@ -219,7 +219,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
-		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
 
 	@Override

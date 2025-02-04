@@ -268,13 +268,9 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		Query query = new Query(org.springframework.data.mongodb.core.query.Criteria.where(ID_FIELD_NAME).in(idList));
-
-		var deleteRes = this.mongoTemplate.remove(query, this.collectionName);
-		long deleteCount = deleteRes.getDeletedCount();
-
-		return Optional.of(deleteCount == idList.size());
+		this.mongoTemplate.remove(query, this.collectionName);
 	}
 
 	@Override

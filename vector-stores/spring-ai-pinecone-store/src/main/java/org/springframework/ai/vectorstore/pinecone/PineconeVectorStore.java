@@ -224,9 +224,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * Deletes a list of documents by their IDs based on the namespace.
 	 * @param documentIds The list of document IDs to be deleted.
 	 * @param namespace The namespace of the document IDs.
-	 * @return An optional boolean indicating the deletion status.
 	 */
-	public Optional<Boolean> delete(List<String> documentIds, String namespace) {
+	public void delete(List<String> documentIds, String namespace) {
 
 		DeleteRequest deleteRequest = DeleteRequest.newBuilder()
 			.setNamespace(namespace) // ignored for free tier.
@@ -235,19 +234,15 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			.build();
 
 		this.pineconeConnection.getBlockingStub().delete(deleteRequest);
-
-		// The Pinecone delete API does not provide deletion status info.
-		return Optional.of(true);
 	}
 
 	/**
 	 * Deletes a list of documents by their IDs.
 	 * @param documentIds The list of document IDs to be deleted.
-	 * @return An optional boolean indicating the deletion status.
 	 */
 	@Override
-	public Optional<Boolean> doDelete(List<String> documentIds) {
-		return delete(documentIds, this.pineconeNamespace);
+	public void doDelete(List<String> documentIds) {
+		delete(documentIds, this.pineconeNamespace);
 	}
 
 	public List<Document> similaritySearch(SearchRequest request, String namespace) {
@@ -309,13 +304,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			if (!matchingDocs.isEmpty()) {
 				// Then delete those documents by ID
 				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
-
-				Optional<Boolean> result = delete(idsToDelete, this.pineconeNamespace);
-
-				if (result.isPresent() && !result.get()) {
-					throw new IllegalStateException("Failed to delete some documents");
-				}
-
+				delete(idsToDelete, this.pineconeNamespace);
 				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}
 		}

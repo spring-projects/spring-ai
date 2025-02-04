@@ -88,8 +88,7 @@ public class ChromaVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 			// Remove all documents from the store
-			assertThat(vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList()))
-				.isEqualTo(Optional.of(Boolean.TRUE));
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			List<Document> results2 = vectorStore
 				.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
@@ -118,7 +117,7 @@ public class ChromaVectorStoreIT {
 			assertThat(resultDoc.getText()).isEqualTo("The sky is blue because of Rayleigh scattering.");
 
 			// Remove all documents from the store
-			assertThat(vectorStore.delete(List.of(document.getId()))).isEqualTo(Optional.of(Boolean.TRUE));
+			vectorStore.delete(List.of(document.getId()));
 
 			results = vectorStore.similaritySearch(SearchRequest.builder().query("Why is the sky blue?").build());
 			assertThat(results).hasSize(0);

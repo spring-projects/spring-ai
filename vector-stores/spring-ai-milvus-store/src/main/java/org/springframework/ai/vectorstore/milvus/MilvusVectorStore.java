@@ -274,7 +274,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 
 		String deleteExpression = String.format("%s in [%s]", this.idFieldName,
@@ -290,8 +290,6 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		if (deleteCount != idList.size()) {
 			logger.warn(String.format("Deleted only %s entries from requested %s ", deleteCount, idList.size()));
 		}
-
-		return Optional.of(status.getStatus() == Status.Success.getCode());
 	}
 
 	@Override

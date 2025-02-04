@@ -318,15 +318,13 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		int updateCount = 0;
 		for (String id : idList) {
 			int count = this.jdbcTemplate.update(
 					String.format("DELETE FROM %s WHERE %s = ?", getFullyQualifiedTableName(), this.idFieldName), id);
 			updateCount = updateCount + count;
 		}
-
-		return Optional.of(updateCount == idList.size());
 	}
 
 	@Override

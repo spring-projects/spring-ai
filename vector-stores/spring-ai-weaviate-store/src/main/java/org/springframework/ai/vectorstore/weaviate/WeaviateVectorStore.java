@@ -273,7 +273,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> documentIds) {
+	public void doDelete(List<String> documentIds) {
 
 		Result<BatchDeleteResponse> result = this.weaviateClient.batch()
 			.objectsBatchDeleter()
@@ -294,8 +294,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 				.collect(Collectors.joining(","));
 			throw new RuntimeException("Failed to delete documents because: \n" + errorMessages);
 		}
-
-		return Optional.of(!result.hasErrors());
 	}
 
 	@Override
@@ -317,11 +315,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			if (!matchingDocs.isEmpty()) {
 				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
 
-				Optional<Boolean> result = delete(idsToDelete);
-
-				if (result.isPresent() && !result.get()) {
-					throw new IllegalStateException("Failed to delete some documents");
-				}
+				delete(idsToDelete);
 
 				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
 			}

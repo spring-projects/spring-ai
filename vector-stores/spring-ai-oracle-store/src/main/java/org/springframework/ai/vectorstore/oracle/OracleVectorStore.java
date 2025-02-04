@@ -286,7 +286,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(final List<String> idList) {
+	public void doDelete(final List<String> idList) {
 		final String sql = String.format("delete from %s where id=?", this.tableName);
 		final int[] argTypes = { Types.VARCHAR };
 
@@ -297,19 +297,15 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 		final int[] deleteCounts = this.jdbcTemplate.batchUpdate(sql, batchArgs, argTypes);
 
-		int deleteCount = 0;
 		for (int detailedResult : deleteCounts) {
 			switch (detailedResult) {
 				case Statement.EXECUTE_FAILED:
 					break;
 				case 1:
 				case Statement.SUCCESS_NO_INFO:
-					deleteCount++;
 					break;
 			}
 		}
-
-		return Optional.of(deleteCount == idList.size());
 	}
 
 	@Override
