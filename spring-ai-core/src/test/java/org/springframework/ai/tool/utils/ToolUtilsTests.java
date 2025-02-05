@@ -182,7 +182,7 @@ class ToolUtilsTests {
 	public static class CustomToolCallResultConverter implements ToolCallResultConverter {
 
 		@Override
-		public String apply(Object result, Type returnType) {
+		public String convert(Object result, Type returnType) {
 			return returnType == null ? "null" : returnType.getTypeName();
 		}
 
@@ -195,7 +195,7 @@ class ToolUtilsTests {
 		}
 
 		@Override
-		public String apply(Object result, Type returnType) {
+		public String convert(Object result, Type returnType) {
 			return returnType == null ? "null" : returnType.getTypeName();
 		}
 

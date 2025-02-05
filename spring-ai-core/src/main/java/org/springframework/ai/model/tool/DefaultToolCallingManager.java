@@ -30,8 +30,8 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.tool.execution.DefaultToolCallExceptionConverter;
-import org.springframework.ai.tool.execution.ToolCallExceptionConverter;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
@@ -62,8 +62,8 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	private static final ToolCallbackResolver DEFAULT_TOOL_CALLBACK_RESOLVER
 			= new DelegatingToolCallbackResolver(List.of());
 
-	private static final ToolCallExceptionConverter DEFAULT_TOOL_CALL_EXCEPTION_CONVERTER
-			= DefaultToolCallExceptionConverter.builder().build();
+	private static final ToolExecutionExceptionProcessor DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR
+			= DefaultToolExecutionExceptionProcessor.builder().build();
 
 	// @formatter:on
 
@@ -71,17 +71,17 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 	private final ToolCallbackResolver toolCallbackResolver;
 
-	private final ToolCallExceptionConverter toolCallExceptionConverter;
+	private final ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
 
 	public DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
-			ToolCallExceptionConverter toolCallExceptionConverter) {
+			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		Assert.notNull(toolCallbackResolver, "toolCallbackResolver cannot be null");
-		Assert.notNull(toolCallExceptionConverter, "toolCallExceptionConverter cannot be null");
+		Assert.notNull(toolExecutionExceptionProcessor, "toolCallExceptionConverter cannot be null");
 
 		this.observationRegistry = observationRegistry;
 		this.toolCallbackResolver = toolCallbackResolver;
-		this.toolCallExceptionConverter = toolCallExceptionConverter;
+		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 	}
 
 	@Override
@@ -214,7 +214,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 				toolResult = toolCallback.call(toolInputArguments, toolContext);
 			}
 			catch (ToolExecutionException ex) {
-				toolResult = toolCallExceptionConverter.convert(ex);
+				toolResult = toolExecutionExceptionProcessor.process(ex);
 			}
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
@@ -244,7 +244,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 		private ToolCallbackResolver toolCallbackResolver = DEFAULT_TOOL_CALLBACK_RESOLVER;
 
-		private ToolCallExceptionConverter toolCallExceptionConverter = DEFAULT_TOOL_CALL_EXCEPTION_CONVERTER;
+		private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor = DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR;
 
 		private Builder() {
 		}
@@ -259,13 +259,15 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			return this;
 		}
 
-		public Builder toolCallExceptionConverter(ToolCallExceptionConverter toolCallExceptionConverter) {
-			this.toolCallExceptionConverter = toolCallExceptionConverter;
+		public Builder toolExecutionExceptionProcessor(
+				ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
+			this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 			return this;
 		}
 
 		public DefaultToolCallingManager build() {
-			return new DefaultToolCallingManager(observationRegistry, toolCallbackResolver, toolCallExceptionConverter);
+			return new DefaultToolCallingManager(observationRegistry, toolCallbackResolver,
+					toolExecutionExceptionProcessor);
 		}
 
 	}

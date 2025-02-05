@@ -19,8 +19,8 @@ package org.springframework.ai.autoconfigure.chat.model;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.execution.DefaultToolCallExceptionConverter;
-import org.springframework.ai.tool.execution.ToolCallExceptionConverter;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -42,8 +42,8 @@ class ToolCallingAutoConfigurationTests {
 				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
 				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
 
-				var toolCallExceptionConverter = context.getBean(ToolCallExceptionConverter.class);
-				assertThat(toolCallExceptionConverter).isInstanceOf(DefaultToolCallExceptionConverter.class);
+				var toolExecutionExceptionProcessor = context.getBean(ToolExecutionExceptionProcessor.class);
+				assertThat(toolExecutionExceptionProcessor).isInstanceOf(DefaultToolExecutionExceptionProcessor.class);
 
 				var toolCallingManager = context.getBean(ToolCallingManager.class);
 				assertThat(toolCallingManager).isInstanceOf(DefaultToolCallingManager.class);

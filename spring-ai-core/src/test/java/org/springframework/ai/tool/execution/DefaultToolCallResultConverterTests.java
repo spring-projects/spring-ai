@@ -18,32 +18,32 @@ class DefaultToolCallResultConverterTests {
 
 	@Test
 	void convertWithNullReturnTypeShouldReturn() {
-		String result = converter.apply(null, null);
+		String result = converter.convert(null, null);
 		assertThat(result).isEqualTo("null");
 	}
 
 	@Test
 	void convertVoidReturnTypeShouldReturnDone() {
-		String result = converter.apply(null, void.class);
+		String result = converter.convert(null, void.class);
 		assertThat(result).isEqualTo("Done");
 	}
 
 	@Test
 	void convertStringReturnTypeShouldReturnJson() {
-		String result = converter.apply("test", String.class);
+		String result = converter.convert("test", String.class);
 		assertThat(result).isEqualTo("\"test\"");
 	}
 
 	@Test
 	void convertNullReturnValueShouldReturnNullJson() {
-		String result = converter.apply(null, String.class);
+		String result = converter.convert(null, String.class);
 		assertThat(result).isEqualTo("null");
 	}
 
 	@Test
 	void convertObjectReturnTypeShouldReturnJson() {
 		TestObject testObject = new TestObject("test", 42);
-		String result = converter.apply(testObject, TestObject.class);
+		String result = converter.convert(testObject, TestObject.class);
 		assertThat(result).containsIgnoringWhitespaces("""
 				"name": "test"
 				""").containsIgnoringWhitespaces("""
@@ -54,7 +54,7 @@ class DefaultToolCallResultConverterTests {
 	@Test
 	void convertCollectionReturnTypeShouldReturnJson() {
 		List<String> testList = List.of("one", "two", "three");
-		String result = converter.apply(testList, List.class);
+		String result = converter.convert(testList, List.class);
 		assertThat(result).isEqualTo("""
 				["one","two","three"]
 				""".trim());
@@ -63,7 +63,7 @@ class DefaultToolCallResultConverterTests {
 	@Test
 	void convertMapReturnTypeShouldReturnJson() {
 		Map<String, Integer> testMap = Map.of("one", 1, "two", 2);
-		String result = converter.apply(testMap, Map.class);
+		String result = converter.convert(testMap, Map.class);
 		assertThat(result).containsIgnoringWhitespaces("""
 				"one": 1
 				""").containsIgnoringWhitespaces("""

@@ -16,7 +16,9 @@
 
 package org.springframework.ai.util.json;
 
+import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -168,7 +170,8 @@ class JsonSchemaGeneratorTests {
 				    "type": "object",
 				    "properties": {
 				        "username": {
-				            "type": "string"
+				            "type": "string",
+				            "description": "The username of the customer"
 				        },
 				        "password": {
 				            "type": "string"
@@ -296,7 +299,8 @@ class JsonSchemaGeneratorTests {
 									"description": "Even more special name"
 							  	}
 				            },
-				            "required": [ "id", "name" ]
+				            "required": [ "id", "name" ],
+				            "description" : "Much more data"
 				        }
 				    },
 				    "required": [ "items", "data", "moreData" ],
@@ -640,7 +644,9 @@ class JsonSchemaGeneratorTests {
 				@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String password) {
 		}
 
-		public void jacksonMethod(@JsonProperty String username, @JsonProperty(required = true) String password) {
+		public void jacksonMethod(
+				@JsonProperty @JsonPropertyDescription("The username of the customer") String username,
+				@JsonProperty(required = true) String password) {
 		}
 
 		public void nullableMethod(@Nullable String username, String password) {
@@ -657,6 +663,7 @@ class JsonSchemaGeneratorTests {
 	record TestData(int id, @ToolParam(description = "The special name") String name) {
 	}
 
+	@JsonClassDescription("Much more data")
 	record MoreTestData(int id, @Schema(description = "Even more special name") String name) {
 	}
 

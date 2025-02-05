@@ -12,6 +12,8 @@ Even though we typically refer to _tool calling_ as a model capability, it is ac
 
 Spring AI provides convenient APIs to define tools, resolve tool call requests from a model, and execute the tool calls. The following sections provide an overview of the tool calling capabilities in Spring AI.
 
+NOTE: Check the xref:api/chat/comparison.adoc[Chat Model Comparisons] to see which AI models support tool calling invocation.
+
 == Quick Start
 
 Let's see how to start using tool calling in Spring AI. We'll implement two simple tools: one for information retrieval and one for taking action. The information retrieval tool will be used to get the current date and time in the user's time zone. The action tool will be used to set an alarm for a specified time.
@@ -82,7 +84,6 @@ We'll add the new tool to the same `DateTimeTools` class as before. The new tool
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 class DateTimeTools {
@@ -101,7 +102,7 @@ class DateTimeTools {
 }
 ----
 
-Next, let's make both tools available to the model. We'll use the `ChatClient` to interact with the model. We'll provide the tools to the model by passing an instance of `DateTimeTools` via the `tools()` method. When we ask to set up an alarm 10 minutes from now, the model will first need to know the current date and time. Then, it will use the current date and time to calculate the alarm time. Finally, it will use the alarm time to set up the alarm. Internally, the `ChatClient` will handle any tool call request from the model and send back to it any tool call execution result, so that the model can generate the final response.
+Next, let's make both tools available to the model. We'll use the `ChatClient` to interact with the model. We'll provide the tools to the model by passing an instance of `DateTimeTools` via the `tools()` method. When we ask to set up an alarm 10 minutes from now, the model will first need to know the current date and time. Then, it will use the current date and time to calculate the alarm time. Finally, it will use the alarm tool to set up the alarm. Internally, the `ChatClient` will handle any tool call request from the model and send back to it any tool call execution result, so that the model can generate the final response.
 
 [source,java]
 ----
@@ -131,35 +132,26 @@ image::tools/tool-calling-01.jpg[The main sequence of actions for tool calling, 
 5. The application sends the tool call result back to the model.
 6. The model generates the final response using the tool call result as additional context.
 
-Tools are the building blocks of tool calling and they are modeled by the `ToolCallback` interface. Spring AI provides built-in support for specifying `ToolCallback`s from methods and functions, but you can always define your own `ToolCallback` implementations to support more use cases.
+Tools are the building blocks of tool calling and they are modeled by the `ToolCallback` interface. Spring AI provides built-in support for specifying `ToolCallback`(s) from methods and functions, but you can always define your own `ToolCallback` implementations to support more use cases.
 
 `ChatModel` implementations transparently dispatch tool call requests to the corresponding `ToolCallback` implementations and will send the tool call results back to the model, which will ultimately generate the final response. They do so using the `ToolCallingManager` interface, which is responsible for managing the tool execution lifecycle.
 
 Both `ChatClient` and `ChatModel` accept a list of `ToolCallback` objects to make the tools available to the model and the `ToolCallingManager` that will eventually execute them. 
 
-Besides passing the `ToolCallback` objects directly, you can also pass a list of tool names, that will be resolved using the `ToolCallbackResolver` interface.
+Besides passing the `ToolCallback` objects directly, you can also pass a list of tool names, that will be resolved dynamically using the `ToolCallbackResolver` interface.
 
 The following sections will go into more details about all these concepts and APIs, including how to customize and extend them to support more use cases.
 
-== Tool Specification
+== Methods as Tools
 
-In Spring AI, tools are modeled via the `ToolCallback` interface, which provides a way to define the tool name, description, input schema, and the actual tool execution logic.
+Spring AI provides built-in support for specifying tools (i.e. `ToolCallback`(s)) from methods in two ways:
 
-This section describes how to:
+- declaratively, using the `@Tool` annotation
+- programmatically, using the low-level `MethodToolCallback` implementation.
 
-- build `ToolCallback`(s) from methods and functions;
-- define the schema for the tool input parameters;
-- provide additional context to tools;
-- return the tool call result directly.
+=== Declarative Specification: `@Tool`
 
-=== Methods as Tools
-
-Spring AI provides built-in support for specifying tools (i.e. `ToolCallback`(s)) from methods, either declaratively using the `@Tool` annotation or programmatically using the low-level `MethodToolCallback` implementation.
-
-==== Declarative Specification: `@Tool`
-
-You can turn a method into a tool by annotating it with `@Tool`. The annotation allows you to provide a description for the tool, which can be used by the model to understand when and how to call the tool. If you don't provide a description, the method name will be used as the tool description.
-However, it's strongly recommended to provide a detailed description because that's paramount for the model to understand the tool's purpose and how to use it. Failing in providing a good description can lead to the model not using the tool when it should or using it incorrectly.
+You can turn a method into a tool by annotating it with `@Tool`.
 
 [source,java]
 ----
@@ -173,18 +165,53 @@ class DateTimeTools {
 }
 ----
 
+The `@Tool` annotation allows you to provide key information about the tool:
+
+- `name`: The name of the tool. If not provided, the method name will be used. AI models use this name to identify the tool when calling it. Therefore, it's not allowed to have two tools with the same name in the same class. The name must be unique across all the tools available to the model for a specific chat request.
+- `description`: The description for the tool, which can be used by the model to understand when and how to call the tool. If not provided, the method name will be used as the tool description. However, it's strongly recommended to provide a detailed description because that's paramount for the model to understand the tool's purpose and how to use it. Failing in providing a good description can lead to the model not using the tool when it should or using it incorrectly.
+- `returnDirect`: Whether the tool result should be returned directly to the client or passed back to the model. See xref:_return_direct[] for more details.
+- `resultConverter`: The `ToolCallResultConverter` implementation to use for converting the result of a tool call to a `String object` to send back to the AI model. See xref:_result_conversion[] for more details.
+
 The method can be either static or instance, and it can have any visibility (public, protected, package-private, or private). The class that contains the method can be either a top-level class or a nested class, and it can also have any visibility (as long as it's accessible where you're planning to instantiate it).
 
-You can define any number of arguments for the method (including no argument) with any type (primitives, POJOs, enums, lists, arrays, maps, and so on). Similarly, the method can return any type, including `void`. If the method returns a value, the return type must be a serializable type, as the result will be serialized and sent back to the model. 
+NOTE: Spring AI provides built-in support for AOT compilation of the `@Tool`-annotated methods as long as the class containing the methods is a Spring bean (e.g. `@Component`). Otherwise, you'll need to provide the necessary configuration to the GraalVM compiler. For example, by annotating the class with `@RegisterReflection(memberCategories = MemberCategory.INVOKE_DECLARED_METHODS)`.
 
-NOTE: Some types are not supported. See: <<limitations>>.
+You can define any number of arguments for the method (including no argument) with most types (primitives, POJOs, enums, lists, arrays, maps, and so on). Similarly, the method can return most types, including `void`. If the method returns a value, the return type must be a serializable type, as the result will be serialized and sent back to the model.
 
-===== Adding Tools to `ChatClient`
+NOTE: Some types are not supported. See xref:_method_tool_limitations[] for more details.
 
-When using the declarative specification approach, there are a few options for adding tools to a `ChatClient`.
-Such tools will only be available for the specific chat request they are added to.
+Spring AI will generate the JSON schema for the input parameters of the `@Tool`-annotated method automatically. The schema is used by the model to understand how to call the tool and prepare the tool request. The `@ToolParam` annotation can be used to provide additional information about the input parameters, such as a description or whether the parameter is required or optional. By default, all input parameters are considered required.
 
-* Pass the tool class instance directly to the `tools()` method.
+[source,java]
+----
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+
+class DateTimeTools {
+
+    @Tool(description = "Set a user alarm for the given time")
+    void setAlarm(@ToolParam(description = "Time in ISO-8601 format") String time) {
+        LocalDateTime alarmTime = LocalDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME);
+        System.out.println("Alarm set for " + alarmTime);
+    }
+
+}
+----
+
+The `@ToolParam` annotation allows you to provide key information about a tool parameter:
+
+- `description`: The description for the parameter, which can be used by the model to understand better how to use it. For example, what format the parameter should be in, what values are allowed, and so on.
+- `required`: Whether the parameter is required or optional. By default, all parameters are considered required. 
+
+If a parameter is annotated as `@Nullable`, it will be considered optional unless explicitly marked as required using the `@ToolParam` annotation.
+
+Besides the `@ToolParam` annotation, you can also use the `@Schema` annotation from Swagger or `@JsonProperty` from Jackson. See xref:_json_schema[] for more details.
+
+==== Adding Tools to `ChatClient`
+
+When using the declarative specification approach, you can pass the tool class instance to the `tools()` method when invoking a `ChatClient`. Such tools will only be available for the specific chat request they are added to.
 
 [source,java]
 ----
@@ -195,25 +222,18 @@ ChatClient.create(chatModel)
     .content();
 ----
 
-* Generate `ToolCallback`(s) from the tool class instance and pass them to the `tools()` method.
+Under the hood, the `ChatClient` will generate a `ToolCallback` from each `@Tool`-annotated method in the tool class instance and pass them to the model. In case you prefer to generate the `ToolCallback`(s) yourself, you can use the `ToolCallbacks` utility class.
 
 [source,java]
 ----
 ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
-ChatClient.create(chatModel)
-    .prompt("What day is tomorrow?")
-    .tools(dateTimeTools)
-    .call()
-    .content();
 ----
 
-===== Adding Default Tools to `ChatClient`
+==== Adding Default Tools to `ChatClient`
 
-When using the declarative specification approach, you can add default tools to a `ChatClient` by adding them to the `ChatClient.Builder` used to instantiate it.
-Such tools will be available for ALL the chat requests performed by ALL the `ChatClient` instances built from that specific `ChatClient.Builder`.
-They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+When using the declarative specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool class instance to the `defaultTools()` method.
 
-* Pass the tool class instance directly to the `tools()` method.
+WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
 [source,java]
 ----
@@ -223,23 +243,9 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-* Generate `ToolCallback`s from the tool class instance and pass them to the `tools()` method.
+==== Adding Tools to `ChatModel`
 
-[source,java]
-----
-ChatModel chatModel = ...
-ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
-ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools(dateTimeTools)
-    .build();
-----
-
-===== Adding Tools to `ChatModel`
-
-When using the declarative specification approach, there are a few options for adding tools to a `ChatModel`.
-Such tools will only be available for the specific chat request they are added to.
-
-* Generate `ToolCallback`(s) from the tool class instance and pass them to the `toolCallbacks()` method of `ToolCallingChatOptions`.
+When using the declarative specification approach, you can pass the tool class instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` you use to call a `ChatModel`. Such tools will only be available for the specific chat request they are added to.
 
 [source,java]
 ----
@@ -252,67 +258,936 @@ Prompt prompt = new Prompt("What day is tomorrow?", chatOptions);
 chatModel.call(prompt);
 ----
 
-==== Programmatic Specification: `MethodToolCallback`
+==== Adding Default Tools to `ChatModel`
 
-===== Adding Tools to `ChatClient`
+When using the declarative specification approach, you can add default tools to `ChatModel` at construction time by passing the tool class instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
 
-===== Adding Tools to `ChatModel`
+WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
-==== Limitations
+[source,java]
+----
+ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
+ChatModel chatModel = OllamaChatModel.builder()
+    .ollamaApi(new OllamaApi())
+    .defaultOptions(ToolCallingChatOptions.builder()
+            .toolCallbacks(dateTimeTools)
+            .build())
+    .build();
+----
 
-Methods using `Optional`, asynchronous (e.g. `CompletableFuture`, `Future`) or reactive types (e.g. `Flow`, `Mono`, `Flux`) as parameters or return types are not currently supported to be used as tools.
+=== Programmatic Specification: `MethodToolCallback`
 
-Furthermore, methods returning a functional type (e.g. `Function`, `Supplier`, `Consumer`) are not supported to be used as tools using this approach, but they are supported using the function-based approach described in the next section.
+You can turn a method into a tool by building a `MethodToolCallback` programmatically.
 
-=== Functions as Tools
+[source,java]
+----
+class DateTimeTools {
 
-Spring AI provides built-in support for specifying tools from functions, either programmatically using the low-level `FunctionToolCallback` implementation or dynamic using the `ToolCallbackResolver` interface for resolution at run-time.
+    String getCurrentDateTime() {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString();
+    }
 
-==== Programmatic Specification: `FunctionToolCallback`
+}
+----
 
-===== Adding Tools to `ChatClient`
+The `MethodToolCallback.Builder` allows you to build a `MethodToolCallback` instance and provide key information about the tool:
 
-===== Adding Tools to `ChatModel`
+- `toolDefinition`: The `ToolDefinition` instance that defines the tool name, description, and input schema. You can build it using the `ToolDefinition.Builder` class. Required.
+- `toolMetadata`: The `ToolMetadata` instance that defines additional settings such as whether the result should be returned directly to the client, and the result converter to use. You can build it using the `ToolMetadata.Builder` class.
+- `toolMethod`: The `Method` instance that represents the tool method. Required.
+- `toolObject`: The object instance that contains the tool method. If the method is static, you can omit this parameter.
+- `toolCallResultConverter`: The `ToolCallResultConverter` instance to use for converting the result of a tool call to a `String` object to send back to the AI model. If not provided, the default converter will be used (`DefaultToolCallResultConverter`).
 
-==== Dynamic Specification: `@Bean`
+The `ToolDefinition.Builder` allows you to build a `ToolDefinition` instance and define the tool name, description, and input schema:
 
-===== Adding Tools to `ChatClient`
+- `name`: The name of the tool. If not provided, the method name will be used. AI models use this name to identify the tool when calling it. Therefore, it's not allowed to have two tools with the same name in the same class. The name must be unique across all the tools available to the model for a specific chat request.
+- `description`: The description for the tool, which can be used by the model to understand when and how to call the tool. If not provided, the method name will be used as the tool description. However, it's strongly recommended to provide a detailed description because that's paramount for the model to understand the tool's purpose and how to use it. Failing in providing a good description can lead to the model not using the tool when it should or using it incorrectly.
+- `inputSchema`: The JSON schema for the input parameters of the tool. If not provided, the schema will be generated automatically based on the method parameters. You can use the `@ToolParam` annotation to provide additional information about the input parameters, such as a description or whether the parameter is required or optional. By default, all input parameters are considered required. See xref:_json_schema[] for more details.
 
-===== Adding Tools to `ChatModel`
+The `ToolMetadata.Builder` allows you to build a `ToolMetadata` instance and define additional settings for the tool:
 
-==== Limitations
+- `returnDirect`: Whether the tool result should be returned directly to the client or passed back to the model. See xref:_return_direct[] for more details.
 
-* Only POJOs.
-* Only public.
-* No primitives.
-* No lists or arrays.
+[source,java]
+----
+Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
+ToolCallback toolCallback = MethodToolCallback.builder()
+    .toolDefinition(ToolDefinition.builder(method)
+            .description("Get the current date and time in the user's timezone")
+            .build())
+    .toolMethod(method)
+    .toolObject(new DateTimeTools())
+    .build();
+----
+
+The method can be either static or instance, and it can have any visibility (public, protected, package-private, or private). The class that contains the method can be either a top-level class or a nested class, and it can also have any visibility (as long as it's accessible where you're planning to instantiate it).
+
+NOTE: Spring AI provides built-in support for AOT compilation of the tool methods as long as the class containing the methods is a Spring bean (e.g. `@Component`). Otherwise, you'll need to provide the necessary configuration to the GraalVM compiler. For example, by annotating the class with `@RegisterReflection(memberCategories = MemberCategory.INVOKE_DECLARED_METHODS)`.
+
+You can define any number of arguments for the method (including no argument) with most types (primitives, POJOs, enums, lists, arrays, maps, and so on). Similarly, the method can return most types, including `void`. If the method returns a value, the return type must be a serializable type, as the result will be serialized and sent back to the model.
+
+NOTE: Some types are not supported. See xref:_method_tool_limitations[] for more details.
+
+If the method is static, you can omit the `toolObject()` method, as it's not needed.
+
+[source,java]
+----
+class DateTimeTools {
+
+    static String getCurrentDateTime() {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString();
+    }
+
+}
+----
+
+[source,java]
+----
+Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
+ToolCallback toolCallback = MethodToolCallback.builder()
+    .toolDefinition(ToolDefinition.builder(method)
+            .description("Get the current date and time in the user's timezone")
+            .build())
+    .toolMethod(method)
+    .build();
+----
+
+Spring AI will generate the JSON schema for the input parameters of the method automatically. The schema is used by the model to understand how to call the tool and prepare the tool request. The `@ToolParam` annotation can be used to provide additional information about the input parameters, such as a description or whether the parameter is required or optional. By default, all input parameters are considered required.
+
+[source,java]
+----
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import org.springframework.ai.tool.annotation.ToolParam;
+
+class DateTimeTools {
+
+    void setAlarm(@ToolParam(description = "Time in ISO-8601 format") String time) {
+        LocalDateTime alarmTime = LocalDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME);
+        System.out.println("Alarm set for " + alarmTime);
+    }
+
+}
+----
+
+The `@ToolParam` annotation allows you to provide key information about a tool parameter:
+
+- `description`: The description for the parameter, which can be used by the model to understand better how to use it. For example, what format the parameter should be in, what values are allowed, and so on.
+- `required`: Whether the parameter is required or optional. By default, all parameters are considered required. 
+
+If a parameter is annotated as `@Nullable`, it will be considered optional unless explicitly marked as required using the `@ToolParam` annotation.
+
+Besides the `@ToolParam` annotation, you can also use the `@Schema` annotation from Swagger or `@JsonProperty` from Jackson. See xref:_json_schema[] for more details.
+
+==== Adding Tools to `ChatClient` and `ChatModel`
+
+When using the programmatic specification approach, you can pass the `MethodToolCallback` instance to the `tools()` method of `ChatClient`.
+The tool will only be available for the specific chat request it's added to.
+
+[source,java]
+----
+ToolCallback toolCallback = ...
+ChatClient.create(chatModel)
+    .prompt("What day is tomorrow?")
+    .tools(toolCallback)
+    .call()
+    .content();
+----
+
+==== Adding Default Tools to `ChatClient`
+
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `MethodToolCallback` instance to the `defaultTools()` method.
+
+WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallback toolCallback = ...
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools(toolCallback)
+    .build();
+----
+
+==== Adding Tools to `ChatModel`
+
+When using the programmatic specification approach, you can pass the `MethodToolCallback` instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` you use to call a `ChatModel`. The tool will only be available for the specific chat request it's added to.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallback toolCallback = ...
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(toolCallback)
+    .build():
+Prompt prompt = new Prompt("What day is tomorrow?", chatOptions);
+chatModel.call(prompt);
+----
+
+==== Adding Default Tools to `ChatModel`
+
+When using the programmatic specification approach, you can add default tools to a `ChatModel` at construction time by passing the `MethodToolCallback` instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
+
+WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+[source,java]
+----
+ToolCallback toolCallback = ...
+ChatModel chatModel = OllamaChatModel.builder()
+    .ollamaApi(new OllamaApi())
+    .defaultOptions(ToolCallingChatOptions.builder()
+            .toolCallbacks(toolCallback)
+            .build())
+    .build();
+----
+
+=== Method Tool Limitations
+
+The following types are not currently supported as parameters or return types for methods used as tools:
+
+- `Optional`
+- Asynchronous types (e.g. `CompletableFuture`, `Future`)
+- Reactive types (e.g. `Flow`, `Mono`, `Flux`)
+- Functional types (e.g. `Function`, `Supplier`, `Consumer`).
+
+Functional types are supported using the function-based tool specification approach. See xref:_functions_as_tools[] for more details.
+
+== Functions as Tools
+
+Spring AI provides built-in support for specifying tools from functions, either programmatically using the low-level `FunctionToolCallback` implementation or dynamically as `@Bean`(s) resolved at runtime.
+
+=== Programmatic Specification: `FunctionToolCallback`
+
+You can turn a functional type (`Function`, `Supplier`, `Consumer`, or `BiFunction`) into a tool by building a `FunctionToolCallback` programmatically.
+
+[source,java]
+----
+public class WeatherService implements Function<WeatherRequest, WeatherResponse> {
+    public WeatherResponse apply(WeatherRequest request) {
+        return new WeatherResponse(30.0, Unit.C);
+    }
+}
+
+public enum Unit { C, F }
+public record WeatherRequest(String location, Unit unit) {}
+public record WeatherResponse(double temp, Unit unit) {}
+----
+
+The `FunctionToolCallback.Builder` allows you to build a `FunctionToolCallback` instance and provide key information about the tool:
+
+- `name`: The name of the tool. AI models use this name to identify the tool when calling it. Therefore, it's not allowed to have two tools with the same name in the same context. The name must be unique across all the tools available to the model for a specific chat request. Required.
+- `toolFunction`: The functional object that represents the tool method (`Function`, `Supplier`, `Consumer`, or `BiFunction`). Required.
+- `description`: The description for the tool, which can be used by the model to understand when and how to call the tool. If not provided, the method name will be used as the tool description. However, it's strongly recommended to provide a detailed description because that's paramount for the model to understand the tool's purpose and how to use it. Failing in providing a good description can lead to the model not using the tool when it should or using it incorrectly.
+- `inputType`: The type of the function input. Required.
+- `inputSchema`: The JSON schema for the input parameters of the tool. If not provided, the schema will be generated automatically based on the `inputType`. You can use the `@ToolParam` annotation to provide additional information about the input parameters, such as a description or whether the parameter is required or optional. By default, all input parameters are considered required. See xref:_json_schema[] for more details.
+- `toolMetadata`: The `ToolMetadata` instance that defines additional settings such as whether the result should be returned directly to the client, and the result converter to use. You can build it using the `ToolMetadata.Builder` class.
+- `toolCallResultConverter`: The `ToolCallResultConverter` instance to use for converting the result of a tool call to a `String` object to send back to the AI model. If not provided, the default converter will be used (`DefaultToolCallResultConverter`).
+
+The `ToolMetadata.Builder` allows you to build a `ToolMetadata` instance and define additional settings for the tool:
+
+- `returnDirect`: Whether the tool result should be returned directly to the client or passed back to the model. See xref:_return_direct[] for more details.
+
+[source,java]
+----
+ToolCallback toolCallback = FunctionToolCallback
+    .builder("currentWeather", new WeatherService())
+    .description("Get the weather in location")
+    .inputType(WeatherRequest.class)
+    .build();
+----
+
+The function inputs and outputs can be either `Void` or POJOs. The input and output POJOs must be serializable, as the result will be serialized and sent back to the model. The function as well as the input and output types must be public.
+
+NOTE: Some types are not supported. See xref:_function_tool_limitations[] for more details.
+
+==== Adding Tools to `ChatClient`
+
+When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance to the `tools()` method of `ChatClient`. The tool will only be available for the specific chat request it's added to.
+
+[source,java]
+----
+ToolCallback toolCallback = ...
+ChatClient.create(chatModel)
+    .prompt("What's the weather like in Copenhagen?")
+    .tools(toolCallback)
+    .call()
+    .content();
+----
+
+==== Adding Default Tools to `ChatClient`
+
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `FunctionToolCallback` instance to the `defaultTools()` method.
+
+WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallback toolCallback = ...
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools(toolCallback)
+    .build();
+----
+
+==== Adding Tools to `ChatModel`
+
+When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance to the `toolCallbacks()` method of `ToolCallingChatOptions`. The tool will only be available for the specific chat request it's added to.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallback toolCallback = ...
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(toolCallback)
+    .build():
+Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions);
+chatModel.call(prompt);
+----
+
+==== Adding Default Tools to `ChatModel`
+
+When using the programmatic specification approach, you can add default tools to a `ChatModel` at construction time by passing the `FunctionToolCallback` instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
+
+WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+[source,java]
+----
+ToolCallback toolCallback = ...
+ChatModel chatModel = OllamaChatModel.builder()
+    .ollamaApi(new OllamaApi())
+    .defaultOptions(ToolCallingChatOptions.builder()
+            .toolCallbacks(toolCallback)
+            .build())
+    .build();
+----
+
+=== Dynamic Specification: `@Bean`
+
+Instead of specifying tools programmatically, you can define tools as Spring beans and let Spring AI resolve them dynamically at runtime using the `ToolCallbackResolver` interface (via the `SpringBeanToolCallbackResolver` implementation). This option gives you the possibility to use any `Function`, `Supplier`, `Consumer`, or `BiFunction` bean as a tool. The bean name will be used as the tool name, and the `@Description` annotation from Spring Framework can be used to provide a description for the tool, used by the model to understand when and how to call the tool. If you don't provide a description, the method name will be used as the tool description. However, it's strongly recommended to provide a detailed description because that's paramount for the model to understand the tool's purpose and how to use it. Failing in providing a good description can lead to the model not using the tool when it should or using it incorrectly.
+
+[source,java]
+----
+@Configuration(proxyBeanMethods = false)
+class WeatherTools {
+
+    WeatherService weatherService = new WeatherService();
+
+	@Bean
+	@Description("Get the weather in location")
+	Function<WeatherRequest, WeatherResponse> currentWeather() {
+		return weatherService;
+	}
+
+}
+----
+
+NOTE: Some types are not supported. See xref:_function_tool_limitations[] for more details.
+
+The JSON schema for the input parameters of the tool will be generated automatically. You can use the `@ToolParam` annotation to provide additional information about the input parameters, such as a description or whether the parameter is required or optional. By default, all input parameters are considered required. See xref:_json_schema[] for more details.
+
+[source,java]
+----
+record WeatherRequest(@ToolParam(description = "The name of a city or a country") String location, Unit unit) {}
+----
+
+This tool specification approach has the drawback of not guaranteeing type safety, as the tool resolution is done at runtime. To mitigate this, you can specify the tool name explicitly using the `@Bean` annotation and storing the value in a constant, so that you can use it in a chat request instead of hard-coding the tool name.
+
+[source,java]
+----
+@Configuration(proxyBeanMethods = false)
+class WeatherTools {
+
+    public static final String CURRENT_WEATHER_TOOL = "currentWeather";
+
+	@Bean(CURRENT_WEATHER_TOOL)
+	@Description("Get the weather in location")
+	Function<WeatherRequest, WeatherResponse> currentWeather() {
+		...
+	}
+
+}
+----
+
+==== Adding Tools to `ChatClient`
+
+When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `tools()` method of `ChatClient`.
+The tool will only be available for the specific chat request it's added to.
+
+[source,java]
+----
+ChatClient.create(chatModel)
+    .prompt("What's the weather like in Copenhagen?")
+    .tools("currentWeather")
+    .call()
+    .content();
+----
+
+==== Adding Default Tools to `ChatClient`
+
+When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool name to the `defaultTools()` method.
+
+WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools("currentWeather")
+    .build();
+----
+
+==== Adding Tools to `ChatModel`
+
+When using the dynamic specification approach, you can pass the tool name to the `toolNames()` method of the `ToolCallingChatOptions` you use to call the `ChatModel`. The tool will only be available for the specific chat request it's added to.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolNames("currentWeather")
+    .build():
+Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions);
+chatModel.call(prompt);
+----
+
+==== Adding Default Tools to `ChatModel`
+
+When using the dynamic specification approach, you can add default tools to `ChatModel` at construction time by passing the tool name to the `toolNames()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
+
+WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
+
+[source,java]
+----
+ChatModel chatModel = OllamaChatModel.builder()
+    .ollamaApi(new OllamaApi())
+    .defaultOptions(ToolCallingChatOptions.builder()
+            .toolNames("currentWeather")
+            .build())
+    .build();
+----
+
+=== Function Tool Limitations
+
+The following types are not currently supported as input or output types for functions used as tools:
+
+- Primitive types
+- `Optional`
+- Collection types (e.g. `List`, `Map`, `Array`, `Set`) 
+- Asynchronous types (e.g. `CompletableFuture`, `Future`)
+- Reactive types (e.g. `Flow`, `Mono`, `Flux`).
+
+Primitive types and collections are supported using the method-based tool specification approach. See xref:_methods_as_tools[] for more details.
+
+== Tool Specification
+
+In Spring AI, tools are modeled via the `ToolCallback` interface. In the previous sections, we've seen how to define tools from methods and functions using the built-in support provided by Spring AI (see xref:_methods_as_tools[] and xref:_functions_as_tools[]). This section will dive deeper into the tool specification and how to customize and extend it to support more use cases.
+
+=== Tool Callback
+
+The `ToolCallback` interface provides a way to define a tool that can be called by the AI model, including both definition and execution logic. It's the main interface to implement when you want to define a tool from scratch. For example, you can define a `ToolCallback` from an MCP Client (using the Model Context Protocol) or a `ChatClient` (to build a modular agentic application).
+
+The interface provides the following methods:
+
+[source,java]
+----
+public interface ToolCallback {
+
+	/**
+	 * Definition used by the AI model to determine when and how to call the tool.
+	 */
+	ToolDefinition getToolDefinition();
+
+	/**
+	 * Metadata providing additional information on how to handle the tool.
+	 */
+	ToolMetadata getToolMetadata();
+
+    /**
+	 * Execute tool with the given input and return the result to send back to the AI model.
+	 */
+	String call(String toolInput);
+
+    /**
+	 * Execute tool with the given input and context, and return the result to send back to the AI model.
+	 */
+	String call(String toolInput, ToolContext tooContext);
+
+}
+----
+
+Spring AI provides built-in implementations for tool methods (`MethodToolCallback`) and tool functions (`FunctionToolCallback`).
+
+=== Tool Definition
+
+The `ToolDefinition` interface provides the required information for the AI model to know about the availability of the tool, including the tool name, description, and input schema. Each `ToolCallback` implementation must provide a `ToolDefinition` instance to define the tool.
+
+The interface provides the following methods:
+
+[source,java]
+----
+public interface ToolDefinition {
+
+	/**
+	 * The tool name. Unique within the tool set provided to a model.
+	 */
+	String name();
+
+	/**
+	 * The tool description, used by the AI model to determine what the tool does.
+	 */
+	String description();
+
+	/**
+	 * The schema of the parameters used to call the tool.
+	 */
+	String inputSchema();
+
+}
+----
+
+NOTE: See xref:_json_schema[] for more details on the input schema.
+
+The `ToolDefinition.Builder` lets you build a `ToolDefinition` instance using the default implementation (`DefaultToolDefinition`).
+
+[source,java]
+----
+ToolDefinition toolDefinition = ToolDefinition.builder()
+    .name("currentWeather")
+    .description("Get the weather in location")
+    .inputSchema("""
+        {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string",
+                    "enum": ["C", "F"]
+                }
+            },
+            "required": ["location", "unit"]
+        }
+    """)
+    .build();
+----
+
+==== Method Tool Definition
+
+When building tools from a method, the `ToolDefinition` is automatically generated for you. In case you prefer to generate the `ToolDefinition` yourself, you can use this convenient builder.
+
+[source,java]
+----
+Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
+ToolDefinition toolDefinition = ToolDefinition.from(method);
+----
+
+The `ToolDefinition` generated from a method includes the method name as the tool name, the method name as the tool description, and the JSON schema of the method input parameters. If the method is annotated with `@Tool`, the tool name and description will be taken from the annotation, if set.
+
+NOTE: See xref:_methods_as_tools[] for more details.
+
+If you'd rather provide some or all of the attributes explicitly, you can use the `ToolDefinition.Builder` to build a custom `ToolDefinition` instance.
+
+[source,java]
+----
+Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
+ToolDefinition toolDefinition = ToolDefinition.builder(method)
+    .name("currentDateTime")
+    .description("Get the current date and time in the user's timezone")
+    .inputSchema(JsonSchemaGenerator.generateForMethodInput(method))
+    .build();
+----
+
+==== Function Tool Definition
+
+When building tools from a function, the `ToolDefinition` is automatically generated for you. When you use the `FunctionToolCallback.Builder` to build a `FunctionToolCallback` instance, you can provide the tool name, description, and input schema that will be used to generate the `ToolDefinition`. See xref:_functions_as_tools[] for more details.
 
 === JSON Schema
 
+When providing a tool to the AI model, the model needs to know the schema of the input type for calling the tool. The schema is used to understand how to call the tool and prepare the tool request. Spring AI provides built-in support for generating the JSON Schema of the input type for a tool via the `JsonSchemaGenerator` class. The schema is provided as part of the `ToolDefinition`.
+
+NOTE: See xref:_tool_definition[] for more details on the `ToolDefinition` and how to pass the input schema to it.
+
+The `JsonSchemaGenerator` class is used under the hood to generate the JSON schema for the input parameters of a method or a function, using any of the strategies described in xref:_methods_as_tools[] and xref:_functions_as_tools[]. The JSON schema generation logic supports a series of annotations that you can use on the input parameters for methods and functions to customize the resulting schema.
+
+This section describes two main options you can customize when generating the JSON schema for the input parameters of a tool: description and required status.
+
 ==== Description
 
-==== Required
+Besides providing a description for the tool itself, you can also provide a description for the input parameters of a tool. The description can be used to provide key information about the input parameters, such as what format the parameter should be in, what values are allowed, and so on. This is useful to help the model understand the input schema and how to use it. Spring AI provides built-in support for generating the description for an input parameter using one of the following annotations:
+
+- `@ToolParam(description = "...")` from Spring AI
+- `@JsonClassDescription(description = "...")` from Jackson
+- `@JsonPropertyDescription(description = "...")` from Jackson
+- `@Schema(description = "...")` from Swagger.
+
+This approach works for both methods and functions, and you can use it recursively for nested types.
+
+[source,java]
+----
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.context.i18n.LocaleContextHolder;
+
+class DateTimeTools {
+
+    @Tool(description = "Set a user alarm for the given time")
+    void setAlarm(@ToolParam(description = "Time in ISO-8601 format") String time) {
+        LocalDateTime alarmTime = LocalDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME);
+        System.out.println("Alarm set for " + alarmTime);
+    }
+
+}
+----
+
+==== Required/Optional
+
+By default, each input parameter is considered required, which forces the AI model to provide a value for it when calling the tool. However, you can make an input parameter optional by using one of the following annotations, in this order of precedence:
+
+- `@ToolParam(required = false)` from Spring AI
+- `@JsonProperty(required = false)` from Jackson
+- `@Schema(required = false)` from Swagger
+- `@Nullable` from Spring Framework.
+
+This approach works for both methods and functions, and you can use it recursively for nested types.
+
+[source,java]
+----
+class CustomerTools {
+
+    @Tool(description = "Update customer information")
+    void updateCustomerInfo(Long id, String name, @ToolParam(required = false) String email) {
+        System.out.println("Updated info for customer with id: " + id);
+    }
+
+}
+----
+
+WARNING: Defining the correct required status for the input parameter is crucial to mitigate the risk of hallucinations and ensure the model provides the right input when calling the tool. In the previous example, the `email` parameter is optional, which means the model can call the tool without providing a value for it. If the parameter was required, the model would have to provide a value for it when calling the tool. And if no value existed, the model would probably make one up, leading to hallucinations.
 
 === Result Conversion
 
-=== Exception Handling
+The result of a tool call is serialized using a `ToolCallResultConverter` and then sent back to the AI model. The `ToolCallResultConverter` interface provides a way to convert the result of a tool call to a `String` object.
+
+The interface provides the following method:
+
+[source,java]
+----
+@FunctionalInterface
+public interface ToolCallResultConverter {
+
+	/**
+	 * Given an Object returned by a tool, convert it to a String compatible with the
+	 * given class type.
+	 */
+	String convert(@Nullable Object result, @Nullable Type returnType);
+
+}
+----
+
+The result must be a serializable type. By default, the result is serialized to JSON using Jackson (`DefaultToolCallResultConverter`), but you can customize the serialization process by providing your own `ToolCallResultConverter` implementation.
+
+Spring AI relies on the `ToolCallResultConverter` in both method and function tools.
+
+==== Method Tool Call Result Conversion
+
+When building tools from a method with the declarative approach, you can provide a custom `ToolCallResultConverter` to use for the tool by setting the `resultConverter()` attribute of the `@Tool` annotation.
+
+[source,java]
+----
+class CustomerTools {
+
+    @Tool(description = "Retrieve customer information", resultConverter = CustomToolCallResultConverter.class)
+    Customer getCustomerInfo(Long id) {
+        return customerRepository.findById(id);
+    }
+
+}
+----
+
+If using the programmatic approach, you can provide a custom `ToolCallResultConverter` to use for the tool by setting the `resultConverter()` attribute of the `MethodToolCallback.Builder`.
+
+See xref:_methods_as_tools[] for more details.
+
+==== Function Tool Call Result Conversion
+
+When building tools from a function using the programmatic approach, you can provide a custom `ToolCallResultConverter` to use for the tool by setting the `resultConverter()` attribute of the `FunctionToolCallback.Builder`.
+
+See xref:_functions_as_tools[] for more details.
 
 === Tool Context
 
+Spring AI supports passing additional contextual information to tools through the `ToolContext` API. This feature allows you to provide extra, user-provided data that can be used within the tool execution along with the tool arguments passed by the AI model. 
+
+image::tools/tool-context.jpg[Providing additional contextual info to tools, width=700, align="center"]
+
+[source,java]
+----
+class CustomerTools {
+
+    @Tool(description = "Retrieve customer information")
+    Customer getCustomerInfo(Long id, ToolContext toolContext) {
+        return customerRepository.findById(id, toolContext.get("tenantId"));
+    }
+
+}
+----
+
+The `ToolContext` is populated with the data provided by the user when invoking `ChatClient`.
+
+[source,java]
+----
+ChatModel chatModel = ...
+
+String response = ChatClient.create(chatModel)
+        .prompt("Tell me more about the customer with ID 42")
+        .tools(new CustomerTools())
+        .toolContext(Map.of("tenantId", "acme"))
+        .call()
+        .content();
+
+System.out.println(response);
+----
+
+NOTE: None of the data provided in the `ToolContext` is sent to the AI model.
+
+Similarly, you can define tool context data when invoking the `ChatModel` directly.
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallback[] customerTools = ToolCallbacks.from(new CustomerTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(customerTools)
+    .toolContext(Map.of("tenantId", "acme"))
+    .build():
+Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);
+chatModel.call(prompt);
+----
+
 === Return Direct
+
+By default, the result of a tool call is sent back to the model as a response. Then, the model can use the result to continue the conversation.
+
+There are cases where you'd rather return the result directly to the caller instead of sending it back to the model. For example, if you build an agent that relies on a RAG tool, you might want to return the result directly to the caller instead of sending it back to the model for unnecessary post-processing. Or perhaps you have certain tools that should end the reasoning loop of the agent.
+
+Each `ToolCallback` implementation can define whether the result of a tool call should be returned directly to the caller or sent back to the model. By default, the result is sent back to the model. But you can change this behavior per tool.
+
+The `ToolCallingManager`, responsible for managing the tool execution lifecycle, is in charge of handling the `returnDirect` attribute associated with the tool. If the attribute is set to `true`, the result of the tool call is returned directly to the caller. Otherwise, the result is sent back to the model.
+
+NOTE: If multiple tool calls are requested at once, the `returnDirect` attribute must be set to `true` for all the tools to return the results directly to the caller. Otherwise, the results will be sent back to the model.
+
+image::tools/return-direct.jpg[Returning tool call results directly to the caller, width=700, align="center"]
+
+1. When we want to make a tool available to the model, we include its definition in the chat request. If we want the result of the tool execution to be returned directly to the caller, we set the `returnDirect` attribute to `true`.
+2. When the model decides to call a tool, it sends a response with the tool name and the input parameters modeled after the defined schema.
+3. The application is responsible for using the tool name to identify and execute the tool with the provided input parameters.
+4. The result of the tool call is processed by the application.
+5. The application sends the tool call result directly to the caller, instead of sending it back to the model.
+
+==== Method Return Direct
+
+When building tools from a method with the declarative approach, you can mark a tool to return the result directly to the caller by setting the `returnDirect` attribute of the `@Tool` annotation to `true`.
+
+[source,java]
+----
+class CustomerTools {
+
+    @Tool(description = "Retrieve customer information", returnDirect = true)
+    Customer getCustomerInfo(Long id) {
+        return customerRepository.findById(id);
+    }
+
+}
+----
+
+If using the programmatic approach, you can set the `returnDirect` attribute via the `ToolMetadata` interface and pass it to the `MethodToolCallback.Builder`.
+
+[source,java]
+----
+ToolMetadata toolMetadata = ToolMetadata.builder()
+    .returnDirect(true)
+    .build();
+----
+
+See xref:_methods_as_tools[] for more details.
+
+==== Function Return Direct
+
+When building tools from a function with the programmatic approach, you can set the `returnDirect` attribute via the `ToolMetadata` interface and pass it to the `FunctionToolCallback.Builder`.
+
+[source,java]
+----
+ToolMetadata toolMetadata = ToolMetadata.builder()
+    .returnDirect(true)
+    .build();
+----
+
+See xref:_functions_as_tools[] for more details.
 
 == Tool Execution
 
+The tool execution is the process of calling the tool with the provided input arguments and returning the result. The tool execution is handled by the `ToolCallingManager` interface, which is responsible for managing the tool execution lifecycle.
+
+[source,java]
+----
+public interface ToolCallingManager {
+
+	/**
+	 * Resolve the tool definitions from the model's tool calling options.
+	 */
+	List<ToolDefinition> resolveToolDefinitions(ToolCallingChatOptions chatOptions);
+
+	/**
+	 * Execute the tool calls requested by the model.
+	 */
+	ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse);
+
+}
+----
+
+If you're using any of the Spring AI Spring Boot Starters, `DefaultToolCallingManager` is the autoconfigured implementation of the `ToolCallingManager` interface. You can customize the tool execution behavior by providing your own `ToolCallingManager` bean.
+
+[source,java]
+----
+@Bean
+ToolCallingManager toolCallingManager() {
+    return ToolCallingManager.builder().build();
+}
+----
+
+By default, Spring AI manages the tool execution lifecycle transparently for you from within each `ChatModel` implementation. But you have the possibility to opt-out of this behavior and control the tool execution yourself. This section describes these two scenarios.
+
 === Framework-Controlled Tool Execution
+
+When using the default behavior, Spring AI will automatically intercept any tool call request from the model, call the tool and return the result to the model. All of this is done transparently for you by each `ChatModel` implementation using a `ToolCallingManager`.
+
+image::tools/framework-manager.jpg[Framework-controlled tool execution lifecycle, width=700, align="center"]
+
+1. When we want to make a tool available to the model, we include its definition in the chat request (`Prompt`) and invoke the `ChatModel` API which sends the request to the AI model.
+2. When the model decides to call a tool, it sends a response (`ChatResponse`) with the tool name and the input parameters modeled after the defined schema.
+3. The `ChatModel` sends the tool call request to the `ToolCallingManager` API.
+4. The `ToolCallingManager` is responsible for identifying the tool to call and executing it with the provided input parameters.
+5. The result of the tool call is returned to the `ToolCallingManager`.
+6. The `ToolCallingManager` returns the tool execution result back to the `ChatModel`.
+7. The `ChatModel` sends the tool execution result back to the AI model (`ToolResponseMessage`).
+8. The AI model generates the final response using the tool call result as additional context and sends it back to the caller (`ChatResponse`) via the `ChatClient`.
+
+WARNING: Currently, the internal messages exchanged with the model regarding the tool execution are not exposed to the user. If you need to access these messages, you should use the user-controlled tool execution approach.
 
 === User-Controlled Tool Execution
 
+There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`. When you invoke a `ChatModel` with this option, the tool execution will be delegated to the caller, giving you full control over the tool execution lifecycle. It's your responsibility checking for tool calls in the `ChatResponse` and executing them using the `ToolCallingManager`.
+
+The following example demonstrates a minimal implementation of the user-controlled tool execution approach:
+
+[source,java]
+----
+ChatModel chatModel = ...
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(new CustomerTools())
+    .internalToolExecutionEnabled(false)
+    .build();
+Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);
+
+ChatResponse chatResponse = chatModel.call(prompt);
+
+while (chatResponse.hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+    prompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
+
+    chatResponse = chatModel.call(prompt);
+}
+
+System.out.println(chatResponse.getResult().getOutput().getText());
+----
+
+NOTE: When choosing the user-controlled tool execution approach, we recommend using a `ToolCallingManager` to manage the tool calling operations. This way, you can benefit from the built-in support provided by Spring AI for tool execution. However, nothing prevents you from implementing your own tool execution logic.
+
+=== Exception Handling
+
+When a tool call fails, the exception is propagated as a `ToolExecutionException` which can be caught to handle the error. A `ToolExecutionExceptionProcessor` can be used to handle a `ToolExecutionException` with two outcomes: either producing an error message to be sent back to the AI model or throwing an exception to be handled by the caller.
+
+[source,java]
+----
+@FunctionalInterface
+public interface ToolExecutionExceptionProcessor {
+
+	/**
+	 * Convert an exception thrown by a tool to a String that can be sent back to the AI
+	 * model or throw an exception to be handled by the caller.
+	 */
+	String process(ToolExecutionException exception);
+
+}
+----
+
+If you're using any of the Spring AI Spring Boot Starters, `DefaultToolExecutionExceptionProcessor` is the autoconfigured implementation of the `ToolExecutionExceptionProcessor` interface. By default, the error message is sent back to the model. The `DefaultToolExecutionExceptionProcessor` constructor lets you set the `alwaysThrow` attribute to `true` or `false`. If `true`, an exception will be thrown instead of sending an error message back to the model.
+
+[source,java]
+----
+@Bean
+ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
+    return new DefaultToolExecutionExceptionProcessor(true);
+}
+----
+
+NOTE: If you defined your own `ToolCallback` implementation, make sure to throw a `ToolExecutionException` when an error occurs as part of the tool execution logic in the `call()` method.
+
+The `ToolExecutionExceptionProcessor` is used internally by the default `ToolCallingManager` (`DefaultToolCallingManager`) to handle exceptions during tool execution. See xref:_tool_execution[] for more details about the tool execution lifecycle.
+
 == Tool Resolution
 
-=== Resolution from Application Context
+The main approach for passing tools to a model is by providing the `ToolCallback`(s) when invoking the `ChatClient` or the `ChatModel`,
+using one of the strategies described in xref:_methods_as_tools[] and xref:_functions_as_tools[].
 
-== Structured Outputs
+However, Spring AI also supports resolving tools dynamically at runtime using the `ToolCallbackResolver` interface. 
+
+[source,java]
+----
+public interface ToolCallbackResolver {
+
+	/**
+	 * Resolve the {@link ToolCallback} for the given tool name.
+	 */
+	@Nullable
+	ToolCallback resolve(String toolName);
+
+}
+----
+
+When using this approach:
+
+- On the client-side, you provide the tool names to the `ChatClient` or the `ChatModel` instead of the `ToolCallback`(s).
+- On the server-side, a `ToolCallbackResolver` implementation is responsible for resolving the tool names to the corresponding `ToolCallback` instances.
+
+By default, Spring AI relies on a `DelegatingToolCallbackResolver` that delegates the tool resolution to a list of `ToolCallbackResolver` instances:
+
+- The `SpringBeanToolCallbackResolver` resolves tools from Spring beans of type `Function`, `Supplier`, `Consumer`, or `BiFunction`. See xref:_dynamic_specification_bean[] for more details.
+- The `StaticToolCallbackResolver` resolves tools from a static list of `ToolCallback` instances. When using the Spring Boot Autoconfiguration, this resolver is automatically configured with all the beans of type `ToolCallback` defined in the application context.
+
+If you rely on the Spring Boot Autoconfiguration, you can customize the resolution logic by providing a custom `ToolCallbackResolver` bean.
+
+[source,java]
+----
+@Bean
+ToolCallbackResolver toolCallbackResolver(List<FunctionCallback> toolCallbacks) {
+    StaticToolCallbackResolver staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
+    return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver));
+}
+----
+
+The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to resolve tools dynamically at runtime, supporting both xref:_framework_controlled_tool_execution[] and xref:_user_controlled_tool_execution[].
 
 == Observability
 
+Instrumentation for the tool calling is on its way. For now, you can use the logging feature to track the tool calling operations.
+
 === Logging
+
+All the main operations of the tool calling features are logged at the `DEBUG` level. You can enable the logging by setting the log level to `DEBUG` for the `org.springframework.ai` package.
