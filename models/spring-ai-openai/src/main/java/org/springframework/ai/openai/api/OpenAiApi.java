@@ -805,7 +805,6 @@ public class OpenAiApi {
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("store") Boolean store,
-			@JsonProperty("reasoning_effort") String reasoningEffort,
 			@JsonProperty("metadata") Map<String, String> metadata,
 			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
@@ -828,7 +827,8 @@ public class OpenAiApi {
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
-			@JsonProperty("user") String user) {
+			@JsonProperty("user") String user,
+			@JsonProperty("reasoning_effort") String reasoningEffort) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -838,9 +838,9 @@ public class OpenAiApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -851,10 +851,10 @@ public class OpenAiApi {
 		 * @param audio Parameters for audio output. Required when audio output is requested with outputModalities: ["audio"].
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, AudioParameters audio, boolean stream) {
-			this(messages, model, null, null, null, null, null, null, null,
+			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -867,9 +867,9 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
-			this(messages, model, null, null, null, null, null, null, null, null, null, null,
+			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -883,9 +883,9 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
-			this(messages, model, null, null, null, null, null, null, null, null, null, null,
+			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null);
+					tools, toolChoice, null, null, null);
 		}
 
 		/**
@@ -896,9 +896,9 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(messages, null, null, null, null, null, null, null, null, null, null, null,
+			this(messages, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -908,10 +908,10 @@ public class OpenAiApi {
 		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
 		 */
 		public ChatCompletionRequest streamOptions(StreamOptions streamOptions) {
-			return new ChatCompletionRequest(this.messages, this.model, this.store, this.reasoningEffort, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
+			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user);
+			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort);
 		}
 
 		/**

@@ -71,9 +71,9 @@ public class OpenAiApiIT {
 	void validateReasoningTokens() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(
 				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
-		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, "low", null, null,
-				null, null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null,
-				null, null, null, null);
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
+				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
+				null, null, null, "low");
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();
