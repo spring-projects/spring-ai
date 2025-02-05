@@ -27,12 +27,10 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
-import org.springframework.ai.model.ApiKey;
-import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.openai.api.OpenAiApiKey;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -80,13 +78,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 		WebClientAutoConfiguration.class })
 public class OpenAiAutoConfiguration {
 
-	@Bean
-	@ConditionalOnMissingBean(ApiKey.class)
-	@OpenAiApiKey
-	public ApiKey openAiApiKey(OpenAiConnectionProperties properties) {
-		return new SimpleApiKey(properties.getApiKey());
-	}
-
 	private static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
 			OpenAiParentProperties commonProperties, OpenAiParentProperties modelProperties, String modelType) {
 
@@ -126,11 +117,11 @@ public class OpenAiAutoConfiguration {
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, List<FunctionCallback> toolFunctionCallbacks,
 			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention, @OpenAiApiKey ApiKey apiKey) {
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var openAiApi = openAiApi(chatProperties, commonProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "chat", apiKey);
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "chat");
 
 		var chatModel = new OpenAiChatModel(openAiApi, chatProperties.getOptions(), functionCallbackResolver,
 				toolFunctionCallbacks, retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
@@ -148,11 +139,11 @@ public class OpenAiAutoConfiguration {
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, RetryTemplate retryTemplate,
 			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<EmbeddingModelObservationConvention> observationConvention, @OpenAiApiKey ApiKey apiKey) {
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var openAiApi = openAiApi(embeddingProperties, commonProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "embedding", apiKey);
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "embedding");
 
 		var embeddingModel = new OpenAiEmbeddingModel(openAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate,
@@ -165,14 +156,14 @@ public class OpenAiAutoConfiguration {
 
 	private OpenAiApi openAiApi(OpenAiChatProperties chatProperties, OpenAiConnectionProperties commonProperties,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler, String modelType, ApiKey apiKey) {
+			ResponseErrorHandler responseErrorHandler, String modelType) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties,
 				modelType);
 
 		return OpenAiApi.builder()
 			.baseUrl(resolved.baseUrl())
-			.apiKey(apiKey)
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
 			.headers(resolved.headers())
 			.completionsPath(chatProperties.getCompletionsPath())
 			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
@@ -184,15 +175,14 @@ public class OpenAiAutoConfiguration {
 
 	private OpenAiApi openAiApi(OpenAiEmbeddingProperties embeddingProperties,
 			OpenAiConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler, String modelType,
-			ApiKey apiKey) {
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler, String modelType) {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, embeddingProperties,
 				modelType);
 
 		return OpenAiApi.builder()
 			.baseUrl(resolved.baseUrl())
-			.apiKey(apiKey)
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
 			.headers(resolved.headers())
 			.completionsPath(OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH)
 			.embeddingsPath(embeddingProperties.getEmbeddingsPath())
