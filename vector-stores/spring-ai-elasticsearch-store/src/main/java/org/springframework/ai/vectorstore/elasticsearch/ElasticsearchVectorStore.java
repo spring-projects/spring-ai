@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -221,6 +222,23 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
 	}
 
+	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
+
+		try {
+			this.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())
+				.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
 	private BulkResponse bulkRequest(BulkRequest bulkRequest) {
 		try {
 			return this.elasticsearchClient.bulk(bulkRequest);
@@ -242,16 +260,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			final float finalThreshold = threshold;
 			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
-			SearchResponse<Document> res = this.elasticsearchClient.search(
-					sr -> sr.index(this.options.getIndexName())
-						.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
-							.similarity(finalThreshold)
-							.k((long) searchRequest.getTopK())
-							.field("embedding")
-							.numCandidates((long) (1.5 * searchRequest.getTopK()))
-							.filter(fl -> fl.queryString(
-									qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression()))))),
-					Document.class);
+			SearchResponse<Document> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
+				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
+					.similarity(finalThreshold)
+					.k((long) searchRequest.getTopK())
+					.field("embedding")
+					.numCandidates((long) (1.5 * searchRequest.getTopK()))
+					.filter(fl -> fl
+						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
+				.size(searchRequest.getTopK()), Document.class);
 
 			return res.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
 		}
@@ -337,6 +354,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			return this.options.getSimilarity().name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.options.getSimilarity()).value();
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.elasticsearchClient;
+		return Optional.of(client);
 	}
 
 	/**

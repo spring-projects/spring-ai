@@ -332,6 +332,13 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.similarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null);
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.searchClient;
+		return Optional.of(client);
+	}
+
 	public record MetadataField(String name, SearchFieldDataType fieldType) {
 
 		public static MetadataField text(String name) {

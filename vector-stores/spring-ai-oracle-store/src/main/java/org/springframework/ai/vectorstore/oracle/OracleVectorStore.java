@@ -47,6 +47,7 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -312,6 +313,25 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String jsonPath = this.filterExpressionConverter.convertExpression(filterExpression);
+			String sql = String.format("DELETE FROM %s WHERE JSON_EXISTS(metadata, '%s')", this.tableName, jsonPath);
+
+			logger.debug("Executing delete with filter: " + sql);
+
+			int deletedCount = this.jdbcTemplate.update(sql);
+			logger.debug("Deleted " + deletedCount + " documents matching filter expression");
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		try {
 			// From the provided query, generate a vector using the embedding model
@@ -513,6 +533,13 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			.similarityMetric(getSimilarityMetric());
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
+	}
+
 	private String getSimilarityMetric() {
 		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.distanceType)) {
 			return this.distanceType.name();
@@ -604,7 +631,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 	}
 
-	private static class DocumentRowMapper implements RowMapper<Document> {
+	private final static class DocumentRowMapper implements RowMapper<Document> {
 
 		@Override
 		public Document mapRow(ResultSet rs, int rowNum) throws SQLException {

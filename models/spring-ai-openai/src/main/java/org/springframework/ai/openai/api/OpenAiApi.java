@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -341,11 +341,20 @@ public class OpenAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		/**
-		 * Points to the most recent snapshot of the o1 model:o1-preview-2024-09-12
+		 * Points to the most recent snapshot of the o1 model:o1-2024-12-17
+		 */
+		O1("o1"),
+		/**
+		 * Latest o1 model snapshot
+		 */
+		O1_2024_12_17("o1-2024-12-17"),
+		/**
+		 * Points to the most recent snapshot of the o1 preview
+		 * model:o1-preview-2024-09-12
 		 */
 		O1_PREVIEW("o1-preview"),
 		/**
-		 * Latest o1 model snapshot
+		 * Latest o1 preview model snapshot
 		 */
 		O1_PREVIEW_2024_09_12("o1-preview-2024-09-12"),
 		/**
@@ -795,7 +804,7 @@ public class OpenAiApi {
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
 			@JsonProperty("store") Boolean store,
-			@JsonProperty("metadata") Object metadata,
+			@JsonProperty("metadata") Map<String, String> metadata,
 			@JsonProperty("frequency_penalty") Double frequencyPenalty,
 			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("logprobs") Boolean logprobs,

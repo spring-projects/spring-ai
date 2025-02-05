@@ -269,3 +269,20 @@ public EmbeddingModel embeddingModel() {
     return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
 }
 ----
+
+== Accessing the Native Client
+
+The Elasticsearch Vector Store implementation provides access to the underlying native Elasticsearch client (`ElasticsearchClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+ElasticsearchVectorStore vectorStore = context.getBean(ElasticsearchVectorStore.class);
+Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    ElasticsearchClient client = nativeClient.get();
+    // Use the native client for Elasticsearch-specific operations
+}
+----
+
+The native client gives you access to Elasticsearch-specific features and operations that might not be exposed through the `VectorStore` interface.

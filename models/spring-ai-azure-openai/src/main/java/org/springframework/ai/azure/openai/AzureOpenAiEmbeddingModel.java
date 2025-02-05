@@ -23,11 +23,12 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.EmbeddingItem;
 import com.azure.ai.openai.models.Embeddings;
 import com.azure.ai.openai.models.EmbeddingsOptions;
+import com.azure.ai.openai.models.EmbeddingsUsage;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.azure.openai.metadata.AzureOpenAiEmbeddingUsage;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -159,8 +160,12 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	private EmbeddingResponse generateEmbeddingResponse(Embeddings embeddings) {
 		List<Embedding> data = generateEmbeddingList(embeddings.getData());
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.setUsage(AzureOpenAiEmbeddingUsage.from(embeddings.getUsage()));
+		metadata.setUsage(getDefaultUsage(embeddings.getUsage()));
 		return new EmbeddingResponse(data, metadata);
+	}
+
+	private DefaultUsage getDefaultUsage(EmbeddingsUsage usage) {
+		return new DefaultUsage(usage.getPromptTokens(), 0, usage.getTotalTokens(), usage);
 	}
 
 	private List<Embedding> generateEmbeddingList(List<EmbeddingItem> nativeData) {

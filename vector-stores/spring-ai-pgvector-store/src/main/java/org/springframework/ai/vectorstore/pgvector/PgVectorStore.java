@@ -45,6 +45,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -316,6 +317,22 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE metadata::jsonb @@ '"
+				+ nativeFilterExpression + "'::jsonpath";
+
+		// Execute the delete
+		try {
+			this.jdbcTemplate.update(sql);
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
@@ -460,6 +477,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
+	}
+
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
 	 * recall. You can add an index to use approximate nearest neighbor search, which
@@ -495,14 +519,14 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	 */
 	public enum PgDistanceType {
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
 		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -287,6 +288,15 @@ public class CoherenceVectorStoreIT {
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
 			truncateMap(context, ((CoherenceVectorStore) vectorStore).getMapName());
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			CoherenceVectorStore vectorStore = context.getBean(CoherenceVectorStore.class);
+			Optional<Session> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

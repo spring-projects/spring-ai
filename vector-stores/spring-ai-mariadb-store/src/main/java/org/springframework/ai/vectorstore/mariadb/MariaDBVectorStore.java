@@ -41,6 +41,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -135,6 +136,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Diego Dupin
  * @author Ilayaperumal Gopinathan
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class MariaDBVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -328,6 +330,25 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			String sql = String.format("DELETE FROM %s WHERE %s", getFullyQualifiedTableName(), nativeFilterExpression);
+
+			logger.debug("Executing delete with filter: {}", sql);
+
+			this.jdbcTemplate.update(sql);
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
@@ -438,6 +459,13 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			return this.getDistanceType().name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
 	}
 
 	public enum MariaDBDistanceType {

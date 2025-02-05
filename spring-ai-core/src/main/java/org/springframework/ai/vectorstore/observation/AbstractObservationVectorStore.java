@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.lang.Nullable;
 
 /**
@@ -100,6 +101,18 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	public void delete(Filter.Expression filterExpression) {
+		VectorStoreObservationContext observationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.DELETE.value())
+			.build();
+
+		VectorStoreObservationDocumentation.AI_VECTOR_STORE
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> this.doDelete(filterExpression));
+	}
+
+	@Override
 	@Nullable
 	public List<Document> similaritySearch(SearchRequest request) {
 
@@ -130,6 +143,18 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * @return true if the documents were successfully deleted
 	 */
 	public abstract Optional<Boolean> doDelete(List<String> idList);
+
+	/**
+	 * Template method for concrete implementations to provide filter-based deletion
+	 * logic.
+	 * @param filterExpression Filter expression to identify documents to delete
+	 */
+	protected void doDelete(Filter.Expression filterExpression) {
+		// this is temporary until we implement this method in all concrete vector stores,
+		// at which point
+		// this method will become an abstract method.
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * Perform the actual similarity search operation.

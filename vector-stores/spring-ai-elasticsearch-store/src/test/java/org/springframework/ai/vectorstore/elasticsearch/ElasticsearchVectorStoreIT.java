@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -52,6 +54,11 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
+import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -139,6 +146,90 @@ class ElasticsearchVectorStoreIT {
 				.indices()
 				.get("spring-ai-document-index");
 			assertThat(stats.total().docs().count()).isEqualTo(0L);
+		});
+	}
+
+	@Test
+	public void deleteDocumentsByFilterExpressionTest() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
+
+			IndicesStats stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+
+			assertThat(stats.total().docs().count()).isEqualTo(0L);
+
+			// Add documents with metadata
+			List<Document> documents = List.of(
+					new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+					new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+					new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+
+			vectorStore.add(documents);
+			elasticsearchClient.indices().refresh();
+
+			stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats.total().docs().count()).isEqualTo(3L);
+
+			// Delete documents with meta1 using filter expression
+			Expression filterExpression = new Expression(ExpressionType.EQ, new Key("meta1"), new Value("meta1"));
+
+			vectorStore.delete(filterExpression);
+			elasticsearchClient.indices().refresh();
+
+			stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats.total().docs().count()).isEqualTo(2L);
+
+			// Clean up remaining documents
+			vectorStore.delete(List.of("2", "3"));
+			elasticsearchClient.indices().refresh();
+
+			stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats.total().docs().count()).isEqualTo(0L);
+		});
+	}
+
+	@Test
+	public void deleteWithStringFilterExpressionTest() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
+
+			List<Document> documents = List.of(
+					new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
+					new Document("2", getText("classpath:/test/data/time.shelter.txt"), Map.of()),
+					new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
+
+			vectorStore.add(documents);
+			elasticsearchClient.indices().refresh();
+
+			// Delete documents with meta1 using string filter
+			vectorStore.delete("meta1 == 'meta1'");
+			elasticsearchClient.indices().refresh();
+
+			IndicesStats stats = elasticsearchClient.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats.total().docs().count()).isEqualTo(2L);
+
+			// Clean up
+			vectorStore.delete(List.of("2", "3"));
+			elasticsearchClient.indices().refresh();
 		});
 	}
 
@@ -397,6 +488,65 @@ class ElasticsearchVectorStoreIT {
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(50).similarityThresholdAll().build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void overDefaultSizeTest() {
+
+		var overDefaultSize = 12;
+
+		getContextRunner().run(context -> {
+
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			var testDocs = new ArrayList<Document>();
+			for (int i = 0; i < overDefaultSize; i++) {
+				testDocs.add(new Document(String.valueOf(i), "Great Depression " + i, Map.of()));
+			}
+			vectorStore.add(testDocs);
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
+						hasSize(1));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Great Depression")
+				.topK(overDefaultSize)
+				.similarityThresholdAll()
+				.build());
+
+			assertThat(results).hasSize(overDefaultSize);
+
+			// Remove all documents from the store
+			vectorStore.delete(testDocs.stream().map(Document::getId).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
+						hasSize(0));
+		});
+	}
+
+	@Test
+	public void getNativeClientTest() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			// Test successful native client retrieval
+			Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+
+			// Verify client functionality
+			ElasticsearchClient client = nativeClient.get();
+			IndicesStats stats = client.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats).isNotNull();
 		});
 	}
 

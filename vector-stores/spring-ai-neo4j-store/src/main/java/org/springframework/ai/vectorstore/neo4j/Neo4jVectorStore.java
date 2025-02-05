@@ -25,17 +25,18 @@ import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -133,6 +134,8 @@ import org.springframework.util.StringUtils;
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	private static final Logger logger = LoggerFactory.getLogger(Neo4jVectorStore.class);
+
 	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
 	public static final int DEFAULT_TRANSACTION_SIZE = 10_000;
@@ -207,12 +210,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			var statement = """
 						UNWIND $rows AS row
 						MERGE (u:%s {%2$s: row.id})
-						ON CREATE
 							SET u += row.properties
-						ON MATCH
-							SET u = {}
-							SET u.%2$s = row.id,
-								u += row.properties
 						WITH row, u
 						CALL db.create.setNodeVectorProperty(u, $embeddingProperty, row[$embeddingProperty])
 					""".formatted(this.label, this.idProperty);
@@ -237,6 +235,29 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 						Map.of("ids", idList, "transactionSize", DEFAULT_TRANSACTION_SIZE))
 				.consume();
 			return Optional.of(idList.size() == summary.counters().nodesDeleted());
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try (var session = this.driver.session(this.sessionConfig)) {
+			String whereClause = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			// Create Cypher query with transaction batching
+			String cypher = """
+					MATCH (node:%s) WHERE %s
+					CALL { WITH node DETACH DELETE node } IN TRANSACTIONS OF $transactionSize ROWS
+					""".formatted(this.label, whereClause);
+
+			var summary = session.run(cypher, Map.of("transactionSize", DEFAULT_TRANSACTION_SIZE)).consume();
+
+			logger.debug("Deleted {} nodes matching filter expression", summary.counters().nodesDeleted());
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete nodes by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete nodes by filter", e);
 		}
 	}
 
@@ -345,6 +366,13 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			return this.distanceType.name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.driver;
+		return Optional.of(client);
 	}
 
 	/**

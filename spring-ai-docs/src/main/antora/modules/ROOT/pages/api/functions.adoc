@@ -1,6 +1,8 @@
 [[Function]]
 = Function Calling API
 
+WARNING: This page describes the previous version of the Function Calling API, which has been deprecated and marked for remove in the next release. The current version is available at xref:api/tools.adoc[Tool Calling]. See the xref:api/tools-migration.adoc[Migration Guide] for more information.
+
 The integration of function support in AI models, permits the model to request the execution of client-side functions, thereby accessing necessary information or performing tasks dynamically as required.
 
 Spring AI currently supports function invocation for the following AI Models:

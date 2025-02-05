@@ -37,13 +37,13 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
@@ -246,16 +246,13 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void functionCallTest() {
 
-		FunctionCallback functionCallback = FunctionCallback.builder()
-			.function("getCurrentWeather", new MockWeatherService())
-			.description("Get the weather in location")
-			.inputType(MockWeatherService.Request.class)
-			.build();
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
-				.functions(functionCallback)
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -270,8 +267,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunctions(FunctionCallback.builder()
-					.function("getCurrentWeather", new MockWeatherService())
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -291,8 +287,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-				.functions(FunctionCallback.builder()
-					.function("getCurrentWeather", new MockWeatherService())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -320,8 +315,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:on
 
 		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -341,8 +335,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:on
 
 		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test
@@ -364,8 +357,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 
 		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
+		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test

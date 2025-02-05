@@ -1,6 +1,61 @@
 [[upgrade-notes]]
 = Upgrading Notes
 
+== Upgrading to 1.0.0.M6
+
+
+=== Changes to Usage Interface and DefaultUsage Implementation
+
+The `Usage` interface and its default implementation `DefaultUsage` have undergone the following changes:
+
+1. Method Rename:
+* `getGenerationTokens()` is now `getCompletionTokens()`
+
+2. Type Changes:
+* All token count fields in `DefaultUsage` changed from `Long` to `Integer`:
+** `promptTokens`
+** `completionTokens` (formerly `generationTokens`)
+** `totalTokens`
+
+==== Required Actions
+
+* Replace all calls to `getGenerationTokens()` with `getCompletionTokens()`
+
+* Update `DefaultUsage` constructor calls:
+[source,java]
+----
+// Old (M5)
+new DefaultUsage(Long promptTokens, Long generationTokens, Long totalTokens)
+
+// New (M6)
+new DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens)
+----
+
+
+NOTE: For more information on handling Usage, refer xref:api/usage-handling.adoc[here]
+
+==== JSON Ser/Deser changes
+While M6 maintains backward compatibility for JSON deserialization of the `generationTokens` field, this field will be removed in M7. Any persisted JSON documents using the old field name should be updated to use `completionTokens`.
+
+Example of the new JSON format:
+[source,json]
+----
+{
+  "promptTokens": 100,
+  "completionTokens": 50,
+  "totalTokens": 150
+}
+----
+
+
+=== Removal of deprecated Amazon Bedrock chat models
+
+Starting 1.0.0-M6, Spring AI transitioned to using Amazon Bedrock's Converse API for all Chat conversation implementations in Spring AI.
+All the Amazon Bedrock Chat models are removed except the Embedding models for Cohere and Titan.
+
+NOTE: Refer to xref:api/chat/bedrock-converse.adoc[Bedrock Converse] documentation for using the chat models.
+
+
 
 == Upgrading to 1.0.0.M5
 
@@ -313,4 +368,3 @@ You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://mar
 * PaLM API support removal
 
 As a follow up to the announcement to https://ai.google.dev/palm_docs/deprecation[deprecate PaLM API], the PaLM API support is removed.
-

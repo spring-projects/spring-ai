@@ -40,6 +40,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
@@ -71,7 +72,6 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.MediaCo
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
-import org.springframework.ai.openai.metadata.OpenAiUsage;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
@@ -267,7 +267,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 				// Current usage
 				OpenAiApi.Usage usage = completionEntity.getBody().usage();
-				Usage currentChatResponseUsage = usage != null ? OpenAiUsage.from(usage) : new EmptyUsage();
+				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(completionEntity.getBody(), rateLimit, accumulatedUsage));
@@ -352,7 +352,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 						}).toList();
 						// @formatter:on
 						OpenAiApi.Usage usage = chatCompletion2.usage();
-						Usage currentChatResponseUsage = usage != null ? OpenAiUsage.from(usage) : new EmptyUsage();
+						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage,
 								previousChatResponse);
 						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
@@ -499,6 +499,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
 				chunk.systemFingerprint(), "chat.completion", chunk.usage());
+	}
+
+	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	/**

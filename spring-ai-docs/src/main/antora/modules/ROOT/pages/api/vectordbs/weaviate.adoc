@@ -230,3 +230,20 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
 |`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
 |===
+
+== Accessing the Native Client
+
+The Weaviate Vector Store implementation provides access to the underlying native Weaviate client (`WeaviateClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+WeaviateVectorStore vectorStore = context.getBean(WeaviateVectorStore.class);
+Optional<WeaviateClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    WeaviateClient client = nativeClient.get();
+    // Use the native client for Weaviate-specific operations
+}
+----
+
+The native client gives you access to Weaviate-specific features and operations that might not be exposed through the `VectorStore` interface.

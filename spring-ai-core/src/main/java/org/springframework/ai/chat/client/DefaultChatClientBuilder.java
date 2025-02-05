@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -147,22 +148,46 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
-	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
-		this.defaultRequest.function(name, description, function);
+	@Override
+	public Builder defaultTools(String... toolNames) {
+		this.defaultRequest.tools(toolNames);
 		return this;
 	}
 
+	@Override
+	public Builder defaultTools(FunctionCallback... toolCallbacks) {
+		this.defaultRequest.tools(toolCallbacks);
+		return this;
+	}
+
+	@Override
+	public Builder defaultTools(Object... toolObjects) {
+		this.defaultRequest.tools(toolObjects);
+		return this;
+	}
+
+	@Deprecated // Use defaultTools()
+	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
+		this.defaultRequest
+			.functions(FunctionCallback.builder().function(name, function).description(description).build());
+		return this;
+	}
+
+	@Deprecated // Use defaultTools()
 	public <I, O> Builder defaultFunction(String name, String description,
 			java.util.function.BiFunction<I, ToolContext, O> biFunction) {
-		this.defaultRequest.function(name, description, biFunction);
+		this.defaultRequest
+			.functions(FunctionCallback.builder().function(name, biFunction).description(description).build());
 		return this;
 	}
 
+	@Deprecated // Use defaultTools()
 	public Builder defaultFunctions(String... functionNames) {
 		this.defaultRequest.functions(functionNames);
 		return this;
 	}
 
+	@Deprecated // Use defaultTools()
 	public Builder defaultFunctions(FunctionCallback... functionCallbacks) {
 		this.defaultRequest.functions(functionCallbacks);
 		return this;
@@ -171,6 +196,19 @@ public class DefaultChatClientBuilder implements Builder {
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
 		this.defaultRequest.toolContext(toolContext);
 		return this;
+	}
+
+	void addMessages(List<Message> messages) {
+		this.defaultRequest.messages(messages);
+	}
+
+	void addToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		this.defaultRequest.tools(toolCallbacks.toArray(FunctionCallback[]::new));
+	}
+
+	void addToolContext(Map<String, Object> toolContext) {
+		this.defaultRequest.toolContext(toolContext);
 	}
 
 }

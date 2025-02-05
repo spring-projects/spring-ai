@@ -91,6 +91,7 @@ The prefix `spring.ai.zhipuai.embedding` is property prefix that configures the 
 | spring.ai.zhipuai.embedding.base-url   | Optional overrides the spring.ai.zhipuai.base-url to provide embedding specific url | -
 | spring.ai.zhipuai.embedding.api-key    | Optional overrides the spring.ai.zhipuai.api-key to provide embedding specific api-key  | -
 | spring.ai.zhipuai.embedding.options.model      | The model to use      | embedding-2
+| spring.ai.zhipuai.embedding.options.dimensions      | The number of dimensions, the default value is 2048 when the model is embedding-3 | -
 |====
 
 NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
@@ -185,7 +186,8 @@ var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
 var embeddingModel = new ZhiPuAiEmbeddingModel(api, MetadataMode.EMBED,
 				ZhiPuAiEmbeddingOptions.builder()
-						.model("embedding-2")
+						.model("embedding-3")
+						.dimensions(1536)
 						.build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel

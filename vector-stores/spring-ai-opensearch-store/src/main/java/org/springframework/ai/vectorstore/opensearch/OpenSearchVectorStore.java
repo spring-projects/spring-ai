@@ -32,17 +32,19 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -139,6 +141,8 @@ import org.springframework.util.Assert;
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	private static final Logger logger = LoggerFactory.getLogger(OpenSearchVectorStore.class);
+
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
@@ -227,6 +231,31 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			// Create delete by query request
+			DeleteByQueryRequest request = new DeleteByQueryRequest.Builder().index(this.index)
+				.query(q -> q.queryString(qs -> qs.query(filterStr)))
+				.build();
+
+			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
+			logger.debug("Deleted " + response.deleted() + " documents matching filter expression");
+
+			if (!response.failures().isEmpty()) {
+				throw new IllegalStateException("Failed to delete some documents: " + response.failures());
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage());
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
@@ -349,6 +378,13 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 
 		return this.similarityFunction;
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.openSearchClient;
+		return Optional.of(client);
 	}
 
 	/**

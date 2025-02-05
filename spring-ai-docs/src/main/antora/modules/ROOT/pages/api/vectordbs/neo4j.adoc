@@ -237,3 +237,20 @@ is converted into the proprietary Neo4j filter format:
 ----
 node.`metadata.author` IN ["john","jill"] AND node.`metadata.'article_type'` = "blog"
 ----
+
+== Accessing the Native Client
+
+The Neo4j Vector Store implementation provides access to the underlying native Neo4j client (`Driver`) through the `getNativeClient()` method:
+
+[source,java]
+----
+Neo4jVectorStore vectorStore = context.getBean(Neo4jVectorStore.class);
+Optional<Driver> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    Driver driver = nativeClient.get();
+    // Use the native client for Neo4j-specific operations
+}
+----
+
+The native client gives you access to Neo4j-specific features and operations that might not be exposed through the `VectorStore` interface.
