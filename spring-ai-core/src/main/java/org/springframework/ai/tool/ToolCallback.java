@@ -16,9 +16,11 @@
 
 package org.springframework.ai.tool;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.lang.Nullable;
 
 /**
  * Represents a tool whose execution can be triggered by an AI model.
@@ -38,6 +40,23 @@ public interface ToolCallback extends FunctionCallback {
 	 */
 	default ToolMetadata getToolMetadata() {
 		return ToolMetadata.builder().build();
+	}
+
+	/**
+	 * Execute tool with the given input and return the result to send back to the AI
+	 * model.
+	 */
+	String call(String toolInput);
+
+	/**
+	 * Execute tool with the given input and context, and return the result to send back
+	 * to the AI model.
+	 */
+	default String call(String toolInput, @Nullable ToolContext tooContext) {
+		if (tooContext != null && !tooContext.getContext().isEmpty()) {
+			throw new UnsupportedOperationException("Tool context is not supported!");
+		}
+		return call(toolInput);
 	}
 
 	@Override

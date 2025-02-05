@@ -20,8 +20,8 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.execution.DefaultToolCallExceptionConverter;
-import org.springframework.ai.tool.execution.ToolCallExceptionConverter;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
@@ -59,19 +59,19 @@ public class ToolCallingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ToolCallExceptionConverter toolCallExceptionConverter() {
-		return new DefaultToolCallExceptionConverter(false);
+	ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
+		return new DefaultToolExecutionExceptionProcessor(false);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
-			ToolCallExceptionConverter toolCallExceptionConverter,
+			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
 			ObjectProvider<ObservationRegistry> observationRegistry) {
 		return ToolCallingManager.builder()
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallbackResolver(toolCallbackResolver)
-			.toolCallExceptionConverter(toolCallExceptionConverter)
+			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 			.build();
 	}
 

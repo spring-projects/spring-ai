@@ -102,7 +102,7 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 		logger.debug("Successful execution of tool: {}", toolDefinition.name());
 
-		return toolCallResultConverter.apply(response, null);
+		return toolCallResultConverter.convert(response, null);
 	}
 
 	@Override

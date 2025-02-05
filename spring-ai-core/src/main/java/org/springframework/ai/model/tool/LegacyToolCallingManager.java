@@ -29,8 +29,8 @@ import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.tool.execution.DefaultToolCallExceptionConverter;
-import org.springframework.ai.tool.execution.ToolCallExceptionConverter;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -59,7 +59,8 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 
 	private final Map<String, FunctionCallback> functionCallbacks = new HashMap<>();
 
-	private final ToolCallExceptionConverter toolCallExceptionConverter = DefaultToolCallExceptionConverter.builder()
+	private final ToolExecutionExceptionProcessor toolExecutionExceptionProcessor = DefaultToolExecutionExceptionProcessor
+		.builder()
 		.build();
 
 	public LegacyToolCallingManager(@Nullable FunctionCallbackResolver functionCallbackResolver,
@@ -194,7 +195,7 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 				toolResult = toolCallback.call(toolInputArguments, toolContext);
 			}
 			catch (ToolExecutionException ex) {
-				toolResult = toolCallExceptionConverter.convert(ex);
+				toolResult = toolExecutionExceptionProcessor.process(ex);
 			}
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));

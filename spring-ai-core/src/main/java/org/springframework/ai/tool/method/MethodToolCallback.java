@@ -31,7 +31,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -112,7 +111,7 @@ public class MethodToolCallback implements ToolCallback {
 
 		Type returnType = toolMethod.getGenericReturnType();
 
-		return toolCallResultConverter.apply(result, returnType);
+		return toolCallResultConverter.convert(result, returnType);
 	}
 
 	private void validateToolContextSupport(@Nullable ToolContext toolContext) {

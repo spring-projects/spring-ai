@@ -21,25 +21,25 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 /**
- * Default implementation of {@link ToolCallExceptionConverter}.
+ * Default implementation of {@link ToolExecutionExceptionProcessor}.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class DefaultToolCallExceptionConverter implements ToolCallExceptionConverter {
+public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExceptionProcessor {
 
-	private final static Logger logger = LoggerFactory.getLogger(DefaultToolCallExceptionConverter.class);
+	private final static Logger logger = LoggerFactory.getLogger(DefaultToolExecutionExceptionProcessor.class);
 
 	private static final boolean DEFAULT_ALWAYS_THROW = false;
 
 	private final boolean alwaysThrow;
 
-	public DefaultToolCallExceptionConverter(boolean alwaysThrow) {
+	public DefaultToolExecutionExceptionProcessor(boolean alwaysThrow) {
 		this.alwaysThrow = alwaysThrow;
 	}
 
 	@Override
-	public String convert(ToolExecutionException exception) {
+	public String process(ToolExecutionException exception) {
 		Assert.notNull(exception, "exception cannot be null");
 		if (alwaysThrow) {
 			throw exception;
@@ -62,8 +62,8 @@ public class DefaultToolCallExceptionConverter implements ToolCallExceptionConve
 			return this;
 		}
 
-		public DefaultToolCallExceptionConverter build() {
-			return new DefaultToolCallExceptionConverter(alwaysThrow);
+		public DefaultToolExecutionExceptionProcessor build() {
+			return new DefaultToolExecutionExceptionProcessor(alwaysThrow);
 		}
 
 	}

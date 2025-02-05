@@ -24,34 +24,38 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Unit tests for {@link DefaultToolCallExceptionConverter}.
+ * Unit tests for {@link DefaultToolExecutionExceptionProcessor}.
  *
  * @author Thomas Vitale
  */
-class DefaultToolCallExceptionConverterTests {
+class DefaultToolExecutionExceptionProcessorTests {
 
 	@Test
 	void whenDefaultThenReturnMessage() {
-		ToolCallExceptionConverter converter = DefaultToolCallExceptionConverter.builder().build();
+		ToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder().build();
 		ToolExecutionException exception = new ToolExecutionException(generateTestDefinition(),
 				new RuntimeException("Test"));
-		assertThat(converter.convert(exception)).isEqualTo("Test");
+		assertThat(processor.process(exception)).isEqualTo("Test");
 	}
 
 	@Test
 	void whenNotAlwaysThrowThenReturnMessage() {
-		ToolCallExceptionConverter converter = DefaultToolCallExceptionConverter.builder().alwaysThrow(false).build();
+		ToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder()
+			.alwaysThrow(false)
+			.build();
 		ToolExecutionException exception = new ToolExecutionException(generateTestDefinition(),
 				new RuntimeException("Test"));
-		assertThat(converter.convert(exception)).isEqualTo("Test");
+		assertThat(processor.process(exception)).isEqualTo("Test");
 	}
 
 	@Test
 	void whenAlwaysThrowThenThrow() {
-		ToolCallExceptionConverter converter = DefaultToolCallExceptionConverter.builder().alwaysThrow(true).build();
+		ToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder()
+			.alwaysThrow(true)
+			.build();
 		ToolExecutionException exception = new ToolExecutionException(generateTestDefinition(),
 				new RuntimeException("Test"));
-		assertThatThrownBy(() -> converter.convert(exception)).isInstanceOf(ToolExecutionException.class);
+		assertThatThrownBy(() -> processor.process(exception)).isInstanceOf(ToolExecutionException.class);
 	}
 
 	private ToolDefinition generateTestDefinition() {

@@ -17,6 +17,7 @@
 package org.springframework.ai.util.json.schema;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
@@ -54,6 +55,8 @@ import java.util.stream.Stream;
  * <ul>
  * <li>{@code @ToolParam(required = ..., description = ...)}</li>
  * <li>{@code @JsonProperty(required = ...)}</li>
+ * <li>{@code @JsonClassDescription(...)}</li>
+ * <li>{@code @JsonPropertyDescription(...)}</li>
  * <li>{@code @Schema(required = ..., description = ...)}</li>
  * <li>{@code @Nullable}</li>
  * </ul>
@@ -165,13 +168,19 @@ public final class JsonSchemaGenerator {
 	}
 
 	/**
-	 * Determines whether a property is required based on the presence of a series of
+	 * Determines whether a property is required based on the presence of a series of *
 	 * annotations.
+	 *
 	 * <p>
-	 * - {@code @ToolParam(required = ...)} - {@code @JsonProperty(required = ...)} -
-	 * {@code @Schema(required = ...)}
+	 * <ul>
+	 * <li>{@code @ToolParam(required = ...)}</li>
+	 * <li>{@code @JsonProperty(required = ...)}</li>
+	 * <li>{@code @Schema(required = ...)}</li>
+	 * <li>{@code @Nullable}</li>
+	 * </ul>
 	 * <p>
-	 * If none of these annotations are present, the default behavior is to consider the
+	 *
+	 * If none of these annotations are present, the default behavior is to consider the *
 	 * property as required.
 	 */
 	private static boolean isMethodParameterRequired(Method method, int index) {
@@ -201,6 +210,17 @@ public final class JsonSchemaGenerator {
 		return PROPERTY_REQUIRED_BY_DEFAULT;
 	}
 
+	/**
+	 * Determines a property description based on the presence of a series of annotations.
+	 *
+	 * <p>
+	 * <ul>
+	 * <li>{@code @ToolParam(description = ...)}</li>
+	 * <li>{@code @JsonPropertyDescription(...)}</li>
+	 * <li>{@code @Schema(description = ...)}</li>
+	 * </ul>
+	 * <p>
+	 */
 	@Nullable
 	private static String getMethodParameterDescription(Method method, int index) {
 		Parameter parameter = method.getParameters()[index];
@@ -208,6 +228,11 @@ public final class JsonSchemaGenerator {
 		var toolParamAnnotation = parameter.getAnnotation(ToolParam.class);
 		if (toolParamAnnotation != null && StringUtils.hasText(toolParamAnnotation.description())) {
 			return toolParamAnnotation.description();
+		}
+
+		var jacksonAnnotation = parameter.getAnnotation(JsonPropertyDescription.class);
+		if (jacksonAnnotation != null && StringUtils.hasText(jacksonAnnotation.value())) {
+			return jacksonAnnotation.value();
 		}
 
 		var schemaAnnotation = parameter.getAnnotation(Schema.class);

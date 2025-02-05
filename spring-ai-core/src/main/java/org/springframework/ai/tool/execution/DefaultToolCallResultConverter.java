@@ -35,7 +35,7 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallResultConverter.class);
 
 	@Override
-	public String apply(@Nullable Object result, @Nullable Type returnType) {
+	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
 			return "Done";

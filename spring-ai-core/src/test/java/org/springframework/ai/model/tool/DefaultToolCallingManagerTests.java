@@ -26,7 +26,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.tool.execution.ToolCallExceptionConverter;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
@@ -59,7 +59,7 @@ class DefaultToolCallingManagerTests {
 		assertThatThrownBy(() -> DefaultToolCallingManager.builder()
 			.observationRegistry(null)
 			.toolCallbackResolver(mock(ToolCallbackResolver.class))
-			.toolCallExceptionConverter(mock(ToolCallExceptionConverter.class))
+			.toolExecutionExceptionProcessor(mock(ToolExecutionExceptionProcessor.class))
 			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("observationRegistry cannot be null");
 	}
 
@@ -68,7 +68,7 @@ class DefaultToolCallingManagerTests {
 		assertThatThrownBy(() -> DefaultToolCallingManager.builder()
 			.observationRegistry(mock(ObservationRegistry.class))
 			.toolCallbackResolver(null)
-			.toolCallExceptionConverter(mock(ToolCallExceptionConverter.class))
+			.toolExecutionExceptionProcessor(mock(ToolExecutionExceptionProcessor.class))
 			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("toolCallbackResolver cannot be null");
 	}
 
@@ -77,7 +77,7 @@ class DefaultToolCallingManagerTests {
 		assertThatThrownBy(() -> DefaultToolCallingManager.builder()
 			.observationRegistry(mock(ObservationRegistry.class))
 			.toolCallbackResolver(mock(ToolCallbackResolver.class))
-			.toolCallExceptionConverter(null)
+			.toolExecutionExceptionProcessor(null)
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolCallExceptionConverter cannot be null");
 	}
