@@ -566,24 +566,25 @@ spring.ai.openai.api-key=your-api-key-here
 
 === Custom API Key Configuration
 
-You can provide your own `ApiKey` implementation by creating a bean with the `@OpenAiApiKey` qualifier:
+You can create a custom instance of `OpenAiApi` with your own `ApiKey` implementation using the builder pattern:
 
 [source,java]
 ----
-@Configuration
-class OpenAiConfig {
-    @Bean
-    @OpenAiApiKey
-    public ApiKey customOpenAiKey() {
-        return new ApiKey() {
-            @Override
-            public String getValue() {
-                // Custom logic to retrieve API key
-                return "your-api-key-here";
-            }
-        };
+ApiKey customApiKey = new ApiKey() {
+    @Override
+    public String getValue() {
+        // Custom logic to retrieve API key
+        return "your-api-key-here";
     }
-}
+};
+
+OpenAiApi openAiApi = OpenAiApi.builder()
+    .apiKey(customApiKey)
+    .build();
+
+// Create a chat client with the custom OpenAiApi instance
+OpenAiChatClient chatClient = new OpenAiChatClient(openAiApi);
+
 ----
 
 This is useful when you need to:
@@ -592,4 +593,3 @@ This is useful when you need to:
 * Rotate API keys dynamically
 * Implement custom API key selection logic
 
-NOTE: If you provide multiple `ApiKey` beans, make sure to use the `@OpenAiApiKey` qualifier to specify which one should be used for OpenAI operations. Without proper qualification, Spring will fail to start due to ambiguous bean definitions.
