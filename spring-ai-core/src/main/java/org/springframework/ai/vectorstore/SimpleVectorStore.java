@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -46,9 +47,14 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.SimpleVectorStoreFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.core.io.Resource;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -67,6 +73,7 @@ import org.springframework.core.io.Resource;
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Jemin Huh
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
@@ -74,11 +81,17 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private final ObjectMapper objectMapper;
 
+	private final ExpressionParser expressionParser;
+
+	private final FilterExpressionConverter filterExpressionConverter;
+
 	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
 
 	protected SimpleVectorStore(SimpleVectorStoreBuilder builder) {
 		super(builder);
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.expressionParser = new SpelExpressionParser();
+		this.filterExpressionConverter = new SimpleVectorStoreFilterExpressionConverter();
 	}
 
 	/**
@@ -114,20 +127,27 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
-		if (request.getFilterExpression() != null) {
-			throw new UnsupportedOperationException(
-					"The [" + this.getClass() + "] doesn't support metadata filtering!");
-		}
-
+		Predicate<SimpleVectorStoreContent> documentFilterPredicate = doFilterPredicate(request);
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
+			.filter(documentFilterPredicate)
 			.map(content -> content
 				.toDocument(EmbeddingMath.cosineSimilarity(userQueryEmbedding, content.getEmbedding())))
 			.filter(document -> document.getScore() >= request.getSimilarityThreshold())
 			.sorted(Comparator.comparing(Document::getScore).reversed())
 			.limit(request.getTopK())
 			.toList();
+	}
+
+	private Predicate<SimpleVectorStoreContent> doFilterPredicate(SearchRequest request) {
+		return request.hasFilterExpression() ? document -> {
+			StandardEvaluationContext context = new StandardEvaluationContext();
+			context.setVariable("metadata", document.getMetadata());
+			return this.expressionParser
+				.parseExpression(this.filterExpressionConverter.convertExpression(request.getFilterExpression()))
+				.getValue(context, Boolean.class);
+		} : document -> true;
 	}
 
 	/**
