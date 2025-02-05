@@ -309,10 +309,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private Object convertIdToPgType(String id) {
-		if (this.initializeSchema) {
-			return UUID.fromString(id);
-		}
-
 		return switch (getIdType()) {
 			case UUID -> UUID.fromString(id);
 			case TEXT -> id;
@@ -534,6 +530,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	}
 
+	/**
+	 * The ID type for the Pg vector store schema. Defaults to UUID.
+	 */
 	public enum PgIdType {
 
 		UUID, TEXT, INTEGER, SERIAL, BIGSERIAL
