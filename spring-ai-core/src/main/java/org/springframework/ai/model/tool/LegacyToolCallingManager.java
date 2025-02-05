@@ -55,6 +55,7 @@ import java.util.Optional;
 @Deprecated
 public class LegacyToolCallingManager implements ToolCallingManager {
 
+	@Nullable
 	private final FunctionCallbackResolver functionCallbackResolver;
 
 	private final Map<String, FunctionCallback> functionCallbacks = new HashMap<>();
@@ -64,11 +65,11 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 		.build();
 
 	public LegacyToolCallingManager(@Nullable FunctionCallbackResolver functionCallbackResolver,
-			List<FunctionCallback> functionCallbacks) {
-		Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
-		Assert.noNullElements(functionCallbacks.toArray(), "functionCallbacks cannot contain null elements");
+			@Nullable List<FunctionCallback> functionCallbacks) {
 		this.functionCallbackResolver = functionCallbackResolver;
-		functionCallbacks.forEach(toolCallback -> this.functionCallbacks.put(toolCallback.getName(), toolCallback));
+		if (functionCallbacks != null) {
+			functionCallbacks.forEach(toolCallback -> this.functionCallbacks.put(toolCallback.getName(), toolCallback));
+		}
 	}
 
 	@Override

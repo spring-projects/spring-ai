@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,10 +28,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.management.ModelManagementOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,16 +44,39 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * @author Jihoon Kim
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
-public class OllamaChatModelTests {
+class OllamaChatModelTests {
 
 	@Mock
 	OllamaApi ollamaApi;
 
 	@Test
-	public void buildOllamaChatModel() {
+	void buildOllamaChatModelWithDeprecatedConstructor() {
+		ChatModel chatModel = new OllamaChatModel(this.ollamaApi,
+				OllamaOptions.builder().model(OllamaModel.MISTRAL).build(), null, null, ObservationRegistry.NOOP,
+				ModelManagementOptions.builder().build());
+		assertThat(chatModel).isNotNull();
+	}
+
+	@Test
+	void buildOllamaChatModelWithConstructor() {
+		ChatModel chatModel = new OllamaChatModel(this.ollamaApi,
+				OllamaOptions.builder().model(OllamaModel.MISTRAL).build(), ToolCallingManager.builder().build(),
+				ObservationRegistry.NOOP, ModelManagementOptions.builder().build());
+		assertThat(chatModel).isNotNull();
+	}
+
+	@Test
+	void buildOllamaChatModelWithBuilder() {
+		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(ollamaApi).build();
+		assertThat(chatModel).isNotNull();
+	}
+
+	@Test
+	void buildOllamaChatModel() {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
 					.ollamaApi(this.ollamaApi)
@@ -60,7 +87,7 @@ public class OllamaChatModelTests {
 	}
 
 	@Test
-	public void buildChatResponseMetadata() {
+	void buildChatResponseMetadata() {
 
 		Long evalDuration = 1000L;
 		Integer evalCount = 101;
@@ -83,7 +110,7 @@ public class OllamaChatModelTests {
 	}
 
 	@Test
-	public void buildChatResponseMetadataAggregationWithNonEmptyMetadata() {
+	void buildChatResponseMetadataAggregationWithNonEmptyMetadata() {
 
 		Long evalDuration = 1000L;
 		Integer evalCount = 101;
