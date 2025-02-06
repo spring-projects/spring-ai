@@ -222,6 +222,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.index).id(id)));
 		}
+		if (bulkRequest(bulkRequestBuilder.build()).errors()) {
+			throw new IllegalStateException("Delete operation failed");
+		}
 	}
 
 	private BulkResponse bulkRequest(BulkRequest bulkRequest) {
