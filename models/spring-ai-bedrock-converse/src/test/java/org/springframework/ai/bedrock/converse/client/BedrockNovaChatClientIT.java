@@ -31,6 +31,7 @@ import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -183,7 +184,7 @@ public class BedrockNovaChatClientIT {
 				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.withRegion(Region.US_EAST_1)
 				.withTimeout(Duration.ofSeconds(120))
-				.withDefaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
+				.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
 				.build();
 		}
 
