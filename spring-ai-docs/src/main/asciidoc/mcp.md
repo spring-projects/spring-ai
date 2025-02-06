@@ -92,7 +92,6 @@ Required dependencies:
 <dependency>
     <groupId>io.modelcontextprotocol.sdk</groupId>
     <artifactId>mcp-spring-webmvc</artifactId>
-    <version>${mcp.version}</version>
 </dependency>
 <dependency>
     <groupId>org.springframework.boot</groupId>
@@ -118,7 +117,6 @@ Required dependencies:
 <dependency>
     <groupId>io.modelcontextprotocol.sdk</groupId>
     <artifactId>mcp-spring-webflux</artifactId>
-    <version>${mcp.version}</version>
 </dependency>
 <dependency>
     <groupId>org.springframework.boot</groupId>
