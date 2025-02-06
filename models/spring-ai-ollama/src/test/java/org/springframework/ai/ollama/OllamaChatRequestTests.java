@@ -20,8 +20,13 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,6 +40,37 @@ class OllamaChatRequestTests {
 		.ollamaApi(new OllamaApi())
 		.defaultOptions(OllamaOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
 		.build();
+
+	@Test
+	void whenToolRuntimeOptionsThenMergeWithDefaults() {
+		OllamaOptions defaultOptions = OllamaOptions.builder()
+			.model("MODEL_NAME")
+			.internalToolExecutionEnabled(true)
+			.toolCallbacks(new TestToolCallback("tool1"), new TestToolCallback("tool2"))
+			.toolNames("tool1", "tool2")
+			.toolContext(Map.of("key1", "value1"))
+			.build();
+		OllamaChatModel chatModel = OllamaChatModel.builder()
+			.ollamaApi(new OllamaApi())
+			.defaultOptions(defaultOptions)
+			.build();
+
+		OllamaOptions runtimeOptions = OllamaOptions.builder()
+			.internalToolExecutionEnabled(false)
+			.toolCallbacks(new TestToolCallback("tool3"), new TestToolCallback("tool4"))
+			.toolNames("tool3")
+			.toolContext(Map.of("key2", "value2"))
+			.build();
+		Prompt prompt = chatModel.buildRequestPrompt(new Prompt("Test message content", runtimeOptions));
+
+		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).isInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(4);
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolNames()).containsExactlyInAnyOrder("tool1",
+				"tool2", "tool3");
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolContext()).containsEntry("key1", "value1")
+			.containsEntry("key2", "value2");
+	}
 
 	@Test
 	void createRequestWithDefaultOptions() {
@@ -122,6 +158,26 @@ class OllamaChatRequestTests {
 		request = chatModel.ollamaChatRequest(prompt2, true);
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
+	}
+
+	static class TestToolCallback implements ToolCallback {
+
+		private final ToolDefinition toolDefinition;
+
+		public TestToolCallback(String name) {
+			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return toolDefinition;
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return "Mission accomplished!";
+		}
+
 	}
 
 }
