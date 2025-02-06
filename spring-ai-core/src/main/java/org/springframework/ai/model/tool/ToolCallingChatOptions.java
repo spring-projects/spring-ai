@@ -24,6 +24,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -202,6 +203,17 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		var mergedToolCallbacks = new ArrayList<>(runtimeToolCallbacks);
 		mergedToolCallbacks.addAll(defaultToolCallbacks);
 		return mergedToolCallbacks;
+	}
+
+	static Map<String, Object> mergeToolContext(Map<String, Object> runtimeToolContext,
+			Map<String, Object> defaultToolContext) {
+		Assert.notNull(runtimeToolContext, "runtimeToolContext cannot be null");
+		Assert.noNullElements(runtimeToolContext.keySet(), "runtimeToolContext keys cannot be null");
+		Assert.notNull(defaultToolContext, "defaultToolContext cannot be null");
+		Assert.noNullElements(defaultToolContext.keySet(), "defaultToolContext keys cannot be null");
+		var mergedToolContext = new HashMap<>(defaultToolContext);
+		mergedToolContext.putAll(runtimeToolContext);
+		return mergedToolContext;
 	}
 
 }

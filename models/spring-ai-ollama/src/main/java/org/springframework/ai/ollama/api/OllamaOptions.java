@@ -18,6 +18,7 @@ package org.springframework.ai.ollama.api;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -331,7 +332,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
 		return new Builder();

@@ -22,6 +22,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -139,6 +140,47 @@ class ToolCallingChatOptionsTests {
 		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(0);
+	}
+
+	@Test
+	void whenMergeRuntimeAndDefaultToolContext() {
+		Map<String, Object> runtimeToolContext = Map.of("key1", "value1", "key2", "value2");
+		Map<String, Object> defaultToolContext = Map.of("key1", "valueA", "key3", "value3");
+		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
+				defaultToolContext);
+		assertThat(mergedToolContext).hasSize(3);
+		assertThat(mergedToolContext).containsEntry("key1", "value1")
+			.containsEntry("key2", "value2")
+			.containsEntry("key3", "value3");
+	}
+
+	@Test
+	void whenMergeRuntimeAndEmptyDefaultToolContext() {
+		Map<String, Object> runtimeToolContext = Map.of("key1", "value1", "key2", "value2");
+		Map<String, Object> defaultToolContext = Map.of();
+		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
+				defaultToolContext);
+		assertThat(mergedToolContext).hasSize(2);
+		assertThat(mergedToolContext).containsEntry("key1", "value1").containsEntry("key2", "value2");
+	}
+
+	@Test
+	void whenMergeEmptyRuntimeAndDefaultToolContext() {
+		Map<String, Object> runtimeToolContext = Map.of();
+		Map<String, Object> defaultToolContext = Map.of("key1", "value1", "key2", "value2");
+		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
+				defaultToolContext);
+		assertThat(mergedToolContext).hasSize(2);
+		assertThat(mergedToolContext).containsEntry("key1", "value1").containsEntry("key2", "value2");
+	}
+
+	@Test
+	void whenMergeEmptyRuntimeAndEmptyDefaultToolContext() {
+		Map<String, Object> runtimeToolContext = Map.of();
+		Map<String, Object> defaultToolContext = Map.of();
+		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
+				defaultToolContext);
+		assertThat(mergedToolContext).hasSize(0);
 	}
 
 	static class TestToolCallback implements ToolCallback {
