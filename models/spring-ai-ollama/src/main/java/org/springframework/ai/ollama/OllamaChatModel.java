@@ -34,6 +34,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -125,8 +126,9 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 
 	@Deprecated
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+			@Nullable FunctionCallbackResolver functionCallbackResolver,
+			@Nullable List<FunctionCallback> toolFunctionCallbacks, ObservationRegistry observationRegistry,
+			ModelManagementOptions modelManagementOptions) {
 		super(functionCallbackResolver, defaultOptions, toolFunctionCallbacks);
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
