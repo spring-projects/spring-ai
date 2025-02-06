@@ -115,28 +115,6 @@ Each of the following sections in the documentation shows which dependencies you
 * xref:api/audio/speech.adoc[Text-To-Speech (TTS) Models]
 * xref:api/vectordbs.adoc[Vector Databases]
 
-== Sample Projects
+== Spring AI samples
 
-You can clone these projects on GitHub to get started.
-
-=== Flight Booking Assistant
-
-https://github.com/tzolov/playground-flight-booking
-
-AI-powered system that has access to terms and conditions (Retrieval Augmented Generation, RAG),
-access tools (Java methods) to perform actions (Function Calling) and uses an LLM to interact with the user
-
-
-=== OpenAI
-
-* https://github.com/rd-1-2022/ai-openai-helloworld
-
-=== Azure OpenAI
-
-* https://github.com/rd-1-2022/ai-azure-openai-helloworld
-* https://github.com/Azure-Samples/spring-ai-azure-workshop
-
-// * https://github.com/rd-1-2022/ai-azure-stuff-prompt
-// * https://github.com/rd-1-2022/ai-azure-prompt-template
-// * https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
-// * https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation
+Please refer to https://github.com/danvega/awesome-spring-ai[this page] for more resources and samples related to Spring AI.
