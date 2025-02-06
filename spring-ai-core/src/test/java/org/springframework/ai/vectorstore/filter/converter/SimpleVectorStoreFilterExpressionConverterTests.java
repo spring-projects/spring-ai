@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata",
 				Map.of("activationDate", "2024-01-07T14:29:12Z", "year", 2020, "country", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 		vectorExpr = this.converter.convertExpression(
 				new Filter.Expression(EQ, new Filter.Key("activationDate"), new Filter.Value("1970-01-01T00:00:02Z")));
@@ -56,7 +56,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 
 		context.setVariable("metadata",
 				Map.of("activationDate", "1970-01-01T00:00:02Z", "year", 2020, "country", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 	}
 
@@ -69,7 +69,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("city", "Seoul", "year", 2020, "country", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 	}
 
@@ -83,7 +83,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("genre", "drama", "year", 2020, "country", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 	}
 
@@ -96,7 +96,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("genre", "drama", "year", 2020, "country", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 	}
 
@@ -113,7 +113,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("city", "Seoul", "year", 2020, "country", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 	}
 
@@ -130,7 +130,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("city", "Seoul", "year", 2020, "country", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 	}
 
@@ -147,7 +147,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("isOpen", true, "year", 2020, "country", "NL"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 		vectorExpr = this.converter.convertExpression(new Filter.Expression(AND,
 				new Filter.Expression(AND, new Filter.Expression(EQ, new Filter.Key("isOpen"), new Filter.Value(true)),
@@ -158,7 +158,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 				"#metadata['isOpen'] == true and #metadata['year'] >= 2020 and not {'BG','NL','US'}.contains(#metadata['country'])");
 
 		context.setVariable("metadata", Map.of("isOpen", true, "year", 2020, "country", "KR"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 	}
 
 	@Test
@@ -172,11 +172,11 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("temperature", -15.6));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 		context.setVariable("metadata", Map.of("temperature", 20.13));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 		context.setVariable("metadata", Map.of("temperature", -1.6));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
 	}
 
@@ -193,7 +193,7 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		StandardEvaluationContext context = new StandardEvaluationContext();
 		ExpressionParser parser = new SpelExpressionParser();
 		context.setVariable("metadata", Map.of("country 1 2 3", "BG"));
-		Assertions.assertTrue(parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
+		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 	}
 
 }
