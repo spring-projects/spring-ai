@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.typesense</groupId>
             <artifactId>typesense-java</artifactId>
-            <version>${typesense.version}</version>
+			<version>${typesense.version}</version>
         </dependency>
 
         <!-- TESTING -->

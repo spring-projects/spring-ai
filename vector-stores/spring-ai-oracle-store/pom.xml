@@ -56,19 +56,16 @@
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ojdbc11</artifactId>
-			<version>${oracle.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ucp</artifactId>
-			<version>${oracle.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.oracle.database.ha</groupId>
 			<artifactId>simplefan</artifactId>
-			<version>${oracle.version}</version>
 		</dependency>
 
 		<dependency>
