@@ -219,6 +219,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
+		if (bulkRequest(bulkRequestBuilder.build()).errors()) {
+			throw new IllegalStateException("Delete operation failed");
+		}
 	}
 
 	@Override
