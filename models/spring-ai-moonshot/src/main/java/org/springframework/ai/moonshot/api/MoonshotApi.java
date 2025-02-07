@@ -532,7 +532,8 @@ public class MoonshotApi {
 		// @formatter:off
 			@JsonProperty("index") Integer index,
 			@JsonProperty("message") ChatCompletionMessage message,
-			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason) {
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+			@JsonProperty("usage") Usage usage) {
 			 // @formatter:on
 		}
 

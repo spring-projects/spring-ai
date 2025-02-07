@@ -243,3 +243,20 @@ You can connect to this server like this:
 ----
 psql -U postgres -h localhost -p 5432
 ----
+
+== Accessing the Native Client
+
+The PGVector Store implementation provides access to the underlying native JDBC client (`JdbcTemplate`) through the `getNativeClient()` method:
+
+[source,java]
+----
+PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
+Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    JdbcTemplate jdbc = nativeClient.get();
+    // Use the native client for PostgreSQL-specific operations
+}
+----
+
+The native client gives you access to PostgreSQL-specific features and operations that might not be exposed through the `VectorStore` interface.

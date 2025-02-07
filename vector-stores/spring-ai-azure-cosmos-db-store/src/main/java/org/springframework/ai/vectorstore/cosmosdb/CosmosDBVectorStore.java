@@ -271,7 +271,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		try {
 			// Convert the list of IDs into bulk delete operations
 			List<CosmosItemOperation> itemOperations = idList.stream()
@@ -285,12 +285,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 						response.getResponse().getStatusCode()))
 				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
 				.blockLast(); // This will block until all operations have finished
-
-			return Optional.of(true);
 		}
 		catch (Exception e) {
 			logger.error("Exception while deleting documents: {}", e.getMessage());
-			return Optional.of(false);
 		}
 	}
 
@@ -372,6 +369,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			.dimensions(this.embeddingModel.dimensions())
 			.namespace(this.container.getDatabase().getId())
 			.similarityMetric("cosine");
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.container;
+		return Optional.of(client);
 	}
 
 	/**

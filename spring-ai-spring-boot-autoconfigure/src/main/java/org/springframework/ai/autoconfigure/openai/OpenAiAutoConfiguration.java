@@ -27,6 +27,7 @@ import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
@@ -160,9 +161,16 @@ public class OpenAiAutoConfiguration {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, chatProperties,
 				modelType);
 
-		return new OpenAiApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				chatProperties.getCompletionsPath(), OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH,
-				restClientBuilder, webClientBuilder, responseErrorHandler);
+		return OpenAiApi.builder()
+			.baseUrl(resolved.baseUrl())
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.headers(resolved.headers())
+			.completionsPath(chatProperties.getCompletionsPath())
+			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 	private OpenAiApi openAiApi(OpenAiEmbeddingProperties embeddingProperties,
@@ -172,9 +180,16 @@ public class OpenAiAutoConfiguration {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, embeddingProperties,
 				modelType);
 
-		return new OpenAiApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH, embeddingProperties.getEmbeddingsPath(),
-				restClientBuilder, webClientBuilder, responseErrorHandler);
+		return OpenAiApi.builder()
+			.baseUrl(resolved.baseUrl())
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.headers(resolved.headers())
+			.completionsPath(OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH)
+			.embeddingsPath(embeddingProperties.getEmbeddingsPath())
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 	@Bean

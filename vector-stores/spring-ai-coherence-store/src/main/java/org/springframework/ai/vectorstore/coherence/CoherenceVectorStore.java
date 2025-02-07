@@ -178,21 +178,15 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(final List<String> idList) {
+	public void doDelete(final List<String> idList) {
 		var chunkIds = idList.stream().map(this::toChunkId).toList();
-		Map<DocumentChunk.Id, Boolean> results = this.documentChunks.invokeAll(chunkIds, entry -> {
+		this.documentChunks.invokeAll(chunkIds, entry -> {
 			if (entry.isPresent()) {
 				entry.remove(false);
 				return true;
 			}
 			return false;
 		});
-		for (boolean r : results.values()) {
-			if (!r) {
-				return Optional.of(false);
-			}
-		}
-		return Optional.of(true);
 	}
 
 	@Override
@@ -273,6 +267,13 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		return VectorStoreObservationContext.builder(VectorStoreProvider.NEO4J.value(), operationName)
 			.collectionName(this.mapName)
 			.dimensions(this.embeddingModel.dimensions());
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.session;
+		return Optional.of(client);
 	}
 
 	/**

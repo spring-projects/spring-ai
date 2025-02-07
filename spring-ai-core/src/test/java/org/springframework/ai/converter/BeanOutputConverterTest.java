@@ -16,37 +16,57 @@
 
 package org.springframework.ai.converter;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
 /**
  * @author Sebastian Ullrich
  * @author Kirk Lund
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Konstantin Pavlov
  */
 @ExtendWith(MockitoExtension.class)
 class BeanOutputConverterTest {
 
+	private ListAppender<ILoggingEvent> logAppender;
+
 	@Mock
 	private ObjectMapper objectMapperMock;
+
+	@BeforeEach
+	void beforeEach() {
+
+		var logger = (Logger) LoggerFactory.getLogger(BeanOutputConverter.class);
+
+		logAppender = new ListAppender<>();
+		logAppender.start();
+		logger.addAppender(logAppender);
+	}
 
 	@Test
 	void shouldHavePreConfiguredDefaultObjectMapper() {
@@ -133,6 +153,19 @@ class BeanOutputConverterTest {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			var testClass = converter.convert("{ \"someString\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void failToConvertInvalidJson() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			assertThatThrownBy(() -> converter.convert("{invalid json")).hasCauseInstanceOf(JsonParseException.class);
+			assertThat(logAppender.list).hasSize(1);
+			final var loggingEvent = logAppender.list.get(0);
+			assertThat(loggingEvent.getFormattedMessage())
+				.isEqualTo("Could not parse the given text to the desired target type: \"{invalid json\" into "
+						+ TestClass.class);
+
+			assertThat(loggingEvent.getMarkerList()).contains(SENSITIVE_DATA_MARKER);
 		}
 
 		@Test

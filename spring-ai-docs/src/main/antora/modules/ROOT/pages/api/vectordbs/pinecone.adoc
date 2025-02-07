@@ -222,3 +222,20 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sprin
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
+
+== Accessing the Native Client
+
+The Pinecone Vector Store implementation provides access to the underlying native Pinecone client (`PineconeConnection`) through the `getNativeClient()` method:
+
+[source,java]
+----
+PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+Optional<PineconeConnection> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    PineconeConnection client = nativeClient.get();
+    // Use the native client for Pinecone-specific operations
+}
+----
+
+The native client gives you access to Pinecone-specific features and operations that might not be exposed through the `VectorStore` interface.

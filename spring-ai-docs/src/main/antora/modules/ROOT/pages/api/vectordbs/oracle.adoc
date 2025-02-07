@@ -206,3 +206,20 @@ You can then connect to the database using:
 ----
 sql mlops/mlops@localhost/freepdb1
 ----
+
+== Accessing the Native Client
+
+The Oracle Vector Store implementation provides access to the underlying native Oracle client (`OracleConnection`) through the `getNativeClient()` method:
+
+[source,java]
+----
+OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+Optional<OracleConnection> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    OracleConnection connection = nativeClient.get();
+    // Use the native client for Oracle-specific operations
+}
+----
+
+The native client gives you access to Oracle-specific features and operations that might not be exposed through the `VectorStore` interface.

@@ -229,3 +229,20 @@ If you are not retrieving the documents in the expected order or the search resu
 
 Embedding models can have a significant impact on the search results (i.e. make sure if your data is in Spanish to use a Spanish or multilingual embedding model).
 ====
+
+== Accessing the Native Client
+
+The Typesense Vector Store implementation provides access to the underlying native Typesense client (`Client`) through the `getNativeClient()` method:
+
+[source,java]
+----
+TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+Optional<Client> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    Client client = nativeClient.get();
+    // Use the native client for Typesense-specific operations
+}
+----
+
+The native client gives you access to Typesense-specific features and operations that might not be exposed through the `VectorStore` interface.

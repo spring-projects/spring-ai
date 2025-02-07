@@ -113,11 +113,6 @@ public final class SimpleVectorStoreContent implements Content {
 	}
 
 	@Override
-	public String getContent() {
-		return this.text;
-	}
-
-	@Override
 	public Map<String, Object> getMetadata() {
 		return this.metadata;
 	}

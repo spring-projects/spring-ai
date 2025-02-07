@@ -35,16 +35,15 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -152,6 +151,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author Jihoon Kim
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -161,6 +161,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
 	public static final String DEFAULT_TABLE_NAME = "vector_store";
+
+	public static final PgIdType DEFAULT_ID_TYPE = PgIdType.UUID;
 
 	public static final String DEFAULT_VECTOR_INDEX_NAME = "spring_ai_vector_index";
 
@@ -186,6 +188,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	private final JdbcTemplate jdbcTemplate;
 
 	private final String schemaName;
+
+	private final PgIdType idType;
 
 	private final boolean schemaValidation;
 
@@ -224,6 +228,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				: this.vectorTableName + "_index";
 
 		this.schemaName = builder.schemaName;
+		this.idType = builder.idType;
 		this.schemaValidation = builder.vectorTableValidationsEnabled;
 
 		this.jdbcTemplate = builder.jdbcTemplate;
@@ -272,13 +277,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 
 				var document = batch.get(i);
+				var id = convertIdToPgType(document.getId());
 				var content = document.getText();
 				var json = toJson(document.getMetadata());
 				var embedding = embeddings.get(documents.indexOf(document));
 				var pGvector = new PGvector(embedding);
 
-				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
-						UUID.fromString(document.getId()));
+				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, id);
 				StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
 				StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
 				StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
@@ -303,16 +308,39 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 	}
 
+	private Object convertIdToPgType(String id) {
+		return switch (getIdType()) {
+			case UUID -> UUID.fromString(id);
+			case TEXT -> id;
+			case INTEGER, SERIAL -> Integer.valueOf(id);
+			case BIGSERIAL -> Long.valueOf(id);
+		};
+	}
+
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		int updateCount = 0;
 		for (String id : idList) {
 			int count = this.jdbcTemplate.update("DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?",
 					UUID.fromString(id));
 			updateCount = updateCount + count;
 		}
+	}
 
-		return Optional.of(updateCount == idList.size());
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE metadata::jsonb @@ '"
+				+ nativeFilterExpression + "'::jsonpath";
+
+		// Execute the delete
+		try {
+			this.jdbcTemplate.update(sql);
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
@@ -412,6 +440,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.schemaName + "." + this.vectorTableName;
 	}
 
+	private PgIdType getIdType() {
+		return this.idType;
+	}
+
 	private String getVectorTableName() {
 		return this.vectorTableName;
 	}
@@ -460,6 +492,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
+	}
+
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
 	 * recall. You can add an index to use approximate nearest neighbor search, which
@@ -490,19 +529,28 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	/**
+	 * The ID type for the Pg vector store schema. Defaults to UUID.
+	 */
+	public enum PgIdType {
+
+		UUID, TEXT, INTEGER, SERIAL, BIGSERIAL
+
+	}
+
+	/**
 	 * Defaults to CosineDistance. But if vectors are normalized to length 1 (like OpenAI
 	 * embeddings), use inner product (NegativeInnerProduct) for best performance.
 	 */
 	public enum PgDistanceType {
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
 		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
 				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
 
-		// NOTE: works only if If vectors are normalized to length 1 (like OpenAI
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
@@ -584,6 +632,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private String vectorTableName = PgVectorStore.DEFAULT_TABLE_NAME;
 
+		private PgIdType idType = PgVectorStore.DEFAULT_ID_TYPE;
+
 		private boolean vectorTableValidationsEnabled = PgVectorStore.DEFAULT_SCHEMA_VALIDATION;
 
 		private int dimensions = PgVectorStore.INVALID_EMBEDDING_DIMENSION;
@@ -611,6 +661,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStoreBuilder vectorTableName(String vectorTableName) {
 			this.vectorTableName = vectorTableName;
+			return this;
+		}
+
+		public PgVectorStoreBuilder idType(PgIdType idType) {
+			this.idType = idType;
 			return this;
 		}
 

@@ -102,8 +102,11 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	public AdvisedRequest before(AdvisedRequest request) {
 		Map<String, Object> context = new HashMap<>(request.adviseContext());
 
-		// 0. Create a query from the user text and parameters.
-		Query originalQuery = new Query(new PromptTemplate(request.userText(), request.userParams()).render());
+		// 0. Create a query from the user text, parameters, and conversation history.
+		Query originalQuery = Query.builder()
+			.text(new PromptTemplate(request.userText(), request.userParams()).render())
+			.history(request.messages())
+			.build();
 
 		// 1. Transform original user query based on a chain of query transformers.
 		Query transformedQuery = originalQuery;

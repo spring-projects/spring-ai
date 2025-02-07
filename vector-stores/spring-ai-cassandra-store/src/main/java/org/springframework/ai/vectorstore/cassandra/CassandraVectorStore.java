@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -66,16 +67,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.cassandra.SchemaUtil;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -305,7 +305,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		CompletableFuture[] futures = new CompletableFuture[idList.size()];
 		int i = 0;
 		for (String id : idList) {
@@ -314,7 +314,38 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			futures[i++] = this.session.executeAsync(s).toCompletableFuture();
 		}
 		CompletableFuture.allOf(futures).join();
-		return Optional.of(Boolean.TRUE);
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			// TODO - Investigate why we can't do a direct filter based delete in
+			// Cassandra
+			// This SO thread seems to indicate that this is not possible in Cassandra
+			// https://stackoverflow.com/questions/70953262/unable-to-delete-multiple-rows-getting-some-partition-key-parts-are-missing-i
+			// Needs more research into this matter.
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("") // empty query since we only want filter matches
+				.filterExpression(filterExpression)
+				.topK(1000) // large enough to get all matches
+				.similarityThresholdAll()
+				.build();
+
+			List<Document> matchingDocs = similaritySearch(searchRequest);
+
+			if (!matchingDocs.isEmpty()) {
+				// Then delete those documents by ID
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				delete(idsToDelete);
+				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter", e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
@@ -671,6 +702,13 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				this.session.execute(stmt);
 			}
 		}
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.session;
+		return Optional.of(client);
 	}
 
 	/**

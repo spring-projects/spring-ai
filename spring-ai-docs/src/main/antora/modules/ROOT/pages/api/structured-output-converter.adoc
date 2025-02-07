@@ -266,10 +266,6 @@ The following AI Models have been tested to support List, Map and Bean structure
 | xref:api/chat/mistralai-chat.adoc[Mistral AI] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/MistralAiChatModelIT.java[MistralAiChatModelIT.java]
 | xref:api/chat/ollama-chat.adoc[Ollama] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatModelIT.java[OllamaChatModelIT.java]
 | xref:api/chat/vertexai-gemini-chat.adoc[Vertex AI Gemini] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatModelIT.java[VertexAiGeminiChatModelIT.java]
-| xref:api/chat/bedrock/bedrock-anthropic.adoc[Bedrock Anthropic 2] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/anthropic/BedrockAnthropicChatModelIT.java[BedrockAnthropicChatModelIT.java]
-| xref:api/chat/bedrock/bedrock-anthropic3.adoc[Bedrock Anthropic 3] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/anthropic3/BedrockAnthropic3ChatModelIT.java[BedrockAnthropic3ChatModelIT.java]
-| xref:api/chat/bedrock/bedrock-cohere.adoc[Bedrock Cohere] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/cohere/BedrockCohereChatModelIT.java[BedrockCohereChatModelIT.java]
-| xref:api/chat/bedrock/bedrock-llama.adoc[Bedrock Llama] | link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/test/java/org/springframework/ai/bedrock/llama/BedrockLlamaChatModelIT.java[BedrockLlamaChatModelIT.java.java]
 |====
 
 == Built-in JSON mode

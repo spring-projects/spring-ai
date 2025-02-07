@@ -27,9 +27,9 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.typesense.TypesenseContainer;
 import org.typesense.api.Client;
 import org.typesense.api.Configuration;
 import org.typesense.resources.Node;
@@ -57,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class TypesenseVectorStoreObservationIT {
@@ -64,9 +65,7 @@ public class TypesenseVectorStoreObservationIT {
 	private static final String TEST_COLLECTION_NAME = "test_vector_store";
 
 	@Container
-	private static GenericContainer<?> typesenseContainer = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
-		.withExposedPorts(8108)
-		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors");
+	private static TypesenseContainer typesense = new TypesenseContainer(TypesenseImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class);
@@ -183,10 +182,9 @@ public class TypesenseVectorStoreObservationIT {
 		@Bean
 		public Client typesenseClient() {
 			List<Node> nodes = new ArrayList<>();
-			nodes
-				.add(new Node("http", typesenseContainer.getHost(), typesenseContainer.getMappedPort(8108).toString()));
+			nodes.add(new Node("http", typesense.getHost(), typesense.getMappedPort(8108).toString()));
 
-			Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), "xyz");
+			Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), typesense.getApiKey());
 			return new Client(configuration);
 		}
 

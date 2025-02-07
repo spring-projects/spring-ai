@@ -23,23 +23,26 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.mongodb.MongoCommandException;
+import com.mongodb.client.result.DeleteResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.UncategorizedMongoDbException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.util.Assert;
@@ -124,6 +127,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final Logger logger = LoggerFactory.getLogger(MongoDBAtlasVectorStore.class);
 
 	public static final String ID_FIELD_NAME = "_id";
 
@@ -263,13 +268,25 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		Query query = new Query(org.springframework.data.mongodb.core.query.Criteria.where(ID_FIELD_NAME).in(idList));
+		this.mongoTemplate.remove(query, this.collectionName);
+	}
 
-		var deleteRes = this.mongoTemplate.remove(query, this.collectionName);
-		long deleteCount = deleteRes.getDeletedCount();
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
 
-		return Optional.of(deleteCount == idList.size());
+		try {
+			String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+			BasicQuery query = new BasicQuery(nativeFilterExpression);
+			DeleteResult deleteResult = this.mongoTemplate.remove(query, this.collectionName);
+
+			logger.debug("Deleted " + deleteResult.getDeletedCount() + " documents matching filter expression");
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
@@ -308,6 +325,13 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			.collectionName(this.collectionName)
 			.dimensions(this.embeddingModel.dimensions())
 			.fieldName(this.pathName);
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.mongoTemplate;
+		return Optional.of(client);
 	}
 
 	/**

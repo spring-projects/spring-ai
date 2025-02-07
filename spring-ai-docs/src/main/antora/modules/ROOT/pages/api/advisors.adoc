@@ -378,8 +378,6 @@ public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamA
 == Backward Compatibility
 
 IMPORTANT: The `AdvisedRequest` class is moved to a new package.
-While the `RequestResponseAdvisor` interface is still available it is marked as deprecated and will be removed around the M3 release.
-It is recommended to use the new `CallAroundAdvisor` and `StreamAroundAdvisor` interfaces for new implementations.
 
 == Breaking API Changes
 The Spring AI Advisor Chain underwent significant changes from version 1.0 M2 to 1.0 M3. Here are the key modifications:

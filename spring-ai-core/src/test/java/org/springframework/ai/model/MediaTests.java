@@ -215,7 +215,7 @@ class MediaTests {
 		Resource resource = new ByteArrayResource(data);
 		String id = "123";
 
-		Media media = new Media(mimeType, resource, id);
+		Media media = Media.builder().mimeType(mimeType).data(resource).id(id).build();
 
 		assertThat(media.getMimeType()).isEqualTo(mimeType);
 		assertThat(media.getData()).isInstanceOf(byte[].class);
@@ -247,7 +247,8 @@ class MediaTests {
 			}
 		};
 
-		assertThatThrownBy(() -> new Media(Media.Format.IMAGE_PNG, failingResource, "123"))
+		assertThatThrownBy(
+				() -> Media.builder().mimeType(Media.Format.IMAGE_PNG).data(failingResource).id("123").build())
 			.isInstanceOf(RuntimeException.class)
 			.hasCauseInstanceOf(IOException.class);
 	}
