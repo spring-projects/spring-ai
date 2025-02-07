@@ -1,0 +1,353 @@
+= MCP Client Boot Starter
+
+The Spring AI MCP (Model Context Protocol) Client Boot Starter provides auto-configuration for MCP client functionality in Spring Boot applications. It supports both synchronous and asynchronous client implementations with various transport options.
+
+The MCP Client Boot Starter provides:
+
+* Management of multiple client instances
+* Automatic client initialization (if enabled)
+* Support for multiple named transports
+* Integration with Spring AI's tool execution framework
+* Proper lifecycle management with automatic cleanup of resources when the application context is closed
+* Customizable client creation through customizers
+
+== Starters
+
+=== Standard MCP Client
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
+</dependency>
+----
+
+The standard starter connects simultaneously to one or more MCP servers over `STDIO` (in-process) and/or `SSE` (remote) transports.
+The SSE connection uses the HttpClient-based transport implementation.
+Each connection to an MCP server creates a new MCP client instance.
+You can choose either `SYNC` or `ASYNC` MCP clients (note: you cannot mix sync and async clients).
+For production deployment, we recommend using the WebFlux-based SSE connection with the `spring-ai-mcp-client-webflux-spring-boot-starter`.
+
+=== WebFlux Client
+
+The WebFlux starter provides similar functionality to the standard starter but uses a WebFlux-based SSE transport implementation.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mcp-client-webflux-spring-boot-starter</artifactId>
+</dependency>
+----
+
+== Configuration Properties
+
+=== Common Properties
+
+The common properties are prefixed with `spring.ai.mcp.client`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP client
+|`true`
+
+|`name`
+|Name of the MCP client instance (used for compatibility checks)
+|`spring-ai-mcp-client`
+
+|`version`
+|Version of the MCP client instance
+|`1.0.0`
+
+|`initialized`
+|Whether to initialize clients on creation
+|`true`
+
+|`request-timeout`
+|Timeout duration for MCP client requests
+|`20s`
+
+|`type`
+|Client type (SYNC or ASYNC). All clients must be either sync or async; mixing is not supported
+|`SYNC`
+
+|`root-change-notification`
+|Enable/disable root change notifications for all clients
+|`true`
+|===
+
+=== Stdio Transport Properties
+
+Properties for Standard I/O transport are prefixed with `spring.ai.mcp.client.stdio`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`servers-configuration`
+|Resource containing the MCP servers configuration in JSON format
+|-
+
+|`connections`
+|Map of named stdio connection configurations
+|-
+
+|`connections.[name].command`
+|The command to execute for the MCP server
+|-
+
+|`connections.[name].args`
+|List of command arguments
+|-
+
+|`connections.[name].env`
+|Map of environment variables for the server process
+|-
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          root-change-notification: true
+          connections:
+            server1:
+              command: /path/to/server
+              args:
+                - --port=8080
+                - --mode=production
+              env:
+                API_KEY: your-api-key
+                DEBUG: "true"
+----
+
+Alternatively, you can configure stdio connections using an external JSON file using the link:https://modelcontextprotocol.io/quickstart/user[Claude Desktop format]:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+----
+
+The Claude Desktop format looks like this:
+
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Desktop",
+        "/Users/username/Downloads"
+      ]
+    }
+  }
+}
+----
+
+Currently, the Claude Desktop format supports only STDIO connection types.
+
+=== SSE Transport Properties
+
+Properties for Server-Sent Events (SSE) transport are prefixed with `spring.ai.mcp.client.sse`:
+
+[cols="2,4"]
+|===
+|Property |Description
+
+|`connections`
+|Map of named SSE connection configurations
+
+|`connections.[name].url`
+|URL endpoint for SSE communication with the MCP server
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        sse:
+          connections:
+            server1:
+              url: http://localhost:8080
+            server2:
+              url: http://otherserver:8081
+----
+
+== Features
+
+=== Sync/Async Client Types
+
+The starter supports two types of clients:
+
+* Synchronous - default client type, suitable for traditional request-response patterns with blocking operations
+* Asynchronous - suitable for reactive applications with non-blocking operations, configured using `spring.ai.mcp.client.type=ASYNC`
+
+=== Client Customization
+
+The auto-configuration supports client spec customization.
+Implement the `McpSyncClientCustomizer` callback interface to customize the `McpClient.SyncSpec` spec for a named server connection.
+Similarly, the `McpAsyncClientCustomizer` interface allows customizing the `McpClient.AsyncSpec` spec for asynchronous clients.
+
+[tabs]
+======
+Sync::
++
+[source,java]
+----
+@Component
+public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
+    @Override
+    public void customize(String name, McpClient.SyncSpec spec) {
+
+        // Customize the sync client configuration
+        spec.requestTimeout(Duration.ofSeconds(30));
+
+        // Adds a consumer to be notified when the available tools change. This allows the
+		    // client to react to changes in the server's tool capabilities, such as tools
+		    // being added or removed.
+        spec.toolsChangeConsumer((List<McpSchema.Tool> tools) -> {
+            // Handle tools change
+        });
+
+        // Adds a consumer to be notified when the available resources change. This allows the
+        // client to react to changes in the server's resource capabilities, such as resources
+        // being added or removed.
+        spec.resourcesChangeConsumer((List<McpSchema.Resource> resources) -> {
+            // Handle resources change
+        });
+
+        // Adds a consumer to be notified when the available prompts change. This allows the
+        // client to react to changes in the server's prompt capabilities, such as prompts
+        // being added or removed.
+        spec.promptsChangeConsumer((List<McpSchema.Prompt> prompts) -> {
+            // Handle prompts change
+        });
+
+        // Adds a consumer to be notified when logging messages are received from the server.
+        spec.loggingConsumer((McpSchema.LoggingMessageNotification log) -> {
+            // Handle log messages
+        });
+
+        // Sets a custom sampling handler for processing message creation requests.
+        spec.sampling((CreateMessageRequest messageRequest) -> {
+            // Handle sampling
+            CreateMessageResult result = ...
+            return result;
+        });
+
+        // Sets the root URIs that the server connecto this client can access. 
+        // Roots define the base URIs for resources that the server can request.
+        // For example, a root might be "file://workspace" for accessing workspace files.
+        spec.roots(roots);
+    }
+}
+----
+
+Async::
++
+[source,java]
+----
+@Component
+public class CustomMcpAsyncClientCustomizer implements McpAsyncClientCustomizer {
+    @Override
+    public void customize(String name, McpClient.AsyncSpec spec) {
+        // Customize the async client configuration
+        spec.requestTimeout(Duration.ofSeconds(30));
+    }
+}
+----
+======
+
+The MCP client auto-configuration automatically detects and applies any customizers found in the application context.
+
+=== Transport Support
+
+The auto-configuration supports multiple transport types:
+
+* Standard I/O (Stdio) (activated by the `spring-ai-mcp-client-spring-boot-starter`)
+* SSE HTTP (activated by the `spring-ai-mcp-client-spring-boot-starter`)
+* SSE WebFlux (activated by the `spring-ai-starter-mcp-client-webflux`)
+
+=== Integration with Spring AI
+
+The starter automatically configures tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions.
+
+== Usage Example
+
+Add the appropriate starter dependency to your project and configure the client in `application.properties` or `application.yml`:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+        name: my-mcp-client
+        version: 1.0.0
+        request-timeout: 30s
+        type: SYNC  # or ASYNC for reactive applications
+        sse:
+          connections:
+            server1:
+              url: http://localhost:8080
+            server2:
+              url: http://otherserver:8081        
+        stdio:
+          root-change-notification: false
+          connections:
+            server1:
+              command: /path/to/server
+              args:
+                - --port=8080
+                - --mode=production
+              env:
+                API_KEY: your-api-key
+                DEBUG: "true"
+----
+
+The MCP client beans will be automatically configured and available for injection:
+
+[source,java]
+----
+@Autowired
+private List<McpSyncClient> mcpSyncClients;  // For sync client
+
+// OR
+
+@Autowired
+private List<McpAsyncClient> mcpAsyncClients;  // For async client
+----
+
+Additionally, the registered MCP Tools with all MCP clients are provided as a list of ToolCallback instances:
+
+[source,java]
+----
+@Autowired
+private List<ToolCallback> toolCallbacks;
+----
+
+== Additional Resources
+
+* link:https://docs.spring.io/spring-ai/reference/[Spring AI Documentation]
+* link:https://modelcontextprotocol.github.io/specification/[Model Context Protocol Specification]
+* link:https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.developing-auto-configuration[Spring Boot Auto-configuration]

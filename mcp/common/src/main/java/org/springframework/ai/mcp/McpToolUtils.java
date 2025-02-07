@@ -17,6 +17,7 @@ package org.springframework.ai.mcp;
 
 import java.util.List;
 
+import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
@@ -180,17 +181,74 @@ public final class McpToolUtils {
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
-	public static List<ToolCallback> getToolCallbacks(McpSyncClient... mcpClients) {
-		return getToolCallbacks(List.of(mcpClients));
+	/**
+	 * Convenience method to get tool callbacks from multiple synchronous MCP clients.
+	 * <p>
+	 * This is a varargs wrapper around {@link #getToolCallbacksFromSyncClients(List)} for
+	 * easier usage when working with individual clients.
+	 * @param mcpClients the synchronous MCP clients to get callbacks from
+	 * @return a list of tool callbacks from all provided clients
+	 * @see #getToolCallbacksFromSyncClients(List)
+	 */
+	public static List<ToolCallback> getToolCallbacksFromSyncClients(McpSyncClient... mcpClients) {
+		return getToolCallbacksFromSyncClients(List.of(mcpClients));
 	}
 
-	public static List<ToolCallback> getToolCallbacks(List<McpSyncClient> mcpClients) {
+	/**
+	 * Gets tool callbacks from a list of synchronous MCP clients.
+	 * <p>
+	 * This method:
+	 * <ol>
+	 * <li>Takes a list of synchronous MCP clients</li>
+	 * <li>Creates a provider for each client</li>
+	 * <li>Retrieves and combines all tool callbacks into a single list</li>
+	 * </ol>
+	 * @param mcpClients the list of synchronous MCP clients to get callbacks from
+	 * @return a list of tool callbacks from all provided clients
+	 */
+	public static List<ToolCallback> getToolCallbacksFromSyncClients(List<McpSyncClient> mcpClients) {
 
 		if (CollectionUtils.isEmpty(mcpClients)) {
 			return List.of();
 		}
 		return mcpClients.stream()
 			.map(mcpClient -> List.of((new SyncMcpToolCallbackProvider(mcpClient).getToolCallbacks())))
+			.flatMap(List::stream)
+			.toList();
+	}
+
+	/**
+	 * Convenience method to get tool callbacks from multiple asynchronous MCP clients.
+	 * <p>
+	 * This is a varargs wrapper around {@link #getToolCallbacksFromAsyncClinents(List)}
+	 * for easier usage when working with individual clients.
+	 * @param asynMcpClients the asynchronous MCP clients to get callbacks from
+	 * @return a list of tool callbacks from all provided clients
+	 * @see #getToolCallbacksFromAsyncClinents(List)
+	 */
+	public static List<ToolCallback> getToolCallbacksFromAsyncClients(McpAsyncClient... asynMcpClients) {
+		return getToolCallbacksFromAsyncClinents(List.of(asynMcpClients));
+	}
+
+	/**
+	 * Gets tool callbacks from a list of asynchronous MCP clients.
+	 * <p>
+	 * This method:
+	 * <ol>
+	 * <li>Takes a list of asynchronous MCP clients</li>
+	 * <li>Creates a provider for each client</li>
+	 * <li>Retrieves and combines all tool callbacks into a single list</li>
+	 * </ol>
+	 * @param asynMcpClients the list of asynchronous MCP clients to get callbacks from
+	 * @return a list of tool callbacks from all provided clients
+	 */
+	public static List<ToolCallback> getToolCallbacksFromAsyncClinents(List<McpAsyncClient> asynMcpClients) {
+
+		if (CollectionUtils.isEmpty(asynMcpClients)) {
+			return List.of();
+		}
+		return asynMcpClients.stream()
+			.map(mcpClient -> List.of((new AsyncMcpToolCallbackProvider(mcpClient).getToolCallbacks())))
 			.flatMap(List::stream)
 			.toList();
 	}

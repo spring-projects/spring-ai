@@ -1,0 +1,340 @@
+= Spring AI MCP Client Boot Starter
+
+The Spring AI MCP (Model Context Protocol) Client Boot Starter provides auto-configuration for MCP client functionality in Spring Boot applications. It supports both synchronous and asynchronous client implementations with various transport options.
+
+The MCP Client Boot Starter provides:
+
+* Automatic client initialization (if enabled)
+* Support for multiple named transports
+* Integration with Spring AI's tool execution framework
+* Proper lifecycle management with automatic cleanup
+* Customizable client creation through customizers
+
+
+== Dependencies
+
+=== Core Starter
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
+    <version>${spring-ai.version}</version>
+</dependency>
+----
+
+It will connect, simultaneously, to one or more MCP Servers over `STDIO` (in-process) and/or `SSE` (remote) transports.
+The SSE connection uses the HttpClient-based transport implementation.
+Every connection to an MCP Server creates a new MCP Client instance.
+You can opt for either `SYNC` or `ASYNC` MCP Clients (Note: you cannot mix sync and async clients).
+For more enterprise-ready deployment, it is recommended to use the WebFlux-based SSE connection using the `spring-ai-mcp-client-webflux-spring-boot-starter` starter.
+
+=== WebFlux Starter
+
+Similar to the core starter, it allows configuring one or more STDIO and SSE connections, but uses WebFlux-based SSE transport implementation.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mcp-client-webflux-spring-boot-starter</artifactId>
+    <version>${spring-ai.version}</version>
+</dependency>
+----
+
+== Configuration Properties
+
+=== Common Properties
+
+All common configuration properties are prefixed with `spring.ai.mcp.client`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP client
+|`true`
+
+|`name`
+|Name of the MCP client instance (used for compatibility checks)
+|`spring-ai-mcp-client`
+
+|`version`
+|Version of the MCP client instance
+|`1.0.0`
+
+|`initialized`
+|Whether to initialize clients on creation
+|`true`
+
+|`request-timeout`
+|Timeout duration for MCP client requests
+|`20s`
+
+|`type`
+|Client type (SYNC or ASYNC). You can not mix client type. All clients can be either sync or async
+|`SYNC`
+
+|`root-change-notification`
+|Enable/disable root change notifications for all clients
+|`true`
+|===
+
+=== SSE Transport Properties
+
+Properties for Server-Sent Events (SSE) transport are prefixed with `spring.ai.mcp.client.sse`:
+
+[cols="2,4"]
+|===
+|Property |Description
+
+|`connections`
+|Map of named SSE connection configurations
+
+|`connections.[name].url`
+|URL endpoint for SSE communication with the MCP server
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        sse:
+          connections:
+            server1:
+              url: http://localhost:8080
+            server2:
+              url: http://otherserver:8081
+----
+
+=== Stdio Transport Properties
+
+Properties for Standard I/O transport are prefixed with `spring.ai.mcp.client.stdio`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`servers-configuration`
+|Resource containing the MCP servers configuration in JSON format
+|-
+
+|`connections`
+|Map of named stdio connection configurations
+|-
+
+|`connections.[name].command`
+|The command to execute for the MCP server
+|-
+
+|`connections.[name].args`
+|List of command arguments
+|-
+
+|`connections.[name].env`
+|Map of environment variables for the server process
+|-
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          root-change-notification: true
+          connections:
+            server1:
+              command: /path/to/server
+              args:
+                - --port=8080
+                - --mode=production
+              env:
+                API_KEY: your-api-key
+                DEBUG: "true"
+----
+
+Alternatively, you can configure stdio connections using an external JSON file using the link:https://modelcontextprotocol.io/quickstart/user[Claude Desctop format]:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+----
+
+The Claude Destop format looks like this:
+
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Desktop",
+        "/Users/username/Downloads"
+      ]
+    }
+  }
+}
+----
+Currently the Claude Destop supports only STDIO connection types.
+
+== Features
+
+=== Client Types
+
+The starter supports two types of clients:
+
+1. *Synchronous Client (SYNC)*
+   * Default client type
+   * Blocking operations
+   * Suitable for traditional request-response patterns
+
+2. *Asynchronous Client (ASYNC)*
+   * Non-blocking operations
+   * Suitable for reactive applications
+   * Must be explicitly configured using `spring.ai.mcp.client.type=ASYNC`
+
+=== Client Customization
+
+The auto-configuration supports customization through:
+
+* `McpSyncClientCustomizer` for synchronous clients
+* `McpAsyncClientCustomizer` for asynchronous clients
+
+== Usage Example
+
+1. Add the appropriate starter dependency to your project.
+
+2. Configure the client in `application.properties` or `application.yml`:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+        name: my-mcp-client
+        version: 1.0.0
+        request-timeout: 30s
+        type: SYNC  # or ASYNC for reactive applications
+        sse:
+          connections:
+            server1:
+              url: http://localhost:8080
+            server2:
+              url: http://otherserver:8081        
+        stdio:
+          root-change-notification: false
+          connections:
+            server1:
+              command: /path/to/server
+              args:
+                - --port=8080
+                - --mode=production
+              env:
+                API_KEY: your-api-key
+                DEBUG: "true"
+----
+
+3. The MCP client beans will be automatically configured and available for injection:
+
+[source,java]
+----
+@Autowired
+private List<McpSyncClient> mcpSyncClients;  // For sync client
+
+// OR
+
+@Autowired
+private List<McpAsyncClient> mcpAsyncClients;  // For async client
+----
+
+== Transport Support
+
+The auto-configuration supports multiple transport types:
+
+* Standard I/O (Stdio)
+* SSE HTTP
+* SSE WebFlux (requires `spring-ai-starter-mcp-client-webflux`)
+
+At least one transport must be available for the clients to be created.
+
+== Integration with Spring AI
+
+The starter automatically configures tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions.
+
+== Lifecycle Management
+
+The auto-configuration includes proper lifecycle management:
+
+* Automatic initialization of clients (if enabled)
+* Proper cleanup of resources when the application context is closed
+* Management of multiple client instances
+
+== Best Practices
+
+1. Choose the appropriate client type based on your application's needs:
+   * Use SYNC client for traditional applications
+   * Use ASYNC client for reactive applications
+
+2. Configure appropriate timeout values based on your use case:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        request-timeout: 30s
+----
+
+3. Use customizers for advanced client configuration:
+[source,java]
+----
+@Component
+public class MyMcpClientCustomizer implements McpSyncClientCustomizer {
+    @Override
+    public void customize(String name, McpClient.SyncSpec clientSpec) {
+        // Custom configuration
+    }
+}
+----
+
+== Troubleshooting
+
+Common issues and solutions:
+
+1. *Client Not Created*
+   * Verify that at least one transport is available
+   * Check if the client is enabled in configuration
+   * Ensure required dependencies are present
+
+2. *Timeout Issues*
+   * Adjust the `request-timeout` property
+   * Check network connectivity
+   * Verify server response times
+
+3. *Integration Issues*
+   * Ensure proper transport configuration
+   * Check client initialization status
+
+== Additional Resources
+
+* link:https://docs.spring.io/spring-ai/reference/[Spring AI Documentation]
+* link:https://modelcontextprotocol.github.io/specification/[Model Context Protocol Specification]
+* link:https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.developing-auto-configuration[Spring Boot Auto-configuration]
