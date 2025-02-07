@@ -89,18 +89,6 @@ public class McpServerProperties {
 	private boolean promptChangeNotification = true;
 
 	/**
-	 * The transport type to use for MCP server communication.
-	 * <p>
-	 * Supported types are:
-	 * <ul>
-	 * <li>STDIO - Standard input/output transport (default)</li>
-	 * <li>WEBMVC - Spring MVC Server-Sent Events transport</li>
-	 * <li>WEBFLUX - Spring WebFlux Server-Sent Events transport</li>
-	 * </ul>
-	 */
-	private Transport transport = Transport.STDIO;
-
-	/**
 	 * The endpoint path for Server-Sent Events (SSE) when using web transports.
 	 * <p>
 	 * This property is only used when transport is set to WEBMVC or WEBFLUX.
@@ -117,31 +105,6 @@ public class McpServerProperties {
 	 * </ul>
 	 */
 	private ServerType type = ServerType.SYNC;
-
-	/**
-	 * Transport types supported by the MCP server.
-	 */
-	public enum Transport {
-
-		/**
-		 * Standard input/output transport, suitable for command-line tools and local
-		 * development.
-		 */
-		STDIO,
-
-		/**
-		 * Spring MVC Server-Sent Events transport, requires spring-boot-starter-web and
-		 * mcp-spring-webmvc.
-		 */
-		WEBMVC,
-
-		/**
-		 * Spring WebFlux Server-Sent Events transport, requires
-		 * spring-boot-starter-webflux and mcp-spring-webflux.
-		 */
-		WEBFLUX
-
-	}
 
 	/**
 	 * Server types supported by the MCP server.
@@ -208,15 +171,6 @@ public class McpServerProperties {
 
 	public void setPromptChangeNotification(boolean promptChangeNotification) {
 		this.promptChangeNotification = promptChangeNotification;
-	}
-
-	public Transport getTransport() {
-		return this.transport;
-	}
-
-	public void setTransport(Transport transport) {
-		Assert.notNull(transport, "Transport must not be null");
-		this.transport = transport;
 	}
 
 	public String getSseMessageEndpoint() {

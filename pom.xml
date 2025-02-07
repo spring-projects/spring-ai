@@ -128,6 +128,8 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-webmvc</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-webflux</module>
 
 		<module>spring-ai-integration-tests</module>
 

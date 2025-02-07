@@ -43,7 +43,6 @@ public class McpServerAutoConfigurationIT {
 			McpServerProperties properties = context.getBean(McpServerProperties.class);
 			assertThat(properties.getName()).isEqualTo("mcp-server");
 			assertThat(properties.getVersion()).isEqualTo("1.0.0");
-			assertThat(properties.getTransport()).isEqualTo(McpServerProperties.Transport.STDIO);
 			assertThat(properties.getType()).isEqualTo(McpServerProperties.ServerType.SYNC);
 			assertThat(properties.isToolChangeNotification()).isTrue();
 			assertThat(properties.isResourceChangeNotification()).isTrue();

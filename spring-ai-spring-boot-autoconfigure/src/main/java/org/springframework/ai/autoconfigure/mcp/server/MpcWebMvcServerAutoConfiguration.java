@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.mcp.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebMvcSseServerTransport;
+import io.modelcontextprotocol.spec.ServerMcpTransport;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -64,7 +65,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  */
 @AutoConfiguration
 @ConditionalOnClass({ WebMvcSseServerTransport.class })
-@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "transport", havingValue = "WEBMVC")
+@ConditionalOnMissingBean(ServerMcpTransport.class)
 public class MpcWebMvcServerAutoConfiguration {
 
 	@Bean

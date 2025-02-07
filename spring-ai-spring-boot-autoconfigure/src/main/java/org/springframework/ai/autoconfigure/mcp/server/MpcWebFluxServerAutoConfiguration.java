@@ -18,6 +18,7 @@ package org.springframework.ai.autoconfigure.mcp.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransport;
+import io.modelcontextprotocol.spec.ServerMcpTransport;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -64,7 +65,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  */
 @AutoConfiguration
 @ConditionalOnClass({ WebFluxSseServerTransport.class })
-@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "transport", havingValue = "WEBFLUX")
+@ConditionalOnMissingBean(ServerMcpTransport.class)
 public class MpcWebFluxServerAutoConfiguration {
 
 	@Bean

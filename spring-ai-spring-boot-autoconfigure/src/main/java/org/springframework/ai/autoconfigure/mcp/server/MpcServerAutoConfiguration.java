@@ -20,19 +20,19 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import io.modelcontextprotocol.server.McpServer;
-import reactor.core.publisher.Mono;
-import io.modelcontextprotocol.server.McpServer.SyncSpec;
-import io.modelcontextprotocol.server.McpServer.AsyncSpec;
-import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
-import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpAsyncServer;
+import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.McpServer.AsyncSpec;
+import io.modelcontextprotocol.server.McpServer.SyncSpec;
+import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncToolRegistration;
+import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.StdioServerTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.ServerMcpTransport;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.tool.ToolCallback;
@@ -94,7 +94,7 @@ import org.springframework.core.log.LogAccessor;
  * @see MpcWebMvcServerAutoConfiguration
  * @see org.springframework.ai.mcp.ToolCallback
  */
-@AutoConfiguration
+@AutoConfiguration(after = { MpcWebMvcServerAutoConfiguration.class, MpcWebFluxServerAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
 @EnableConfigurationProperties(McpServerProperties.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true")
@@ -104,8 +104,6 @@ public class MpcServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "transport", havingValue = "STDIO",
-			matchIfMissing = true)
 	public ServerMcpTransport stdioServerTransport() {
 		return new StdioServerTransport();
 	}
