@@ -273,7 +273,11 @@ public class MistralAiApi {
 		MEDIUM("mistral-medium-latest"),
 		LARGE("mistral-large-latest"),
 		PIXTRAL("pixtral-12b-2409"),
-		PIXTRAL_LARGE("pixtral-large-latest");
+		PIXTRAL_LARGE("pixtral-large-latest"),
+		MINISTRAL_3B_LATEST("ministral-3b-latest"),
+		MINISTRAL_8B_LATEST("ministral-8b-latest"),
+		OPEN_MISTRAL_NEMO("open-mixtral-nemo"),
+		CODESTRAL("codestral-latest");
 		// @formatter:on
 
 		private final String value;
