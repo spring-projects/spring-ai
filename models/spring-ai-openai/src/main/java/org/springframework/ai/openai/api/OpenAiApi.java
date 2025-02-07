@@ -1138,8 +1138,11 @@ public class OpenAiApi {
 	 * {@link Role#ASSISTANT} role and null otherwise.
 	 * @param audioOutput Audio response from the model. >>>>>>> bdb66e577 (OpenAI -
 	 * Support audio input modality)
+	 * @param reasoningContent For deepseek-reasoner model only. The reasoning contents of
+	 * the assistant message, before the final answer.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(// @formatter:off
 			@JsonProperty("content") Object rawContent,
 			@JsonProperty("role") Role role,
@@ -1148,7 +1151,8 @@ public class OpenAiApi {
 			@JsonProperty("tool_calls")
 			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("refusal") String refusal,
-			@JsonProperty("audio") AudioOutput audioOutput) { // @formatter:on
+			@JsonProperty("audio") AudioOutput audioOutput,
+			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -1157,7 +1161,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null, null);
+			this(content, role, null, null, null, null, null, null);
 
 		}
 

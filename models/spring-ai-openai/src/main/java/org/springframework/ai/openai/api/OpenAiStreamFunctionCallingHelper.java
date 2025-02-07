@@ -39,6 +39,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 public class OpenAiStreamFunctionCallingHelper {
@@ -97,6 +98,8 @@ public class OpenAiStreamFunctionCallingHelper {
 		String refusal = (current.refusal() != null ? current.refusal() : previous.refusal());
 		ChatCompletionMessage.AudioOutput audioOutput = (current.audioOutput() != null ? current.audioOutput()
 				: previous.audioOutput());
+		String reasoningContent = (current.reasoningContent() != null ? current.reasoningContent()
+				: previous.reasoningContent());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -126,7 +129,8 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput,
+				reasoningContent);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {

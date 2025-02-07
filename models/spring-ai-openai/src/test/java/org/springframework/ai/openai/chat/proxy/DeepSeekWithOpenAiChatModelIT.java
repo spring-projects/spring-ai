@@ -56,6 +56,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -81,6 +83,9 @@ class DeepSeekWithOpenAiChatModelIT {
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
+
+	@Autowired
+	private OpenAiApi openAiApi;
 
 	@Autowired
 	private OpenAiChatModel chatModel;
@@ -128,9 +133,9 @@ class DeepSeekWithOpenAiChatModelIT {
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
-		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getPromptTokens()).isPositive();
+		assertThat(streamingTokenUsage.getCompletionTokens()).isPositive();
+		assertThat(streamingTokenUsage.getTotalTokens()).isPositive();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
 		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
@@ -323,6 +328,56 @@ class DeepSeekWithOpenAiChatModelIT {
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
+	}
+
+	@Test
+	void chatCompletionEntityWithReasoning() {
+		OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage(
+				"Explain the theory of relativity", OpenAiApi.ChatCompletionMessage.Role.USER);
+		OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(List.of(chatCompletionMessage),
+				"deepseek-reasoner", 0.8, false);
+		ResponseEntity<OpenAiApi.ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody().choices().get(0).message().reasoningContent()).isNotBlank();
+	}
+
+	@Test
+	void chatCompletionStreamWithReasoning() {
+		OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage(
+				"Explain the theory of relativity", OpenAiApi.ChatCompletionMessage.Role.USER);
+		OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(List.of(chatCompletionMessage),
+				"deepseek-reasoner", 0.8, true);
+		Flux<OpenAiApi.ChatCompletionChunk> response = this.openAiApi.chatCompletionStream(request);
+
+		assertThat(response).isNotNull();
+		List<OpenAiApi.ChatCompletionChunk> chunks = response.collectList().block();
+		assertThat(chunks).isNotNull();
+		assertThat(chunks.stream().anyMatch(chunk -> !chunk.choices().get(0).delta().reasoningContent().isBlank()))
+			.isTrue();
+	}
+
+	@Test
+	void chatModelCallWithReasoning() {
+		OpenAiChatModel deepReasoner = new OpenAiChatModel(this.openAiApi,
+				OpenAiChatOptions.builder().model("deepseek-reasoner").build());
+		ChatResponse chatResponse = deepReasoner.call(new Prompt("Explain the theory of relativity"));
+		assertThat(chatResponse.getResults()).isNotEmpty();
+		assertThat(chatResponse.getResults().get(0).getOutput().getMetadata().get("reasoningContent").toString())
+			.isNotBlank();
+	}
+
+	@Test
+	void chatModelStreamWithReasoning() {
+		OpenAiChatModel deepReasoner = new OpenAiChatModel(this.openAiApi,
+				OpenAiChatOptions.builder().model("deepseek-reasoner").build());
+		Flux<ChatResponse> flux = deepReasoner.stream(new Prompt("Explain the theory of relativity"));
+		List<ChatResponse> responses = flux.collectList().block();
+		assertThat(responses).isNotEmpty();
+		assertThat(responses.stream()
+			.flatMap(response -> response.getResults().stream())
+			.map(result -> result.getOutput().getMetadata().get("reasoningContent").toString())
+			.anyMatch(StringUtils::hasText)).isTrue();
 	}
 
 	@SpringBootConfiguration
