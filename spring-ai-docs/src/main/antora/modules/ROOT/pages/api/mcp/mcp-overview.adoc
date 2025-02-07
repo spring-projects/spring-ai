@@ -1,0 +1,90 @@
+= Model Context Protocol (MCP)
+
+The link:https://modelcontextprotocol.org/docs/concepts/architecture[Model Context Protocol] (MCP) is a standardized protocol that enables AI models to interact with external tools and resources in a structured way. 
+It supports multiple transport mechanisms for flexibility in different environments.
+
+The link:https://modelcontextprotocol.github.io/sdk/java[Java MCP] provides a Java SDK implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication.
+
+== MCP Java SDK
+
+The Java MCP implementation follows a three-layer architecture:
+
+// [cols="2,10"]
+|===
+|  |
+^a| image::mcp/mcp-stack.svg[MCP Stack Architecture]
+a| * *Client/Server Layer*: The McpClient handles client-side and the McpServer manages server-side protocol operations.
+Both utilize McpSession for operations
+* *Session Layer (McpSession)*: Manages communication patterns and state.
+Uses the DefaultMcpSession implementation.
+* *Transport Layer (McpTransport)*: Handles JSON-RPC message serialization/deserialization.
+Supports multiple transport implementations.
+|===
+
+// [cols="10,2"]
+|===
+| MCP Client |
+
+a| The MCP Client is a key component in the Model Context Protocol (MCP) architecture, responsible for establishing and managing connections with MCP servers. It implements the client-side of the protocol, handling:
+
+* Protocol version negotiation to ensure compatibility with servers
+* Capability negotiation to determine available features
+* Message transport and JSON-RPC communication
+* Tool discovery and execution
+* Resource access and management
+* Prompt system interactions
+* Optional features like roots management and sampling support
+* Synchronous and asynchronous operations
+* Multiple transport options:
+** Stdio-based transport for process-based communication
+** Java HttpClient-based SSE client transport
+** WebFlux SSE client transport for reactive HTTP streaming
+
+^a| image::mcp/java-mcp-client-architecture.jpg[Java MCP Client Architecture, width=500]
+|===
+
+// [cols="10,2"]
+|===
+| MCP Server |
+
+a| The MCP Server is a foundational component in the Model Context Protocol (MCP) architecture that provides tools, resources, and capabilities to clients. It implements the server-side of the protocol, responsible for:
+
+* Exposing tools that clients can discover and execute
+* Managing resources with URI-based access patterns
+* Providing prompt templates and handling prompt requests
+* Supporting capability negotiation with clients
+* Implementing server-side protocol operations
+* Managing concurrent client connections
+* Providing structured logging and notifications
+* Supporting both synchronous and asynchronous APIs for flexible integration
+* Multiple transport options:
+** Stdio-based transport for process-based communication
+** Servlet-based SSE server transport
+** WebFlux SSE server transport for reactive HTTP streaming
+** WebMVC SSE server transport for servlet-based HTTP streaming
+
+^a| image::mcp/java-mcp-server-architecture.jpg[Java MCP Server Architecture, width=600]
+|===
+
+For manual SDK implementation, refer to the link:https://modelcontextprotocol.github.io/sdk/java[MCP Java SDK documentation]. 
+For simplified setup, use the Spring AI MCP Boot Starters below.
+
+== Spring AI MCP Integration
+
+The Spring AI MCP integration is provided through Spring Boot starters:
+
+=== link:mcp-client-boot-starter-docs.html[Client Starters]
+* `spring-ai-mcp-client-spring-boot-starter` - Core starter with STDIO and HTTP-based SSE support
+* `spring-ai-mcp-client-webflux-spring-boot-starter` - WebFlux-based SSE transport
+
+=== link:mcp-server-boot-starter-docs.html[Server Starters]
+* `spring-ai-mcp-server-spring-boot-starter` - Core server with STDIO transport
+* `spring-ai-mcp-server-webmvc-spring-boot-starter` - Spring MVC-based SSE transport
+* `spring-ai-mcp-server-webflux-spring-boot-starter` - WebFlux-based SSE transport
+
+== Additional Resources
+
+* link:mcp-client-boot-starter-docs.html[MCP Client Boot Starters Documentation]
+* link:mcp-server-boot-starter-docs.html[MCP Server Boot Starters Documentation]
+* link:mcp-helpers.html[MCP Utilities Documentation]
+* link:https://modelcontextprotocol.github.io/specification/[Model Context Protocol Specification]

@@ -95,10 +95,13 @@
 * xref:api/prompt.adoc[]
 * xref:api/structured-output-converter.adoc[Structured Output]
 * xref:api/tools.adoc[Tool Calling]
-* xref:api/model-context-protocol.adoc[Model Context Protocol (MCP)]
 * xref:api/functions.adoc[Function Calling (Deprecated)]
 ** xref:api/function-callback.adoc[FunctionCallback API (Deprecated)]
 ** xref:api/tools-migration.adoc[Migrating to ToolCallback API]
+* xref:api/mcp/mcp-overview.adoc[Model Context Protocol (MCP)]
+** xref:api/mcp/mcp-client-boot-starter-docs.adoc[MCP Client Boot Starters]
+** xref:api/mcp/mcp-server-boot-starter-docs.adoc[MCP Server Boot Starters]
+** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
 * xref:api/multimodality.adoc[Multimodality]
 * xref:api/etl-pipeline.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
@@ -112,4 +115,3 @@
 
 * Appendices
 ** xref:upgrade-notes.adoc[]
-
