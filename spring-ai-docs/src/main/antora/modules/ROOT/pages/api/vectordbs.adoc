@@ -35,7 +35,7 @@ public interface VectorStore extends DocumentWriter {
 
     void add(List<Document> documents);
 
-    Optional<Boolean> delete(List<String> idList);
+    void delete(List<String> idList);
 
     void delete(Filter.Expression filterExpression);
 
@@ -392,6 +392,204 @@ Consider the following example:
 Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 ----
 
+== Deleting Documents from Vector Store
+
+The Vector Store interface provides multiple methods for deleting documents, allowing you to remove data either by specific document IDs or using filter expressions.
+
+=== Delete by Document IDs
+
+The simplest way to delete documents is by providing a list of document IDs:
+
+[source,java]
+----
+void delete(List<String> idList);
+----
+
+This method removes all documents whose IDs match those in the provided list.
+If any ID in the list doesn't exist in the store, it will be ignored.
+
+.Example usage
+[source,java]
+----
+// Create and add document
+Document document = new Document("The World is Big",
+    Map.of("country", "Netherlands"));
+vectorStore.add(List.of(document));
+
+// Delete document by ID
+vectorStore.delete(List.of(document.getId()));
+----
+
+=== Delete by Filter Expression
+
+For more complex deletion criteria, you can use filter expressions:
+
+[source,java]
+----
+void delete(Filter.Expression filterExpression);
+----
+
+This method accepts a `Filter.Expression` object that defines the criteria for which documents should be deleted.
+It's particularly useful when you need to delete documents based on their metadata properties.
+
+.Example usage
+[source,java]
+----
+// Create test documents with different metadata
+Document bgDocument = new Document("The World is Big",
+    Map.of("country", "Bulgaria"));
+Document nlDocument = new Document("The World is Big",
+    Map.of("country", "Netherlands"));
+
+// Add documents to the store
+vectorStore.add(List.of(bgDocument, nlDocument));
+
+// Delete documents from Bulgaria using filter expression
+Filter.Expression filterExpression = new Filter.Expression(
+    Filter.ExpressionType.EQ,
+    new Filter.Key("country"),
+    new Filter.Value("Bulgaria")
+);
+vectorStore.delete(filterExpression);
+
+// Verify deletion with search
+SearchRequest request = SearchRequest.builder()
+    .query("World")
+    .filterExpression("country == 'Bulgaria'")
+    .build();
+List<Document> results = vectorStore.similaritySearch(request);
+// results will be empty as Bulgarian document was deleted
+----
+
+=== Delete by String Filter Expression
+
+For convenience, you can also delete documents using a string-based filter expression:
+
+[source,java]
+----
+void delete(String filterExpression);
+----
+
+This method converts the provided string filter into a `Filter.Expression` object internally.
+It's useful when you have filter criteria in string format.
+
+.Example usage
+[source,java]
+----
+// Create and add documents
+Document bgDocument = new Document("The World is Big",
+    Map.of("country", "Bulgaria"));
+Document nlDocument = new Document("The World is Big",
+    Map.of("country", "Netherlands"));
+vectorStore.add(List.of(bgDocument, nlDocument));
+
+// Delete Bulgarian documents using string filter
+vectorStore.delete("country == 'Bulgaria'");
+
+// Verify remaining documents
+SearchRequest request = SearchRequest.builder()
+    .query("World")
+    .topK(5)
+    .build();
+List<Document> results = vectorStore.similaritySearch(request);
+// results will only contain the Netherlands document
+----
+
+=== Error Handling When Calling the Delete API
+
+All deletion methods may throw exceptions in case of errors:
+
+The best practice is to wrap delete operations in try-catch blocks:
+
+.Example usage
+[source,java]
+----
+try {
+    vectorStore.delete("country == 'Bulgaria'");
+}
+catch (Exception  e) {
+    logger.error("Invalid filter expression", e);
+}
+----
+
+=== Document Versioning Use Case
+
+A common scenario is managing document versions where you need to upload a new version of a document while removing the old version. Here's how to handle this using filter expressions:
+
+.Example usage
+[source,java]
+----
+// Create initial document (v1) with version metadata
+Document documentV1 = new Document(
+    "AI and Machine Learning Best Practices",
+    Map.of(
+        "docId", "AIML-001",
+        "version", "1.0",
+        "lastUpdated", "2024-01-01"
+    )
+);
+
+// Add v1 to the vector store
+vectorStore.add(List.of(documentV1));
+
+// Create updated version (v2) of the same document
+Document documentV2 = new Document(
+    "AI and Machine Learning Best Practices - Updated",
+    Map.of(
+        "docId", "AIML-001",
+        "version", "2.0",
+        "lastUpdated", "2024-02-01"
+    )
+);
+
+// First, delete the old version using filter expression
+Filter.Expression deleteOldVersion = new Filter.Expression(
+    Filter.ExpressionType.AND,
+    Arrays.asList(
+        new Filter.Expression(
+            Filter.ExpressionType.EQ,
+            new Filter.Key("docId"),
+            new Filter.Value("AIML-001")
+        ),
+        new Filter.Expression(
+            Filter.ExpressionType.EQ,
+            new Filter.Key("version"),
+            new Filter.Value("1.0")
+        )
+    )
+);
+vectorStore.delete(deleteOldVersion);
+
+// Add the new version
+vectorStore.add(List.of(documentV2));
+
+// Verify only v2 exists
+SearchRequest request = SearchRequest.builder()
+    .query("AI and Machine Learning")
+    .filterExpression("docId == 'AIML-001'")
+    .build();
+List<Document> results = vectorStore.similaritySearch(request);
+// results will contain only v2 of the document
+----
+
+You can also accomplish the same using the string filter expression:
+
+.Example usage
+[source,java]
+----
+// Delete old version using string filter
+vectorStore.delete("docId == 'AIML-001' AND version == '1.0'");
+
+// Add new version
+vectorStore.add(List.of(documentV2));
+----
+
+=== Performance Considerations While Deleting Documents
+
+* Deleting by ID list is generally faster when you know exactly which documents to remove.
+* Filter-based deletion may require scanning the index to find matching documents; however, this is vector store implementation-specific.
+* Large deletion operations should be batched to avoid overwhelming the system.
+* Consider using filter expressions when deleting based on document properties rather than collecting IDs first.
 
 == Understanding Vectors
 
