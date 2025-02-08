@@ -265,19 +265,24 @@ public class MistralAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		OPEN_MISTRAL_7B("open-mistral-7b"),
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
+		@Deprecated(forRemoval = true, since = "1.0.0-M6")
 		OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
-		SMALL("mistral-small-latest"),
-		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral will be removing this model - see https://docs.mistral.ai/getting-started/models/models_overview/
-		MEDIUM("mistral-medium-latest"),
+		// Premier Models
+		CODESTRAL("codestral-latest"),
 		LARGE("mistral-large-latest"),
-		PIXTRAL("pixtral-12b-2409"),
 		PIXTRAL_LARGE("pixtral-large-latest"),
 		MINISTRAL_3B_LATEST("ministral-3b-latest"),
 		MINISTRAL_8B_LATEST("ministral-8b-latest"),
-		OPEN_MISTRAL_NEMO("open-mixtral-nemo"),
-		CODESTRAL("codestral-latest");
+		// Free Models
+		SMALL("mistral-small-latest"),
+		PIXTRAL("pixtral-12b-2409"),
+		// Free Models - Research
+		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
+		OPEN_CODESTRAL_MAMBA("open-codestral-mamba");
 		// @formatter:on
 
 		private final String value;
