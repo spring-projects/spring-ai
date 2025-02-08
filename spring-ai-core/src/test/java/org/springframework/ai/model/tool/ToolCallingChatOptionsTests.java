@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link ToolCallingChatOptions}.
@@ -79,7 +80,7 @@ class ToolCallingChatOptionsTests {
 		Set<String> runtimeToolNames = Set.of("toolA");
 		Set<String> defaultToolNames = Set.of("toolB");
 		Set<String> mergedToolNames = ToolCallingChatOptions.mergeToolNames(runtimeToolNames, defaultToolNames);
-		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA", "toolB");
+		assertThat(mergedToolNames).containsExactlyInAnyOrder("toolA");
 	}
 
 	@Test
@@ -112,7 +113,8 @@ class ToolCallingChatOptionsTests {
 		List<FunctionCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
 		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
-		assertThat(mergedToolCallbacks).hasSize(2);
+		assertThat(mergedToolCallbacks).hasSize(1);
+		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
 	}
 
 	@Test
@@ -122,6 +124,7 @@ class ToolCallingChatOptionsTests {
 		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
+		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
 	}
 
 	@Test
@@ -131,6 +134,7 @@ class ToolCallingChatOptionsTests {
 		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
+		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolB");
 	}
 
 	@Test
@@ -181,6 +185,14 @@ class ToolCallingChatOptionsTests {
 		Map<String, Object> mergedToolContext = ToolCallingChatOptions.mergeToolContext(runtimeToolContext,
 				defaultToolContext);
 		assertThat(mergedToolContext).hasSize(0);
+	}
+
+	@Test
+	void shouldEnsureUniqueToolNames() {
+		List<FunctionCallback> toolCallbacks = List.of(new TestToolCallback("toolA"), new TestToolCallback("toolA"));
+		assertThatThrownBy(() -> ToolCallingChatOptions.validateToolCallbacks(toolCallbacks))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Multiple tools with the same name (toolA)");
 	}
 
 	static class TestToolCallback implements ToolCallback {

@@ -47,6 +47,32 @@ Example of the new JSON format:
 }
 ----
 
+=== Changes to usage of FunctionCallingOptions for tool calling
+
+Each `ChatModel` instance, at construction time, accepts an optional `ChatOptions` or `FunctionCallingOptions` instance
+that can be used to configure default tools used for calling the model.
+
+Before 1.0.0-M6:
+
+- any tool passed via the `functions()` method of the default `FunctionCallingOptions` instance was included in
+each call to the model from that `ChatModel` instance, possibly overwritten by runtime options.
+- any tool passed via the `functionCallbacks()` method of the default `FunctionCallingOptions` instance was only
+made available for runtime dynamic resolution (see xref:api/tools.adoc#_tool_resolution[Tool Resolution]), but never
+included in any call to the model unless explicitly requested.
+
+Starting 1.0.0-M6:
+
+- any tool passed via the `functions()` method or the `functionCallbacks()` of the default `FunctionCallingOptions`
+instance is now handled in the same way: it is included in each call to the model from that `ChatModel` instance,
+possibly overwritten by runtime options. With that, there is consistency in the way tools are included in calls
+to the model and prevents any confusion due to a difference in behavior between `functionCallbacks()` and all the other options.
+
+If you want to make a tool available for runtime dynamic resolution and include it in a chat request to the model only
+when explicitly requested, you can use one of the strategies described in xref:api/tools.adoc#_tool_resolution[Tool Resolution].
+
+NOTE: 1.0.0-M6 introduced new APIs for handling tool calling. Backward compatibility is maintained for the old APIs across
+all scenarios, except the one described above. The old APIs are still available, but they are deprecated
+and will be removed in 1.0.0-M7.
 
 === Removal of deprecated Amazon Bedrock chat models
 
