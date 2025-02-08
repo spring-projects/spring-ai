@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,69 @@
 package org.springframework.ai.openai;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
-public class ChatCompletionRequestTests {
+class ChatCompletionRequestTests {
 
 	@Test
-	public void createRequestWithChatOptions() {
+	void whenToolRuntimeOptionsThenMergeWithDefaults() {
+		OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.internalToolExecutionEnabled(true)
+			.toolCallbacks(new TestToolCallback("tool1"), new TestToolCallback("tool2"))
+			.toolNames("tool1", "tool2")
+			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
+			.build();
 
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey(new SimpleApiKey("TEST")).build())
+			.defaultOptions(defaultOptions)
+			.build();
+
+		OpenAiChatOptions runtimeOptions = OpenAiChatOptions.builder()
+			.internalToolExecutionEnabled(false)
+			.toolCallbacks(new TestToolCallback("tool3"), new TestToolCallback("tool4"))
+			.toolNames("tool3")
+			.toolContext(Map.of("key2", "valueB"))
+			.build();
+		Prompt prompt = chatModel.buildRequestPrompt(new Prompt("Test message content", runtimeOptions));
+
+		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).isInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
+			.stream()
+			.map(FunctionCallback::getName)).containsExactlyInAnyOrder("tool3", "tool4");
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolNames()).containsExactlyInAnyOrder("tool3");
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolContext()).containsEntry("key1", "value1")
+			.containsEntry("key2", "valueB");
+	}
+
+	@Test
+	void createRequestWithChatOptions() {
 		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
 
-		var request = client.createRequest(new Prompt("Test message content"), false);
+		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
+
+		var request = client.createRequest(prompt, false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
@@ -57,14 +98,13 @@ public class ChatCompletionRequestTests {
 	}
 
 	@Test
-	public void promptOptionsTools() {
-
+	void promptOptionsTools() {
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
 		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
 				OpenAiChatOptions.builder().model("DEFAULT_MODEL").build());
 
-		var request = client.createRequest(new Prompt("Test message content",
+		var prompt = client.buildRequestPrompt(new Prompt("Test message content",
 				OpenAiChatOptions.builder()
 					.model("PROMPT_MODEL")
 					.functionCallbacks(List.of(FunctionCallback.builder()
@@ -72,11 +112,9 @@ public class ChatCompletionRequestTests {
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
-					.build()),
-				false);
+					.build()));
 
-		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
-		assertThat(client.getFunctionCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
+		var request = client.createRequest(prompt, false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
@@ -87,8 +125,7 @@ public class ChatCompletionRequestTests {
 	}
 
 	@Test
-	public void defaultOptionsTools() {
-
+	void defaultOptionsTools() {
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
 		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
@@ -101,48 +138,43 @@ public class ChatCompletionRequestTests {
 						.build()))
 					.build());
 
-		var request = client.createRequest(new Prompt("Test message content"), false);
+		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
 
-		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
-		assertThat(client.getFunctionCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
-		assertThat(client.getFunctionCallbackRegister().get(TOOL_FUNCTION_NAME).getDescription())
-			.isEqualTo("Get the weather in location");
+		var request = client.createRequest(prompt, false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
+		assertThat(request.tools()).hasSize(1);
+		assertThat(request.tools().get(0).getFunction().getName()).isEqualTo(TOOL_FUNCTION_NAME);
 
-		assertThat(request.tools()).as("Default Options callback functions are not automatically enabled!")
-			.isNullOrEmpty();
-
-		// Explicitly enable the function
-		request = client.createRequest(
-				new Prompt("Test message content", OpenAiChatOptions.builder().function(TOOL_FUNCTION_NAME).build()),
-				false);
+		// Reference the default options tool by name at runtime
+		prompt = client.buildRequestPrompt(
+				new Prompt("Test message content", OpenAiChatOptions.builder().function(TOOL_FUNCTION_NAME).build()));
+		request = client.createRequest(prompt, false);
 
 		assertThat(request.tools()).hasSize(1);
-		assertThat(request.tools().get(0).getFunction().getName()).as("Explicitly enabled function")
-			.isEqualTo(TOOL_FUNCTION_NAME);
+		assertThat(request.tools().get(0).getFunction().getName()).isEqualTo(TOOL_FUNCTION_NAME);
+	}
 
-		// Override the default options function with one from the prompt
-		request = client.createRequest(new Prompt("Test message content",
-				OpenAiChatOptions.builder()
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
-						.description("Overridden function description")
-						.inputType(MockWeatherService.Request.class)
-						.build()))
-					.build()),
-				false);
+	static class TestToolCallback implements ToolCallback {
 
-		assertThat(request.tools()).hasSize(1);
-		assertThat(request.tools().get(0).getFunction().getName()).as("Explicitly enabled function")
-			.isEqualTo(TOOL_FUNCTION_NAME);
+		private final ToolDefinition toolDefinition;
 
-		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
-		assertThat(client.getFunctionCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);
-		assertThat(client.getFunctionCallbackRegister().get(TOOL_FUNCTION_NAME).getDescription())
-			.isEqualTo("Overridden function description");
+		public TestToolCallback(String name) {
+			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return toolDefinition;
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return "Mission accomplished!";
+		}
+
 	}
 
 }

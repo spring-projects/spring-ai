@@ -218,6 +218,28 @@ class DefaultToolCallingManagerTests {
 	}
 
 	@Test
+	void whenDuplicateMixedToolCallsInChatResponseThenExecute() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"),
+				ToolCallingChatOptions.builder()
+					.toolCallbacks(new TestToolCallback("toolA"))
+					.toolNames("toolA")
+					.build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
+					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.build();
+
+		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
+				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!")));
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+	}
+
+	@Test
 	void whenMultipleToolCallsWithReturnDirectInChatResponseThenExecute() {
 		ToolCallback toolCallbackA = new TestToolCallback("toolA", true);
 		ToolCallback toolCallbackB = new TestToolCallback("toolB", true);

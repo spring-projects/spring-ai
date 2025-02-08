@@ -24,7 +24,7 @@ The AI Model is not guaranteed to return the structured output as requested.
 The model may not understand the prompt or be unable to generate the structured output as requested.
 Consider implementing a validation mechanism to ensure the model output is as expected.
 
-TIP: The `StructuredOutputConverter` is not used for LLM xref:api/functions.adoc[Function Calling], as this feature inherently provides structured outputs by default.
+TIP: The `StructuredOutputConverter` is not used for LLM xref:api/tools.adoc[Tool Calling], as this feature inherently provides structured outputs by default.
 
 == Structured Output API
 
