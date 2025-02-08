@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.mcp.client;
+package org.springframework.ai.autoconfigure.mcp.client.properties;
 
 import java.time.Duration;
 
@@ -93,6 +93,14 @@ public class McpClientCommonProperties {
 
 	}
 
+	/**
+	 * Flag to enable/disable root change notifications.
+	 * <p>
+	 * When enabled, the client will be notified of changes to the root configuration.
+	 * Defaults to true.
+	 */
+	private boolean rootChangeNotification = true;
+
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -139,6 +147,14 @@ public class McpClientCommonProperties {
 
 	public void setType(ClientType type) {
 		this.type = type;
+	}
+
+	public boolean isRootChangeNotification() {
+		return this.rootChangeNotification;
+	}
+
+	public void setRootChangeNotification(boolean rootChangeNotification) {
+		this.rootChangeNotification = rootChangeNotification;
 	}
 
 }

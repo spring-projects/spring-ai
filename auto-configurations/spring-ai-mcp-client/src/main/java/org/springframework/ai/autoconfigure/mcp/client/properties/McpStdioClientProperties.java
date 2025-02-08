@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.mcp.client;
+package org.springframework.ai.autoconfigure.mcp.client.properties;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -48,14 +48,6 @@ public class McpStdioClientProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.client.stdio";
 
 	/**
-	 * Flag to enable/disable root change notifications.
-	 * <p>
-	 * When enabled, the client will be notified of changes to the root configuration.
-	 * Defaults to true.
-	 */
-	private boolean rootChangeNotification = true;
-
-	/**
 	 * Resource containing the MCP servers configuration.
 	 * <p>
 	 * This resource should contain a JSON configuration defining the MCP servers and
@@ -81,14 +73,6 @@ public class McpStdioClientProperties {
 
 	public Map<String, Parameters> getConnections() {
 		return this.connections;
-	}
-
-	public boolean isRootChangeNotification() {
-		return this.rootChangeNotification;
-	}
-
-	public void setRootChangeNotification(boolean rootChangeNotification) {
-		this.rootChangeNotification = rootChangeNotification;
 	}
 
 	/**

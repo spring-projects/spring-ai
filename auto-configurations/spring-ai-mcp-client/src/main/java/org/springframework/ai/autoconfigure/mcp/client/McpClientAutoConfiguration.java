@@ -24,6 +24,9 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
+import org.springframework.ai.autoconfigure.mcp.client.configurer.McpAsyncClientConfigurer;
+import org.springframework.ai.autoconfigure.mcp.client.configurer.McpSyncClientConfigurer;
+import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
@@ -220,9 +223,7 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	McpSyncClientConfigurer mcpSyncClientConfigurer(ObjectProvider<McpSyncClientCustomizer> customizerProvider) {
-		McpSyncClientConfigurer configurer = new McpSyncClientConfigurer();
-		configurer.setCustomizers(customizerProvider.orderedStream().toList());
-		return configurer;
+		return new McpSyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 
 	// Async client configuration
@@ -286,9 +287,7 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	McpAsyncClientConfigurer mcpAsyncClientConfigurer(ObjectProvider<McpAsyncClientCustomizer> customizerProvider) {
-		McpAsyncClientConfigurer configurer = new McpAsyncClientConfigurer();
-		configurer.setCustomizers(customizerProvider.orderedStream().toList());
-		return configurer;
+		return new McpAsyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 
 }

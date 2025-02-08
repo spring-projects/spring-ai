@@ -23,7 +23,9 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 
-import org.springframework.ai.autoconfigure.mcp.client.McpSseClientProperties.SseParameters;
+import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
+import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties;
+import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties.SseParameters;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

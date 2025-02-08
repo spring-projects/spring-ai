@@ -26,7 +26,9 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
-import org.springframework.ai.autoconfigure.mcp.client.McpSseClientProperties.SseParameters;
+import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
+import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties;
+import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties.SseParameters;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

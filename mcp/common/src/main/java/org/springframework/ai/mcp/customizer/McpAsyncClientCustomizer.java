@@ -18,11 +18,27 @@ package org.springframework.ai.mcp.customizer;
 import io.modelcontextprotocol.client.McpClient;
 
 /**
+ * Interface for customizing asynchronous MCP client configurations.
+ * <p>
+ * This interface allows for customization of MCP client behavior through Spring's
+ * customizer pattern. Implementations can modify the client's configuration before it is
+ * used in the application.
+ * <p>
+ *
  * @author Christian Tzolov
  * @since 1.0.0
+ * @see io.modelcontextprotocol.client.McpClient.AsyncSpec
  */
 public interface McpAsyncClientCustomizer {
 
-	void customize(String name, McpClient.AsyncSpec sync);
+	/**
+	 * Customizes an asynchronous MCP client configuration.
+	 * <p>
+	 * This method is called for each async MCP client being created, allowing for
+	 * client-specific customizations based on the client's name and specification.
+	 * @param name the name of the MCP client being customized
+	 * @param spec the async specification to customize
+	 */
+	void customize(String name, McpClient.AsyncSpec spec);
 
 }

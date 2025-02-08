@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.springframework.ai.autoconfigure.mcp.client;
+package org.springframework.ai.autoconfigure.mcp.client.properties;
 
 import java.util.HashMap;
 import java.util.Map;

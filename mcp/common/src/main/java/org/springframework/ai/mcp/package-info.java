@@ -14,6 +14,26 @@
  * limitations under the License.
  */
 
+/**
+ * Core support for Model Context Protocol (MCP) integration in Spring AI.
+ * <p>
+ * This package provides the foundational classes and utilities for integrating MCP with
+ * Spring AI's tool system. It includes:
+ * <ul>
+ * <li>Tool callback implementations for both synchronous and asynchronous MCP
+ * operations</li>
+ * <li>Tool callback providers that discover and expose MCP tools</li>
+ * <li>Utility classes for converting between Spring AI and MCP tool representations</li>
+ * <li>Support for customizing MCP client behavior</li>
+ * </ul>
+ * <p>
+ * The classes in this package enable seamless integration between Spring AI applications
+ * and MCP servers, allowing language models to discover and invoke tools through a
+ * standardized protocol.
+ *
+ * @author Christian Tzolov
+ * @since 1.0.0
+ */
 @NonNullApi
 @NonNullFields
 package org.springframework.ai.mcp;

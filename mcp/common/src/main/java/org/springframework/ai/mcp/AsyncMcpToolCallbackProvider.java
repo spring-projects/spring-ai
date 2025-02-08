@@ -107,6 +107,18 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		}
 	}
 
+	/**
+	 * Creates a reactive stream of tool callbacks from multiple MCP clients.
+	 * <p>
+	 * This utility method:
+	 * <ol>
+	 * <li>Takes a list of MCP clients</li>
+	 * <li>Creates a provider for each client</li>
+	 * <li>Retrieves and flattens all tool callbacks into a single stream</li>
+	 * </ol>
+	 * @param mcpClients the list of MCP clients to create callbacks from
+	 * @return a Flux of tool callbacks from all provided clients
+	 */
 	public static Flux<ToolCallback> asyncToolCallbacks(List<McpAsyncClient> mcpClients) {
 		if (CollectionUtils.isEmpty(mcpClients)) {
 			return Flux.empty();

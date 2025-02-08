@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.mcp.client;
+package org.springframework.ai.autoconfigure.mcp.client.configurer;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ public class McpAsyncClientConfigurer {
 
 	private List<McpAsyncClientCustomizer> customizers;
 
-	void setCustomizers(List<McpAsyncClientCustomizer> customizers) {
+	public McpAsyncClientConfigurer(List<McpAsyncClientCustomizer> customizers) {
 		this.customizers = customizers;
 	}
 

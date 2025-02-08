@@ -38,7 +38,7 @@ import org.springframework.util.CollectionUtils;
  * <p>
  * Example usage: <pre>{@code
  * McpSyncClient mcpClient = // obtain MCP client
- * ToolCallbackProvider provider = new McpToolCallbackProvider(mcpClient);
+ * ToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
  *
  * // Get all available tools
  * ToolCallback[] tools = provider.getToolCallbacks();
@@ -56,7 +56,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	private final McpSyncClient mcpClient;
 
 	/**
-	 * Creates a new {@code McpToolCallbackProvider} instance.
+	 * Creates a new {@code SyncMcpToolCallbackProvider} instance.
 	 * @param mcpClient the MCP client to use for discovering tools
 	 */
 	public SyncMcpToolCallbackProvider(McpSyncClient mcpClient) {
@@ -106,6 +106,18 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		}
 	}
 
+	/**
+	 * Creates a list of tool callbacks from multiple MCP clients.
+	 * <p>
+	 * This utility method:
+	 * <ol>
+	 * <li>Takes a list of MCP clients</li>
+	 * <li>Creates a provider for each client</li>
+	 * <li>Retrieves and combines all tool callbacks into a single list</li>
+	 * </ol>
+	 * @param mcpClients the list of MCP clients to create callbacks from
+	 * @return a list of tool callbacks from all provided clients
+	 */
 	public static List<ToolCallback> syncToolCallbacks(List<McpSyncClient> mcpClients) {
 
 		if (CollectionUtils.isEmpty(mcpClients)) {

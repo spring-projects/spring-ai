@@ -62,11 +62,10 @@ public class SyncMcpToolCallback implements ToolCallback {
 	private final Tool tool;
 
 	/**
-	 * Creates a new {@code McpToolCallback} instance.
+	 * Creates a new {@code SyncMcpToolCallback} instance.
 	 * @param mcpClient the MCP client to use for tool execution
 	 * @param tool the MCP tool definition to adapt
 	 */
-
 	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
 		this.mcpClient = mcpClient;
 		this.tool = tool;
