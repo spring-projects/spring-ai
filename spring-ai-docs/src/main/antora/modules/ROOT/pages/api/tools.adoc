@@ -232,6 +232,7 @@ ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
 ==== Adding Default Tools to `ChatClient`
 
 When using the declarative specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool class instance to the `defaultTools()` method.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -261,6 +262,7 @@ chatModel.call(prompt);
 ==== Adding Default Tools to `ChatModel`
 
 When using the declarative specification approach, you can add default tools to `ChatModel` at construction time by passing the tool class instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -397,6 +399,7 @@ ChatClient.create(chatModel)
 ==== Adding Default Tools to `ChatClient`
 
 When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `MethodToolCallback` instance to the `defaultTools()` method.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -427,6 +430,7 @@ chatModel.call(prompt);
 ==== Adding Default Tools to `ChatModel`
 
 When using the programmatic specification approach, you can add default tools to a `ChatModel` at construction time by passing the `MethodToolCallback` instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -517,6 +521,7 @@ ChatClient.create(chatModel)
 ==== Adding Default Tools to `ChatClient`
 
 When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `FunctionToolCallback` instance to the `defaultTools()` method.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -547,6 +552,7 @@ chatModel.call(prompt);
 ==== Adding Default Tools to `ChatModel`
 
 When using the programmatic specification approach, you can add default tools to a `ChatModel` at construction time by passing the `FunctionToolCallback` instance to the `toolCallbacks()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -625,6 +631,7 @@ ChatClient.create(chatModel)
 ==== Adding Default Tools to `ChatClient`
 
 When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool name to the `defaultTools()` method.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -653,6 +660,7 @@ chatModel.call(prompt);
 ==== Adding Default Tools to `ChatModel`
 
 When using the dynamic specification approach, you can add default tools to `ChatModel` at construction time by passing the tool name to the `toolNames()` method of the `ToolCallingChatOptions` instance used to create the `ChatModel`.
+If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by that `ChatModel` instance. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
 
@@ -966,6 +974,9 @@ ChatOptions chatOptions = ToolCallingChatOptions.builder()
 Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);
 chatModel.call(prompt);
 ----
+
+If the `toolContext` option is set both in the default options and in the runtime options, the resulting `ToolContext` will be the merge of the two,
+where the runtime options take precedence over the default options.
 
 === Return Direct
 

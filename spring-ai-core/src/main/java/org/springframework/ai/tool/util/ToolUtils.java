@@ -26,10 +26,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Miscellaneous tool utility methods. Mainly for internal use within the framework.
@@ -85,15 +85,20 @@ public final class ToolUtils {
 		}
 	}
 
-	public static List<String> getDuplicateToolNames(FunctionCallback... toolCallbacks) {
+	public static List<String> getDuplicateToolNames(List<FunctionCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		return Stream.of(toolCallbacks)
+		return toolCallbacks.stream()
 			.collect(Collectors.groupingBy(FunctionCallback::getName, Collectors.counting()))
 			.entrySet()
 			.stream()
 			.filter(entry -> entry.getValue() > 1)
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
+	}
+
+	public static List<String> getDuplicateToolNames(FunctionCallback... toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		return getDuplicateToolNames(Arrays.asList(toolCallbacks));
 	}
 
 }

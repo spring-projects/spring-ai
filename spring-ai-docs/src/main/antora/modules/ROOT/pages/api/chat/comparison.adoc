@@ -7,7 +7,7 @@
 This table compares various Chat Models supported by Spring AI, detailing their capabilities:
 
 - xref:api/multimodality.adoc[Multimodality]: The types of input the model can process (e.g., text, image, audio, video).
-- xref:api/functions.adoc[Tools/Functions]: Whether the model supports function calling or tool use.
+- xref:api/tools.adoc[Tools/Function Calling]: Whether the model supports function calling or tool use.
 - Streaming: If the model offers streaming responses.
 - Retry: Support for retry mechanisms.
 - xref:observability/index.adoc[Observability]: Features for monitoring and debugging.

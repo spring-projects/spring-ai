@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,8 @@ package org.springframework.ai.openai;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -31,6 +29,12 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.LegacyToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -112,6 +116,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
+	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
+
 	/**
 	 * The default options used for the chat completion requests.
 	 */
@@ -132,6 +138,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	private final ObservationRegistry observationRegistry;
 
+	private final ToolCallingManager toolCallingManager;
+
 	/**
 	 * Conventions to use for generating observations.
 	 */
@@ -142,7 +150,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
 	 * Chat API.
 	 * @throws IllegalArgumentException if openAiApi is null
+	 * @deprecated Use OpenAiChatModel.Builder.
 	 */
+	@Deprecated
 	public OpenAiChatModel(OpenAiApi openAiApi) {
 		this(openAiApi, OpenAiChatOptions.builder().model(OpenAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
 	}
@@ -152,7 +162,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
 	 * Chat API.
 	 * @param options The OpenAiChatOptions to configure the chat model.
+	 * @deprecated Use OpenAiChatModel.Builder.
 	 */
+	@Deprecated
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options) {
 		this(openAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
@@ -164,9 +176,11 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param options The OpenAiChatOptions to configure the chat model.
 	 * @param functionCallbackResolver The function callback resolver.
 	 * @param retryTemplate The retry template.
+	 * @deprecated Use OpenAiChatModel.Builder.
 	 */
+	@Deprecated
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
+			@Nullable FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
 		this(openAiApi, options, functionCallbackResolver, List.of(), retryTemplate);
 	}
 
@@ -178,10 +192,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param functionCallbackResolver The function callback resolver.
 	 * @param toolFunctionCallbacks The tool function callbacks.
 	 * @param retryTemplate The retry template.
+	 * @deprecated Use OpenAiChatModel.Builder.
 	 */
+	@Deprecated
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate) {
+			@Nullable FunctionCallbackResolver functionCallbackResolver,
+			@Nullable List<FunctionCallback> toolFunctionCallbacks, RetryTemplate retryTemplate) {
 		this(openAiApi, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
 				ObservationRegistry.NOOP);
 	}
@@ -195,29 +211,48 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 * @param toolFunctionCallbacks The tool function callbacks.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
+	 * @deprecated Use OpenAiChatModel.Builder or OpenAiChatModel(OpenAiApi,
+	 * OpenAiChatOptions, ToolCallingManager, RetryTemplate, ObservationRegistry).
 	 */
+	@Deprecated
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
+			@Nullable FunctionCallbackResolver functionCallbackResolver,
+			@Nullable List<FunctionCallback> toolFunctionCallbacks, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
+		this(openAiApi, options,
+				LegacyToolCallingManager.builder()
+					.functionCallbackResolver(functionCallbackResolver)
+					.functionCallbacks(toolFunctionCallbacks)
+					.build(),
+				retryTemplate, observationRegistry);
+		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
+				+ "Please use the OpenAiChatModel.Builder or the new constructor accepting ToolCallingManager instead.");
+	}
+
+	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-
-		super(functionCallbackResolver, options, toolFunctionCallbacks);
-
-		Assert.notNull(openAiApi, "OpenAiApi must not be null");
-		Assert.notNull(options, "Options must not be null");
-		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
-		Assert.isTrue(CollectionUtils.isEmpty(options.getFunctionCallbacks()),
-				"The default function callbacks must be set via the toolFunctionCallbacks constructor parameter");
-		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
-
+		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
+		// because it modifies them. We are using ToolCallingManager instead,
+		// so we just pass empty options here.
+		super(null, OpenAiChatOptions.builder().build(), List.of());
+		Assert.notNull(openAiApi, "openAiApi cannot be null");
+		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
+		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
+		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
+		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		this.openAiApi = openAiApi;
-		this.defaultOptions = options;
+		this.defaultOptions = defaultOptions;
+		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		return this.internalCall(prompt, null);
+		// Before moving any further, build the final request Prompt,
+		// merging runtime and default options.
+		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return this.internalCall(requestPrompt, null);
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
@@ -227,7 +262,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(OpenAiApiConstants.PROVIDER_NAME)
-			.requestOptions(buildRequestOptions(request))
+			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -263,8 +298,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 
-				// Non function calling.
 				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
+
 				// Current usage
 				OpenAiApi.Usage usage = completionEntity.getBody().usage();
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
@@ -278,13 +313,21 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 			});
 
-		if (!isProxyToolCalls(prompt, this.defaultOptions)
-				&& isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
-			var toolCallConversation = handleToolCalls(prompt, response);
-			// Recursively call the call method with the tool call message
-			// conversation that contains the call responses.
-			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
+		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response != null
+				&& response.hasToolCalls()) {
+			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			if (toolExecutionResult.returnDirect()) {
+				// Return tool execution result directly to the client.
+				return ChatResponse.builder()
+					.from(response)
+					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					.build();
+			}
+			else {
+				// Send the tool execution result back to the model.
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+						response);
+			}
 		}
 
 		return response;
@@ -292,7 +335,10 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		return internalStream(prompt, null);
+		// Before moving any further, build the final request Prompt,
+		// merging runtime and default options.
+		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return internalStream(requestPrompt, null);
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
@@ -320,7 +366,7 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(OpenAiApiConstants.PROVIDER_NAME)
-				.requestOptions(buildRequestOptions(request))
+				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -392,12 +438,18 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 
-				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-						OpenAiApi.ChatCompletionFinishReason.STOP.name()))) {
-					var toolCallConversation = handleToolCalls(prompt, response);
-					// Recursively call the stream method with the tool call message
-					// conversation that contains the call responses.
-					return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), response);
+				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response.hasToolCalls()) {
+					var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+					if (toolExecutionResult.returnDirect()) {
+						// Return tool execution result directly to the client.
+						return Flux.just(ChatResponse.builder().from(response)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
+					} else {
+						// Send the tool execution result back to the model.
+						return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+								response);
+					}
 				}
 				else {
 					return Flux.just(response);
@@ -505,6 +557,63 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
+	Prompt buildRequestPrompt(Prompt prompt) {
+		// Process runtime options
+		OpenAiChatOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						OpenAiChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
+						OpenAiChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						OpenAiChatOptions.class);
+			}
+		}
+
+		// Define request options by merging runtime options and default options
+		OpenAiChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				OpenAiChatOptions.class);
+
+		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
+		// Jackson, used by ModelOptionsUtils.
+		if (runtimeOptions != null) {
+			requestOptions.setHttpHeaders(
+					mergeHttpHeaders(runtimeOptions.getHttpHeaders(), this.defaultOptions.getHttpHeaders()));
+			requestOptions.setInternalToolExecutionEnabled(
+					ModelOptionsUtils.mergeOption(runtimeOptions.isInternalToolExecutionEnabled(),
+							this.defaultOptions.isInternalToolExecutionEnabled()));
+			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
+					this.defaultOptions.getToolNames()));
+			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
+					this.defaultOptions.getToolCallbacks()));
+			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
+					this.defaultOptions.getToolContext()));
+		}
+		else {
+			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
+			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.isInternalToolExecutionEnabled());
+			requestOptions.setToolNames(this.defaultOptions.getToolNames());
+			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
+			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+		}
+
+		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
+
+		return new Prompt(prompt.getInstructions(), requestOptions);
+	}
+
+	private Map<String, String> mergeHttpHeaders(Map<String, String> runtimeHttpHeaders,
+			Map<String, String> defaultHttpHeaders) {
+		var mergedHttpHeaders = new HashMap<>(defaultHttpHeaders);
+		mergedHttpHeaders.putAll(runtimeHttpHeaders);
+		return mergedHttpHeaders;
+	}
+
 	/**
 	 * Accessible for testing.
 	 */
@@ -563,38 +672,17 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
-		Set<String> enabledToolsToUse = new HashSet<>();
+		OpenAiChatOptions requestOptions = (OpenAiChatOptions) prompt.getOptions();
+		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
 
-		if (prompt.getOptions() != null) {
-			OpenAiChatOptions updatedRuntimeOptions = null;
-
-			if (prompt.getOptions() instanceof FunctionCallingOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(((FunctionCallingOptions) prompt.getOptions()),
-						FunctionCallingOptions.class, OpenAiChatOptions.class);
-			}
-			else {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						OpenAiChatOptions.class);
-			}
-
-			enabledToolsToUse.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
-
-			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
-		}
-
-		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
-			enabledToolsToUse.addAll(this.defaultOptions.getFunctions());
-		}
-
-		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
-
-		// Add the enabled functions definitions to the request's tools parameter.
-		if (!CollectionUtils.isEmpty(enabledToolsToUse)) {
-
+		// Add the tool definitions to the request's tools parameter.
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
+		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().tools(this.getFunctionTools(enabledToolsToUse)).build(), request,
+					OpenAiChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
 					ChatCompletionRequest.class);
 		}
+
 		// Remove `streamOptions` from the request if it is not a streaming request
 		if (request.streamOptions() != null && !stream) {
 			logger.warn("Removing streamOptions from the request as it is not a streaming request!");
@@ -643,24 +731,12 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 		}
 	}
 
-	private List<OpenAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
-		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
-			var function = new OpenAiApi.FunctionTool.Function(functionCallback.getDescription(),
-					functionCallback.getName(), functionCallback.getInputTypeSchema());
+	private List<OpenAiApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
+		return toolDefinitions.stream().map(toolDefinition -> {
+			var function = new OpenAiApi.FunctionTool.Function(toolDefinition.description(), toolDefinition.name(),
+					toolDefinition.inputSchema());
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
-	}
-
-	private ChatOptions buildRequestOptions(OpenAiApi.ChatCompletionRequest request) {
-		return ChatOptions.builder()
-			.model(request.model())
-			.frequencyPenalty(request.frequencyPenalty())
-			.maxTokens(request.maxTokens())
-			.presencePenalty(request.presencePenalty())
-			.stopSequences(request.stop())
-			.temperature(request.temperature())
-			.topP(request.topP())
-			.build();
 	}
 
 	@Override
@@ -680,6 +756,96 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private OpenAiApi openAiApi;
+
+		private OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
+			.model(OpenAiApi.DEFAULT_CHAT_MODEL)
+			.temperature(0.7)
+			.build();
+
+		private ToolCallingManager toolCallingManager;
+
+		private FunctionCallbackResolver functionCallbackResolver;
+
+		private List<FunctionCallback> toolFunctionCallbacks;
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private Builder() {
+		}
+
+		public Builder openAiApi(OpenAiApi openAiApi) {
+			this.openAiApi = openAiApi;
+			return this;
+		}
+
+		public Builder defaultOptions(OpenAiChatOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		@Deprecated
+		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
+			this.functionCallbackResolver = functionCallbackResolver;
+			return this;
+		}
+
+		@Deprecated
+		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
+			this.toolFunctionCallbacks = toolFunctionCallbacks;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public OpenAiChatModel build() {
+			if (toolCallingManager != null) {
+				Assert.isNull(functionCallbackResolver,
+						"functionCallbackResolver cannot be set when toolCallingManager is set");
+				Assert.isNull(toolFunctionCallbacks,
+						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
+
+				return new OpenAiChatModel(openAiApi, defaultOptions, toolCallingManager, retryTemplate,
+						observationRegistry);
+			}
+
+			if (functionCallbackResolver != null) {
+				Assert.isNull(toolCallingManager,
+						"toolCallingManager cannot be set when functionCallbackResolver is set");
+				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
+						: List.of();
+
+				return new OpenAiChatModel(openAiApi, defaultOptions, functionCallbackResolver, toolCallbacks,
+						retryTemplate, observationRegistry);
+			}
+
+			return new OpenAiChatModel(openAiApi, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
+					observationRegistry);
+		}
+
 	}
 
 }
