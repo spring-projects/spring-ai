@@ -1,2 +1,2 @@
 org.springframework.aot.hint.RuntimeHintsRegistrar=\
-	org.springframework.ai.mcp.McpHints
+	org.springframework.ai.mcp.aot.McpHints

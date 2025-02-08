@@ -17,6 +17,7 @@ package org.springframework.ai.mcp;
 
 import java.util.List;
 
+import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
@@ -180,17 +181,32 @@ public final class McpToolUtils {
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
-	public static List<ToolCallback> getToolCallbacks(McpSyncClient... mcpClients) {
-		return getToolCallbacks(List.of(mcpClients));
+	public static List<ToolCallback> getToolCallbacksFromSyncClients(McpSyncClient... mcpClients) {
+		return getToolCallbacksFromSyncClients(List.of(mcpClients));
 	}
 
-	public static List<ToolCallback> getToolCallbacks(List<McpSyncClient> mcpClients) {
+	public static List<ToolCallback> getToolCallbacksFromSyncClients(List<McpSyncClient> mcpClients) {
 
 		if (CollectionUtils.isEmpty(mcpClients)) {
 			return List.of();
 		}
 		return mcpClients.stream()
 			.map(mcpClient -> List.of((new SyncMcpToolCallbackProvider(mcpClient).getToolCallbacks())))
+			.flatMap(List::stream)
+			.toList();
+	}
+
+	public static List<ToolCallback> getToolCallbacksFromAsyncClients(McpAsyncClient... asynMcpClients) {
+		return getToolCallbacksFromAsyncClinents(List.of(asynMcpClients));
+	}
+
+	public static List<ToolCallback> getToolCallbacksFromAsyncClinents(List<McpAsyncClient> asynMcpClients) {
+
+		if (CollectionUtils.isEmpty(asynMcpClients)) {
+			return List.of();
+		}
+		return asynMcpClients.stream()
+			.map(mcpClient -> List.of((new AsyncMcpToolCallbackProvider(mcpClient).getToolCallbacks())))
 			.flatMap(List::stream)
 			.toList();
 	}
