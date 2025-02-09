@@ -1,33 +1,21 @@
-= MCP Common Utilities
-:page-title: Spring AI MCP Common Utilities
+= MCP Utilities
+:page-title: Spring AI MCP Utilities
 
-This document provides reference documentation for the common utilities in Spring AI's Model Context Protocol (MCP) integration.
+The MCP utilities provide foundational support for integrating Model Context Protocol with Spring AI applications. 
+These utilities enable seamless communication between Spring AI's tool system and MCP servers, supporting both synchronous and asynchronous operations.
+They are typically used for programmatic MCP Client and Server configuration and interaction.
+For a more streamlined configuration, consider using the boot starters.
 
-The MCP common utilities provide foundational support for integrating Model Context Protocol with Spring AI applications. These utilities enable seamless communication between Spring AI's tool system and MCP servers, supporting both synchronous and asynchronous operations.
+== ToolCallback Utility
 
-== Core Components
+=== Tool Callback Adapter
 
-=== Tool Callbacks
+Adapts MCP tools to Spring AI's tool interface with both synchronous and asynchronous execution support.
 
-==== AsyncMcpToolCallback
-
-Adapts MCP tools to Spring AI's tool interface with asynchronous execution support.
-
-[source,java]
-----
-McpAsyncClient mcpClient = // obtain MCP client
-Tool mcpTool = // obtain MCP tool definition
-ToolCallback callback = new AsyncMcpToolCallback(mcpClient, mcpTool);
-
-// Use the tool through Spring AI's interfaces
-ToolDefinition definition = callback.getToolDefinition();
-String result = callback.call("{\"param\": \"value\"}");
-----
-
-==== SyncMcpToolCallback
-
-Similar to AsyncMcpToolCallback but provides synchronous execution semantics.
-
+[tabs]
+======
+Sync::
++
 [source,java]
 ----
 McpSyncClient mcpClient = // obtain MCP client
@@ -39,33 +27,28 @@ ToolDefinition definition = callback.getToolDefinition();
 String result = callback.call("{\"param\": \"value\"}");
 ----
 
-=== Tool Callback Providers
-
-==== AsyncMcpToolCallbackProvider
-
-Discovers and provides MCP tools asynchronously.
-
+Async::
++
 [source,java]
 ----
 McpAsyncClient mcpClient = // obtain MCP client
-ToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(mcpClient);
+Tool mcpTool = // obtain MCP tool definition
+ToolCallback callback = new AsyncMcpToolCallback(mcpClient, mcpTool);
 
-// Get all available tools
-ToolCallback[] tools = provider.getToolCallbacks();
+// Use the tool through Spring AI's interfaces
+ToolDefinition definition = callback.getToolDefinition();
+String result = callback.call("{\"param\": \"value\"}");
 ----
+======
 
-The provider also offers a utility method for working with multiple clients:
+=== Tool Callback Providers
 
-[source,java]
-----
-List<McpAsyncClient> clients = // obtain list of clients
-Flux<ToolCallback> callbacks = AsyncMcpToolCallbackProvider.asyncToolCallbacks(clients);
-----
+Discovers and provides MCP tools from MCP clients.
 
-==== SyncMcpToolCallbackProvider
-
-Similar to AsyncMcpToolCallbackProvider but works with synchronous clients.
-
+[tabs]
+======
+Sync::
++
 [source,java]
 ----
 McpSyncClient mcpClient = // obtain MCP client
@@ -74,93 +57,100 @@ ToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
 // Get all available tools
 ToolCallback[] tools = provider.getToolCallbacks();
 ----
-
++
 For multiple clients:
-
++
 [source,java]
 ----
 List<McpSyncClient> clients = // obtain list of clients
 List<ToolCallback> callbacks = SyncMcpToolCallbackProvider.syncToolCallbacks(clients);
 ----
 
-=== Client Customization
-
-==== McpAsyncClientCustomizer
-
-Allows customization of asynchronous MCP client configurations.
-
+Async::
++
 [source,java]
 ----
-@Component
-public class CustomMcpAsyncClientCustomizer implements McpAsyncClientCustomizer {
-    @Override
-    public void customize(String name, McpClient.AsyncSpec spec) {
-        // Customize the async client configuration
-        spec.requestTimeout(Duration.ofSeconds(30));
-    }
-}
+McpAsyncClient mcpClient = // obtain MCP client
+ToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(mcpClient);
+
+// Get all available tools
+ToolCallback[] tools = provider.getToolCallbacks();
 ----
-
-==== McpSyncClientCustomizer
-
-Similar to McpAsyncClientCustomizer but for synchronous clients.
-
++
+For multiple clients:
++
 [source,java]
 ----
-@Component
-public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
-    @Override
-    public void customize(String name, McpClient.SyncSpec spec) {
-        // Customize the sync client configuration
-        spec.requestTimeout(Duration.ofSeconds(30));
-    }
-}
+List<McpAsyncClient> clients = // obtain list of clients
+Flux<ToolCallback> callbacks = AsyncMcpToolCallbackProvider.asyncToolCallbacks(clients);
 ----
+======
 
-=== Utility Classes
+== McpToolUtils
 
-==== McpToolUtils
-
-Provides helper methods for working with MCP tools in a Spring AI environment.
+=== ToolCallbacks to ToolRegistrations
 
 Converting Spring AI tool callbacks to MCP tool registrations:
 
+[tabs]
+======
+Sync::
++
 [source,java]
 ----
-// For synchronous tools
 List<ToolCallback> toolCallbacks = // obtain tool callbacks
-List<SyncToolRegistration> syncRegs = McpToolUtils.toSyncToolRegistration(toolCallbacks);
-
-// For asynchronous tools
-List<AsyncToolRegistration> asyncRegs = McpToolUtils.toAsyncToolRegistration(toolCallbacks);
+List<SyncToolRegistration> syncToolRegs = McpToolUtils.toSyncToolRegistration(toolCallbacks);
 ----
-
-Getting tool callbacks from MCP clients:
-
++
+then you can use the `McpServer.SyncSpec` to register the tool registrations:
++
 [source,java]
 ----
-// From sync clients
+McpServer.SyncSpec syncSpec = ...
+syncSpec.tools(syncToolRegs);
+----
+
+Async::
++
+[source,java]
+----
+List<ToolCallback> toolCallbacks = // obtain tool callbacks
+List<AsyncToolRegistration> asyncToolRegs = McpToolUtils.toAsyncToolRegistration(toolCallbacks);
+----
++
+then you can use the `McpServer.AsyncSpec` to register the tool registrations:
++
+[source,java]
+----
+McpServer.AsyncSpec asyncSpec = ...
+asyncSpec.tools(asyncToolRegs);
+----
+======
+
+=== MCP Clients to ToolCallbacks
+
+Getting tool callbacks from MCP clients
+
+[tabs]
+======
+Sync::
++
+[source,java]
+----
 List<McpSyncClient> syncClients = // obtain sync clients
 List<ToolCallback> syncCallbacks = McpToolUtils.getToolCallbacksFromSyncClients(syncClients);
+----
 
-// From async clients
+Async::
++
+[source,java]
+----
 List<McpAsyncClient> asyncClients = // obtain async clients
 List<ToolCallback> asyncCallbacks = McpToolUtils.getToolCallbacksFromAsyncClients(asyncClients);
 ----
+======
 
-=== Native Image Support
+== Native Image Support
 
-==== McpHints
-
-Provides GraalVM native image hints for MCP schema classes.
-
-[source,java]
-----
-@Configuration
-@ImportRuntimeHints(McpHints.class)
-public class MyConfiguration {
-    // Configuration code
-}
-----
-
+The `McpHints` class provides GraalVM native image hints for MCP schema classes.
 This class automatically registers all necessary reflection hints for MCP schema classes when building native images.
