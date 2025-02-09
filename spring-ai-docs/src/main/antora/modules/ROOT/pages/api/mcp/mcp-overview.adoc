@@ -5,25 +5,20 @@ It supports multiple transport mechanisms for flexibility in different environme
 
 The link:https://modelcontextprotocol.github.io/sdk/java[Java MCP] provides a Java SDK implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication.
 
-== Architecture
+== MCP Java SDK
 
-The Java MCP integration follows a layered architecture with clear separation of concerns:
+The Java MCP implementation follows a three-layer architecture:
 
 // [cols="2,10"]
 |===
 |  |
-
-^a| image::mcp/mcp-stack.svg[MCP Stack Architecture, ]
-
+^a| image::mcp/mcp-stack.svg[MCP Stack Architecture]
 a| * *Client/Server Layer*: The McpClient handles client-side and the McpServer manages server-side protocol operations.
-Both use McpSession for sync/async operations.
-
+Both utilize McpSession for operations
 * *Session Layer (McpSession)*: Manages communication patterns and state.
 Uses the DefaultMcpSession implementation.
-
 * *Transport Layer (McpTransport)*: Handles JSON-RPC message serialization/deserialization.
-Multiple transport implementations are available.
-
+Supports multiple transport implementations.
 |===
 
 // [cols="10,2"]
@@ -71,11 +66,8 @@ a| The MCP Server is a foundational component in the Model Context Protocol (MCP
 ^a| image::mcp/java-mcp-server-architecture.jpg[Java MCP Server Architecture, width=600]
 |===
 
-== MCP Java SDK
-
-Please follow the link:https://modelcontextprotocol.github.io/sdk/java[MCP Java SDK] documentation for detailed information on the Java SDK implementation. 
-It provides detailed instructions on how to build MCP clients and servers manually using the SDK.
-For a more streamlined configuration, consider using the Spring AI MCP Boot Starters provided below.
+For manual SDK implementation, refer to the link:https://modelcontextprotocol.github.io/sdk/java[MCP Java SDK documentation]. 
+For simplified setup, use the Spring AI MCP Boot Starters below.
 
 == Spring AI MCP Integration
 
