@@ -23,7 +23,7 @@ The MCP Client Boot Starter provides:
 </dependency>
 ----
 
-The core starter connects simultaneously to one or more MCP servers over `STDIO` (in-process) and/or `SSE` (remote) transports.
+The standard starter connects simultaneously to one or more MCP servers over `STDIO` (in-process) and/or `SSE` (remote) transports.
 The SSE connection uses the HttpClient-based transport implementation.
 Each connection to an MCP server creates a new MCP client instance.
 You can choose either `SYNC` or `ASYNC` MCP clients (note: you cannot mix sync and async clients).
@@ -31,7 +31,7 @@ For production deployment, we recommend using the WebFlux-based SSE connection w
 
 === WebFlux Client
 
-The WebFlux starter provides similar functionality to the core starter but uses a WebFlux-based SSE transport implementation.
+The WebFlux starter provides similar functionality to the standard starter but uses a WebFlux-based SSE transport implementation.
 
 [source,xml]
 ----
@@ -45,7 +45,7 @@ The WebFlux starter provides similar functionality to the core starter but uses 
 
 === Common Properties
 
-All common configuration properties are prefixed with `spring.ai.mcp.client`:
+The common properties are prefixed with `spring.ai.mcp.client`:
 
 [cols="3,4,3"]
 |===
@@ -217,8 +217,47 @@ Sync::
 public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
     @Override
     public void customize(String name, McpClient.SyncSpec spec) {
+
         // Customize the sync client configuration
         spec.requestTimeout(Duration.ofSeconds(30));
+
+        // Adds a consumer to be notified when the available tools change. This allows the
+		    // client to react to changes in the server's tool capabilities, such as tools
+		    // being added or removed.
+        spec.toolsChangeConsumer((List<McpSchema.Tool> tools) -> {
+            // Handle tools change
+        });
+
+        // Adds a consumer to be notified when the available resources change. This allows the
+        // client to react to changes in the server's resource capabilities, such as resources
+        // being added or removed.
+        spec.resourcesChangeConsumer((List<McpSchema.Resource> resources) -> {
+            // Handle resources change
+        });
+
+        // Adds a consumer to be notified when the available prompts change. This allows the
+        // client to react to changes in the server's prompt capabilities, such as prompts
+        // being added or removed.
+        spec.promptsChangeConsumer((List<McpSchema.Prompt> prompts) -> {
+            // Handle prompts change
+        });
+
+        // Adds a consumer to be notified when logging messages are received from the server.
+        spec.loggingConsumer((McpSchema.LoggingMessageNotification log) -> {
+            // Handle log messages
+        });
+
+        // Sets a custom sampling handler for processing message creation requests.
+        spec.sampling((CreateMessageRequest messageRequest) -> {
+            // Handle sampling
+            CreateMessageResult result = ...
+            return result;
+        });
+
+        // Sets the root URIs that the server connecto this client can access. 
+        // Roots define the base URIs for resources that the server can request.
+        // For example, a root might be "file://workspace" for accessing workspace files.
+        spec.roots(roots);
     }
 }
 ----
