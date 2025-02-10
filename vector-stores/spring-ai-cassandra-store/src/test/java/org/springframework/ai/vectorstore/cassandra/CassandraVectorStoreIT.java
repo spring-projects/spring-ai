@@ -422,6 +422,38 @@ class CassandraVectorStoreIT {
 	}
 
 	@Test
+	void deleteById() {
+		this.contextRunner.run(context -> {
+			try (CassandraVectorStore store = createTestStore(context,
+					new SchemaColumn("country", DataTypes.TEXT, SchemaColumnTags.INDEXED),
+					new SchemaColumn("year", DataTypes.SMALLINT, SchemaColumnTags.INDEXED))) {
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", (short) 2020));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", (short) 2023));
+
+				store.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				// Verify initial state
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
+				assertThat(results).hasSize(3);
+
+				store.delete(List.of(bgDocument.getId(), bgDocument2.getId()));
+
+				results = store.similaritySearch(
+						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+			}
+		});
+	}
+
+	@Test
 	void deleteByFilter() {
 		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = createTestStore(context,

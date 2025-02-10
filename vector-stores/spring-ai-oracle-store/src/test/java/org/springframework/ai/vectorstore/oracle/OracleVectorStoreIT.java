@@ -318,6 +318,42 @@ public class OracleVectorStoreIT {
 	}
 
 	@Test
+	void deleteById() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var doc1 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020));
+				var doc2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var doc3 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
+
+				vectorStore.add(List.of(doc1, doc2, doc3));
+
+				// Delete first two documents
+				vectorStore.delete(List.of(doc1.getId(), doc2.getId()));
+
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(doc3.getId());
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(doc3.getId());
+				assertThat(results.get(0).getMetadata())
+					.hasEntrySatisfying("country", value -> assertThat(value.toString()).isEqualTo("\"BG\""))
+					.hasEntrySatisfying("year", value -> assertThat(value.toString()).isEqualTo("2023"));
+
+				// Clean up remaining document
+				vectorStore.delete(List.of(doc3.getId()));
+			});
+	}
+
+	@Test
 	void deleteByFilter() {
 		this.contextRunner
 			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",

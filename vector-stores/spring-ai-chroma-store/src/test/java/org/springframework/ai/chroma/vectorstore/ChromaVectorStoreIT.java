@@ -169,6 +169,41 @@ public class ChromaVectorStoreIT {
 	}
 
 	@Test
+	public void deleteById() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.mariadb.distanceType=COSINE").run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL", "year", 2021));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.build();
+
+			List<Document> results = vectorStore.similaritySearch(searchRequest);
+			assertThat(results).hasSize(3);
+
+			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
+					new Filter.Key("country"), new Filter.Value("BG"));
+
+			vectorStore.delete(List.of(bgDocument.getId(), bgDocument2.getId()));
+
+			// Verify deletion - should only have NL document remaining
+			results = vectorStore.similaritySearch(searchRequest);
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+		});
+	}
+
+	@Test
 	public void deleteWithFilterExpression() {
 		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
