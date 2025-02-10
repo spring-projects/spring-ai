@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -43,6 +44,7 @@ import org.testcontainers.utility.MountableFile;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -66,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @Disabled("Oracle image is 2GB")
-public class OracleVectorStoreIT {
+public class OracleVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE).withCopyFileToContainer(
@@ -119,6 +121,17 @@ public class OracleVectorStoreIT {
 			previous = current;
 		}
 		return true;
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				testFunction.accept(vectorStore);
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -312,71 +325,6 @@ public class OracleVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());
 				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
-
-				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
-			});
-	}
-
-	@Test
-	void deleteByFilter() {
-		this.contextRunner
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
-					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
-			.run(context -> {
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-
-				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2020));
-				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "NL"));
-				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2023));
-
-				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-				Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-						new Filter.Key("country"), new Filter.Value("BG"));
-
-				vectorStore.delete(filterExpression);
-
-				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-				assertThat(results).hasSize(1);
-				assertThat(results.get(0).getMetadata()).containsKey("country")
-					.hasEntrySatisfying("country",
-							value -> assertThat(value.toString().replace("\"", "")).isEqualTo("NL"));
-
-				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
-			});
-	}
-
-	@Test
-	void deleteWithStringFilterExpression() {
-		this.contextRunner
-			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
-					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
-			.run(context -> {
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-
-				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2020));
-				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "NL"));
-				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2023));
-
-				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-				vectorStore.delete("country == 'BG'");
-
-				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-				assertThat(results).hasSize(1);
-				assertThat(results.get(0).getMetadata()).containsKey("country")
-					.hasEntrySatisfying("country",
-							value -> assertThat(value.toString().replace("\"", "")).isEqualTo("NL"));
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
 			});
