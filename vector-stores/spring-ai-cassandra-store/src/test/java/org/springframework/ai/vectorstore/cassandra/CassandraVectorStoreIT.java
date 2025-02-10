@@ -19,10 +19,12 @@ package org.springframework.ai.vectorstore.cassandra;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -40,8 +42,10 @@ import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore.SchemaColumn;
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore.SchemaColumnTags;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -64,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0
  */
 @Testcontainers
-class CassandraVectorStoreIT {
+class CassandraVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static CassandraContainer<?> cassandraContainer = new CassandraContainer<>(CassandraImage.DEFAULT_IMAGE);
@@ -108,6 +112,24 @@ class CassandraVectorStoreIT {
 		CassandraVectorStore.dropKeyspace(builder);
 		CassandraVectorStore store = builder.build();
 		return store;
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
+	}
+
+	@Override
+	protected Document createDocument(String country, Integer year) {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("country", country);
+		if (year != null) {
+			metadata.put("year", year.shortValue());
+		}
+		return new Document("The World is Big and Salvation Lurks Around the Corner", metadata);
 	}
 
 	@Test
@@ -422,7 +444,7 @@ class CassandraVectorStoreIT {
 	}
 
 	@Test
-	void deleteByFilter() {
+	protected void deleteByFilter() {
 		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = createTestStore(context,
 					new SchemaColumn("country", DataTypes.TEXT, SchemaColumnTags.INDEXED),
@@ -458,7 +480,7 @@ class CassandraVectorStoreIT {
 	}
 
 	@Test
-	void deleteWithStringFilterExpression() {
+	protected void deleteWithStringFilterExpression() {
 		this.contextRunner.run(context -> {
 			try (CassandraVectorStore store = createTestStore(context,
 					new SchemaColumn("country", DataTypes.TEXT, SchemaColumnTags.INDEXED),

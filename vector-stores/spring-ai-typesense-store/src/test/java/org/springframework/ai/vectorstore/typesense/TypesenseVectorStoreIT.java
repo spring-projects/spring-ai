@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ import org.typesense.resources.Node;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -58,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @Testcontainers
-public class TypesenseVectorStoreIT {
+public class TypesenseVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	private static TypesenseContainer typesense = new TypesenseContainer(TypesenseImage.DEFAULT_IMAGE);
@@ -79,6 +82,14 @@ public class TypesenseVectorStoreIT {
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@Test
@@ -243,61 +254,6 @@ public class TypesenseVectorStoreIT {
 
 			((TypesenseVectorStore) vectorStore).dropCollection();
 
-		});
-	}
-
-	@Test
-	void deleteByFilter() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL"));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("country"), new Filter.Value("BG"));
-
-			vectorStore.delete(filterExpression);
-
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			((TypesenseVectorStore) vectorStore).dropCollection();
-		});
-	}
-
-	@Test
-	void deleteWithStringFilterExpression() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL"));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-			vectorStore.delete("country == 'BG'");
-
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			((TypesenseVectorStore) vectorStore).dropCollection();
 		});
 	}
 

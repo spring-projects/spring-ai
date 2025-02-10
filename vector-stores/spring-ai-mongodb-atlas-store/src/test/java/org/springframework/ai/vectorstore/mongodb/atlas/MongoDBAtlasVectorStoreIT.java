@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.mongodb.client.MongoClient;
@@ -39,6 +40,7 @@ import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -64,7 +66,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class MongoDBAtlasVectorStoreIT {
+class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(MongoDbImage.DEFAULT_IMAGE);
@@ -79,6 +81,14 @@ class MongoDBAtlasVectorStoreIT {
 		this.contextRunner.run(context -> {
 			MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
 			mongoTemplate.getCollection("vector_store").deleteMany(new org.bson.Document());
+		});
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
 		});
 	}
 
@@ -254,71 +264,6 @@ class MongoDBAtlasVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
-		});
-	}
-
-	@Test
-	void deleteByFilter() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL", "year", 2021));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-			Thread.sleep(5000); // Wait for indexing
-
-			SearchRequest searchRequest = SearchRequest.builder()
-				.query("The World")
-				.topK(5)
-				.similarityThresholdAll()
-				.build();
-
-			List<Document> results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(3);
-
-			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("country"), new Filter.Value("BG"));
-
-			vectorStore.delete(filterExpression);
-			Thread.sleep(1000); // Wait for deletion to be processed
-
-			results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-		});
-	}
-
-	@Test
-	void deleteWithStringFilterExpression() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL", "year", 2021));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-			Thread.sleep(5000); // Wait for indexing
-
-			var searchRequest = SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build();
-
-			List<Document> results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(3);
-
-			vectorStore.delete("country == 'BG'");
-			Thread.sleep(1000); // Wait for deletion to be processed
-
-			results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
 		});
 	}
 

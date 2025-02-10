@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import io.qdrant.client.QdrantClient;
@@ -41,6 +42,7 @@ import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -61,7 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+") })
-public class QdrantVectorStoreIT {
+public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String COLLECTION_NAME = "test_collection";
 
@@ -95,6 +97,14 @@ public class QdrantVectorStoreIT {
 			.get();
 
 		client.close();
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@Test
@@ -257,57 +267,6 @@ public class QdrantVectorStoreIT {
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
-		});
-	}
-
-	@Test
-	void deleteByFilter() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Bulgaria", "number", 3));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Netherlands", "number", 90));
-
-			vectorStore.add(List.of(bgDocument, nlDocument));
-
-			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("country"), new Filter.Value("Bulgaria"));
-
-			vectorStore.delete(filterExpression);
-
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "Netherlands");
-
-			vectorStore.delete(List.of(nlDocument.getId()));
-		});
-	}
-
-	@Test
-	void deleteWithStringFilterExpression() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Bulgaria", "number", 3));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "Netherlands", "number", 90));
-
-			vectorStore.add(List.of(bgDocument, nlDocument));
-
-			vectorStore.delete("number > 50");
-
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "Bulgaria");
-
-			vectorStore.delete(List.of(bgDocument.getId()));
 		});
 	}
 

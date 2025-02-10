@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import io.weaviate.client.Config;
 import io.weaviate.client.WeaviateClient;
@@ -35,10 +37,10 @@ import org.testcontainers.weaviate.WeaviateContainer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -54,7 +56,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @Testcontainers
-public class WeaviateVectorStoreIT {
+public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static WeaviateContainer weaviateContainer = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
@@ -83,6 +85,14 @@ public class WeaviateVectorStoreIT {
 
 	private void resetCollection(VectorStore vectorStore) {
 		vectorStore.delete(this.documents.stream().map(Document::getId).toList());
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@Test
@@ -253,62 +263,6 @@ public class WeaviateVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
-		});
-	}
-
-	@Test
-	void deleteByFilter() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL"));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("country"), new Filter.Value("BG"));
-
-			vectorStore.delete(filterExpression);
-
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			vectorStore.delete(List.of(nlDocument.getId()));
-
-		});
-	}
-
-	@Test
-	void deleteWithStringFilterExpression() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL"));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-			vectorStore.delete("country == 'BG'");
-
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			vectorStore.delete(List.of(nlDocument.getId()));
 		});
 	}
 

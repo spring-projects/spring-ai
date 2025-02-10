@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,6 +46,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -71,7 +73,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class MariaDBStoreIT {
+public class MariaDBStoreIT extends BaseVectorStoreTests {
 
 	private static String schemaName = "testdb";
 
@@ -139,6 +141,14 @@ public class MariaDBStoreIT {
 			previous = current;
 		}
 		return true;
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -360,72 +370,6 @@ public class MariaDBStoreIT {
 
 				dropTable(context);
 			});
-	}
-
-	@Test
-	public void deleteByFilter() {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.mariadb.distanceType=COSINE").run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL", "year", 2021));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-			SearchRequest searchRequest = SearchRequest.builder()
-				.query("The World")
-				.topK(5)
-				.similarityThresholdAll()
-				.build();
-
-			List<Document> results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(3);
-
-			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("country"), new Filter.Value("BG"));
-
-			vectorStore.delete(filterExpression);
-
-			// Verify deletion - should only have NL document remaining
-			results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			dropTable(context);
-		});
-	}
-
-	@Test
-	public void deleteWithStringFilterExpression() {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.mariadb.distanceType=COSINE").run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL", "year", 2021));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-			var searchRequest = SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build();
-
-			List<Document> results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(3);
-
-			vectorStore.delete("country == 'BG'");
-
-			results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			dropTable(context);
-		});
 	}
 
 	@Test
