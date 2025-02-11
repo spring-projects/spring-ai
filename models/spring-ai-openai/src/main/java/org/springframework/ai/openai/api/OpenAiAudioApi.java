@@ -72,7 +72,14 @@ public class OpenAiAudioApi {
 	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		Consumer<HttpHeaders> authHeaders = h -> h.setBearerAuth(openAiToken);
+		Consumer<HttpHeaders> authHeaders;
+		if (openAiToken != null && !openAiToken.isEmpty()) {
+			authHeaders = h -> h.setBearerAuth(openAiToken);
+		}
+		else {
+			authHeaders = h -> {
+			};
+		}
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(authHeaders)
@@ -111,7 +118,9 @@ public class OpenAiAudioApi {
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> authHeaders = h -> {
-			h.setBearerAuth(apiKey);
+			if (apiKey != null && !apiKey.isEmpty()) {
+				h.setBearerAuth(apiKey);
+			}
 			h.addAll(headers);
 			// h.setContentType(MediaType.APPLICATION_JSON);
 		};
@@ -135,7 +144,7 @@ public class OpenAiAudioApi {
 
 	/**
 	 * Streams audio generated from the input text.
-	 *
+	 * <p>
 	 * This method sends a POST request to the OpenAI API to generate audio from the
 	 * provided text. The audio is streamed back as a Flux of ResponseEntity objects, each
 	 * containing a byte array of the audio data.
