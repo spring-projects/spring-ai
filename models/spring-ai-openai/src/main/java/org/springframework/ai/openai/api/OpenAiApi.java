@@ -16,25 +16,9 @@
 
 package org.springframework.ai.openai.api;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import org.springframework.ai.model.ApiKey;
-import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.model.*;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
@@ -48,6 +32,14 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Single class implementation of the
@@ -200,7 +192,10 @@ public class OpenAiApi {
 		this.embeddingsPath = embeddingsPath;
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			h.setBearerAuth(apiKey.getValue());
+			if(!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
+
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
