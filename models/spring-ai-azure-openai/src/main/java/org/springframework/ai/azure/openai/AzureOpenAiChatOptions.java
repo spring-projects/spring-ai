@@ -17,6 +17,8 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +32,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -44,7 +48,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  */
 @JsonInclude(Include.NON_NULL)
-public class AzureOpenAiChatOptions implements FunctionCallingOptions {
+public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 	/**
 	 * The maximum number of tokens to generate.
@@ -139,33 +143,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	private AzureOpenAiResponseFormat responseFormat;
 
 	/**
-	 * OpenAI Tool Function Callbacks to register with the ChatModel. For Prompt Options
-	 * the functionCallbacks are automatically enabled for the duration of the prompt
-	 * execution. For Default Options the functionCallbacks are registered but disabled by
-	 * default. Use the enableFunctions to set the functions from the registry to be used
-	 * by the ChatModel chat completion requests.
-	 */
-	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
-
-	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests. Functions with those names must exist in the
-	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
-	 * are automatically enabled for the duration of the prompt execution.
-	 *
-	 * Note that function enabled with the default options are enabled for all chat
-	 * completion requests. This could impact the token count and the billing. If the
-	 * functions is set in a prompt options, then the enabled functions are only active
-	 * for the duration of this prompt execution.
-	 */
-	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
-
-	@JsonIgnore
-	private Boolean proxyToolCalls;
-
-	/**
 	 * Seed value for deterministic sampling such that the same seed and parameters return
 	 * the same result.
 	 */
@@ -199,7 +176,68 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	private ChatCompletionStreamOptions streamOptions;
 
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
+
+	/**
+	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
+	 * completion requests.
+	 */
+	@JsonIgnore
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+
+	/**
+	 * Collection of tool names to be resolved at runtime and used for tool calling in the
+	 * chat completion requests.
+	 */
+	@JsonIgnore
+	private Set<String> toolNames = new HashSet<>();
+
+	/**
+	 * Whether to enable the tool execution lifecycle internally in ChatModel.
+	 */
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
+
+	@Override
+	@JsonIgnore
+	public List<FunctionCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean isInternalToolExecutionEnabled() {
+		return internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -224,7 +262,10 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			.topLogprobs(fromOptions.getTopLogProbs())
 			.enhancements(fromOptions.getEnhancements())
 			.toolContext(fromOptions.getToolContext())
+			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
 			.streamOptions(fromOptions.getStreamOptions())
+			.toolCallbacks(fromOptions.getToolCallbacks())
+			.toolNames(fromOptions.getToolNames())
 			.build();
 	}
 
@@ -336,21 +377,28 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
-	}
-
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
+		return this.getToolCallbacks();
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.setToolCallbacks(functionCallbacks);
+	}
+
+	@Override
+	@Deprecated
+	@JsonIgnore
 	public Set<String> getFunctions() {
-		return this.functions;
+		return this.getToolNames();
 	}
 
 	public void setFunctions(Set<String> functions) {
-		this.functions = functions;
+		this.setToolNames(functions);
 	}
 
 	public AzureOpenAiResponseFormat getResponseFormat() {
@@ -400,12 +448,16 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
+		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
 	}
 
+	@Deprecated
+	@JsonIgnore
 	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
+		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
@@ -493,21 +545,19 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
+		@Deprecated
 		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
-			return this;
+			return toolCallbacks(functionCallbacks);
 		}
 
+		@Deprecated
 		public Builder functions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
-			return this;
+			return toolNames(functionNames);
 		}
 
+		@Deprecated
 		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
-			return this;
+			return toolNames(functionName);
 		}
 
 		public Builder responseFormat(AzureOpenAiResponseFormat responseFormat) {
@@ -515,8 +565,11 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
+		@Deprecated
 		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+			if (proxyToolCalls != null) {
+				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
+			}
 			return this;
 		}
 
@@ -552,6 +605,34 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 
 		public Builder streamOptions(ChatCompletionStreamOptions streamOptions) {
 			this.options.streamOptions = streamOptions;
+			return this;
+		}
+
+		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
 		}
 

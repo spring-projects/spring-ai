@@ -194,9 +194,11 @@ class AzureOpenAiChatModelObservationIT {
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder,
 				TestObservationRegistry observationRegistry) {
-			return new AzureOpenAiChatModel(openAIClientBuilder,
-					AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build(), null, List.of(),
-					observationRegistry);
+			return AzureOpenAiChatModel.builder()
+				.openAIClientBuilder(openAIClientBuilder)
+				.defaultOptions(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}
