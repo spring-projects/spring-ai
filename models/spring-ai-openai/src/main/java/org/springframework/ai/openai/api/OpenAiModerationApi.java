@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +58,9 @@ public class OpenAiModerationApi {
 		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> {
-			h.setBearerAuth(openAiToken);
+			if (openAiToken != null && !openAiToken.isEmpty()) {
+				h.setBearerAuth(openAiToken);
+			}
 			h.setContentType(MediaType.APPLICATION_JSON);
 		}).defaultStatusHandler(responseErrorHandler).build();
 	}

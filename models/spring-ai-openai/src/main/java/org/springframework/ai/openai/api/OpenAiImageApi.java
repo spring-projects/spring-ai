@@ -87,7 +87,9 @@ public class OpenAiImageApi {
 		// @formatter:off
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(h -> {
-				h.setBearerAuth(apiKey);
+				if(apiKey != null && !apiKey.isEmpty()) {
+					h.setBearerAuth(apiKey);
+				}
 				h.setContentType(MediaType.APPLICATION_JSON);
 				h.addAll(headers);
 			})

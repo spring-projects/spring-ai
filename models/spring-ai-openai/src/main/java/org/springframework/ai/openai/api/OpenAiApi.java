@@ -34,6 +34,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
@@ -200,7 +201,10 @@ public class OpenAiApi {
 		this.embeddingsPath = embeddingsPath;
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			h.setBearerAuth(apiKey.getValue());
+			if(!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
+
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
