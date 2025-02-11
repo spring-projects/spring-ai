@@ -22,6 +22,7 @@ To set up `PineconeVectorStore`, gather the following details from your Pinecone
 [NOTE]
 ====
 This information is available to you in the Pinecone UI portal.
+The namespace support is not available in the Pinecone free tier.
 ====
 
 == Auto-configuration
@@ -154,8 +155,7 @@ NOTE: These filter expressions are converted into the equivalent Pinecone filter
 
 == Manual Configuration
 
-If you prefer to configure the `PineconeVectorStore` manually, you can do so by creating a `PineconeVectorStoreConfig` bean
-and passing it to the `PineconeVectorStore` constructor.
+If you prefer to configure `PineconeVectorStore` manually, you can do so by using the `PineconeVectorStore#Builder`.
 
 Add these dependencies to your project:
 
@@ -189,11 +189,14 @@ To configure Pinecone in your application, you can use the following setup:
 ----
 @Bean
 public VectorStore pineconeVectorStore(EmbeddingModel embeddingModel) {
-    return PineconeVectorStore
-        .builder(embeddingModel, PINECONE_API_KEY, PINECONE_PROJECT_ID, PINECONE_ENVIRONMENT, PINECONE_INDEX_NAME)
-        .namespace(PINECONE_NAMESPACE) // the free tier doesn't support namespaces.
-        .contentFieldName(CUSTOM_CONTENT_FIELD_NAME) // optional field to store the original content. Defaults to `document_content`
-        .build();
+    return PineconeVectorStore.builder(embeddingModel)
+            .apiKey(PINECONE_API_KEY)
+            .projectId(PINECONE_PROJECT_ID)
+            .environment(PINECONE_ENVIRONMENT)
+            .indexName(PINECONE_INDEX_NAME)
+            .namespace(PINECONE_NAMESPACE) // the free tier doesn't support namespaces.
+            .contentFieldName(CUSTOM_CONTENT_FIELD_NAME) // optional field to store the original content. Defaults to `document_content`
+            .build();
 }
 ----
 
