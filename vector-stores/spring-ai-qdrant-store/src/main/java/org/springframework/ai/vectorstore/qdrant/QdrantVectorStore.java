@@ -31,7 +31,6 @@ import io.qdrant.client.grpc.Points.PointId;
 import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
-import io.qdrant.client.grpc.Points.UpdateStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

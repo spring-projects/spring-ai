@@ -47,12 +47,12 @@ import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIdType;
-import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIdType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -560,9 +560,9 @@ public class PgVectorStoreIT {
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 				.dimensions(PgVectorStore.INVALID_EMBEDDING_DIMENSION)
-				.idType(idType)
+				.idType(this.idType)
 				.distanceType(this.distanceType)
-				.initializeSchema(initializeSchema)
+				.initializeSchema(this.initializeSchema)
 				.indexType(PgIndexType.HNSW)
 				.removeExistingVectorStoreTable(true)
 				.build();
