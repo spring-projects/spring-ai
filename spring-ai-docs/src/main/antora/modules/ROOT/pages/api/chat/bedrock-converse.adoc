@@ -90,7 +90,7 @@ The prefix `spring.ai.bedrock.converse.chat` is the property prefix that configu
 
 == Runtime Options [[chat-options]]
 
-Use the portable `ChatOptions` or `FunctionCallingOptions` portable builders to create model configurations, such as temperature, maxToken, topP, etc.
+Use the portable `ChatOptions` or `ToolCallingChatOptions` portable builders to create model configurations, such as temperature, maxToken, topP, etc.
 
 On start-up, the default options can be configured with the `BedrockConverseProxyChatModel(api, options)` constructor or the `spring.ai.bedrock.converse.chat.options.*` properties.
 
@@ -98,12 +98,11 @@ At run-time you can override the default options by adding new, request specific
 
 [source,java]
 ----
-var options = FunctionCallingOptions.builder()
-        .withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
-        .withTemperature(0.6)
-        .withMaxTokens(300)
-        .withFunctionCallbacks(List.of(FunctionCallback.builder()
-            .function("getCurrentWeather", new WeatherService())
+var options = ToolCallingChatOptions.builder()
+        .model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+        .temperature(0.6)
+        .maxTokens(300)
+        .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
             .description("Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
             .inputType(WeatherService.Request.class)
             .build()))
@@ -118,7 +117,28 @@ String response = ChatClient.create(this.chatModel)
 
 == Tool/Function Calling
 
-The Bedrock Converse API supports function calling capabilities, allowing models to use tools during conversations. Here's an example of how to define and use functions:
+The Bedrock Converse API supports tool calling capabilities, allowing models to use tools during conversations. 
+Here's an example of how to define and use @Tool based tools:
+
+[source,java]
+----
+
+public class WeatherService {
+
+    @Tool(description = "Get the weather in location")
+    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
+        ...
+    }
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .tools(new WeatherService())
+        .call()
+        .content();
+----
+
+You can use the java.util.function beans as tools as well:
 
 [source,java]
 ----
@@ -130,11 +150,13 @@ public Function<Request, Response> weatherFunction() {
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")				
-        .function("weatherFunction")
+        .tools("weatherFunction")
         .inputType(Request.class)
         .call()
         .content();
 ----
+
+Find more in xref:api/tools.adoc[Tools] documentation.
 
 == Multimodal
 

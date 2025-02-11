@@ -62,6 +62,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioPa
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -332,7 +333,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
-	void functionCallTest() {
+	@Deprecated
+	void functionCallTestDeprecated() {
 
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
@@ -354,6 +356,28 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void functionCallTest() {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = OpenAiChatOptions.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
