@@ -19,7 +19,6 @@ package org.springframework.ai.chroma.vectorstore;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
