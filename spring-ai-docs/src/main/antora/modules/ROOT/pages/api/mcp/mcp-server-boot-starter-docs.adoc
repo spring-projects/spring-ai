@@ -211,6 +211,12 @@ public class McpServerApplication {
 The auto-configuration will automatically register the toolcallbacs as MCP tools.
 You can have multiple beans producing list of ToolCallbacks. The autoconfiguration will merge them.
 
+== Example Applicaitons
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-webflux-server[Weather Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport.
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-stdio-server[Weather Server (STDIO)] - Spring AI MCP Server Boot Starter with STDIO transport.
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/book-library/starter-webflux-server[Book Library Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport.
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/manual-webflux-server[Weather Server Manual Configuraiton] - Spring AI MCP Server Boot Starter that doesn't use autoconfiguration but the Java SDK to configure the server manually.
+
 == Additional Resources
 
 * link:https://docs.spring.io/spring-ai/reference/[Spring AI Documentation]
