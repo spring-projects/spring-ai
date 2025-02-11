@@ -113,28 +113,111 @@ The MCP Server supports three transport mechanisms, each with its dedicated star
 
 == Features and Capabilities
 
-=== Tools Registration
-* Support for both sync and async tool execution
-* Automatic tool registration through Spring beans
+The MCP Server Boot Starter allows servers to expose tools, resources, and prompts to clients.
+It automatically converts custom capability handlers registered as Spring beans to sync/async registrations based on server type:
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/tools/[Tools]
+Allows servers to expose tools that can be invoked by language models. The MCP Server Boot Starter provides:
+
 * Change notification support
 * Tools are automatically converted to sync/async registrations based on server type
+* Automatic tool registration through Spring beans:
 
-=== Resource Management
+[source,java]
+----
+@Bean
+public List<ToolCallback> myTools(...) {
+    List<ToolCallback> tools = ...
+    return tools;
+}
+----
+
+or using the low-level API:
+
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncToolRegistration> myTools(...) {
+    List<McpServerFeatures.SyncToolRegistration> tools = ...
+    return tools;
+}
+----
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/resources/[Resource Management]
+
+Provides a standardized way for servers to expose resources to clients.
+
 * Static and dynamic resource registration
 * Optional change notifications
 * Support for resource templates
 * Automatic conversion between sync/async resource registrations
+* Automatic resource registration through Spring beans:
 
-=== Prompt Templates
-* Configurable prompt registration
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncResourceRegistration> myResources(...) {
+    var systemInfoResource = new McpSchema.Resource(...);
+    var resourceRegistration = new McpServerFeatures.SyncResourceRegistration(systemInfoResource, request -> {
+        try {
+            var systemInfo = Map.of(...);
+            String jsonContent = new ObjectMapper().writeValueAsString(systemInfo);
+            return new McpSchema.ReadResourceResult(
+                    List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to generate system info", e);
+        }
+    });
+
+    return List.of(resourceRegistration);
+}
+----
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/prompts/[Prompt Management]
+
+Provides a standardized way for servers to expose prompt templates to clients.
+
 * Change notification support
 * Template versioning
 * Automatic conversion between sync/async prompt registrations
+* Automatic prompt registration through Spring beans:
 
-=== Root Change Consumers
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncPromptRegistration> myPrompts() {
+    var prompt = new McpSchema.Prompt("greeting", "A friendly greeting prompt",
+        List.of(new McpSchema.PromptArgument("name", "The name to greet", true)));
+
+    var promptRegistration = new McpServerFeatures.SyncPromptRegistration(prompt, getPromptRequest -> {
+        String nameArgument = (String) getPromptRequest.arguments().get("name");
+        if (nameArgument == null) { nameArgument = "friend"; }
+        var userMessage = new PromptMessage(Role.USER, new TextContent("Hello " + nameArgument + "! How can I assist you today?"));
+        return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+    });
+
+    return List.of(promptRegistration);
+}
+----
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/client/roots/#root-list-changes[Root Change Consumers]
+
+When roots change, clients that support `listChanged` send a Root Change notification.
+
 * Support for monitoring root changes
 * Automatic conversion to async consumers for reactive applications
 * Optional registration through Spring beans
+
+[source,java]
+----
+@Bean
+public Consumer<List<McpSchema.Root>> rootsChangeConsumer() {
+    return roots -> {
+        logger.info("Registering root resources: {}", roots);
+    };
+}
+----
 
 == Usage Examples
 
@@ -179,43 +262,43 @@ spring:
         sse-message-endpoint: /mcp/messages
 ----
 
-=== Create Spring Boot application with MCP Server
+=== Creating a Spring Boot Application with MCP Server
 
 [source,java]
 ----
 @Service
 public class WeatherService {
 
-	@Tool(description = "Get weather information by city name")
-	public String getBooks(String cityName) {
-    // Implementation
-  }  
+    @Tool(description = "Get weather information by city name")
+    public String getWeather(String cityName) {
+        // Implementation
+    }
 }
 
 @SpringBootApplication
 public class McpServerApplication {
 
-	private static final Logger logger = LoggerFactory.getLogger(McpServerApplication.class);
+    private static final Logger logger = LoggerFactory.getLogger(McpServerApplication.class);
 
-	public static void main(String[] args) {
-		SpringApplication.run(McpServerApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(McpServerApplication.class, args);
+    }
 
-	@Bean
-	public List<ToolCallback> tools(WeatherService weatherService) {
-    return ToolCallbacks.from(weatherService);
-	}
+    @Bean
+    public List<ToolCallback> tools(WeatherService weatherService) {
+        return ToolCallbacks.from(weatherService);
+    }
 }
 ----
 
-The auto-configuration will automatically register the toolcallbacs as MCP tools.
-You can have multiple beans producing list of ToolCallbacks. The autoconfiguration will merge them.
+The auto-configuration will automatically register the tool callbacks as MCP tools.
+You can have multiple beans producing lists of ToolCallbacks. The auto-configuration will merge them.
 
-== Example Applicaitons
+== Example Applications
 * link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-webflux-server[Weather Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport.
 * link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-stdio-server[Weather Server (STDIO)] - Spring AI MCP Server Boot Starter with STDIO transport.
 * link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/book-library/starter-webflux-server[Book Library Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport.
-* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/manual-webflux-server[Weather Server Manual Configuraiton] - Spring AI MCP Server Boot Starter that doesn't use autoconfiguration but the Java SDK to configure the server manually.
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/manual-webflux-server[Weather Server Manual Configuration] - Spring AI MCP Server Boot Starter that doesn't use auto-configuration but the Java SDK to configure the server manually.
 
 == Additional Resources
 
