@@ -28,6 +28,7 @@ import com.azure.core.util.ClientOptions;
 import com.azure.core.util.Header;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.autoconfigure.chat.model.ToolCallingAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
@@ -35,10 +36,11 @@ import org.springframework.ai.azure.openai.AzureOpenAiImageModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -55,12 +57,14 @@ import org.springframework.util.StringUtils;
  * @author Piotr Olaszewski
  * @author Soby Chacko
  * @author Manuel Andreo Garcia
+ * @author Ilayaperumal Gopinathan
  */
-@AutoConfiguration
+@AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
 @ConditionalOnClass({ OpenAIClientBuilder.class, AzureOpenAiChatModel.class })
 @EnableConfigurationProperties({ AzureOpenAiChatProperties.class, AzureOpenAiEmbeddingProperties.class,
 		AzureOpenAiConnectionProperties.class, AzureOpenAiImageOptionsProperties.class,
 		AzureOpenAiAudioTranscriptionProperties.class })
+@ImportAutoConfiguration(classes = { ToolCallingAutoConfiguration.class })
 public class AzureOpenAiAutoConfiguration {
 
 	private static final String APPLICATION_ID = "spring-ai";
@@ -121,13 +125,16 @@ public class AzureOpenAiAutoConfiguration {
 	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder,
-			AzureOpenAiChatProperties chatProperties, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackResolver functionCallbackResolver, ObjectProvider<ObservationRegistry> observationRegistry,
+			AzureOpenAiChatProperties chatProperties, ToolCallingManager toolCallingManager,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		var chatModel = new AzureOpenAiChatModel(openAIClientBuilder, chatProperties.getOptions(),
-				functionCallbackResolver, toolFunctionCallbacks,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var chatModel = AzureOpenAiChatModel.builder()
+			.openAIClientBuilder(openAIClientBuilder)
+			.defaultOptions(chatProperties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
