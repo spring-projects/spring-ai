@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.bedrock.converse;
 
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.Assert;
@@ -38,7 +38,7 @@ public class BedrockConverseProxyChatProperties {
 	private boolean enabled = true;
 
 	@NestedConfigurationProperty
-	private FunctionCallingOptions options = FunctionCallingOptions.builder()
+	private ToolCallingChatOptions options = ToolCallingChatOptions.builder()
 		.temperature(0.7)
 		.maxTokens(300)
 		.topK(10)
@@ -52,11 +52,11 @@ public class BedrockConverseProxyChatProperties {
 		this.enabled = enabled;
 	}
 
-	public FunctionCallingOptions getOptions() {
+	public ToolCallingChatOptions getOptions() {
 		return this.options;
 	}
 
-	public void setOptions(FunctionCallingOptions options) {
+	public void setOptions(ToolCallingChatOptions options) {
 		Assert.notNull(options, "FunctionCallingOptions must not be null");
 		this.options = options;
 	}

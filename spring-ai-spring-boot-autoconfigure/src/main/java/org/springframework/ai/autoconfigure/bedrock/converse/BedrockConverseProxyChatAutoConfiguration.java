@@ -16,8 +16,6 @@
 
 package org.springframework.ai.autoconfigure.bedrock.converse;
 
-import java.util.List;
-
 import io.micrometer.observation.ObservationRegistry;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
@@ -26,13 +24,15 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.autoconfigure.bedrock.BedrockAwsConnectionProperties;
+import org.springframework.ai.autoconfigure.chat.model.ToolCallingAutoConfiguration;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -50,12 +50,13 @@ import org.springframework.context.annotation.Import;
  * @author Christian Tzolov
  * @author Wei Jiang
  */
-@AutoConfiguration
+@AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
 @ConditionalOnClass({ BedrockProxyChatModel.class, BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
 @ConditionalOnProperty(prefix = BedrockConverseProxyChatProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true", matchIfMissing = true)
 @Import(BedrockAwsConnectionConfiguration.class)
+@ImportAutoConfiguration({ ToolCallingAutoConfiguration.class })
 public class BedrockConverseProxyChatAutoConfiguration {
 
 	@Bean
@@ -63,22 +64,21 @@ public class BedrockConverseProxyChatAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public BedrockProxyChatModel bedrockProxyChatModel(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties connectionProperties,
-			BedrockConverseProxyChatProperties chatProperties, FunctionCallbackResolver functionCallbackResolver,
-			List<FunctionCallback> toolFunctionCallbacks, ObjectProvider<ObservationRegistry> observationRegistry,
+			BedrockConverseProxyChatProperties chatProperties, ToolCallingManager toolCallingManager,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<BedrockRuntimeClient> bedrockRuntimeClient,
 			ObjectProvider<BedrockRuntimeAsyncClient> bedrockRuntimeAsyncClient) {
 
 		var chatModel = BedrockProxyChatModel.builder()
-			.withCredentialsProvider(credentialsProvider)
-			.withRegion(regionProvider.getRegion())
-			.withTimeout(connectionProperties.getTimeout())
-			.withDefaultOptions(chatProperties.getOptions())
-			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.functionCallbackResolver(functionCallbackResolver)
-			.withToolFunctionCallbacks(toolFunctionCallbacks)
-			.withBedrockRuntimeClient(bedrockRuntimeClient.getIfAvailable())
-			.withBedrockRuntimeAsyncClient(bedrockRuntimeAsyncClient.getIfAvailable())
+			.credentialsProvider(credentialsProvider)
+			.region(regionProvider.getRegion())
+			.timeout(connectionProperties.getTimeout())
+			.defaultOptions(chatProperties.getOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.toolCallingManager(toolCallingManager)
+			.bedrockRuntimeClient(bedrockRuntimeClient.getIfAvailable())
+			.bedrockRuntimeAsyncClient(bedrockRuntimeAsyncClient.getIfAvailable())
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
