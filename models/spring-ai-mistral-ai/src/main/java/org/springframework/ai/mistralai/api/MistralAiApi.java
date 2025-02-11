@@ -627,9 +627,11 @@ public class MistralAiApi {
 	 * @param stop A list of tokens that the model should stop generating after. If set,
 	 * @param randomSeed The seed to use for random sampling. If set, different calls will
 	 * generate deterministic results.
-	 * @param responseFormat An object specifying the format that the model must output.
-	 * Setting to { "type": "json_object" } enables JSON mode, which guarantees the
-	 * message the model generates is valid JSON.
+	 * @param responseFormat An object specifying the format or schema that the model must
+	 * output. Setting to { "type": "json_object" } enables JSON mode, which guarantees
+	 * the message the model generates is valid JSON. Setting to { "type": "json_object" ,
+	 * "json_schema": schema} allows you to ensure the model provides an answer in a very
+	 * specific JSON format by supplying a clear JSON schema.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -718,12 +720,9 @@ public class MistralAiApi {
 		public enum ToolChoice {
 
 			// @formatter:off
-			@JsonProperty("auto")
-			AUTO,
-			@JsonProperty("any")
-			ANY,
-			@JsonProperty("none")
-			NONE
+			@JsonProperty("auto") AUTO,
+			@JsonProperty("any")  ANY,
+			@JsonProperty("none") NONE
 			 // @formatter:on
 
 		}
@@ -732,10 +731,11 @@ public class MistralAiApi {
 		 * An object specifying the format that the model must output.
 		 *
 		 * @param type Must be one of 'text' or 'json_object'.
+		 * @param jsonSchema A specific JSON schema to match, if 'type' is 'json_object'.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(@JsonProperty("type") String type) {
-
+		public record ResponseFormat(@JsonProperty("type") String type,
+				@JsonProperty("json_schema") Map<String, Object> jsonSchema) {
 		}
 
 	}
