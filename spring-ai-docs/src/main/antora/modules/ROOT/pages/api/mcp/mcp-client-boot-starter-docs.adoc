@@ -203,9 +203,26 @@ The starter supports two types of clients:
 
 === Client Customization
 
-The auto-configuration supports client spec customization.
-Implement the `McpSyncClientCustomizer` callback interface to customize the `McpClient.SyncSpec` spec for a named server connection.
-Similarly, the `McpAsyncClientCustomizer` interface allows customizing the `McpClient.AsyncSpec` spec for asynchronous clients.
+The auto-configuration provides extensive client spec customization capabilities through callback interfaces. These customizers allow you to configure various aspects of the MCP client behavior, from request timeouts to event handling and message processing.
+
+==== Customization Types
+
+The following customization options are available:
+
+* *Request Configuration* - Set custom request timeouts
+* link:https://spec.modelcontextprotocol.io/specification/2024-11-05/client/sampling/[*Custom Sampling Handlers*] - standardized way for servers to request LLM sampling (`completions` or `generations`) from LLMs via clients. This flow allows clients to maintain control over model access, selection, and permissions while enabling servers to leverage AI capabilities — with no server API keys necessary. 
+* link:https://spec.modelcontextprotocol.io/specification/2024-11-05/client/roots/[*File system (Roots) Access*] - standardized way for clients to expose filesystem `roots` to servers. 
+Roots define the boundaries of where servers can operate within the filesystem, allowing them to understand which directories and files they have access to. 
+Servers can request the list of roots from supporting clients and receive notifications when that list changes.
+* *Event Handlers*  - client's handler to be notified when a certain server event occurs:
+  - Tools change notifications - when the list of available server tools changes
+  - Resources change notifications - when the list of available server resources changes.
+  - Prompts change notifications - when the list of available server prompts changes.
+* link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/utilities/logging/[*Logging Handlers*] - standardized way for servers to send structured log messages to clients. 
+Clients can control logging verbosity by setting minimum log levels
+
+
+You can implement either `McpSyncClientCustomizer` for synchronous clients or `McpAsyncClientCustomizer` for asynchronous clients, depending on your application's needs.
 
 [tabs]
 ======
@@ -216,27 +233,34 @@ Sync::
 @Component
 public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
     @Override
-    public void customize(String name, McpClient.SyncSpec spec) {
+    public void customize(String serverConfiurationName, McpClient.SyncSpec spec) {
 
-        // Customize the sync client configuration
+        // Customize the request configuration
         spec.requestTimeout(Duration.ofSeconds(30));
 
-        // Adds a consumer to be notified when the available tools change. This allows the
-		    // client to react to changes in the server's tool capabilities, such as tools
-		    // being added or removed.
+        // Sets the root URIs that the server connecto this client can access. 
+        spec.roots(roots);
+
+        // Sets a custom sampling handler for processing message creation requests.
+        spec.sampling((CreateMessageRequest messageRequest) -> {
+            // Handle sampling
+            CreateMessageResult result = ...
+            return result;
+        });
+
+        // Adds a consumer to be notified when the available tools change, such as tools
+        // being added or removed.
         spec.toolsChangeConsumer((List<McpSchema.Tool> tools) -> {
             // Handle tools change
         });
 
-        // Adds a consumer to be notified when the available resources change. This allows the
-        // client to react to changes in the server's resource capabilities, such as resources
+        // Adds a consumer to be notified when the available resources change, such as resources
         // being added or removed.
         spec.resourcesChangeConsumer((List<McpSchema.Resource> resources) -> {
             // Handle resources change
         });
 
-        // Adds a consumer to be notified when the available prompts change. This allows the
-        // client to react to changes in the server's prompt capabilities, such as prompts
+        // Adds a consumer to be notified when the available prompts change, such as prompts
         // being added or removed.
         spec.promptsChangeConsumer((List<McpSchema.Prompt> prompts) -> {
             // Handle prompts change
@@ -246,18 +270,6 @@ public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
         spec.loggingConsumer((McpSchema.LoggingMessageNotification log) -> {
             // Handle log messages
         });
-
-        // Sets a custom sampling handler for processing message creation requests.
-        spec.sampling((CreateMessageRequest messageRequest) -> {
-            // Handle sampling
-            CreateMessageResult result = ...
-            return result;
-        });
-
-        // Sets the root URIs that the server connecto this client can access. 
-        // Roots define the base URIs for resources that the server can request.
-        // For example, a root might be "file://workspace" for accessing workspace files.
-        spec.roots(roots);
     }
 }
 ----
@@ -269,13 +281,14 @@ Async::
 @Component
 public class CustomMcpAsyncClientCustomizer implements McpAsyncClientCustomizer {
     @Override
-    public void customize(String name, McpClient.AsyncSpec spec) {
+    public void customize(String serverConfiurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration
         spec.requestTimeout(Duration.ofSeconds(30));
     }
 }
 ----
 ======
+The `serverConfiurationName` parameter is the name of the server configuration that the customizer is being applied to and the the MCP Client is created for.
 
 The MCP client auto-configuration automatically detects and applies any customizers found in the application context.
 
@@ -345,6 +358,12 @@ Additionally, the registered MCP Tools with all MCP clients are provided as a li
 @Autowired
 private List<ToolCallback> toolCallbacks;
 ----
+
+== Example Applications
+
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/web-search/brave-chatbot[Brave Wet Search Chatbot] - A chatbot that uses the Model Context Protocol to interact with a web search server.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Default MCP Client Starter] - A simple example of using the the default `spring-ai-mcp-client-spring-boot-starter` MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-webflux-client[WebFlux MCP Client Starter] - A simple example of using the `spring-ai-mcp-client-webflux-spring-boot-starter` the MCP Client Boot Starter.
 
 == Additional Resources
 
