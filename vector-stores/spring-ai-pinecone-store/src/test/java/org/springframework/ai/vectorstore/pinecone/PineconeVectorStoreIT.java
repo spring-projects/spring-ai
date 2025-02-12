@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import io.pinecone.PineconeConnection;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -56,7 +58,7 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Soby Chacko
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
-public class PineconeVectorStoreIT {
+public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 	// Replace the PINECONE_ENVIRONMENT, PINECONE_PROJECT_ID, PINECONE_INDEX_NAME and
 	// PINECONE_API_KEY with your pinecone credentials.
@@ -96,6 +98,14 @@ public class PineconeVectorStoreIT {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
 		Awaitility.setDefaultTimeout(Duration.ONE_MINUTE);
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@Test
@@ -287,59 +297,6 @@ public class PineconeVectorStoreIT {
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Hello").topK(1).build()),
 						hasSize(0));
-		});
-	}
-
-	@Test
-	void deleteByFilter() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			cleanupExistingDocuments(vectorStore, "The World");
-
-			var documents = createWorldDocuments();
-			vectorStore.add(documents);
-
-			awaitDocumentsCount(vectorStore, "The World", 3);
-
-			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-					new Filter.Key("country"), new Filter.Value("BG"));
-
-			vectorStore.delete(filterExpression);
-
-			awaitDocumentsCount(vectorStore, "The World", 1);
-
-			List<Document> results = searchDocuments(vectorStore, "The World", 5);
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			vectorStore.delete(List.of(documents.get(1).getId())); // nlDocument
-			awaitDocumentsCount(vectorStore, "The World", 0);
-		});
-	}
-
-	@Test
-	void deleteWithStringFilterExpression() {
-		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
-
-			cleanupExistingDocuments(vectorStore, "The World");
-
-			var documents = createWorldDocuments();
-			vectorStore.add(documents);
-
-			awaitDocumentsCount(vectorStore, "The World", 3);
-
-			vectorStore.delete("country == 'BG'");
-
-			awaitDocumentsCount(vectorStore, "The World", 1);
-
-			List<Document> results = searchDocuments(vectorStore, "The World", 5);
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			vectorStore.delete(List.of(documents.get(1).getId())); // nlDocument
-			awaitDocumentsCount(vectorStore, "The World", 0);
 		});
 	}
 
