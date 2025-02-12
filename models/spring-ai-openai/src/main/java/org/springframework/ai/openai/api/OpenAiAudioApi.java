@@ -26,6 +26,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
@@ -45,6 +48,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * <a href="https://platform.openai.com/docs/api-reference/audio">OpenAI Audio</a>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.1
  */
 public class OpenAiAudioApi {
@@ -56,7 +60,9 @@ public class OpenAiAudioApi {
 	/**
 	 * Create a new audio api.
 	 * @param openAiToken OpenAI apiKey.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiAudioApi(String openAiToken) {
 		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
@@ -68,10 +74,11 @@ public class OpenAiAudioApi {
 	 * @param openAiToken OpenAI apiKey.
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-
 		Consumer<HttpHeaders> authHeaders;
 		if (openAiToken != null && !openAiToken.isEmpty()) {
 			authHeaders = h -> h.setBearerAuth(openAiToken);
@@ -96,7 +103,9 @@ public class OpenAiAudioApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiAudioApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
@@ -112,14 +121,31 @@ public class OpenAiAudioApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiAudioApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, new SimpleApiKey(apiKey), headers, restClientBuilder, webClientBuilder, responseErrorHandler);
+	}
+
+	/**
+	 * Create a new audio api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiAudioApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> authHeaders = h -> {
-			if (apiKey != null && !apiKey.isEmpty()) {
-				h.setBearerAuth(apiKey);
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
 			}
 			h.addAll(headers);
 			// h.setContentType(MediaType.APPLICATION_JSON);
@@ -131,6 +157,10 @@ public class OpenAiAudioApi {
 			.build();
 
 		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(authHeaders).build();
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -928,6 +958,73 @@ public class OpenAiAudioApi {
 			@JsonProperty("compression_ratio") Float compressionRatio,
 			@JsonProperty("no_speech_prob") Float noSpeechProb) {
 			// @formatter:on
+		}
+
+	}
+
+	/**
+	 * Builder to construct {@link OpenAiAudioApi} instance.
+	 */
+	public static class Builder {
+
+		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			Assert.notNull(headers, "headers cannot be null");
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public OpenAiAudioApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new OpenAiAudioApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
+					this.webClientBuilder, this.responseErrorHandler);
 		}
 
 	}

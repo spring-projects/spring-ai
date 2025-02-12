@@ -22,12 +22,16 @@ import java.util.Map;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -46,7 +50,9 @@ public class OpenAiImageApi {
 	/**
 	 * Create a new OpenAI Image api with base URL set to {@code https://api.openai.com}.
 	 * @param openAiToken OpenAI apiKey.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiImageApi(String openAiToken) {
 		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
 	}
@@ -55,8 +61,9 @@ public class OpenAiImageApi {
 	 * Create a new OpenAI Image API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
 	 * @param openAiToken OpenAI apiKey.
-	 * @param restClientBuilder the rest client builder to use.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
 		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
@@ -66,8 +73,9 @@ public class OpenAiImageApi {
 	 * @param baseUrl the base URL for the OpenAI API.
 	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder the rest client builder to use.
-	 * @param responseErrorHandler the response error handler to use.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiImageApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), restClientBuilder, responseErrorHandler);
@@ -80,15 +88,31 @@ public class OpenAiImageApi {
 	 * @param headers the http headers to use.
 	 * @param restClientBuilder the rest client builder to use.
 	 * @param responseErrorHandler the response error handler to use.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiImageApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		this(baseUrl, new SimpleApiKey(apiKey), headers, restClientBuilder, responseErrorHandler);
+	}
+
+	/**
+	 * Create a new OpenAI Image API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param restClientBuilder the rest client builder to use.
+	 * @param responseErrorHandler the response error handler to use.
+	 */
+	public OpenAiImageApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		// @formatter:off
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(h -> {
-				if(apiKey != null && !apiKey.isEmpty()) {
-					h.setBearerAuth(apiKey);
+				if(!(apiKey instanceof NoopApiKey)) {
+					h.setBearerAuth(apiKey.getValue());
 				}
 				h.setContentType(MediaType.APPLICATION_JSON);
 				h.addAll(headers);
@@ -166,6 +190,69 @@ public class OpenAiImageApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Data(@JsonProperty("url") String url, @JsonProperty("b64_json") String b64Json,
 			@JsonProperty("revised_prompt") String revisedPrompt) {
+
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder to construct {@link OpenAiImageApi} instance.
+	 */
+	public static class Builder {
+
+		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			Assert.notNull(headers, "headers cannot be null");
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public OpenAiImageApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new OpenAiImageApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
+					this.responseErrorHandler);
+		}
 
 	}
 
