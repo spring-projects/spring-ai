@@ -18,7 +18,7 @@ a| * *Client/Server Layer*: The McpClient handles client-side operations while t
 |===
 
 |===
-| link:https://modelcontextprotocol.io//sdk/java/mcp-client[MCP Client] |
+| link:https://modelcontextprotocol.io/sdk/java/mcp-client[MCP Client] |
 
 a| The MCP Client is a key component in the Model Context Protocol (MCP) architecture, responsible for establishing and managing connections with MCP servers. It implements the client-side of the protocol, handling:
 
@@ -41,7 +41,7 @@ a| The MCP Client is a key component in the Model Context Protocol (MCP) archite
 |===
 
 |===
-| link:https://modelcontextprotocol.io//sdk/java/mcp-server[MCP Server] |
+| link:https://modelcontextprotocol.io/sdk/java/mcp-server[MCP Server] |
 
 a| The MCP Server is a foundational component in the Model Context Protocol (MCP) architecture that provides tools, resources, and capabilities to clients. It implements the server-side of the protocol, responsible for:
 
