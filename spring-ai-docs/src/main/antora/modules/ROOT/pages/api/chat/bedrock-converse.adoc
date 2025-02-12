@@ -115,7 +115,7 @@ String response = ChatClient.create(this.chatModel)
     .content();
 ----
 
-== Tool/Function Calling
+== Tool Calling
 
 The Bedrock Converse API supports tool calling capabilities, allowing models to use tools during conversations. 
 Here's an example of how to define and use @Tool based tools:

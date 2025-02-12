@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertexai.gemini.function;
+package org.springframework.ai.vertexai.gemini.tool;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +48,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
-public class VertexAiGeminiChatModelFunctionCallingIT {
+public class VertexAiGeminiChatModelToolCallingIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiChatModelFunctionCallingIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiChatModelToolCallingIT.class);
 
 	@Autowired
 	private VertexAiGeminiChatModel chatModel;
@@ -83,7 +82,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.functionCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputSchema(openApiSchema)
 				.inputType(MockWeatherService.Request.class)
@@ -106,17 +105,13 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.functionCallbacks(List.of(
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
-						.inputSchema(JsonSchemaGenerator.generateForType(MockWeatherService.Request.class,
-								JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES))
 						.description("Get the current weather in a given location.")
 						.inputType(MockWeatherService.Request.class)
 						.build(),
 					FunctionToolCallback.builder("get_payment_status", new PaymentStatus())
-						.inputSchema(JsonSchemaGenerator.generateForType(PaymentInfoRequest.class,
-								JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES))
 						.description(
 								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
 						.inputType(PaymentInfoRequest.class)
@@ -147,10 +142,8 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH)
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.inputSchema(JsonSchemaGenerator.generateForType(MockWeatherService.Request.class,
-						JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES))
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -205,11 +198,13 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		@Bean
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
-			return new VertexAiGeminiChatModel(vertexAi,
-					VertexAiGeminiChatOptions.builder()
-						.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
-						.temperature(0.9)
-						.build());
+			return VertexAiGeminiChatModel.builder()
+				.vertexAI(vertexAi)
+				.defaultOptions(VertexAiGeminiChatOptions.builder()
+					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+					.temperature(0.9)
+					.build())
+				.build();
 		}
 
 	}

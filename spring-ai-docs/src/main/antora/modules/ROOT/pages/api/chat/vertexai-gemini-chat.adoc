@@ -113,11 +113,49 @@ ChatResponse response = chatModel.call(
 TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
 https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
-== Function Calling
+== Tool Calling
 
-You can register custom Java functions with the VertexAiGeminiChatModel and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
-This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
+The Vertex AI Gemini model supports tool calling capabilities, allowing models to use tools during conversations. 
+Here's an example of how to define and use `@Tool`-based tools:
+
+[source,java]
+----
+
+public class WeatherService {
+
+    @Tool(description = "Get the weather in location")
+    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
+        ...
+    }
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .tools(new WeatherService())
+        .call()
+        .content();
+----
+
+You can use the java.util.function beans as tools as well:
+
+[source,java]
+----
+@Bean
+@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+public Function<Request, Response> weatherFunction() {
+    return new MockWeatherService();
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .tools("weatherFunction")
+        .inputType(Request.class)
+        .call()
+        .content();
+----
+
+Find more in xref:api/tools.adoc[Tools] documentation.
+
 
 == Multimodal
 
