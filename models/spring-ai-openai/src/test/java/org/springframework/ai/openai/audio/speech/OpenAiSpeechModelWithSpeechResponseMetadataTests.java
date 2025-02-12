@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,16 @@ package org.springframework.ai.openai.audio.speech;
 
 import java.time.Duration;
 
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
@@ -38,6 +39,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.matches;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -111,7 +114,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_RESET_HEADER.getName(), "27h55s451ms");
 		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-		this.server.expect(requestTo("/v1/audio/speech"))
+		this.server.expect(requestTo(StringContains.containsString("/v1/audio/speech")))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess("Audio bytes as string", MediaType.APPLICATION_OCTET_STREAM).headers(httpHeaders));
@@ -128,7 +131,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
 		@Bean
 		public OpenAiAudioApi openAiAudioApi(RestClient.Builder builder) {
-			return new OpenAiAudioApi("", TEST_API_KEY, builder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+			return OpenAiAudioApi.builder().apiKey(new SimpleApiKey(TEST_API_KEY)).restClientBuilder(builder).build();
 		}
 
 	}

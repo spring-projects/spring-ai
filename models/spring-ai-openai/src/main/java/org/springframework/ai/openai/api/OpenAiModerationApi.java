@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -31,6 +38,7 @@ import org.springframework.web.client.RestClient;
  * OpenAI Moderation API.
  *
  * @author Ahmed Yousri
+ * @author Ilayaperumal Gopinathan
  * @see <a href=
  * "https://platform.openai.com/docs/api-reference/moderations">https://platform.openai.com/docs/api-reference/moderations</a>
  */
@@ -47,11 +55,17 @@ public class OpenAiModerationApi {
 	/**
 	 * Create a new OpenAI Moderation api with base URL set to https://api.openai.com
 	 * @param openAiToken OpenAI apiKey.
+	 * @deprecated use {@link Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiModerationApi(String openAiToken) {
 		this(DEFAULT_BASE_URL, openAiToken, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
+	/**
+	 * @deprecated use {@link Builder} instead.
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
 	public OpenAiModerationApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -62,6 +76,26 @@ public class OpenAiModerationApi {
 				h.setBearerAuth(openAiToken);
 			}
 			h.setContentType(MediaType.APPLICATION_JSON);
+		}).defaultStatusHandler(responseErrorHandler).build();
+	}
+
+	/**
+	 * Create a new OpenAI Moderation API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param apiKey OpenAI apiKey.
+	 * @param restClientBuilder the rest client builder to use.
+	 */
+	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+
+		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> {
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
+			h.setContentType(MediaType.APPLICATION_JSON);
+			h.addAll(headers);
 		}).defaultStatusHandler(responseErrorHandler).build();
 	}
 
@@ -139,6 +173,69 @@ public class OpenAiModerationApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Data(@JsonProperty("url") String url, @JsonProperty("b64_json") String b64Json,
 			@JsonProperty("revised_prompt") String revisedPrompt) {
+
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder to construct {@link OpenAiModerationApi} instance.
+	 */
+	public static class Builder {
+
+		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			Assert.notNull(headers, "headers cannot be null");
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public OpenAiModerationApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
+					this.responseErrorHandler);
+		}
 
 	}
 

@@ -186,9 +186,7 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
-	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
-	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
@@ -1680,7 +1678,7 @@ public class OpenAiApi {
 		}
 
 		public Builder apiKey(String simpleApiKey) {
-			Assert.notNull(simpleApiKey, "apiKey cannot be null");
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
 			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
