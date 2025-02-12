@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -38,9 +39,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 /**
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = OpenAiChatModeAdditionalHttpHeadersIT.Config.class)
+@SpringBootTest(classes = OpenAiChatModelAdditionalHttpHeadersIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class OpenAiChatModeAdditionalHttpHeadersIT {
+public class OpenAiChatModelAdditionalHttpHeadersIT {
 
 	@Autowired
 	private OpenAiChatModel openAiChatModel;
@@ -67,7 +68,7 @@ public class OpenAiChatModeAdditionalHttpHeadersIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi("Invalid API Key");
+			return OpenAiApi.builder().apiKey(new SimpleApiKey("Invalid API Key")).build();
 		}
 
 		@Bean

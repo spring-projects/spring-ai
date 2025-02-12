@@ -68,6 +68,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Stefan Vassilev
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
@@ -210,9 +211,13 @@ public class OpenAiAutoConfiguration {
 
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, imageProperties, "image");
 
-		var openAiImageApi = new OpenAiImageApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
-
+		var openAiImageApi = OpenAiImageApi.builder()
+			.baseUrl(resolved.baseUrl())
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.headers(resolved.headers())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 		var imageModel = new OpenAiImageModel(openAiImageApi, imageProperties.getOptions(), retryTemplate,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
@@ -233,9 +238,14 @@ public class OpenAiAutoConfiguration {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, transcriptionProperties,
 				"transcription");
 
-		var openAiAudioApi = new OpenAiAudioApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
+		var openAiAudioApi = OpenAiAudioApi.builder()
+			.baseUrl(resolved.baseUrl())
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.headers(resolved.headers())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 
 		return new OpenAiAudioTranscriptionModel(openAiAudioApi, transcriptionProperties.getOptions(), retryTemplate);
 
@@ -250,9 +260,13 @@ public class OpenAiAutoConfiguration {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, moderationProperties,
 				"moderation");
 
-		var openAiModerationApi = new OpenAiModerationApi(resolved.baseUrl, resolved.apiKey(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
-
+		var openAiModerationApi = OpenAiModerationApi.builder()
+			.baseUrl(resolved.baseUrl)
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.headers(resolved.headers())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 		return new OpenAiModerationModel(openAiModerationApi, retryTemplate)
 			.withDefaultOptions(moderationProperties.getOptions());
 	}
@@ -269,9 +283,14 @@ public class OpenAiAutoConfiguration {
 		ResolvedConnectionProperties resolved = resolveConnectionProperties(commonProperties, speechProperties,
 				"speach");
 
-		var openAiAudioApi = new OpenAiAudioApi(resolved.baseUrl(), resolved.apiKey(), resolved.headers(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
+		var openAiAudioApi = OpenAiAudioApi.builder()
+			.baseUrl(resolved.baseUrl())
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.headers(resolved.headers())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 
 		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
 	}

@@ -391,7 +391,10 @@ class MistralWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return OpenAiApi.builder().baseUrl(MISTRAL_BASE_URL).apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
+			return OpenAiApi.builder()
+				.baseUrl(MISTRAL_BASE_URL)
+				.apiKey(new SimpleApiKey(System.getenv("MISTRAL_AI_API_KEY")))
+				.build();
 		}
 
 		@Bean
