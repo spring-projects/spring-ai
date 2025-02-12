@@ -224,8 +224,9 @@ public class FunctionToolCallbackTests {
 		@Description("Get the list of authors who wrote the given books available in the library")
 		Function<Books, List<Author>> authorsByBooks() {
 			return books -> {
-				logger.info("Getting authors by books: {}", books.books().stream().map(Book::title).toList());
-				return bookService.getAuthorsByBook(books.books());
+				List<Author> authors = bookService.getAuthorsByBook(books.books());
+				logger.info("Getting authors: {} by books: {}", authors, books.books().stream().map(Book::title).toList());
+				return authors;
 			};
 		}
 
