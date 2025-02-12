@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ModelResponse;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -109,6 +110,21 @@ public class ChatResponse implements ModelResponse<Generation> {
 			return false;
 		}
 		return generations.stream().anyMatch(generation -> generation.getOutput().hasToolCalls());
+	}
+
+	/**
+	 * Whether the model has finished with any of the given finish reasons.
+	 */
+	public boolean hasFinishReasons(Set<String> finishReasons) {
+		Assert.notNull(finishReasons, "finishReasons cannot be null");
+		if (CollectionUtils.isEmpty(generations)) {
+			return false;
+		}
+		return generations.stream().anyMatch(generation -> {
+			var finishReason = (generation.getMetadata().getFinishReason() != null)
+					? generation.getMetadata().getFinishReason() : "";
+			return finishReasons.stream().map(String::toLowerCase).toList().contains(finishReason.toLowerCase());
+		});
 	}
 
 	@Override

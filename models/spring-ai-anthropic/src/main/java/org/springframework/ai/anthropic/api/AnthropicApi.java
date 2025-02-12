@@ -238,7 +238,7 @@ public class AnthropicApi {
 		CLAUDE_3_OPUS("claude-3-opus-latest"),
 
 		/**
-		 * The CLAUDE_3_SONNET
+		 * The CLAUDE_3_SONNET (Deprecated. To be removed on July 21, 2025)
 		 */
 		CLAUDE_3_SONNET("claude-3-sonnet-20240229"),
 
@@ -254,12 +254,12 @@ public class AnthropicApi {
 
 		// Legacy models
 		/**
-		 * The CLAUDE_2_1
+		 * The CLAUDE_2_1 (Deprecated. To be removed on July 21, 2025)
 		 */
 		CLAUDE_2_1("claude-2.1"),
 
 		/**
-		 * The CLAUDE_2_0
+		 * The CLAUDE_2_0 (Deprecated. To be removed on July 21, 2025)
 		 */
 		CLAUDE_2("claude-2.0");
 

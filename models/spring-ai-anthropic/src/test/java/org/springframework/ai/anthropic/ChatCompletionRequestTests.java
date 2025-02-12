@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Thomas Vitale
  */
 public class ChatCompletionRequestTests {
 
@@ -35,7 +36,9 @@ public class ChatCompletionRequestTests {
 		var client = new AnthropicChatModel(new AnthropicApi("TEST"),
 				AnthropicChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
 
-		var request = client.createRequest(new Prompt("Test message content"), false);
+		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
+
+		var request = client.createRequest(prompt, false);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
@@ -43,8 +46,10 @@ public class ChatCompletionRequestTests {
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.temperature()).isEqualTo(66.6);
 
-		request = client.createRequest(new Prompt("Test message content",
-				AnthropicChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).build()), true);
+		prompt = client.buildRequestPrompt(new Prompt("Test message content",
+				AnthropicChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).build()));
+
+		request = client.createRequest(prompt, true);
 
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isTrue();
