@@ -110,6 +110,29 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
+The Azure OpenAI Chat Client is created using the link:https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/src/main/java/com/azure/ai/openai/OpenAIClientBuilder.java[OpenAIClientBuilder] provided by the Azure SDK. Spring AI allows to customize the builder by providing link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/main/java/org/springframework/ai/autoconfigure/azure/openai/AzureOpenAIClientBuilderCustomizer.java[AzureOpenAIClientBuilderCustomizer] beans.
+
+A customizer might be used for example to change the default response timeout:
+
+[source,java]
+----
+@Configuration
+public class AzureOpenAiConfig {
+
+	@Bean
+	public OpenAIClientBuilderCustomizer responseTimeoutCustomizer() {
+		return openAiClientBuilder -> {
+			HttpClientOptions clientOptions = new HttpClientOptions()
+					.setResponseTimeout(Duration.ofMinutes(5));
+			openAiClientBuilder.httpClient(HttpClient.createDefault(clientOptions));
+		};
+	}
+
+}
+----
+
+
+
 === Chat Properties
 
 The prefix `spring.ai.azure.openai` is the property prefix to configure the connection to Azure OpenAI.
