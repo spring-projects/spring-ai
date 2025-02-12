@@ -42,6 +42,12 @@ import org.springframework.ai.vectorstore.filter.Filter;
  */
 public abstract class BaseVectorStoreTests {
 
+	/**
+	 * Execute a test function with a configured VectorStore instance. This method is
+	 * responsible for providing a properly initialized VectorStore within the appropriate
+	 * Spring application context for testing.
+	 * @param testFunction the consumer that executes test operations on the VectorStore
+	 */
 	protected abstract void executeTest(Consumer<VectorStore> testFunction);
 
 	protected Document createDocument(String country, Integer year) {
