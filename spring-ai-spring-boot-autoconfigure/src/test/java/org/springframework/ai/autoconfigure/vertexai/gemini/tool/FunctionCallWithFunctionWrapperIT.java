@@ -27,8 +27,8 @@ import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoCo
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -54,7 +54,7 @@ public class FunctionCallWithFunctionWrapperIT {
 	void functionCallTest() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
@@ -65,7 +65,7 @@ public class FunctionCallWithFunctionWrapperIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().function("WeatherInfo").build()));
+						VertexAiGeminiChatOptions.builder().toolName("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);
 
@@ -77,12 +77,10 @@ public class FunctionCallWithFunctionWrapperIT {
 	static class Config {
 
 		@Bean
-		public FunctionCallback weatherFunctionInfo() {
+		public ToolCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder()
-				.function("WeatherInfo", new MockWeatherService())
+			return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
 				.description("Get the current weather in a given location")
-				.schemaType(SchemaType.OPEN_API_SCHEMA)
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

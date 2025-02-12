@@ -14,7 +14,6 @@
 *** xref:api/chat/deepseek-chat.adoc[DeepSeek AI]
 *** xref:api/chat/google-vertexai.adoc[Google VertexAI]
 **** xref:api/chat/vertexai-gemini-chat.adoc[VertexAI Gemini]
-***** xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Gemini Function Calling]
 *** xref:api/chat/groq-chat.adoc[Groq]
 *** xref:api/chat/huggingface.adoc[Hugging Face]
 *** xref:api/chat/mistralai-chat.adoc[Mistral AI]

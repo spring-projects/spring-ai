@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertexai.gemini.function;
+package org.springframework.ai.vertexai.gemini.tool;
 
 import java.util.function.Function;
 

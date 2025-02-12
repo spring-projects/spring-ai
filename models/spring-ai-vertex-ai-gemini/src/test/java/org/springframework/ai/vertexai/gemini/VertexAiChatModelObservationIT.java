@@ -39,7 +39,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,7 +65,7 @@ public class VertexAiChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -88,7 +87,7 @@ public class VertexAiChatModelObservationIT {
 	void observationForStreamingOperation() {
 
 		var options = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -128,7 +127,7 @@ public class VertexAiChatModelObservationIT {
 					AiProvider.VERTEX_AI.value())
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO.getValue())
+					VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.hasHighCardinalityKeyValue(
@@ -177,9 +176,14 @@ public class VertexAiChatModelObservationIT {
 		@Bean
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi,
 				TestObservationRegistry observationRegistry) {
-			return new VertexAiGeminiChatModel(vertexAi,
-					VertexAiGeminiChatOptions.builder().model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO).build(),
-					null, List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+
+			return VertexAiGeminiChatModel.builder()
+				.vertexAI(vertexAi)
+				.observationRegistry(observationRegistry)
+				.defaultOptions(VertexAiGeminiChatOptions.builder()
+					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+					.build())
+				.build();
 		}
 
 	}
