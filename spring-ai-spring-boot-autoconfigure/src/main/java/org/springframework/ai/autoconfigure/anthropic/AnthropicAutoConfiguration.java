@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,16 @@
 
 package org.springframework.ai.autoconfigure.anthropic;
 
-import java.util.List;
-
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.autoconfigure.chat.model.ToolCallingAutoConfiguration;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -50,13 +49,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+		ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ AnthropicChatProperties.class, AnthropicConnectionProperties.class })
 @ConditionalOnClass(AnthropicApi.class)
 @ConditionalOnProperty(prefix = AnthropicChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class })
+		ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class })
 public class AnthropicAutoConfiguration {
 
 	@Bean
@@ -74,13 +74,17 @@ public class AnthropicAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
-			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver,
-			List<FunctionCallback> toolFunctionCallbacks, ObjectProvider<ObservationRegistry> observationRegistry,
+			RetryTemplate retryTemplate, ToolCallingManager toolCallingManager,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		var chatModel = new AnthropicChatModel(anthropicApi, chatProperties.getOptions(), retryTemplate,
-				functionCallbackResolver, toolFunctionCallbacks,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var chatModel = AnthropicChatModel.builder()
+			.anthropicApi(anthropicApi)
+			.defaultOptions(chatProperties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
