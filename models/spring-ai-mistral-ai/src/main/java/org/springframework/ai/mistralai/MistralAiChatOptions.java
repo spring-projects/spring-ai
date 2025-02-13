@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
@@ -49,33 +50,7 @@ import org.springframework.util.Assert;
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MistralAiChatOptions implements ToolCallingChatOptions {
-
-	/**
-	 * ID of the model to use
-	 */
-	private @JsonProperty("model") String model;
-
-	/**
-	 * What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will
-	 * make the output more random, while lower values like 0.2 will make it more focused
-	 * and deterministic. We generally recommend altering this or top_p but not both.
-	 */
-	private @JsonProperty("temperature") Double temperature;
-
-	/**
-	 * Nucleus sampling, where the model considers the results of the tokens with top_p
-	 * probability mass. So 0.1 means only the tokens comprising the top 10% probability
-	 * mass are considered. We generally recommend altering this or temperature but not
-	 * both.
-	 */
-	private @JsonProperty("top_p") Double topP;
-
-	/**
-	 * The maximum number of tokens to generate in the completion. The token count of your
-	 * prompt plus max_tokens cannot exceed the model's context length.
-	 */
-	private @JsonProperty("max_tokens") Integer maxTokens;
+public class MistralAiChatOptions extends AbstractChatOptions implements ToolCallingChatOptions {
 
 	/**
 	 * Whether to inject a safety prompt before all conversations.
@@ -150,28 +125,18 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.responseFormat(fromOptions.getResponseFormat())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.tools(fromOptions.getTools())
 			.toolChoice(fromOptions.getToolChoice())
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.build();
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
-	}
-
-	@Override
-	public Integer getMaxTokens() {
-		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
@@ -237,18 +202,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 		this.toolChoice = toolChoice;
 	}
 
-	@Override
-	public Double getTemperature() {
-		return this.temperature;
-	}
-
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
-	}
-
-	@Override
-	public Double getTopP() {
-		return this.topP;
 	}
 
 	public void setTopP(Double topP) {
@@ -369,6 +324,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public MistralAiChatOptions copy() {
 		return fromOptions(this);
 	}

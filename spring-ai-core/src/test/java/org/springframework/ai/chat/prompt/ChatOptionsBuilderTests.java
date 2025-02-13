@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.prompt;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -27,13 +26,13 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * Unit Tests for {@link ChatOptions} builder.
  *
  * @author youngmon
  * @author Mark Pollack
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class ChatOptionsBuilderTests {
@@ -161,17 +160,6 @@ public class ChatOptionsBuilderTests {
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getPresencePenalty()).isNull();
 		assertThat(options.getStopSequences()).isNull();
-	}
-
-	@Test
-	void shouldBeImmutableAfterBuild() {
-		// Given
-		List<String> stopSequences = new ArrayList<>(List.of("stop1", "stop2"));
-		ChatOptions options = this.builder.stopSequences(stopSequences).build();
-
-		// Then
-		assertThatThrownBy(() -> options.getStopSequences().add("stop3"))
-			.isInstanceOf(UnsupportedOperationException.class);
 	}
 
 }

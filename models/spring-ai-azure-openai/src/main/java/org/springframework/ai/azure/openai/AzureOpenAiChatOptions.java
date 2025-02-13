@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -46,36 +48,10 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  */
 @JsonInclude(Include.NON_NULL)
-public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
-
-	/**
-	 * The maximum number of tokens to generate.
-	 */
-	@JsonProperty("max_tokens")
-	private Integer maxTokens;
-
-	/**
-	 * The sampling temperature to use that controls the apparent creativity of generated
-	 * completions. Higher values will make output more random while lower values will
-	 * make results more focused and deterministic. It is not recommended to modify
-	 * temperature and top_p for the same completions request as the interaction of these
-	 * two settings is difficult to predict.
-	 */
-	@JsonProperty("temperature")
-	private Double temperature;
-
-	/**
-	 * An alternative to sampling with temperature called nucleus sampling. This value
-	 * causes the model to consider the results of tokens with the provided probability
-	 * mass. As an example, a value of 0.15 will cause only the tokens comprising the top
-	 * 15% of probability mass to be considered. It is not recommended to modify
-	 * temperature and top_p for the same completions request as the interaction of these
-	 * two settings is difficult to predict.
-	 */
-	@JsonProperty("top_p")
-	private Double topP;
+public class AzureOpenAiChatOptions extends AbstractChatOptions implements ToolCallingChatOptions {
 
 	/**
 	 * A map between GPT token IDs and bias scores that influences the probability of
@@ -108,24 +84,6 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	 */
 	@JsonProperty("stop")
 	private List<String> stop;
-
-	/**
-	 * A value that influences the probability of generated tokens appearing based on
-	 * their existing presence in generated text. Positive values will make tokens less
-	 * likely to appear when they already exist and increase the model's likelihood to
-	 * output new topics.
-	 */
-	@JsonProperty("presence_penalty")
-	private Double presencePenalty;
-
-	/**
-	 * A value that influences the probability of generated tokens appearing based on
-	 * their cumulative frequency in generated text. Positive values will make tokens less
-	 * likely to appear as their frequency increases and decrease the likelihood of the
-	 * model repeating the same statements verbatim.
-	 */
-	@JsonProperty("frequency_penalty")
-	private Double frequencyPenalty;
 
 	/**
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
@@ -250,18 +208,18 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.maxTokens(fromOptions.getMaxTokens())
 			.N(fromOptions.getN())
 			.presencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.user(fromOptions.getUser())
 			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
+			.functions(fromOptions.getFunctions() != null ? new HashSet<>(fromOptions.getFunctions()) : null)
 			.responseFormat(fromOptions.getResponseFormat())
 			.seed(fromOptions.getSeed())
 			.logprobs(fromOptions.isLogprobs())
 			.topLogprobs(fromOptions.getTopLogProbs())
 			.enhancements(fromOptions.getEnhancements())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
 			.streamOptions(fromOptions.getStreamOptions())
 			.toolCallbacks(fromOptions.getToolCallbacks())
@@ -321,18 +279,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.stop = stop;
 	}
 
-	@Override
-	public Double getPresencePenalty() {
-		return this.presencePenalty;
-	}
-
 	public void setPresencePenalty(Double presencePenalty) {
 		this.presencePenalty = presencePenalty;
-	}
-
-	@Override
-	public Double getFrequencyPenalty() {
-		return this.frequencyPenalty;
 	}
 
 	public void setFrequencyPenalty(Double frequencyPenalty) {
@@ -356,11 +304,6 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setDeploymentName(String deploymentName) {
 		this.deploymentName = deploymentName;
-	}
-
-	@Override
-	public Double getTemperature() {
-		return this.temperature;
 	}
 
 	public void setTemperature(Double temperature) {
@@ -479,8 +422,60 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("")
 	public AzureOpenAiChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof AzureOpenAiChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.logitBias, that.logitBias) && Objects.equals(this.user, that.user)
+				&& Objects.equals(this.n, that.n) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.deploymentName, that.deploymentName)
+				&& Objects.equals(this.responseFormat, that.responseFormat)
+				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
+				&& Objects.equals(this.functions, that.functions)
+				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.topLogProbs, that.topLogProbs)
+				&& Objects.equals(this.enhancements, that.enhancements)
+				&& Objects.equals(this.streamOptions, that.streamOptions)
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (this.logitBias != null ? this.logitBias.hashCode() : 0);
+		result = prime * result + (this.user != null ? this.user.hashCode() : 0);
+		result = prime * result + (this.n != null ? this.n.hashCode() : 0);
+		result = prime * result + (this.stop != null ? this.stop.hashCode() : 0);
+		result = prime * result + (this.deploymentName != null ? this.deploymentName.hashCode() : 0);
+		result = prime * result + (this.responseFormat != null ? this.responseFormat.hashCode() : 0);
+		result = prime * result + (this.functionCallbacks != null ? this.functionCallbacks.hashCode() : 0);
+		result = prime * result + (this.functions != null ? this.functions.hashCode() : 0);
+		result = prime * result + (this.proxyToolCalls != null ? this.proxyToolCalls.hashCode() : 0);
+		result = prime * result + (this.seed != null ? this.seed.hashCode() : 0);
+		result = prime * result + (this.logprobs != null ? this.logprobs.hashCode() : 0);
+		result = prime * result + (this.topLogProbs != null ? this.topLogProbs.hashCode() : 0);
+		result = prime * result + (this.enhancements != null ? this.enhancements.hashCode() : 0);
+		result = prime * result + (this.streamOptions != null ? this.streamOptions.hashCode() : 0);
+		result = prime * result + (this.toolContext != null ? this.toolContext.hashCode() : 0);
+		result = prime * result + (this.maxTokens != null ? this.maxTokens.hashCode() : 0);
+		result = prime * result + (this.frequencyPenalty != null ? this.frequencyPenalty.hashCode() : 0);
+		result = prime * result + (this.presencePenalty != null ? this.presencePenalty.hashCode() : 0);
+		result = prime * result + (this.temperature != null ? this.temperature.hashCode() : 0);
+		result = prime * result + (this.topP != null ? this.topP.hashCode() : 0);
+		return result;
 	}
 
 	public static class Builder {

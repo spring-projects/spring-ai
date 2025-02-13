@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package org.springframework.ai.oci.cohere;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.oracle.bmc.generativeaiinference.model.CohereTool;
 
+import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -29,18 +31,10 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class OCICohereChatOptions implements ChatOptions {
-
-	@JsonProperty("model")
-	private String model;
-
-	/**
-	 * The maximum number of tokens to generate per request.
-	 */
-	@JsonProperty("maxTokens")
-	private Integer maxTokens;
+public class OCICohereChatOptions extends AbstractChatOptions implements ChatOptions {
 
 	/**
 	 * The OCI Compartment to run chat requests in.
@@ -59,43 +53,6 @@ public class OCICohereChatOptions implements ChatOptions {
 	 */
 	@JsonProperty("preambleOverride")
 	private String preambleOverride;
-
-	/**
-	 * The sample temperature, where higher values are more random, and lower values are
-	 * more deterministic.
-	 */
-	@JsonProperty("temperature")
-	private Double temperature;
-
-	/**
-	 * The Top P parameter modifies the probability of tokens sampled. E.g., a value of
-	 * 0.25 means only tokens from the top 25% probability mass will be considered.
-	 */
-	@JsonProperty("topP")
-	private Double topP;
-
-	/**
-	 * The Top K parameter limits the number of potential tokens considered at each step
-	 * of text generation. E.g., a value of 5 means only the top 5 most probable tokens
-	 * will be considered during each step of text generation.
-	 */
-	@JsonProperty("topK")
-	private Integer topK;
-
-	/**
-	 * The frequency penalty assigns a penalty to repeated tokens depending on how many
-	 * times it has already appeared in the prompt or output. Higher values will reduce
-	 * repeated tokens and outputs will be more random.
-	 */
-	@JsonProperty("frequencyPenalty")
-	private Double frequencyPenalty;
-
-	/**
-	 * The presence penalty assigns a penalty to each token when it appears in the output
-	 * to encourage generating outputs with tokens that haven't been used.
-	 */
-	@JsonProperty("presencePenalty")
-	private Double presencePenalty;
 
 	/**
 	 * A collection of textual sequences that will end completions generation.
@@ -124,11 +81,11 @@ public class OCICohereChatOptions implements ChatOptions {
 			.temperature(fromOptions.temperature)
 			.topP(fromOptions.topP)
 			.topK(fromOptions.topK)
-			.stop(fromOptions.stop)
+			.stop(fromOptions.stop != null ? new ArrayList<>(fromOptions.stop) : null)
 			.frequencyPenalty(fromOptions.frequencyPenalty)
 			.presencePenalty(fromOptions.presencePenalty)
-			.documents(fromOptions.documents)
-			.tools(fromOptions.tools)
+			.documents(fromOptions.documents != null ? new ArrayList<>(fromOptions.documents) : null)
+			.tools(fromOptions.tools != null ? new ArrayList<>(fromOptions.tools) : null)
 			.build();
 	}
 
@@ -217,48 +174,70 @@ public class OCICohereChatOptions implements ChatOptions {
 	 */
 
 	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	@Override
-	public Double getFrequencyPenalty() {
-		return this.frequencyPenalty;
-	}
-
-	@Override
-	public Integer getMaxTokens() {
-		return this.maxTokens;
-	}
-
-	@Override
-	public Double getPresencePenalty() {
-		return this.presencePenalty;
-	}
-
-	@Override
 	public List<String> getStopSequences() {
 		return this.stop;
 	}
 
 	@Override
-	public Double getTemperature() {
-		return this.temperature;
-	}
-
-	@Override
-	public Integer getTopK() {
-		return this.topK;
-	}
-
-	@Override
-	public Double getTopP() {
-		return this.topP;
-	}
-
-	@Override
-	public ChatOptions copy() {
+	@SuppressWarnings("unchecked")
+	public OCICohereChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+
+		OCICohereChatOptions that = (OCICohereChatOptions) o;
+
+		if (model != null ? !model.equals(that.model) : that.model != null)
+			return false;
+		if (maxTokens != null ? !maxTokens.equals(that.maxTokens) : that.maxTokens != null)
+			return false;
+		if (compartment != null ? !compartment.equals(that.compartment) : that.compartment != null)
+			return false;
+		if (servingMode != null ? !servingMode.equals(that.servingMode) : that.servingMode != null)
+			return false;
+		if (preambleOverride != null ? !preambleOverride.equals(that.preambleOverride) : that.preambleOverride != null)
+			return false;
+		if (temperature != null ? !temperature.equals(that.temperature) : that.temperature != null)
+			return false;
+		if (topP != null ? !topP.equals(that.topP) : that.topP != null)
+			return false;
+		if (topK != null ? !topK.equals(that.topK) : that.topK != null)
+			return false;
+		if (stop != null ? !stop.equals(that.stop) : that.stop != null)
+			return false;
+		if (frequencyPenalty != null ? !frequencyPenalty.equals(that.frequencyPenalty) : that.frequencyPenalty != null)
+			return false;
+		if (presencePenalty != null ? !presencePenalty.equals(that.presencePenalty) : that.presencePenalty != null)
+			return false;
+		if (documents != null ? !documents.equals(that.documents) : that.documents != null)
+			return false;
+		return tools != null ? tools.equals(that.tools) : that.tools == null;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
+		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
+		result = prime * result + ((this.compartment == null) ? 0 : this.compartment.hashCode());
+		result = prime * result + ((this.servingMode == null) ? 0 : this.servingMode.hashCode());
+		result = prime * result + ((this.preambleOverride == null) ? 0 : this.preambleOverride.hashCode());
+		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
+		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
+		result = prime * result + ((this.topK == null) ? 0 : this.topK.hashCode());
+		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
+		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
+		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
+		result = prime * result + ((this.documents == null) ? 0 : this.documents.hashCode());
+		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
+		return result;
 	}
 
 	public static class Builder {

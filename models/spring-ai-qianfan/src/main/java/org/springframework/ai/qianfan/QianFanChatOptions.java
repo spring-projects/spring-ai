@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,16 @@
 
 package org.springframework.ai.qianfan;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.qianfan.api.QianFanApi;
 
@@ -33,6 +36,7 @@ import org.springframework.ai.qianfan.api.QianFanApi;
  *
  * @author Geng Rong
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 1.0
  * @see ChatOptions
  */
@@ -64,6 +68,7 @@ public class QianFanChatOptions implements ChatOptions {
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 	 */
 	private @JsonProperty("response_format") QianFanApi.ChatCompletionRequest.ResponseFormat responseFormat;
+
 	/**
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
@@ -93,7 +98,7 @@ public class QianFanChatOptions implements ChatOptions {
 			.maxTokens(fromOptions.getMaxTokens())
 			.presencePenalty(fromOptions.getPresencePenalty())
 			.responseFormat(fromOptions.getResponseFormat())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.build();
@@ -187,100 +192,37 @@ public class QianFanChatOptions implements ChatOptions {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof QianFanChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.model, that.model) && Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP);
+	}
+
+	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
-		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
+		result = prime * result + (this.model != null ? this.model.hashCode() : 0);
+		result = prime * result + (this.frequencyPenalty != null ? this.frequencyPenalty.hashCode() : 0);
+		result = prime * result + (this.maxTokens != null ? this.maxTokens.hashCode() : 0);
+		result = prime * result + (this.presencePenalty != null ? this.presencePenalty.hashCode() : 0);
+		result = prime * result + (this.responseFormat != null ? this.responseFormat.hashCode() : 0);
+		result = prime * result + (this.stop != null ? this.stop.hashCode() : 0);
+		result = prime * result + (this.temperature != null ? this.temperature.hashCode() : 0);
+		result = prime * result + (this.topP != null ? this.topP.hashCode() : 0);
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		QianFanChatOptions other = (QianFanChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty)) {
-			return false;
-		}
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null) {
-				return false;
-			}
-		}
-		else if (!this.responseFormat.equals(other.responseFormat)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		return true;
-	}
-
-	@Override
+	@SuppressWarnings("unchecked")
 	public QianFanChatOptions copy() {
 		return fromOptions(this);
 	}
