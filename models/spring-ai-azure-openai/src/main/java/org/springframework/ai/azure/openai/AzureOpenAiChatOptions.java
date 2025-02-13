@@ -439,9 +439,10 @@ public class AzureOpenAiChatOptions extends AbstractChatOptions implements ToolC
 				&& Objects.equals(this.n, that.n) && Objects.equals(this.stop, that.stop)
 				&& Objects.equals(this.deploymentName, that.deploymentName)
 				&& Objects.equals(this.responseFormat, that.responseFormat)
-				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(this.functions, that.functions)
-				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls) && Objects.equals(this.seed, that.seed)
+
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.topLogProbs, that.topLogProbs)
 				&& Objects.equals(this.enhancements, that.enhancements)
 				&& Objects.equals(this.streamOptions, that.streamOptions)
@@ -461,9 +462,10 @@ public class AzureOpenAiChatOptions extends AbstractChatOptions implements ToolC
 		result = prime * result + (this.stop != null ? this.stop.hashCode() : 0);
 		result = prime * result + (this.deploymentName != null ? this.deploymentName.hashCode() : 0);
 		result = prime * result + (this.responseFormat != null ? this.responseFormat.hashCode() : 0);
-		result = prime * result + (this.functionCallbacks != null ? this.functionCallbacks.hashCode() : 0);
-		result = prime * result + (this.functions != null ? this.functions.hashCode() : 0);
-		result = prime * result + (this.proxyToolCalls != null ? this.proxyToolCalls.hashCode() : 0);
+		result = prime * result + (this.toolCallbacks != null ? this.toolCallbacks.hashCode() : 0);
+		result = prime * result + (this.toolNames != null ? this.toolNames.hashCode() : 0);
+		result = prime * result
+				+ (this.internalToolExecutionEnabled != null ? this.internalToolExecutionEnabled.hashCode() : 0);
 		result = prime * result + (this.seed != null ? this.seed.hashCode() : 0);
 		result = prime * result + (this.logprobs != null ? this.logprobs.hashCode() : 0);
 		result = prime * result + (this.topLogProbs != null ? this.topLogProbs.hashCode() : 0);

@@ -256,10 +256,9 @@ public class AnthropicChatOptions extends AbstractChatOptions implements ToolCal
 				&& Objects.equals(this.metadata, that.metadata)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
-				&& Objects.equals(this.topK, that.topK)
-				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(this.functions, that.functions)
-				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
@@ -274,9 +273,10 @@ public class AnthropicChatOptions extends AbstractChatOptions implements ToolCal
 		result = prime * result + (this.temperature != null ? this.temperature.hashCode() : 0);
 		result = prime * result + (this.topP != null ? this.topP.hashCode() : 0);
 		result = prime * result + (this.topK != null ? this.topK.hashCode() : 0);
-		result = prime * result + (this.functionCallbacks != null ? this.functionCallbacks.hashCode() : 0);
-		result = prime * result + (this.functions != null ? this.functions.hashCode() : 0);
-		result = prime * result + (this.proxyToolCalls != null ? this.proxyToolCalls.hashCode() : 0);
+		result = prime * result + (this.toolCallbacks != null ? this.toolCallbacks.hashCode() : 0);
+		result = prime * result + (this.toolNames != null ? this.toolNames.hashCode() : 0);
+		result = prime * result
+				+ (this.internalToolExecutionEnabled != null ? this.internalToolExecutionEnabled.hashCode() : 0);
 		result = prime * result + (this.toolContext != null ? this.toolContext.hashCode() : 0);
 		return result;
 	}
