@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -57,6 +58,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
+import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolConfiguration;
@@ -262,7 +264,8 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			});
 
 		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && chatResponse != null
-				&& chatResponse.hasToolCalls()) {
+				&& chatResponse.hasToolCalls()
+				&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -279,22 +282,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		}
 		return chatResponse;
 	}
-
-	// private ToolCallingChatOptions buildRequestOptions(ConverseRequest request) {
-
-	// ToolCallingChatOptions toolCallbackChatOptions = ToolCallingChatOptions.builder()
-	// .model(request.modelId())
-	// .maxTokens(request.inferenceConfig().maxTokens())
-	// .stopSequences(request.inferenceConfig().stopSequences())
-	// .temperature(request.inferenceConfig().temperature() != null
-	// ? request.inferenceConfig().temperature().doubleValue()
-	// : null)
-	// .topP(request.inferenceConfig().topP() != null ?
-	// request.inferenceConfig().topP().doubleValue() : null)
-	// .build();
-
-	// return toolCallbackChatOptions;
-	// }
 
 	@Override
 	public ChatOptions getDefaultOptions() {
@@ -708,28 +695,34 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 			Flux<ConverseStreamOutput> response = converseStream(converseStreamRequest);
 
-			// @formatter:off
 			Flux<ChatResponse> chatResponses = ConverseApiUtils.toChatResponse(response, perviousChatResponse);
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 
-				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && chatResponse.hasToolCalls()) {
+				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions())
+						&& chatResponse.hasToolCalls()
+						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
+
 					var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+
 					if (toolExecutionResult.returnDirect()) {
 						// Return tool execution result directly to the client.
-						return Flux.just(ChatResponse.builder().from(chatResponse)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build());
-					} else {
+						return Flux.just(ChatResponse.builder()
+							.from(chatResponse)
+							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+							.build());
+					}
+					else {
 						// Send the tool execution result back to the model.
-						return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						chatResponse);
+						return this.internalStream(
+								new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+								chatResponse);
 					}
 				}
 				else {
 					return Flux.just(chatResponse);
 				}
-			})
+			})// @formatter:off
 			.doOnError(observation::error)
 			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
