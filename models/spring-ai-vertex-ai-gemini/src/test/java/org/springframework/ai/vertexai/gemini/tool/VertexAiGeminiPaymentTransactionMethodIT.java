@@ -38,7 +38,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -183,9 +183,8 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public List<ToolCallback> paymentServiceTools() {
-			var tools = List.of(ToolCallbacks.from(new PaymentService()));
-			return tools;
+		public ToolCallbackProvider paymentServiceTools() {
+			return ToolCallbackProvider.from(List.of(ToolCallbacks.from(new PaymentService())));
 		}
 
 		@Bean
@@ -221,11 +220,11 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 
 		@Bean
 		ToolCallingManager toolCallingManager(GenericApplicationContext applicationContext,
-				List<ToolCallback> toolCallbacks, List<FunctionCallback> functionCallbacks,
+				List<ToolCallbackProvider> tcps, List<FunctionCallback> functionCallbacks,
 				ObjectProvider<ObservationRegistry> observationRegistry) {
 
 			List<FunctionCallback> allFunctionCallbacks = new ArrayList(functionCallbacks);
-			allFunctionCallbacks.addAll(toolCallbacks.stream().map(tc -> (FunctionCallback) tc).toList());
+			tcps.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionCallbacks::addAll);
 
 			var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionCallbacks);
 
