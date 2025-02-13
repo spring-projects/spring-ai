@@ -992,7 +992,7 @@ public class OpenAiAudioApi {
 		}
 
 		public Builder apiKey(String simpleApiKey) {
-			Assert.hasText(simpleApiKey, "simpleApiKey cannot be empty or null");
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
 			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
