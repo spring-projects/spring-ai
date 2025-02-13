@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -31,10 +32,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.util.Assert;
 
 /**
@@ -46,16 +49,11 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class AnthropicChatOptions implements ToolCallingChatOptions {
+public class AnthropicChatOptions extends AbstractChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
-	private @JsonProperty("model") String model;
-	private @JsonProperty("max_tokens") Integer maxTokens;
+
 	private @JsonProperty("metadata") ChatCompletionRequest.Metadata metadata;
-	private @JsonProperty("stop_sequences") List<String> stopSequences;
-	private @JsonProperty("temperature") Double temperature;
-	private @JsonProperty("top_p") Double topP;
-	private @JsonProperty("top_k") Integer topK;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
@@ -90,29 +88,20 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		return builder().model(fromOptions.getModel())
 			.maxTokens(fromOptions.getMaxTokens())
 			.metadata(fromOptions.getMetadata())
-			.stopSequences(fromOptions.getStopSequences())
+			.stopSequences(
+					fromOptions.getStopSequences() != null ? new ArrayList<>(fromOptions.getStopSequences()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.topK(fromOptions.getTopK())
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.build();
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
 	}
 
 	public void setModel(String model) {
 		this.model = model;
-	}
-
-	@Override
-	public Integer getMaxTokens() {
-		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
@@ -127,36 +116,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		this.metadata = metadata;
 	}
 
-	@Override
-	public List<String> getStopSequences() {
-		return this.stopSequences;
-	}
-
 	public void setStopSequences(List<String> stopSequences) {
 		this.stopSequences = stopSequences;
-	}
-
-	@Override
-	public Double getTemperature() {
-		return this.temperature;
 	}
 
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
-	@Override
-	public Double getTopP() {
-		return this.topP;
-	}
-
 	public void setTopP(Double topP) {
 		this.topP = topP;
-	}
-
-	@Override
-	public Integer getTopK() {
-		return this.topK;
 	}
 
 	public void setTopK(Integer topK) {
@@ -273,6 +242,43 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@Override
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof AnthropicChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.model, that.model) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.metadata, that.metadata)
+				&& Objects.equals(this.stopSequences, that.stopSequences)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.topK, that.topK)
+				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
+				&& Objects.equals(this.functions, that.functions)
+				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
+				&& Objects.equals(this.toolContext, that.toolContext);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (this.model != null ? this.model.hashCode() : 0);
+		result = prime * result + (this.maxTokens != null ? this.maxTokens.hashCode() : 0);
+		result = prime * result + (this.metadata != null ? this.metadata.hashCode() : 0);
+		result = prime * result + (this.stopSequences != null ? this.stopSequences.hashCode() : 0);
+		result = prime * result + (this.temperature != null ? this.temperature.hashCode() : 0);
+		result = prime * result + (this.topP != null ? this.topP.hashCode() : 0);
+		result = prime * result + (this.topK != null ? this.topK.hashCode() : 0);
+		result = prime * result + (this.functionCallbacks != null ? this.functionCallbacks.hashCode() : 0);
+		result = prime * result + (this.functions != null ? this.functions.hashCode() : 0);
+		result = prime * result + (this.proxyToolCalls != null ? this.proxyToolCalls.hashCode() : 0);
+		result = prime * result + (this.toolContext != null ? this.toolContext.hashCode() : 0);
+		return result;
 	}
 
 	public static class Builder {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.moonshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
@@ -39,33 +41,7 @@ import org.springframework.util.Assert;
  * @author Alexandros Pappas
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MoonshotChatOptions implements FunctionCallingOptions {
-
-	/**
-	 * ID of the model to use
-	 */
-	private @JsonProperty("model") String model;
-
-	/**
-	 * The maximum number of tokens to generate in the chat completion. The total length
-	 * of input tokens and generated tokens is limited by the model's context length.
-	 */
-	private @JsonProperty("max_tokens") Integer maxTokens;
-
-	/**
-	 * What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will
-	 * make the output more random, while lower values like 0.2 will make it more focused
-	 * and deterministic. We generally recommend altering this or top_p but not both.
-	 */
-	private @JsonProperty("temperature") Double temperature;
-
-	/**
-	 * An alternative to sampling with temperature, called nucleus sampling, where the
-	 * model considers the results of the tokens with top_p probability mass. So 0.1 means
-	 * only the tokens comprising the top 10% probability mass are considered. We
-	 * generally recommend altering this or temperature but not both.
-	 */
-	private @JsonProperty("top_p") Double topP;
+public class MoonshotChatOptions extends AbstractChatOptions implements FunctionCallingOptions {
 
 	/**
 	 * How many chat completion choices to generate for each input message. Note that you
@@ -73,20 +49,6 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 	 * Keep n as 1 to minimize costs.
 	 */
 	private @JsonProperty("n") Integer n;
-
-	/**
-	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether
-	 * they appear in the text so far, increasing the model's likelihood to talk about new
-	 * topics.
-	 */
-	private @JsonProperty("presence_penalty") Double presencePenalty;
-
-	/**
-	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their
-	 * existing frequency in the text so far, decreasing the model's likelihood to repeat
-	 * the same line verbatim.
-	 */
-	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
 
 	/**
 	 * Up to 5 sequences where the API will stop generating further tokens.
@@ -141,7 +103,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 	private Boolean proxyToolCalls;
 
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
 		return new Builder();
@@ -166,27 +128,12 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 		this.functions = functionNames;
 	}
 
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
 	public void setModel(String model) {
 		this.model = model;
 	}
 
-	@Override
-	public Double getFrequencyPenalty() {
-		return this.frequencyPenalty;
-	}
-
 	public void setFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
-	}
-
-	@Override
-	public Integer getMaxTokens() {
-		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
@@ -199,11 +146,6 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 
 	public void setN(Integer n) {
 		this.n = n;
-	}
-
-	@Override
-	public Double getPresencePenalty() {
-		return this.presencePenalty;
 	}
 
 	public void setPresencePenalty(Double presencePenalty) {
@@ -229,18 +171,8 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 		this.stop = stop;
 	}
 
-	@Override
-	public Double getTemperature() {
-		return this.temperature;
-	}
-
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
-	}
-
-	@Override
-	public Double getTopP() {
-		return this.topP;
 	}
 
 	public void setTopP(Double topP) {
@@ -289,14 +221,14 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 			.N(this.n)
 			.presencePenalty(this.presencePenalty)
 			.frequencyPenalty(this.frequencyPenalty)
-			.stop(this.stop)
+			.stop(this.stop != null ? new ArrayList<>(this.stop) : null)
 			.user(this.user)
-			.tools(this.tools)
+			.tools(this.tools != null ? new ArrayList<>(this.tools) : null)
 			.toolChoice(this.toolChoice)
 			.functionCallbacks(this.functionCallbacks)
 			.functions(this.functions)
 			.proxyToolCalls(this.proxyToolCalls)
-			.toolContext(this.toolContext)
+			.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null)
 			.build();
 	}
 
