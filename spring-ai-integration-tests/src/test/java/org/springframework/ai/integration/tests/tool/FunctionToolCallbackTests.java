@@ -158,7 +158,7 @@ public class FunctionToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
 			.tools(Tools.AUTHORS_BY_BOOKS)
 			.call()
 			.content();
@@ -174,7 +174,7 @@ public class FunctionToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
 			.tools(FunctionToolCallback.builder("authorsByAvailableBooks", function)
 				.description("Get the list of authors who wrote the given books available in the library")
 				.inputType(Books.class)
