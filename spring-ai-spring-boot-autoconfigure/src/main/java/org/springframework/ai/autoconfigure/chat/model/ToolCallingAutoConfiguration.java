@@ -16,11 +16,15 @@
 
 package org.springframework.ai.autoconfigure.chat.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
@@ -33,9 +37,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Auto-configuration for common tool calling features of {@link ChatModel}.
@@ -51,12 +52,10 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			ObjectProvider<List<FunctionCallback>> functionCallbacksProvider,
-			ObjectProvider<List<ToolCallback>> toolCallbacksProvider) {
+			List<FunctionCallback> functionCallbacks, List<ToolCallbackProvider> tcbProviders) {
 
-		List<FunctionCallback> allFunctionAndToolCallbacks = new ArrayList<>(
-				functionCallbacksProvider.stream().flatMap(List::stream).toList());
-		allFunctionAndToolCallbacks.addAll(toolCallbacksProvider.stream().flatMap(List::stream).toList());
+		List<FunctionCallback> allFunctionAndToolCallbacks = new ArrayList<>(functionCallbacks);
+		tcbProviders.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionAndToolCallbacks::addAll);
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
 

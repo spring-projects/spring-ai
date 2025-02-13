@@ -16,7 +16,6 @@
 
 package org.springframework.ai.autoconfigure.chat.model;
 
-import java.util.List;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
@@ -24,14 +23,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.StaticToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -104,8 +105,13 @@ class ToolCallingAutoConfigurationTests {
 			return "30";
 		}
 
+		@Tool(description = "Get the weather in location. Return temperature in 36°F or 36°C format.")
+		public String getForecast2(String location) {
+			return "30";
+		}
+
 		public String getAlert(String usState) {
-			return "Alergt";
+			return "Alert";
 		}
 
 	}
@@ -118,8 +124,8 @@ class ToolCallingAutoConfigurationTests {
 		// Therefore we need to provide the ToolCallback instances explicitly using the
 		// ToolCallbacks.from(...) utility method.
 		@Bean
-		public List<ToolCallback> toolCallbacks() {
-			return List.of(ToolCallbacks.from(new WeatherService()));
+		public ToolCallbackProvider toolCallbacks() {
+			return MethodToolCallbackProvider.builder().toolObjects(new WeatherService()).build();
 		}
 
 		public record Request(String location) {
@@ -135,41 +141,51 @@ class ToolCallingAutoConfigurationTests {
 		}
 
 		@Bean
-		public List<FunctionCallback> functionCallbacks3() {
-			return List.of(FunctionCallback.builder()
+		public FunctionCallback functionCallbacks3() {
+			return FunctionCallback.builder()
 				.function("getCurrentWeather3", (Request request) -> "15.0°C")
 				.description("Gets the weather in location")
 				.inputType(Request.class)
-				.build());
+				.build();
 		}
 
 		@Bean
-		public List<FunctionCallback> functionCallbacks4() {
-			return List.of(FunctionCallback.builder()
+		public FunctionCallback functionCallbacks4() {
+			return FunctionCallback.builder()
 				.function("getCurrentWeather4", (Request request) -> "15.0°C")
 				.description("Gets the weather in location")
 				.inputType(Request.class)
-				.build());
+				.build();
 
 		}
 
 		@Bean
-		public List<ToolCallback> toolCallbacks5() {
-			return List.of(FunctionToolCallback.builder("getCurrentWeather5", (Request request) -> "15.0°C")
+		public ToolCallback toolCallbacks5() {
+			return FunctionToolCallback.builder("getCurrentWeather5", (Request request) -> "15.0°C")
 				.description("Gets the weather in location")
 				.inputType(Request.class)
-				.build());
+				.build();
 
 		}
 
 		@Bean
-		public List<ToolCallback> toolCallbacks6() {
+		public ToolCallbackProvider blabla() {
+			return new StaticToolCallbackProvider(
+					FunctionToolCallback.builder("getCurrentWeather5", (Request request) -> "15.0°C")
+						.description("Gets the weather in location")
+						.inputType(Request.class)
+						.build());
+
+		}
+
+		@Bean
+		public ToolCallback toolCallbacks6() {
 			var toolMethod = ReflectionUtils.findMethod(WeatherService.class, "getAlert", String.class);
-			return List.of(MethodToolCallback.builder()
+			return MethodToolCallback.builder()
 				.toolDefinition(ToolDefinition.builder(toolMethod).build())
 				.toolMethod(toolMethod)
 				.toolObject(new WeatherService())
-				.build());
+				.build();
 		}
 
 	}
