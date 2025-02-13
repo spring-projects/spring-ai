@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import org.springframework.lang.Nullable;
 /**
  * {@link ModelOptions} representing the common options that are portable across different
  * chat models.
+ *
+ * @author Alexandros Pappas
  */
 public interface ChatOptions extends ModelOptions {
 
@@ -95,7 +97,7 @@ public interface ChatOptions extends ModelOptions {
 	 * @return Returns a new {@link ChatOptions.Builder}.
 	 */
 	static ChatOptions.Builder builder() {
-		return new DefaultChatOptionsBuilder();
+		return new DefaultChatOptions.Builder();
 	}
 
 	/**
