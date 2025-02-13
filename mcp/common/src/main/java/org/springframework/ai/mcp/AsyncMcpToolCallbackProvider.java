@@ -15,11 +15,12 @@
  */
 package org.springframework.ai.mcp;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.util.Assert;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -28,23 +29,38 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * Implementation of {@link ToolCallbackProvider} that discovers and provides MCP tools
- * asynchronously.
+ * asynchronously from one or more MCP servers.
  * <p>
  * This class acts as a tool provider for Spring AI, automatically discovering tools from
- * an MCP server and making them available as Spring AI tools. It:
+ * multiple MCP servers and making them available as Spring AI tools. It:
  * <ul>
- * <li>Connects to an MCP server through an async client</li>
- * <li>Lists and retrieves available tools from the server</li>
+ * <li>Connects to MCP servers through async clients</li>
+ * <li>Lists and retrieves available tools from each server asynchronously</li>
  * <li>Creates {@link AsyncMcpToolCallback} instances for each discovered tool</li>
- * <li>Validates tool names to prevent duplicates</li>
+ * <li>Validates tool names to prevent duplicates across all servers</li>
  * </ul>
  * <p>
- * Example usage: <pre>{@code
+ * Example usage with a single client:
+ *
+ * <pre>{@code
  * McpAsyncClient mcpClient = // obtain MCP client
  * ToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(mcpClient);
  *
  * // Get all available tools
  * ToolCallback[] tools = provider.getToolCallbacks();
+ * }</pre>
+ *
+ * Example usage with multiple clients:
+ *
+ * <pre>{@code
+ * List<McpAsyncClient> mcpClients = // obtain multiple MCP clients
+ * ToolCallbackProvider provider = new AsyncMcpToolCallbackProvider(mcpClients);
+ *
+ * // Get tools from all clients
+ * ToolCallback[] tools = provider.getToolCallbacks();
+ *
+ * // Or use the reactive API
+ * Flux<ToolCallback> toolsFlux = AsyncMcpToolCallbackProvider.asyncToolCallbacks(mcpClients);
  * }</pre>
  *
  * @author Christian Tzolov
@@ -55,40 +71,61 @@ import org.springframework.util.CollectionUtils;
  */
 public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
-	private final McpAsyncClient mcpClient;
+	private final List<McpAsyncClient> mcpClients;
 
 	/**
-	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance.
-	 * @param mcpClient the MCP client to use for discovering tools
+	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance with a list of MCP
+	 * clients.
+	 * @param mcpClients the list of MCP clients to use for discovering tools. Each client
+	 * typically connects to a different MCP server, allowing tool discovery from multiple
+	 * sources.
+	 * @throws IllegalArgumentException if mcpClients is null
 	 */
-	public AsyncMcpToolCallbackProvider(McpAsyncClient mcpClient) {
-		this.mcpClient = mcpClient;
+	public AsyncMcpToolCallbackProvider(List<McpAsyncClient> mcpClients) {
+		Assert.notNull(mcpClients, "McpClients must not be null");
+		this.mcpClients = mcpClients;
+	}
+
+	public AsyncMcpToolCallbackProvider(McpAsyncClient... mcpClients) {
+		Assert.notNull(mcpClients, "McpClients must not be null");
+		this.mcpClients = List.of(mcpClients);
 	}
 
 	/**
-	 * Discovers and returns all available tools from the MCP server asynchronously.
+	 * Discovers and returns all available tools from the configured MCP servers.
 	 * <p>
 	 * This method:
 	 * <ol>
-	 * <li>Retrieves the list of tools from the MCP server</li>
-	 * <li>Creates a {@link AsyncMcpToolCallback} for each tool</li>
-	 * <li>Validates that there are no duplicate tool names</li>
+	 * <li>Retrieves the list of tools from each MCP server asynchronously</li>
+	 * <li>Creates a {@link AsyncMcpToolCallback} for each discovered tool</li>
+	 * <li>Validates that there are no duplicate tool names across all servers</li>
 	 * </ol>
+	 * <p>
+	 * Note: While the underlying tool discovery is asynchronous, this method blocks until
+	 * all tools are discovered from all servers.
 	 * @return an array of tool callbacks, one for each discovered tool
 	 * @throws IllegalStateException if duplicate tool names are found
 	 */
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-		var toolCallbacks = this.mcpClient.listTools()
-			.map(response -> response.tools()
-				.stream()
-				.map(tool -> new AsyncMcpToolCallback(this.mcpClient, tool))
-				.toArray(ToolCallback[]::new))
-			.block();
 
-		validateToolCallbacks(toolCallbacks);
+		List<ToolCallback> toolCallbackList = new ArrayList<>();
 
-		return toolCallbacks;
+		for (McpAsyncClient mcpClient : this.mcpClients) {
+
+			ToolCallback[] toolCallbacks = mcpClient.listTools()
+				.map(response -> response.tools()
+					.stream()
+					.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
+					.toArray(ToolCallback[]::new))
+				.block();
+
+			validateToolCallbacks(toolCallbacks);
+
+			toolCallbackList.addAll(List.of(toolCallbacks));
+		}
+
+		return toolCallbackList.toArray(new ToolCallback[0]);
 	}
 
 	/**
@@ -110,12 +147,19 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	/**
 	 * Creates a reactive stream of tool callbacks from multiple MCP clients.
 	 * <p>
-	 * This utility method:
+	 * This utility method provides a reactive way to work with tool callbacks from
+	 * multiple MCP clients in a single operation. It:
 	 * <ol>
-	 * <li>Takes a list of MCP clients</li>
-	 * <li>Creates a provider for each client</li>
-	 * <li>Retrieves and flattens all tool callbacks into a single stream</li>
+	 * <li>Takes a list of MCP clients as input</li>
+	 * <li>Creates a provider instance to manage all clients</li>
+	 * <li>Retrieves tools from all clients asynchronously</li>
+	 * <li>Combines them into a single reactive stream</li>
+	 * <li>Ensures there are no naming conflicts between tools from different clients</li>
 	 * </ol>
+	 * <p>
+	 * Unlike {@link #getToolCallbacks()}, this method provides a fully reactive way to
+	 * work with tool callbacks, making it suitable for non-blocking applications. Any
+	 * errors during tool discovery will be propagated through the returned Flux.
 	 * @param mcpClients the list of MCP clients to create callbacks from
 	 * @return a Flux of tool callbacks from all provided clients
 	 */
@@ -124,9 +168,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			return Flux.empty();
 		}
 
-		return Flux.fromIterable(mcpClients)
-			.flatMap(mcpClient -> Mono.just(new AsyncMcpToolCallbackProvider(mcpClient).getToolCallbacks()))
-			.flatMap(callbacks -> Flux.fromArray(callbacks));
+		return Flux.fromArray(new AsyncMcpToolCallbackProvider(mcpClients).getToolCallbacks());
 	}
 
 }

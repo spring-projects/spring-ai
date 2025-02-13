@@ -34,7 +34,7 @@ public class StaticToolCallbackProvider implements ToolCallbackProvider {
 	}
 
 	public StaticToolCallbackProvider(List<? extends FunctionCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "ToolCallbacks must not be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks.toArray(new FunctionCallback[0]);
 	}
 
