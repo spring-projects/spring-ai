@@ -20,6 +20,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
@@ -33,12 +34,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Auto-configuration for common tool calling features of {@link ChatModel}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -48,8 +51,15 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			List<FunctionCallback> toolCallbacks) {
-		var staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
+			ObjectProvider<List<FunctionCallback>> functionCallbacksProvider,
+			ObjectProvider<List<ToolCallback>> toolCallbacksProvider) {
+
+		List<FunctionCallback> allFunctionAndToolCallbacks = new ArrayList<>(
+				functionCallbacksProvider.stream().flatMap(List::stream).toList());
+		allFunctionAndToolCallbacks.addAll(toolCallbacksProvider.stream().flatMap(List::stream).toList());
+
+		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
+
 		var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
 			.applicationContext(applicationContext)
 			.build();
