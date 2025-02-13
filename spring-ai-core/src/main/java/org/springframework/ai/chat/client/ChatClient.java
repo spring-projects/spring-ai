@@ -224,7 +224,7 @@ public interface ChatClient {
 
 		ChatClientRequestSpec tools(Object... toolObjects);
 
-		ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProvider);
+		ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders);
 
 		@Deprecated
 		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
@@ -293,7 +293,7 @@ public interface ChatClient {
 
 		Builder defaultTools(Object... toolObjects);
 
-		Builder defaultTools(ToolCallbackProvider... toolCallbackProvider);
+		Builder defaultTools(ToolCallbackProvider... toolCallbackProviders);
 
 		/**
 		 * @deprecated in favor of {@link #defaultTools(String...)}

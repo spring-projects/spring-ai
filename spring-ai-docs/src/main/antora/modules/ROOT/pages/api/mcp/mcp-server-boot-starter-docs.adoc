@@ -126,9 +126,9 @@ Allows servers to expose tools that can be invoked by language models. The MCP S
 [source,java]
 ----
 @Bean
-public ToolCallbackProvier myTools(...) {
+public ToolCallbackProvider myTools(...) {
     List<ToolCallback> tools = ...
-    return ToolCallbackProvier.from(tools);
+    return ToolCallbackProvider.from(tools);
 }
 ----
 
