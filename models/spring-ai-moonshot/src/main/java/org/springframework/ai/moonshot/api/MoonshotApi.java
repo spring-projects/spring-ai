@@ -48,6 +48,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Wang Xiaojie
  */
 public class MoonshotApi {
 
@@ -207,14 +208,47 @@ public class MoonshotApi {
 	 * Moonshot Chat Completion Models:
 	 *
 	 * <ul>
+	 * <li><b>MOONSHOT_V1_AUTO</b> - moonshot-v1-auto</li>
 	 * <li><b>MOONSHOT_V1_8K</b> - moonshot-v1-8k</li>
 	 * <li><b>MOONSHOT_V1_32K</b> - moonshot-v1-32k</li>
 	 * <li><b>MOONSHOT_V1_128K</b> - moonshot-v1-128k</li>
+	 * </ul>
+	 *
+	 * {@code moonshot-v1-auto} can select the appropriate model based on the number of
+	 * Tokens occupied by the current context. The available models for selection include:
+	 * <ul>
+	 * <li>{@code moonshot-v1-8k}</li>
+	 * <li>{@code moonshot-v1-32k}</li>
+	 * <li>{@code moonshot-v1-128k}</li>
+	 * </ul>
+	 * <p>
+	 * {@code moonshot-v1-auto} can be regarded as a model router, which decides which
+	 * specific model to select based on the number of Tokens occupied by the current
+	 * context. In terms of performance and output, {@code moonshot-v1-auto} is
+	 * indistinguishable from the aforementioned models.
+	 * </p>
+	 * The routing rules for the model selected by {@code moonshot-v1-auto} are as
+	 * follows:
+	 * <ul>
+	 * <li>If {@code total_tokens ≤ 8 * 1024}, choose {@code moonshot-v1-8k}.</li>
+	 * <li>If {@code 8 * 1024 < total_tokens ≤ 32 * 1024}, choose
+	 * {@code moonshot-v1-32k}.</li>
+	 * <li>If {@code total_tokens > 32 * 1024}, choose {@code moonshot-v1-128k}.</li>
+	 * </ul>
+	 * The calculation formula is: {@code total_tokens = prompt_tokens + max_tokens}
+	 * <p>
+	 * The total number of Tokens is composed of two parts:
+	 * <ul>
+	 * <li>{@code prompt_tokens}: The number of Tokens occupied by the input prompt
+	 * (Prompt).</li>
+	 * <li>{@code max_tokens}: The maximum number of Tokens expected to be generated as
+	 * output.</li>
 	 * </ul>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		MOONSHOT_V1_AUTO("moonshot-v1-auto"),
 		MOONSHOT_V1_8K("moonshot-v1-8k"),
 		MOONSHOT_V1_32K("moonshot-v1-32k"),
 		MOONSHOT_V1_128K("moonshot-v1-128k");
