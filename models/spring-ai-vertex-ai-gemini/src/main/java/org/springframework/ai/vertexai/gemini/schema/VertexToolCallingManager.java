@@ -26,20 +26,44 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
+import org.springframework.util.Assert;
 
 /**
+ * Implementation of {@link ToolCallingManager} specifically designed for Vertex AI
+ * Gemini. This manager adapts tool definitions to be compatible with Vertex AI's OpenAPI
+ * schema format by converting JSON schemas and ensuring proper type value upper-casing.
+ *
+ * <p>
+ * It delegates the actual tool execution to another {@link ToolCallingManager} while
+ * handling the necessary schema conversions for Vertex AI compatibility.
+ *
  * @author Christian Tzolov
  * @since 1.0.0
  */
-
 public class VertexToolCallingManager implements ToolCallingManager {
 
+	/**
+	 * The underlying tool calling manager that handles actual tool execution.
+	 */
 	private final ToolCallingManager delegateToolCallingManager;
 
+	/**
+	 * Creates a new instance of VertexToolCallingManager.
+	 * @param delegateToolCallingManager the underlying tool calling manager that handles
+	 * actual tool execution
+	 */
 	public VertexToolCallingManager(ToolCallingManager delegateToolCallingManager) {
+		Assert.notNull(delegateToolCallingManager, "Delegate tool calling manager must not be null");
 		this.delegateToolCallingManager = delegateToolCallingManager;
 	}
 
+	/**
+	 * Resolves tool definitions and converts their input schemas to be compatible with
+	 * Vertex AI's OpenAPI format. This includes converting JSON schemas to OpenAPI format
+	 * and ensuring proper type value casing.
+	 * @param chatOptions the options containing tool preferences and configurations
+	 * @return a list of tool definitions with Vertex AI compatible schemas
+	 */
 	@Override
 	public List<ToolDefinition> resolveToolDefinitions(ToolCallingChatOptions chatOptions) {
 
@@ -58,6 +82,12 @@ public class VertexToolCallingManager implements ToolCallingManager {
 		}).toList();
 	}
 
+	/**
+	 * Executes tool calls by delegating to the underlying tool calling manager.
+	 * @param prompt the original prompt that triggered the tool calls
+	 * @param chatResponse the chat response containing the tool calls to execute
+	 * @return the result of executing the tool calls
+	 */
 	@Override
 	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
 		return this.delegateToolCallingManager.executeToolCalls(prompt, chatResponse);

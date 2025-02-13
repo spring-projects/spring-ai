@@ -93,7 +93,37 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Vertex AI Gemini Chat Model implementation.
+ * Vertex AI Gemini Chat Model implementation that provides access to Google's Gemini
+ * language models.
+ *
+ * <p>
+ * Key features include:
+ * <ul>
+ * <li>Support for multiple Gemini model versions including Gemini Pro, Gemini 1.5 Pro,
+ * Gemini 1.5/2.0 Flash variants</li>
+ * <li>Tool/Function calling capabilities through {@link ToolCallingManager}</li>
+ * <li>Streaming support via {@link #stream(Prompt)} method</li>
+ * <li>Configurable safety settings through {@link VertexAiGeminiSafetySetting}</li>
+ * <li>Support for system messages and multi-modal content (text and images)</li>
+ * <li>Built-in retry mechanism and observability through Micrometer</li>
+ * <li>Google Search Retrieval integration</li>
+ * </ul>
+ *
+ * <p>
+ * The model can be configured with various options including temperature, top-k, top-p
+ * sampling, maximum output tokens, and candidate count through
+ * {@link VertexAiGeminiChatOptions}.
+ *
+ * <p>
+ * Use the {@link Builder} to create instances with custom configurations:
+ *
+ * <pre>{@code
+ * VertexAiGeminiChatModel model = VertexAiGeminiChatModel.builder()
+ * 		.vertexAI(vertexAI)
+ * 		.defaultOptions(options)
+ * 		.toolCallingManager(toolManager)
+ * 		.build();
+ * }</pre>
  *
  * @author Christian Tzolov
  * @author Grogdunn
@@ -104,6 +134,9 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author Alexandros Pappas
  * @since 0.8.1
+ * @see VertexAiGeminiChatOptions
+ * @see ToolCallingManager
+ * @see ChatModel
  */
 public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
 
@@ -203,6 +236,16 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 	}
 
+	/**
+	 * Creates a new instance of VertexAiGeminiChatModel.
+	 * @param vertexAI the Vertex AI instance to use
+	 * @param defaultOptions the default options to use
+	 * @param toolCallingManager the tool calling manager to use. It is wrapped in a
+	 * {@link VertexToolCallingManager} to ensure compatibility with Vertex AI's OpenAPI
+	 * schema format.
+	 * @param retryTemplate the retry template to use
+	 * @param observationRegistry the observation registry to use
+	 */
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
@@ -221,6 +264,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 
+		// Wrap the provided tool calling manager in a VertexToolCallingManager to ensure
+		// compatibility with Vertex AI's OpenAPI schema format.
 		if (toolCallingManager instanceof VertexToolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
 		}
