@@ -35,6 +35,12 @@ public final class JsonSchemaConverter {
 		// Prevent instantiation
 	}
 
+	/**
+	 * Parses a JSON string into an ObjectNode.
+	 * @param jsonString The JSON string to parse
+	 * @return ObjectNode containing the parsed JSON
+	 * @throws RuntimeException if the JSON string cannot be parsed
+	 */
 	public static ObjectNode fromJson(String jsonString) {
 		try {
 			return (ObjectNode) JsonParser.getObjectMapper().readTree(jsonString);

@@ -126,12 +126,11 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	private List<VertexAiGeminiSafetySetting> safetySettings = new ArrayList<>();
+	// @formatter:on
 
 	public static Builder builder() {
 		return new Builder();
 	}
-
-	// @formatter:on
 
 	public static VertexAiGeminiChatOptions fromOptions(VertexAiGeminiChatOptions fromOptions) {
 		VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
