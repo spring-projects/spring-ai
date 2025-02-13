@@ -21,9 +21,9 @@ package org.springframework.ai.vertexai.gemini.schema;
  */
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.Assert;
 
 /**
@@ -31,15 +31,13 @@ import org.springframework.util.Assert;
  */
 public final class JsonSchemaConverter {
 
-	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
 	private JsonSchemaConverter() {
 		// Prevent instantiation
 	}
 
 	public static ObjectNode fromJson(String jsonString) {
 		try {
-			return (ObjectNode) OBJECT_MAPPER.readTree(jsonString);
+			return (ObjectNode) JsonParser.getObjectMapper().readTree(jsonString);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to parse JSON: " + jsonString, e);
@@ -57,7 +55,7 @@ public final class JsonSchemaConverter {
 
 		try {
 			// Convert to OpenAPI schema using our custom conversion logic
-			ObjectNode openApiSchema = convertSchema(jsonSchemaNode, OBJECT_MAPPER.getNodeFactory());
+			ObjectNode openApiSchema = convertSchema(jsonSchemaNode, JsonParser.getObjectMapper().getNodeFactory());
 
 			// Add OpenAPI-specific metadata
 			if (!openApiSchema.has("openapi")) {
@@ -105,8 +103,8 @@ public final class JsonSchemaConverter {
 			ObjectNode properties = target.putObject("properties");
 			source.get("properties").fields().forEachRemaining(entry -> {
 				if (entry.getValue() instanceof ObjectNode) {
-					properties.set(entry.getKey(),
-							convertSchema((ObjectNode) entry.getValue(), OBJECT_MAPPER.getNodeFactory()));
+					properties.set(entry.getKey(), convertSchema((ObjectNode) entry.getValue(),
+							JsonParser.getObjectMapper().getNodeFactory()));
 				}
 			});
 		}
@@ -124,7 +122,7 @@ public final class JsonSchemaConverter {
 			}
 			else if (additionalProps.isObject()) {
 				target.set("additionalProperties",
-						convertSchema((ObjectNode) additionalProps, OBJECT_MAPPER.getNodeFactory()));
+						convertSchema((ObjectNode) additionalProps, JsonParser.getObjectMapper().getNodeFactory()));
 			}
 		}
 
@@ -132,7 +130,7 @@ public final class JsonSchemaConverter {
 		if (source.has("items")) {
 			JsonNode items = source.get("items");
 			if (items.isObject()) {
-				target.set("items", convertSchema((ObjectNode) items, OBJECT_MAPPER.getNodeFactory()));
+				target.set("items", convertSchema((ObjectNode) items, JsonParser.getObjectMapper().getNodeFactory()));
 			}
 		}
 
