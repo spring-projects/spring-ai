@@ -353,7 +353,11 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 						|| chatCompletions.getUsage() != null)
 				.map(chatCompletions -> {
 					if (!chatCompletions.getChoices().isEmpty()) {
-						final var toolCalls = chatCompletions.getChoices().get(0).getDelta().getToolCalls();
+						ChatChoice chatChoice = chatCompletions.getChoices().get(0);
+						List<ChatCompletionsToolCall> toolCalls = null;
+						if (chatChoice.getDelta() != null) {
+							toolCalls = chatChoice.getDelta().getToolCalls();
+						}
 						isFunctionCall.set(toolCalls != null && !toolCalls.isEmpty());
 					}
 					return chatCompletions;
