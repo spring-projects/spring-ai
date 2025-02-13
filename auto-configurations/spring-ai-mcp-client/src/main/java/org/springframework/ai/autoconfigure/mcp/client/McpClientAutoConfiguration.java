@@ -30,7 +30,7 @@ import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommo
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
-import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -176,9 +176,9 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<ToolCallback> toolCallbacks(ObjectProvider<List<McpSyncClient>> mcpClientsProvider) {
+	public ToolCallbackProvider toolCallbacks(ObjectProvider<List<McpSyncClient>> mcpClientsProvider) {
 		List<McpSyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
-		return McpToolUtils.getToolCallbacksFromSyncClients(mcpClients);
+		return ToolCallbackProvider.from(McpToolUtils.getToolCallbacksFromSyncClients(mcpClients));
 	}
 
 	/**
@@ -265,9 +265,9 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<ToolCallback> asyncToolCallbacks(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider) {
+	public ToolCallbackProvider asyncToolCallbacks(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider) {
 		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
-		return McpToolUtils.getToolCallbacksFromAsyncClinents(mcpClients);
+		return ToolCallbackProvider.from(McpToolUtils.getToolCallbacksFromAsyncClinents(mcpClients));
 	}
 
 	public record ClosebleMcpAsyncClients(List<McpAsyncClient> clients) implements AutoCloseable {
