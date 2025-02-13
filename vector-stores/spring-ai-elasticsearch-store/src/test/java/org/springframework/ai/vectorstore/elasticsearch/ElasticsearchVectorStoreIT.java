@@ -45,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.ai.model.SimpleApiKey;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -57,10 +58,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter.Expression;
-import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
-import org.springframework.ai.vectorstore.filter.Filter.Key;
-import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -127,10 +124,11 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
-	@Test
-	public void addAndDeleteDocumentsTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "cosine", "custom_embedding_field" })
+	public void addAndDeleteDocumentsTest(String vectorStoreBeanName) {
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + vectorStoreBeanName,
 					ElasticsearchVectorStore.class);
 			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
 
@@ -160,12 +158,12 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
-	public void addAndSearchTest(String similarityFunction) {
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "custom_embedding_field" })
+	public void addAndSearchTest(String vectorStoreBeanName) {
 
 		getContextRunner().run(context -> {
 
-			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + vectorStoreBeanName,
 					ElasticsearchVectorStore.class);
 
 			vectorStore.add(this.documents);
@@ -197,11 +195,11 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
-	public void searchWithFilters(String similarityFunction) {
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "custom_embedding_field" })
+	public void searchWithFilters(String vectorStoreBeanName) {
 
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + vectorStoreBeanName,
 					ElasticsearchVectorStore.class);
 
 			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
@@ -311,11 +309,11 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
-	public void documentUpdateTest(String similarityFunction) {
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "custom_embedding_field" })
+	public void documentUpdateTest(String vectorStoreBeanName) {
 
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + vectorStoreBeanName,
 					ElasticsearchVectorStore.class);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
@@ -369,10 +367,10 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "cosine", "l2_norm", "dot_product" })
-	public void searchThresholdTest(String similarityFunction) {
+	@ValueSource(strings = { "cosine", "l2_norm", "dot_product", "custom_embedding_field" })
+	public void searchThresholdTest(String vectorStoreBeanName) {
 		getContextRunner().run(context -> {
-			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + similarityFunction,
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_" + vectorStoreBeanName,
 					ElasticsearchVectorStore.class);
 
 			vectorStore.add(this.documents);
@@ -507,9 +505,20 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 				.build();
 		}
 
+		@Bean("vectorStore_custom_embedding_field")
+		public ElasticsearchVectorStore vectorStoreCustomField(EmbeddingModel embeddingModel, RestClient restClient) {
+			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+			options.setEmbeddingFieldName("custom_embedding_field");
+			return ElasticsearchVectorStore.builder(restClient, embeddingModel)
+				.initializeSchema(true)
+				.options(options)
+				.build();
+		}
+
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(
+					OpenAiApi.builder().apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY"))).build());
 		}
 
 		@Bean

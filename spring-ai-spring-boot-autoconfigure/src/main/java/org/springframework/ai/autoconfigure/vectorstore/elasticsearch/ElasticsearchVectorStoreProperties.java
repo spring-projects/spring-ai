@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Eddú Meléndez
  * @author Wei Jiang
  * @author Josh Long
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 @ConfigurationProperties(prefix = "spring.ai.vectorstore.elasticsearch")
@@ -45,6 +46,11 @@ public class ElasticsearchVectorStoreProperties extends CommonVectorStorePropert
 	 * The similarity function to use.
 	 */
 	private SimilarityFunction similarity;
+
+	/**
+	 * The name of the vector field to search against
+	 */
+	private String embeddingFieldName = "embedding";
 
 	public String getIndexName() {
 		return this.indexName;
@@ -68,6 +74,14 @@ public class ElasticsearchVectorStoreProperties extends CommonVectorStorePropert
 
 	public void setSimilarity(SimilarityFunction similarity) {
 		this.similarity = similarity;
+	}
+
+	public String getEmbeddingFieldName() {
+		return embeddingFieldName;
+	}
+
+	public void setEmbeddingFieldName(String embeddingFieldName) {
+		this.embeddingFieldName = embeddingFieldName;
 	}
 
 }
