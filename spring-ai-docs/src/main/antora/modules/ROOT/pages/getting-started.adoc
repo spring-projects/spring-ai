@@ -12,8 +12,18 @@ NOTE: Spring AI supports Spring Boot 3.2.x and 3.3.x
 
 Head on over to https://start.spring.io/[start.spring.io] and select the AI Models and Vector Stores that you want to use in your new applications.
 
-[[repositories]]
-== Add Milestone and Snapshot Repositories
+[[artifact-repositories]]
+== Artifact Repositories
+
+=== 1.0 M6 and after - Use Maven Central
+
+As of 1.0 M6, releases are available in Maven Central.
+No changes to your build file are required.
+
+
+=== Pre 1.0 M6 - Add Spring Repositories
+
+You will need to add Spring milestone and snapshot repositories to your build system.
 
 If you prefer to add the dependency snippets by hand, follow the directions in the following sections.
 
