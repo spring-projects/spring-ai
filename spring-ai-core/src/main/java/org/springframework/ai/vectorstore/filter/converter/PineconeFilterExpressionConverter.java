@@ -22,7 +22,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Key;
 
 /**
  * Converts {@link Expression} into Pinecone metadata filter expression format.
- * (https://docs.pinecone.io/docs/metadata-filtering)
+ * (<a href="https://docs.pinecone.io/docs/metadata-filtering">Metadata filtering</a>)
  *
  * @author Christian Tzolov
  */
@@ -58,7 +58,7 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
-		context.append("\"" + identifier + "\": ");
+		context.append("\"").append(identifier).append("\": ");
 	}
 
 }
