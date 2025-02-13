@@ -211,10 +211,7 @@ public final class McpToolUtils {
 		if (CollectionUtils.isEmpty(mcpClients)) {
 			return List.of();
 		}
-		return mcpClients.stream()
-			.map(mcpClient -> List.of((new SyncMcpToolCallbackProvider(mcpClient).getToolCallbacks())))
-			.flatMap(List::stream)
-			.toList();
+		return List.of((new SyncMcpToolCallbackProvider(mcpClients).getToolCallbacks()));
 	}
 
 	/**
@@ -247,10 +244,7 @@ public final class McpToolUtils {
 		if (CollectionUtils.isEmpty(asynMcpClients)) {
 			return List.of();
 		}
-		return asynMcpClients.stream()
-			.map(mcpClient -> List.of((new AsyncMcpToolCallbackProvider(mcpClient).getToolCallbacks())))
-			.flatMap(List::stream)
-			.toList();
+		return List.of((new AsyncMcpToolCallbackProvider(asynMcpClients).getToolCallbacks()));
 	}
 
 }

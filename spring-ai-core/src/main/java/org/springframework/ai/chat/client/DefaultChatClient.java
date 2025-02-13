@@ -35,6 +35,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbacks;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -868,6 +869,16 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
 			this.functionCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+			return this;
+		}
+
+		@Override
+		public ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders) {
+			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
+			Assert.noNullElements(toolCallbackProviders, "toolCallbackProviders cannot contain null elements");
+			for (ToolCallbackProvider toolCallbackProvider : toolCallbackProviders) {
+				this.functionCallbacks.addAll(List.of(toolCallbackProvider.getToolCallbacks()));
+			}
 			return this;
 		}
 

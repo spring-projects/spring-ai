@@ -16,9 +16,11 @@
 
 package org.springframework.ai.autoconfigure.mcp.server;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServer;
@@ -39,7 +41,9 @@ import io.modelcontextprotocol.spec.ServerMcpTransport;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolUtils;
+import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -135,7 +139,8 @@ public class MpcServerAutoConfiguration {
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
 			ObjectProvider<List<SyncToolRegistration>> tools, ObjectProvider<List<SyncResourceRegistration>> resources,
 			ObjectProvider<List<SyncPromptRegistration>> prompts,
-			ObjectProvider<Consumer<List<McpSchema.Root>>> rootsChangeConsumers) {
+			ObjectProvider<Consumer<List<McpSchema.Root>>> rootsChangeConsumers,
+			List<ToolCallbackProvider> toolCallbackProvider) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -143,7 +148,14 @@ public class MpcServerAutoConfiguration {
 		// Create the server with both tool and resource capabilities
 		SyncSpec serverBuilder = McpServer.sync(transport).serverInfo(serverInfo);
 
-		List<SyncToolRegistration> toolResgistrations = tools.stream().flatMap(List::stream).toList();
+		List<SyncToolRegistration> toolResgistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
+		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
+			.map(pr -> List.of(pr.getToolCallbacks()))
+			.flatMap(List::stream)
+			.filter(fc -> fc instanceof ToolCallback)
+			.map(fc -> (ToolCallback) fc)
+			.toList();
+		toolResgistrations.addAll(McpToolUtils.toSyncToolRegistration(providerToolCallbacks));
 		if (!CollectionUtils.isEmpty(toolResgistrations)) {
 			serverBuilder.tools(toolResgistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
@@ -191,7 +203,8 @@ public class MpcServerAutoConfiguration {
 			ObjectProvider<List<AsyncToolRegistration>> tools,
 			ObjectProvider<List<AsyncResourceRegistration>> resources,
 			ObjectProvider<List<AsyncPromptRegistration>> prompts,
-			ObjectProvider<Consumer<List<McpSchema.Root>>> rootsChangeConsumer) {
+			ObjectProvider<Consumer<List<McpSchema.Root>>> rootsChangeConsumer,
+			List<ToolCallbackProvider> toolCallbackProvider) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -199,7 +212,14 @@ public class MpcServerAutoConfiguration {
 		// Create the server with both tool and resource capabilities
 		AsyncSpec serverBilder = McpServer.async(transport).serverInfo(serverInfo);
 
-		List<AsyncToolRegistration> toolResgistrations = tools.stream().flatMap(List::stream).toList();
+		List<AsyncToolRegistration> toolResgistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
+		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
+			.map(pr -> List.of(pr.getToolCallbacks()))
+			.flatMap(List::stream)
+			.filter(fc -> fc instanceof ToolCallback)
+			.map(fc -> (ToolCallback) fc)
+			.toList();
+		toolResgistrations.addAll(McpToolUtils.toAsyncToolRegistration(providerToolCallbacks));
 		if (!CollectionUtils.isEmpty(toolResgistrations)) {
 			serverBilder.tools(toolResgistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());

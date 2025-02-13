@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.mcp;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -25,22 +26,35 @@ import org.springframework.ai.tool.util.ToolUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Implementation of {@link ToolCallbackProvider} that discovers and provides MCP tools.
+ * Implementation of {@link ToolCallbackProvider} that discovers and provides MCP tools
+ * from one or more MCP servers.
  * <p>
  * This class acts as a tool provider for Spring AI, automatically discovering tools from
- * an MCP server and making them available as Spring AI tools. It:
+ * multiple MCP servers and making them available as Spring AI tools. It:
  * <ul>
- * <li>Connects to an MCP server through a sync client</li>
- * <li>Lists and retrieves available tools from the server</li>
+ * <li>Connects to one or more MCP servers through sync clients</li>
+ * <li>Lists and retrieves available tools from all connected servers</li>
  * <li>Creates {@link SyncMcpToolCallback} instances for each discovered tool</li>
- * <li>Validates tool names to prevent duplicates</li>
+ * <li>Validates tool names to prevent duplicates across all servers</li>
  * </ul>
  * <p>
- * Example usage: <pre>{@code
+ * Example usage with a single client:
+ *
+ * <pre>{@code
  * McpSyncClient mcpClient = // obtain MCP client
  * ToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
  *
  * // Get all available tools
+ * ToolCallback[] tools = provider.getToolCallbacks();
+ * }</pre>
+ *
+ * Example usage with multiple clients:
+ *
+ * <pre>{@code
+ * List<McpSyncClient> mcpClients = // obtain multiple MCP clients
+ * ToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClients);
+ *
+ * // Get tools from all clients
  * ToolCallback[] tools = provider.getToolCallbacks();
  * }</pre>
  *
@@ -53,24 +67,29 @@ import org.springframework.util.CollectionUtils;
 
 public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
-	private final McpSyncClient mcpClient;
+	private final List<McpSyncClient> mcpClients;
 
 	/**
-	 * Creates a new {@code SyncMcpToolCallbackProvider} instance.
-	 * @param mcpClient the MCP client to use for discovering tools
+	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
+	 * clients.
+	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 */
-	public SyncMcpToolCallbackProvider(McpSyncClient mcpClient) {
-		this.mcpClient = mcpClient;
+	public SyncMcpToolCallbackProvider(List<McpSyncClient> mcpClients) {
+		this.mcpClients = mcpClients;
+	}
+
+	public SyncMcpToolCallbackProvider(McpSyncClient... mcpClients) {
+		this.mcpClients = List.of(mcpClients);
 	}
 
 	/**
-	 * Discovers and returns all available tools from the MCP server.
+	 * Discovers and returns all available tools from all connected MCP servers.
 	 * <p>
 	 * This method:
 	 * <ol>
-	 * <li>Retrieves the list of tools from the MCP server</li>
-	 * <li>Creates a {@link SyncMcpToolCallback} for each tool</li>
-	 * <li>Validates that there are no duplicate tool names</li>
+	 * <li>Retrieves the list of tools from each connected MCP server</li>
+	 * <li>Creates a {@link SyncMcpToolCallback} for each discovered tool</li>
+	 * <li>Validates that there are no duplicate tool names across all servers</li>
 	 * </ol>
 	 * @return an array of tool callbacks, one for each discovered tool
 	 * @throws IllegalStateException if duplicate tool names are found
@@ -78,16 +97,18 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		var toolCallbacks = this.mcpClient.listTools()
-			.tools()
-			.stream()
-			.map(tool -> new SyncMcpToolCallback(this.mcpClient, tool))
-			.toArray(ToolCallback[]::new);
+		var toolCallbacks = new ArrayList<>();
 
-		validateToolCallbacks(toolCallbacks);
-
-		return toolCallbacks;
-
+		mcpClients.stream().forEach(mcpClient -> {
+			toolCallbacks.addAll(mcpClient.listTools()
+				.tools()
+				.stream()
+				.map(tool -> new SyncMcpToolCallback(mcpClient, tool))
+				.toList());
+		});
+		var array = toolCallbacks.toArray(new ToolCallback[0]);
+		validateToolCallbacks(array);
+		return array;
 	}
 
 	/**
@@ -107,13 +128,15 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	}
 
 	/**
-	 * Creates a list of tool callbacks from multiple MCP clients.
+	 * Creates a consolidated list of tool callbacks from multiple MCP clients.
 	 * <p>
-	 * This utility method:
+	 * This utility method provides a convenient way to create tool callbacks from
+	 * multiple MCP clients in a single operation. It:
 	 * <ol>
-	 * <li>Takes a list of MCP clients</li>
-	 * <li>Creates a provider for each client</li>
-	 * <li>Retrieves and combines all tool callbacks into a single list</li>
+	 * <li>Takes a list of MCP clients as input</li>
+	 * <li>Creates a provider instance to manage all clients</li>
+	 * <li>Retrieves tools from all clients and combines them into a single list</li>
+	 * <li>Ensures there are no naming conflicts between tools from different clients</li>
 	 * </ol>
 	 * @param mcpClients the list of MCP clients to create callbacks from
 	 * @return a list of tool callbacks from all provided clients
@@ -123,10 +146,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		if (CollectionUtils.isEmpty(mcpClients)) {
 			return List.of();
 		}
-		return mcpClients.stream()
-			.map(mcpClient -> List.of((new SyncMcpToolCallbackProvider(mcpClient).getToolCallbacks())))
-			.flatMap(List::stream)
-			.toList();
+		return List.of((new SyncMcpToolCallbackProvider(mcpClients).getToolCallbacks()));
 	}
 
 }
