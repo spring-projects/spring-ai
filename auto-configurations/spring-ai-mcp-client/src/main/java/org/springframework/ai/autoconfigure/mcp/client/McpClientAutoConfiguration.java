@@ -27,10 +27,12 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.autoconfigure.mcp.client.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.autoconfigure.mcp.client.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
-import org.springframework.ai.mcp.McpToolUtils;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -176,9 +178,22 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<ToolCallback> toolCallbacks(ObjectProvider<List<McpSyncClient>> mcpClientsProvider) {
+	public ToolCallbackProvider toolCallbacks(ObjectProvider<List<McpSyncClient>> mcpClientsProvider) {
 		List<McpSyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
-		return McpToolUtils.getToolCallbacksFromSyncClients(mcpClients);
+		return new SyncMcpToolCallbackProvider(mcpClients);
+	}
+
+	/**
+	 * @deprecated replaced by {@link #toolCallbacks(ObjectProvider)} that returns a
+	 * {@link ToolCallbackProvider} instead of a list of {@link ToolCallback}
+	 */
+	@Deprecated
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public List<ToolCallback> toolCallbacksDeprecated(ObjectProvider<List<McpSyncClient>> mcpClientsProvider) {
+		List<McpSyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
+		return List.of(new SyncMcpToolCallbackProvider(mcpClients).getToolCallbacks());
 	}
 
 	/**
@@ -189,7 +204,7 @@ public class McpClientAutoConfiguration {
 	 * This class is responsible for closing all MCP sync clients when the application
 	 * context is closed, preventing resource leaks.
 	 */
-	public record ClosebleMcpSyncClients(List<McpSyncClient> clients) implements AutoCloseable {
+	public record CloseableMcpSyncClients(List<McpSyncClient> clients) implements AutoCloseable {
 
 		@Override
 		public void close() {
@@ -205,8 +220,8 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public ClosebleMcpSyncClients makeSyncClientsClosable(List<McpSyncClient> clients) {
-		return new ClosebleMcpSyncClients(clients);
+	public CloseableMcpSyncClients makeSyncClientsClosable(List<McpSyncClient> clients) {
+		return new CloseableMcpSyncClients(clients);
 	}
 
 	/**
@@ -263,14 +278,26 @@ public class McpClientAutoConfiguration {
 		return mcpSyncClients;
 	}
 
+	/**
+	 * @deprecated replaced by {@link #asyncToolCallbacks(ObjectProvider)} that returns a
+	 * {@link ToolCallbackProvider} instead of a list of {@link ToolCallback}
+	 */
+	@Deprecated
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<ToolCallback> asyncToolCallbacks(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider) {
+	public List<ToolCallback> asyncToolCallbacksDeprecated(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider) {
 		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
-		return McpToolUtils.getToolCallbacksFromAsyncClinents(mcpClients);
+		return List.of(new AsyncMcpToolCallbackProvider(mcpClients).getToolCallbacks());
 	}
 
-	public record ClosebleMcpAsyncClients(List<McpAsyncClient> clients) implements AutoCloseable {
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public ToolCallbackProvider asyncToolCallbacks(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider) {
+		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
+		return new AsyncMcpToolCallbackProvider(mcpClients);
+	}
+
+	public record CloseableMcpAsyncClients(List<McpAsyncClient> clients) implements AutoCloseable {
 		@Override
 		public void close() {
 			this.clients.forEach(McpAsyncClient::close);
@@ -279,8 +306,8 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public ClosebleMcpAsyncClients makeAsynClientsClosable(List<McpAsyncClient> clients) {
-		return new ClosebleMcpAsyncClients(clients);
+	public CloseableMcpAsyncClients makeAsynClientsClosable(List<McpAsyncClient> clients) {
+		return new CloseableMcpAsyncClients(clients);
 	}
 
 	@Bean

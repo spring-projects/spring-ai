@@ -351,12 +351,14 @@ private List<McpSyncClient> mcpSyncClients;  // For sync client
 private List<McpAsyncClient> mcpAsyncClients;  // For async client
 ----
 
-Additionally, the registered MCP Tools with all MCP clients are provided as a list of ToolCallback instances:
+Additionally, the registered MCP Tools with all MCP clients are provided as a list of ToolCallback 
+through a ToolCallbackProvider instance:
 
 [source,java]
 ----
 @Autowired
-private List<ToolCallback> toolCallbacks;
+private SyncMcpToolCallbackProvider toolCallbackProvider;
+ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
 ----
 
 == Example Applications

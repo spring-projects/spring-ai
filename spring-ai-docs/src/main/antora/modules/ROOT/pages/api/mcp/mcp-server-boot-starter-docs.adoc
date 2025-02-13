@@ -126,9 +126,9 @@ Allows servers to expose tools that can be invoked by language models. The MCP S
 [source,java]
 ----
 @Bean
-public List<ToolCallback> myTools(...) {
+public ToolCallbackProvider myTools(...) {
     List<ToolCallback> tools = ...
-    return tools;
+    return ToolCallbackProvider.from(tools);
 }
 ----
 
@@ -284,15 +284,15 @@ public class McpServerApplication {
         SpringApplication.run(McpServerApplication.class, args);
     }
 
-    @Bean
-    public List<ToolCallback> tools(WeatherService weatherService) {
-        return ToolCallbacks.from(weatherService);
-    }
+	@Bean
+	public ToolCallbackProvider weatherTools(WeatherService weatherService) {
+		return MethodToolCallbackProvider.builder().toolObjects(weatherService).build();
+	}
 }
 ----
 
 The auto-configuration will automatically register the tool callbacks as MCP tools.
-You can have multiple beans producing lists of ToolCallbacks. The auto-configuration will merge them.
+You can have multiple beans producing ToolCallbacks. The auto-configuration will merge them.
 
 == Example Applications
 * link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-webflux-server[Weather Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport.
