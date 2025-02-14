@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -30,7 +31,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -47,10 +47,33 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  */
 // @formatter:off
 
-public class WatsonxAiChatOptions extends AbstractChatOptions implements ChatOptions {
+public class WatsonxAiChatOptions implements ChatOptions {
 
 	@JsonIgnore
 	private final ObjectMapper mapper = new ObjectMapper();
+
+	/**
+	 * The temperature of the model. Increasing the temperature will
+	 * make the model answer more creatively. (Default: 0.7)
+	 */
+	@JsonProperty("temperature")
+	private Double temperature;
+
+	/**
+	 * Works together with top-k. A higher value (e.g., 0.95) will lead to
+	 * more diverse text, while a lower value (e.g., 0.2) will generate more focused and
+	 * conservative text. (Default: 1.0)
+	 */
+	@JsonProperty("top_p")
+	private Double topP;
+
+	/**
+	 * Reduces the probability of generating nonsense. A higher value (e.g.
+	 * 100) will give more diverse answers, while a lower value (e.g. 10) will be more
+	 * conservative. (Default: 50)
+	 */
+	@JsonProperty("top_k")
+	private Integer topK;
 
 	/**
 	 * Decoding is the process that a model uses to choose the tokens in the generated output.
@@ -84,6 +107,14 @@ public class WatsonxAiChatOptions extends AbstractChatOptions implements ChatOpt
 	private Integer minNewTokens;
 
 	/**
+	 * Sets when the LLM should stop.
+	 * (e.g., ["\n\n\n"]) then when the LLM generates three consecutive line breaks it will terminate.
+	 * Stop sequences are ignored until after the number of tokens that are specified in the Min tokens parameter are generated.
+	 */
+	@JsonProperty("stop_sequences")
+	private List<String> stopSequences;
+
+	/**
 	 * Sets how strongly to penalize repetitions. A higher value
 	 * (e.g., 1.8) will penalize repetitions more strongly, while a lower value (e.g.,
 	 * 1.1) will be more lenient. (Default: 1.0)
@@ -96,6 +127,12 @@ public class WatsonxAiChatOptions extends AbstractChatOptions implements ChatOpt
 	 */
 	@JsonProperty("random_seed")
 	private Integer randomSeed;
+
+	/**
+	 * Model is the identifier of the LLM Model to be used
+	 */
+	@JsonProperty("model")
+	private String model;
 
 	/**
 	 * Set additional request params (some model have non-predefined options)
@@ -135,12 +172,27 @@ public class WatsonxAiChatOptions extends AbstractChatOptions implements ChatOpt
 				.build();
 	}
 
+	@Override
+	public Double getTemperature() {
+		return this.temperature;
+	}
+
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
+	@Override
+	public Double getTopP() {
+		return this.topP;
+	}
+
 	public void setTopP(Double topP) {
 		this.topP = topP;
+	}
+
+	@Override
+	public Integer getTopK() {
+		return this.topK;
 	}
 
 	public void setTopK(Integer topK) {
@@ -180,6 +232,11 @@ public class WatsonxAiChatOptions extends AbstractChatOptions implements ChatOpt
 
 	public void setMinNewTokens(Integer minNewTokens) {
 		this.minNewTokens = minNewTokens;
+	}
+
+	@Override
+	public List<String> getStopSequences() {
+		return this.stopSequences;
 	}
 
 	public void setStopSequences(List<String> stopSequences) {
@@ -276,35 +333,24 @@ public class WatsonxAiChatOptions extends AbstractChatOptions implements ChatOpt
 
 		WatsonxAiChatOptions that = (WatsonxAiChatOptions) o;
 
-		if (decodingMethod != null ? !decodingMethod.equals(that.decodingMethod) : that.decodingMethod != null) return false;
-		if (maxNewTokens != null ? !maxNewTokens.equals(that.maxNewTokens) : that.maxNewTokens != null) return false;
-		if (minNewTokens != null ? !minNewTokens.equals(that.minNewTokens) : that.minNewTokens != null) return false;
-		if (repetitionPenalty != null ? !repetitionPenalty.equals(that.repetitionPenalty) : that.repetitionPenalty != null) return false;
-		if (randomSeed != null ? !randomSeed.equals(that.randomSeed) : that.randomSeed != null) return false;
-		if (temperature != null ? !temperature.equals(that.temperature) : that.temperature != null) return false;
-		if (topP != null ? !topP.equals(that.topP) : that.topP != null) return false;
-		if (topK != null ? !topK.equals(that.topK) : that.topK != null) return false;
-		if (stopSequences != null ? !stopSequences.equals(that.stopSequences) : that.stopSequences != null) return false;
-		if (model != null ? !model.equals(that.model) : that.model != null) return false;
-		return additional != null ? additional.equals(that.additional) : that.additional == null;
+		return Objects.equals(this.decodingMethod, that.decodingMethod) &&
+				Objects.equals(this.maxNewTokens, that.maxNewTokens) &&
+				Objects.equals(this.minNewTokens, that.minNewTokens) &&
+				Objects.equals(this.repetitionPenalty, that.repetitionPenalty) &&
+				Objects.equals(this.randomSeed, that.randomSeed) &&
+				Objects.equals(this.temperature, that.temperature) &&
+				Objects.equals(this.topP, that.topP) &&
+				Objects.equals(this.topK, that.topK) &&
+				Objects.equals(this.stopSequences, that.stopSequences) &&
+				Objects.equals(this.model, that.model) &&
+				Objects.equals(this.additional, that.additional);
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.decodingMethod == null) ? 0 : this.decodingMethod.hashCode());
-		result = prime * result + ((this.maxNewTokens == null) ? 0 : this.maxNewTokens.hashCode());
-		result = prime * result + ((this.minNewTokens == null) ? 0 : this.minNewTokens.hashCode());
-		result = prime * result + ((this.repetitionPenalty == null) ? 0 : this.repetitionPenalty.hashCode());
-		result = prime * result + ((this.randomSeed == null) ? 0 : this.randomSeed.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.topK == null) ? 0 : this.topK.hashCode());
-		result = prime * result + ((this.stopSequences == null) ? 0 : this.stopSequences.hashCode());
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.additional == null) ? 0 : this.additional.hashCode());
-		return result;
+		return Objects.hash(this.decodingMethod, this.maxNewTokens, this.minNewTokens,
+				this.repetitionPenalty, this.randomSeed, this.temperature,
+				this.topP, this.topK, this.stopSequences, this.model, this.additional);
 	}
 
 	public static class Builder {

@@ -31,7 +31,7 @@ class DefaultChatOptionsTests {
 
 	@Test
 	void testBuilderWithAllFields() {
-		DefaultChatOptions options = DefaultChatOptions.builder()
+		ChatOptions options = ChatOptions.builder()
 			.model("test-model")
 			.frequencyPenalty(0.5)
 			.maxTokens(100)
@@ -50,7 +50,7 @@ class DefaultChatOptionsTests {
 
 	@Test
 	void testCopy() {
-		DefaultChatOptions original = DefaultChatOptions.builder()
+		ChatOptions original = ChatOptions.builder()
 			.model("test-model")
 			.frequencyPenalty(0.5)
 			.maxTokens(100)

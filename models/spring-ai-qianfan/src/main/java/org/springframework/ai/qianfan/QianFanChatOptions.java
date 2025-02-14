@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.qianfan.api.QianFanApi;
 
@@ -208,17 +207,8 @@ public class QianFanChatOptions implements ChatOptions {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (this.model != null ? this.model.hashCode() : 0);
-		result = prime * result + (this.frequencyPenalty != null ? this.frequencyPenalty.hashCode() : 0);
-		result = prime * result + (this.maxTokens != null ? this.maxTokens.hashCode() : 0);
-		result = prime * result + (this.presencePenalty != null ? this.presencePenalty.hashCode() : 0);
-		result = prime * result + (this.responseFormat != null ? this.responseFormat.hashCode() : 0);
-		result = prime * result + (this.stop != null ? this.stop.hashCode() : 0);
-		result = prime * result + (this.temperature != null ? this.temperature.hashCode() : 0);
-		result = prime * result + (this.topP != null ? this.topP.hashCode() : 0);
-		return result;
+		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
+				this.responseFormat, this.stop, this.temperature, this.topP);
 	}
 
 	@Override

@@ -32,12 +32,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
-import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.util.Assert;
 
 /**
@@ -49,11 +47,16 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class AnthropicChatOptions extends AbstractChatOptions implements ToolCallingChatOptions {
+public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
-
+	private @JsonProperty("model") String model;
+	private @JsonProperty("max_tokens") Integer maxTokens;
 	private @JsonProperty("metadata") ChatCompletionRequest.Metadata metadata;
+	private @JsonProperty("stop_sequences") List<String> stopSequences;
+	private @JsonProperty("temperature") Double temperature;
+	private @JsonProperty("top_p") Double topP;
+	private @JsonProperty("top_k") Integer topK;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
@@ -100,8 +103,18 @@ public class AnthropicChatOptions extends AbstractChatOptions implements ToolCal
 			.build();
 	}
 
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	@Override
+	public Integer getMaxTokens() {
+		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
@@ -116,16 +129,36 @@ public class AnthropicChatOptions extends AbstractChatOptions implements ToolCal
 		this.metadata = metadata;
 	}
 
+	@Override
+	public List<String> getStopSequences() {
+		return this.stopSequences;
+	}
+
 	public void setStopSequences(List<String> stopSequences) {
 		this.stopSequences = stopSequences;
+	}
+
+	@Override
+	public Double getTemperature() {
+		return this.temperature;
 	}
 
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
 	}
 
+	@Override
+	public Double getTopP() {
+		return this.topP;
+	}
+
 	public void setTopP(Double topP) {
 		this.topP = topP;
+	}
+
+	@Override
+	public Integer getTopK() {
+		return this.topK;
 	}
 
 	public void setTopK(Integer topK) {
@@ -240,6 +273,7 @@ public class AnthropicChatOptions extends AbstractChatOptions implements ToolCal
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
 	}
@@ -264,21 +298,8 @@ public class AnthropicChatOptions extends AbstractChatOptions implements ToolCal
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (this.model != null ? this.model.hashCode() : 0);
-		result = prime * result + (this.maxTokens != null ? this.maxTokens.hashCode() : 0);
-		result = prime * result + (this.metadata != null ? this.metadata.hashCode() : 0);
-		result = prime * result + (this.stopSequences != null ? this.stopSequences.hashCode() : 0);
-		result = prime * result + (this.temperature != null ? this.temperature.hashCode() : 0);
-		result = prime * result + (this.topP != null ? this.topP.hashCode() : 0);
-		result = prime * result + (this.topK != null ? this.topK.hashCode() : 0);
-		result = prime * result + (this.toolCallbacks != null ? this.toolCallbacks.hashCode() : 0);
-		result = prime * result + (this.toolNames != null ? this.toolNames.hashCode() : 0);
-		result = prime * result
-				+ (this.internalToolExecutionEnabled != null ? this.internalToolExecutionEnabled.hashCode() : 0);
-		result = prime * result + (this.toolContext != null ? this.toolContext.hashCode() : 0);
-		return result;
+		return Objects.hash(model, maxTokens, metadata, stopSequences, temperature, topP, topK, toolCallbacks,
+				toolNames, internalToolExecutionEnabled, toolContext);
 	}
 
 	public static class Builder {

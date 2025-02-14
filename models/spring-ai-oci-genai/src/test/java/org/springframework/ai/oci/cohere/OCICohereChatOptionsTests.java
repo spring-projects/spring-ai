@@ -73,7 +73,7 @@ class OCICohereChatOptionsTests {
 			.tools(List.of(new CohereTool("test-tool", "test-context", Map.of())))
 			.build();
 
-		OCICohereChatOptions copied = original.copy();
+		OCICohereChatOptions copied = (OCICohereChatOptions) original.copy();
 
 		assertThat(copied).isNotSameAs(original).isEqualTo(original);
 		// Ensure deep copy

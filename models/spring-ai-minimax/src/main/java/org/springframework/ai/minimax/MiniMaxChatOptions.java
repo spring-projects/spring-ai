@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.chat.prompt.AbstractChatOptions;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.function.FunctionCallback;
@@ -49,14 +49,33 @@ import org.springframework.util.Assert;
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
-public class MiniMaxChatOptions extends AbstractChatOptions implements FunctionCallingOptions {
+public class MiniMaxChatOptions implements FunctionCallingOptions {
 
 	// @formatter:off
+	/**
+	 * ID of the model to use.
+	 */
+	private @JsonProperty("model") String model;
+	/**
+	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing
+	 * frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.
+	 */
+	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
+	/**
+	 * The maximum number of tokens to generate in the chat completion. The total length of input
+	 * tokens and generated tokens is limited by the model's context length.
+	 */
+	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
 	 * How many chat completion choices to generate for each input message. Note that you will be charged based
 	 * on the number of generated tokens across all of the choices. Keep n as 1 to minimize costs.
 	 */
 	private @JsonProperty("n") Integer n;
+	/**
+	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they
+	 * appear in the text so far, increasing the model's likelihood to talk about new topics.
+	 */
+	private @JsonProperty("presence_penalty") Double presencePenalty;
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
@@ -73,7 +92,18 @@ public class MiniMaxChatOptions extends AbstractChatOptions implements FunctionC
 	 * Up to 4 sequences where the API will stop generating further tokens.
 	 */
 	private @JsonProperty("stop") List<String> stop;
-
+	/**
+	 * What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output
+	 * more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend
+	 * altering this or top_p but not both.
+	 */
+	private @JsonProperty("temperature") Double temperature;
+	/**
+	 * An alternative to sampling with temperature, called nucleus sampling, where the model considers the
+	 * results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10%
+	 * probability mass are considered. We generally recommend altering this or temperature but not both.
+	 */
+	private @JsonProperty("top_p") Double topP;
 	/**
 	 * Mask the text information in the output that is easy to involve privacy issues,
 	 * including but not limited to email, domain name, link, ID number, home address, etc.
@@ -148,12 +178,27 @@ public class MiniMaxChatOptions extends AbstractChatOptions implements FunctionC
 			.build();
 	}
 
+	@Override
+	public String getModel() {
+		return this.model;
+	}
+
 	public void setModel(String model) {
 		this.model = model;
 	}
 
+	@Override
+	public Double getFrequencyPenalty() {
+		return this.frequencyPenalty;
+	}
+
 	public void setFrequencyPenalty(Double frequencyPenalty) {
 		this.frequencyPenalty = frequencyPenalty;
+	}
+
+	@Override
+	public Integer getMaxTokens() {
+		return this.maxTokens;
 	}
 
 	public void setMaxTokens(Integer maxTokens) {
@@ -166,6 +211,11 @@ public class MiniMaxChatOptions extends AbstractChatOptions implements FunctionC
 
 	public void setN(Integer n) {
 		this.n = n;
+	}
+
+	@Override
+	public Double getPresencePenalty() {
+		return this.presencePenalty;
 	}
 
 	public void setPresencePenalty(Double presencePenalty) {
@@ -207,8 +257,18 @@ public class MiniMaxChatOptions extends AbstractChatOptions implements FunctionC
 		this.stop = stop;
 	}
 
+	@Override
+	public Double getTemperature() {
+		return this.temperature;
+	}
+
 	public void setTemperature(Double temperature) {
 		this.temperature = temperature;
+	}
+
+	@Override
+	public Double getTopP() {
+		return this.topP;
 	}
 
 	public void setTopP(Double topP) {
@@ -285,24 +345,8 @@ public class MiniMaxChatOptions extends AbstractChatOptions implements FunctionC
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.n == null) ? 0 : this.n.hashCode());
-		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
-		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
-		result = prime * result + ((this.seed == null) ? 0 : this.seed.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.maskSensitiveInfo == null) ? 0 : this.maskSensitiveInfo.hashCode());
-		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
-		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
-		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
-		return result;
+		return Objects.hash(model, frequencyPenalty, maxTokens, n, presencePenalty, responseFormat, seed, stop,
+				temperature, topP, maskSensitiveInfo, tools, toolChoice, proxyToolCalls, toolContext);
 	}
 
 	@Override
@@ -310,139 +354,25 @@ public class MiniMaxChatOptions extends AbstractChatOptions implements FunctionC
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
 		MiniMaxChatOptions other = (MiniMaxChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.n == null) {
-			if (other.n != null) {
-				return false;
-			}
-		}
-		else if (!this.n.equals(other.n)) {
-			return false;
-		}
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty)) {
-			return false;
-		}
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null) {
-				return false;
-			}
-		}
-		else if (!this.responseFormat.equals(other.responseFormat)) {
-			return false;
-		}
-		if (this.seed == null) {
-			if (other.seed != null) {
-				return false;
-			}
-		}
-		else if (!this.seed.equals(other.seed)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.maskSensitiveInfo == null) {
-			if (other.maskSensitiveInfo != null) {
-				return false;
-			}
-		}
-		else if (!this.maskSensitiveInfo.equals(other.maskSensitiveInfo)) {
-			return false;
-		}
-		if (this.tools == null) {
-			if (other.tools != null) {
-				return false;
-			}
-		}
-		else if (!this.tools.equals(other.tools)) {
-			return false;
-		}
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null) {
-				return false;
-			}
-		}
-		else if (!this.toolChoice.equals(other.toolChoice)) {
-			return false;
-		}
-		if (this.proxyToolCalls == null) {
-			if (other.proxyToolCalls != null) {
-				return false;
-			}
-		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
-			return false;
-		}
 
-		if (this.toolContext == null) {
-			if (other.toolContext != null) {
-				return false;
-			}
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-
-		return true;
+		return Objects.equals(this.model, other.model) && Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
+				&& Objects.equals(this.maxTokens, other.maxTokens) && Objects.equals(this.n, other.n)
+				&& Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.responseFormat, other.responseFormat) && Objects.equals(this.seed, other.seed)
+				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP)
+				&& Objects.equals(this.maskSensitiveInfo, other.maskSensitiveInfo)
+				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
+				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
+				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public MiniMaxChatOptions copy() {
 		return fromOptions(this);
 	}
