@@ -32,8 +32,9 @@ import org.springframework.util.StringUtils;
  * An instance of this formatter can be customized using the {@link Builder} nested class.
  *
  * @author Christian Tzolov
+ * @author Iryna Kopchak
  */
-public final class ExtractedTextFormatter {
+public class ExtractedTextFormatter {
 
 	/** Flag indicating if the text should be left-aligned */
 	private final boolean leftAlignment;
@@ -84,7 +85,7 @@ public final class ExtractedTextFormatter {
 	 * @return Returns the same text but with blank lines trimmed.
 	 */
 	public static String trimAdjacentBlankLines(String pageText) {
-		return pageText.replaceAll("(?m)(^ *\n)", "\n").replaceAll("(?m)^$([\r\n]+?)(^$[\r\n]+?^)+", "$1");
+		return pageText.replaceAll("(?m)^(?:\\s*\\r?\\n)+", "\n");
 	}
 
 	/**
