@@ -18,7 +18,13 @@ package org.springframework.ai.azure.openai.metadata;
 
 import java.nio.charset.StandardCharsets;
 
-import com.azure.ai.openai.models.*;
+import com.azure.ai.openai.models.ChatChoiceLogProbabilityInfo;
+import com.azure.ai.openai.models.ChatTokenLogProbabilityInfo;
+import com.azure.ai.openai.models.ChatTokenLogProbabilityResult;
+import com.azure.ai.openai.models.ContentFilterResult;
+import com.azure.ai.openai.models.ContentFilterResultDetailsForPrompt;
+import com.azure.ai.openai.models.ContentFilterResultsForChoice;
+import com.azure.ai.openai.models.ContentFilterSeverity;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
