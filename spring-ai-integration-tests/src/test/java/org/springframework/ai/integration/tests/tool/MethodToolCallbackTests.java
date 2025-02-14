@@ -16,10 +16,13 @@
 
 package org.springframework.ai.integration.tests.tool;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.integration.tests.tool.domain.Author;
@@ -31,10 +34,6 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -96,7 +95,8 @@ public class MethodToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
+					"The Lion, the Witch and the Wardrobe"))
 			.tools(tools)
 			.call()
 			.content();
@@ -108,7 +108,8 @@ public class MethodToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
+					"The Lion, the Witch and the Wardrobe"))
 			.tools(ToolCallbacks.from(tools))
 			.call()
 			.content();
