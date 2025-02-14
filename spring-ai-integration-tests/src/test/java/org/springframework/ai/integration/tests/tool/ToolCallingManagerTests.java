@@ -139,7 +139,7 @@ public class ToolCallingManagerTests {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty()
 			.contains("His Dark Materials")
-			.contains("Narnia")
+			.contains("The Lion, the Witch and the Wardrob")
 			.contains("The Hobbit")
 			.contains("The Lord of The Rings")
 			.contains("The Silmarillion");
