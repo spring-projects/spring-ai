@@ -5,7 +5,7 @@ It supports multiple transport mechanisms to provide flexibility across differen
 
 == MCP Java SDK
 
-The link:https://modelcontextprotocol.github.io/sdk/java[MCP Java SDK] provides a Java implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication patterns.
+The link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK] provides a Java implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication patterns.
 
 The Java MCP implementation follows a three-layer architecture:
 
