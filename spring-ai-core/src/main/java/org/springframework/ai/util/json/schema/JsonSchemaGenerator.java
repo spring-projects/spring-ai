@@ -244,7 +244,7 @@ public final class JsonSchemaGenerator {
 	}
 
 	// Based on the method in ModelOptionsUtils.
-	private static void convertTypeValuesToUpperCase(ObjectNode node) {
+	public static void convertTypeValuesToUpperCase(ObjectNode node) {
 		if (node.isObject()) {
 			node.fields().forEachRemaining(entry -> {
 				JsonNode value = entry.getValue();

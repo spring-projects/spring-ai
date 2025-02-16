@@ -18,7 +18,6 @@ package org.springframework.ai.vectorstore.hanadb;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

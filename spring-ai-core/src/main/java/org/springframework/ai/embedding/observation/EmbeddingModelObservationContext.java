@@ -49,6 +49,10 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 		return new Builder();
 	}
 
+	/**
+	 * @deprecated Use {@link #getRequest().getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
 	public EmbeddingOptions getRequestOptions() {
 		return this.requestOptions;
 	}
@@ -74,6 +78,11 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 			return this;
 		}
 
+		/**
+		 * @deprecated EmbeddingOptions are passed in the EmbeddingRequest object and
+		 * should not be set separately anymore.
+		 */
+		@Deprecated(forRemoval = true)
 		public Builder requestOptions(EmbeddingOptions requestOptions) {
 			this.requestOptions = requestOptions;
 			return this;

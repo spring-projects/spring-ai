@@ -90,6 +90,12 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 		List<FunctionCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
 		for (String toolName : chatOptions.getToolNames()) {
+			// Skip the tool if it is already present in the request toolCallbacks.
+			// That might happen if a tool is defined in the options
+			// both as a ToolCallback and as a tool name.
+			if (chatOptions.getToolCallbacks().stream().anyMatch(tool -> tool.getName().equals(toolName))) {
+				continue;
+			}
 			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
@@ -207,6 +213,12 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			}
 			else if (toolCallback instanceof ToolCallback callback) {
 				returnDirect = returnDirect && callback.getToolMetadata().returnDirect();
+			}
+			else if (returnDirect == null) {
+				// This is a temporary solution to ensure backward compatibility with
+				// FunctionCallback.
+				// TODO: remove this block when FunctionCallback is removed.
+				returnDirect = false;
 			}
 
 			String toolResult;

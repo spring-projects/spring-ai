@@ -228,8 +228,10 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		@Bean
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClient, String selectedModel) {
-			return new AzureOpenAiChatModel(openAIClient,
-					AzureOpenAiChatOptions.builder().deploymentName(selectedModel).maxTokens(500).build());
+			return AzureOpenAiChatModel.builder()
+				.openAIClientBuilder(openAIClient)
+				.defaultOptions(AzureOpenAiChatOptions.builder().deploymentName(selectedModel).maxTokens(500).build())
+				.build();
 		}
 
 		@Bean

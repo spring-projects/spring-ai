@@ -129,28 +129,18 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 			@Nullable FunctionCallbackResolver functionCallbackResolver,
 			@Nullable List<FunctionCallback> toolFunctionCallbacks, ObservationRegistry observationRegistry,
 			ModelManagementOptions modelManagementOptions) {
-		super(functionCallbackResolver, defaultOptions, toolFunctionCallbacks);
-		Assert.notNull(ollamaApi, "ollamaApi must not be null");
-		Assert.notNull(defaultOptions, "defaultOptions must not be null");
-		Assert.notNull(observationRegistry, "observationRegistry must not be null");
-		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
-		this.chatApi = ollamaApi;
-		this.defaultOptions = defaultOptions;
-		this.toolCallingManager = new LegacyToolCallingManager(functionCallbackResolver, toolFunctionCallbacks);
-		this.observationRegistry = observationRegistry;
-		this.modelManager = new OllamaModelManager(this.chatApi, modelManagementOptions);
-		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+		this(ollamaApi, defaultOptions, new LegacyToolCallingManager(functionCallbackResolver, toolFunctionCallbacks),
+				observationRegistry, modelManagementOptions);
 
 		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the new constructor accepting ToolCallingManager instead.");
+				+ "Please use the OllamaChatModel.Builder or the new constructor accepting ToolCallingManager instead.");
 	}
 
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
-		// We do not pass the 'defaultOptions' to the AbstractToolSupport, because it
-		// modifies them.
-		// We are not using the AbstractToolSupport class in this path, so we just pass
-		// empty options.
+		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
+		// because it modifies them. We are using ToolCallingManager instead,
+		// so we just pass empty options here.
 		super(null, OllamaOptions.builder().build(), List.of());
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
@@ -423,6 +413,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 		if (!StringUtils.hasText(requestOptions.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
+
+		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
 		return new Prompt(prompt.getInstructions(), requestOptions);
 	}

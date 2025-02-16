@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Set;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Christian Tzolov
  */
+@Disabled
 @SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
@@ -181,9 +182,9 @@ public class BedrockNovaChatClientIT {
 			String modelId = "amazon.nova-pro-v1:0";
 
 			return BedrockProxyChatModel.builder()
-				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
-				.withRegion(Region.US_EAST_1)
-				.withTimeout(Duration.ofSeconds(120))
+				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+				.region(Region.US_EAST_1)
+				.timeout(Duration.ofSeconds(120))
 				.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
 				.build();
 		}

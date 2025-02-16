@@ -380,7 +380,8 @@ class BedrockConverseChatClientIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
-	void multiModalityImageUrl(String modelName) throws IOException {
+	@Deprecated
+	void multiModalityImageUrl2(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
@@ -389,6 +390,26 @@ class BedrockConverseChatClientIT {
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
 		.options(FunctionCallingOptions.builder().model(modelName).build())
+		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+		.call()
+		.content();
+		// @formatter:on
+
+		logger.info(response);
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	void multiModalityImageUrl(String modelName) throws IOException {
+
+		// TODO: add url method that wrapps the checked exception.
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+		// TODO consider adding model(...) method to ChatClient as a shortcut to
+		.options(ToolCallingChatOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();

@@ -833,10 +833,11 @@ public class MistralAiApi {
 		 * @param type The type of tool call the output is required for. For now, this is
 		 * always function.
 		 * @param function The function definition.
+		 * @param index The index of the tool call in the list of tool calls.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
-				@JsonProperty("function") ChatCompletionFunction function) {
+				@JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
 
 		}
 

@@ -420,6 +420,58 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		}
 
 		/**
+		 * Sets the Pinecone namespace. Note: The free-tier (gcp-starter) doesn't support
+		 * Namespaces.
+		 * @param namespace The namespace to use (leave empty for free tier)
+		 * @return The builder instance
+		 */
+		public Builder namespace(@Nullable String namespace) {
+			this.namespace = namespace != null ? namespace : "";
+			return this;
+		}
+
+		/**
+		 * Sets the content field name.
+		 * @param contentFieldName The content field name to use
+		 * @return The builder instance
+		 */
+		public Builder contentFieldName(@Nullable String contentFieldName) {
+			this.contentFieldName = contentFieldName != null ? contentFieldName : CONTENT_FIELD_NAME;
+			return this;
+		}
+
+		/**
+		 * Sets the distance metadata field name.
+		 * @param distanceMetadataFieldName The distance metadata field name to use
+		 * @return The builder instance
+		 */
+		public Builder distanceMetadataFieldName(@Nullable String distanceMetadataFieldName) {
+			this.distanceMetadataFieldName = distanceMetadataFieldName != null ? distanceMetadataFieldName
+					: DocumentMetadata.DISTANCE.value();
+			return this;
+		}
+
+		/**
+		 * Sets the server-side timeout.
+		 * @param serverSideTimeout The timeout duration to use
+		 * @return The builder instance
+		 */
+		public Builder serverSideTimeout(@Nullable Duration serverSideTimeout) {
+			this.serverSideTimeout = serverSideTimeout != null ? serverSideTimeout : Duration.ofSeconds(20);
+			return this;
+		}
+
+		/**
+		 * Builds a new PineconeVectorStore instance with the configured properties.
+		 * @return A new PineconeVectorStore instance
+		 * @throws IllegalStateException if the builder is in an invalid state
+		 */
+		@Override
+		public PineconeVectorStore build() {
+			return new PineconeVectorStore(this);
+		}
+
+		/**
 		 * First step interface requiring API key configuration.
 		 */
 		public interface BuilderWithApiKey {
@@ -487,40 +539,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		 */
 		public static class StepBuilder {
 
-			private record ApiKeyStep(EmbeddingModel embeddingModel) implements BuilderWithApiKey {
-				@Override
-				public BuilderWithProjectId apiKey(String apiKey) {
-					Assert.hasText(apiKey, "ApiKey must not be null or empty");
-					return new ProjectIdStep(embeddingModel, apiKey);
-				}
-			}
-
-			private record ProjectIdStep(EmbeddingModel embeddingModel, String apiKey) implements BuilderWithProjectId {
-				@Override
-				public BuilderWithEnvironment projectId(String projectId) {
-					Assert.hasText(projectId, "ProjectId must not be null or empty");
-					return new EnvironmentStep(embeddingModel, apiKey, projectId);
-				}
-			}
-
-			private record EnvironmentStep(EmbeddingModel embeddingModel, String apiKey,
-					String projectId) implements BuilderWithEnvironment {
-				@Override
-				public BuilderWithIndexName environment(String environment) {
-					Assert.hasText(environment, "Environment must not be null or empty");
-					return new IndexNameStep(embeddingModel, apiKey, projectId, environment);
-				}
-			}
-
-			private record IndexNameStep(EmbeddingModel embeddingModel, String apiKey, String projectId,
-					String environment) implements BuilderWithIndexName {
-				@Override
-				public Builder indexName(String indexName) {
-					Assert.hasText(indexName, "IndexName must not be null or empty");
-					return new Builder(embeddingModel, apiKey, projectId, environment, indexName);
-				}
-			}
-
 			/**
 			 * Initiates the step builder sequence with the embedding model.
 			 * @param embeddingModel The embedding model to use
@@ -532,58 +550,40 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 				return new ApiKeyStep(embeddingModel);
 			}
 
-		}
+			private record ApiKeyStep(EmbeddingModel embeddingModel) implements BuilderWithApiKey {
+				@Override
+				public BuilderWithProjectId apiKey(String apiKey) {
+					Assert.hasText(apiKey, "ApiKey must not be null or empty");
+					return new ProjectIdStep(this.embeddingModel, apiKey);
+				}
+			}
 
-		/**
-		 * Sets the Pinecone namespace. Note: The free-tier (gcp-starter) doesn't support
-		 * Namespaces.
-		 * @param namespace The namespace to use (leave empty for free tier)
-		 * @return The builder instance
-		 */
-		public Builder namespace(@Nullable String namespace) {
-			this.namespace = namespace != null ? namespace : "";
-			return this;
-		}
+			private record ProjectIdStep(EmbeddingModel embeddingModel, String apiKey) implements BuilderWithProjectId {
+				@Override
+				public BuilderWithEnvironment projectId(String projectId) {
+					Assert.hasText(projectId, "ProjectId must not be null or empty");
+					return new EnvironmentStep(this.embeddingModel, this.apiKey, projectId);
+				}
+			}
 
-		/**
-		 * Sets the content field name.
-		 * @param contentFieldName The content field name to use
-		 * @return The builder instance
-		 */
-		public Builder contentFieldName(@Nullable String contentFieldName) {
-			this.contentFieldName = contentFieldName != null ? contentFieldName : CONTENT_FIELD_NAME;
-			return this;
-		}
+			private record EnvironmentStep(EmbeddingModel embeddingModel, String apiKey,
+					String projectId) implements BuilderWithEnvironment {
+				@Override
+				public BuilderWithIndexName environment(String environment) {
+					Assert.hasText(environment, "Environment must not be null or empty");
+					return new IndexNameStep(this.embeddingModel, this.apiKey, this.projectId, environment);
+				}
+			}
 
-		/**
-		 * Sets the distance metadata field name.
-		 * @param distanceMetadataFieldName The distance metadata field name to use
-		 * @return The builder instance
-		 */
-		public Builder distanceMetadataFieldName(@Nullable String distanceMetadataFieldName) {
-			this.distanceMetadataFieldName = distanceMetadataFieldName != null ? distanceMetadataFieldName
-					: DocumentMetadata.DISTANCE.value();
-			return this;
-		}
+			private record IndexNameStep(EmbeddingModel embeddingModel, String apiKey, String projectId,
+					String environment) implements BuilderWithIndexName {
+				@Override
+				public Builder indexName(String indexName) {
+					Assert.hasText(indexName, "IndexName must not be null or empty");
+					return new Builder(this.embeddingModel, this.apiKey, this.projectId, this.environment, indexName);
+				}
+			}
 
-		/**
-		 * Sets the server-side timeout.
-		 * @param serverSideTimeout The timeout duration to use
-		 * @return The builder instance
-		 */
-		public Builder serverSideTimeout(@Nullable Duration serverSideTimeout) {
-			this.serverSideTimeout = serverSideTimeout != null ? serverSideTimeout : Duration.ofSeconds(20);
-			return this;
-		}
-
-		/**
-		 * Builds a new PineconeVectorStore instance with the configured properties.
-		 * @return A new PineconeVectorStore instance
-		 * @throws IllegalStateException if the builder is in an invalid state
-		 */
-		@Override
-		public PineconeVectorStore build() {
-			return new PineconeVectorStore(this);
 		}
 
 	}
