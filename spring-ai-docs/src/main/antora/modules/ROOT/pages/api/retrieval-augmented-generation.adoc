@@ -172,6 +172,8 @@ Pre-Retrieval modules are responsible for processing the user query to achieve t
 A component for transforming the input query to make it more effective for retrieval tasks, addressing challenges
 such as poorly formed queries, ambiguous terms, complex vocabulary, or unsupported languages.
 
+IMPORTANT: When using a `QueryTransformer`, it's recommended to configure the `ChatClient.Builder` with a low temperature (e.g., 0.0) to ensure more deterministic and accurate results, improving retrieval quality.  The default temperature for most chat models is typically too high for optimal query transformation, leading to reduced retrieval effectiveness.
+
 ===== CompressionQueryTransformer
 
 A `CompressionQueryTransformer` uses a large language model to compress a conversation history and a follow-up query
