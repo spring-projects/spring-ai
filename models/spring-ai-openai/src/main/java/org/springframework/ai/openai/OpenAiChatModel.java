@@ -146,30 +146,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
-	 * Creates an instance of the OpenAiChatModel.
-	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
-	 * Chat API.
-	 * @throws IllegalArgumentException if openAiApi is null
-	 * @deprecated Use OpenAiChatModel.Builder.
-	 */
-	@Deprecated
-	public OpenAiChatModel(OpenAiApi openAiApi) {
-		this(openAiApi, OpenAiChatOptions.builder().model(OpenAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
-	}
-
-	/**
-	 * Initializes an instance of the OpenAiChatModel.
-	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
-	 * Chat API.
-	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @deprecated Use OpenAiChatModel.Builder.
-	 */
-	@Deprecated
-	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options) {
-		this(openAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	/**
 	 * Initializes a new instance of the OpenAiChatModel.
 	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
 	 * Chat API.

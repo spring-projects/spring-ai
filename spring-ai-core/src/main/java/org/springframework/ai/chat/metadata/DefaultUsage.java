@@ -30,18 +30,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
-@JsonPropertyOrder({ "promptTokens", "completionTokens", "totalTokens", "generationTokens", "nativeUsage" })
+@JsonPropertyOrder({ "promptTokens", "completionTokens", "totalTokens", "nativeUsage" })
 public class DefaultUsage implements Usage {
 
 	private final Integer promptTokens;
 
 	private final Integer completionTokens;
-
-	/**
-	 * @deprecated as of 1.0.0-M6, scheduled for removal
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	private final Long generationTokens;
 
 	private final int totalTokens;
 
@@ -62,7 +56,6 @@ public class DefaultUsage implements Usage {
 	public DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens, Object nativeUsage) {
 		this.promptTokens = promptTokens != null ? promptTokens : 0;
 		this.completionTokens = completionTokens != null ? completionTokens : 0;
-		this.generationTokens = Long.valueOf(this.completionTokens);
 		this.totalTokens = totalTokens != null ? totalTokens
 				: calculateTotalTokens(this.promptTokens, this.completionTokens);
 		this.nativeUsage = nativeUsage;
@@ -106,11 +99,8 @@ public class DefaultUsage implements Usage {
 	@JsonCreator
 	public static DefaultUsage fromJson(@JsonProperty("promptTokens") Integer promptTokens,
 			@JsonProperty("completionTokens") Integer completionTokens,
-			@JsonProperty("generationTokens") Long generationTokens, @JsonProperty("totalTokens") Integer totalTokens,
-			@JsonProperty("nativeUsage") Object nativeUsage) {
-		Integer effectiveCompletionTokens = completionTokens != null ? completionTokens
-				: (generationTokens != null ? generationTokens.intValue() : 0);
-		return new DefaultUsage(promptTokens, effectiveCompletionTokens, totalTokens, nativeUsage);
+			@JsonProperty("totalTokens") Integer totalTokens, @JsonProperty("nativeUsage") Object nativeUsage) {
+		return new DefaultUsage(promptTokens, completionTokens, totalTokens, nativeUsage);
 	}
 
 	@Override

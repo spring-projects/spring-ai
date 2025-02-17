@@ -61,8 +61,10 @@ public class BedrockConverseUsageAggregationTests {
 
 	@BeforeEach
 	public void beforeEach() {
-		this.chatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient, this.bedrockRuntimeAsyncClient,
-				FunctionCallingOptions.builder().build(), null, List.of(), ObservationRegistry.NOOP);
+		this.chatModel = BedrockProxyChatModel.builder()
+			.bedrockRuntimeClient(this.bedrockRuntimeClient)
+			.bedrockRuntimeAsyncClient(this.bedrockRuntimeAsyncClient)
+			.build();
 	}
 
 	@Test

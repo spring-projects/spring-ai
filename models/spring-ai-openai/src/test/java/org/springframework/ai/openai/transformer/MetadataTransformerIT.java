@@ -163,13 +163,12 @@ public class MetadataTransformerIT {
 				throw new IllegalArgumentException(
 						"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 			}
-			return new OpenAiApi(apiKey);
+			return OpenAiApi.builder().apiKey(apiKey).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiChatModel(OpenAiApi openAiApi) {
-			OpenAiChatModel openAiChatModel = new OpenAiChatModel(openAiApi);
-			return openAiChatModel;
+			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
 		}
 
 		@Bean

@@ -52,7 +52,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 	MockWeatherService weatherService = new MockWeatherService();
 
-	OpenAiApi completionApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+	OpenAiApi completionApi = OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
 		try {

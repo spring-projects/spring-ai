@@ -161,47 +161,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 	 */
 	private final ToolCallingManager toolCallingManager;
 
-	@Deprecated
-	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
-		this(openAIClientBuilder,
-				AzureOpenAiChatOptions.builder()
-					.deploymentName(DEFAULT_DEPLOYMENT_NAME)
-					.temperature(DEFAULT_TEMPERATURE)
-					.build());
-	}
-
-	@Deprecated
-	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options) {
-		this(openAIClientBuilder, options, null);
-	}
-
-	@Deprecated
-	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver) {
-		this(openAIClientBuilder, options, functionCallbackResolver, List.of());
-	}
-
-	@Deprecated
-	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks) {
-		this(openAIClientBuilder, options, functionCallbackResolver, toolFunctionCallbacks, ObservationRegistry.NOOP);
-	}
-
-	@Deprecated
-	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks, ObservationRegistry observationRegistry) {
-		this(openAIClientBuilder, options,
-				LegacyToolCallingManager.builder()
-					.functionCallbackResolver(functionCallbackResolver)
-					.functionCallbacks(toolFunctionCallbacks)
-					.build(),
-				observationRegistry);
-		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the AzureOpenAiChatModel.Builder or the new constructor accepting ToolCallingManager instead.");
-	}
-
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, ObservationRegistry observationRegistry) {
 		// We do not pass the 'defaultOptions' to the AbstractToolSupport,

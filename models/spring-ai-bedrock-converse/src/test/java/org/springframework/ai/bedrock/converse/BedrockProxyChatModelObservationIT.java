@@ -35,6 +35,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,10 +171,10 @@ public class BedrockProxyChatModelObservationIT {
 			String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 
 			return BedrockProxyChatModel.builder()
-				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
-				.withRegion(Region.US_EAST_1)
-				.withObservationRegistry(observationRegistry)
-				.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
+				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+				.region(Region.US_EAST_1)
+				.observationRegistry(observationRegistry)
+				.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
 				.build();
 		}
 
