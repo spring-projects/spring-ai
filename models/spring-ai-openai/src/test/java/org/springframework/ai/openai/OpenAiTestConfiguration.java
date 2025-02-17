@@ -61,28 +61,25 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiChatModel openAiChatModel(OpenAiApi api) {
-		OpenAiChatModel openAiChatModel = new OpenAiChatModel(api,
-				OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI).build());
-		return openAiChatModel;
+		return OpenAiChatModel.builder()
+			.openAiApi(api)
+			.defaultOptions(OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI).build())
+			.build();
 	}
 
 	@Bean
 	public OpenAiAudioTranscriptionModel openAiTranscriptionModel(OpenAiAudioApi api) {
-		OpenAiAudioTranscriptionModel openAiTranscriptionModel = new OpenAiAudioTranscriptionModel(api);
-		return openAiTranscriptionModel;
+		return new OpenAiAudioTranscriptionModel(api);
 	}
 
 	@Bean
 	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiAudioApi api) {
-		OpenAiAudioSpeechModel openAiAudioSpeechModel = new OpenAiAudioSpeechModel(api);
-		return openAiAudioSpeechModel;
+		return new OpenAiAudioSpeechModel(api);
 	}
 
 	@Bean
 	public OpenAiImageModel openAiImageModel(OpenAiImageApi imageApi) {
-		OpenAiImageModel openAiImageModel = new OpenAiImageModel(imageApi);
-		// openAiImageModel.setModel("foobar");
-		return openAiImageModel;
+		return new OpenAiImageModel(imageApi);
 	}
 
 	@Bean
@@ -92,8 +89,7 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiModerationModel openAiModerationClient(OpenAiModerationApi openAiModerationApi) {
-		OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(openAiModerationApi);
-		return openAiModerationModel;
+		return new OpenAiModerationModel(openAiModerationApi);
 	}
 
 }

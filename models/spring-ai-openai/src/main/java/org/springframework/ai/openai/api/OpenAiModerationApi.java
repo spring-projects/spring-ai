@@ -53,33 +53,6 @@ public class OpenAiModerationApi {
 	private final ObjectMapper objectMapper;
 
 	/**
-	 * Create a new OpenAI Moderation api with base URL set to https://api.openai.com
-	 * @param openAiToken OpenAI apiKey.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiModerationApi(String openAiToken) {
-		this(DEFAULT_BASE_URL, openAiToken, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiModerationApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-
-		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> {
-			if (openAiToken != null && !openAiToken.isEmpty()) {
-				h.setBearerAuth(openAiToken);
-			}
-			h.setContentType(MediaType.APPLICATION_JSON);
-		}).defaultStatusHandler(responseErrorHandler).build();
-	}
-
-	/**
 	 * Create a new OpenAI Moderation API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
 	 * @param apiKey OpenAI apiKey.

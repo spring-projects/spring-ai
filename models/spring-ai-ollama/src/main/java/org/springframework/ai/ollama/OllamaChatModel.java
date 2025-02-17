@@ -28,13 +28,6 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -59,6 +52,9 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
@@ -69,6 +65,8 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -123,18 +121,6 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	private final ToolCallingManager toolCallingManager;
 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
-
-	@Deprecated
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
-			@Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks, ObservationRegistry observationRegistry,
-			ModelManagementOptions modelManagementOptions) {
-		this(ollamaApi, defaultOptions, new LegacyToolCallingManager(functionCallbackResolver, toolFunctionCallbacks),
-				observationRegistry, modelManagementOptions);
-
-		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the OllamaChatModel.Builder or the new constructor accepting ToolCallingManager instead.");
-	}
 
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
@@ -599,8 +585,14 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 						"toolCallingManager must not be set when functionCallbackResolver is set");
 				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
 						: List.of();
-				return new OllamaChatModel(this.ollamaApi, this.defaultOptions, this.functionCallbackResolver,
-						toolCallbacks, this.observationRegistry, this.modelManagementOptions);
+				return OllamaChatModel.builder()
+					.ollamaApi(this.ollamaApi)
+					.defaultOptions(this.defaultOptions)
+					.functionCallbackResolver(this.functionCallbackResolver)
+					.toolFunctionCallbacks(toolCallbacks)
+					.observationRegistry(this.observationRegistry)
+					.modelManagementOptions(this.modelManagementOptions)
+					.build();
 			}
 
 			return new OllamaChatModel(this.ollamaApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,

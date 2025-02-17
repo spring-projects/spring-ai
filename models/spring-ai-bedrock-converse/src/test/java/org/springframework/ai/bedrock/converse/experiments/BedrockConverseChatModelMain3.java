@@ -58,8 +58,8 @@ public final class BedrockConverseChatModelMain3 {
 					.build());
 
 		BedrockProxyChatModel chatModel = BedrockProxyChatModel.builder()
-			.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
-			.withRegion(Region.US_EAST_1)
+			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+			.region(Region.US_EAST_1)
 			.build();
 
 		var response = chatModel.call(prompt);

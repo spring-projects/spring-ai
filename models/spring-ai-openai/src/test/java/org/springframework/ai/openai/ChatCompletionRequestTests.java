@@ -74,8 +74,10 @@ class ChatCompletionRequestTests {
 
 	@Test
 	void createRequestWithChatOptions() {
-		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
-				OpenAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
+			.build();
 
 		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
 
@@ -101,8 +103,10 @@ class ChatCompletionRequestTests {
 	void promptOptionsTools() {
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
-				OpenAiChatOptions.builder().model("DEFAULT_MODEL").build());
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
 
 		var prompt = client.buildRequestPrompt(new Prompt("Test message content",
 				OpenAiChatOptions.builder()
@@ -128,15 +132,17 @@ class ChatCompletionRequestTests {
 	void defaultOptionsTools() {
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new OpenAiChatModel(new OpenAiApi("TEST"),
-				OpenAiChatOptions.builder()
-					.model("DEFAULT_MODEL")
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
-						.description("Get the weather in location")
-						.inputType(MockWeatherService.Request.class)
-						.build()))
-					.build());
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.functionCallbacks(List.of(FunctionCallback.builder()
+					.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build()))
+				.build())
+			.build();
 
 		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
 

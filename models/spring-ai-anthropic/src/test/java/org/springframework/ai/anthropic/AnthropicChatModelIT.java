@@ -410,7 +410,7 @@ class AnthropicChatModelIT {
 
 		@Bean
 		public AnthropicChatModel openAiChatModel(AnthropicApi api) {
-			return new AnthropicChatModel(api);
+			return AnthropicChatModel.builder().anthropicApi(api).build();
 		}
 
 	}

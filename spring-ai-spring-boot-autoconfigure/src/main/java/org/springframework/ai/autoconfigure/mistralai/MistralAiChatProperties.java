@@ -35,7 +35,7 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue();
+	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.SMALL.getValue();
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 

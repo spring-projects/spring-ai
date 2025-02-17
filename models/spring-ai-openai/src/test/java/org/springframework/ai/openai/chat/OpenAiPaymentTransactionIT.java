@@ -217,14 +217,18 @@ public class OpenAiPaymentTransactionIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackResolver functionCallbackResolver) {
-			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build(),
-					functionCallbackResolver, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(
+						OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build())
+				.functionCallbackResolver(functionCallbackResolver)
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+				.build();
 		}
 
 		/**

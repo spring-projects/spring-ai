@@ -124,48 +124,6 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 	 * @deprecated Use {@link MistralAiChatModel.Builder}.
 	 */
 	@Deprecated
-	public MistralAiChatModel(MistralAiApi mistralAiApi) {
-		this(mistralAiApi,
-				MistralAiChatOptions.builder()
-					.temperature(0.7)
-					.topP(1.0)
-					.safePrompt(false)
-					.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-					.build());
-	}
-
-	/**
-	 * @deprecated Use {@link MistralAiChatModel.Builder}.
-	 */
-	@Deprecated
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options) {
-		this(mistralAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	/**
-	 * @deprecated Use {@link MistralAiChatModel.Builder}.
-	 */
-	@Deprecated
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver, @Nullable RetryTemplate retryTemplate) {
-		this(mistralAiApi, options, functionCallbackResolver, List.of(), retryTemplate);
-	}
-
-	/**
-	 * @deprecated Use {@link MistralAiChatModel.Builder}.
-	 */
-	@Deprecated
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks, RetryTemplate retryTemplate) {
-		this(mistralAiApi, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
-				ObservationRegistry.NOOP);
-	}
-
-	/**
-	 * @deprecated Use {@link MistralAiChatModel.Builder}.
-	 */
-	@Deprecated
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
 			@Nullable FunctionCallbackResolver functionCallbackResolver,
 			@Nullable List<FunctionCallback> toolFunctionCallbacks, RetryTemplate retryTemplate,
@@ -589,7 +547,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 			.temperature(0.7)
 			.topP(1.0)
 			.safePrompt(false)
-			.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.model(MistralAiApi.ChatModel.SMALL.getValue())
 			.build();
 
 		private ToolCallingManager toolCallingManager;
