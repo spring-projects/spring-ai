@@ -82,7 +82,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -95,10 +94,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -135,7 +130,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @since 1.0.0
  */
-public class BedrockProxyChatModel extends AbstractToolCallSupport implements ChatModel {
+public class BedrockProxyChatModel implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModel.class);
 
@@ -161,32 +156,9 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 	 */
 	private ChatModelObservationConvention observationConvention;
 
-	/**
-	 * @deprecated Use
-	 * {@link #BedrockProxyChatModel(BedrockRuntimeClient, BedrockRuntimeAsyncClient, ToolCallingChatOptions, ObservationRegistry, ToolCallingManager)}
-	 * instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, FunctionCallingOptions defaultOptions,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			ObservationRegistry observationRegistry) {
-
-		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, from(defaultOptions), observationRegistry,
-				LegacyToolCallingManager.builder()
-					.functionCallbackResolver(functionCallbackResolver)
-					.functionCallbacks(toolFunctionCallbacks)
-					.build());
-	}
-
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
 			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ToolCallingChatOptions defaultOptions,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
-
-		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
-		// because it modifies them. We are using ToolCallingManager instead,
-		// so we just pass empty options here.
-		super(null, FunctionCallingOptions.builder().build(), List.of());
 
 		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
 		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
@@ -197,21 +169,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
-	}
-
-	@Deprecated
-	private static ToolCallingChatOptions from(FunctionCallingOptions options) {
-		return ToolCallingChatOptions.builder()
-			.model(options.getModel())
-			.maxTokens(options.getMaxTokens())
-			.stopSequences(options.getStopSequences())
-			.temperature(options.getTemperature())
-			.topP(options.getTopP())
-			.toolCallbacks(options.getFunctionCallbacks())
-			.toolNames(options.getFunctions())
-			.internalToolExecutionEnabled(options.getProxyToolCalls() != null ? !options.getProxyToolCalls() : false)
-			.toolContext(options.getToolContext())
-			.build();
 	}
 
 	private static ToolCallingChatOptions from(ChatOptions options) {
@@ -294,9 +251,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 				runtimeOptions = toolCallingChatOptions.copy();
-			}
-			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				runtimeOptions = from(functionCallingOptions);
 			}
 			else {
 				runtimeOptions = from(prompt.getOptions());
@@ -804,10 +758,6 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 
 		private ToolCallingChatOptions defaultOptions = ToolCallingChatOptions.builder().build();
 
-		private FunctionCallbackResolver functionCallbackResolver;
-
-		private List<FunctionCallback> toolFunctionCallbacks;
-
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 		private ChatModelObservationConvention customObservationConvention;
@@ -824,29 +774,9 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			return this;
 		}
 
-		/**
-		 * @deprecated Use {@link #credentialsProvider(AwsCredentialsProvider)} instead.
-		 */
-		@Deprecated
-		public Builder withCredentialsProvider(AwsCredentialsProvider credentialsProvider) {
-			Assert.notNull(credentialsProvider, "'credentialsProvider' must not be null.");
-			this.credentialsProvider = credentialsProvider;
-			return this;
-		}
-
 		public Builder credentialsProvider(AwsCredentialsProvider credentialsProvider) {
 			Assert.notNull(credentialsProvider, "'credentialsProvider' must not be null.");
 			this.credentialsProvider = credentialsProvider;
-			return this;
-		}
-
-		/**
-		 * @deprecated Use {@link #region(Region)} instead.
-		 */
-		@Deprecated
-		public Builder withRegion(Region region) {
-			Assert.notNull(region, "'region' must not be null.");
-			this.region = region;
 			return this;
 		}
 
@@ -856,78 +786,15 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			return this;
 		}
 
-		/**
-		 * @deprecated Use {@link #timeout(Duration)} instead.
-		 */
-		@Deprecated
-		public Builder withTimeout(Duration timeout) {
-			Assert.notNull(timeout, "'timeout' must not be null.");
-			this.timeout = timeout;
-			return this;
-		}
-
 		public Builder timeout(Duration timeout) {
 			Assert.notNull(timeout, "'timeout' must not be null.");
 			this.timeout = timeout;
 			return this;
 		}
 
-		/**
-		 * @deprecated Use {@link #defaultOptions(ToolCallingChatOptions)} instead.
-		 */
-		@Deprecated
-		public Builder withDefaultOptions(FunctionCallingOptions defaultOptions) {
-			Assert.notNull(defaultOptions, "'defaultOptions' must not be null.");
-			return this.defaultOptions(ToolCallingChatOptions.builder()
-				.model(defaultOptions.getModel())
-				.maxTokens(defaultOptions.getMaxTokens())
-				.stopSequences(defaultOptions.getStopSequences())
-				.temperature(defaultOptions.getTemperature())
-				.topP(defaultOptions.getTopP())
-				.toolCallbacks(defaultOptions.getFunctionCallbacks())
-				.toolNames(defaultOptions.getFunctions())
-				.internalToolExecutionEnabled(
-						defaultOptions.getProxyToolCalls() != null ? !defaultOptions.getProxyToolCalls() : false)
-				.toolContext(defaultOptions.getToolContext())
-				.build());
-		}
-
 		public Builder defaultOptions(ToolCallingChatOptions defaultOptions) {
 			Assert.notNull(defaultOptions, "'defaultOptions' must not be null.");
 			this.defaultOptions = defaultOptions;
-			return this;
-		}
-
-		/**
-		 * @deprecated To be removed after M6
-		 */
-		@Deprecated
-		public Builder withFunctionCallbackContext(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		/**
-		 * @deprecated To be removed after M6
-		 */
-		@Deprecated
-		public Builder withToolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
-			this.toolFunctionCallbacks = toolFunctionCallbacks;
-			return this;
-		}
-
-		/**
-		 * @deprecated Use {@link #observationRegistry(ObservationRegistry)} instead.
-		 */
-		@Deprecated
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
-			Assert.notNull(observationRegistry, "'observationRegistry' must not be null.");
-			this.observationRegistry = observationRegistry;
 			return this;
 		}
 
@@ -937,44 +804,14 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			return this;
 		}
 
-		/**
-		 * @deprecated Use
-		 * {@link #customObservationConvention(ChatModelObservationConvention)} instead.
-		 */
-		@Deprecated
-		public Builder withCustomObservationConvention(ChatModelObservationConvention observationConvention) {
-			Assert.notNull(observationConvention, "'observationConvention' must not be null.");
-			this.customObservationConvention = observationConvention;
-			return this;
-		}
-
 		public Builder customObservationConvention(ChatModelObservationConvention observationConvention) {
 			Assert.notNull(observationConvention, "'observationConvention' must not be null.");
 			this.customObservationConvention = observationConvention;
 			return this;
 		}
 
-		/**
-		 * @deprecated Use {@link #bedrockRuntimeClient(BedrockRuntimeClient)} instead.
-		 */
-		@Deprecated
-		public Builder withBedrockRuntimeClient(BedrockRuntimeClient bedrockRuntimeClient) {
-			this.bedrockRuntimeClient = bedrockRuntimeClient;
-			return this;
-		}
-
 		public Builder bedrockRuntimeClient(BedrockRuntimeClient bedrockRuntimeClient) {
 			this.bedrockRuntimeClient = bedrockRuntimeClient;
-			return this;
-		}
-
-		/**
-		 * @deprecated Use {@link #bedrockRuntimeAsyncClient(BedrockRuntimeAsyncClient)}
-		 * instead.
-		 */
-		@Deprecated
-		public Builder withBedrockRuntimeAsyncClient(BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
-			this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
 			return this;
 		}
 
@@ -1013,22 +850,10 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 			BedrockProxyChatModel bedrockProxyChatModel = null;
 
 			if (this.toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
-						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolFunctionCallbacks,
-						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
-
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
 						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
 						this.toolCallingManager);
 
-			}
-			else if (this.functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
-						"toolCallingManager cannot be set when functionCallbackResolver is set");
-				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.functionCallbackResolver,
-						this.toolFunctionCallbacks, this.observationRegistry);
 			}
 			else {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,

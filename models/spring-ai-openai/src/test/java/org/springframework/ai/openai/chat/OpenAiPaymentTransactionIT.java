@@ -16,11 +16,13 @@
 
 package org.springframework.ai.openai.chat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -34,19 +36,28 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
+import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
+import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +82,7 @@ public class OpenAiPaymentTransactionIT {
 	public void transactionPaymentStatuses(String functionName) {
 		List<TransactionStatusResponse> content = this.chatClient.prompt()
 			.advisors(new LoggingAdvisor())
-			.functions(functionName)
+			.tools(functionName)
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
@@ -102,7 +113,7 @@ public class OpenAiPaymentTransactionIT {
 
 		Flux<String> flux = this.chatClient.prompt()
 			.advisors(new LoggingAdvisor())
-			.functions(functionName)
+			.tools(functionName)
 			.user(u -> u.text("""
 					What is the status of my payment transactions 001, 002 and 003?
 
@@ -217,25 +228,56 @@ public class OpenAiPaymentTransactionIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 		}
 
 		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackResolver functionCallbackResolver) {
-			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build(),
-					functionCallbackResolver, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, ToolCallingManager toolCallingManager) {
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.toolCallingManager(toolCallingManager)
+				.defaultOptions(
+						OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build())
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+				.build();
 		}
 
-		/**
-		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
-		 * different from the other JSON schema types.
-		 */
 		@Bean
-		public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-			DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-			manager.setApplicationContext(context);
-			return manager;
+		@ConditionalOnMissingBean
+		ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
+				List<FunctionCallback> functionCallbacks, List<ToolCallbackProvider> tcbProviders) {
+
+			List<FunctionCallback> allFunctionAndToolCallbacks = new ArrayList<>(functionCallbacks);
+			tcbProviders.stream()
+				.map(pr -> List.of(pr.getToolCallbacks()))
+				.forEach(allFunctionAndToolCallbacks::addAll);
+
+			var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
+
+			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
+				.applicationContext(applicationContext)
+				.build();
+
+			return new DelegatingToolCallbackResolver(
+					List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
+			return new DefaultToolExecutionExceptionProcessor(false);
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
+				ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
+				ObjectProvider<ObservationRegistry> observationRegistry) {
+			return ToolCallingManager.builder()
+				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+				.toolCallbackResolver(toolCallbackResolver)
+				.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
+				.build();
 		}
 
 	}

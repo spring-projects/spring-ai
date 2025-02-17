@@ -18,6 +18,7 @@ package org.springframework.ai.openai.chat;
 
 import java.time.Duration;
 
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -133,7 +134,7 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER.getName(), "112358");
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_RESET_HEADER.getName(), "27h55s451ms");
 
-		this.server.expect(requestTo("/v1/chat/completions"))
+		this.server.expect(requestTo(StringContains.containsString("/v1/chat/completions")))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess(getJson(), MediaType.APPLICATION_JSON).headers(httpHeaders));
@@ -169,12 +170,16 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 
 		@Bean
 		public OpenAiApi chatCompletionApi(RestClient.Builder builder, WebClient.Builder webClientBuilder) {
-			return new OpenAiApi("", TEST_API_KEY, builder, webClientBuilder);
+			return OpenAiApi.builder()
+				.apiKey(TEST_API_KEY)
+				.restClientBuilder(builder)
+				.webClientBuilder(webClientBuilder)
+				.build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi);
+			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
 		}
 
 	}

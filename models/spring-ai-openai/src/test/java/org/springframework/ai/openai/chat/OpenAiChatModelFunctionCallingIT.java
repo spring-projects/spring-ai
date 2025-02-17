@@ -219,12 +219,12 @@ class OpenAiChatModelFunctionCallingIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi);
+			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
 		}
 
 	}

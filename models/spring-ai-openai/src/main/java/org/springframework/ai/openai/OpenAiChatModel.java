@@ -29,12 +29,6 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -50,7 +44,6 @@ import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.metadata.UsageUtils;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -67,6 +60,9 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
@@ -79,6 +75,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -111,7 +108,7 @@ import org.springframework.util.StringUtils;
  * @see StreamingChatModel
  * @see OpenAiApi
  */
-public class OpenAiChatModel extends AbstractToolCallSupport implements ChatModel {
+public class OpenAiChatModel implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModel.class);
 
@@ -146,96 +143,8 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	/**
-	 * Creates an instance of the OpenAiChatModel.
-	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
-	 * Chat API.
-	 * @throws IllegalArgumentException if openAiApi is null
-	 * @deprecated Use OpenAiChatModel.Builder.
-	 */
-	@Deprecated
-	public OpenAiChatModel(OpenAiApi openAiApi) {
-		this(openAiApi, OpenAiChatOptions.builder().model(OpenAiApi.DEFAULT_CHAT_MODEL).temperature(0.7).build());
-	}
-
-	/**
-	 * Initializes an instance of the OpenAiChatModel.
-	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
-	 * Chat API.
-	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @deprecated Use OpenAiChatModel.Builder.
-	 */
-	@Deprecated
-	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options) {
-		this(openAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	/**
-	 * Initializes a new instance of the OpenAiChatModel.
-	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
-	 * Chat API.
-	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @param functionCallbackResolver The function callback resolver.
-	 * @param retryTemplate The retry template.
-	 * @deprecated Use OpenAiChatModel.Builder.
-	 */
-	@Deprecated
-	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver, RetryTemplate retryTemplate) {
-		this(openAiApi, options, functionCallbackResolver, List.of(), retryTemplate);
-	}
-
-	/**
-	 * Initializes a new instance of the OpenAiChatModel.
-	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
-	 * Chat API.
-	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @param functionCallbackResolver The function callback resolver.
-	 * @param toolFunctionCallbacks The tool function callbacks.
-	 * @param retryTemplate The retry template.
-	 * @deprecated Use OpenAiChatModel.Builder.
-	 */
-	@Deprecated
-	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks, RetryTemplate retryTemplate) {
-		this(openAiApi, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
-				ObservationRegistry.NOOP);
-	}
-
-	/**
-	 * Initializes a new instance of the OpenAiChatModel.
-	 * @param openAiApi The OpenAiApi instance to be used for interacting with the OpenAI
-	 * Chat API.
-	 * @param options The OpenAiChatOptions to configure the chat model.
-	 * @param functionCallbackResolver The function callback resolver.
-	 * @param toolFunctionCallbacks The tool function callbacks.
-	 * @param retryTemplate The retry template.
-	 * @param observationRegistry The ObservationRegistry used for instrumentation.
-	 * @deprecated Use OpenAiChatModel.Builder or OpenAiChatModel(OpenAiApi,
-	 * OpenAiChatOptions, ToolCallingManager, RetryTemplate, ObservationRegistry).
-	 */
-	@Deprecated
-	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks, RetryTemplate retryTemplate,
-			ObservationRegistry observationRegistry) {
-		this(openAiApi, options,
-				LegacyToolCallingManager.builder()
-					.functionCallbackResolver(functionCallbackResolver)
-					.functionCallbacks(toolFunctionCallbacks)
-					.build(),
-				retryTemplate, observationRegistry);
-		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the OpenAiChatModel.Builder or the new constructor accepting ToolCallingManager instead.");
-	}
-
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
-		// because it modifies them. We are using ToolCallingManager instead,
-		// so we just pass empty options here.
-		super(null, OpenAiChatOptions.builder().build(), List.of());
 		Assert.notNull(openAiApi, "openAiApi cannot be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
@@ -777,10 +686,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		private ToolCallingManager toolCallingManager;
 
-		private FunctionCallbackResolver functionCallbackResolver;
-
-		private List<FunctionCallback> toolFunctionCallbacks;
-
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -803,18 +708,6 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 			return this;
 		}
 
-		@Deprecated
-		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		@Deprecated
-		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
-			this.toolFunctionCallbacks = toolFunctionCallbacks;
-			return this;
-		}
-
 		public Builder retryTemplate(RetryTemplate retryTemplate) {
 			this.retryTemplate = retryTemplate;
 			return this;
@@ -827,25 +720,9 @@ public class OpenAiChatModel extends AbstractToolCallSupport implements ChatMode
 
 		public OpenAiChatModel build() {
 			if (toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
-						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolFunctionCallbacks,
-						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
-
 				return new OpenAiChatModel(openAiApi, defaultOptions, toolCallingManager, retryTemplate,
 						observationRegistry);
 			}
-
-			if (functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
-						"toolCallingManager cannot be set when functionCallbackResolver is set");
-				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
-						: List.of();
-
-				return new OpenAiChatModel(openAiApi, defaultOptions, functionCallbackResolver, toolCallbacks,
-						retryTemplate, observationRegistry);
-			}
-
 			return new OpenAiChatModel(openAiApi, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
 					observationRegistry);
 		}
