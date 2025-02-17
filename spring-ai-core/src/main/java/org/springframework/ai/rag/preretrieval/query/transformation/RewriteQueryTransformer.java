@@ -82,7 +82,7 @@ public class RewriteQueryTransformer implements QueryTransformer {
 			.user(user -> user.text(this.promptTemplate.getTemplate())
 				.param("target", this.targetSearchSystem)
 				.param("query", query.text()))
-			.options(ChatOptions.builder().temperature(0.0).build())
+			.options(ChatOptions.builder().build())
 			.call()
 			.content();
 
