@@ -416,7 +416,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if containerName is null or empty
 		 */
 		public Builder containerName(String containerName) {
-			Assert.hasText(this.containerName, "Container name must not be empty");
+			Assert.hasText(containerName, "Container name must not be empty");
 			this.containerName = containerName;
 			return this;
 		}
@@ -428,7 +428,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if databaseName is null or empty
 		 */
 		public Builder databaseName(String databaseName) {
-			Assert.hasText(this.databaseName, "Database name must not be empty");
+			Assert.hasText(databaseName, "Database name must not be empty");
 			this.databaseName = databaseName;
 			return this;
 		}
@@ -440,7 +440,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if partitionKeyPath is null or empty
 		 */
 		public Builder partitionKeyPath(String partitionKeyPath) {
-			Assert.hasText(this.partitionKeyPath, "Partition key path must not be empty");
+			Assert.hasText(partitionKeyPath, "Partition key path must not be empty");
 			this.partitionKeyPath = partitionKeyPath;
 			return this;
 		}
@@ -452,7 +452,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if vectorStoreThroughput is not positive
 		 */
 		public Builder vectorStoreThroughput(int vectorStoreThroughput) {
-			Assert.isTrue(this.vectorStoreThroughput > 0, "Vector store throughput must be positive");
+			Assert.isTrue(vectorStoreThroughput > 0, "Vector store throughput must be positive");
 			this.vectorStoreThroughput = vectorStoreThroughput;
 			return this;
 		}
@@ -464,7 +464,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if vectorDimensions is not positive
 		 */
 		public Builder vectorDimensions(long vectorDimensions) {
-			Assert.isTrue(this.vectorDimensions > 0, "Vector dimensions must be positive");
+			Assert.isTrue(vectorDimensions > 0, "Vector dimensions must be positive");
 			this.vectorDimensions = vectorDimensions;
 			return this;
 		}

@@ -77,6 +77,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
 			.metadataFields(List.of(properties.getMetadataFields()))
 			.vectorStoreThroughput(properties.getVectorStoreThroughput())
 			.vectorDimensions(properties.getVectorDimensions())
+			.partitionKeyPath(properties.getPartitionKeyPath())
 			.build();
 
 	}
