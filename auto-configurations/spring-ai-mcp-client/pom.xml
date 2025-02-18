@@ -41,6 +41,12 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- NOTE: Currently the webmvc doesn't implement client transport. 
 			We will add it in the future based on ResrtClient.
 		-->
