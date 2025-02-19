@@ -72,7 +72,6 @@ import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.metadata.UsageUtils;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -85,16 +84,12 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -119,7 +114,7 @@ import org.springframework.util.CollectionUtils;
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
  */
-public class AzureOpenAiChatModel extends AbstractToolCallSupport implements ChatModel {
+public class AzureOpenAiChatModel implements ChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModel.class);
 
@@ -163,10 +158,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, ObservationRegistry observationRegistry) {
-		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
-		// because it modifies them. We are using ToolCallingManager instead,
-		// so we just pass empty options here.
-		super(null, AzureOpenAiChatOptions.builder().build(), List.of());
 		Assert.notNull(openAIClientBuilder, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
@@ -488,10 +479,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		if (prompt.getOptions() != null) {
 			AzureOpenAiChatOptions updatedRuntimeOptions;
-			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions,
-						FunctionCallingOptions.class, AzureOpenAiChatOptions.class);
-			}
 			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
 						ToolCallingChatOptions.class, AzureOpenAiChatOptions.class);
@@ -620,10 +607,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						AzureOpenAiChatOptions.class);
-			}
-			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
 						AzureOpenAiChatOptions.class);
 			}
 			else {
@@ -932,10 +915,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		private ToolCallingManager toolCallingManager;
 
-		private FunctionCallbackResolver functionCallbackResolver;
-
-		private List<FunctionCallback> toolFunctionCallbacks;
-
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 		private Builder() {
@@ -956,18 +935,6 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			return this;
 		}
 
-		@Deprecated
-		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		@Deprecated
-		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
-			this.toolFunctionCallbacks = toolFunctionCallbacks;
-			return this;
-		}
-
 		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
@@ -975,29 +942,9 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 
 		public AzureOpenAiChatModel build() {
 			if (toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
-						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolFunctionCallbacks,
-						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
-
 				return new AzureOpenAiChatModel(openAIClientBuilder, defaultOptions, toolCallingManager,
 						observationRegistry);
 			}
-
-			if (functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
-						"toolCallingManager cannot be set when functionCallbackResolver is set");
-				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
-						: List.of();
-
-				return new Builder().openAIClientBuilder(openAIClientBuilder)
-					.defaultOptions(defaultOptions)
-					.functionCallbackResolver(functionCallbackResolver)
-					.toolFunctionCallbacks(toolCallbacks)
-					.observationRegistry(observationRegistry)
-					.build();
-			}
-
 			return new AzureOpenAiChatModel(openAIClientBuilder, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
 					observationRegistry);
 		}

@@ -16,11 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.util.List;
-
-import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -40,8 +36,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.isA;
@@ -140,14 +137,13 @@ public class BedrockConverseUsageAggregationTests {
 		given(this.bedrockRuntimeClient.converse(isA(ConverseRequest.class))).willReturn(converseResponseToolUse)
 			.willReturn(converseResponseFinal);
 
-		FunctionCallback functionCallback = FunctionCallback.builder()
-			.function("getCurrentWeather", (Request request) -> "15.0°C")
+		ToolCallback toolCallback = FunctionToolCallback.builder("getCurrentWeather", (Request request) -> "15.0°C")
 			.description("Gets the weather in location")
 			.inputType(Request.class)
 			.build();
 
 		var result = this.chatModel.call(new Prompt("What is the weather in Paris?",
-				FunctionCallingOptions.builder().functionCallbacks(functionCallback).build()));
+				ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText())

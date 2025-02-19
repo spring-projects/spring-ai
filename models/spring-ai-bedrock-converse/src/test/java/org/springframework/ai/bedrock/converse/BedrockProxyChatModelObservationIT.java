@@ -34,7 +34,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -68,7 +67,7 @@ public class BedrockProxyChatModelObservationIT {
 
 	@Test
 	void observationForChatOperation() {
-		var options = FunctionCallingOptions.builder()
+		var options = ToolCallingChatOptions.builder()
 			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
@@ -90,7 +89,7 @@ public class BedrockProxyChatModelObservationIT {
 
 	@Test
 	void observationForStreamingChatOperation() {
-		var options = FunctionCallingOptions.builder()
+		var options = ToolCallingChatOptions.builder()
 			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))

@@ -35,6 +35,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -97,11 +98,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
-			FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-				.function("weatherFunction")
-				.build();
+			ToolCallingChatOptions toolOptions = ToolCallingChatOptions.builder().toolNames("weatherFunction").build();
 
-			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), toolOptions));
 
 			logger.info("Response: {}", response);
 		});
