@@ -72,5 +72,10 @@
 			<artifactId>mockwebserver</artifactId>
 			<version>${okhttp3.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
+		</dependency>
 	</dependencies>
 </project>
