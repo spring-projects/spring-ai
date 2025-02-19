@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -51,7 +50,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,7 +94,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			testFunction.accept(vectorStore);
 		});

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -86,7 +85,7 @@ public class TypesenseVectorStoreIT extends BaseVectorStoreTests {
 
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			testFunction.accept(vectorStore);
 		});

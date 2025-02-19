@@ -51,7 +51,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIdType;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
@@ -169,7 +168,7 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			testFunction.accept(vectorStore);
 		});

@@ -86,7 +86,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			testFunction.accept(vectorStore);
 		});

@@ -37,7 +37,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -72,7 +71,7 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			testFunction.accept(vectorStore);
 		});
