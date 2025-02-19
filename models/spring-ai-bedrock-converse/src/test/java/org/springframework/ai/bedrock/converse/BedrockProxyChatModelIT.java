@@ -92,7 +92,7 @@ class BedrockProxyChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				FunctionCallingOptions.builder().model(modelName).build());
+				ToolCallingChatOptions.builder().model(modelName).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isGreaterThan(0);
@@ -128,7 +128,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = FunctionCallingOptions.builder().temperature(0.0).build();
+		var promptOptions = ToolCallingChatOptions.builder().temperature(0.0).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
@@ -255,9 +255,8 @@ class BedrockProxyChatModelIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = FunctionCallingOptions.builder()
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+		var promptOptions = ToolCallingChatOptions.builder()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
@@ -305,10 +304,9 @@ class BedrockProxyChatModelIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = FunctionCallingOptions.builder()
+		var promptOptions = ToolCallingChatOptions.builder()
 			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
@@ -333,7 +331,7 @@ class BedrockProxyChatModelIT {
 		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(FunctionCallingOptions.builder().model(model).build())
+				.options(ToolCallingChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -348,7 +346,7 @@ class BedrockProxyChatModelIT {
 		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(FunctionCallingOptions.builder().model(model).build())
+				.options(ToolCallingChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.stream()
 				.chatResponse()

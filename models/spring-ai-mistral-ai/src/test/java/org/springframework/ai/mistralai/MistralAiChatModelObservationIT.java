@@ -32,7 +32,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,7 +183,6 @@ public class MistralAiChatModelObservationIT {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)
 				.defaultOptions(MistralAiChatOptions.builder().build())
-				.functionCallbackResolver(new DefaultFunctionCallbackResolver())
 				.retryTemplate(RetryTemplate.defaultInstance())
 				.observationRegistry(observationRegistry)
 				.build();

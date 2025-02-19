@@ -88,7 +88,7 @@ import org.springframework.util.MimeType;
  * @author Alexandros Pappas
  * @since 1.0.0
  */
-public class MistralAiChatModel extends AbstractToolCallSupport implements ChatModel {
+public class MistralAiChatModel implements ChatModel {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -120,31 +120,9 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	/**
-	 * @deprecated Use {@link MistralAiChatModel.Builder}.
-	 */
-	@Deprecated
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			@Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks, RetryTemplate retryTemplate,
-			ObservationRegistry observationRegistry) {
-		this(mistralAiApi, options,
-				LegacyToolCallingManager.builder()
-					.functionCallbackResolver(functionCallbackResolver)
-					.functionCallbacks(toolFunctionCallbacks)
-					.build(),
-				retryTemplate, observationRegistry);
-		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the MistralAiChatModel.Builder or the new constructor accepting ToolCallingManager instead.");
-	}
-
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
-		// because it modifies them. We are using ToolCallingManager instead,
-		// so we just pass empty options here.
-		super(null, MistralAiChatOptions.builder().build(), List.of());
 		Assert.notNull(mistralAiApi, "mistralAiApi cannot be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
@@ -552,10 +530,6 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		private ToolCallingManager toolCallingManager;
 
-		private FunctionCallbackResolver functionCallbackResolver;
-
-		private List<FunctionCallback> toolFunctionCallbacks;
-
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -578,18 +552,6 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 			return this;
 		}
 
-		@Deprecated
-		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		@Deprecated
-		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
-			this.toolFunctionCallbacks = toolFunctionCallbacks;
-			return this;
-		}
-
 		public Builder retryTemplate(RetryTemplate retryTemplate) {
 			this.retryTemplate = retryTemplate;
 			return this;
@@ -602,25 +564,9 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		public MistralAiChatModel build() {
 			if (toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
-						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolFunctionCallbacks,
-						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
-
 				return new MistralAiChatModel(mistralAiApi, defaultOptions, toolCallingManager, retryTemplate,
 						observationRegistry);
 			}
-
-			if (functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
-						"toolCallingManager cannot be set when functionCallbackResolver is set");
-				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
-						: List.of();
-
-				return new MistralAiChatModel(mistralAiApi, defaultOptions, functionCallbackResolver, toolCallbacks,
-						retryTemplate, observationRegistry);
-			}
-
 			return new MistralAiChatModel(mistralAiApi, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
 					observationRegistry);
 		}
