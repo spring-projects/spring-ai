@@ -34,6 +34,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
@@ -185,9 +186,7 @@ public class OpenAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
-	 * @deprecated since 1.0.0.M6 - use {@link #builder()} instead
 	 */
-	@Deprecated(since = "1.0.0.M6")
 	public OpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
@@ -200,7 +199,10 @@ public class OpenAiApi {
 		this.embeddingsPath = embeddingsPath;
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			h.setBearerAuth(apiKey.getValue());
+			if(!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
+
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
@@ -1672,6 +1674,12 @@ public class OpenAiApi {
 		public Builder apiKey(ApiKey apiKey) {
 			Assert.notNull(apiKey, "apiKey cannot be null");
 			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
 

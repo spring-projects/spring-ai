@@ -5,16 +5,17 @@ WARNING: This page describes the previous version of the Function Calling API, w
 
 The integration of function support in AI models, permits the model to request the execution of client-side functions, thereby accessing necessary information or performing tasks dynamically as required.
 
-Spring AI currently supports function invocation for the following AI Models:
+Spring AI currently supports tool/function calling for the following AI Models:
 
-* Anthropic Claude: Refer to the xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic Claude function invocation docs].
-* Azure OpenAI: Refer to the xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI function invocation docs].
-* Google VertexAI Gemini: Refer to the xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini function invocation docs].
-* Groq: Refer to the xref:api/chat/groq-chat.adoc#_function_calling[Groq function invocation docs].
-* Mistral AI: Refer to the xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI function invocation docs].
+* Anthropic Claude: Refer to the xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic Claude tool/function calling].
+* Azure OpenAI: Refer to the xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI tool/function calling].
+* Amazon Bedrock Converse: Refer to the xref:api/chat/bedrock-converse.adoc#_tool_calling[Amazon Bedrock Converse tool/function calling].
+* Google VertexAI Gemini: Refer to the xref:api/chat/vertexai-gemini-chat.adoc#_tool_calling[Vertex AI Gemini tool/function calling].
+* Groq: Refer to the xref:api/chat/groq-chat.adoc#_function_calling[Groq tool/function calling].
+* Mistral AI: Refer to the xref:api/chat/functions/mistralai-chat-functions.adoc[Mistral AI tool/function calling].
 // * MiniMax : Refer to the xref:api/chat/functions/minimax-chat-functions.adoc[MiniMax function invocation docs].
-* Ollama: Refer to the xref:api/chat/functions/ollama-chat-functions.adoc[Ollama function invocation docs] (streaming not supported yet).
-* OpenAI: Refer to the xref:api/chat/functions/openai-chat-functions.adoc[OpenAI function invocation docs].
+* Ollama: Refer to the xref:api/chat/functions/ollama-chat-functions.adoc[Ollama tool/function calling]
+* OpenAI: Refer to the xref:api/chat/functions/openai-chat-functions.adoc[OpenAI tool/function calling].
 // * ZhiPu AI : Refer to the xref:api/chat/functions/zhipuai-chat-functions.adoc[ZhiPu AI function invocation docs].
 
 image::function-calling-basic-flow.jpg[Function calling, width=700, align="center"]

@@ -60,7 +60,8 @@ dependencies {
 ======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories. Refer to the Repositories section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the Repositories section to add these repositories to your build system.
 
 === Base Properties
 

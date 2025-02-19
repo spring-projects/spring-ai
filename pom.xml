@@ -34,7 +34,12 @@
 		<module>spring-ai-bom</module>
 		<module>spring-ai-core</module>
 		<module>spring-ai-test</module>
+
 		<module>spring-ai-spring-boot-autoconfigure</module>
+
+		<module>auto-configurations/spring-ai-mcp-client</module>
+		<module>auto-configurations/spring-ai-mcp-server</module>
+
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
@@ -127,7 +132,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>		
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
 
 		<module>spring-ai-integration-tests</module>
 
@@ -181,7 +190,7 @@
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.13</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
-		<victools.version>4.31.1</victools.version>
+		<victools.version>4.37.0</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
@@ -227,7 +236,7 @@
 		<okhttp3.version>4.12.0</okhttp3.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.7.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>0.7.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -826,6 +835,13 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<dependency>
+				<groupId>io.modelcontextprotocol.sdk</groupId>
+				<artifactId>mcp-bom</artifactId>
+				<version>${mcp.sdk.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
@@ -878,6 +894,16 @@
 			<name>Mark Pollack</name>
 			<email>mpollack at vmware.com</email>
 			<organization>VMware</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+			<roles>
+				<role>lead</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>tzolov</id>
+			<name>Christian Tzolov</name>
+			<email>christian tzolov at broadcom.com</email>
+			<organization>Broadcom</organization>
 			<organizationUrl>http://www.spring.io</organizationUrl>
 			<roles>
 				<role>lead</role>

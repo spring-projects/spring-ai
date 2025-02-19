@@ -29,7 +29,14 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.*;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 
 /**
  * @author Jemin Huh

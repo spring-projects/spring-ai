@@ -19,6 +19,7 @@ package org.springframework.ai.openai;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest.GranularityType;
@@ -35,7 +36,8 @@ public class TranscriptionRequestTests {
 	@Test
 	public void defaultOptions() {
 
-		var client = new OpenAiAudioTranscriptionModel(new OpenAiAudioApi("TEST"),
+		var client = new OpenAiAudioTranscriptionModel(
+				OpenAiAudioApi.builder().apiKey(new SimpleApiKey("TEST")).build(),
 				OpenAiAudioTranscriptionOptions.builder()
 					.model("DEFAULT_MODEL")
 					.responseFormat(TranscriptResponseFormat.TEXT)
@@ -59,7 +61,8 @@ public class TranscriptionRequestTests {
 	@Test
 	public void runtimeOptions() {
 
-		var client = new OpenAiAudioTranscriptionModel(new OpenAiAudioApi("TEST"),
+		var client = new OpenAiAudioTranscriptionModel(
+				OpenAiAudioApi.builder().apiKey(new SimpleApiKey("TEST")).build(),
 				OpenAiAudioTranscriptionOptions.builder()
 					.model("DEFAULT_MODEL")
 					.responseFormat(TranscriptResponseFormat.TEXT)

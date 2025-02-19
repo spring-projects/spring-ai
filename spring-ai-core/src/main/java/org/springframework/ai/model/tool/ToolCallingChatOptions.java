@@ -20,8 +20,10 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.tool.util.ToolUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -191,18 +193,20 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
 		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
 		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
-		var mergedToolNames = new HashSet<>(runtimeToolNames);
-		mergedToolNames.addAll(defaultToolNames);
-		return mergedToolNames;
+		if (CollectionUtils.isEmpty(runtimeToolNames)) {
+			return new HashSet<>(defaultToolNames);
+		}
+		return new HashSet<>(runtimeToolNames);
 	}
 
 	static List<FunctionCallback> mergeToolCallbacks(List<FunctionCallback> runtimeToolCallbacks,
 			List<FunctionCallback> defaultToolCallbacks) {
 		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
 		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
-		var mergedToolCallbacks = new ArrayList<>(runtimeToolCallbacks);
-		mergedToolCallbacks.addAll(defaultToolCallbacks);
-		return mergedToolCallbacks;
+		if (CollectionUtils.isEmpty(runtimeToolCallbacks)) {
+			return new ArrayList<>(defaultToolCallbacks);
+		}
+		return new ArrayList<>(runtimeToolCallbacks);
 	}
 
 	static Map<String, Object> mergeToolContext(Map<String, Object> runtimeToolContext,
@@ -214,6 +218,14 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		var mergedToolContext = new HashMap<>(defaultToolContext);
 		mergedToolContext.putAll(runtimeToolContext);
 		return mergedToolContext;
+	}
+
+	static void validateToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
+		if (!duplicateToolNames.isEmpty()) {
+			throw new IllegalStateException("Multiple tools with the same name (%s) found in ToolCallingChatOptions"
+				.formatted(String.join(", ", duplicateToolNames)));
+		}
 	}
 
 }

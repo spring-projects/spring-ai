@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClient;
@@ -33,6 +34,9 @@ import com.azure.core.http.HttpRequest;
 import com.azure.core.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
+import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAIClientBuilderCustomizer;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.azure.openai.AzureOpenAiAutoConfiguration;
@@ -59,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Piotr Olaszewski
  * @author Soby Chacko
+ * @author Manuel Andreo Garcia
  * @since 0.8.0
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_API_KEY", matches = ".+")
@@ -226,6 +231,22 @@ class AzureOpenAiAutoConfigurationIT {
 		// Explicitly enable the transcription auto-configuration.
 		this.contextRunner.withPropertyValues("spring.ai.azure.openai.audio.transcription.enabled=true")
 			.run(context -> assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty());
+	}
+
+	@Test
+	void openAIClientBuilderCustomizer() {
+		AtomicBoolean firstCustomizationApplied = new AtomicBoolean(false);
+		AtomicBoolean secondCustomizationApplied = new AtomicBoolean(false);
+		this.contextRunner
+			.withBean("first", AzureOpenAIClientBuilderCustomizer.class,
+					() -> clientBuilder -> firstCustomizationApplied.set(true))
+			.withBean("second", AzureOpenAIClientBuilderCustomizer.class,
+					() -> clientBuilder -> secondCustomizationApplied.set(true))
+			.run(context -> {
+				context.getBean(OpenAIClientBuilder.class);
+				assertThat(firstCustomizationApplied.get()).isTrue();
+				assertThat(secondCustomizationApplied.get()).isTrue();
+			});
 	}
 
 }
