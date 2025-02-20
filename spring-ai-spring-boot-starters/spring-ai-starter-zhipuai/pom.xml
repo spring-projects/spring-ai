@@ -26,7 +26,7 @@
 	<artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Starter - ZhiPuAI</name>
-	<description>Spring AI ZhiPuAI Auto Configuration</description>
+	<description>Spring AI ZhiPuAI Spring Boot Starter</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -44,7 +44,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+			<artifactId>spring-ai-zhipuai-spring-boot-autoconfigure</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
