@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class McpServerAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(MpcServerAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {

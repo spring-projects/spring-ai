@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-org.springframework.ai.autoconfigure.mcp.server.MpcServerAutoConfiguration
-org.springframework.ai.autoconfigure.mcp.server.MpcWebMvcServerAutoConfiguration
-org.springframework.ai.autoconfigure.mcp.server.MpcWebFluxServerAutoConfiguration
+org.springframework.ai.autoconfigure.mcp.server.McpServerAutoConfiguration
+org.springframework.ai.autoconfigure.mcp.server.McpWebMvcServerAutoConfiguration
+org.springframework.ai.autoconfigure.mcp.server.McpWebFluxServerAutoConfiguration
 

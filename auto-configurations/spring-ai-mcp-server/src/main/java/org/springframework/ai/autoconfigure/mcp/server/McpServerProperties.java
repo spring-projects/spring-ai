@@ -33,7 +33,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 1.0.0
- * @see org.springframework.ai.autoconfigure.mcp.server.MpcServerAutoConfiguration
+ * @see org.springframework.ai.autoconfigure.mcp.server.McpServerAutoConfiguration
  */
 @ConfigurationProperties(McpServerProperties.CONFIG_PREFIX)
 public class McpServerProperties {

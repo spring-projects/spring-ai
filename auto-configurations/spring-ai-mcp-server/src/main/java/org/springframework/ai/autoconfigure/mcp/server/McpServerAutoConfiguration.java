@@ -95,22 +95,22 @@ import org.springframework.util.CollectionUtils;
  * </ul>
  * <p>
  * WebMvc transport support is provided separately by
- * {@link MpcWebMvcServerAutoConfiguration}.
+ * {@link McpWebMvcServerAutoConfiguration}.
  *
  * @author Christian Tzolov
  * @since 1.0.0
  * @see McpServerProperties
- * @see MpcWebMvcServerAutoConfiguration
+ * @see McpWebMvcServerAutoConfiguration
  * @see org.springframework.ai.mcp.ToolCallback
  */
-@AutoConfiguration(after = { MpcWebMvcServerAutoConfiguration.class, MpcWebFluxServerAutoConfiguration.class })
+@AutoConfiguration(after = { McpWebMvcServerAutoConfiguration.class, McpWebFluxServerAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
 @EnableConfigurationProperties(McpServerProperties.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class MpcServerAutoConfiguration {
+public class McpServerAutoConfiguration {
 
-	private static final LogAccessor logger = new LogAccessor(MpcServerAutoConfiguration.class);
+	private static final LogAccessor logger = new LogAccessor(McpServerAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
