@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.vectorestore.weaviate;
+package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
 import java.util.Map;
 

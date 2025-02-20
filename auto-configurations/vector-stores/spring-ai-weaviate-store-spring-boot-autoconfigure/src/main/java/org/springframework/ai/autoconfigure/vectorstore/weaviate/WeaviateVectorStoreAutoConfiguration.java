@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.vectorestore.weaviate;
+package org.springframework.ai.autoconfigure.vectorstore.weaviate;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.weaviate.client.Config;
