@@ -35,11 +35,40 @@
 		<module>spring-ai-core</module>
 		<module>spring-ai-test</module>
 
-		<module>spring-ai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
-		<module>auto-configurations/spring-ai-mcp-client</module>
-		<module>auto-configurations/spring-ai-mcp-server</module>
+		<module>auto-configurations/chat/spring-ai-autoconfigure-model-chat-client</module>
+		<module>auto-configurations/chat/spring-ai-autoconfigure-model-tool</module>
+		<module>auto-configurations/chat/spring-ai-autoconfigure-model-chat-memory</module>
+
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-moonshot</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-qianfan</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-watsonx-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
+
+		<module>auto-configurations/observation/chat/spring-ai-autoconfigure-observation-chat</module>
+		<module>auto-configurations/observation/embedding/spring-ai-autoconfigure-observation-embedding</module>
+		<module>auto-configurations/observation/image/spring-ai-autoconfigure-observation-image</module>
+
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
+
 		<module>auto-configurations/vector-stores/spring-ai-weaviate-store-spring-boot-autoconfigure</module>
+
+		<module>spring-ai-spring-boot-autoconfigure</module>
 
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
@@ -116,25 +145,25 @@
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-anthropic</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-openai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-bedrock-converse</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-huggingface</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-minimax</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mistral-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-oci-genai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-ollama</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-openai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-postgresml-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-qianfan</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-stability-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-transformers</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vertex-ai-gemini</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-watsonx-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-zhipuai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-moonshot</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-oci-genai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-qianfan</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-watsonx-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-moonshot</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
