@@ -316,11 +316,43 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<!-- TODO: To be removed in 1-0-0.M7 once individual autoconfigure modules are updated -->
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<!-- Spring AI Spring Boot Auto-configurations -->
+
+			<!-- Spring AI Retry autoconfiguration-->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-retry-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Chat autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-chat-model-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-chat-memory-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI MCP autoconfiguration -->
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -333,6 +365,125 @@
                 <artifactId>spring-ai-mcp-server-spring-boot-autoconfigure</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<!-- Spring AI Model autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-anthroic-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-azure-openai-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bedrock-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-huggingface-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-minimax-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mistral-ai-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-moonshot-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-oci-genai-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-ollama-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-openai-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-postgresml-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-qianfan-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-stability-ai-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-transformers-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-vertex-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-watsonx-ai-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-zhipuai-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-chat-observation-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-embedding-observation-spring-boot-autoconfigure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 
             <!-- Spring Boot Starters -->
             <dependency>
