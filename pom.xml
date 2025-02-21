@@ -39,7 +39,11 @@
 
 		<module>auto-configurations/spring-ai-mcp-client</module>
 		<module>auto-configurations/spring-ai-mcp-server</module>
-		<module>auto-configurations/vector-stores/spring-ai-weaviate-store-spring-boot-autoconfigure</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vectorstore-milvus</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vectorstore-pinecone</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vectorstore-qdrant</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vectorstore-typesense</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vectorstore-weaviate</module>
 
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>

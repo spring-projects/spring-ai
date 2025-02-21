@@ -48,6 +48,12 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vectorstore-pinecone</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-pinecone-store</artifactId>

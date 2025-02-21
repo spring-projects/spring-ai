@@ -50,6 +50,12 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vectorstore-typesense</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-typesense-store</artifactId>
