@@ -42,6 +42,8 @@
 
 	<dependencies>
 
+		<!-- TODO: Once all the per module autoconfigurations are updated, the following autoconfiguration should be removed -->
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
