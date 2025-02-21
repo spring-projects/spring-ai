@@ -36,7 +36,6 @@ org.springframework.ai.autoconfigure.vectorstore.milvus.MilvusVectorStoreAutoCon
 org.springframework.ai.autoconfigure.vectorstore.redis.RedisVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfiguration
-org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.neo4j.Neo4jVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantVectorStoreAutoConfiguration
 org.springframework.ai.autoconfigure.vectorstore.hanadb.HanaCloudVectorStoreAutoConfiguration
