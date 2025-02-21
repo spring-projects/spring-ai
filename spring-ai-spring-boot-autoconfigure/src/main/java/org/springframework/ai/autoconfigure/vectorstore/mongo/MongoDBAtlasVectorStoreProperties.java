@@ -18,7 +18,7 @@ package org.springframework.ai.autoconfigure.vectorstore.mongo;
 
 import java.util.List;
 
-import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
+import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

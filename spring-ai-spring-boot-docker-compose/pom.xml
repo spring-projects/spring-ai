@@ -51,7 +51,17 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-weaviate-store-spring-boot-autoconfigure</artifactId>
+			<artifactId>spring-ai-autoconfigure-vector-store-weaviate</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-qdrant</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-typesense</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
