@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -40,6 +41,7 @@ import org.springframework.util.Assert;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -130,7 +132,7 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 	private Boolean proxyToolCalls;
 
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -141,7 +143,7 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 		return ZhiPuAiChatOptions.builder()
 			.model(fromOptions.getModel())
 			.maxTokens(fromOptions.getMaxTokens())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.tools(fromOptions.getTools())
@@ -149,10 +151,11 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 			.user(fromOptions.getUser())
 			.requestId(fromOptions.getRequestId())
 			.doSample(fromOptions.getDoSample())
-			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
+			.functionCallbacks(fromOptions.getFunctionCallbacks() != null
+					? new ArrayList<>(fromOptions.getFunctionCallbacks()) : null)
+			.functions(fromOptions.getFunctions() != null ? new HashSet<>(fromOptions.getFunctions()) : null)
 			.proxyToolCalls(fromOptions.getProxyToolCalls())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.build();
 	}
 
@@ -309,19 +312,8 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
-		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
-		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
-		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
-		return result;
+		return Objects.hash(this.model, this.maxTokens, this.stop, this.temperature, this.topP, this.tools,
+				this.toolChoice, this.user, this.requestId, this.doSample, this.proxyToolCalls, this.toolContext);
 	}
 
 	@Override
@@ -329,113 +321,22 @@ public class ZhiPuAiChatOptions implements FunctionCallingOptions {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
 		ZhiPuAiChatOptions other = (ZhiPuAiChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.tools == null) {
-			if (other.tools != null) {
-				return false;
-			}
-		}
-		else if (!this.tools.equals(other.tools)) {
-			return false;
-		}
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null) {
-				return false;
-			}
-		}
-		else if (!this.toolChoice.equals(other.toolChoice)) {
-			return false;
-		}
-		if (this.user == null) {
-			if (other.user != null) {
-				return false;
-			}
-		}
-		else if (!this.user.equals(other.user)) {
-			return false;
-		}
-		if (this.requestId == null) {
-			if (other.requestId != null) {
-				return false;
-			}
-		}
-		else if (!this.requestId.equals(other.requestId)) {
-			return false;
-		}
-		if (this.doSample == null) {
-			if (other.doSample != null) {
-				return false;
-			}
-		}
-		else if (!this.doSample.equals(other.doSample)) {
-			return false;
-		}
-		if (this.proxyToolCalls == null) {
-			if (other.proxyToolCalls != null) {
-				return false;
-			}
-		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
-			return false;
-		}
-		if (this.toolContext == null) {
-			if (other.toolContext != null) {
-				return false;
-			}
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-		return true;
+
+		return Objects.equals(this.model, other.model) && Objects.equals(this.maxTokens, other.maxTokens)
+				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.tools, other.tools)
+				&& Objects.equals(this.toolChoice, other.toolChoice) && Objects.equals(this.user, other.user)
+				&& Objects.equals(this.requestId, other.requestId) && Objects.equals(this.doSample, other.doSample)
+				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
+				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ZhiPuAiChatOptions copy() {
 		return fromOptions(this);
 	}
