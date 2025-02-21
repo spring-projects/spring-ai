@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +69,7 @@ public class MistralAiChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.model(MistralAiApi.ChatModel.SMALL.getValue())
 			.maxTokens(2048)
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -91,7 +90,7 @@ public class MistralAiChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.model(MistralAiApi.ChatModel.SMALL.getValue())
 			.maxTokens(2048)
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -125,12 +124,12 @@ public class MistralAiChatModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+			.hasContextualNameEqualTo("chat " + MistralAiApi.ChatModel.SMALL.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.MISTRAL_AI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
+					MistralAiApi.ChatModel.SMALL.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
 					StringUtils.hasText(responseMetadata.getModel()) ? responseMetadata.getModel()
 							: KeyValue.NONE_VALUE)
@@ -181,9 +180,12 @@ public class MistralAiChatModelObservationIT {
 		@Bean
 		public MistralAiChatModel openAiChatModel(MistralAiApi mistralAiApi,
 				TestObservationRegistry observationRegistry) {
-			return new MistralAiChatModel(mistralAiApi, MistralAiChatOptions.builder().build(),
-					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
-					observationRegistry);
+			return MistralAiChatModel.builder()
+				.mistralAiApi(mistralAiApi)
+				.defaultOptions(MistralAiChatOptions.builder().build())
+				.retryTemplate(RetryTemplate.defaultInstance())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}
