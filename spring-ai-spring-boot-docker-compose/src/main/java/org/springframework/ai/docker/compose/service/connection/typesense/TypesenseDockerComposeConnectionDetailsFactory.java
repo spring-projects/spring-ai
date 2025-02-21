@@ -16,7 +16,7 @@
 
 package org.springframework.ai.docker.compose.service.connection.typesense;
 
-import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseConnectionDetails;
+import org.springframework.ai.vectorstore.typesense.autoconfigure.TypesenseConnectionDetails;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionSource;

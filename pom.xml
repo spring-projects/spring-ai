@@ -66,7 +66,11 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
 
-		<module>auto-configurations/vector-stores/spring-ai-weaviate-store-spring-boot-autoconfigure</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
 
 		<module>spring-ai-spring-boot-autoconfigure</module>
 
@@ -113,17 +117,17 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mariadb-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-milvus-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-oracle-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-pinecone-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-qdrant-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-redis-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-typesense-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-weaviate-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-milvus</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pinecone</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-qdrant</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
 
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-azure-openai</module>
