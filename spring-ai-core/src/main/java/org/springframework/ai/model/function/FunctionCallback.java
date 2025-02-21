@@ -79,8 +79,8 @@ public interface FunctionCallback {
 	 * model.
 	 * @return String containing the function call response.
 	 */
-	default String call(String functionInput, ToolContext tooContext) {
-		if (tooContext != null && !tooContext.getContext().isEmpty()) {
+	default String call(String functionInput, ToolContext toolContext) {
+		if (toolContext != null && !toolContext.getContext().isEmpty()) {
 			throw new UnsupportedOperationException("Function context is not supported!");
 		}
 		return call(functionInput);
