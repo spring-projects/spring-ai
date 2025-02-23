@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.springframework.util.StringUtils;
  * @author Josh Long
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
@@ -71,6 +72,9 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 		}
 		if (properties.getSimilarity() != null) {
 			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
+		}
+		if (properties.getEmbeddingFieldName() != null) {
+			elasticsearchVectorStoreOptions.setEmbeddingFieldName(properties.getEmbeddingFieldName());
 		}
 
 		return ElasticsearchVectorStore.builder(restClient, embeddingModel)
