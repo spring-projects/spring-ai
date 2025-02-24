@@ -323,9 +323,18 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		String nativeFilterExpressions = "";
+		String searchParamsJson = null;
+		if (request instanceof MilvusSearchRequest milvusReq) {
+			nativeFilterExpressions = StringUtils.hasText(milvusReq.getNativeExpression())
+					? milvusReq.getNativeExpression() : getConvertedFilterExpression(request);
 
-		String nativeFilterExpressions = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+			searchParamsJson = StringUtils.hasText(milvusReq.getSearchParamsJson()) ? milvusReq.getSearchParamsJson()
+					: null;
+		}
+		else {
+			nativeFilterExpressions = getConvertedFilterExpression(request);
+		}
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 		List<String> outFieldNames = new ArrayList<>();
@@ -346,6 +355,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
 			searchParamBuilder.withExpr(nativeFilterExpressions);
+		}
+
+		if (StringUtils.hasText(searchParamsJson)) {
+			searchParamBuilder.withParams(searchParamsJson);
 		}
 
 		R<SearchResults> respSearch = this.milvusClient.search(searchParamBuilder.build());
@@ -383,6 +396,11 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 					.build();
 			})
 			.toList();
+	}
+
+	private String getConvertedFilterExpression(SearchRequest request) {
+		return (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 	}
 
 	private float getResultSimilarity(RowRecord rowRecord) {
