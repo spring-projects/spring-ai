@@ -63,7 +63,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = SseWebFluxTransportAutoConfiguration.class)
 @ConditionalOnClass({ McpSchema.class, McpSyncClient.class })
-@ConditionalOnMissingClass("io.modelcontextprotocol.client.transport.public class WebFluxSseClientTransport")
+@ConditionalOnMissingClass("io.modelcontextprotocol.client.transport.WebFluxSseClientTransport")
 @EnableConfigurationProperties({ McpSseClientProperties.class, McpClientCommonProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
