@@ -3,9 +3,15 @@
 The link:https://modelcontextprotocol.org/docs/concepts/architecture[Model Context Protocol] (MCP) is a standardized protocol that enables AI models to interact with external tools and resources in a structured way. 
 It supports multiple transport mechanisms to provide flexibility across different environments.
 
-== MCP Java SDK
-
 The link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK] provides a Java implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication patterns.
+
+`**Spring AI MCP**` extends the MCP Java SDK with Spring Boot integration, providing both xref:api/mcp/mcp-client-boot-starter-docs.adoc[client] and xref:api/mcp/mcp-server-boot-starter-docs.adoc[server] starters. 
+Bootstrap your AI applications with MCP support using link:https://start.spring.io[Spring Initializer].
+
+== MCP Java SDK Architecture
+
+TIP: This section provides an overview for the link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK architecture]. 
+For the Spring AI MCP integration, refer to the xref:#_spring_ai_mcp_integration[Spring AI MCP Boot Starters] documentation.
 
 The Java MCP implementation follows a three-layer architecture:
 
