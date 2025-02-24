@@ -28,7 +28,7 @@
     <artifactId>spring-ai-mcp-client-webflux-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Starter - MCP Client Webflux</name>
-    <description>Spring AI MCP Client WebFlux Auto Configuration</description>
+    <description>Spring AI MCP Client WebFlux Spring Boot Starter</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>

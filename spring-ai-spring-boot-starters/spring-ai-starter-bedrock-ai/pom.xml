@@ -27,7 +27,7 @@
     <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Starter - Bedrock AI</name>
-    <description>Spring AI Bedrock AI Auto Configuration</description>
+    <description>Spring AI Bedrock AI Spring Boot Starter</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>
@@ -44,7 +44,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+            <artifactId>spring-ai-bedrock-spring-boot-autoconfigure</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
