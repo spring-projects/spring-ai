@@ -318,9 +318,19 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
-
-		String nativeFilterExpressions = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+		String nativeFilterExpressions = "";
+		String searchParamsJson = null;
+		if (request instanceof MilvusSearchRequest milvusReq){
+			if(milvusReq.getNativeExpression() != null && !milvusReq.getNativeExpression().isEmpty()) {
+				nativeFilterExpressions = milvusReq.getNativeExpression();
+			}
+			if (milvusReq.getSearchParamsJson() != null && !milvusReq.getSearchParamsJson().isEmpty()) {
+				searchParamsJson = milvusReq.getSearchParamsJson();
+			}
+		} else {
+			nativeFilterExpressions = (request.getFilterExpression() != null)
+					? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+		}
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 		List<String> outFieldNames = new ArrayList<>();
@@ -341,6 +351,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
 			searchParamBuilder.withExpr(nativeFilterExpressions);
+		}
+
+		if (StringUtils.hasText(searchParamsJson)) {
+			searchParamBuilder.withParams(searchParamsJson);
 		}
 
 		R<SearchResults> respSearch = this.milvusClient.search(searchParamBuilder.build());
