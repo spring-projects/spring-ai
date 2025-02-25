@@ -150,13 +150,13 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.responseFormat(fromOptions.getResponseFormat())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.tools(fromOptions.getTools())
 			.toolChoice(fromOptions.getToolChoice())
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.build();
 	}
 
@@ -369,6 +369,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public MistralAiChatOptions copy() {
 		return fromOptions(this);
 	}

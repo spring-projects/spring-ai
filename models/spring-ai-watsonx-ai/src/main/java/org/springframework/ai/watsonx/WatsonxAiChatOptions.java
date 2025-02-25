@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package org.springframework.ai.watsonx;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -162,11 +164,11 @@ public class WatsonxAiChatOptions implements ChatOptions {
 				.decodingMethod(fromOptions.getDecodingMethod())
 				.maxNewTokens(fromOptions.getMaxNewTokens())
 				.minNewTokens(fromOptions.getMinNewTokens())
-				.stopSequences(fromOptions.getStopSequences())
+				.stopSequences(fromOptions.getStopSequences() != null ? new ArrayList<>(fromOptions.getStopSequences()) : null)
 				.repetitionPenalty(fromOptions.getRepetitionPenalty())
 				.randomSeed(fromOptions.getRandomSeed())
 				.model(fromOptions.getModel())
-				.additionalProperties(fromOptions.getAdditionalProperties())
+				.additionalProperties(fromOptions.getAdditionalProperties() != null ? new HashMap<>(fromOptions.getAdditionalProperties()) : null)
 				.build();
 	}
 
@@ -319,8 +321,36 @@ public class WatsonxAiChatOptions implements ChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public WatsonxAiChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+
+		WatsonxAiChatOptions that = (WatsonxAiChatOptions) o;
+
+		return Objects.equals(this.decodingMethod, that.decodingMethod) &&
+				Objects.equals(this.maxNewTokens, that.maxNewTokens) &&
+				Objects.equals(this.minNewTokens, that.minNewTokens) &&
+				Objects.equals(this.repetitionPenalty, that.repetitionPenalty) &&
+				Objects.equals(this.randomSeed, that.randomSeed) &&
+				Objects.equals(this.temperature, that.temperature) &&
+				Objects.equals(this.topP, that.topP) &&
+				Objects.equals(this.topK, that.topK) &&
+				Objects.equals(this.stopSequences, that.stopSequences) &&
+				Objects.equals(this.model, that.model) &&
+				Objects.equals(this.additional, that.additional);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.decodingMethod, this.maxNewTokens, this.minNewTokens,
+				this.repetitionPenalty, this.randomSeed, this.temperature,
+				this.topP, this.topK, this.stopSequences, this.model, this.additional);
 	}
 
 	public static class Builder {

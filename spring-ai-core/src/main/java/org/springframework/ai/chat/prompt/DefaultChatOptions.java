@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.chat.prompt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Default implementation for the {@link ChatOptions}.
@@ -126,6 +127,29 @@ public class DefaultChatOptions implements ChatOptions {
 		copy.setTopK(this.getTopK());
 		copy.setTopP(this.getTopP());
 		return (T) copy;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+
+		DefaultChatOptions that = (DefaultChatOptions) o;
+
+		return Objects.equals(this.model, that.model) && Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.stopSequences, that.stopSequences)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
+				&& Objects.equals(this.topP, that.topP);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(model, maxTokens, frequencyPenalty, presencePenalty, stopSequences, temperature, topP,
+				topK);
 	}
 
 }

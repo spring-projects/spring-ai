@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -588,6 +589,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
 	}
