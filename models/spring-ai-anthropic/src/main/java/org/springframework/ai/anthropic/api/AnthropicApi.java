@@ -228,6 +228,11 @@ public class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-3-7-sonnet-latest model.
+		 */
+		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
+		
+		/**
 		 * The claude-3-5-sonnet-20241022 model.
 		 */
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
