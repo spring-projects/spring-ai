@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,8 +90,8 @@ class AnthropicChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20241022" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest",
+			"claude-3-opus-latest" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -143,9 +144,6 @@ class AnthropicChatModelIT {
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		// assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
-		// assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
-
 	}
 
 	@Test
@@ -357,7 +355,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getName();
+		String model = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder().model(model).build())
@@ -391,6 +389,68 @@ class AnthropicChatModelIT {
 
 	}
 
+	@Test
+	void thinkingTest() {
+		UserMessage userMessage = new UserMessage("Tell me a Joke?");
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.temperature(1.0) // temperature should be set to 1 when thinking is enabled
+			.maxTokens(8192)
+			.thinking(AnthropicApi.ThinkingType.ENABLED, 2048) // Must be ≥1024 and less
+																// than max_tokens.
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+
+		logger.info("Response: {}", response);
+
+		for (Generation generation : response.getResults()) {
+			AssistantMessage message = generation.getOutput();
+			if (message.getText() != null) { // text
+				assertThat(message.getText()).isNotBlank();
+			}
+			else if (message.getMetadata().containsKey("signature")) { // thinking
+				assertThat(message.getMetadata().get("signature")).isNotNull();
+				assertThat(message.getMetadata().get("thinking")).isNotNull();
+			}
+			else if (message.getMetadata().containsKey("data")) { // redacted thinking
+				assertThat(message.getMetadata().get("data")).isNotNull();
+			}
+		}
+	}
+
+	@Test
+	void testToolUseContentBlock() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
+			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+		for (Generation generation : response.getResults()) {
+			AssistantMessage message = generation.getOutput();
+			if (!message.getToolCalls().isEmpty()) {
+				assertThat(message.getToolCalls()).isNotEmpty();
+				AssistantMessage.ToolCall toolCall = message.getToolCalls().get(0);
+				assertThat(toolCall.id()).isNotBlank();
+				assertThat(toolCall.name()).isNotBlank();
+				assertThat(toolCall.arguments()).isNotBlank();
+			}
+		}
+	}
+
 	@SpringBootConfiguration
 	public static class Config {
 
@@ -410,7 +470,7 @@ class AnthropicChatModelIT {
 
 		@Bean
 		public AnthropicChatModel openAiChatModel(AnthropicApi api) {
-			return new AnthropicChatModel(api);
+			return AnthropicChatModel.builder().anthropicApi(api).build();
 		}
 
 	}

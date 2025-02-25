@@ -56,6 +56,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("temperature") Double temperature;
 	private @JsonProperty("top_p") Double topP;
 	private @JsonProperty("top_k") Integer topK;
+	private @JsonProperty("thinking") ChatCompletionRequest.ThinkingConfig thinking;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
@@ -94,6 +95,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.topK(fromOptions.getTopK())
+			.thinking(fromOptions.getThinking())
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
@@ -161,6 +163,14 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	public void setTopK(Integer topK) {
 		this.topK = topK;
+	}
+
+	public ChatCompletionRequest.ThinkingConfig getThinking() {
+		return this.thinking;
+	}
+
+	public void setThinking(ChatCompletionRequest.ThinkingConfig thinking) {
+		this.thinking = thinking;
 	}
 
 	@Override
@@ -316,6 +326,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder topK(Integer topK) {
 			this.options.topK = topK;
+			return this;
+		}
+
+		public Builder thinking(ChatCompletionRequest.ThinkingConfig thinking) {
+			this.options.thinking = thinking;
+			return this;
+		}
+
+		public Builder thinking(AnthropicApi.ThinkingType type, Integer budgetTokens) {
+			this.options.thinking = new ChatCompletionRequest.ThinkingConfig(type, budgetTokens);
 			return this;
 		}
 
