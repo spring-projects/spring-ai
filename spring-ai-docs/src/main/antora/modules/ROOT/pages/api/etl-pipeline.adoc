@@ -289,6 +289,101 @@ List<Document> splitDocuments = new TokenTextSplitter().apply(this.documents);
 * Custom metadata can be added to all documents created by the reader using the `getCustomMetadata()` method.
 
 
+=== HTML (JSoup)
+
+The `JsoupDocumentReader` processes HTML documents, converting them into a list of `Document` objects using the JSoup library.
+
+==== Example
+
+[source,java]
+----
+@Component
+class MyHtmlReader {
+
+    private final Resource resource;
+
+    MyHtmlReader(@Value("classpath:/my-page.html") Resource resource) {
+        this.resource = resource;
+    }
+
+    List<Document> loadHtml() {
+        JsoupDocumentReaderConfig config = JsoupDocumentReaderConfig.builder()
+            .selector("article p") // Extract paragraphs within <article> tags
+            .charset("ISO-8859-1")  // Use ISO-8859-1 encoding
+            .includeLinkUrls(true) // Include link URLs in metadata
+            .metadataTags(List.of("author", "date")) // Extract author and date meta tags
+            .additionalMetadata("source", "my-page.html") // Add custom metadata
+            .build();
+
+        JsoupDocumentReader reader = new JsoupDocumentReader(this.resource, config);
+        return reader.get();
+    }
+}
+----
+
+The `JsoupDocumentReaderConfig` allows you to customize the behavior of the `JsoupDocumentReader`:
+
+*   `charset`:  Specifies the character encoding of the HTML document (defaults to "UTF-8").
+*   `selector`:  A JSoup CSS selector to specify which elements to extract text from (defaults to "body").
+*   `separator`:  The string used to join text from multiple selected elements (defaults to "\n").
+*   `allElements`:  If `true`, extracts all text from the `<body>` element, ignoring the `selector` (defaults to `false`).
+*   `groupByElement`: If `true`, creates a separate `Document` for each element matched by the `selector` (defaults to `false`).
+*   `includeLinkUrls`:  If `true`, extracts absolute link URLs and adds them to the metadata (defaults to `false`).
+*   `metadataTags`:  A list of `<meta>` tag names to extract content from (defaults to `["description", "keywords"]`).
+*   `additionalMetadata`:  Allows you to add custom metadata to all created `Document` objects.
+
+==== Sample Document: my-page.html
+
+[source,html]
+----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Web Page</title>
+    <meta name="description" content="A sample web page for Spring AI">
+    <meta name="keywords" content="spring, ai, html, example">
+    <meta name="author" content="John Doe">
+    <meta name="date" content="2024-01-15">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to My Page</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about">About</a></li>
+        </ul>
+    </nav>
+    <article>
+        <h2>Main Content</h2>
+        <p>This is the main content of my web page.</p>
+        <p>It contains multiple paragraphs.</p>
+        <a href="https://www.example.com">External Link</a>
+    </article>
+    <footer>
+        <p>&copy; 2024 John Doe</p>
+    </footer>
+</body>
+</html>
+----
+
+Behavior:
+
+The `JsoupDocumentReader` processes the HTML content and creates `Document` objects based on the configuration:
+
+*   The `selector` determines which elements are used for text extraction.
+*   If `allElements` is `true`, all text within the `<body>` is extracted into a single `Document`.
+*   If `groupByElement` is `true`, each element matching the `selector` creates a separate `Document`.
+*   If neither `allElements` nor `groupByElement` is `true`, text from all elements matching the `selector` is joined using the `separator`.
+*   The document title, content from specified `<meta>` tags, and (optionally) link URLs are added to the `Document` metadata.
+*   The base URI, for resolving relative links, will be extracted from URL resources.
+
+The reader preserves the text content of the selected elements, but removes any HTML tags within them.
+
+
 === Markdown
 
 The `MarkdownDocumentReader` processes Markdown documents, converting them into a list of `Document` objects.

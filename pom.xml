@@ -46,6 +46,7 @@
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-cloud-bindings</module>
 
+		<module>document-readers/jsoup-reader</module>
 		<module>document-readers/markdown-reader</module>
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
