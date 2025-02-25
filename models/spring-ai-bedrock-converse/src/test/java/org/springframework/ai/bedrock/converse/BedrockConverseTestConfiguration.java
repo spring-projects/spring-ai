@@ -21,7 +21,7 @@ import java.time.Duration;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -42,7 +42,7 @@ public class BedrockConverseTestConfiguration {
 			.region(Region.US_EAST_1)
 			// .region(Region.US_EAST_1)
 			.timeout(Duration.ofSeconds(120))
-			.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
+			.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
 			.build();
 	}
 

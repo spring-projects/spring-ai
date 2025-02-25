@@ -115,17 +115,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	}
 
 	/**
-	 * Creates a new builder instance for configuring a PineconeVectorStore.
-	 * @return A new PineconeBuilder instance
-	 * @deprecated use {@link #builder(EmbeddingModel)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public static Builder builder(EmbeddingModel embeddingModel, String apiKey, String projectId, String environment,
-			String indexName) {
-		return new Builder(embeddingModel, apiKey, projectId, environment, indexName);
-	}
-
-	/**
 	 * Creates a new builder for constructing a PineconeVectorStore instance. This builder
 	 * implements a type-safe step pattern that guides users through the required
 	 * configuration fields in a specific order, followed by optional configurations.
