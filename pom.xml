@@ -202,7 +202,6 @@
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.51.0</oci-sdk-version>
 		<com.google.cloud.version>26.48.0</com.google.cloud.version>
-		<qdrant.version>1.9.1</qdrant.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.37.0</jsonschema.version>
 		<swagger-annotations.version>2.2.25</swagger-annotations.version>
@@ -226,7 +225,7 @@
 		<azure-search.version>11.6.1</azure-search.version>
 		<azure-cosmos.version>5.17.1</azure-cosmos.version>
 		<weaviate-client.version>5.0.1</weaviate-client.version>
-		<qdrant.version>1.9.1</qdrant.version>
+		<qdrant.version>1.13.0</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
 		<mariadb.version>3.5.1</mariadb.version>
