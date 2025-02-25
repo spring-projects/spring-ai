@@ -295,46 +295,49 @@ public class AnthropicChatModel implements ChatModel {
 			return new ChatResponse(List.of());
 		}
 
-		List<Generation> generations = chatCompletion.content()
-			.stream()
-			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
-					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()))
-			.toList();
-
-		List<Generation> allGenerations = new ArrayList<>(generations);
+		List<Generation> generations = new ArrayList<>();
+		List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
+		for (ContentBlock content : chatCompletion.content()) {
+			switch (content.type()) {
+				case TEXT, TEXT_DELTA:
+					generations.add(new Generation(new AssistantMessage(content.text(), Map.of()),
+							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
+					break;
+				case THINKING, THINKING_DELTA:
+					Map<String, Object> thinkingProperties = new HashMap<>();
+					thinkingProperties.put("signature", content.signature());
+					generations.add(new Generation(new AssistantMessage(content.thinking(), thinkingProperties),
+							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
+					break;
+				case REDACTED_THINKING:
+					Map<String, Object> redactedProperties = new HashMap<>();
+					redactedProperties.put("data", content.data());
+					generations.add(new Generation(new AssistantMessage(null, redactedProperties),
+							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
+					break;
+				case TOOL_USE:
+					var functionCallId = content.id();
+					var functionName = content.name();
+					var functionArguments = JsonParser.toJson(content.input());
+					toolCalls.add(
+							new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
+					break;
+			}
+		}
 
 		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
 			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
 					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
-			allGenerations.add(generation);
+			generations.add(generation);
 		}
 
-		List<ContentBlock> toolToUseList = chatCompletion.content()
-			.stream()
-			.filter(c -> c.type() == ContentBlock.Type.TOOL_USE)
-			.toList();
-
-		if (!CollectionUtils.isEmpty(toolToUseList)) {
-			List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
-
-			for (ContentBlock toolToUse : toolToUseList) {
-
-				var functionCallId = toolToUse.id();
-				var functionName = toolToUse.name();
-				var functionArguments = JsonParser.toJson(toolToUse.input());
-
-				toolCalls
-					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
-			}
-
+		if (!CollectionUtils.isEmpty(toolCalls)) {
 			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 			Generation toolCallGeneration = new Generation(assistantMessage,
 					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
-			allGenerations.add(toolCallGeneration);
+			generations.add(toolCallGeneration);
 		}
-
-		return new ChatResponse(allGenerations, this.from(chatCompletion, usage));
+		return new ChatResponse(generations, this.from(chatCompletion, usage));
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
@@ -506,7 +509,7 @@ public class AnthropicChatModel implements ChatModel {
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
-			request = ChatCompletionRequest.from(request).withTools(getFunctionTools(toolDefinitions)).build();
+			request = ChatCompletionRequest.from(request).tools(getFunctionTools(toolDefinitions)).build();
 		}
 
 		return request;

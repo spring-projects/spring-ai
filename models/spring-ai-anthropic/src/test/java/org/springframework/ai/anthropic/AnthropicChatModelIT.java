@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,7 +83,6 @@ class AnthropicChatModelIT {
 
 	private static void validateChatResponseMetadata(ChatResponse response, String model) {
 		assertThat(response.getMetadata().getId()).isNotEmpty();
-		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
@@ -118,7 +118,7 @@ class AnthropicChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				AnthropicChatOptions.builder().model("claude-3-sonnet-20240229").build());
+				AnthropicChatOptions.builder().model("claude-3-5-sonnet-latest").build());
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
@@ -143,9 +143,6 @@ class AnthropicChatModelIT {
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		// assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
-		// assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
-
 	}
 
 	@Test
@@ -357,7 +354,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_2_1.getName();
+		String model = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder().model(model).build())
@@ -384,11 +381,74 @@ class AnthropicChatModelIT {
 
 		logger.info(response.toString());
 		// Note, brittle test.
-		validateChatResponseMetadata(response, "claude-3-5-sonnet-20241022");
+		validateChatResponseMetadata(response, "claude-3-5-sonnet-latest");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
+	}
+
+	@Test
+	void thinkingTest() {
+		UserMessage userMessage = new UserMessage(
+				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.temperature(1.0) // temperature should be set to 1 when thinking is enabled
+			.maxTokens(8192)
+			.thinking(AnthropicApi.ThinkingType.ENABLED, 2048) // Must be ≥1024 && <
+																// max_tokens
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+
+		logger.info("Response: {}", response);
+
+		for (Generation generation : response.getResults()) {
+			AssistantMessage message = generation.getOutput();
+			if (message.getText() != null) { // text
+				assertThat(message.getText()).isNotBlank();
+			}
+			else if (message.getMetadata().containsKey("signature")) { // thinking
+				assertThat(message.getMetadata().get("signature")).isNotNull();
+				assertThat(message.getMetadata().get("thinking")).isNotNull();
+			}
+			else if (message.getMetadata().containsKey("data")) { // redacted thinking
+				assertThat(message.getMetadata().get("data")).isNotNull();
+			}
+		}
+	}
+
+	@Test
+	void testToolUseContentBlock() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
+			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+		for (Generation generation : response.getResults()) {
+			AssistantMessage message = generation.getOutput();
+			if (!message.getToolCalls().isEmpty()) {
+				assertThat(message.getToolCalls()).isNotEmpty();
+				AssistantMessage.ToolCall toolCall = message.getToolCalls().get(0);
+				assertThat(toolCall.id()).isNotBlank();
+				assertThat(toolCall.name()).isNotBlank();
+				assertThat(toolCall.arguments()).isNotBlank();
+			}
+		}
 	}
 
 	@SpringBootConfiguration

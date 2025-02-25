@@ -102,11 +102,11 @@ public class AnthropicApiToolIT {
 	private ResponseEntity<ChatCompletionResponse> doCall(List<AnthropicMessage> messageConversation) {
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
-			.withMessages(messageConversation)
-			.withMaxTokens(1500)
-			.withTemperature(0.8)
-			.withTools(this.tools)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+			.messages(messageConversation)
+			.maxTokens(1500)
+			.temperature(0.8)
+			.tools(this.tools)
 			.build();
 
 		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi.chatCompletionEntity(chatCompletionRequest);
