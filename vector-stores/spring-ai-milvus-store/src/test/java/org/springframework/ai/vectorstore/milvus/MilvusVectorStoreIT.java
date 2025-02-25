@@ -319,7 +319,7 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
 				.containsExactlyInAnyOrder("A", "B");
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
-				.containsExactlyInAnyOrder(1, 1);
+				.containsExactlyInAnyOrder(1.0, 1.0);
 		});
 	}
 

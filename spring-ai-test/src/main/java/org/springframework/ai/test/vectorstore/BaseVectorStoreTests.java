@@ -110,7 +110,8 @@ public abstract class BaseVectorStoreTests {
 			assertThat(results.get(0).getId()).isEqualTo(documents.get(2).getId());
 			Map<String, Object> metadata = results.get(0).getMetadata();
 			assertThat(normalizeValue(metadata.get("country"))).isEqualTo("BG");
-			assertThat(normalizeValue(metadata.get("year"))).isEqualTo("2023");
+			// the values are converted into Double
+			assertThat(normalizeValue(metadata.get("year"))).isEqualTo("2023.0");
 
 			vectorStore.delete(List.of(documents.get(2).getId()));
 		});
