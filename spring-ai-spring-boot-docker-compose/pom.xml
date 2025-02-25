@@ -52,6 +52,16 @@
 			<artifactId>spring-ai-weaviate-store-spring-boot-autoconfigure</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-qdrant-store-spring-boot-autoconfigure</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-typesense-store-spring-boot-autoconfigure</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 
         <dependency>
             <groupId>com.google.protobuf</groupId>

@@ -16,7 +16,7 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.mariadb;
 
-import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
+import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore.MariaDBDistanceType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
