@@ -93,7 +93,7 @@ import org.springframework.util.StringUtils;
  */
 public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
 
-	public static final String DEFAULT_MODEL_NAME = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue();
+	public static final String DEFAULT_MODEL_NAME = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue();
 
 	public static final Integer DEFAULT_MAX_TOKENS = 500;
 
