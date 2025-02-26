@@ -7,15 +7,13 @@ link:https://www.pinecone.io/[Pinecone] is a popular cloud-based vector database
 == Prerequisites
 
 1. Pinecone Account: Before you start, sign up for a link:https://app.pinecone.io/[Pinecone account].
-2. Pinecone Project: Once registered, create a new project, an index, and generate an API key. You'll need these details for configuration.
+2. Pinecone Project: Once registered, generate an API key and create and index. You'll need these details for configuration.
 3. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
 - If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `PineconeVectorStore`.
 
 To set up `PineconeVectorStore`, gather the following details from your Pinecone account:
 
 * Pinecone API Key
-* Pinecone Environment
-* Pinecone Project ID
 * Pinecone Index Name
 * Pinecone Namespace
 
@@ -70,8 +68,6 @@ A simple configuration can either be provided via Spring Boot's _application.pro
 [source,properties]
 ----
 spring.ai.vectorstore.pinecone.apiKey=<your api key>
-spring.ai.vectorstore.pinecone.environment=<your environment>
-spring.ai.vectorstore.pinecone.projectId=<your project id>
 spring.ai.vectorstore.pinecone.index-name=<your index name>
 
 # API key if needed, e.g. OpenAI
@@ -109,8 +105,6 @@ You can use the following properties in your Spring Boot configuration to custom
 |Property| Description | Default value
 
 |`spring.ai.vectorstore.pinecone.api-key`| Pinecone API Key | -
-|`spring.ai.vectorstore.pinecone.environment`| Pinecone environment | `gcp-starter`
-|`spring.ai.vectorstore.pinecone.project-id`| Pinecone project ID | -
 |`spring.ai.vectorstore.pinecone.index-name`| Pinecone index name | -
 |`spring.ai.vectorstore.pinecone.namespace`| Pinecone namespace | -
 |`spring.ai.vectorstore.pinecone.content-field-name`| Pinecone metadata field name used to store the original text content. | `document_content`
@@ -191,8 +185,6 @@ To configure Pinecone in your application, you can use the following setup:
 public VectorStore pineconeVectorStore(EmbeddingModel embeddingModel) {
     return PineconeVectorStore.builder(embeddingModel)
             .apiKey(PINECONE_API_KEY)
-            .projectId(PINECONE_PROJECT_ID)
-            .environment(PINECONE_ENVIRONMENT)
             .indexName(PINECONE_INDEX_NAME)
             .namespace(PINECONE_NAMESPACE) // the free tier doesn't support namespaces.
             .contentFieldName(CUSTOM_CONTENT_FIELD_NAME) // optional field to store the original content. Defaults to `document_content`
