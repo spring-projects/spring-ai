@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.pinecone;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -26,7 +27,6 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -58,10 +58,6 @@ import static org.hamcrest.Matchers.hasSize;
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
 public class PineconeVectorStoreObservationIT {
 
-	private static final String PINECONE_ENVIRONMENT = "gcp-starter";
-
-	private static final String PINECONE_PROJECT_ID = "814621f";
-
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
 	// NOTE: Leave it empty as for free tier as later doesn't support namespaces.
@@ -91,7 +87,7 @@ public class PineconeVectorStoreObservationIT {
 	public static void beforeAll() {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
-		Awaitility.setDefaultTimeout(Duration.ONE_MINUTE);
+		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
 	}
 
 	@Test
@@ -190,8 +186,6 @@ public class PineconeVectorStoreObservationIT {
 		public VectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
 			return PineconeVectorStore.builder(embeddingModel)
 				.apiKey(System.getenv("PINECONE_API_KEY"))
-				.projectId(PINECONE_PROJECT_ID)
-				.environment(PINECONE_ENVIRONMENT)
 				.indexName(PINECONE_INDEX_NAME)
 				.namespace(PINECONE_NAMESPACE)
 				.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)
