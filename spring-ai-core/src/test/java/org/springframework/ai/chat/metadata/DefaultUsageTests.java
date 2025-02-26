@@ -32,13 +32,12 @@ public class DefaultUsageTests {
 	void testSerializationWithAllFields() throws Exception {
 		DefaultUsage usage = new DefaultUsage(Integer.valueOf(100), Integer.valueOf(50), Integer.valueOf(150));
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertThat(json)
-			.isEqualTo("{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"generationTokens\":50}");
+		assertThat(json).isEqualTo("{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150}");
 	}
 
 	@Test
 	void testDeserializationWithAllFields() throws Exception {
-		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"generationTokens\":50}";
+		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150}";
 		DefaultUsage usage = this.objectMapper.readValue(json, DefaultUsage.class);
 		assertThat(usage.getPromptTokens()).isEqualTo(100);
 		assertThat(usage.getCompletionTokens()).isEqualTo(50);
@@ -49,8 +48,7 @@ public class DefaultUsageTests {
 	void testSerializationWithNullFields() throws Exception {
 		DefaultUsage usage = new DefaultUsage((Integer) null, (Integer) null, (Integer) null);
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertThat(json)
-			.isEqualTo("{\"promptTokens\":0,\"completionTokens\":0,\"totalTokens\":0,\"generationTokens\":0}");
+		assertThat(json).isEqualTo("{\"promptTokens\":0,\"completionTokens\":0,\"totalTokens\":0}");
 	}
 
 	@Test
@@ -92,8 +90,7 @@ public class DefaultUsageTests {
 
 		// Test serialization
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertThat(json)
-			.isEqualTo("{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"generationTokens\":50}");
+		assertThat(json).isEqualTo("{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150}");
 
 		// Test deserialization
 		DefaultUsage deserializedUsage = this.objectMapper.readValue(json, DefaultUsage.class);
@@ -113,8 +110,7 @@ public class DefaultUsageTests {
 
 		// Test serialization
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertThat(json)
-			.isEqualTo("{\"promptTokens\":0,\"completionTokens\":0,\"totalTokens\":0,\"generationTokens\":0}");
+		assertThat(json).isEqualTo("{\"promptTokens\":0,\"completionTokens\":0,\"totalTokens\":0}");
 
 		// Test deserialization
 		DefaultUsage deserializedUsage = this.objectMapper.readValue(json, DefaultUsage.class);
@@ -124,17 +120,8 @@ public class DefaultUsageTests {
 	}
 
 	@Test
-	void testDeserializationWithLegacyFormat() throws Exception {
-		String json = "{\"promptTokens\":100,\"generationTokens\":50,\"totalTokens\":150}";
-		DefaultUsage usage = this.objectMapper.readValue(json, DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isEqualTo(100);
-		assertThat(usage.getCompletionTokens()).isEqualTo(50);
-		assertThat(usage.getTotalTokens()).isEqualTo(150);
-	}
-
-	@Test
 	void testDeserializationWithDifferentPropertyOrder() throws Exception {
-		String json = "{\"totalTokens\":150,\"generationTokens\":50,\"completionTokens\":50,\"promptTokens\":100}";
+		String json = "{\"totalTokens\":150,\"completionTokens\":50,\"promptTokens\":100}";
 		DefaultUsage usage = this.objectMapper.readValue(json, DefaultUsage.class);
 		assertThat(usage.getPromptTokens()).isEqualTo(100);
 		assertThat(usage.getCompletionTokens()).isEqualTo(50);
@@ -150,7 +137,7 @@ public class DefaultUsageTests {
 		DefaultUsage usage = new DefaultUsage(100, 50, 150, customNativeUsage);
 		String json = this.objectMapper.writeValueAsString(usage);
 		assertThat(json).isEqualTo(
-				"{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"generationTokens\":50,\"nativeUsage\":{\"custom_field\":\"custom_value\",\"custom_number\":42}}");
+				"{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"nativeUsage\":{\"custom_field\":\"custom_value\",\"custom_number\":42}}");
 	}
 
 	@Test
@@ -193,14 +180,6 @@ public class DefaultUsageTests {
 		assertThat(deserializedMap.get("field3")).isEqualTo(true);
 		assertThat(deserializedMap.get("field4")).isEqualTo(java.util.Arrays.asList(1, 2, 3));
 		assertThat(deserializedMap.get("field5")).isEqualTo(java.util.Map.of("nested", "value"));
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	void testDeprecatedGenerationTokens() {
-		DefaultUsage usage = new DefaultUsage(Integer.valueOf(100), Integer.valueOf(50), Integer.valueOf(150));
-		assertThat(usage.getGenerationTokens()).isEqualTo(50L);
-		assertThat(usage.getCompletionTokens().longValue()).isEqualTo(usage.getGenerationTokens());
 	}
 
 	@Test
@@ -262,8 +241,7 @@ public class DefaultUsageTests {
 		assertThat(usage.getTotalTokens()).isEqualTo(-3);
 
 		String json = this.objectMapper.writeValueAsString(usage);
-		assertThat(json)
-			.isEqualTo("{\"promptTokens\":-1,\"completionTokens\":-2,\"totalTokens\":-3,\"generationTokens\":-2}");
+		assertThat(json).isEqualTo("{\"promptTokens\":-1,\"completionTokens\":-2,\"totalTokens\":-3}");
 	}
 
 	@Test
