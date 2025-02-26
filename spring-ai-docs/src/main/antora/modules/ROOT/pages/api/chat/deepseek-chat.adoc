@@ -20,7 +20,7 @@ Visit https://api-docs.deepseek.com/[here] to create an API Key. Configure it us
 Set the `spring.ai.openai.base-url` property to `https://api.deepseek.com`.
 
 * **Select a DeepSeek Model**:
-Use the `spring.ai.openai.chat.model=<model name>` property to specify the model. Refer to https://api-docs.deepseek.com/quick_start/pricing[Supported Models] for available options.
+Use the `spring.ai.openai.chat.options.model=<model name>` property to specify the model. Refer to https://api-docs.deepseek.com/quick_start/pricing[Supported Models] for available options.
 
 Example environment variables configuration:
 
