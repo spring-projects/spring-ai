@@ -47,4 +47,12 @@ public interface ModelDescription {
 		return "";
 	}
 
+	/**
+	 * Returns the size of the model
+	 * @return
+	 */
+	default String getModelSize() {
+		return null;
+	}
+
 }
