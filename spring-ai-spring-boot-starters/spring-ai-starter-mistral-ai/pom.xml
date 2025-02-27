@@ -26,7 +26,7 @@
     <artifactId>spring-ai-mistral-ai-spring-boot-starter</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Starter - MistralAI</name>
-    <description>Spring AI MistralAI Auto Configuration</description>
+    <description>Spring AI MistralAI Spring Boot Starter</description>
     <url>https://github.com/spring-projects/spring-ai</url>
 
     <scm>
@@ -44,7 +44,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+            <artifactId>spring-ai-mistral-ai-spring-boot-autoconfigure</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

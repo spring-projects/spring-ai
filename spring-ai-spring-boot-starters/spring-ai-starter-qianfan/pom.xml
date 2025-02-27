@@ -26,7 +26,7 @@
 	<artifactId>spring-ai-qianfan-spring-boot-starter</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Starter - QianFan</name>
-	<description>Spring AI QianFan Auto Configuration</description>
+	<description>Spring AI QianFan Spring Boot Starter</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -44,7 +44,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+			<artifactId>spring-ai-qianfan-spring-boot-autoconfigure</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 

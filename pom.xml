@@ -35,11 +35,40 @@
 		<module>spring-ai-core</module>
 		<module>spring-ai-test</module>
 
-		<module>spring-ai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/common/spring-ai-retry-spring-boot-autoconfigure</module>
 
-		<module>auto-configurations/spring-ai-mcp-client</module>
-		<module>auto-configurations/spring-ai-mcp-server</module>
+		<module>auto-configurations/chat/spring-ai-chat-client-spring-boot-autoconfigure</module>
+		<module>auto-configurations/chat/spring-ai-chat-model-spring-boot-autoconfigure</module>
+		<module>auto-configurations/chat/spring-ai-chat-memory-spring-boot-autoconfigure</module>
+
+		<module>auto-configurations/models/spring-ai-anthropic-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-azure-openai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-bedrock-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-huggingface-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-minimax-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-mistral-ai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-moonshot-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-oci-genai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-ollama-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-openai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-postgresml-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-qianfan-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-stability-ai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-transformers-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-vertex-ai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-watsonx-ai-spring-boot-autoconfigure</module>
+		<module>auto-configurations/models/spring-ai-zhipuai-spring-boot-autoconfigure</module>
+
+		<module>auto-configurations/observation/chat/spring-ai-chat-observation-spring-boot-autoconfigure</module>
+		<module>auto-configurations/observation/embedding/spring-ai-embedding-observation-spring-boot-autoconfigure</module>
+		<module>auto-configurations/observation/image/spring-ai-image-observation-spring-boot-autoconfigure</module>
+
+		<module>auto-configurations/mcp/spring-ai-mcp-client</module>
+		<module>auto-configurations/mcp/spring-ai-mcp-server</module>
+
 		<module>auto-configurations/vector-stores/spring-ai-weaviate-store-spring-boot-autoconfigure</module>
+
+		<module>spring-ai-spring-boot-autoconfigure</module>
 
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
