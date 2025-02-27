@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
@@ -40,7 +41,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiAudioApiIT {
 
-	OpenAiAudioApi audioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
+	OpenAiAudioApi audioApi = OpenAiAudioApi.builder()
+		.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
+		.build();
 
 	@SuppressWarnings("null")
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.springframework.ai.chroma.vectorstore;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -34,6 +34,7 @@ import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
@@ -51,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class ChromaVectorStoreIT {
+public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
@@ -67,6 +68,14 @@ public class ChromaVectorStoreIT {
 			new Document(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
 					Collections.singletonMap("meta2", "meta2")));
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
+	}
 
 	@Test
 	public void addAndSearch() {
@@ -87,8 +96,7 @@ public class ChromaVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 			// Remove all documents from the store
-			assertThat(vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList()))
-				.isEqualTo(Optional.of(Boolean.TRUE));
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
 
 			List<Document> results2 = vectorStore
 				.similaritySearch(SearchRequest.builder().query("Great").topK(1).build());
@@ -117,7 +125,7 @@ public class ChromaVectorStoreIT {
 			assertThat(resultDoc.getText()).isEqualTo("The sky is blue because of Rayleigh scattering.");
 
 			// Remove all documents from the store
-			assertThat(vectorStore.delete(List.of(document.getId()))).isEqualTo(Optional.of(Boolean.TRUE));
+			vectorStore.delete(List.of(document.getId()));
 
 			results = vectorStore.similaritySearch(SearchRequest.builder().query("Why is the sky blue?").build());
 			assertThat(results).hasSize(0);

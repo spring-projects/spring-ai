@@ -40,7 +40,7 @@ public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata 
 			return this;
 		}
 
-		public DefaultToolMetadata build() {
+		public ToolMetadata build() {
 			return new DefaultToolMetadata(returnDirect);
 		}
 

@@ -319,3 +319,20 @@ nodetool import wikidata articles ${CASSANDRA_DATA}/data/wikidata/articles-*/
 * An alternative to `nodetool import` is to just restart Cassandra.
 * If there are any failures in the indexes they will be rebuilt automatically.
 ====
+
+== Accessing the Native Client
+
+The Cassandra Vector Store implementation provides access to the underlying native Cassandra client (`CqlSession`) through the `getNativeClient()` method:
+
+[source,java]
+----
+CassandraVectorStore vectorStore = context.getBean(CassandraVectorStore.class);
+Optional<CqlSession> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    CqlSession session = nativeClient.get();
+    // Use the native client for Cassandra-specific operations
+}
+----
+
+The native client gives you access to Cassandra-specific features and operations that might not be exposed through the `VectorStore` interface.

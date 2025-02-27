@@ -33,6 +33,9 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbacks;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -57,14 +60,12 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
-import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -549,11 +550,11 @@ public class DefaultChatClient implements ChatClient {
 				Flux<AdvisedResponse> stream = inputRequest.aroundAdvisorChainBuilder.build().nextAroundStream(initialAdvisedRequest);
 
 				return stream
-					.map(AdvisedResponse::response)
-					.doOnError(observation::error)
-					.doFinally(s -> observation.stop())
-					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-				 // @formatter:on
+						.map(AdvisedResponse::response)
+						.doOnError(observation::error)
+						.doFinally(s -> observation.stop())
+						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				// @formatter:on
 			});
 		}
 
@@ -695,8 +696,8 @@ public class DefaultChatClient implements ChatClient {
 				@Override
 				public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
 					return chatModel.stream(advisedRequest.toPrompt())
-					.map(chatResponse -> new AdvisedResponse(chatResponse, Collections.unmodifiableMap(advisedRequest.adviseContext())))
-					.publishOn(Schedulers.boundedElastic()); // TODO add option to disable.
+							.map(chatResponse -> new AdvisedResponse(chatResponse, Collections.unmodifiableMap(advisedRequest.adviseContext())))
+							.publishOn(Schedulers.boundedElastic()); // TODO add option to disable.
 				}
 			});
 			// @formatter:on
@@ -848,6 +849,22 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
+		public ChatClientRequestSpec tools(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+			this.functionCallbacks.addAll(List.of(toolCallbacks));
+			return this;
+		}
+
+		@Override
+		public ChatClientRequestSpec tools(List<ToolCallback> toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+			this.functionCallbacks.addAll(toolCallbacks);
+			return this;
+		}
+
+		@Override
 		public ChatClientRequestSpec tools(Object... toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
@@ -856,68 +873,21 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec toolCallbacks(FunctionCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.functionCallbacks.addAll(Arrays.asList(toolCallbacks));
+		public ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders) {
+			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
+			Assert.noNullElements(toolCallbackProviders, "toolCallbackProviders cannot contain null elements");
+			for (ToolCallbackProvider toolCallbackProvider : toolCallbackProviders) {
+				this.functionCallbacks.addAll(List.of(toolCallbackProvider.getToolCallbacks()));
+			}
 			return this;
 		}
 
-		@Override
-		public <I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.Function<I, O> function) {
-			Assert.hasText(name, "name cannot be null or empty");
-			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(function, "function cannot be null");
-
-			var fcw = FunctionCallbackWrapper.builder(function)
-				.withDescription(description)
-				.withName(name)
-				.withResponseConverter(Object::toString)
-				.build();
-			this.functionCallbacks.add(fcw);
-			return this;
-		}
-
-		@Override
-		public <I, O> ChatClientRequestSpec function(String name, String description,
-				java.util.function.BiFunction<I, ToolContext, O> biFunction) {
-
-			Assert.hasText(name, "name cannot be null or empty");
-			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(biFunction, "biFunction cannot be null");
-
-			var fcw = FunctionCallbackWrapper.builder(biFunction)
-				.withDescription(description)
-				.withName(name)
-				.withResponseConverter(Object::toString)
-				.build();
-			this.functionCallbacks.add(fcw);
-			return this;
-		}
-
-		@Override
-		public <I, O> ChatClientRequestSpec function(String name, String description, @Nullable Class<I> inputType,
-				java.util.function.Function<I, O> function) {
-
-			Assert.hasText(name, "name cannot be null or empty");
-			Assert.hasText(description, "description cannot be null or empty");
-			Assert.notNull(function, "function cannot be null");
-
-			var fcw = FunctionCallback.builder()
-				.function(name, function)
-				.description(description)
-				.responseConverter(Object::toString)
-				.inputType(inputType)
-				.build();
-			this.functionCallbacks.add(fcw);
-			return this;
-		}
-
+		@Deprecated // Use tools()
 		public ChatClientRequestSpec functions(String... functionBeanNames) {
 			return tools(functionBeanNames);
 		}
 
+		@Deprecated // Use tools()
 		public ChatClientRequestSpec functions(FunctionCallback... functionCallbacks) {
 			Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
 			Assert.noNullElements(functionCallbacks, "functionCallbacks cannot contain null elements");

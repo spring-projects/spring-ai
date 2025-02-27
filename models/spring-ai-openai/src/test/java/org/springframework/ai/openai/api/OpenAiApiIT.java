@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiApiIT {
@@ -64,6 +66,26 @@ public class OpenAiApiIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
+	}
+
+	@Test
+	@Disabled("The reasoning_effort option is only available in o1 models.")
+	void validateReasoningTokens() {
+		ChatCompletionMessage userMessage = new ChatCompletionMessage(
+				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
+				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
+				null, null, null, "low");
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+
+		OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = response.getBody()
+			.usage()
+			.completionTokenDetails();
+		assertThat(completionTokenDetails).isNotNull();
+		assertThat(completionTokenDetails.reasoningTokens()).isPositive();
 	}
 
 	@Test

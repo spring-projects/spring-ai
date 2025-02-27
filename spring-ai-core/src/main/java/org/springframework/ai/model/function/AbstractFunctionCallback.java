@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.util.Assert;
 
 /**
@@ -41,7 +42,9 @@ import org.springframework.util.Assert;
  * @param <I> the 3rd party service input type.
  * @param <O> the 3rd party service output type.
  * @author Christian Tzolov
+ * @deprecated in favor of {@link FunctionToolCallback}.
  */
+@Deprecated
 abstract class AbstractFunctionCallback<I, O> implements BiFunction<I, ToolContext, O>, FunctionCallback {
 
 	private final String name;

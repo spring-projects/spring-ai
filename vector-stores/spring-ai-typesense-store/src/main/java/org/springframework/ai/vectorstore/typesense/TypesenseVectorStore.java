@@ -38,14 +38,13 @@ import org.typesense.model.MultiSearchSearchesParameter;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -71,6 +70,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Mark Pollack
+ * @author Soby Chacko
  * @see org.springframework.ai.vectorstore.VectorStore
  * @see org.springframework.ai.embedding.EmbeddingModel
  */
@@ -167,7 +167,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
 		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ":=[" + String.join(",", idList) + "]");
 
@@ -180,12 +180,36 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			if (deletedDocs < idList.size()) {
 				logger.warn("Failed to delete all documents");
 			}
-
-			return Optional.of(deletedDocs > 0);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents", e);
-			return Optional.of(Boolean.FALSE);
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+			DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
+			deleteDocumentsParameters.filterBy(filterStr);
+
+			Map<String, Object> response = this.client.collections(this.collectionName)
+				.documents()
+				.delete(deleteDocumentsParameters);
+
+			int deletedDocs = (Integer) response.getOrDefault("num_deleted", 0);
+			if (deletedDocs == 0) {
+				logger.warn("No documents were deleted matching filter expression");
+			}
+			else {
+				logger.debug("Deleted {} documents matching filter expression", deletedDocs);
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter", e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
@@ -348,6 +372,13 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			.collectionName(this.collectionName)
 			.fieldName(EMBEDDING_FIELD_NAME)
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.client;
+		return Optional.of(client);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {

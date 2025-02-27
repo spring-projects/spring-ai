@@ -23,6 +23,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -37,7 +38,6 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
-import org.springframework.ai.minimax.metadata.MiniMaxUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.lang.Nullable;
@@ -171,8 +171,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 					return new EmbeddingResponse(List.of());
 				}
 
-				var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
-						MiniMaxUsage.from(new MiniMaxApi.Usage(0, 0, apiEmbeddingResponse.totalTokens())));
+				var metadata = new EmbeddingResponseMetadata(apiRequest.model(), getDefaultUsage(apiEmbeddingResponse));
 
 				List<Embedding> embeddings = new ArrayList<>();
 				for (int i = 0; i < apiEmbeddingResponse.vectors().size(); i++) {
@@ -183,6 +182,10 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 				observationContext.setResponse(embeddingResponse);
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(MiniMaxApi.EmbeddingList apiEmbeddingList) {
+		return new DefaultUsage(0, 0, apiEmbeddingList.totalTokens());
 	}
 
 	/**

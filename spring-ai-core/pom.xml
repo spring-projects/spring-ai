@@ -36,16 +36,11 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-		<antlr.version>4.13.1</antlr.version>
-	</properties>
-
 	<dependencies>
 
 		<dependency>
 			<groupId>com.fasterxml.jackson.module</groupId>
 			<artifactId>jackson-module-jsonSchema</artifactId>
-			<version>${jackson-module-jsonSchema.version}</version>
 		</dependency>
 
 		<dependency>
@@ -128,26 +123,22 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
-			<version>${jackson.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib</artifactId>
-			<version>${kotlin.version}</version>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-reflect</artifactId>
-			<version>${kotlin.version}</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -161,7 +152,6 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.module</groupId>
 			<artifactId>jackson-module-kotlin</artifactId>
-			<version>${jackson.version}</version>
 			<scope>test</scope>
 		</dependency>
 

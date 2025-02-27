@@ -40,10 +40,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -208,7 +206,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
@@ -218,7 +216,26 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
-		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
+		if (bulkRequest(bulkRequestBuilder.build()).errors()) {
+			throw new IllegalStateException("Delete operation failed");
+		}
+	}
+
+	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (!indexExists()) {
+			throw new IllegalArgumentException("Index not found");
+		}
+
+		try {
+			this.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())
+				.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));
+		}
+		catch (Exception e) {
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	private BulkResponse bulkRequest(BulkRequest bulkRequest) {
@@ -245,9 +262,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			SearchResponse<Document> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 					.similarity(finalThreshold)
-					.k((long) searchRequest.getTopK())
+					.k(searchRequest.getTopK())
 					.field("embedding")
-					.numCandidates((long) (1.5 * searchRequest.getTopK()))
+					.numCandidates((int) (1.5 * searchRequest.getTopK()))
 					.filter(fl -> fl
 						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
 				.size(searchRequest.getTopK()), Document.class);
@@ -336,6 +353,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			return this.options.getSimilarity().name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.options.getSimilarity()).value();
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.elasticsearchClient;
+		return Optional.of(client);
 	}
 
 	/**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,10 +38,10 @@ public class BedrockConverseTestConfiguration {
 		String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 
 		return BedrockProxyChatModel.builder()
-			.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
-			.withRegion(Region.US_EAST_1)
-			.withTimeout(Duration.ofSeconds(120))
-			// .withRegion(Region.US_EAST_1)
+			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+			.region(Region.US_EAST_1)
+			// .region(Region.US_EAST_1)
+			.timeout(Duration.ofSeconds(120))
 			.withDefaultOptions(FunctionCallingOptions.builder().model(modelId).build())
 			.build();
 	}

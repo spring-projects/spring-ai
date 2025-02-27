@@ -17,7 +17,7 @@ class DefaultToolDefinitionTests {
 		var toolDefinition = new DefaultToolDefinition("name", "description", "{}");
 		assertThat(toolDefinition.name()).isEqualTo("name");
 		assertThat(toolDefinition.description()).isEqualTo("description");
-		assertThat(toolDefinition.inputTypeSchema()).isEqualTo("{}");
+		assertThat(toolDefinition.inputSchema()).isEqualTo("{}");
 	}
 
 	@Test
@@ -49,17 +49,17 @@ class DefaultToolDefinitionTests {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenInputTypeSchemaIsNull() {
+	void shouldThrowExceptionWhenInputSchemaIsNull() {
 		assertThatThrownBy(() -> new DefaultToolDefinition("name", "description", null))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("inputTypeSchema cannot be null or empty");
+			.hasMessage("inputSchema cannot be null or empty");
 	}
 
 	@Test
-	void shouldThrowExceptionWhenInputTypeSchemaIsEmpty() {
+	void shouldThrowExceptionWhenInputSchemaIsEmpty() {
 		assertThatThrownBy(() -> new DefaultToolDefinition("name", "description", ""))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("inputTypeSchema cannot be null or empty");
+			.hasMessage("inputSchema cannot be null or empty");
 	}
 
 }

@@ -2,3 +2,6 @@ org.springframework.aot.hint.RuntimeHintsRegistrar=\
 	org.springframework.ai.aot.SpringAiCoreRuntimeHints,\
 	org.springframework.ai.aot.KnuddelsRuntimeHints,\
     org.springframework.ai.aot.ToolRuntimeHints
+
+org.springframework.beans.factory.aot.BeanRegistrationAotProcessor=\
+    org.springframework.ai.aot.ToolBeanRegistrationAotProcessor

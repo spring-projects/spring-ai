@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,16 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.model.function.FunctionCallback.CommonCallbackInvokingSpec;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
+/**
+ * @deprecated Use specific builder for the type of tool you need, e.g.
+ * {@link FunctionToolCallback.Builder} and {@link MethodToolCallback.Builder}.
+ */
+@Deprecated
 public class DefaultCommonCallbackInvokingSpec<B extends CommonCallbackInvokingSpec<B>>
 		implements CommonCallbackInvokingSpec<B> {
 

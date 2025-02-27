@@ -30,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -50,7 +51,6 @@ import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage.Role;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionRequest;
 import org.springframework.ai.qianfan.api.QianFanConstants;
-import org.springframework.ai.qianfan.metadata.QianFanUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -292,10 +292,14 @@ public class QianFanChatModel implements ChatModel, StreamingChatModel {
 		Assert.notNull(result, "QianFan ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
-			.usage(result.usage() != null ? QianFanUsage.from(result.usage()) : new EmptyUsage())
+			.usage(result.usage() != null ? getDefaultUsage(result.usage()) : new EmptyUsage())
 			.model(model)
 			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
+	}
+
+	private DefaultUsage getDefaultUsage(QianFanApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {

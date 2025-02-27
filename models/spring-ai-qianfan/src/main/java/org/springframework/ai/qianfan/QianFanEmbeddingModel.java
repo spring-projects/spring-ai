@@ -22,6 +22,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -38,7 +39,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.qianfan.api.QianFanApi;
 import org.springframework.ai.qianfan.api.QianFanApi.EmbeddingList;
 import org.springframework.ai.qianfan.api.QianFanConstants;
-import org.springframework.ai.qianfan.metadata.QianFanUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
@@ -176,7 +176,7 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
-						QianFanUsage.from(apiEmbeddingResponse.usage()));
+						getDefaultUsage(apiEmbeddingResponse.usage()));
 
 				List<Embedding> embeddings = apiEmbeddingResponse.data()
 					.stream()
@@ -190,6 +190,10 @@ public class QianFanEmbeddingModel extends AbstractEmbeddingModel {
 				return embeddingResponse;
 			});
 
+	}
+
+	private DefaultUsage getDefaultUsage(QianFanApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	/**

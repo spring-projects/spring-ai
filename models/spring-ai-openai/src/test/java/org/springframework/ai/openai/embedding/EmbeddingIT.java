@@ -56,7 +56,7 @@ class EmbeddingIT extends AbstractIT {
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0)).isNotNull();
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
-		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("text-embedding-ada-002");
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("text-embedding-ada-002-v2");
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(2);
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 

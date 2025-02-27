@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,71 +19,127 @@ package org.springframework.ai.chat.metadata;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
  * Default implementation of the {@link Usage} interface.
  *
  * @author Mark Pollack
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
+@JsonPropertyOrder({ "promptTokens", "completionTokens", "totalTokens", "generationTokens", "nativeUsage" })
 public class DefaultUsage implements Usage {
 
-	private final Long promptTokens;
+	private final Integer promptTokens;
 
-	private final Long generationTokens;
-
-	private final Long totalTokens;
+	private final Integer completionTokens;
 
 	/**
-	 * Create a new DefaultUsage with promptTokens and generationTokens.
+	 * @deprecated as of 1.0.0-M6, scheduled for removal
+	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
+	private final Long generationTokens;
+
+	private final int totalTokens;
+
+	private final Object nativeUsage;
+
+	/**
+	 * Create a new DefaultUsage with promptTokens, completionTokens, totalTokens and
+	 * native {@link Usage} object.
 	 * @param promptTokens the number of tokens in the prompt, or {@code null} if not
 	 * available
-	 * @param generationTokens the number of tokens in the generation, or {@code null} if
+	 * @param completionTokens the number of tokens in the generation, or {@code null} if
 	 * not available
+	 * @param totalTokens the total number of tokens, or {@code null} to calculate from
+	 * promptTokens and completionTokens
+	 * @param nativeUsage the native usage object returned by the model provider, or
+	 * {@code null} to return the map of prompt, completion and total tokens.
 	 */
-	public DefaultUsage(Long promptTokens, Long generationTokens) {
-		this(promptTokens, generationTokens, null);
+	public DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens, Object nativeUsage) {
+		this.promptTokens = promptTokens != null ? promptTokens : 0;
+		this.completionTokens = completionTokens != null ? completionTokens : 0;
+		this.generationTokens = Long.valueOf(this.completionTokens);
+		this.totalTokens = totalTokens != null ? totalTokens
+				: calculateTotalTokens(this.promptTokens, this.completionTokens);
+		this.nativeUsage = nativeUsage;
 	}
 
 	/**
-	 * Create a new DefaultUsage with promptTokens, generationTokens, and totalTokens.
+	 * Create a new DefaultUsage with promptTokens and completionTokens.
 	 * @param promptTokens the number of tokens in the prompt, or {@code null} if not
 	 * available
-	 * @param generationTokens the number of tokens in the generation, or {@code null} if
+	 * @param completionTokens the number of tokens in the generation, or {@code null} if
+	 * not available
+	 */
+	public DefaultUsage(Integer promptTokens, Integer completionTokens) {
+		this(promptTokens, completionTokens, null, null);
+	}
+
+	/**
+	 * Create a new DefaultUsage with promptTokens, completionTokens, and totalTokens.
+	 * @param promptTokens the number of tokens in the prompt, or {@code null} if not
+	 * available
+	 * @param completionTokens the number of tokens in the generation, or {@code null} if
 	 * not available
 	 * @param totalTokens the total number of tokens, or {@code null} to calculate from
-	 * promptTokens and generationTokens
+	 * promptTokens and completionTokens
+	 */
+	public DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) {
+		this(promptTokens, completionTokens, totalTokens, null);
+	}
+
+	/**
+	 * Create a new DefaultUsage with promptTokens, completionTokens, and totalTokens.
+	 * This constructor is used for JSON deserialization and handles both the new format
+	 * with completionTokens and the legacy format with generationTokens.
+	 * @param promptTokens the number of tokens in the prompt
+	 * @param completionTokens the number of tokens in the completion (new format)
+	 * @param generationTokens the number of tokens in the generation (legacy format)
+	 * @param totalTokens the total number of tokens
+	 * @param nativeUsage the native usage object
+	 * @return a new DefaultUsage instance
 	 */
 	@JsonCreator
-	public DefaultUsage(@JsonProperty("promptTokens") Long promptTokens,
-			@JsonProperty("generationTokens") Long generationTokens, @JsonProperty("totalTokens") Long totalTokens) {
-		this.promptTokens = promptTokens != null ? promptTokens : 0L;
-		this.generationTokens = generationTokens != null ? generationTokens : 0L;
-		this.totalTokens = totalTokens != null ? totalTokens
-				: calculateTotalTokens(this.promptTokens, this.generationTokens);
+	public static DefaultUsage fromJson(@JsonProperty("promptTokens") Integer promptTokens,
+			@JsonProperty("completionTokens") Integer completionTokens,
+			@JsonProperty("generationTokens") Long generationTokens, @JsonProperty("totalTokens") Integer totalTokens,
+			@JsonProperty("nativeUsage") Object nativeUsage) {
+		Integer effectiveCompletionTokens = completionTokens != null ? completionTokens
+				: (generationTokens != null ? generationTokens.intValue() : 0);
+		return new DefaultUsage(promptTokens, effectiveCompletionTokens, totalTokens, nativeUsage);
 	}
 
 	@Override
 	@JsonProperty("promptTokens")
-	public Long getPromptTokens() {
+	public Integer getPromptTokens() {
 		return this.promptTokens;
 	}
 
 	@Override
-	@JsonProperty("generationTokens")
-	public Long getGenerationTokens() {
-		return this.generationTokens;
+	@JsonProperty("completionTokens")
+	public Integer getCompletionTokens() {
+		return this.completionTokens;
 	}
 
 	@Override
 	@JsonProperty("totalTokens")
-	public Long getTotalTokens() {
+	public Integer getTotalTokens() {
 		return this.totalTokens;
 	}
 
-	private Long calculateTotalTokens(Long promptTokens, Long generationTokens) {
-		return promptTokens + generationTokens;
+	@Override
+	@JsonProperty("nativeUsage")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public Object getNativeUsage() {
+		return this.nativeUsage;
+	}
+
+	private Integer calculateTotalTokens(Integer promptTokens, Integer completionTokens) {
+		return promptTokens + completionTokens;
 	}
 
 	@Override
@@ -94,20 +150,25 @@ public class DefaultUsage implements Usage {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
+
 		DefaultUsage that = (DefaultUsage) o;
-		return Objects.equals(this.promptTokens, that.promptTokens)
-				&& Objects.equals(this.generationTokens, that.generationTokens)
-				&& Objects.equals(this.totalTokens, that.totalTokens);
+		return this.totalTokens == that.totalTokens && Objects.equals(this.promptTokens, that.promptTokens)
+				&& Objects.equals(this.completionTokens, that.completionTokens)
+				&& Objects.equals(this.nativeUsage, that.nativeUsage);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.promptTokens, this.generationTokens, this.totalTokens);
+		int result = Objects.hashCode(this.promptTokens);
+		result = 31 * result + Objects.hashCode(this.completionTokens);
+		result = 31 * result + this.totalTokens;
+		result = 31 * result + Objects.hashCode(this.nativeUsage);
+		return result;
 	}
 
 	@Override
 	public String toString() {
-		return "DefaultUsage{" + "promptTokens=" + this.promptTokens + ", generationTokens=" + this.generationTokens
+		return "DefaultUsage{" + "promptTokens=" + this.promptTokens + ", completionTokens=" + this.completionTokens
 				+ ", totalTokens=" + this.totalTokens + '}';
 	}
 

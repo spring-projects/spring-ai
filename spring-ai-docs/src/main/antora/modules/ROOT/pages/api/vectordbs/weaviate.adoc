@@ -90,7 +90,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 Please have a look at the list of xref:#_weaviatevectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
@@ -230,3 +230,20 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
 |`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
 |===
+
+== Accessing the Native Client
+
+The Weaviate Vector Store implementation provides access to the underlying native Weaviate client (`WeaviateClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+WeaviateVectorStore vectorStore = context.getBean(WeaviateVectorStore.class);
+Optional<WeaviateClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    WeaviateClient client = nativeClient.get();
+    // Use the native client for Weaviate-specific operations
+}
+----
+
+The native client gives you access to Weaviate-specific features and operations that might not be exposed through the `VectorStore` interface.

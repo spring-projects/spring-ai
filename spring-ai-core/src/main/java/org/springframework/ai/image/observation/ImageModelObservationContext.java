@@ -45,6 +45,10 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 		return new Builder();
 	}
 
+	/**
+	 * @deprecated Use {@link #getRequest().getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
 	public ImageOptions getRequestOptions() {
 		return this.requestOptions;
 	}
@@ -74,6 +78,11 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 			return this;
 		}
 
+		/**
+		 * @deprecated ImageOptions are passed in the ImagePrompt object and should not be
+		 * set separately anymore.
+		 */
+		@Deprecated(forRemoval = true)
 		public Builder requestOptions(ImageOptions requestOptions) {
 			this.requestOptions = requestOptions;
 			return this;

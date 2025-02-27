@@ -71,7 +71,10 @@ public class AzureChatCompletionsOptionsTests {
 			.responseFormat(AzureOpenAiResponseFormat.TEXT)
 			.build();
 
-		var client = new AzureOpenAiChatModel(mockClient, defaultOptions);
+		var client = AzureOpenAiChatModel.builder()
+			.openAIClientBuilder(mockClient)
+			.defaultOptions(defaultOptions)
+			.build();
 
 		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content"));
 

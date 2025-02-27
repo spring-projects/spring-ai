@@ -135,7 +135,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			.build()
 			.prompt()
 			.user("joke")
-			.advisors(new VectorStoreChatMemoryAdvisor(store))
+			.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
 			.call()
 			.chatResponse();
 

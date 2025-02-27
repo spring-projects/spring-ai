@@ -238,3 +238,20 @@ is converted into the proprietary OpenSearch filter format:
 ----
 (metadata.author:john OR jill) AND metadata.article_type:blog
 ----
+
+== Accessing the Native Client
+
+The OpenSearch Vector Store implementation provides access to the underlying native OpenSearch client (`OpenSearchClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
+Optional<OpenSearchClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    OpenSearchClient client = nativeClient.get();
+    // Use the native client for OpenSearch-specific operations
+}
+----
+
+The native client gives you access to OpenSearch-specific features and operations that might not be exposed through the `VectorStore` interface.
