@@ -36,4 +36,16 @@ public class HuggingfaceTestConfiguration {
 		return huggingfaceChatModel;
 	}
 
+	@Bean
+	public HuggingfaceImageModel huggingfaceImageModel() {
+		String apiKey = System.getenv("HUGGINGFACE_API_KEY");
+		if (!StringUtils.hasText(apiKey)) {
+			throw new IllegalArgumentException(
+					"You must provide an API key.  Put it in an environment variable under the name HUGGINGFACE_API_KEY");
+		}
+		HuggingfaceImageModel huggingfaceImageModel = new HuggingfaceImageModel(apiKey,
+				System.getenv("HUGGINGFACE_CHAT_URL"));
+		return huggingfaceImageModel;
+	}
+
 }
