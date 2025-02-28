@@ -351,8 +351,8 @@ public class CouchbaseVectorStore extends AbstractObservationVectorStore impleme
 		}
 	}
 
-	public void close() throws Exception{
-		if(this.cluster != null){
+	public void close() throws Exception {
+		if (this.cluster != null) {
 			this.cluster.close();
 			logger.info("Connection with cluster closed");
 		}
