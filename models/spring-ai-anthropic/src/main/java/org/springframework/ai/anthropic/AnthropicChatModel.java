@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,6 +79,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 /**
@@ -273,8 +275,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate
-					.execute(ctx -> this.anthropicApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate.execute(
+						ctx -> this.anthropicApi.chatCompletionEntity(request, this.getAdditionalHttpHeaders(prompt)));
 
 				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
 				AnthropicApi.Usage usage = completionResponse.usage();
@@ -338,7 +340,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(request);
+			Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(request,
+					this.getAdditionalHttpHeaders(prompt));
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
@@ -462,6 +465,16 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				+ ". Supported types are: images (image/*) and PDF documents (application/pdf)");
 	}
 
+	private MultiValueMap<String, String> getAdditionalHttpHeaders(Prompt prompt) {
+
+		Map<String, String> headers = new HashMap<>(this.defaultOptions.getHttpHeaders());
+		if (prompt.getOptions() != null && prompt.getOptions() instanceof AnthropicChatOptions chatOptions) {
+			headers.putAll(chatOptions.getHttpHeaders());
+		}
+		return CollectionUtils.toMultiValueMap(
+				headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue()))));
+	}
+
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		AnthropicChatOptions runtimeOptions = null;
@@ -487,6 +500,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
+			requestOptions.setHttpHeaders(
+					mergeHttpHeaders(runtimeOptions.getHttpHeaders(), this.defaultOptions.getHttpHeaders()));
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.isInternalToolExecutionEnabled(),
 							this.defaultOptions.isInternalToolExecutionEnabled()));
@@ -498,8 +513,8 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 					this.defaultOptions.getToolContext()));
 		}
 		else {
+			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.isInternalToolExecutionEnabled());
-
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
@@ -508,6 +523,13 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
 		return new Prompt(prompt.getInstructions(), requestOptions);
+	}
+
+	private Map<String, String> mergeHttpHeaders(Map<String, String> runtimeHttpHeaders,
+			Map<String, String> defaultHttpHeaders) {
+		var mergedHttpHeaders = new HashMap<>(defaultHttpHeaders);
+		mergedHttpHeaders.putAll(runtimeHttpHeaders);
+		return mergedHttpHeaders;
 	}
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
