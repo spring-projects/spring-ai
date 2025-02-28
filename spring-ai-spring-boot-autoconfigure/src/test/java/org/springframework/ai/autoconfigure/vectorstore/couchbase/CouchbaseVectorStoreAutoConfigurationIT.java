@@ -87,18 +87,18 @@ class CouchbaseVectorStoreAutoConfigurationIT {
 
 			vectorStore.add(List.of(bgDocument, nlDocument));
 
-			var request = SearchRequest.query("The World").withTopK(5);
+			var requestBuilder = SearchRequest.builder().query("The World").topK(5);
 
-			List<Document> results = vectorStore.similaritySearch(request);
+			List<Document> results = vectorStore.similaritySearch(requestBuilder.build());
 			assertThat(results).hasSize(2);
 
-			results = vectorStore
-				.similaritySearch(request.withSimilarityThresholdAll().withFilterExpression("country == 'Bulgaria'"));
+			results = vectorStore.similaritySearch(
+					requestBuilder.similarityThresholdAll().filterExpression("country == 'Bulgaria'").build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			results = vectorStore.similaritySearch(
-					request.withSimilarityThresholdAll().withFilterExpression("country == 'Netherlands'"));
+					requestBuilder.similarityThresholdAll().filterExpression("country == 'Netherlands'").build());
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 

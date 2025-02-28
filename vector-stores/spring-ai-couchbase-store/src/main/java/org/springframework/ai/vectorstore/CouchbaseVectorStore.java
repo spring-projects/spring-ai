@@ -31,24 +31,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.RetrySpec;
 
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author Laurent Doguin
  * @since 1.0.0
  */
-public class CouchbaseVectorStore implements VectorStore, InitializingBean {
+public class CouchbaseVectorStore extends AbstractObservationVectorStore implements InitializingBean, AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(CouchbaseVectorStore.class);
 
@@ -64,7 +64,7 @@ public class CouchbaseVectorStore implements VectorStore, InitializingBean {
 
 	private final Cluster cluster;
 
-	private final FilterExpressionConverter filterExpressionConverter;
+	private final CouchbaseAiSearchFilterExpressionConverter filterExpressionConverter;
 
 	private final boolean initializeSchema;
 
@@ -76,54 +76,71 @@ public class CouchbaseVectorStore implements VectorStore, InitializingBean {
 
 	private final Bucket bucket;
 
-	public CouchbaseVectorStore(Cluster cluster, EmbeddingModel embeddingModel, boolean initializeSchema) {
-		this(cluster, embeddingModel, CouchbaseVectorStoreConfig.defaultConfig(), initializeSchema);
-	}
+	protected CouchbaseVectorStore(Builder builder) {
+		super(builder);
 
-	public CouchbaseVectorStore(Cluster cluster, EmbeddingModel embeddingModel, CouchbaseVectorStoreConfig config,
-			boolean initializeSchema) {
-		Objects.requireNonNull(cluster, "CouchbaseCluster must not be null");
-		Objects.requireNonNull(embeddingModel, "embeddingModel must not be null");
-		this.initializeSchema = initializeSchema;
-		this.embeddingModel = embeddingModel;
-		this.config = config;
-		this.filterExpressionConverter = new CouchbaseAiSearchFilterExpressionConverter();
-		this.cluster = cluster;
+		Objects.requireNonNull(builder.cluster, "CouchbaseCluster must not be null");
+		Objects.requireNonNull(builder.embeddingModel, "embeddingModel must not be null");
+		this.initializeSchema = builder.initializeSchema;
+		this.embeddingModel = builder.embeddingModel;
+		this.config = builder.couchbaseVectorStoreConfig;
+		this.filterExpressionConverter = builder.filterExpressionConverter;
+		this.cluster = builder.cluster;
 		this.bucket = cluster.bucket(config.bucketName);
 		this.scope = bucket.scope(config.scopeName);
 		this.collection = scope.collection(config.collectionName);
 	}
 
 	@Override
-	public void add(List<Document> documents) {
-		for (Document document : documents) {
-			if (Objects.isNull(document.getEmbedding()) || document.getEmbedding().isEmpty()) {
-				logger.debug("Calling embeddingModel for document id = " + document.getId());
-				document.setEmbedding(this.embeddingModel.embed(document));
-			}
-			collection.upsert(document.getId(), document);
+	public void afterPropertiesSet() {
+
+		if (!this.initializeSchema) {
+			return;
+		}
+
+		try {
+			initCluster();
+		}
+		catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public Optional<Boolean> delete(List<String> idList) {
+	public void doAdd(List<Document> documents) {
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+				this.batchingStrategy);
+		for (Document document : documents) {
+			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(), document.getText(),
+					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+			collection.upsert(document.getId(), cbDoc);
+		}
+	}
+
+	@Override
+	public void doDelete(List<String> idList) {
 		for (String id : idList) {
 			collection.remove(id);
 		}
-		return Optional.empty();
 	}
 
 	@Override
-	public List<Document> similaritySearch(org.springframework.ai.vectorstore.SearchRequest springAiRequest) {
-		List<Double> queryEmbedding = this.embeddingModel.embed(springAiRequest.getQuery());
-
-		Float[] data = queryEmbedding.stream().map(Double::floatValue).toArray(Float[]::new);
-		float[] embeddings = new float[data.length];
-
-		for (int x = 0; x < data.length; x++) {
-			embeddings[x] = data[x].floatValue();
+	public void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+		try {
+			String nativeFilter = this.filterExpressionConverter.convertExpression(filterExpression);
+			String sql = String.format("DELETE FROM %s WHERE %s", collection.name(), nativeFilter);
+			scope.query(sql, QueryOptions.queryOptions().metrics(true));
 		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
 
+	@Override
+	public List<Document> doSimilaritySearch(org.springframework.ai.vectorstore.SearchRequest springAiRequest) {
+		float[] embeddings = this.embeddingModel.embed(springAiRequest.getQuery());
 		int topK = springAiRequest.getTopK();
 
 		double similarityThreshold = springAiRequest.getSimilarityThreshold();
@@ -146,18 +163,60 @@ public class CouchbaseVectorStore implements VectorStore, InitializingBean {
 	}
 
 	@Override
-	public void afterPropertiesSet() {
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this;
+		return Optional.of(client);
+	}
 
-		if (!this.initializeSchema) {
-			return;
+	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
+
+		return VectorStoreObservationContext.builder(VectorStoreProvider.COUCHBASE.value(), operationName)
+			.collectionName(this.collection.name())
+			.dimensions(this.embeddingModel.dimensions());
+	}
+
+	public static Builder builder(Cluster cluster, CouchbaseVectorStoreConfig couchbaseVectorStoreConfig,
+			EmbeddingModel embeddingModel) {
+		return new Builder(cluster, couchbaseVectorStoreConfig, embeddingModel);
+	}
+
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+
+		private final Cluster cluster;
+
+		private final CouchbaseVectorStoreConfig couchbaseVectorStoreConfig;
+
+		private final CouchbaseAiSearchFilterExpressionConverter filterExpressionConverter = new CouchbaseAiSearchFilterExpressionConverter();
+
+		private boolean initializeSchema = false;
+
+		/**
+		 * @throws IllegalArgumentException if couchbaseVectorConfig or cluster is null
+		 */
+		private Builder(Cluster cluster, CouchbaseVectorStoreConfig couchbaseVectorStoreConfig,
+				EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+			Assert.notNull(cluster, "Cluster must not be null");
+			this.cluster = cluster;
+			Assert.notNull(couchbaseVectorStoreConfig, "CouchbaseVectorStoreConfig must not be NULL");
+			this.couchbaseVectorStoreConfig = couchbaseVectorStoreConfig;
 		}
 
-		try {
-			initCluster();
+		/**
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return the builder instance
+		 */
+		public Builder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
 		}
-		catch (InterruptedException e) {
-			throw new RuntimeException(e);
+
+		public CouchbaseVectorStore build() {
+			return new CouchbaseVectorStore(this);
 		}
+
 	}
 
 	public void initCluster() throws InterruptedException {
@@ -289,6 +348,13 @@ public class CouchbaseVectorStore implements VectorStore, InitializingBean {
 
 			SearchIndex si = SearchIndex.fromJson(jsonIndexValue);
 			s.searchIndexes().upsertIndex(si);
+		}
+	}
+
+	public void close() throws Exception{
+		if(this.cluster != null){
+			this.cluster.close();
+			logger.info("Connection with cluster closed");
 		}
 	}
 
@@ -440,6 +506,9 @@ public class CouchbaseVectorStore implements VectorStore, InitializingBean {
 
 		}
 
+	}
+
+	public record CouchbaseDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
 }

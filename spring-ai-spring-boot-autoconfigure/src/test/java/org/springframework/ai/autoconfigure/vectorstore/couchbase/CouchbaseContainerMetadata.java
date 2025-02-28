@@ -24,7 +24,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public class CouchbaseContainerMetadata {
 
-	public static final String BUCKET_NAME = "default";
+	public static final String BUCKET_NAME = "example";
 
 	public static final String USERNAME = "Administrator";
 

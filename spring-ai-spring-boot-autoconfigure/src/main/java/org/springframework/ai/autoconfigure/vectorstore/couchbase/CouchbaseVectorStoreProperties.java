@@ -15,7 +15,7 @@
  */
 package org.springframework.ai.autoconfigure.vectorstore.couchbase;
 
-import org.springframework.ai.autoconfigure.CommonVectorStoreProperties;
+import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.CouchbaseIndexOptimization;
 import org.springframework.ai.vectorstore.CouchbaseSimilarityFunction;
 import org.springframework.boot.context.properties.ConfigurationProperties;

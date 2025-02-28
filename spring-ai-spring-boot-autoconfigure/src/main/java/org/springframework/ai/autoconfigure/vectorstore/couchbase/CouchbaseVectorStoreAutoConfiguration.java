@@ -39,7 +39,7 @@ public class CouchbaseVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	public CouchbaseVectorStore vectorStore(CouchbaseVectorStoreProperties properties, Cluster cluster,
 			EmbeddingModel embeddingModel) {
-		var builder = CouchbaseVectorStore.CouchbaseVectorStoreConfig.builder();
+		var builder = org.springframework.ai.vectorstore.CouchbaseVectorStore.CouchbaseVectorStoreConfig.builder();
 
 		if (StringUtils.hasText(properties.getIndexName())) {
 			builder.withVectorIndexName(properties.getIndexName());
@@ -62,7 +62,9 @@ public class CouchbaseVectorStoreAutoConfiguration {
 		if (properties.getOptimization() != null) {
 			builder.withIndexOptimization(properties.getOptimization());
 		}
-		return new CouchbaseVectorStore(cluster, embeddingModel, builder.build(), properties.isInitializeSchema());
+		return CouchbaseVectorStore.builder(cluster, builder.build(), embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.build();
 	}
 
 }
