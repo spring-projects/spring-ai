@@ -91,10 +91,10 @@ For example:
 OpenAiAudioApi.TranscriptResponseFormat responseFormat = OpenAiAudioApi.TranscriptResponseFormat.VTT;
 
 OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
-    .withLanguage("en")
-    .withPrompt("Ask not this, but ask that")
-    .withTemperature(0f)
-    .withResponseFormat(this.responseFormat)
+    .language("en")
+    .prompt("Ask not this, but ask that")
+    .temperature(0f)
+    .responseFormat(this.responseFormat)
     .build();
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, this.transcriptionOptions);
 AudioTranscriptionResponse response = openAiTranscriptionModel.call(this.transcriptionRequest);
@@ -132,8 +132,8 @@ var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
 var openAiAudioTranscriptionModel = new OpenAiAudioTranscriptionModel(this.openAiAudioApi);
 
 var transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
-    .withResponseFormat(TranscriptResponseFormat.TEXT)
-    .withTemperature(0f)
+    .responseFormat(TranscriptResponseFormat.TEXT)
+    .temperature(0f)
     .build();
 
 var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac");

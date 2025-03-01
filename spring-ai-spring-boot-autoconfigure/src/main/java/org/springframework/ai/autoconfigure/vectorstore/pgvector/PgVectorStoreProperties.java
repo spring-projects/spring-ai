@@ -47,6 +47,8 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
 
+	private PgVectorStore.PgIdType idType = PgVectorStore.PgIdType.UUID;
+
 	private boolean schemaValidation = PgVectorStore.DEFAULT_SCHEMA_VALIDATION;
 
 	private int maxDocumentBatchSize = PgVectorStore.MAX_DOCUMENT_BATCH_SIZE;
@@ -97,6 +99,14 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setSchemaName(String schemaName) {
 		this.schemaName = schemaName;
+	}
+
+	public PgVectorStore.PgIdType getIdType() {
+		return idType;
+	}
+
+	public void setIdType(PgVectorStore.PgIdType idType) {
+		this.idType = idType;
 	}
 
 	public boolean isSchemaValidation() {

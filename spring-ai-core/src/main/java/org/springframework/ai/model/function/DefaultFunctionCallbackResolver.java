@@ -28,6 +28,8 @@ import kotlin.jvm.functions.Function2;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
+import org.springframework.ai.tool.resolution.TypeResolverHelper;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -55,7 +57,9 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Christopher Smith
  * @author Sebastien Deleuze
+ * @deprecated Use {@link SpringBeanToolCallbackResolver} instead.
  */
+@Deprecated
 public class DefaultFunctionCallbackResolver implements ApplicationContextAware, FunctionCallbackResolver {
 
 	private GenericApplicationContext applicationContext;

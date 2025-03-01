@@ -35,7 +35,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -151,38 +152,56 @@ public class DefaultChatClientBuilder implements Builder {
 
 	@Override
 	public Builder defaultTools(String... toolNames) {
-		this.defaultRequest.functions(toolNames);
+		this.defaultRequest.tools(toolNames);
+		return this;
+	}
+
+	@Override
+	public Builder defaultTools(FunctionCallback... toolCallbacks) {
+		this.defaultRequest.tools(toolCallbacks);
+		return this;
+	}
+
+	@Override
+	public Builder defaultTools(List<ToolCallback> toolCallbacks) {
+		this.defaultRequest.tools(toolCallbacks);
 		return this;
 	}
 
 	@Override
 	public Builder defaultTools(Object... toolObjects) {
-		this.defaultRequest.functions(ToolCallbacks.from(toolObjects));
+		this.defaultRequest.tools(toolObjects);
 		return this;
 	}
 
 	@Override
-	public Builder defaultToolCallbacks(FunctionCallback... toolCallbacks) {
-		this.defaultRequest.functions(toolCallbacks);
+	public Builder defaultTools(ToolCallbackProvider... toolCallbackProviders) {
+		this.defaultRequest.tools(toolCallbackProviders);
 		return this;
 	}
 
+	@Deprecated // Use defaultTools()
 	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
-		this.defaultRequest.function(name, description, function);
+		this.defaultRequest
+			.functions(FunctionCallback.builder().function(name, function).description(description).build());
 		return this;
 	}
 
+	@Deprecated // Use defaultTools()
 	public <I, O> Builder defaultFunction(String name, String description,
 			java.util.function.BiFunction<I, ToolContext, O> biFunction) {
-		this.defaultRequest.function(name, description, biFunction);
+		this.defaultRequest
+			.functions(FunctionCallback.builder().function(name, biFunction).description(description).build());
 		return this;
 	}
 
+	@Deprecated // Use defaultTools()
 	public Builder defaultFunctions(String... functionNames) {
 		this.defaultRequest.functions(functionNames);
 		return this;
 	}
 
+	@Deprecated // Use defaultTools()
 	public Builder defaultFunctions(FunctionCallback... functionCallbacks) {
 		this.defaultRequest.functions(functionCallbacks);
 		return this;
@@ -199,7 +218,7 @@ public class DefaultChatClientBuilder implements Builder {
 
 	void addToolCallbacks(List<FunctionCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		this.defaultRequest.toolCallbacks(toolCallbacks.toArray(FunctionCallback[]::new));
+		this.defaultRequest.tools(toolCallbacks.toArray(FunctionCallback[]::new));
 	}
 
 	void addToolContext(Map<String, Object> toolContext) {

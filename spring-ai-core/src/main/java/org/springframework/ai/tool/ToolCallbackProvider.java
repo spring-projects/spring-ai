@@ -16,6 +16,10 @@
 
 package org.springframework.ai.tool;
 
+import java.util.List;
+
+import org.springframework.ai.model.function.FunctionCallback;
+
 /**
  * Provides {@link ToolCallback} instances for tools defined in different sources.
  *
@@ -24,6 +28,14 @@ package org.springframework.ai.tool;
  */
 public interface ToolCallbackProvider {
 
-	ToolCallback[] getToolCallbacks();
+	FunctionCallback[] getToolCallbacks();
+
+	public static ToolCallbackProvider from(List<? extends FunctionCallback> toolCallbacks) {
+		return new StaticToolCallbackProvider(toolCallbacks);
+	}
+
+	public static ToolCallbackProvider from(FunctionCallback... toolCallbacks) {
+		return new StaticToolCallbackProvider(toolCallbacks);
+	}
 
 }

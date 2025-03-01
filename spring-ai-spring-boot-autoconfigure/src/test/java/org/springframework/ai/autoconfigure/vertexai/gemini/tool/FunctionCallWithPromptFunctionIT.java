@@ -29,6 +29,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -51,7 +52,7 @@ public class FunctionCallWithPromptFunctionIT {
 	void functionCallTest() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH_LIGHT.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
@@ -68,12 +69,11 @@ public class FunctionCallWithPromptFunctionIT {
 						""");
 
 				var promptOptions = VertexAiGeminiChatOptions.builder()
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function("CurrentWeatherService", new MockWeatherService())
-						.schemaType(SchemaType.OPEN_API_SCHEMA) // IMPORTANT!!
-						.description("Get the weather in location")
-						.inputType(MockWeatherService.Request.class)
-						.build()))
+					.toolCallbacks(
+							List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
+								.description("Get the weather in location")
+								.inputType(MockWeatherService.Request.class)
+								.build()))
 					.build();
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));

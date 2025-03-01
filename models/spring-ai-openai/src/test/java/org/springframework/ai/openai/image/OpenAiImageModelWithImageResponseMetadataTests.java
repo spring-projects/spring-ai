@@ -18,6 +18,7 @@ package org.springframework.ai.openai.image;
 
 import java.util.List;
 
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,8 +26,10 @@ import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -104,7 +107,7 @@ public class OpenAiImageModelWithImageResponseMetadataTests {
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER.getName(), "112358");
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_RESET_HEADER.getName(), "27h55s451ms");
 
-		this.server.expect(requestTo("v1/images/generations"))
+		this.server.expect(requestTo(StringContains.containsString("v1/images/generations")))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess(getJson(), MediaType.APPLICATION_JSON).headers(httpHeaders));
@@ -132,7 +135,7 @@ public class OpenAiImageModelWithImageResponseMetadataTests {
 
 		@Bean
 		public OpenAiImageApi imageGenerationApi(RestClient.Builder builder) {
-			return new OpenAiImageApi("", TEST_API_KEY, builder);
+			return OpenAiImageApi.builder().apiKey(new SimpleApiKey(TEST_API_KEY)).restClientBuilder(builder).build();
 		}
 
 		@Bean

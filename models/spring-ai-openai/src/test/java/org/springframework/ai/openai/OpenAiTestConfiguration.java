@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai;
 
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -30,31 +32,31 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiApi openAiApi() {
-		return new OpenAiApi(getApiKey());
+		return OpenAiApi.builder().apiKey(getApiKey()).build();
 	}
 
 	@Bean
 	public OpenAiImageApi openAiImageApi() {
-		return new OpenAiImageApi(getApiKey());
+		return OpenAiImageApi.builder().apiKey(getApiKey()).build();
 	}
 
 	@Bean
 	public OpenAiAudioApi openAiAudioApi() {
-		return new OpenAiAudioApi(getApiKey());
+		return OpenAiAudioApi.builder().apiKey(getApiKey()).build();
 	}
 
 	@Bean
 	public OpenAiModerationApi openAiModerationApi() {
-		return new OpenAiModerationApi(getApiKey());
+		return OpenAiModerationApi.builder().apiKey(getApiKey()).build();
 	}
 
-	private String getApiKey() {
+	private ApiKey getApiKey() {
 		String apiKey = System.getenv("OPENAI_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
 					"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 		}
-		return apiKey;
+		return new SimpleApiKey(apiKey);
 	}
 
 	@Bean

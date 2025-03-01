@@ -41,6 +41,8 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 
+import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
+
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
  * to a specific object type using JSON schema. This converter works by generating a JSON
@@ -143,7 +145,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
 		}
 		catch (JsonProcessingException e) {
-			logger.error("Could not pretty print json schema for jsonNode: " + jsonNode);
+			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
 			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
 		}
 	}
@@ -180,7 +182,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			return (T) this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
 		}
 		catch (JsonProcessingException e) {
-			logger.error("Could not parse the given text to the desired target type:" + text + " into " + this.type);
+			logger.error(SENSITIVE_DATA_MARKER,
+					"Could not parse the given text to the desired target type: \"{}\" into {}", text, this.type);
 			throw new RuntimeException(e);
 		}
 	}

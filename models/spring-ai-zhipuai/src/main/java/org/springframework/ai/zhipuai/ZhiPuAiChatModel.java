@@ -38,6 +38,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
@@ -68,7 +69,6 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
-import org.springframework.ai.zhipuai.metadata.ZhiPuAiUsage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -326,11 +326,15 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 		Assert.notNull(result, "ZhiPuAI ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
-			.usage(result.usage() != null ? ZhiPuAiUsage.from(result.usage()) : new EmptyUsage())
+			.usage(result.usage() != null ? getDefaultUsage(result.usage()) : new EmptyUsage())
 			.model(result.model() != null ? result.model() : "")
 			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
+	}
+
+	private DefaultUsage getDefaultUsage(ZhiPuAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	/**

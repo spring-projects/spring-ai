@@ -54,13 +54,13 @@ public final class ModelUsageMetricsGenerator {
 				.increment(usage.getPromptTokens());
 		}
 
-		if (usage.getGenerationTokens() != null) {
+		if (usage.getCompletionTokens() != null) {
 			Counter.builder(AiObservationMetricNames.TOKEN_USAGE.value())
 				.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.OUTPUT.value())
 				.description(DESCRIPTION)
 				.tags(createTags(context))
 				.register(meterRegistry)
-				.increment(usage.getGenerationTokens());
+				.increment(usage.getCompletionTokens());
 		}
 
 		if (usage.getTotalTokens() != null) {

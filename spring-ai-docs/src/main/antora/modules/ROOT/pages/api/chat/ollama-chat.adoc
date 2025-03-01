@@ -309,8 +309,8 @@ String jsonSchema = """
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OllamaOptions.builder()
-            .withModel(OllamaModel.LLAMA3_2.getName())
-            .withFormat(new ObjectMapper().readValue(jsonSchema, Map.class))
+            .model(OllamaModel.LLAMA3_2.getName())
+            .format(new ObjectMapper().readValue(jsonSchema, Map.class))
             .build());
 
 ChatResponse response = this.ollamaChatModel.call(this.prompt);
@@ -340,8 +340,8 @@ var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OllamaOptions.builder()
-            .withModel(OllamaModel.LLAMA3_2.getName())
-            .withFormat(outputConverter.getJsonSchemaMap())
+            .model(OllamaModel.LLAMA3_2.getName())
+            .format(outputConverter.getJsonSchemaMap())
             .build());
 
 ChatResponse response = this.ollamaChatModel.call(this.prompt);
@@ -466,10 +466,14 @@ Next, create an `OllamaChatModel` instance and use it to send requests for text 
 ----
 var ollamaApi = new OllamaApi();
 
-var chatModel = new OllamaChatModel(this.ollamaApi,
-            OllamaOptions.create()
-                .model(OllamaOptions.DEFAULT_MODEL)
-                .temperature(0.9));
+var chatModel = OllamaChatModel.builder()
+                    .ollamaApi(ollamaApi)
+                    .defaultOptions(
+                        OllamaOptions.builder()
+                            .model(OllamaModel.MISTRAL)
+                            .temperature(0.9)
+                            .build())
+                    .build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -508,7 +512,7 @@ var request = ChatRequest.builder("orca-mini")
                 .content("What is the capital of Bulgaria and what is the size? "
                         + "What is the national anthem?")
                 .build()))
-    .options(OllamaOptions.create().temperature(0.9))
+    .options(OllamaOptions.builder().temperature(0.9).build())
     .build();
 
 ChatResponse response = this.ollamaApi.chat(this.request);
@@ -519,7 +523,7 @@ var request2 = ChatRequest.builder("orca-mini")
     .messages(List.of(Message.builder(Role.USER)
         .content("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
-    .options(OllamaOptions.create().temperature(0.9).toMap())
+    .options(OllamaOptions.builder().temperature(0.9).build().toMap())
     .build();
 
 Flux<ChatResponse> streamingResponse = this.ollamaApi.streamingChat(this.request2);

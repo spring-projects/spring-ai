@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,26 +21,32 @@ package org.springframework.ai.chat.metadata;
  * per AI request.
  *
  * @author John Blum
+ * @author Ilayaperumal Gopinathan
  * @since 0.7.0
  */
 public interface Usage {
 
 	/**
 	 * Returns the number of tokens used in the {@literal prompt} of the AI request.
-	 * @return an {@link Long} with the number of tokens used in the {@literal prompt} of
-	 * the AI request.
-	 * @see #getGenerationTokens()
+	 * @return an {@link Integer} with the number of tokens used in the {@literal prompt}
+	 * of the AI request.
+	 * @see #getCompletionTokens()
 	 */
-	Long getPromptTokens();
+	Integer getPromptTokens();
+
+	@Deprecated(forRemoval = true, since = "1.0.0-M6")
+	default Long getGenerationTokens() {
+		return getCompletionTokens().longValue();
+	}
 
 	/**
 	 * Returns the number of tokens returned in the {@literal generation (aka completion)}
 	 * of the AI's response.
-	 * @return an {@link Long} with the number of tokens returned in the
+	 * @return an {@link Integer} with the number of tokens returned in the
 	 * {@literal generation (aka completion)} of the AI's response.
 	 * @see #getPromptTokens()
 	 */
-	Long getGenerationTokens();
+	Integer getCompletionTokens();
 
 	/**
 	 * Return the total number of tokens from both the {@literal prompt} of an AI request
@@ -48,14 +54,20 @@ public interface Usage {
 	 * @return the total number of tokens from both the {@literal prompt} of an AI request
 	 * and {@literal generation} of the AI's response.
 	 * @see #getPromptTokens()
-	 * @see #getGenerationTokens()
+	 * @see #getCompletionTokens()
 	 */
-	default Long getTotalTokens() {
-		Long promptTokens = getPromptTokens();
+	default Integer getTotalTokens() {
+		Integer promptTokens = getPromptTokens();
 		promptTokens = promptTokens != null ? promptTokens : 0;
-		Long completionTokens = getGenerationTokens();
+		Integer completionTokens = getCompletionTokens();
 		completionTokens = completionTokens != null ? completionTokens : 0;
 		return promptTokens + completionTokens;
 	}
+
+	/**
+	 * Return the usage data from the underlying model API response.
+	 * @return the object of type inferred by the API response.
+	 */
+	Object getNativeUsage();
 
 }

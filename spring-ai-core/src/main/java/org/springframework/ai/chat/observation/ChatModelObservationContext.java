@@ -45,6 +45,10 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 		return new Builder();
 	}
 
+	/**
+	 * @deprecated Use {@link #getRequest().getOptions()} instead.
+	 */
+	@Deprecated(forRemoval = true)
 	public ChatOptions getRequestOptions() {
 		return this.requestOptions;
 	}
@@ -70,6 +74,11 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 			return this;
 		}
 
+		/**
+		 * @deprecated ChatOptions are passed in the Prompt object and should not be set
+		 * separately anymore.
+		 */
+		@Deprecated(forRemoval = true)
 		public Builder requestOptions(ChatOptions requestOptions) {
 			this.requestOptions = requestOptions;
 			return this;

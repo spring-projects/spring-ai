@@ -54,13 +54,12 @@ public class PineconeVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return PineconeVectorStore
-			.builder(embeddingModel, properties.getApiKey(), properties.getProjectId(), properties.getEnvironment(),
-					properties.getIndexName())
+		return PineconeVectorStore.builder(embeddingModel)
+			.apiKey(properties.getApiKey())
+			.indexName(properties.getIndexName())
 			.namespace(properties.getNamespace())
 			.contentFieldName(properties.getContentFieldName())
 			.distanceMetadataFieldName(properties.getDistanceMetadataFieldName())
-			.serverSideTimeout(properties.getServerSideTimeout())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)

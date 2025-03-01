@@ -82,7 +82,8 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 | spring.ai.vertex.ai.gemini.chat.options.maxOutputTokens | The maximum number of tokens to generate. | -
 | spring.ai.vertex.ai.gemini.chat.options.frequencyPenalty |  | -
 | spring.ai.vertex.ai.gemini.chat.options.presencePenalty |  | -
-| spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
+| spring.ai.vertex.ai.gemini.chat.options.toolNames | List of tools, identified by their names, to enable for function calling in a single prompt requests. Tools with those names must exist in the ToolCallback registry. | -
+| (**deprecated** by `toolNames`) spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
 | spring.ai.vertex.ai.gemini.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 | spring.ai.vertex.ai.gemini.chat.options.safetySettings | List of safety settings to control safety filters, as defined by https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters[Vertex AI Safety Filters]. Each safety setting can have a method, threshold, and category. | -
 
@@ -113,15 +114,49 @@ ChatResponse response = chatModel.call(
 TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
 https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
-== Function Calling
+== Tool Calling
 
-WARNING: As of 30th of April 2023, the Vertex AI `Gemini Pro` model has significantly degraded the support for function calling! While the feature is still available, it is not recommended for production use.
-Apparently the Gemini Pro can not handle anymore the function name correctly.
-The parallel function calling is gone as well.
+The Vertex AI Gemini model supports tool calling capabilities, allowing models to use tools during conversations. 
+Here's an example of how to define and use `@Tool`-based tools:
 
-You can register custom Java functions with the VertexAiGeminiChatModel and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
-This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
+[source,java]
+----
+
+public class WeatherService {
+
+    @Tool(description = "Get the weather in location")
+    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
+        ...
+    }
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .tools(new WeatherService())
+        .call()
+        .content();
+----
+
+You can use the java.util.function beans as tools as well:
+
+[source,java]
+----
+@Bean
+@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+public Function<Request, Response> weatherFunction() {
+    return new MockWeatherService();
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .tools("weatherFunction")
+        .inputType(Request.class)
+        .call()
+        .content();
+----
+
+Find more in xref:api/tools.adoc[Tools] documentation.
+
 
 == Multimodal
 

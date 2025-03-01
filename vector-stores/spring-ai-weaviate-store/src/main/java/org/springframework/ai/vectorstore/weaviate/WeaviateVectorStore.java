@@ -43,13 +43,13 @@ import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder.GetBuilderBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -92,6 +92,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
+
+	private static final Logger logger = LoggerFactory.getLogger(WeaviateVectorStore.class);
 
 	private static final String METADATA_FIELD_PREFIX = "meta_";
 
@@ -271,7 +273,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> documentIds) {
+	public void doDelete(List<String> documentIds) {
 
 		Result<BatchDeleteResponse> result = this.weaviateClient.batch()
 			.objectsBatchDeleter()
@@ -292,8 +294,39 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 				.collect(Collectors.joining(","));
 			throw new RuntimeException("Failed to delete documents because: \n" + errorMessages);
 		}
+	}
 
-		return Optional.of(!result.hasErrors());
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			// Use similarity search with empty query to find documents matching the
+			// filter
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("") // empty query since we only want filter matches
+				.filterExpression(filterExpression)
+				.topK(10000) // large enough to get all matches
+				.similarityThresholdAll()
+				.build();
+
+			List<Document> matchingDocs = similaritySearch(searchRequest);
+
+			if (!matchingDocs.isEmpty()) {
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+
+				delete(idsToDelete);
+
+				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
+			}
+			else {
+				logger.debug("No documents found matching filter expression");
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter", e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
@@ -402,6 +435,13 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.WEAVIATE.value(), operationName)
 			.dimensions(this.embeddingModel.dimensions())
 			.collectionName(this.weaviateObjectClass);
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.weaviateClient;
+		return Optional.of(client);
 	}
 
 	/**

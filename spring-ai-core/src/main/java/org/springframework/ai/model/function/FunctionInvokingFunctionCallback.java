@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.function.Function;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.util.Assert;
 
 /**
@@ -34,7 +35,9 @@ import org.springframework.util.Assert;
  * @param <I> the input type
  * @param <O> the output type
  * @author Christian Tzolov
+ * @deprecated in favor of {@link FunctionToolCallback}.
  */
+@Deprecated
 public final class FunctionInvokingFunctionCallback<I, O> extends AbstractFunctionCallback<I, O> {
 
 	private final BiFunction<I, ToolContext, O> biFunction;

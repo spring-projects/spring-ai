@@ -39,7 +39,7 @@ export SPRING_AI_OPENAI_CHAT_MODEL=llama-3.1-sonar-small-128k-online
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
 Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
@@ -141,13 +141,14 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OpenAiChatOptions.builder()
-            .withModel("llama-3.1-sonar-large-128k-online")
-            .withTemperature(0.4)
+            .model("llama-3.1-sonar-large-128k-online")
+            .temperature(0.4)
         .build()
     ));
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions#builder()].
+
 
 == Function Calling
 

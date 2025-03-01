@@ -18,6 +18,7 @@ package org.springframework.ai.openai.audio.transcription;
 
 import java.time.Duration;
 
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,11 +26,11 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionMetadata;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
@@ -120,7 +121,7 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER.getName(), "112358");
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_RESET_HEADER.getName(), "27h55s451ms");
 
-		this.server.expect(requestTo("/v1/audio/transcriptions"))
+		this.server.expect(requestTo(StringContains.containsString("/v1/audio/transcriptions")))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess(getJson(), MediaType.APPLICATION_JSON).headers(httpHeaders));
@@ -156,7 +157,7 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 
 		@Bean
 		public OpenAiAudioApi chatCompletionApi(RestClient.Builder builder) {
-			return new OpenAiAudioApi("", TEST_API_KEY, builder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+			return OpenAiAudioApi.builder().apiKey(new SimpleApiKey(TEST_API_KEY)).restClientBuilder(builder).build();
 		}
 
 		@Bean

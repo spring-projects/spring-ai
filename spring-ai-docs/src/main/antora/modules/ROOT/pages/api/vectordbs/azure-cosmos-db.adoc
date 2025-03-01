@@ -205,3 +205,20 @@ Add the following dependency in your Maven project:
     <artifactId>spring-ai-azure-cosmos-db-store</artifactId>
 </dependency>
 ----
+
+== Accessing the Native Client
+
+The Azure Cosmos DB Vector Store implementation provides access to the underlying native Azure Cosmos DB client (`CosmosClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+CosmosDBVectorStore vectorStore = context.getBean(CosmosDBVectorStore.class);
+Optional<CosmosClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    CosmosClient client = nativeClient.get();
+    // Use the native client for Azure Cosmos DB-specific operations
+}
+----
+
+The native client gives you access to Azure Cosmos DB-specific features and operations that might not be exposed through the `VectorStore` interface.

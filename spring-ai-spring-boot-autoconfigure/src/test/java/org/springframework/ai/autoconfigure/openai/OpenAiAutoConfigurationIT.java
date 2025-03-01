@@ -151,7 +151,7 @@ public class OpenAiAutoConfigurationIT {
 			}).collect(Collectors.joining());
 
 			assertThat(streamingTokenUsage[0].getPromptTokens()).isGreaterThan(0);
-			assertThat(streamingTokenUsage[0].getGenerationTokens()).isGreaterThan(0);
+			assertThat(streamingTokenUsage[0].getCompletionTokens()).isGreaterThan(0);
 			assertThat(streamingTokenUsage[0].getTotalTokens()).isGreaterThan(0);
 
 			assertThat(response).isNotEmpty();

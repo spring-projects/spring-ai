@@ -17,7 +17,8 @@
 package org.springframework.ai.tool.definition;
 
 import org.springframework.ai.tool.util.ToolUtils;
-import org.springframework.ai.util.json.JsonSchemaGenerator;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
+import org.springframework.util.Assert;
 
 import java.lang.reflect.Method;
 
@@ -40,9 +41,9 @@ public interface ToolDefinition {
 	String description();
 
 	/**
-	 * The JSON Schema of the parameters used to call the tool.
+	 * The schema of the parameters used to call the tool.
 	 */
-	String inputTypeSchema();
+	String inputSchema();
 
 	/**
 	 * Create a default {@link ToolDefinition} builder.
@@ -52,14 +53,21 @@ public interface ToolDefinition {
 	}
 
 	/**
-	 * Create a default {@link ToolDefinition} instance from a {@link Method}.
+	 * Create a default {@link ToolDefinition} builder from a {@link Method}.
 	 */
-	static ToolDefinition from(Method method) {
+	static DefaultToolDefinition.Builder builder(Method method) {
+		Assert.notNull(method, "method cannot be null");
 		return DefaultToolDefinition.builder()
 			.name(ToolUtils.getToolName(method))
 			.description(ToolUtils.getToolDescription(method))
-			.inputTypeSchema(JsonSchemaGenerator.generateForMethodInput(method))
-			.build();
+			.inputSchema(JsonSchemaGenerator.generateForMethodInput(method));
+	}
+
+	/**
+	 * Create a default {@link ToolDefinition} instance from a {@link Method}.
+	 */
+	static ToolDefinition from(Method method) {
+		return ToolDefinition.builder(method).build();
 	}
 
 }

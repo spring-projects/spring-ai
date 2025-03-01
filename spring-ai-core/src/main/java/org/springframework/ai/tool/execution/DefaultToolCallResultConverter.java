@@ -16,9 +16,13 @@
 
 package org.springframework.ai.tool.execution;
 
+import java.lang.reflect.Type;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * A default implementation of {@link ToolCallResultConverter}.
@@ -28,13 +32,16 @@ import org.springframework.util.Assert;
  */
 public final class DefaultToolCallResultConverter implements ToolCallResultConverter {
 
+	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallResultConverter.class);
+
 	@Override
-	public String apply(@Nullable Object result, Class<?> returnType) {
-		Assert.notNull(returnType, "returnType cannot be null");
+	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
+			logger.debug("The tool has no return type. Converting to conventional response.");
 			return "Done";
 		}
 		else {
+			logger.debug("Converting tool result to JSON.");
 			return JsonParser.toJson(result);
 		}
 	}
