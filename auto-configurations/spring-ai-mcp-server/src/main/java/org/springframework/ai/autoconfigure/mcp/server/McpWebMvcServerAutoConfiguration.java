@@ -64,7 +64,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 @ConditionalOnMissingBean(ServerMcpTransport.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "stdio", havingValue = "false",
 		matchIfMissing = true)
-public class MpcWebMvcServerAutoConfiguration {
+public class McpWebMvcServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean

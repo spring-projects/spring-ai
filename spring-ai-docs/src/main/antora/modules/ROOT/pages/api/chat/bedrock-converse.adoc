@@ -110,8 +110,8 @@ var options = ToolCallingChatOptions.builder()
 
 String response = ChatClient.create(this.chatModel)
     .prompt("What is current weather in Amsterdam?")
-    .options()
-    .call(options)
+    .options(options)
+    .call()
     .content();
 ----
 

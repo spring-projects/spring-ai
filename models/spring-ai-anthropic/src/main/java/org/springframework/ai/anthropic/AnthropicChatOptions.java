@@ -80,6 +80,13 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+
+	/**
+	 * Optional HTTP headers to be added to the chat completion request.
+	 */
+	@JsonIgnore
+	private Map<String, String> httpHeaders = new HashMap<>();
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -98,6 +105,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext())
+			.httpHeaders(fromOptions.getHttpHeaders())
 			.build();
 	}
 
@@ -270,6 +278,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@JsonIgnore
+	public Map<String, String> getHttpHeaders() {
+		return httpHeaders;
+	}
+
+	public void setHttpHeaders(Map<String, String> httpHeaders) {
+		this.httpHeaders = httpHeaders;
+	}
+
 	@Override
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
@@ -377,6 +394,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder httpHeaders(Map<String, String> httpHeaders) {
+			this.options.setHttpHeaders(httpHeaders);
 			return this;
 		}
 

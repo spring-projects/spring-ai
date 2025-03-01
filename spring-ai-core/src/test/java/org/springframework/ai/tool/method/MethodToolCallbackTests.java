@@ -69,8 +69,8 @@ class MethodToolCallbackTests {
 	}
 
 	@Test
-	void shouldThrowExceptionWhenToolContextNotSupported() {
-		Method toolMethod = getMethod("publicMethod", PublicTools.class);
+	void shouldThrowExceptionWhenToolContextArgumentIsMissing() {
+		Method toolMethod = getMethod("methodWithToolContext", ToolContextTools.class);
 		MethodToolCallback callback = MethodToolCallback.builder()
 			.toolDefinition(ToolDefinition.from(toolMethod))
 			.toolMetadata(ToolMetadata.from(toolMethod))
@@ -78,14 +78,12 @@ class MethodToolCallbackTests {
 			.toolObject(new PublicTools())
 			.build();
 
-		ToolContext toolContext = new ToolContext(Map.of("key", "value"));
-
 		assertThatThrownBy(() -> callback.call("""
 				{
 				    "input": "test"
 				}
-				""", toolContext)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("ToolContext is not supported");
+				""")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolContext is required by the method as an argument");
 	}
 
 	@Test

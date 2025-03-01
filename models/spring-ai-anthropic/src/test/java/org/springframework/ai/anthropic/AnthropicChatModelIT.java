@@ -89,8 +89,8 @@ class AnthropicChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20241022" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest",
+			"claude-3-opus-latest" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -275,11 +275,11 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
@@ -307,11 +307,11 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
@@ -337,11 +337,11 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
-				.build()))
+				.build())
 			.build();
 
 		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
@@ -410,7 +410,7 @@ class AnthropicChatModelIT {
 
 		@Bean
 		public AnthropicChatModel openAiChatModel(AnthropicApi api) {
-			return new AnthropicChatModel(api);
+			return AnthropicChatModel.builder().anthropicApi(api).build();
 		}
 
 	}
