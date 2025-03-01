@@ -66,7 +66,7 @@ class RetrievalAugmentationAdvisorTests {
 		var chatModel = mock(ChatModel.class);
 		var promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture())).willReturn(ChatResponse.builder()
-			.withGenerations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))
+			.generations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))
 			.build());
 
 		// Document Retriever

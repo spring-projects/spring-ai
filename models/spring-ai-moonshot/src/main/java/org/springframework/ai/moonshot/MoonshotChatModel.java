@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.metadata.UsageUtils;
@@ -65,7 +66,6 @@ import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionMessage.Too
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest;
 import org.springframework.ai.moonshot.api.MoonshotApi.FunctionTool;
 import org.springframework.ai.moonshot.api.MoonshotConstants;
-import org.springframework.ai.moonshot.metadata.MoonshotUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -226,7 +226,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 					return buildGeneration(choice, metadata);
 				}).toList();
 				MoonshotApi.Usage usage = completionEntity.getBody().usage();
-				Usage currentUsage = (usage != null) ? MoonshotUsage.from(usage) : new EmptyUsage();
+				Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
 				Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(completionEntity.getBody(), cumulativeUsage));
@@ -245,6 +245,10 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
 		}
 		return response;
+	}
+
+	private DefaultUsage getDefaultUsage(MoonshotApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	@Override
@@ -302,7 +306,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 							return buildGeneration(choice, metadata);
 						}).toList();
 						MoonshotApi.Usage usage = chatCompletion2.usage();
-						Usage currentUsage = (usage != null) ? MoonshotUsage.from(usage) : new EmptyUsage();
+						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
 
 						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
@@ -336,7 +340,7 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 		Assert.notNull(result, "Moonshot ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
-			.usage(result.usage() != null ? MoonshotUsage.from(result.usage()) : new EmptyUsage())
+			.usage(result.usage() != null ? getDefaultUsage(result.usage()) : new EmptyUsage())
 			.model(result.model() != null ? result.model() : "")
 			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();

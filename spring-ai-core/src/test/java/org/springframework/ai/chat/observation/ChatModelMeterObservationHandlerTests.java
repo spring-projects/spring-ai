@@ -16,7 +16,9 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -106,13 +108,22 @@ class ChatModelMeterObservationHandlerTests {
 	static class TestUsage implements Usage {
 
 		@Override
-		public Long getPromptTokens() {
-			return 1000L;
+		public Integer getPromptTokens() {
+			return 1000;
 		}
 
 		@Override
-		public Long getGenerationTokens() {
-			return 500L;
+		public Integer getCompletionTokens() {
+			return 500;
+		}
+
+		@Override
+		public Map<String, Integer> getNativeUsage() {
+			Map<String, Integer> usage = new HashMap<>();
+			usage.put("promptTokens", getPromptTokens());
+			usage.put("completionTokens", getCompletionTokens());
+			usage.put("totalTokens", getTotalTokens());
+			return usage;
 		}
 
 	}

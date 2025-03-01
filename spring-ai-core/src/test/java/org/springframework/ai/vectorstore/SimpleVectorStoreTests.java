@@ -38,6 +38,7 @@ import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -112,8 +113,8 @@ class SimpleVectorStoreTests {
 	@Test
 	void shouldHandleDeleteOfNonexistentDocument() {
 		this.vectorStore.delete(List.of("nonexistent-id"));
-		// Should not throw exception and return true
-		assertThat(this.vectorStore.delete(List.of("nonexistent-id")).get()).isTrue();
+		// Should not throw exception
+		assertDoesNotThrow(() -> this.vectorStore.delete(List.of("nonexistent-id")));
 	}
 
 	@Test

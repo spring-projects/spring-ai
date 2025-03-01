@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ModelResponse;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -33,6 +34,7 @@ import org.springframework.util.CollectionUtils;
  * @author Soby Chacko
  * @author John Blum
  * @author Alexandros Pappas
+ * @author Thomas Vitale
  */
 public class ChatResponse implements ModelResponse<Generation> {
 
@@ -100,6 +102,31 @@ public class ChatResponse implements ModelResponse<Generation> {
 		return this.chatResponseMetadata;
 	}
 
+	/**
+	 * Whether the model has requested the execution of a tool.
+	 */
+	public boolean hasToolCalls() {
+		if (CollectionUtils.isEmpty(generations)) {
+			return false;
+		}
+		return generations.stream().anyMatch(generation -> generation.getOutput().hasToolCalls());
+	}
+
+	/**
+	 * Whether the model has finished with any of the given finish reasons.
+	 */
+	public boolean hasFinishReasons(Set<String> finishReasons) {
+		Assert.notNull(finishReasons, "finishReasons cannot be null");
+		if (CollectionUtils.isEmpty(generations)) {
+			return false;
+		}
+		return generations.stream().anyMatch(generation -> {
+			var finishReason = (generation.getMetadata().getFinishReason() != null)
+					? generation.getMetadata().getFinishReason() : "";
+			return finishReasons.stream().map(String::toLowerCase).toList().contains(finishReason.toLowerCase());
+		});
+	}
+
 	@Override
 	public String toString() {
 		return "ChatResponse [metadata=" + this.chatResponseMetadata + ", generations=" + this.generations + "]";
@@ -137,15 +164,6 @@ public class ChatResponse implements ModelResponse<Generation> {
 			return this.metadata(other.chatResponseMetadata);
 		}
 
-		/**
-		 * @deprecated Use {@link #metadata(String, Object)} instead.
-		 */
-		@Deprecated
-		public Builder withMetadata(String key, Object value) {
-			this.chatResponseMetadataBuilder.keyValue(key, value);
-			return this;
-		}
-
 		public Builder metadata(String key, Object value) {
 			this.chatResponseMetadataBuilder.keyValue(key, value);
 			return this;
@@ -162,16 +180,6 @@ public class ChatResponse implements ModelResponse<Generation> {
 				this.chatResponseMetadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 			return this;
-		}
-
-		/**
-		 * @deprecated Use {@link #generations(List)} instead.
-		 */
-		@Deprecated
-		public Builder withGenerations(List<Generation> generations) {
-			this.generations = generations;
-			return this;
-
 		}
 
 		public Builder generations(List<Generation> generations) {

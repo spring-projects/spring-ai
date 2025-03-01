@@ -68,6 +68,11 @@ public enum OllamaModel implements ChatModelDescription {
 	LLAMA3_2_1B("llama3.2:1b"),
 
 	/**
+	 * The Llama 3.2 3B language model from Meta.
+	 */
+	LLAMA3_2_3B("llama3.2:3b"),
+
+	/**
 	 * The 7B parameters model
 	 */
 	MISTRAL("mistral"),

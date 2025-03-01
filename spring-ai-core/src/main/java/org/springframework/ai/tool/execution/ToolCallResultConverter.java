@@ -18,7 +18,7 @@ package org.springframework.ai.tool.execution;
 
 import org.springframework.lang.Nullable;
 
-import java.util.function.BiFunction;
+import java.lang.reflect.Type;
 
 /**
  * A functional interface to convert tool call results to a String that can be sent back
@@ -28,12 +28,12 @@ import java.util.function.BiFunction;
  * @since 1.0.0
  */
 @FunctionalInterface
-public interface ToolCallResultConverter extends BiFunction<Object, Class<?>, String> {
+public interface ToolCallResultConverter {
 
 	/**
 	 * Given an Object returned by a tool, convert it to a String compatible with the
 	 * given class type.
 	 */
-	String apply(@Nullable Object result, Class<?> returnType);
+	String convert(@Nullable Object result, @Nullable Type returnType);
 
 }

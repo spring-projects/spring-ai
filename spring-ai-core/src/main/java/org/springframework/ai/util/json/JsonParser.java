@@ -27,6 +27,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 
+import java.lang.reflect.Type;
+
 /**
  * Utilities to perform parsing operations between JSON and Java.
  */
@@ -61,6 +63,21 @@ public final class JsonParser {
 		}
 		catch (JsonProcessingException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getName()), ex);
+		}
+	}
+
+	/**
+	 * Converts a JSON string to a Java object.
+	 */
+	public static <T> T fromJson(String json, Type type) {
+		Assert.notNull(json, "json cannot be null");
+		Assert.notNull(type, "type cannot be null");
+
+		try {
+			return OBJECT_MAPPER.readValue(json, OBJECT_MAPPER.constructType(type));
+		}
+		catch (JsonProcessingException ex) {
+			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getTypeName()), ex);
 		}
 	}
 

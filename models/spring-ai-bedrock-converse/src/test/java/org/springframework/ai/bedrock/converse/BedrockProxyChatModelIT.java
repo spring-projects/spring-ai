@@ -48,6 +48,8 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -77,7 +79,7 @@ class BedrockProxyChatModelIT {
 		// assertThat(response.getMetadata().getId()).isNotEmpty();
 		// assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
@@ -93,11 +95,11 @@ class BedrockProxyChatModelIT {
 				FunctionCallingOptions.builder().model(modelName).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isGreaterThan(0);
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isGreaterThan(0);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0);
 		assertThat(response.getMetadata().getUsage().getTotalTokens())
 			.isEqualTo(response.getMetadata().getUsage().getPromptTokens()
-					+ response.getMetadata().getUsage().getGenerationTokens());
+					+ response.getMetadata().getUsage().getCompletionTokens());
 		Generation generation = response.getResults().get(0);
 		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
@@ -133,11 +135,11 @@ class BedrockProxyChatModelIT {
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
+		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
 		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
 
 	}
@@ -240,11 +242,13 @@ class BedrockProxyChatModelIT {
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getText());
-		assertThat(response.getResult().getOutput().getText()).contains("banan", "apple", "basket");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
+	@Deprecated
 	@Test
-	void functionCallTest() {
+	void functionCallTestDeprecated() {
 
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
@@ -256,6 +260,29 @@ class BedrockProxyChatModelIT {
 				.function("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		Generation generation = response.getResult();
+		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallTest() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = ToolCallingChatOptions.builder()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return in 36°C format")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

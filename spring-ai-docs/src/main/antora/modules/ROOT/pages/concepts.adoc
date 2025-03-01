@@ -143,8 +143,8 @@ The Spring AI library helps you implement solutions based on the "`stuffing the 
 
 image::spring-ai-prompt-stuffing.jpg[Prompt stuffing, width=700, align="center"]
 
-* **xref::concepts.adoc#concept-fc[Function Calling]**: This technique allows registering custom, user functions that connect the large language models to the APIs of external systems.
-Spring AI greatly simplifies code you need to write to support xref:api/functions.adoc[function calling].
+* **xref::concepts.adoc#concept-fc[Tool Calling]**: This technique allows registering tools (user-defined services) that connect the large language models to the APIs of external systems.
+Spring AI greatly simplifies code you need to write to support xref:api/tools.adoc[tool calling].
 
 [[concept-rag]]
 === Retrieval Augmented Generation
@@ -173,30 +173,29 @@ image::spring-ai-rag.jpg[Spring AI RAG, width=1000, align="center"]
 * The xref::api/chatclient.adoc#_retrieval_augmented_generation[ChatClient - RAG] explains how to use the `QuestionAnswerAdvisor` to enable the RAG capability in your application.
 
 [[concept-fc]]
-=== Function Calling
+=== Tool Calling
 
 Large Language Models (LLMs) are frozen after training, leading to stale knowledge, and they are unable to access or modify external data.
 
-The xref::api/functions.adoc[Function Calling] mechanism addresses these shortcomings.
-It allows you to register your own functions to connect the large language models to the APIs of external systems.
+The xref::api/tools.adoc[Tool Calling] mechanism addresses these shortcomings.
+It allows you to register your own services as tools to connect the large language models to the APIs of external systems.
 These systems can provide LLMs with real-time data and perform data processing actions on their behalf.
 
-Spring AI greatly simplifies code you need to write to support function invocation.
-It handles the function invocation conversation for you.
-You can provide your function as a `@Bean` and then provide the bean name of the function in your prompt options to activate that function.
-Additionally, you can define and reference multiple functions in a single prompt.
+Spring AI greatly simplifies code you need to write to support tool invocation.
+It handles the tool invocation conversation for you.
+You can provide your tool as a `@Tool`-annotated method and provide it in your prompt options to make it available to the model.
+Additionally, you can define and reference multiple tools in a single prompt.
 
-image::function-calling-basic-flow.jpg[Function calling, width=700, align="center"]
+image::tools/tool-calling-01.jpg[The main sequence of actions for tool calling, width=700, align="center"]
 
-1. Perform a chat request sending along function definition information.
-The latter provides the `name`, `description` (e.g. explaining when the Model should call the function), and `input parameters` (e.g. the function's input parameters schema).
-2. When the Model decides to call the function, it will call the function with the input parameters and return the output to the model.
-3. Spring AI handles this conversation for you.
-It dispatches the function call to the appropriate function and returns the result to the model.
-4. The Model can perform multiple function calls to retrieve all the information it needs.
-5. Once all information needed is acquired, the Model will generate a response.
+1. When we want to make a tool available to the model, we include its definition in the chat request. Each tool definition comprises of a name, a description, and the schema of the input parameters.
+2. When the model decides to call a tool, it sends a response with the tool name and the input parameters modeled after the defined schema.
+3. The application is responsible for using the tool name to identify and execute the tool with the provided input parameters.
+4. The result of the tool call is processed by the application.
+5. The application sends the tool call result back to the model.
+6. The model generates the final response using the tool call result as additional context.
 
-Follow the xref::api/functions.adoc[Function Calling] documentation for further information on how to use this feature with different AI models.
+Follow the xref::api/tools.adoc[Tool Calling] documentation for further information on how to use this feature with different AI models.
 
 [[concept-evaluating-ai-responses]]
 == Evaluating AI responses

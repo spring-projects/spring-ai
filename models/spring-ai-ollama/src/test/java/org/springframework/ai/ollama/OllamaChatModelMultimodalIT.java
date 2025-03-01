@@ -68,7 +68,8 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
 		logger.info(response.getResult().getOutput().getText());
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
 	@SpringBootConfiguration

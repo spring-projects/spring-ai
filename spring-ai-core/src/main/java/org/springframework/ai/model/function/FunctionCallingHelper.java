@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.springframework.ai.model.tool.ToolCallingManager;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -40,7 +41,10 @@ import org.springframework.util.CollectionUtils;
  * Helper class that reuses the {@link AbstractToolCallSupport} to implement the function
  * call handling logic on the client side. Used when the withProxyToolCalls(true) option
  * is enabled.
+ *
+ * @deprecated Use {@link ToolCallingManager} instead.
  */
+@Deprecated
 public class FunctionCallingHelper extends AbstractToolCallSupport {
 
 	public FunctionCallingHelper() {

@@ -64,6 +64,7 @@ public class PgVectorStoreAutoConfiguration {
 
 		return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.schemaName(properties.getSchemaName())
+			.idType(properties.getIdType())
 			.vectorTableName(properties.getTableName())
 			.vectorTableValidationsEnabled(properties.isSchemaValidation())
 			.dimensions(properties.getDimensions())

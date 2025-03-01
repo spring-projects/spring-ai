@@ -23,12 +23,14 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.autoconfigure.chat.model.ToolCallingAutoConfiguration;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -52,10 +54,10 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @since 1.0.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 @ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatModel.class })
 @EnableConfigurationProperties({ VertexAiGeminiChatProperties.class, VertexAiGeminiConnectionProperties.class })
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class })
+@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 public class VertexAiGeminiAutoConfiguration {
 
 	@Bean
@@ -91,16 +93,20 @@ public class VertexAiGeminiAutoConfiguration {
 	@ConditionalOnProperty(prefix = VertexAiGeminiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public VertexAiGeminiChatModel vertexAiGeminiChat(VertexAI vertexAi, VertexAiGeminiChatProperties chatProperties,
-			List<FunctionCallback> toolFunctionCallbacks, ApplicationContext context, RetryTemplate retryTemplate,
+			ToolCallingManager toolCallingManager, ApplicationContext context, RetryTemplate retryTemplate,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
-		FunctionCallbackResolver functionCallbackResolver = springAiFunctionManager(context);
+		VertexAiGeminiChatModel chatModel = VertexAiGeminiChatModel.builder()
+			.vertexAI(vertexAi)
+			.defaultOptions(chatProperties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
-		VertexAiGeminiChatModel chatModel = new VertexAiGeminiChatModel(vertexAi, chatProperties.getOptions(),
-				functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
 		return chatModel;
 	}
 
@@ -108,11 +114,12 @@ public class VertexAiGeminiAutoConfiguration {
 	 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
 	 * different from the other JSON schema types.
 	 */
-	private FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
-		manager.setApplicationContext(context);
-		return manager;
-	}
+	// private FunctionCallbackResolver springAiFunctionManager(ApplicationContext
+	// context) {
+	// DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
+	// manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
+	// manager.setApplicationContext(context);
+	// return manager;
+	// }
 
 }

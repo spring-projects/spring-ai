@@ -42,7 +42,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by setting `spring.ai.vectorstore.mongodb.initialize-schema=true` in the `application.properties` file.
 Alternatively you can opt-out the initialization and create the index manually using the MongoDB Atlas UI, Atlas Administration API, or Atlas CLI, which can be useful if the index needs advanced mapping or additional configuration.
@@ -228,3 +228,20 @@ To get started with Spring AI and MongoDB:
 
 * See the https://www.mongodb.com/docs/atlas/atlas-vector-search/ai-integrations/spring-ai/#std-label-spring-ai[Getting Started guide for Spring AI Integration].
 * For a comprehensive code example demonstrating Retrieval Augmented Generation (RAG) with Spring AI and MongoDB, refer to this https://www.mongodb.com/developer/languages/java/retrieval-augmented-generation-spring-ai/[detailed tutorial].
+
+== Accessing the Native Client
+
+The MongoDB Atlas Vector Store implementation provides access to the underlying native MongoDB client (`MongoClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+MongoDBAtlasVectorStore vectorStore = context.getBean(MongoDBAtlasVectorStore.class);
+Optional<MongoClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    MongoClient client = nativeClient.get();
+    // Use the native client for MongoDB-specific operations
+}
+----
+
+The native client gives you access to MongoDB-specific features and operations that might not be exposed through the `VectorStore` interface.

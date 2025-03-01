@@ -135,29 +135,6 @@ public class Media {
 	}
 
 	/**
-	 * Create a new Media instance.
-	 * @param mimeType the media MIME type
-	 * @param resource the media resource
-	 * @param id the media id
-	 * @deprecated Use {@link Builder} instead.
-	 */
-	@Deprecated(since = "1.0.0.M5")
-	public Media(MimeType mimeType, Resource resource, String id) {
-		Assert.notNull(mimeType, "MimeType must not be null");
-		Assert.notNull(resource, "Resource must not be null");
-		try {
-			byte[] bytes = resource.getContentAsByteArray();
-			this.mimeType = mimeType;
-			this.id = id;
-			this.data = bytes;
-			this.name = generateDefaultName(mimeType);
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	/**
 	 * Creates a new Media builder.
 	 * @return a new Media builder instance
 	 */

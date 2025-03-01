@@ -16,14 +16,10 @@ class ToolDefinitionTests {
 
 	@Test
 	void shouldCreateDefaultToolDefinitionBuilder() {
-		var toolDefinition = ToolDefinition.builder()
-			.name("name")
-			.description("description")
-			.inputTypeSchema("{}")
-			.build();
+		var toolDefinition = ToolDefinition.builder().name("name").description("description").inputSchema("{}").build();
 		assertThat(toolDefinition.name()).isEqualTo("name");
 		assertThat(toolDefinition.description()).isEqualTo("description");
-		assertThat(toolDefinition.inputTypeSchema()).isEqualTo("{}");
+		assertThat(toolDefinition.inputSchema()).isEqualTo("{}");
 	}
 
 	@Test
@@ -31,7 +27,7 @@ class ToolDefinitionTests {
 		var toolDefinition = ToolDefinition.from(Tools.class.getDeclaredMethods()[0]);
 		assertThat(toolDefinition.name()).isEqualTo("mySuperTool");
 		assertThat(toolDefinition.description()).isEqualTo("Test description");
-		assertThat(toolDefinition.inputTypeSchema()).isEqualToIgnoringWhitespace("""
+		assertThat(toolDefinition.inputSchema()).isEqualToIgnoringWhitespace("""
 				{
 				    "$schema" : "https://json-schema.org/draft/2020-12/schema",
 				    "type" : "object",

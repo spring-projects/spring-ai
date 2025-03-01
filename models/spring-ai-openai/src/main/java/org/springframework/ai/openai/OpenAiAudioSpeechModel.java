@@ -177,11 +177,11 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 				: request.getInstructions().getText();
 
 		OpenAiAudioApi.SpeechRequest.Builder requestBuilder = OpenAiAudioApi.SpeechRequest.builder()
-			.withModel(options.getModel())
-			.withInput(input)
-			.withVoice(options.getVoice())
-			.withResponseFormat(options.getResponseFormat())
-			.withSpeed(options.getSpeed());
+			.model(options.getModel())
+			.input(input)
+			.voice(options.getVoice())
+			.responseFormat(options.getResponseFormat())
+			.speed(options.getSpeed());
 
 		return requestBuilder.build();
 	}

@@ -3,6 +3,8 @@ package org.springframework.ai.util.json;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Type;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -106,6 +108,20 @@ class JsonParserTests {
 		var object = JsonParser.fromJson(json, TestRecord.class);
 		assertThat(object).isNotNull();
 		assertThat(object.name).isEqualTo("James");
+	}
+
+	@Test
+	void fromJsonToObjectWithType() {
+		var json = """
+				    {
+				      "name" : "John",
+				      "age" : 30
+				    }
+				""";
+		TestRecord object = JsonParser.fromJson(json, (Type) TestRecord.class);
+		assertThat(object).isNotNull();
+		assertThat(object.name).isEqualTo("John");
+		assertThat(object.age).isEqualTo(30);
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
@@ -52,7 +54,9 @@ import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -66,7 +70,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class ElasticsearchVectorStoreIT {
+class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
@@ -108,6 +112,14 @@ class ElasticsearchVectorStoreIT {
 			if (!indices.isEmpty()) {
 				elasticsearchClient.indices().delete(del -> del.index(indices));
 			}
+		});
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		getContextRunner().run(context -> {
+			VectorStore vectorStore = context.getBean("vectorStore_cosine", VectorStore.class);
+			testFunction.accept(vectorStore);
 		});
 	}
 
@@ -437,6 +449,26 @@ class ElasticsearchVectorStoreIT {
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void getNativeClientTest() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			// Test successful native client retrieval
+			Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+
+			// Verify client functionality
+			ElasticsearchClient client = nativeClient.get();
+			IndicesStats stats = client.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats).isNotNull();
 		});
 	}
 

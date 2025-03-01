@@ -246,7 +246,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 	private AdvisedResponse after(AdvisedResponse advisedResponse) {
 		ChatResponse.Builder chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
-		chatResponseBuilder.withMetadata(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
+		chatResponseBuilder.metadata(RETRIEVED_DOCUMENTS, advisedResponse.adviseContext().get(RETRIEVED_DOCUMENTS));
 		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
 	}
 

@@ -1,5 +1,7 @@
 = FunctionCallback
 
+WARNING: This page describes the previous version of the Function Calling API, which has been deprecated and marked for remove in the next release. The current version is available at xref:api/tools.adoc[Tool Calling]. See the xref:api/tools-migration.adoc[Migration Guide] for more information.
+
 The `FunctionCallback` interface in Spring AI provides a standardized way to implement Large Language Model (LLM) function calling capabilities. It allows developers to register custom functions that can be called by AI models when specific conditions or intents are detected in the prompts.
 
 The `FunctionCallback` interface defines several key methods:

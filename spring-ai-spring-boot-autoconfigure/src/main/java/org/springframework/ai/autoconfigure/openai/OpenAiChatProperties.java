@@ -25,7 +25,7 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = "gpt-4o";
+	public static final String DEFAULT_CHAT_MODEL = "gpt-4o-mini";
 
 	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
 

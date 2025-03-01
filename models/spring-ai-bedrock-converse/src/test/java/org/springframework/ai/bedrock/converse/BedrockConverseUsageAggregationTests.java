@@ -20,6 +20,7 @@ import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -85,7 +86,7 @@ public class BedrockConverseUsageAggregationTests {
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response Content Block");
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(16);
-		assertThat(result.getMetadata().getUsage().getGenerationTokens()).isEqualTo(14);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(14);
 		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(30);
 	}
 
@@ -151,7 +152,7 @@ public class BedrockConverseUsageAggregationTests {
 			.isSameAs(converseResponseFinal.output().message().content().get(0).text());
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(445 + 540);
-		assertThat(result.getMetadata().getUsage().getGenerationTokens()).isEqualTo(119 + 106);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(119 + 106);
 		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(564 + 646);
 	}
 

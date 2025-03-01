@@ -25,13 +25,19 @@
     <artifactId>spring-ai-docs</artifactId>
     <name>Spring AI Docs</name>
     <description>Spring AI documentation</description>
+	<url>https://github.com/spring-projects/spring-ai</url>
+
+	<scm>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
+	</scm>
 
     <build>
         <plugins>
 			<plugin>
 				<groupId>org.antora</groupId>
 				<artifactId>antora-maven-plugin</artifactId>
-				<version>${org.maven.antora-version}</version>
 				<extensions>true</extensions>
 				<configuration>
 					<options>
@@ -54,7 +60,6 @@
 			<plugin>
 				<groupId>io.spring.maven.antora</groupId>
 				<artifactId>antora-component-version-maven-plugin</artifactId>
-				<version>${io.spring.maven.antora-version}</version>
 				<executions>
 					<execution>
 						<goals>

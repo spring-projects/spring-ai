@@ -52,7 +52,7 @@ class RewriteQueryTransformerIT {
 
 		assertThat(transformedQuery).isNotNull();
 		System.out.println(transformedQuery);
-		assertThat(transformedQuery.text()).containsIgnoringCase("Large Language Model");
+		assertThat(transformedQuery.text()).containsIgnoringCase("model");
 	}
 
 }

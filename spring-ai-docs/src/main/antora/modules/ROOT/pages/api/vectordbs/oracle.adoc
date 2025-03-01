@@ -52,7 +52,7 @@ dependencies {
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 To connect to and configure the `OracleVectorStore`, you need to provide access details for your database.
 A simple configuration can either be provided via Spring Boot's `application.yml`
@@ -206,3 +206,20 @@ You can then connect to the database using:
 ----
 sql mlops/mlops@localhost/freepdb1
 ----
+
+== Accessing the Native Client
+
+The Oracle Vector Store implementation provides access to the underlying native Oracle client (`OracleConnection`) through the `getNativeClient()` method:
+
+[source,java]
+----
+OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+Optional<OracleConnection> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    OracleConnection connection = nativeClient.get();
+    // Use the native client for Oracle-specific operations
+}
+----
+
+The native client gives you access to Oracle-specific features and operations that might not be exposed through the `VectorStore` interface.

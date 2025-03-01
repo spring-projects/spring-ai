@@ -24,7 +24,7 @@ class ToolCallbackTests {
 		private final ToolDefinition toolDefinition;
 
 		public TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).description(name).inputTypeSchema("{}").build();
+			this.toolDefinition = ToolDefinition.builder().name(name).description(name).inputSchema("{}").build();
 		}
 
 		@Override

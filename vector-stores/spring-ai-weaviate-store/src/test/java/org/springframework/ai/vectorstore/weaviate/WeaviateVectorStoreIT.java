@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import io.weaviate.client.Config;
 import io.weaviate.client.WeaviateClient;
@@ -34,6 +36,7 @@ import org.testcontainers.weaviate.WeaviateContainer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -52,7 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @Testcontainers
-public class WeaviateVectorStoreIT {
+public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static WeaviateContainer weaviateContainer = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
@@ -81,6 +84,14 @@ public class WeaviateVectorStoreIT {
 
 	private void resetCollection(VectorStore vectorStore) {
 		vectorStore.delete(this.documents.stream().map(Document::getId).toList());
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@Test
@@ -251,6 +262,15 @@ public class WeaviateVectorStoreIT {
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			WeaviateVectorStore vectorStore = context.getBean(WeaviateVectorStore.class);
+			Optional<WeaviateClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

@@ -22,13 +22,13 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 
 Portable `Vector Store API` across multiple providers, including a novel `SQL-like metadata filter API` that is also portable. Support for 14 vector databases are available.
 
-=== Function Calling API
+=== Tool Calling API
 
-`Function calling`. Spring AI makes it easy to have the AI model invoke your POJO `java.util.Function` object.
+Spring AI makes it easy to have the AI model invoke your services as `@Tool`-annotated methods or POJO `java.util.Function` objects.
 
-image::function-calling-basic-flow.jpg[Function calling, width=500, align="center"]
+image::tools/tool-calling-01.jpg[The main sequence of actions for tool calling, width=500, align="center"]
 
-Check the Spring AI xref::api/functions.adoc[Function Calling] documentation.
+Check the Spring AI xref::api/tools.adoc[Tool Calling] documentation.
 
 === Auto Configuration
 

@@ -22,12 +22,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.bedrock.anthropic.api.AnthropicChatBedrockApi;
-import org.springframework.ai.bedrock.cohere.api.CohereChatBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
-import org.springframework.ai.bedrock.jurassic2.api.Ai21Jurassic2ChatBedrockApi;
-import org.springframework.ai.bedrock.llama.api.LlamaChatBedrockApi;
-import org.springframework.ai.bedrock.titan.api.TitanChatBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
@@ -44,9 +39,7 @@ class BedrockRuntimeHintsTests {
 		BedrockRuntimeHints bedrockRuntimeHints = new BedrockRuntimeHints();
 		bedrockRuntimeHints.registerHints(runtimeHints, null);
 
-		List<Class> classList = Arrays.asList(Ai21Jurassic2ChatBedrockApi.class, CohereChatBedrockApi.class,
-				CohereEmbeddingBedrockApi.class, LlamaChatBedrockApi.class, TitanChatBedrockApi.class,
-				TitanEmbeddingBedrockApi.class, AnthropicChatBedrockApi.class);
+		List<Class> classList = Arrays.asList(CohereEmbeddingBedrockApi.class, TitanEmbeddingBedrockApi.class);
 
 		for (Class aClass : classList) {
 			Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(aClass);

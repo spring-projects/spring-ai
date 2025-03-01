@@ -22,6 +22,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -36,7 +37,6 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.mistralai.metadata.MistralAiUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
@@ -131,7 +131,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-						MistralAiUsage.from(apiEmbeddingResponse.usage()));
+						getDefaultUsage(apiEmbeddingResponse.usage()));
 
 				var embeddings = apiEmbeddingResponse.data()
 					.stream()
@@ -144,6 +144,10 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(MistralAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	@SuppressWarnings("unchecked")

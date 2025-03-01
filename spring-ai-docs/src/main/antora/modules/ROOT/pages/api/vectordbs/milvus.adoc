@@ -32,7 +32,7 @@ dependencies {
 
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
@@ -229,3 +229,20 @@ If Docker complains about resources, then execute:
 ----
 docker system prune --all --force --volumes
 ----
+
+== Accessing the Native Client
+
+The Milvus Vector Store implementation provides access to the underlying native Milvus client (`MilvusServiceClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+MilvusVectorStore vectorStore = context.getBean(MilvusVectorStore.class);
+Optional<MilvusServiceClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    MilvusServiceClient client = nativeClient.get();
+    // Use the native client for Milvus-specific operations
+}
+----
+
+The native client gives you access to Milvus-specific features and operations that might not be exposed through the `VectorStore` interface.
