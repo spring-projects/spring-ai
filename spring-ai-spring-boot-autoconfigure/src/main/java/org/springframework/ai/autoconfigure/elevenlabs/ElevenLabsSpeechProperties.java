@@ -1,0 +1,52 @@
+package org.springframework.ai.autoconfigure.elevenlabs;
+
+import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechOptions;
+import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
+/**
+ * Configuration properties for the ElevenLabs Text-to-Speech API.
+ *
+ * @author Alexandros Pappas
+ */
+@ConfigurationProperties(ElevenLabsSpeechProperties.CONFIG_PREFIX)
+public class ElevenLabsSpeechProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.elevenlabs.tts";
+
+	public static final String DEFAULT_MODEL_ID = "eleven_monolingual_v1";
+
+	private static final String DEFAULT_VOICE_ID = "9BWtsMINqrJLrRacOk9x";
+
+	private static final ElevenLabsApi.OutputFormat DEFAULT_OUTPUT_FORMAT = ElevenLabsApi.OutputFormat.MP3_22050_32;
+
+	/**
+	 * Enable ElevenLabs speech model.
+	 */
+	private boolean enabled = true;
+
+	@NestedConfigurationProperty
+	private ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder()
+		.modelId(DEFAULT_MODEL_ID)
+		.voiceId(DEFAULT_VOICE_ID)
+		.outputFormat(DEFAULT_OUTPUT_FORMAT.getValue())
+		.build();
+
+	public ElevenLabsTextToSpeechOptions getOptions() {
+		return this.options;
+	}
+
+	public void setOptions(ElevenLabsTextToSpeechOptions options) {
+		this.options = options;
+	}
+
+	public boolean isEnabled() {
+		return this.enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+
+}
