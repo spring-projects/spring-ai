@@ -28,7 +28,6 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.retry.RetryUtils;
 
-
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;

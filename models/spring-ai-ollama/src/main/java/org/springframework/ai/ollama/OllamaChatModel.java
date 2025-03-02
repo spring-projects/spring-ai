@@ -141,7 +141,8 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 	}
 
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
-			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions, RetryTemplate retryTemplate) {
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions,
+			RetryTemplate retryTemplate) {
 		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
 		// because it modifies them. We are using ToolCallingManager instead,
 		// so we just pass empty options here.
