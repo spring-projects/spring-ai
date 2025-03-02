@@ -162,6 +162,7 @@
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-bedrock-converse</module>
+		<module>models/spring-ai-elevenlabs</module>
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
@@ -180,6 +181,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-elevenlabs</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
@@ -711,7 +713,8 @@
 								<exclude>org.springframework.ai.anthropic/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.azure.openai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.bedrock/**/*IT.java</exclude>
-								 <exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.elevenlabs/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.huggingface/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.minimax/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
@@ -759,6 +762,7 @@
 								 <exclude>org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
 
