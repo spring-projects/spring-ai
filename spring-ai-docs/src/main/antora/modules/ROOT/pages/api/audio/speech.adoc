@@ -1,5 +1,9 @@
 [[Speech]]
 = Text-To-Speech (TTS) API
 
-Spring AI provides support for OpenAI's Speech API.
-When additional providers for Speech are implemented, a common `SpeechModel`  and `StreamingSpeechModel` interface will be extracted.
+Spring AI provides support for the following Text-To-Speech (TTS) providers:
+
+- xref:api/audio/speech/openai-speech.adoc[OpenAI's Speech API]
+- xref:api/audio/speech/elevenlabs-speech.adoc[Eleven Labs Text-To-Speech API]
+
+Future enhancements may introduce additional providers, at which point a common `TextToSpeechModel` and `StreamingTextToSpeechModel` interface will be extracted.
