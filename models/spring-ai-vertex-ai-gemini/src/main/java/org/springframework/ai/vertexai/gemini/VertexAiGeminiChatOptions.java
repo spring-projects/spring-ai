@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vertexai.gemini;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -453,6 +454,12 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
 			this.options.toolCallbacks = toolCallbacks;
+			return this;
+		}
+
+		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
