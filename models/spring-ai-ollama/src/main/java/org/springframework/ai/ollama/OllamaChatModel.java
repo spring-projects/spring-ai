@@ -617,6 +617,10 @@ public class OllamaChatModel extends AbstractToolCallSupport implements ChatMode
 						toolCallbacks, this.observationRegistry, this.modelManagementOptions);
 			}
 
+			if (this.retryTemplate == null) {
+				this.retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+			}
+
 			return new OllamaChatModel(this.ollamaApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
 					this.observationRegistry, this.modelManagementOptions, this.retryTemplate);
 		}
