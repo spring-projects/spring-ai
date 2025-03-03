@@ -15,8 +15,6 @@
  */
 package org.springframework.ai.mcp;
 
-import java.util.List;
-
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -24,13 +22,15 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.util.json.JsonParser;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.MimeType;
+import java.util.List;
 
 /**
  * Utility class that provides helper methods for working with Model Context Protocol
@@ -162,10 +162,19 @@ public final class McpToolUtils {
 		return new McpServerFeatures.SyncToolRegistration(tool, request -> {
 			try {
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request));
-				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					return new McpSchema.CallToolResult(List
-						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
-							false);
+				String imgData = callResult;
+				if (mimeType != null && mimeType.getType().equals("image")) {
+					if (callResult.startsWith("{") && callResult.endsWith("}")) {
+						// This is most likely a JSON structure:
+						// let's try to parse it as a base64 wrapper.
+						var b64Struct = JsonParser.fromJson(callResult, Base64Wrapper.class);
+						if (b64Struct.mimeType.getType().equals("image")) {
+							// Get the base64 encoded image as is.
+							imgData = b64Struct.data;
+						}
+					}
+					return new McpSchema.CallToolResult(List.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT),
+							null, imgData, mimeType.toString())), false);
 				}
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
 			}
@@ -332,6 +341,9 @@ public final class McpToolUtils {
 			return List.of();
 		}
 		return List.of((new AsyncMcpToolCallbackProvider(asyncMcpClients).getToolCallbacks()));
+	}
+
+	private record Base64Wrapper(MimeType mimeType, String data) {
 	}
 
 }
