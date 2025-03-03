@@ -51,7 +51,7 @@ import static org.springframework.ai.vectorstore.testcontainer.CouchbaseContaine
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class CouchbaseVectorStoreIT {
+public class CouchbaseSearchVectorStoreIT {
 
 	// Define the couchbase container.
 	@Container
@@ -269,8 +269,8 @@ public class CouchbaseVectorStoreIT {
 	@Test
 	void getNativeClientTest() {
 		getContextRunner().run(context -> {
-			CouchbaseVectorStore vectorStore = context.getBean(CouchbaseVectorStore.class);
-			Optional<CouchbaseVectorStore> nativeClient = vectorStore.getNativeClient();
+			CouchbaseSearchVectorStore vectorStore = context.getBean(CouchbaseSearchVectorStore.class);
+			Optional<CouchbaseSearchVectorStore> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
 		});
 	}
@@ -280,18 +280,16 @@ public class CouchbaseVectorStoreIT {
 	public static class TestApplication {
 
 		@Bean
-		public CouchbaseVectorStore vectorStore(EmbeddingModel embeddingModel) {
+		public CouchbaseSearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			Cluster cluster = Cluster.connect(couchbaseContainer.getConnectionString(),
 					couchbaseContainer.getUsername(), couchbaseContainer.getPassword());
-			CouchbaseVectorStore.CouchbaseVectorStoreConfig config = org.springframework.ai.vectorstore.CouchbaseVectorStore.CouchbaseVectorStoreConfig
+			CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig config = CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig
 				.builder()
 				.withBucketName("springBucket")
 				.withScopeName("springScope")
 				.withCollectionName("sprtingcollection")
 				.build();
-			return org.springframework.ai.vectorstore.CouchbaseVectorStore.builder(cluster, config, embeddingModel)
-				.initializeSchema(true)
-				.build();
+			return CouchbaseSearchVectorStore.builder(cluster, config, embeddingModel).initializeSchema(true).build();
 		}
 
 		@Bean

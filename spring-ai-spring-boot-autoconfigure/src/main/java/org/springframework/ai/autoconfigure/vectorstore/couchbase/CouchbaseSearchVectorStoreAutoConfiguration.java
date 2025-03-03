@@ -17,7 +17,7 @@ package org.springframework.ai.autoconfigure.vectorstore.couchbase;
 
 import com.couchbase.client.java.Cluster;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.CouchbaseVectorStore;
+import org.springframework.ai.vectorstore.CouchbaseSearchVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -31,15 +31,15 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 @AutoConfiguration(after = CouchbaseAutoConfiguration.class)
-@ConditionalOnClass({ CouchbaseVectorStore.class, EmbeddingModel.class, Cluster.class })
-@EnableConfigurationProperties(CouchbaseVectorStoreProperties.class)
-public class CouchbaseVectorStoreAutoConfiguration {
+@ConditionalOnClass({ CouchbaseSearchVectorStore.class, EmbeddingModel.class, Cluster.class })
+@EnableConfigurationProperties(CouchbaseSearchVectorStoreProperties.class)
+public class CouchbaseSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CouchbaseVectorStore vectorStore(CouchbaseVectorStoreProperties properties, Cluster cluster,
+	public CouchbaseSearchVectorStore vectorStore(CouchbaseSearchVectorStoreProperties properties, Cluster cluster,
 			EmbeddingModel embeddingModel) {
-		var builder = org.springframework.ai.vectorstore.CouchbaseVectorStore.CouchbaseVectorStoreConfig.builder();
+		var builder = CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig.builder();
 
 		if (StringUtils.hasText(properties.getIndexName())) {
 			builder.withVectorIndexName(properties.getIndexName());
@@ -62,7 +62,7 @@ public class CouchbaseVectorStoreAutoConfiguration {
 		if (properties.getOptimization() != null) {
 			builder.withIndexOptimization(properties.getOptimization());
 		}
-		return CouchbaseVectorStore.builder(cluster, builder.build(), embeddingModel)
+		return CouchbaseSearchVectorStore.builder(cluster, builder.build(), embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.build();
 	}

@@ -24,8 +24,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Laurent Doguin
  * @since 1.0.0
  */
-@ConfigurationProperties(prefix = CouchbaseVectorStoreProperties.CONFIG_PREFIX)
-public class CouchbaseVectorStoreProperties extends CommonVectorStoreProperties {
+@ConfigurationProperties(prefix = CouchbaseSearchVectorStoreProperties.CONFIG_PREFIX)
+public class CouchbaseSearchVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.couchbase";
 

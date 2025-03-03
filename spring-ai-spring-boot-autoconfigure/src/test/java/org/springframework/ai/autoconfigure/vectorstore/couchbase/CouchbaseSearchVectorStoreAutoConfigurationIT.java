@@ -47,7 +47,7 @@ import static org.springframework.ai.autoconfigure.vectorstore.couchbase.Couchba
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class CouchbaseVectorStoreAutoConfigurationIT {
+class CouchbaseSearchVectorStoreAutoConfigurationIT {
 
 	// Define the couchbase container.
 	@Container
@@ -62,7 +62,7 @@ class CouchbaseVectorStoreAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(CouchbaseAutoConfiguration.class,
-				CouchbaseVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
+				CouchbaseSearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
 				SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
 		.withPropertyValues("spring.couchbase.connection-string=" + couchbaseContainer.getConnectionString(),
 				"spring.couchbase.username=" + couchbaseContainer.getUsername(),
@@ -111,7 +111,7 @@ class CouchbaseVectorStoreAutoConfigurationIT {
 	public void propertiesTest() {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(CouchbaseAutoConfiguration.class,
-					CouchbaseVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
+					CouchbaseSearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
 					SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
 			.withPropertyValues("spring.couchbase.connection-string=" + couchbaseContainer.getConnectionString(),
 					"spring.couchbase.username=" + couchbaseContainer.getUsername(),
@@ -125,7 +125,7 @@ class CouchbaseVectorStoreAutoConfigurationIT {
 					"spring.ai.vectorstore.couchbase.optimization=latency",
 					"spring.ai.vectorstore.couchbase.similarity=l2_norm")
 			.run(context -> {
-				var properties = context.getBean(CouchbaseVectorStoreProperties.class);
+				var properties = context.getBean(CouchbaseSearchVectorStoreProperties.class);
 				var vectorStore = context.getBean(VectorStore.class);
 
 				assertThat(properties).isNotNull();

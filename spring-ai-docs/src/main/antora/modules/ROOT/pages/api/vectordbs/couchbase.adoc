@@ -1,6 +1,6 @@
 = Couchbase
 
-This section will walk you through setting up the `CouchbaseVectorStore` to store document embeddings and perform similarity searches using Couchbase.
+This section will walk you through setting up the `CouchbaseSearchVectorStore` to store document embeddings and perform similarity searches using Couchbase.
 
 link:https://docs.couchbase.com/server/current/vector-search/vector-search.html[Couchbase] is a distributed, JSON document database, with all the desired capabilities of a relational DBMS. Among other features, it allows users to query information using vector-based storage and retrieval.
 
@@ -8,7 +8,7 @@ link:https://docs.couchbase.com/server/current/vector-search/vector-search.html[
 
 
 A running Couchbase instance. The following options are available:
-
+Couchbase
 * link:https://hub.docker.com/_/couchbase/[Docker]
 * link:https://cloud.couchbase.com/[Capella - Couchbase as a Service]
 * link:https://www.couchbase.com/downloads/?family=couchbase-server[Install Couchbase locally]
@@ -51,7 +51,7 @@ Please have a look at the list of <<couchbasevector-properties,configuration par
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 
-Now you can auto-wire the `CouchbaseVectorStore` as a vector store in your application.
+Now you can auto-wire the `CouchbaseSearchVectorStore` as a vector store in your application.
 
 [source,java]
 ----
@@ -74,7 +74,7 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sprin
 [[couchbasevector-properties]]
 === Configuration Properties
 
-To connect to Couchbase and use the `CouchbaseVectorStore`, you need to provide access details for your instance.
+To connect to Couchbase and use the `CouchbaseSearchVectorStore`, you need to provide access details for your instance.
 A simple configuration can either be provided via Spring Boot's `application.yml`,
 
 [source,yaml]
@@ -107,7 +107,7 @@ For example, if you want to store your password as an environment variable but k
 
 NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
 
-Spring Boot's auto-configuration feature for the Couchbase Cluster will create a bean instance that will be used by the `CouchbaseVectorStore`.
+Spring Boot's auto-configuration feature for the Couchbase Cluster will create a bean instance that will be used by the `CouchbaseSearchVectorStore`.
 
 The Spring Boot properties starting with `spring.couchbase.*` are used to configure the Couchbase cluster instance:
 
@@ -134,7 +134,7 @@ The Spring Boot properties starting with `spring.couchbase.*` are used to config
 | `spring.couchbase.env.timeouts.management` | Timeout for the management operations.| 75s
 |===
 
-Properties starting with the `spring.ai.vectorstore.couchbase.*` prefix are used to configure `CouchbaseVectorStore`.
+Properties starting with the `spring.ai.vectorstore.couchbase.*` prefix are used to configure `CouchbaseSearchVectorStore`.
 
 |===
 |Property | Description | Default Value
@@ -226,19 +226,20 @@ public Cluster cluster() {
 }
 ----
 
-and then create the `CouchbaseVectorStore` bean:
+and then create the `CouchbaseSearchVectorStore` bean:
 
+// This needs to be changed
 [source,java]
 ----
 @Bean
-public CouchbaseVectorStore vectorStore(Cluster cluster, EmbeddingModel embeddingModel) {
-    CouchbaseVectorStore.CouchbaseVectorStoreConfig config = CouchbaseVectorStore.CouchbaseVectorStoreConfig
+public CouchbaseSearchVectorStore vectorStore(Cluster cluster, EmbeddingModel embeddingModel) {
+    CouchbaseSearchVectorStore.CouchbaseSearcgVectorStoreConfig config = CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig
         .builder()
         .withBucketName("myBucket")
         .withScopeName("myScope")
         .withCollectionName("myCollection")
         .build();
-    return new CouchbaseVectorStore(cluster, embeddingModel, config, true);
+    return new CouchbaseSearchVectorStore(cluster, embeddingModel, config, true);
 }
 // This can be any EmbeddingModel implementation.
 @Bean
