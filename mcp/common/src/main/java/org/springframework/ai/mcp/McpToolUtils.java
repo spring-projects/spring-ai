@@ -15,6 +15,8 @@
  */
 package org.springframework.ai.mcp;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -25,6 +27,7 @@ import io.modelcontextprotocol.spec.McpSchema.Role;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import reactor.core.publisher.Mono;
@@ -163,18 +166,21 @@ public final class McpToolUtils {
 			try {
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request));
 				String imgData = callResult;
-				if (mimeType != null && mimeType.getType().equals("image")) {
+				if (mimeType != null && "image".equals(mimeType.getType())) {
+					String imgType = mimeType.toString();
 					if (callResult.startsWith("{") && callResult.endsWith("}")) {
 						// This is most likely a JSON structure:
 						// let's try to parse it as a base64 wrapper.
 						var b64Struct = JsonParser.fromJson(callResult, Base64Wrapper.class);
 						if (b64Struct.mimeType.getType().equals("image")) {
 							// Get the base64 encoded image as is.
-							imgData = b64Struct.data;
+							imgType = b64Struct.mimeType().toString();
+							imgData = b64Struct.data();
 						}
 					}
-					return new McpSchema.CallToolResult(List.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT),
-							null, imgData, mimeType.toString())), false);
+					return new McpSchema.CallToolResult(
+							List.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, imgData, imgType)),
+							false);
 				}
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
 			}
@@ -343,7 +349,9 @@ public final class McpToolUtils {
 		return List.of((new AsyncMcpToolCallbackProvider(asyncMcpClients).getToolCallbacks()));
 	}
 
-	private record Base64Wrapper(MimeType mimeType, String data) {
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	private record Base64Wrapper(@JsonAlias("mimetype") @Nullable MimeType mimeType, @JsonAlias( {
+			"base64", "b64", "imageData" }) @Nullable String data){
 	}
 
 }
