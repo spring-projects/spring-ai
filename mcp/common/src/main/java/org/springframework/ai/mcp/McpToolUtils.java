@@ -143,17 +143,20 @@ public final class McpToolUtils {
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request));
 				String imgData = callResult;
 				if (mimeType != null && mimeType.getType().equals("image")) {
+					String imgType = mimeType.toString();
 					if (callResult.startsWith("{") && callResult.endsWith("}")) {
 						// This is most likely a JSON structure:
 						// let's try to parse it as a base64 wrapper.
 						var b64Struct = JsonParser.fromJson(callResult, Base64Wrapper.class);
 						if (b64Struct.mimeType.getType().equals("image")) {
 							// Get the base64 encoded image as is.
-							imgData = b64Struct.data;
+							imgType = b64Struct.mimeType().toString();
+							imgData = b64Struct.data();
 						}
 					}
-					return new McpSchema.CallToolResult(List.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT),
-							null, "image", imgData, mimeType.toString())), false);
+					return new McpSchema.CallToolResult(List
+						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, "image", imgData, imgType)),
+							false);
 				}
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
 			}
