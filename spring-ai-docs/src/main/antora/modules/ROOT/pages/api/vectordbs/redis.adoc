@@ -9,6 +9,8 @@ link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] ex
 * Store vectors and the associated metadata within hashes or JSON documents
 * Retrieve vectors
 * Perform vector searches
+* Cache chat responses based on semantic similarity
+* Store and query conversation history
 
 == Prerequisites
 
@@ -150,6 +152,69 @@ is converted into the proprietary Redis filter format:
 [source,text]
 ----
 @country:{UK | NL} @year:[2020 inf]
+----
+
+=== Semantic Cache Usage
+
+The semantic cache provides vector similarity-based caching for chat responses implemented as an advisor:
+
+[source,java]
+----
+// Create semantic cache
+SemanticCache semanticCache = DefaultSemanticCache.builder()
+    .embeddingModel(embeddingModel)
+    .jedisClient(jedisClient)
+    .similarityThreshold(0.95)  // Optional: defaults to 0.95
+    .build();
+
+// Create cache advisor
+SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
+    .cache(semanticCache)
+    .build();
+
+// Use with chat client
+ChatResponse response = ChatClient.builder(chatModel)
+    .build()
+    .prompt("What is the capital of France?")
+    .advisors(cacheAdvisor)
+    .call()
+    .chatResponse();
+
+// Manually interact with cache
+semanticCache.set("query", chatResponse);
+semanticCache.set("query", chatResponse, Duration.ofHours(1)); // With TTL
+Optional<ChatResponse> cached = semanticCache.get("similar query");
+----
+
+=== Chat Memory Usage
+
+RedisChatMemory provides persistent storage for conversation history:
+
+[source,java]
+----
+// Create chat memory
+RedisChatMemory chatMemory = RedisChatMemory.builder()
+    .jedisClient(jedisClient)
+    .timeToLive(Duration.ofHours(24))  // Optional: message TTL
+    .indexName("custom-memory-index")   // Optional
+    .keyPrefix("custom-prefix")         // Optional
+    .build();
+
+// Add messages
+chatMemory.add("conversation-1", new UserMessage("Hello"));
+chatMemory.add("conversation-1", new AssistantMessage("Hi there!"));
+
+// Add multiple messages
+chatMemory.add("conversation-1", List.of(
+    new UserMessage("How are you?"),
+    new AssistantMessage("I'm doing well!")
+));
+
+// Retrieve messages
+List<Message> messages = chatMemory.get("conversation-1", 10); // Last 10 messages
+
+// Clear conversation
+chatMemory.clear("conversation-1");
 ----
 
 == Manual Configuration
