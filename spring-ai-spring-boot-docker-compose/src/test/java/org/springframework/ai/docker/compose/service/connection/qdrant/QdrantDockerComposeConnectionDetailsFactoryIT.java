@@ -19,7 +19,7 @@ package org.springframework.ai.docker.compose.service.connection.qdrant;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantConnectionDetails;
+import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantConnectionDetails;
 import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;

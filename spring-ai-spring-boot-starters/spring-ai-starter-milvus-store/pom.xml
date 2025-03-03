@@ -48,6 +48,12 @@
             <version>${project.parent.version}</version>
         </dependency>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vectorstore-milvus</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-milvus-store</artifactId>

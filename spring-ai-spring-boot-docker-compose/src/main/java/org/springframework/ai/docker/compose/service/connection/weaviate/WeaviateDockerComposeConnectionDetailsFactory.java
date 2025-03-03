@@ -16,7 +16,7 @@
 
 package org.springframework.ai.docker.compose.service.connection.weaviate;
 
-import org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateConnectionDetails;
+import org.springframework.ai.vectorstore.weaviate.autoconfigure.WeaviateConnectionDetails;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionSource;

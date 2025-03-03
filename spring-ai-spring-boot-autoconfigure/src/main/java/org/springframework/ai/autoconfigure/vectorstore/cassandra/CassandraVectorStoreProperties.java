@@ -20,7 +20,7 @@ import com.google.api.client.util.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
+import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

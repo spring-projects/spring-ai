@@ -19,7 +19,7 @@ package org.springframework.ai.docker.compose.service.connection.typesense;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseConnectionDetails;
+import org.springframework.ai.vectorstore.typesense.autoconfigure.TypesenseConnectionDetails;
 import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
