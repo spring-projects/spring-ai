@@ -87,8 +87,9 @@ All properties are prefixed with `spring.ai.mcp.server`:
 |`version` |Server version |`1.0.0`
 |`type` |Server type (SYNC/ASYNC) |`SYNC`
 |`resource-change-notification` |Enable resource change notifications |`true`
-|`tool-change-notification` |Enable tool change notifications |`true`
 |`prompt-change-notification` |Enable prompt change notifications |`true`
+|`tool-change-notification` |Enable tool change notifications |`true`
+|`tool-response-mime-type` |(optinal) response MIME type per tool name. For example `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will assosiate the `image/png` mime type with the `generateImage()` tool name |`-`
 |`sse-message-endpoint` |SSE endpoint path for web transport |`/mcp/message`
 |===
 

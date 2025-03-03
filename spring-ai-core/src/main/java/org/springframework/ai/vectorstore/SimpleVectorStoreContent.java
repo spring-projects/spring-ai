@@ -17,7 +17,6 @@
 package org.springframework.ai.vectorstore;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -100,7 +99,7 @@ public final class SimpleVectorStoreContent implements Content {
 
 		this.id = id;
 		this.text = text;
-		this.metadata = Collections.unmodifiableMap(new HashMap<>(metadata));
+		this.metadata = Map.copyOf(metadata);
 		this.embedding = Arrays.copyOf(embedding, embedding.length);
 	}
 
@@ -110,6 +109,7 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @return a new instance with the updated embedding
 	 * @throws IllegalArgumentException if embedding is null or empty
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M7")
 	public SimpleVectorStoreContent withEmbedding(float[] embedding) {
 		Assert.notNull(embedding, "embedding must not be null");
 		Assert.isTrue(embedding.length > 0, "embedding vector must not be empty");
