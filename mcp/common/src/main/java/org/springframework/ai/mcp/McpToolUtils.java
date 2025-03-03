@@ -172,7 +172,8 @@ public final class McpToolUtils {
 						// This is most likely a JSON structure:
 						// let's try to parse it as a base64 wrapper.
 						var b64Struct = JsonParser.fromJson(callResult, Base64Wrapper.class);
-						if (b64Struct.mimeType.getType().equals("image")) {
+						if (b64Struct.mimeType() != null && b64Struct.data() != null
+								&& b64Struct.mimeType.getType().equals("image")) {
 							// Get the base64 encoded image as is.
 							imgType = b64Struct.mimeType().toString();
 							imgData = b64Struct.data();
