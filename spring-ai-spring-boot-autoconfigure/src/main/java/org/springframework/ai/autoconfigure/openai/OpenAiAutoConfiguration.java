@@ -253,6 +253,8 @@ public class OpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = OpenAiModerationProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+			matchIfMissing = true)
 	public OpenAiModerationModel openAiModerationClient(OpenAiConnectionProperties commonProperties,
 			OpenAiModerationProperties moderationProperties, RetryTemplate retryTemplate,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
