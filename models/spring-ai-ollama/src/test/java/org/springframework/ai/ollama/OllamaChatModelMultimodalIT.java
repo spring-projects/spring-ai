@@ -27,6 +27,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -85,6 +86,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
 				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 
