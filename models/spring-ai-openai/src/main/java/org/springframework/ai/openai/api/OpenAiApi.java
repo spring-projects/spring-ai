@@ -204,6 +204,7 @@ public class OpenAiApi {
 			}
 
 			h.setContentType(MediaType.APPLICATION_JSON);
+			h.set(HttpHeaders.ACCEPT_ENCODING, "gzip, deflate");
 			h.addAll(headers);
 		};
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
