@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.mcp;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -148,7 +149,8 @@ public final class McpToolUtils {
 						// This is most likely a JSON structure:
 						// let's try to parse it as a base64 wrapper.
 						var b64Struct = JsonParser.fromJson(callResult, Base64Wrapper.class);
-						if (b64Struct.mimeType.getType().equals("image")) {
+						if (b64Struct.mimeType() != null && b64Struct.data() != null
+								&& b64Struct.mimeType.getType().equals("image")) {
 							// Get the base64 encoded image as is.
 							imgType = b64Struct.mimeType().toString();
 							imgData = b64Struct.data();
@@ -325,6 +327,7 @@ public final class McpToolUtils {
 		return List.of((new AsyncMcpToolCallbackProvider(asynMcpClients).getToolCallbacks()));
 	}
 
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	private record Base64Wrapper(MimeType mimeType, String data) {
 	}
 
