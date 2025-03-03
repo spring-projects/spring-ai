@@ -15,6 +15,7 @@
  */
 package org.springframework.ai.mcp;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -328,7 +329,8 @@ public final class McpToolUtils {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	private record Base64Wrapper(MimeType mimeType, String data) {
+	private record Base64Wrapper(@JsonAlias("mimetype") MimeType mimeType, @JsonAlias( {
+			"base64", "b64", "imageData" }) String data){
 	}
 
 }
