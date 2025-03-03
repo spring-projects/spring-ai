@@ -1,7 +1,16 @@
 package org.springframework.ai.tool.execution;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.util.json.JsonParser;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -69,6 +78,34 @@ class DefaultToolCallResultConverterTests {
 				""").containsIgnoringWhitespaces("""
 				"two": 2
 				""");
+	}
+
+	@Test
+	void convertImageShouldReturnBase64Image() throws IOException {
+		// We don't want any AWT windows.
+		System.setProperty("java.awt.headless", "true");
+
+		var img = new BufferedImage(64, 64, BufferedImage.TYPE_4BYTE_ABGR);
+		var g = img.createGraphics();
+		g.setColor(Color.WHITE);
+		g.fillRect(0, 0, 64, 64);
+		g.dispose();
+		String result = converter.convert(img, BufferedImage.class);
+
+		var b64Struct = JsonParser.fromJson(result, Base64Wrapper.class);
+		assertThat(b64Struct.mimeType).isEqualTo(MimeTypeUtils.IMAGE_PNG);
+		assertThat(b64Struct.data).isNotNull();
+
+		var imgData = Base64.getDecoder().decode(b64Struct.data);
+		assertThat(imgData.length).isNotZero();
+
+		var imgRes = ImageIO.read(new ByteArrayInputStream(imgData));
+		assertThat(imgRes.getWidth()).isEqualTo(64);
+		assertThat(imgRes.getHeight()).isEqualTo(64);
+		assertThat(imgRes.getRGB(0, 0)).isEqualTo(img.getRGB(0, 0));
+	}
+
+	record Base64Wrapper(MimeType mimeType, String data) {
 	}
 
 	static class TestObject {
