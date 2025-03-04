@@ -325,14 +325,15 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		String nativeFilterExpressions = "";
 		String searchParamsJson = null;
-		if (request instanceof MilvusSearchRequest milvusReq){
-			if(milvusReq.getNativeExpression() != null && !milvusReq.getNativeExpression().isEmpty()) {
+		if (request instanceof MilvusSearchRequest milvusReq) {
+			if (milvusReq.getNativeExpression() != null && !milvusReq.getNativeExpression().isEmpty()) {
 				nativeFilterExpressions = milvusReq.getNativeExpression();
 			}
 			if (milvusReq.getSearchParamsJson() != null && !milvusReq.getSearchParamsJson().isEmpty()) {
 				searchParamsJson = milvusReq.getSearchParamsJson();
 			}
-		} else {
+		}
+		else {
 			nativeFilterExpressions = (request.getFilterExpression() != null)
 					? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 		}

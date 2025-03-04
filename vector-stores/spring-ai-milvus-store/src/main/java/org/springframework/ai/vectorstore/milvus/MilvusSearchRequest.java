@@ -5,13 +5,16 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.lang.Nullable;
 
 /**
- * A specialized {@link SearchRequest} for Milvus vector search, extending the base request
- * with Milvus-specific parameters.
+ * A specialized {@link SearchRequest} for Milvus vector search, extending the base
+ * request with Milvus-specific parameters.
  * <p>
  * This class introduces two additional fields:
  * <ul>
- *   <li>{@code nativeExpression} - A native Milvus filter expression (e.g., "city LIKE 'New%'").</li>
- *   <li>{@code searchParamsJson} - A JSON string containing search parameters (e.g., "{\"nprobe\":128}").</li>
+ * <li>{@code nativeExpression} - A native Milvus filter expression (e.g.,
+ * {@code "city LIKE
+ * 'New%'"}).</li>
+ * <li>{@code searchParamsJson} - A JSON string containing search parameters (e.g.,
+ * {@code "{\"nprobe\":128}"}).</li>
  * </ul>
  * <p>
  * Use the {@link MilvusBuilder} to construct instances of this class.
@@ -27,10 +30,11 @@ public final class MilvusSearchRequest extends SearchRequest {
 	private final String searchParamsJson;
 
 	/**
-	 * Private constructor to initialize a MilvusSearchRequest using the base request and builder.
-	 *
-	 * @param baseRequest The base {@link SearchRequest} containing standard search fields.
-	 * @param builder     The {@link MilvusBuilder} containing Milvus-specific parameters.
+	 * Private constructor to initialize a MilvusSearchRequest using the base request and
+	 * builder.
+	 * @param baseRequest The base {@link SearchRequest} containing standard search
+	 * fields.
+	 * @param builder The {@link MilvusBuilder} containing Milvus-specific parameters.
 	 */
 	private MilvusSearchRequest(SearchRequest baseRequest, MilvusBuilder builder) {
 		super(baseRequest); // Copy all standard fields
@@ -40,8 +44,8 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 	/**
 	 * Retrieves the native Milvus filter expression.
-	 *
-	 * @return A string representing the native Milvus expression, or {@code null} if not set.
+	 * @return A string representing the native Milvus expression, or {@code null} if not
+	 * set.
 	 */
 	@Nullable
 	public String getNativeExpression() {
@@ -50,7 +54,6 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 	/**
 	 * Retrieves the JSON-encoded search parameters.
-	 *
 	 * @return A JSON string containing search parameters, or {@code null} if not set.
 	 */
 	@Nullable
@@ -60,7 +63,6 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 	/**
 	 * Creates a new {@link MilvusBuilder} for constructing a {@link MilvusSearchRequest}.
-	 *
 	 * @return A new {@link MilvusBuilder} instance.
 	 */
 	public static MilvusBuilder milvusBuilder() {
@@ -76,6 +78,7 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 		@Nullable
 		private String nativeExpression;
+
 		@Nullable
 		private String searchParamsJson;
 
@@ -129,7 +132,6 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 		/**
 		 * Sets the native Milvus filter expression.
-		 *
 		 * @param nativeExpression The native Milvus expression string.
 		 * @return This builder instance.
 		 */
@@ -140,7 +142,6 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 		/**
 		 * Sets the JSON-encoded search parameters.
-		 *
 		 * @param searchParamsJson A JSON string containing search parameters.
 		 * @return This builder instance.
 		 */
@@ -151,12 +152,13 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 		/**
 		 * Builds and returns a {@link MilvusSearchRequest} instance.
-		 *
 		 * @return A new {@link MilvusSearchRequest} object with the specified parameters.
 		 */
 		public MilvusSearchRequest build() {
 			SearchRequest parentRequest = this.baseBuilder.build();
 			return new MilvusSearchRequest(parentRequest, this);
 		}
+
 	}
+
 }
