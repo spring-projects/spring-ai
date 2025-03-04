@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.pinecone;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import io.pinecone.PineconeConnection;
+import io.pinecone.clients.Pinecone;
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -56,15 +56,10 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
 public class PineconeVectorStoreIT extends BaseVectorStoreTests {
-
-	// Replace the PINECONE_ENVIRONMENT, PINECONE_PROJECT_ID, PINECONE_INDEX_NAME and
-	// PINECONE_API_KEY with your pinecone credentials.
-	private static final String PINECONE_ENVIRONMENT = "gcp-starter";
-
-	private static final String PINECONE_PROJECT_ID = "814621f";
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
@@ -97,7 +92,7 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 	public static void beforeAll() {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
-		Awaitility.setDefaultTimeout(Duration.ONE_MINUTE);
+		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
 	}
 
 	@Override
@@ -332,7 +327,7 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
 			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
-			Optional<PineconeConnection> nativeClient = vectorStore.getNativeClient();
+			Optional<Pinecone> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
 		});
 	}
@@ -395,8 +390,6 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 			return PineconeVectorStore.builder(embeddingModel)
 				.apiKey(apikey)
-				.projectId(PINECONE_PROJECT_ID)
-				.environment(PINECONE_ENVIRONMENT)
 				.indexName(PINECONE_INDEX_NAME)
 				.namespace(PINECONE_NAMESPACE)
 				.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)

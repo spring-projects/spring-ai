@@ -18,11 +18,14 @@ package org.springframework.ai.reader.tika;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
+import org.springframework.ai.reader.ExtractedTextFormatter;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Christian Tzolov
+ * @author Shahbaz Aamir
  */
 public class TikaDocumentReaderTests {
 
@@ -43,6 +46,28 @@ public class TikaDocumentReaderTests {
 
 		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_SOURCE);
 		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)).isEqualTo(resourceName);
+		assertThat(doc.getText()).contains(contentSnipped);
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"classpath:/word-sample.docx,word-sample.docx,This document demonstrates the ability of the calibre DOCX Input plugin",
+			"classpath:/sample2.pdf,sample2.pdf,Robert Maron", "classpath:/sample.ppt,sample.ppt,Sample FILE",
+			"classpath:/sample.pptx,sample.pptx,Sample FILE" })
+	public void testReaderWithFormatter(String resourceUri, String resourceName, String contentSnipped) {
+
+		ExtractedTextFormatter formatter = ExtractedTextFormatter.builder().withNumberOfTopTextLinesToDelete(5).build();
+		var docs = new TikaDocumentReader(resourceUri, formatter).get();
+
+		assertThat(docs).hasSize(1);
+
+		var doc = docs.get(0);
+
+		assertThat(doc.getMetadata()).containsKeys(TikaDocumentReader.METADATA_SOURCE);
+		assertThat(doc.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)).isEqualTo(resourceName);
+		assertFalse(doc.getText().contains(contentSnipped));
+		docs = new TikaDocumentReader(resourceUri).get();
+		doc = docs.get(0);
 		assertThat(doc.getText()).contains(contentSnipped);
 	}
 

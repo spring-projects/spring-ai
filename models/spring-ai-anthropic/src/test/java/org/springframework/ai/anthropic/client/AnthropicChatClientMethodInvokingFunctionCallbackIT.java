@@ -192,13 +192,13 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 	}
 
 	@Test
-	void methodGetWeatherToolContextButNonContextMethod() {
+	void methodGetWeatherWithContextMethodButMissingContext() {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
 		// @formatter:off
 		var toolMethod = ReflectionUtils.findMethod(
-			TestFunctionClass.class, "getWeatherNonStatic", String.class, Unit.class);
+			TestFunctionClass.class, "getWeatherWithContext", String.class, Unit.class, ToolContext.class);
 
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
@@ -209,11 +209,10 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
 					.build())
-				.toolContext(Map.of("tool", "value"))
 				.call()
 				.content())
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("ToolContext is not supported by the method as an argument");
+				.hasMessage("ToolContext is required by the method as an argument");
 		// @formatter:on
 	}
 

@@ -56,13 +56,10 @@ public class PineconeVectorStoreAutoConfiguration {
 
 		return PineconeVectorStore.builder(embeddingModel)
 			.apiKey(properties.getApiKey())
-			.projectId(properties.getProjectId())
-			.environment(properties.getEnvironment())
 			.indexName(properties.getIndexName())
 			.namespace(properties.getNamespace())
 			.contentFieldName(properties.getContentFieldName())
 			.distanceMetadataFieldName(properties.getDistanceMetadataFieldName())
-			.serverSideTimeout(properties.getServerSideTimeout())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)
