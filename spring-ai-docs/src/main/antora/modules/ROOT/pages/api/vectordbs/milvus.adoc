@@ -161,6 +161,58 @@ vectorStore.similaritySearch(SearchRequest.builder()
 
 NOTE: These filter expressions are converted into the equivalent Milvus filters.
 
+== Using MilvusSearchRequest
+
+MilvusSearchRequest extends SearchRequest, allowing you to use Milvus-specific search parameters such as native expressions and search parameter JSON.
+
+[source,java]
+----
+MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder()
+    .query("sample query")
+    .topK(5)
+    .similarityThreshold(0.7)
+    .nativeExpression("metadata[\"age\"] > 30") // Overrides filterExpression if both are set
+    .filterExpression("age <= 30") // Ignored if nativeExpression is set
+    .searchParamsJson("{\"nprobe\":128}")
+    .build();
+List results = vectorStore.similaritySearch(request);
+----
+This allows greater flexibility when using Milvus-specific search features.
+
+== Importance of `nativeExpression` and `searchParamsJson` in `MilvusSearchRequest`
+
+These two parameters enhance Milvus search precision and ensure optimal query performance:
+
+*nativeExpression*: Enables additional filtering capabilities using Milvus' native filtering expressions.
+https://milvus.io/docs/boolean.md[Milvus Filtering]
+
+Example:
+[source,java]
+----
+MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder()
+    .query("sample query")
+    .topK(5)
+    .nativeExpression("metadata['category'] == 'science'")
+    .build();
+----
+
+*searchParamsJson*: Essential for tuning search behavior when using IVF_FLAT, Milvus' default index.
+https://milvus.io/docs/index.md?tab=floating[Milvus Vector Index]
+
+By default, `IVF_FLAT` requires `nprobe` to be set for accurate results. If not specified, `nprobe` defaults to `1`, which can lead to poor recall or even zero search results.
+
+Example:
+[source,java]
+----
+MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder()
+    .query("sample query")
+    .topK(5)
+    .searchParamsJson("{\"nprobe\":128}")
+    .build();
+----
+
+Using `nativeExpression` ensures advanced filtering, while `searchParamsJson` prevents ineffective searches caused by a low default `nprobe` value.
+
 [[milvus-properties]]
 == Milvus VectorStore properties
 
