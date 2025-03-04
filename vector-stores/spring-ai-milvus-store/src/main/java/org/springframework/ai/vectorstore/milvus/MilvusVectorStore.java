@@ -326,16 +326,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		String nativeFilterExpressions = "";
 		String searchParamsJson = null;
 		if (request instanceof MilvusSearchRequest milvusReq) {
-			if (milvusReq.getNativeExpression() != null && !milvusReq.getNativeExpression().isEmpty()) {
-				nativeFilterExpressions = milvusReq.getNativeExpression();
-			}
-			if (milvusReq.getSearchParamsJson() != null && !milvusReq.getSearchParamsJson().isEmpty()) {
-				searchParamsJson = milvusReq.getSearchParamsJson();
-			}
+			nativeFilterExpressions = StringUtils.hasText(milvusReq.getNativeExpression())
+					? milvusReq.getNativeExpression() : getConvertedFilterExpression(request);
+
+			searchParamsJson = StringUtils.hasText(milvusReq.getSearchParamsJson()) ? milvusReq.getSearchParamsJson()
+					: null;
 		}
 		else {
-			nativeFilterExpressions = (request.getFilterExpression() != null)
-					? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+			nativeFilterExpressions = getConvertedFilterExpression(request);
 		}
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
@@ -398,6 +396,11 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 					.build();
 			})
 			.toList();
+	}
+
+	private String getConvertedFilterExpression(SearchRequest request) {
+		return (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 	}
 
 	private float getResultSimilarity(RowRecord rowRecord) {
