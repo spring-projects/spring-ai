@@ -66,11 +66,23 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
 
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-hanadb</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 
 		<module>spring-ai-spring-boot-autoconfigure</module>
 
@@ -106,26 +118,26 @@
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-aws-opensearch-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-cosmos-db-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-cassandra-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-chroma-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-coherence-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-couchbase-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-elasticsearch-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-gemfire-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-hanadb-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mariadb-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mongodb-atlas-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-neo4j-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-opensearch-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-oracle-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-pgvector-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-redis-store</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-cassandra</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-chroma</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-elasticsearch</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-gemfire</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-hanadb</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mariadb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-milvus</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mongodb-atlas</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-neo4j</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-opensearch</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-oracle</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pgvector</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pinecone</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-qdrant</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
 

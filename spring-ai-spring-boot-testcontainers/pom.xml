@@ -51,6 +51,21 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-opensearch</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-chroma</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-mongodb-atlas</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-milvus</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
