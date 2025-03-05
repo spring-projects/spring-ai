@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
@@ -46,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
@@ -250,22 +252,24 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.maxTokens(fromOptions.getMaxTokens())
 			.N(fromOptions.getN())
 			.presencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.user(fromOptions.getUser())
-			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
+			.functionCallbacks(fromOptions.getFunctionCallbacks() != null
+					? new ArrayList<>(fromOptions.getFunctionCallbacks()) : null)
+			.functions(fromOptions.getFunctions() != null ? new HashSet<>(fromOptions.getFunctions()) : null)
 			.responseFormat(fromOptions.getResponseFormat())
 			.seed(fromOptions.getSeed())
 			.logprobs(fromOptions.isLogprobs())
 			.topLogprobs(fromOptions.getTopLogProbs())
 			.enhancements(fromOptions.getEnhancements())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
 			.streamOptions(fromOptions.getStreamOptions())
-			.toolCallbacks(fromOptions.getToolCallbacks())
-			.toolNames(fromOptions.getToolNames())
+			.toolCallbacks(
+					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.build();
 	}
 
@@ -479,8 +483,42 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public AzureOpenAiChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof AzureOpenAiChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.logitBias, that.logitBias) && Objects.equals(this.user, that.user)
+				&& Objects.equals(this.n, that.n) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.deploymentName, that.deploymentName)
+				&& Objects.equals(this.responseFormat, that.responseFormat)
+
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.topLogProbs, that.topLogProbs)
+				&& Objects.equals(this.enhancements, that.enhancements)
+				&& Objects.equals(this.streamOptions, that.streamOptions)
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.logitBias, this.user, this.n, this.stop, this.deploymentName, this.responseFormat,
+				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.seed, this.logprobs,
+				this.topLogProbs, this.enhancements, this.streamOptions, this.toolContext, this.maxTokens,
+				this.frequencyPenalty, this.presencePenalty, this.temperature, this.topP);
 	}
 
 	public static class Builder {
