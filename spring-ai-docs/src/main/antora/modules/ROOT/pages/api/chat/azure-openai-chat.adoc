@@ -335,10 +335,9 @@ Next, create an `AzureOpenAiChatModel` instance and use it to generate text resp
 
 [source,java]
 ----
-var openAIClient = new OpenAIClientBuilder()
+var openAIClientBuilder = new OpenAIClientBuilder()
   .credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-  .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-  .buildClient();
+  .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"));
 
 var openAIChatOptions = AzureOpenAiChatOptions.builder()
   .deploymentName("gpt-4o")
@@ -346,13 +345,16 @@ var openAIChatOptions = AzureOpenAiChatOptions.builder()
   .maxTokens(200)
   .build();
 
-var chatModel = new AzureOpenAiChatModel(this.openAIClient, this.openAIChatOptions);
+var chatModel = AzureOpenAiChatModel.builder()
+				.openAIClientBuilder(openAIClientBuilder)
+				.defaultOptions(openAIChatOptions)
+				.build();
 
-ChatResponse response = this.chatModel.call(
+ChatResponse response = chatModel.call(
   new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = this.chatModel.stream(
+Flux<ChatResponse> streamingResponses = chatModel.stream(
   new Prompt("Generate the names of 5 famous pirates."));
 
 ----

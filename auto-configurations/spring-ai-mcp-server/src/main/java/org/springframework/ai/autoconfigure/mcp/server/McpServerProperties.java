@@ -16,6 +16,9 @@
 
 package org.springframework.ai.autoconfigure.mcp.server;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -33,7 +36,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 1.0.0
- * @see org.springframework.ai.autoconfigure.mcp.server.MpcServerAutoConfiguration
+ * @see org.springframework.ai.autoconfigure.mcp.server.McpServerAutoConfiguration
  */
 @ConfigurationProperties(McpServerProperties.CONFIG_PREFIX)
 public class McpServerProperties {
@@ -130,6 +133,11 @@ public class McpServerProperties {
 
 	}
 
+	/**
+	 * (Optinal) response MIME type per tool name.
+	 */
+	private Map<String, String> toolResponseMimeType = new HashMap<>();
+
 	public boolean isStdio() {
 		return this.stdio;
 	}
@@ -204,6 +212,10 @@ public class McpServerProperties {
 	public void setType(ServerType serverType) {
 		Assert.notNull(serverType, "Server type must not be null");
 		this.type = serverType;
+	}
+
+	public Map<String, String> getToolResponseMimeType() {
+		return this.toolResponseMimeType;
 	}
 
 }

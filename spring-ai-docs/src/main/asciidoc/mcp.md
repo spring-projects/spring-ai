@@ -170,9 +170,9 @@ spring:
 
 The MCP server auto-configuration is provided through:
 
-1. `MpcServerAutoConfiguration`: Core server configuration supporting both sync and async modes
-2. `MpcWebMvcServerAutoConfiguration`: WebMvc transport configuration (activated when WebMvc dependencies are present)
-3. `MpcWebFluxServerAutoConfiguration`: WebFlux transport configuration (activated when WebFlux dependencies are present)
+1. `McpServerAutoConfiguration`: Core server configuration supporting both sync and async modes
+2. `McpWebMvcServerAutoConfiguration`: WebMvc transport configuration (activated when WebMvc dependencies are present)
+3. `McpWebFluxServerAutoConfiguration`: WebFlux transport configuration (activated when WebFlux dependencies are present)
 
 The auto-configuration will automatically set up the appropriate server type and transport based on your configuration and available dependencies.
 

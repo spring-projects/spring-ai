@@ -44,7 +44,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
+            <artifactId>spring-ai-weaviate-store-spring-boot-autoconfigure</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

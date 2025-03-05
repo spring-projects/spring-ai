@@ -33,7 +33,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  */
-public final class SearchRequest {
+public class SearchRequest {
 
 	/**
 	 * Similarity threshold that accepts all search scores. A threshold value of 0.0 means
@@ -69,6 +69,16 @@ public final class SearchRequest {
 			.topK(originalSearchRequest.getTopK())
 			.similarityThreshold(originalSearchRequest.getSimilarityThreshold())
 			.filterExpression(originalSearchRequest.getFilterExpression());
+	}
+
+	public SearchRequest() {
+	}
+
+	protected SearchRequest(SearchRequest original) {
+		this.query = original.query;
+		this.topK = original.topK;
+		this.similarityThreshold = original.similarityThreshold;
+		this.filterExpression = original.filterExpression;
 	}
 
 	public String getQuery() {

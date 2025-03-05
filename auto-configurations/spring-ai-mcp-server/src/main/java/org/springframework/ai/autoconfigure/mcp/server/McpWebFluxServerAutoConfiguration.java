@@ -68,7 +68,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 @ConditionalOnMissingBean(ServerMcpTransport.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "stdio", havingValue = "false",
 		matchIfMissing = true)
-public class MpcWebFluxServerAutoConfiguration {
+public class McpWebFluxServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -80,6 +81,13 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+
+	/**
+	 * Optional HTTP headers to be added to the chat completion request.
+	 */
+	@JsonIgnore
+	private Map<String, String> httpHeaders = new HashMap<>();
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -90,14 +98,17 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		return builder().model(fromOptions.getModel())
 			.maxTokens(fromOptions.getMaxTokens())
 			.metadata(fromOptions.getMetadata())
-			.stopSequences(fromOptions.getStopSequences())
+			.stopSequences(
+					fromOptions.getStopSequences() != null ? new ArrayList<>(fromOptions.getStopSequences()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.topK(fromOptions.getTopK())
-			.toolCallbacks(fromOptions.getToolCallbacks())
-			.toolNames(fromOptions.getToolNames())
+			.toolCallbacks(
+					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.build();
 	}
 
@@ -270,9 +281,44 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@JsonIgnore
+	public Map<String, String> getHttpHeaders() {
+		return httpHeaders;
+	}
+
+	public void setHttpHeaders(Map<String, String> httpHeaders) {
+		this.httpHeaders = httpHeaders;
+	}
+
 	@Override
+	@SuppressWarnings("unchecked")
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof AnthropicChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.model, that.model) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.metadata, that.metadata)
+				&& Objects.equals(this.stopSequences, that.stopSequences)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.httpHeaders, that.httpHeaders);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(model, maxTokens, metadata, stopSequences, temperature, topP, topK, toolCallbacks,
+				toolNames, internalToolExecutionEnabled, toolContext, httpHeaders);
 	}
 
 	public static class Builder {
@@ -377,6 +423,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder httpHeaders(Map<String, String> httpHeaders) {
+			this.options.setHttpHeaders(httpHeaders);
 			return this;
 		}
 

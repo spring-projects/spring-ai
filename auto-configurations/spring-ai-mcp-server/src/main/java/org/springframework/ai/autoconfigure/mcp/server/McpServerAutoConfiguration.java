@@ -54,6 +54,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for the Model Context Protocol (MCP)
@@ -95,22 +96,22 @@ import org.springframework.util.CollectionUtils;
  * </ul>
  * <p>
  * WebMvc transport support is provided separately by
- * {@link MpcWebMvcServerAutoConfiguration}.
+ * {@link McpWebMvcServerAutoConfiguration}.
  *
  * @author Christian Tzolov
  * @since 1.0.0
  * @see McpServerProperties
- * @see MpcWebMvcServerAutoConfiguration
+ * @see McpWebMvcServerAutoConfiguration
  * @see org.springframework.ai.mcp.ToolCallback
  */
-@AutoConfiguration(after = { MpcWebMvcServerAutoConfiguration.class, MpcWebFluxServerAutoConfiguration.class })
+@AutoConfiguration(after = { McpWebMvcServerAutoConfiguration.class, McpWebFluxServerAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
 @EnableConfigurationProperties(McpServerProperties.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class MpcServerAutoConfiguration {
+public class McpServerAutoConfiguration {
 
-	private static final LogAccessor logger = new LogAccessor(MpcServerAutoConfiguration.class);
+	private static final LogAccessor logger = new LogAccessor(McpServerAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -127,9 +128,21 @@ public class MpcServerAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<McpServerFeatures.SyncToolRegistration> syncTools(ObjectProvider<List<ToolCallback>> toolCalls) {
-		var tools = toolCalls.stream().flatMap(List::stream).toList();
-		return McpToolUtils.toSyncToolRegistration(tools);
+	public List<McpServerFeatures.SyncToolRegistration> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
+			McpServerProperties serverProperties) {
+		List<ToolCallback> tools = toolCalls.stream().flatMap(List::stream).toList();
+
+		return this.toSyncToolRegistration(tools, serverProperties);
+	}
+
+	private List<McpServerFeatures.SyncToolRegistration> toSyncToolRegistration(List<ToolCallback> tools,
+			McpServerProperties serverProperties) {
+		return tools.stream().map(tool -> {
+			String toolName = tool.getToolDefinition().name();
+			MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
+					? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
+			return McpToolUtils.toSyncToolRegistration(tool, mimeType);
+		}).toList();
 	}
 
 	@Bean
@@ -149,13 +162,16 @@ public class MpcServerAutoConfiguration {
 		SyncSpec serverBuilder = McpServer.sync(transport).serverInfo(serverInfo);
 
 		List<SyncToolRegistration> toolResgistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
+
 		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
 			.map(pr -> List.of(pr.getToolCallbacks()))
 			.flatMap(List::stream)
 			.filter(fc -> fc instanceof ToolCallback)
 			.map(fc -> (ToolCallback) fc)
 			.toList();
-		toolResgistrations.addAll(McpToolUtils.toSyncToolRegistration(providerToolCallbacks));
+
+		toolResgistrations.addAll(this.toSyncToolRegistration(providerToolCallbacks, serverProperties));
+
 		if (!CollectionUtils.isEmpty(toolResgistrations)) {
 			serverBuilder.tools(toolResgistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
@@ -191,9 +207,21 @@ public class MpcServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpServerFeatures.AsyncToolRegistration> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls) {
+	public List<McpServerFeatures.AsyncToolRegistration> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
+			McpServerProperties serverProperties) {
 		var tools = toolCalls.stream().flatMap(List::stream).toList();
-		return McpToolUtils.toAsyncToolRegistration(tools);
+
+		return this.toAsyncToolRegistration(tools, serverProperties);
+	}
+
+	private List<McpServerFeatures.AsyncToolRegistration> toAsyncToolRegistration(List<ToolCallback> tools,
+			McpServerProperties serverProperties) {
+		return tools.stream().map(tool -> {
+			String toolName = tool.getToolDefinition().name();
+			MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
+					? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
+			return McpToolUtils.toAsyncToolRegistration(tool, mimeType);
+		}).toList();
 	}
 
 	@Bean
@@ -219,7 +247,9 @@ public class MpcServerAutoConfiguration {
 			.filter(fc -> fc instanceof ToolCallback)
 			.map(fc -> (ToolCallback) fc)
 			.toList();
-		toolResgistrations.addAll(McpToolUtils.toAsyncToolRegistration(providerToolCallbacks));
+
+		toolResgistrations.addAll(this.toAsyncToolRegistration(providerToolCallbacks, serverProperties));
+
 		if (!CollectionUtils.isEmpty(toolResgistrations)) {
 			serverBilder.tools(toolResgistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());

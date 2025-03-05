@@ -165,12 +165,12 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 	}
 
 	@Test
-	void methodGetWeatherToolContextButNonContextMethod() {
+	void methodGetWeatherToolContextButMissingContextArgument() {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var toolMethod = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
+		var toolMethod = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherWithContext", String.class,
+				Unit.class, ToolContext.class);
 
 		// @formatter:off
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
@@ -181,12 +181,11 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 						.build())
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
-					.build())
-				.toolContext(Map.of("tool", "value"))
+					.build())				
 				.call()
 				.content())
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("ToolContext is not supported by the method as an argument");
+				.hasMessage("ToolContext is required by the method as an argument");
 		// @formatter:on
 	}
 

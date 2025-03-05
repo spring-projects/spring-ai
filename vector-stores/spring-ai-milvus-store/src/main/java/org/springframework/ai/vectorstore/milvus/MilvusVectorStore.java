@@ -16,13 +16,16 @@
 
 package org.springframework.ai.vectorstore.milvus;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.common.clientenum.ConsistencyLevelEnum;
 import io.milvus.exception.ParamException;
@@ -159,7 +162,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public static final String EMBEDDING_FIELD_NAME = "embedding";
 
 	// Metadata, automatically assigned by Milvus.
-	private static final String DISTANCE_FIELD_NAME = "distance";
+	public static final String SIMILARITY_FIELD_NAME = "score";
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
@@ -234,7 +237,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		List<String> docIdArray = new ArrayList<>();
 		List<String> contentArray = new ArrayList<>();
-		List<JSONObject> metadataArray = new ArrayList<>();
+		List<JsonObject> metadataArray = new ArrayList<>();
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
@@ -246,7 +249,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
 			contentArray.add(document.getText());
-			metadataArray.add(new JSONObject(document.getMetadata()));
+			Gson gson = new Gson();
+			String jsonString = gson.toJson(document.getMetadata());
+			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
 			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
 		}
 
@@ -318,9 +323,18 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		String nativeFilterExpressions = "";
+		String searchParamsJson = null;
+		if (request instanceof MilvusSearchRequest milvusReq) {
+			nativeFilterExpressions = StringUtils.hasText(milvusReq.getNativeExpression())
+					? milvusReq.getNativeExpression() : getConvertedFilterExpression(request);
 
-		String nativeFilterExpressions = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+			searchParamsJson = StringUtils.hasText(milvusReq.getSearchParamsJson()) ? milvusReq.getSearchParamsJson()
+					: null;
+		}
+		else {
+			nativeFilterExpressions = getConvertedFilterExpression(request);
+		}
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 		List<String> outFieldNames = new ArrayList<>();
@@ -343,6 +357,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			searchParamBuilder.withExpr(nativeFilterExpressions);
 		}
 
+		if (StringUtils.hasText(searchParamsJson)) {
+			searchParamBuilder.withParams(searchParamsJson);
+		}
+
 		R<SearchResults> respSearch = this.milvusClient.search(searchParamBuilder.build());
 
 		if (respSearch.getException() != null) {
@@ -357,29 +375,37 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.map(rowRecord -> {
 				String docId = String.valueOf(rowRecord.get(this.idFieldName));
 				String content = (String) rowRecord.get(this.contentFieldName);
-				JSONObject metadata = null;
+				JsonObject metadata = new JsonObject();
 				try {
-					metadata = (JSONObject) rowRecord.get(this.metadataFieldName);
+					metadata = (JsonObject) rowRecord.get(this.metadataFieldName);
 					// inject the distance into the metadata.
-					metadata.put(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
 				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
 					// collection
 				}
+				Gson gson = new Gson();
+				Type type = new TypeToken<Map<String, Object>>() {
+				}.getType();
 				return Document.builder()
 					.id(docId)
 					.text(content)
-					.metadata((metadata != null) ? metadata.getInnerMap() : Map.of())
+					.metadata((metadata != null) ? gson.fromJson(metadata, type) : Map.of())
 					.score((double) getResultSimilarity(rowRecord))
 					.build();
 			})
 			.toList();
 	}
 
+	private String getConvertedFilterExpression(SearchRequest request) {
+		return (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+	}
+
 	private float getResultSimilarity(RowRecord rowRecord) {
-		Float distance = (Float) rowRecord.get(DISTANCE_FIELD_NAME);
-		return (this.metricType == MetricType.IP || this.metricType == MetricType.COSINE) ? distance : (1 - distance);
+		Float score = (Float) rowRecord.get(SIMILARITY_FIELD_NAME);
+		return (this.metricType == MetricType.IP || this.metricType == MetricType.COSINE) ? score : (1 - score);
 	}
 
 	// ---------------------------------------------------------------------------------
