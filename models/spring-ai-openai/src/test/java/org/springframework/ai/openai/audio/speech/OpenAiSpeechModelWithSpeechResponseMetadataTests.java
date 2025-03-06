@@ -48,6 +48,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 /**
  * @author Ahmed Yousri
+ * @author Jonghoon Park
  */
 @RestClientTest(OpenAiSpeechModelWithSpeechResponseMetadataTests.Config.class)
 public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
@@ -73,7 +74,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 		prepareMock();
 
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
