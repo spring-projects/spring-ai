@@ -282,14 +282,14 @@ public final class McpToolUtils {
 	/**
 	 * Convenience method to get tool callbacks from multiple asynchronous MCP clients.
 	 * <p>
-	 * This is a varargs wrapper around {@link #getToolCallbacksFromAsyncClinents(List)}
+	 * This is a varargs wrapper around {@link #getToolCallbacksFromAsyncClients(List)}
 	 * for easier usage when working with individual clients.
-	 * @param asynMcpClients the asynchronous MCP clients to get callbacks from
+	 * @param asyncMcpClients the asynchronous MCP clients to get callbacks from
 	 * @return a list of tool callbacks from all provided clients
-	 * @see #getToolCallbacksFromAsyncClinents(List)
+	 * @see #getToolCallbacksFromAsyncClients(List)
 	 */
-	public static List<ToolCallback> getToolCallbacksFromAsyncClients(McpAsyncClient... asynMcpClients) {
-		return getToolCallbacksFromAsyncClinents(List.of(asynMcpClients));
+	public static List<ToolCallback> getToolCallbacksFromAsyncClients(McpAsyncClient... asyncMcpClients) {
+		return getToolCallbacksFromAsyncClients(List.of(asyncMcpClients));
 	}
 
 	/**
@@ -301,15 +301,15 @@ public final class McpToolUtils {
 	 * <li>Creates a provider for each client</li>
 	 * <li>Retrieves and combines all tool callbacks into a single list</li>
 	 * </ol>
-	 * @param asynMcpClients the list of asynchronous MCP clients to get callbacks from
+	 * @param asyncMcpClients the list of asynchronous MCP clients to get callbacks from
 	 * @return a list of tool callbacks from all provided clients
 	 */
-	public static List<ToolCallback> getToolCallbacksFromAsyncClinents(List<McpAsyncClient> asynMcpClients) {
+	public static List<ToolCallback> getToolCallbacksFromAsyncClients(List<McpAsyncClient> asyncMcpClients) {
 
-		if (CollectionUtils.isEmpty(asynMcpClients)) {
+		if (CollectionUtils.isEmpty(asyncMcpClients)) {
 			return List.of();
 		}
-		return List.of((new AsyncMcpToolCallbackProvider(asynMcpClients).getToolCallbacks()));
+		return List.of((new AsyncMcpToolCallbackProvider(asyncMcpClients).getToolCallbacks()));
 	}
 
 }
