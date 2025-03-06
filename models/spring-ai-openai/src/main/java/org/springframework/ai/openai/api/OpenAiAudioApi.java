@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 0.8.1
  */
 public class OpenAiAudioApi {
@@ -330,7 +331,7 @@ public class OpenAiAudioApi {
 	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("input") String input,
-		@JsonProperty("voice") Voice voice,
+		@JsonProperty("voice") String voice,
 		@JsonProperty("response_format") AudioResponseFormat responseFormat,
 		@JsonProperty("speed") Float speed) {
 		// @formatter:on
@@ -419,7 +420,7 @@ public class OpenAiAudioApi {
 
 			private String input;
 
-			private Voice voice;
+			private String voice;
 
 			private AudioResponseFormat responseFormat = AudioResponseFormat.MP3;
 
@@ -435,8 +436,13 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			public Builder voice(Voice voice) {
+			public Builder voice(String voice) {
 				this.voice = voice;
+				return this;
+			}
+
+			public Builder voice(Voice voice) {
+				this.voice = voice.getValue();
 				return this;
 			}
 

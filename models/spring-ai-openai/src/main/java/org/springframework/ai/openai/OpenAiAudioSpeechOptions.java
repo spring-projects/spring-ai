@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,15 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
  * @author Ahmed Yousri
  * @author Hyunjoon Choi
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 1.0.0-M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OpenAiAudioSpeechOptions implements ModelOptions {
 
 	/**
-	 * ID of the model to use for generating the audio. One of the available TTS models:
-	 * tts-1 or tts-1-hd.
+	 * ID of the model to use for generating the audio. For OpenAI's TTS API, use one of
+	 * the available models: tts-1 or tts-1-hd.
 	 */
 	@JsonProperty("model")
 	private String model;
@@ -48,11 +49,11 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 	private String input;
 
 	/**
-	 * The voice to use for synthesis. One of the available voices for the chosen model:
-	 * 'alloy', 'echo', 'fable', 'onyx', 'nova', and 'shimmer'.
+	 * The voice to use for synthesis. For OpenAI's TTS API, One of the available voices
+	 * for the chosen model: 'alloy', 'echo', 'fable', 'onyx', 'nova', and 'shimmer'.
 	 */
 	@JsonProperty("voice")
-	private Voice voice;
+	private String voice;
 
 	/**
 	 * The format of the audio output. Supported formats are mp3, opus, aac, and flac.
@@ -88,12 +89,16 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 		this.input = input;
 	}
 
-	public Voice getVoice() {
+	public String getVoice() {
 		return this.voice;
 	}
 
-	public void setVoice(Voice voice) {
+	public void setVoice(String voice) {
 		this.voice = voice;
+	}
+
+	public void setVoice(Voice voice) {
+		this.voice = voice.getValue();
 	}
 
 	public AudioResponseFormat getResponseFormat() {
@@ -197,8 +202,13 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 			return this;
 		}
 
-		public Builder voice(Voice voice) {
+		public Builder voice(String voice) {
 			this.options.voice = voice;
+			return this;
+		}
+
+		public Builder voice(Voice voice) {
+			this.options.voice = voice.getValue();
 			return this;
 		}
 
