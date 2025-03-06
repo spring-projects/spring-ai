@@ -13,5 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-gemini.org.springframework.ai.model.vertexai.autoconfigure.VertexAiGeminiAutoConfiguration
-embedding.org.springframework.ai.model.vertexai.autoconfigure.VertexAiEmbeddingAutoConfiguration
+org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiEmbeddingAutoConfiguration
+org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiAutoConfiguration
