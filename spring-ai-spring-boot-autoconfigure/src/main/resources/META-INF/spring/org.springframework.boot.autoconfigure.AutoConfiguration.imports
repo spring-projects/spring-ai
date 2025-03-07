@@ -29,8 +29,6 @@ org.springframework.ai.autoconfigure.embedding.observation.EmbeddingObservationA
 org.springframework.ai.autoconfigure.image.observation.ImageObservationAutoConfiguration
 org.springframework.ai.model.ollama.autoconfigure.OllamaAutoConfiguration
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiAutoConfiguration
-org.springframework.ai.autoconfigure.vectorstore.azure.AzureVectorStoreAutoConfiguration
-org.springframework.ai.autoconfigure.vectorstore.cosmosdb.CosmosDBVectorStoreAutoConfiguration
 org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration
 org.springframework.ai.model.postgresml.autoconfigure.PostgresMlAutoConfiguration
 org.springframework.ai.model.anthropic.autoconfigure.AnthropicAutoConfiguration

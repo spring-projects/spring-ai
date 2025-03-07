@@ -66,6 +66,8 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
 
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
@@ -118,11 +120,11 @@
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-cosmos-db-store</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-azure-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-coherence-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-couchbase-store</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-chroma</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-elasticsearch</module>
