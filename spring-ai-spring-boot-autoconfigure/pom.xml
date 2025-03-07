@@ -132,14 +132,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Azure Vector Store -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-azure-store</artifactId>
-			<version>${project.parent.version}</version>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- Vertex AI Embedding -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -242,14 +234,6 @@
 			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>apache-client</artifactId>
 			<version>${awssdk.version}</version>
-			<optional>true</optional>
-		</dependency>
-
-		<!-- Azure Cosmos DB vector store -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
-			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 
