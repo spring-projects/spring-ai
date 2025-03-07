@@ -30,11 +30,11 @@ public interface ToolCallbackProvider {
 
 	FunctionCallback[] getToolCallbacks();
 
-	public static ToolCallbackProvider from(List<? extends FunctionCallback> toolCallbacks) {
+	static ToolCallbackProvider from(List<? extends FunctionCallback> toolCallbacks) {
 		return new StaticToolCallbackProvider(toolCallbacks);
 	}
 
-	public static ToolCallbackProvider from(FunctionCallback... toolCallbacks) {
+	static ToolCallbackProvider from(FunctionCallback... toolCallbacks) {
 		return new StaticToolCallbackProvider(toolCallbacks);
 	}
 
