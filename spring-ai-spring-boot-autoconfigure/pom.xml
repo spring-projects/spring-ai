@@ -132,14 +132,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Azure Vector Store -->
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-azure-store</artifactId>
-			<version>${project.parent.version}</version>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- Vertex AI Embedding -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

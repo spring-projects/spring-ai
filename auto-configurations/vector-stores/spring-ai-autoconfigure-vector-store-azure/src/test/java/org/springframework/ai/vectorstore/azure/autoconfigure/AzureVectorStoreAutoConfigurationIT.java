@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.vectorstore.azure;
+package org.springframework.ai.vectorstore.azure.autoconfigure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +45,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.ai.test.vectorstore.ObservationTestUtil.assertObservationRegistry;
 
 /**
  * @author Christian Tzolov
@@ -112,9 +113,8 @@ public class AzureVectorStoreAutoConfigurationIT {
 					.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build()),
 							hasSize(1));
 
-				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
-					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
-							VectorStoreObservationContext.Operation.ADD);
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
+						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
 				List<Document> results = vectorStore
@@ -128,9 +128,8 @@ public class AzureVectorStoreAutoConfigurationIT {
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
 
-				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
-					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
-							VectorStoreObservationContext.Operation.QUERY);
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
+						VectorStoreObservationContext.Operation.QUERY);
 				observationRegistry.clear();
 
 				// Remove all documents from the store
@@ -140,9 +139,8 @@ public class AzureVectorStoreAutoConfigurationIT {
 					.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build()),
 							hasSize(0));
 
-				org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil
-					.assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
-							VectorStoreObservationContext.Operation.DELETE);
+				assertObservationRegistry(observationRegistry, VectorStoreProvider.AZURE,
+						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 
 			});

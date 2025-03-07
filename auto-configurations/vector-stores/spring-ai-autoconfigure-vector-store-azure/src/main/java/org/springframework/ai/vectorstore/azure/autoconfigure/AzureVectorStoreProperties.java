@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.vectorstore.azure;
+package org.springframework.ai.vectorstore.azure.autoconfigure;
 
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;

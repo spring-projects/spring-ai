@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.vectorstore.cosmosdb;
+package org.springframework.ai.vectorstore.cosmosdb.autoconfigure;
 
 import java.util.HashMap;
 import java.util.List;
