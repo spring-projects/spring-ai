@@ -37,10 +37,8 @@ org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiAutoConfiguration
 org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
 org.springframework.ai.autoconfigure.zhipuai.ZhiPuAiAutoConfiguration
 org.springframework.ai.autoconfigure.chat.client.ChatClientAutoConfiguration
-org.springframework.ai.vectorstore.opensearch.autoconfigure.OpenSearchVectorStoreAutoConfiguration
 org.springframework.ai.model.moonshot.autoconfigure.MoonshotAutoConfiguration
 org.springframework.ai.model.qianfan.autoconfigure.QianFanAutoConfiguration
 org.springframework.ai.model.minimax.autoconfigure.MiniMaxAutoConfiguration
 embedding.org.springframework.ai.model.vertexai.autoconfigure.VertexAiEmbeddingAutoConfiguration
 cassandra.org.springframework.ai.model.chat.memory.autoconfigure.CassandraChatMemoryAutoConfiguration
-org.springframework.ai.autoconfigure.vectorstore.observation.VectorStoreObservationAutoConfiguration

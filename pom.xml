@@ -78,6 +78,7 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-observation</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
