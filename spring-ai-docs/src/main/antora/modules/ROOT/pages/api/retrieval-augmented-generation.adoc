@@ -123,7 +123,7 @@ String answer = chatClient.prompt()
 [source,java]
 ----
 Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
-        .queryTransformer(RewriteQueryTransformer.builder()
+        .queryTransformers(RewriteQueryTransformer.builder()
                 .chatClientBuilder(chatClientBuilder.build().mutate())
                 .build())
         .documentRetriever(VectorStoreDocumentRetriever.builder()
