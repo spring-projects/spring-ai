@@ -36,24 +36,25 @@
     </scm>
 
     <dependencies>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-milvus</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-observation</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-milvus-store</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-
     </dependencies>
 
 </project>

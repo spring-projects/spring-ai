@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.vectorstore.observation;
+package org.springframework.ai.vectorstore.observation.autoconfigure;
 
 import io.micrometer.tracing.otel.bridge.OtelTracer;
 import org.slf4j.Logger;
