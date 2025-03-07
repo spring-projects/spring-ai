@@ -100,6 +100,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		}
 
 		try {
+			logger.info("Init Cluster Called");
 			initCluster();
 		}
 		catch (InterruptedException e) {
@@ -109,6 +110,9 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		logger.info("Trying Add");
+		logger.info(this.config.bucketName);
+		logger.info(this.config.scopeName);
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
 				this.batchingStrategy);
 		for (Document document : documents) {
@@ -152,11 +156,11 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		String statement = String.format(
 				"""
 						SELECT c.* FROM `%s` AS c
-						WHERE SEARCH(`c`, {"query": {"match_none": {}}, "knn": [{"field": "embedding", "k": %s, "vector": %s }   ]    }, {"index": "%s.%s.%s"}   )
+						WHERE SEARCH_SCORE() > %s AND SEARCH(`c`, {"query": {"match_none": {}}, "knn": [{"field": "embedding", "k": %s, "vector": %s }   ]    }, {"index": "%s.%s.%s"}   )
 						%s
 						""",
-				this.config.collectionName, topK, Arrays.toString(embeddings), this.config.bucketName,
-				this.config.scopeName, this.config.vectorIndexName, nativeFilterExpression);
+				this.config.collectionName, similarityThreshold, topK, Arrays.toString(embeddings),
+				this.config.bucketName, this.config.scopeName, this.config.vectorIndexName, nativeFilterExpression);
 
 		QueryResult result = scope.query(statement, QueryOptions.queryOptions());
 
@@ -227,8 +231,10 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		if (bs == null) {
 			cluster.buckets().createBucket(BucketSettings.create(this.config.bucketName));
 		}
+		logger.info("Created bucket");
 		Bucket b = cluster.bucket(this.config.bucketName);
-		b.waitUntilReady(Duration.ofSeconds(1));
+		b.waitUntilReady(Duration.ofSeconds(20));
+		logger.info("Opened Bucket");
 		boolean scopeExist = b.collections()
 			.getAllScopes()
 			.stream()
