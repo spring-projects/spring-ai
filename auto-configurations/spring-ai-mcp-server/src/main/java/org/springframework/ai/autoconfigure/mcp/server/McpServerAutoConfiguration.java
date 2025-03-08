@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServer;
@@ -41,7 +40,6 @@ import io.modelcontextprotocol.spec.ServerMcpTransport;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolUtils;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
@@ -161,7 +159,7 @@ public class McpServerAutoConfiguration {
 		// Create the server with both tool and resource capabilities
 		SyncSpec serverBuilder = McpServer.sync(transport).serverInfo(serverInfo);
 
-		List<SyncToolRegistration> toolResgistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
+		List<SyncToolRegistration> toolRegistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
 
 		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
 			.map(pr -> List.of(pr.getToolCallbacks()))
@@ -170,28 +168,28 @@ public class McpServerAutoConfiguration {
 			.map(fc -> (ToolCallback) fc)
 			.toList();
 
-		toolResgistrations.addAll(this.toSyncToolRegistration(providerToolCallbacks, serverProperties));
+		toolRegistrations.addAll(this.toSyncToolRegistration(providerToolCallbacks, serverProperties));
 
-		if (!CollectionUtils.isEmpty(toolResgistrations)) {
-			serverBuilder.tools(toolResgistrations);
+		if (!CollectionUtils.isEmpty(toolRegistrations)) {
+			serverBuilder.tools(toolRegistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools" + toolResgistrations.size() + " notification: "
+			logger.info("Registered tools" + toolRegistrations.size() + " notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
 
-		List<SyncResourceRegistration> resourceResgistrations = resources.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(resourceResgistrations)) {
-			serverBuilder.resources(resourceResgistrations);
+		List<SyncResourceRegistration> resourceRegistrations = resources.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(resourceRegistrations)) {
+			serverBuilder.resources(resourceRegistrations);
 			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources" + resourceResgistrations.size() + " notification: "
+			logger.info("Registered resources" + resourceRegistrations.size() + " notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
 
-		List<SyncPromptRegistration> promptResgistrations = prompts.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(promptResgistrations)) {
-			serverBuilder.prompts(promptResgistrations);
+		List<SyncPromptRegistration> promptRegistrations = prompts.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(promptRegistrations)) {
+			serverBuilder.prompts(promptRegistrations);
 			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts" + promptResgistrations.size() + " notification: "
+			logger.info("Registered prompts" + promptRegistrations.size() + " notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
 
@@ -238,9 +236,9 @@ public class McpServerAutoConfiguration {
 				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
-		AsyncSpec serverBilder = McpServer.async(transport).serverInfo(serverInfo);
+		AsyncSpec serverBuilder = McpServer.async(transport).serverInfo(serverInfo);
 
-		List<AsyncToolRegistration> toolResgistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
+		List<AsyncToolRegistration> toolRegistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
 		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
 			.map(pr -> List.of(pr.getToolCallbacks()))
 			.flatMap(List::stream)
@@ -248,28 +246,28 @@ public class McpServerAutoConfiguration {
 			.map(fc -> (ToolCallback) fc)
 			.toList();
 
-		toolResgistrations.addAll(this.toAsyncToolRegistration(providerToolCallbacks, serverProperties));
+		toolRegistrations.addAll(this.toAsyncToolRegistration(providerToolCallbacks, serverProperties));
 
-		if (!CollectionUtils.isEmpty(toolResgistrations)) {
-			serverBilder.tools(toolResgistrations);
+		if (!CollectionUtils.isEmpty(toolRegistrations)) {
+			serverBuilder.tools(toolRegistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools" + toolResgistrations.size() + " notification: "
+			logger.info("Registered tools" + toolRegistrations.size() + " notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
 
-		List<AsyncResourceRegistration> resourceResgistrations = resources.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(resourceResgistrations)) {
-			serverBilder.resources(resourceResgistrations);
+		List<AsyncResourceRegistration> resourceRegistrations = resources.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(resourceRegistrations)) {
+			serverBuilder.resources(resourceRegistrations);
 			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources" + resourceResgistrations.size() + " notification: "
+			logger.info("Registered resources" + resourceRegistrations.size() + " notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
 
-		List<AsyncPromptRegistration> promptResgistrations = prompts.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(promptResgistrations)) {
-			serverBilder.prompts(promptResgistrations);
+		List<AsyncPromptRegistration> promptRegistrations = prompts.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(promptRegistrations)) {
+			serverBuilder.prompts(promptRegistrations);
 			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts" + promptResgistrations.size() + " notification: "
+			logger.info("Registered prompts" + promptRegistrations.size() + " notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
 
@@ -278,13 +276,13 @@ public class McpServerAutoConfiguration {
 				consumer.accept(roots);
 				return Mono.empty();
 			};
-			serverBilder.rootsChangeConsumer(asyncConsumer);
+			serverBuilder.rootsChangeConsumer(asyncConsumer);
 			logger.info("Registered roots change consumer");
 		});
 
-		serverBilder.capabilities(capabilitiesBuilder.build());
+		serverBuilder.capabilities(capabilitiesBuilder.build());
 
-		return serverBilder.build();
+		return serverBuilder.build();
 	}
 
 }
