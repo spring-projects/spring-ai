@@ -25,6 +25,7 @@ import java.util.Objects;
  *
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
+ * @author Ricken Bazolo
  * @since 1.0.0
  */
 public final class CategoryScores {
@@ -51,6 +52,16 @@ public final class CategoryScores {
 
 	private final double violence;
 
+	private final double dangerousAndCriminalContent;
+
+	private final double health;
+
+	private final double financial;
+
+	private final double law;
+
+	private final double pii;
+
 	private CategoryScores(Builder builder) {
 		this.sexual = builder.sexual;
 		this.hate = builder.hate;
@@ -63,6 +74,11 @@ public final class CategoryScores {
 		this.selfHarmInstructions = builder.selfHarmInstructions;
 		this.harassmentThreatening = builder.harassmentThreatening;
 		this.violence = builder.violence;
+		this.dangerousAndCriminalContent = builder.dangerousAndCriminalContent;
+		this.health = builder.health;
+		this.financial = builder.financial;
+		this.law = builder.law;
+		this.pii = builder.pii;
 	}
 
 	public static Builder builder() {
@@ -174,6 +190,16 @@ public final class CategoryScores {
 
 		private double violence;
 
+		private double dangerousAndCriminalContent;
+
+		private double health;
+
+		private double financial;
+
+		private double law;
+
+		private double pii;
+
 		public Builder sexual(double sexual) {
 			this.sexual = sexual;
 			return this;
@@ -226,6 +252,31 @@ public final class CategoryScores {
 
 		public Builder violence(double violence) {
 			this.violence = violence;
+			return this;
+		}
+
+		public Builder dangerousAndCriminalContent(double dangerousAndCriminalContent) {
+			this.dangerousAndCriminalContent = dangerousAndCriminalContent;
+			return this;
+		}
+
+		public Builder health(double health) {
+			this.health = health;
+			return this;
+		}
+
+		public Builder financial(double financial) {
+			this.financial = financial;
+			return this;
+		}
+
+		public Builder law(double law) {
+			this.law = law;
+			return this;
+		}
+
+		public Builder pii(double pii) {
+			this.pii = pii;
 			return this;
 		}
 
