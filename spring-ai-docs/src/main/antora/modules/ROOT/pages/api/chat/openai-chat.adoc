@@ -154,7 +154,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OpenAiChatOptions.builder()
-            .model("gpt-4-o")
+            .model("gpt-4o")
             .temperature(0.4)
         .build()
     ));
