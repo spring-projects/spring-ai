@@ -15,6 +15,7 @@
 */
 package org.springframework.ai.tool;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.ai.model.function.FunctionCallback;
@@ -72,6 +73,19 @@ public class StaticToolCallbackProvider implements ToolCallbackProvider {
 	 * elements
 	 */
 	public StaticToolCallbackProvider(List<? extends FunctionCallback> toolCallbacks) {
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks.toArray(new FunctionCallback[0]);
+	}
+
+	/**
+	 * Constructs a new StaticToolCallbackProvider with the specified list of function
+	 * callbacks. The list is converted to an array internally.
+	 * @param toolCallbacks the list of function callbacks to be provided by this
+	 * provider. Must not be null and must not contain null elements.
+	 * @throws IllegalArgumentException if the toolCallbacks list is null or contains null
+	 * elements
+	 */
+	public StaticToolCallbackProvider(Collection<? extends ToolCallback> toolCallbacks) {
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks.toArray(new FunctionCallback[0]);
 	}
