@@ -173,7 +173,7 @@ public class McpServerAutoConfiguration {
 		if (!CollectionUtils.isEmpty(toolRegistrations)) {
 			serverBuilder.tools(toolRegistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools" + toolRegistrations.size() + " notification: "
+			logger.info("Registered tools: " + toolRegistrations.size() + ", notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
 
@@ -181,7 +181,7 @@ public class McpServerAutoConfiguration {
 		if (!CollectionUtils.isEmpty(resourceRegistrations)) {
 			serverBuilder.resources(resourceRegistrations);
 			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources" + resourceRegistrations.size() + " notification: "
+			logger.info("Registered resources: " + resourceRegistrations.size() + ", notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
 
@@ -189,7 +189,7 @@ public class McpServerAutoConfiguration {
 		if (!CollectionUtils.isEmpty(promptRegistrations)) {
 			serverBuilder.prompts(promptRegistrations);
 			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts" + promptRegistrations.size() + " notification: "
+			logger.info("Registered prompts: " + promptRegistrations.size() + ", notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
 
@@ -251,7 +251,7 @@ public class McpServerAutoConfiguration {
 		if (!CollectionUtils.isEmpty(toolRegistrations)) {
 			serverBuilder.tools(toolRegistrations);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools" + toolRegistrations.size() + " notification: "
+			logger.info("Registered tools: " + toolRegistrations.size() + ", notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
 
@@ -259,7 +259,7 @@ public class McpServerAutoConfiguration {
 		if (!CollectionUtils.isEmpty(resourceRegistrations)) {
 			serverBuilder.resources(resourceRegistrations);
 			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources" + resourceRegistrations.size() + " notification: "
+			logger.info("Registered resources: " + resourceRegistrations.size() + ", notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
 
@@ -267,7 +267,7 @@ public class McpServerAutoConfiguration {
 		if (!CollectionUtils.isEmpty(promptRegistrations)) {
 			serverBuilder.prompts(promptRegistrations);
 			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts" + promptRegistrations.size() + " notification: "
+			logger.info("Registered prompts: " + promptRegistrations.size() + ", notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
 
