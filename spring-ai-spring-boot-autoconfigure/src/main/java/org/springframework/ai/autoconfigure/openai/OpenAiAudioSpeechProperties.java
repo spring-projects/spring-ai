@@ -29,6 +29,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *
  * @author Ahmed Yousri
  * @author Stefan Vassilev
+ * @author Jonghoon Park
  */
 @ConfigurationProperties(OpenAiAudioSpeechProperties.CONFIG_PREFIX)
 public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
@@ -39,7 +40,7 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	private static final Float SPEED = 1.0f;
 
-	private static final OpenAiAudioApi.SpeechRequest.Voice VOICE = OpenAiAudioApi.SpeechRequest.Voice.ALLOY;
+	private static final String VOICE = OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue();
 
 	private static final OpenAiAudioApi.SpeechRequest.AudioResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
 

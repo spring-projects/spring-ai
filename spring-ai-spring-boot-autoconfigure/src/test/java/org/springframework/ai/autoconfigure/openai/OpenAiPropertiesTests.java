@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonghoon Park
  * @since 0.8.0
  */
 public class OpenAiPropertiesTests {
@@ -177,7 +178,7 @@ public class OpenAiPropertiesTests {
 
 				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_1");
 				assertThat(speechProperties.getOptions().getVoice())
-					.isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ALLOY);
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue());
 				assertThat(speechProperties.getOptions().getResponseFormat())
 					.isEqualTo(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3);
 				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.75f);
@@ -205,7 +206,7 @@ public class OpenAiPropertiesTests {
 
 				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_1");
 				assertThat(speechProperties.getOptions().getVoice())
-					.isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ALLOY);
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue());
 				assertThat(speechProperties.getOptions().getResponseFormat())
 					.isEqualTo(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3);
 				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.75f);
@@ -237,7 +238,8 @@ public class OpenAiPropertiesTests {
 				assertThat(speechProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
 
 				assertThat(speechProperties.getOptions().getModel()).isEqualTo("TTS_2");
-				assertThat(speechProperties.getOptions().getVoice()).isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ECHO);
+				assertThat(speechProperties.getOptions().getVoice())
+					.isEqualTo(OpenAiAudioApi.SpeechRequest.Voice.ECHO.getValue());
 				assertThat(speechProperties.getOptions().getResponseFormat())
 					.isEqualTo(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.OPUS);
 				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(0.5f);
