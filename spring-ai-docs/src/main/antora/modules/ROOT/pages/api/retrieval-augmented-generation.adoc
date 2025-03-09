@@ -39,14 +39,11 @@ This filter expression can be configured when creating the `QuestionAnswerAdviso
 
 Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` reulsts.
 
-
 [source,java]
 ----
 var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
         SearchRequest.builder().similarityThreshold(0.8d).topK(6).build());
 ----
-
-
 
 ==== Dynamic Filter Expressions
 
@@ -117,6 +114,29 @@ String answer = chatClient.prompt()
         .call()
         .content();
 ----
+
+The `VectorStoreDocumentRetriever` accepts a `FilterExpression` to filter the search results based on metadata.
+You can provide one when instantiating the `VectorStoreDocumentRetriever` or at runtime per request,
+using the `FILTER_EXPRESSION` advisor context parameter.
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .advisors(a -> a.param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "type == 'Spring'"))
+        .user(question)
+        .call()
+        .content();
+----
+
+See xref:api/retrieval-augmented-generation.adoc#_vectorstoredocumentretriever for more information.
 
 ===== Advanced RAG
 
@@ -296,6 +316,18 @@ DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
         .build())
     .build();
 List<Document> documents = retriever.retrieve(new Query("What are the KPIs for the next semester?"));
+----
+
+You can also provide a request-specific filter expression via the `Query` API, using the `FILTER_EXPRESSION` parameter.
+If both the request-specific and the retriever-specific filter expressions are provided, the request-specific filter expression takes precedence.
+
+[source,java]
+----
+Query query = Query.builder()
+    .text("Who is Anacletus?")
+    .context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "location == 'Whispering Woods'"))
+    .build();
+List<Document> retrievedDocuments = documentRetriever.retrieve(query);
 ----
 
 ==== Document Join

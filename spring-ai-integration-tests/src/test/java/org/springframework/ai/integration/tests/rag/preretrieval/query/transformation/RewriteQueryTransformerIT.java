@@ -43,7 +43,7 @@ class RewriteQueryTransformerIT {
 
 	@Test
 	void whenTransformerWithDefaults() {
-		Query query = new Query("I'm studying machine learning. What is an LLM?");
+		Query query = new Query("What are the main tourist attractions in L.A.?");
 		QueryTransformer queryTransformer = RewriteQueryTransformer.builder()
 			.chatClientBuilder(ChatClient.builder(this.openAiChatModel))
 			.build();
@@ -52,7 +52,7 @@ class RewriteQueryTransformerIT {
 
 		assertThat(transformedQuery).isNotNull();
 		System.out.println(transformedQuery);
-		assertThat(transformedQuery.text()).containsIgnoringCase("model");
+		assertThat(transformedQuery.text()).containsIgnoringCase("Angeles");
 	}
 
 }

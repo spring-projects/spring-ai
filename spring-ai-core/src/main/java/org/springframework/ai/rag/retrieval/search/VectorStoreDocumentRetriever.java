@@ -24,8 +24,10 @@ import org.springframework.ai.rag.Query;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Retrieves documents from a vector store that are semantically similar to the input
@@ -47,6 +49,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public final class VectorStoreDocumentRetriever implements DocumentRetriever {
+
+	public static final String FILTER_EXPRESSION = "vector_store_filter_expression";
 
 	private final VectorStore vectorStore;
 
@@ -75,13 +79,22 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 	@Override
 	public List<Document> retrieve(Query query) {
 		Assert.notNull(query, "query cannot be null");
+		var requestFilterExpression = computeRequestFilterExpression(query);
 		var searchRequest = SearchRequest.builder()
 			.query(query.text())
-			.filterExpression(this.filterExpression.get())
+			.filterExpression(requestFilterExpression)
 			.similarityThreshold(this.similarityThreshold)
 			.topK(this.topK)
 			.build();
 		return this.vectorStore.similaritySearch(searchRequest);
+	}
+
+	private Filter.Expression computeRequestFilterExpression(Query query) {
+		var contextFilterExpression = query.context().get(FILTER_EXPRESSION);
+		if (contextFilterExpression != null && StringUtils.hasText(contextFilterExpression.toString())) {
+			return new FilterExpressionTextParser().parse(contextFilterExpression.toString());
+		}
+		return this.filterExpression.get();
 	}
 
 	public static Builder builder() {
