@@ -134,7 +134,7 @@ public class McpServerProperties {
 	}
 
 	/**
-	 * (Optinal) response MIME type per tool name.
+	 * (Optional) response MIME type per tool name.
 	 */
 	private Map<String, String> toolResponseMimeType = new HashMap<>();
 
