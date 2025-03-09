@@ -109,6 +109,29 @@ class RetrievalAugmentationAdvisorIT {
 	}
 
 	@Test
+	void ragWithRequestFilter() {
+		String question = "Where does the adventure of Anacletus and Birba take place?";
+
+		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
+			.build();
+
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(question)
+			.advisors(ragAdvisor)
+			.advisors(a -> a.param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "location == 'Italy'"))
+			.call()
+			.chatResponse();
+
+		assertThat(chatResponse).isNotNull();
+		// No documents retrieved since the filter expression matches none of the
+		// documents in the vector store.
+		assertThat((String) chatResponse.getResult().getMetadata().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT))
+			.isNull();
+	}
+
+	@Test
 	void ragWithCompression() {
 		MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor.builder(new InMemoryChatMemory()).build();
 
