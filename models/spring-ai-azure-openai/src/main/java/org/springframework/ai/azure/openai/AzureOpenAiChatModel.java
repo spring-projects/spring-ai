@@ -16,6 +16,8 @@
 
 package org.springframework.ai.azure.openai;
 
+import com.azure.ai.openai.models.ChatCompletionsJsonSchemaResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionsJsonSchemaResponseFormatJsonSchema;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -59,6 +61,8 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.azure.openai.AzureOpenAiResponseFormat.JsonSchema;
+import org.springframework.ai.azure.openai.AzureOpenAiResponseFormat.Type;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -115,6 +119,7 @@ import org.springframework.util.CollectionUtils;
  * @author Alexandros Pappas
  * @author Berjan Jonker
  * @author Andres da Silva Santos
+ * @author Bart Veenstra
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -918,8 +923,15 @@ public class AzureOpenAiChatModel implements ChatModel {
 	 * @return Azure response format
 	 */
 	private ChatCompletionsResponseFormat toAzureResponseFormat(AzureOpenAiResponseFormat responseFormat) {
-		if (responseFormat == AzureOpenAiResponseFormat.JSON) {
+		if (responseFormat.getType() == Type.JSON_OBJECT) {
 			return new ChatCompletionsJsonResponseFormat();
+		}
+		if (responseFormat.getType() == Type.JSON_SCHEMA) {
+			JsonSchema jsonSchema = responseFormat.getJsonSchema();
+			var responseFormatJsonSchema = new ChatCompletionsJsonSchemaResponseFormatJsonSchema(jsonSchema.getName());
+			String jsonString = ModelOptionsUtils.toJsonString(jsonSchema.getSchema());
+			responseFormatJsonSchema.setSchema(BinaryData.fromString(jsonString));
+			return new ChatCompletionsJsonSchemaResponseFormat(responseFormatJsonSchema);
 		}
 		return new ChatCompletionsTextResponseFormat();
 	}
