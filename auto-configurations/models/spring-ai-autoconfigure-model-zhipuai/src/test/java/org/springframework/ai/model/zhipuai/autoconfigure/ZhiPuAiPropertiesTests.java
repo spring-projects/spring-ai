@@ -335,7 +335,7 @@ public class ZhiPuAiPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
-					"spring.ai.zhipuai.embedding.enabled=false")
+					"spring.ai.model.embedding=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
@@ -354,7 +354,7 @@ public class ZhiPuAiPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
-					"spring.ai.zhipuai.embedding.enabled=true")
+					"spring.ai.model.embedding=zhipuai")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
@@ -367,7 +367,7 @@ public class ZhiPuAiPropertiesTests {
 	void chatActivation() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
-					"spring.ai.zhipuai.chat.enabled=false")
+					"spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
@@ -386,7 +386,7 @@ public class ZhiPuAiPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
-					"spring.ai.zhipuai.chat.enabled=true")
+					"spring.ai.model.chat=zhipuai")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
@@ -400,7 +400,7 @@ public class ZhiPuAiPropertiesTests {
 	void imageActivation() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
-					"spring.ai.zhipuai.image.enabled=false")
+					"spring.ai.model.image=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {
@@ -419,7 +419,7 @@ public class ZhiPuAiPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
-					"spring.ai.zhipuai.image.enabled=true")
+					"spring.ai.model.image=zhipuai")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class))
 			.run(context -> {

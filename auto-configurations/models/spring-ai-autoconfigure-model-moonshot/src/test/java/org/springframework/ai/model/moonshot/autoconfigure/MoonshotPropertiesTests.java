@@ -135,7 +135,7 @@ public class MoonshotPropertiesTests {
 	void chatActivation() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.moonshot.api-key=API_KEY", "spring.ai.moonshot.base-url=TEST_BASE_URL",
-					"spring.ai.moonshot.chat.enabled=false")
+					"spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
 			.run(context -> {
@@ -154,7 +154,7 @@ public class MoonshotPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.moonshot.api-key=API_KEY", "spring.ai.moonshot.base-url=TEST_BASE_URL",
-					"spring.ai.moonshot.chat.enabled=true")
+					"spring.ai.model.chat=moonshot")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
 			.run(context -> {

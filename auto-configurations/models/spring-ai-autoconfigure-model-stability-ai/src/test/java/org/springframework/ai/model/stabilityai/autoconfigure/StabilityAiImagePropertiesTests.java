@@ -77,7 +77,7 @@ public class StabilityAiImagePropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.stabilityai.image.api-key=API_KEY",
-					"spring.ai.stabilityai.image.base-url=ENDPOINT", "spring.ai.stabilityai.image.enabled=false")
+					"spring.ai.stabilityai.image.base-url=ENDPOINT", "spring.ai.model.image=none")
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
@@ -97,7 +97,7 @@ public class StabilityAiImagePropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.stabilityai.image.api-key=API_KEY",
-					"spring.ai.stabilityai.image.base-url=ENDPOINT", "spring.ai.stabilityai.image.enabled=true")
+					"spring.ai.stabilityai.image.base-url=ENDPOINT", "spring.ai.model.image=stabilityai")
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();

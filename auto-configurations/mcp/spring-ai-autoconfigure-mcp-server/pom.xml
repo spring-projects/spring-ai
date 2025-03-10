@@ -9,7 +9,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-mcp-server-spring-boot-autoconfigure</artifactId>
+	<artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI MCP Server Auto Configuration</name>
 	<description>Spring AI MCP Server Auto Configuration</description>

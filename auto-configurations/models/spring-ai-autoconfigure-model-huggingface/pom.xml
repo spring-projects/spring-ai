@@ -37,14 +37,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>
-			<version>${project.parent.version}</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-observation-chat</artifactId>
+			<artifactId>spring-ai-autoconfigure-model-chat-observation</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>

@@ -20,6 +20,8 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
@@ -47,14 +49,13 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ AnthropicChatProperties.class, AnthropicConnectionProperties.class })
 @ConditionalOnClass(AnthropicApi.class)
-@ConditionalOnProperty(prefix = AnthropicChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class })
 public class AnthropicAutoConfiguration {
@@ -73,6 +74,8 @@ public class AnthropicAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.ANTHROPIC,
+			matchIfMissing = true)
 	public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
 			RetryTemplate retryTemplate, ToolCallingManager toolCallingManager,
 			ObjectProvider<ObservationRegistry> observationRegistry,

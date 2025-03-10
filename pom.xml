@@ -37,20 +37,26 @@
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
-		<module>auto-configurations/chat/spring-ai-autoconfigure-model-chat-client</module>
-		<module>auto-configurations/chat/spring-ai-autoconfigure-model-tool</module>
-		<module>auto-configurations/chat/spring-ai-autoconfigure-model-chat-memory</module>
+		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
+
+		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
+		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
+
+		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
+		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
 
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-moonshot</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
+
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-qianfan</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
@@ -59,9 +65,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-watsonx-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
 
-		<module>auto-configurations/observation/chat/spring-ai-autoconfigure-observation-chat</module>
-		<module>auto-configurations/observation/embedding/spring-ai-autoconfigure-observation-embedding</module>
-		<module>auto-configurations/observation/image/spring-ai-autoconfigure-observation-image</module>
+
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>

@@ -37,7 +37,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-observation-embedding</artifactId>
+			<artifactId>spring-ai-autoconfigure-model-embedding-observation</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>

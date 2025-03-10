@@ -21,6 +21,8 @@ import ai.onnxruntime.OrtSession;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -42,8 +44,8 @@ public class TransformersEmbeddingModelAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = TransformersEmbeddingModelProperties.CONFIG_PREFIX, name = "enabled",
-			havingValue = "true", matchIfMissing = true)
+	@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.TRANSFORMERS,
+			matchIfMissing = true)
 	public TransformersEmbeddingModel embeddingModel(TransformersEmbeddingModelProperties properties,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {

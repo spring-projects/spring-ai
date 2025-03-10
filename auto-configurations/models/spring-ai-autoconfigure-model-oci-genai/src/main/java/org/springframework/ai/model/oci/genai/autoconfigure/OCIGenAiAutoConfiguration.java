@@ -31,6 +31,8 @@ import com.oracle.bmc.retrier.RetryConfiguration;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.oci.OCIEmbeddingModel;
 import org.springframework.ai.oci.cohere.OCICohereChatModel;
 import org.springframework.beans.factory.ObjectProvider;
@@ -90,7 +92,7 @@ public class OCIGenAiAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = OCIEmbeddingModelProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OCI_GENAI,
 			matchIfMissing = true)
 	public OCIEmbeddingModel ociEmbeddingModel(GenerativeAiInferenceClient generativeAiClient,
 			OCIEmbeddingModelProperties properties) {
@@ -98,7 +100,7 @@ public class OCIGenAiAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = OCICohereChatModelProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OCI_GENAI,
 			matchIfMissing = true)
 	public OCICohereChatModel ociChatModel(GenerativeAiInferenceClient generativeAiClient,
 			OCICohereChatModelProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,

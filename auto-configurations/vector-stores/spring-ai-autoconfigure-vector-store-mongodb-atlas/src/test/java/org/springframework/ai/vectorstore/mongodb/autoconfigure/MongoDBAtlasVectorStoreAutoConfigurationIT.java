@@ -27,7 +27,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
-import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -64,7 +64,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
 				MongoDBAtlasVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
+				SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 		.withPropertyValues("spring.data.mongodb.database=springaisample",
 				"spring.ai.vectorstore.mongodb.initialize-schema=true",
 				"spring.ai.vectorstore.mongodb.collection-name=test_collection",
