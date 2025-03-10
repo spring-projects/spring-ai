@@ -84,7 +84,7 @@ A simple configuration can be provided via Spring Boot's `application.yml`,
 spring:
   data:
     redis:
-      uri: <redis instance uri>
+      url: <redis instance url>
   ai:
     vectorstore:
       redis:
