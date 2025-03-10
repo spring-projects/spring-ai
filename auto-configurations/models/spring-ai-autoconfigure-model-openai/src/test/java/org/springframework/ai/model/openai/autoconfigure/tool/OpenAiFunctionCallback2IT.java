@@ -23,8 +23,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
@@ -44,7 +44,7 @@ public class OpenAiFunctionCallback2IT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.chat.options.model=" + ChatModel.GPT_4_O_MINI.getName())
-		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

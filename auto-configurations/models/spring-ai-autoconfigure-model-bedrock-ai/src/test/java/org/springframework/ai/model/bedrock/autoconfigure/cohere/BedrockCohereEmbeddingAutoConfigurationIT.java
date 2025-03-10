@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockCohereEmbeddingAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true",
+		.withPropertyValues("spring.ai.model.embedding=bedrock-cohere",
 				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id(),
 				"spring.ai.bedrock.cohere.embedding.options.inputType=SEARCH_DOCUMENT",
 				"spring.ai.bedrock.cohere.embedding.options.truncate=NONE")
@@ -109,19 +109,18 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	}
 
 	@Test
-	public void embeddingDisabled() {
+	public void embeddingActivation() {
 
-		// It is disabled by default
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isNotEmpty();
 			});
 
 		// Explicitly enable the embedding auto-configuration.
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
-			.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true")
+			.withPropertyValues("spring.ai.model.embedding=bedrock-cohere")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isNotEmpty();
@@ -130,7 +129,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 
 		// Explicitly disable the embedding auto-configuration.
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
-			.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=false")
+			.withPropertyValues("spring.ai.model.embedding=none")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();

@@ -265,7 +265,7 @@ public class MiniMaxPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
-					"spring.ai.minimax.embedding.enabled=false")
+					"spring.ai.model.embedding=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
@@ -297,7 +297,7 @@ public class MiniMaxPropertiesTests {
 	void chatActivation() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
-					"spring.ai.minimax.chat.enabled=false")
+					"spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {
@@ -316,7 +316,7 @@ public class MiniMaxPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
-					"spring.ai.minimax.chat.enabled=true")
+					"spring.ai.model.chat=minimax")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
 			.run(context -> {

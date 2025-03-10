@@ -13,4 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
+org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration

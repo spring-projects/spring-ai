@@ -235,7 +235,7 @@ public class QianFanPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
-					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.qianfan.embedding.enabled=false")
+					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.embedding=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
 			.run(context -> {
@@ -255,7 +255,7 @@ public class QianFanPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
-					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.qianfan.embedding.enabled=true")
+					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.chat=qianfan")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
 			.run(context -> {
@@ -268,7 +268,7 @@ public class QianFanPropertiesTests {
 	void chatActivation() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
-					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.qianfan.chat.enabled=false")
+					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
 			.run(context -> {
@@ -402,7 +402,7 @@ public class QianFanPropertiesTests {
 	void imageActivation() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
-					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.qianfan.image.enabled=false")
+					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.image=none")
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))
@@ -424,7 +424,7 @@ public class QianFanPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
-					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.qianfan.image.enabled=true")
+					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.chat=qianfan")
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))

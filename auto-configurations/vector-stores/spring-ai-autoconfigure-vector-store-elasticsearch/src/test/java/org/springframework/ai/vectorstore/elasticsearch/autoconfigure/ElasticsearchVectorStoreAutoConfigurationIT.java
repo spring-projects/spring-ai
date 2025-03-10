@@ -29,7 +29,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -61,7 +61,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
 				ElasticsearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
+				SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 				"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
@@ -129,7 +129,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
 					ElasticsearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-					SpringAiRetryAutoConfiguration.class, OpenAiAutoConfiguration.class))
+					SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 					"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 					"spring.ai.vectorstore.elasticsearch.index-name=example",

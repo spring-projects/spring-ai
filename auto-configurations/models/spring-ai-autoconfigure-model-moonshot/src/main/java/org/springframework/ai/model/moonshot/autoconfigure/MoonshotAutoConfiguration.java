@@ -20,6 +20,8 @@ import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
@@ -54,7 +56,10 @@ public class MoonshotAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = MoonshotChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	// @ConditionalOnProperty(prefix = MoonshotChatProperties.CONFIG_PREFIX, name =
+	// "enabled", havingValue = "true",
+	// matchIfMissing = true)
+	@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MOONSHOT,
 			matchIfMissing = true)
 	public MoonshotChatModel moonshotChatModel(MoonshotCommonProperties commonProperties,
 			MoonshotChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,

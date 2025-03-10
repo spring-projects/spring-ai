@@ -18,6 +18,8 @@ package org.springframework.ai.model.qianfan.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -58,7 +60,7 @@ public class QianFanAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = QianFanChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.QIANFAN,
 			matchIfMissing = true)
 	public QianFanChatModel qianFanChatModel(QianFanConnectionProperties commonProperties,
 			QianFanChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
@@ -81,7 +83,7 @@ public class QianFanAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = QianFanEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.QIANFAN,
 			matchIfMissing = true)
 	public QianFanEmbeddingModel qianFanEmbeddingModel(QianFanConnectionProperties commonProperties,
 			QianFanEmbeddingProperties embeddingProperties,
@@ -105,7 +107,7 @@ public class QianFanAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = QianFanImageProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.QIANFAN,
 			matchIfMissing = true)
 	public QianFanImageModel qianFanImageModel(QianFanConnectionProperties commonProperties,
 			QianFanImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
