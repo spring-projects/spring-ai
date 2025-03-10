@@ -142,8 +142,9 @@ public final class McpToolUtils {
 			try {
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					return new McpSchema.CallToolResult(List.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT),
-							null, "image", callResult, mimeType.toString())), false);
+					return new McpSchema.CallToolResult(List
+						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
+							false);
 				}
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
 			}
