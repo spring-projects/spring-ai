@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -34,16 +35,25 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
+import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
+import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,7 +78,7 @@ public class OpenAiPaymentTransactionIT {
 	public void transactionPaymentStatuses(String functionName) {
 		List<TransactionStatusResponse> content = this.chatClient.prompt()
 			.advisors(new LoggingAdvisor())
-			.functions(functionName)
+			.tools(functionName)
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
@@ -99,7 +109,7 @@ public class OpenAiPaymentTransactionIT {
 
 		Flux<String> flux = this.chatClient.prompt()
 			.advisors(new LoggingAdvisor())
-			.functions(functionName)
+			.tools(functionName)
 			.user(u -> u.text("""
 					What is the status of my payment transactions 001, 002 and 003?
 
@@ -218,12 +228,32 @@ public class OpenAiPaymentTransactionIT {
 		}
 
 		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, ToolCallingManager toolCallingManager) {
 			return OpenAiChatModel.builder()
 				.openAiApi(openAiApi)
 				.defaultOptions(
 						OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build())
+				.toolCallingManager(toolCallingManager)
 				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+				.build();
+		}
+
+		@Bean
+		ToolCallingManager toolCallingManager(GenericApplicationContext applicationContext,
+				List<FunctionCallback> toolCallbacks, ObjectProvider<ObservationRegistry> observationRegistry) {
+
+			var staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
+			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
+				.applicationContext(applicationContext)
+				.build();
+
+			ToolCallbackResolver toolCallbackResolver = new DelegatingToolCallbackResolver(
+					List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+
+			return ToolCallingManager.builder()
+				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+				.toolCallbackResolver(toolCallbackResolver)
+				.toolExecutionExceptionProcessor(new DefaultToolExecutionExceptionProcessor(false))
 				.build();
 		}
 
