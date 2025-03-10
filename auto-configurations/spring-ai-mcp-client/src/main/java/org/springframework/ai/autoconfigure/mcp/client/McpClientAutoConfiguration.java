@@ -111,6 +111,18 @@ import org.springframework.util.CollectionUtils;
 public class McpClientAutoConfiguration {
 
 	/**
+	 * Create a dynamic client name based on the client name and the name of the server
+	 * connection.
+	 * @param clientName the client name as defined by the configuration
+	 * @param serverConnectionName the name of the server connection being used by the
+	 * client
+	 * @return the connected client name
+	 */
+	private String connectedClientName(String clientName, String serverConnectionName) {
+		return clientName + " - " + serverConnectionName;
+	}
+
+	/**
 	 * Creates a list of {@link McpSyncClient} instances based on the available
 	 * transports.
 	 *
@@ -144,7 +156,8 @@ public class McpClientAutoConfiguration {
 		if (!CollectionUtils.isEmpty(namedTransports)) {
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
 
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(commonProperties.getName(),
+				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
+						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
 
 				McpClient.SyncSpec syncSpec = McpClient.sync(namedTransport.transport())
@@ -256,7 +269,8 @@ public class McpClientAutoConfiguration {
 		if (!CollectionUtils.isEmpty(namedTransports)) {
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
 
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(commonProperties.getName(),
+				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
+						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
 
 				McpClient.AsyncSpec syncSpec = McpClient.async(namedTransport.transport())

@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.Map;
+import java.util.UUID;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -85,7 +86,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(this.tool.name())
+			.name(this.asyncMcpClient.getClientInfo().name() + "-" + this.tool.name())
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();

@@ -19,8 +19,7 @@ import io.modelcontextprotocol.spec.ClientMcpTransport;
 
 /**
  * A named MCP client transport. Usually created by the transport auto-configurations, but
- * you can also create them manually. Expose the list castom NamedClientMcpTransport
- * as @Bean.
+ * you can also create them manually.
  *
  * @param name the name of the transport. Usually the name of the server connection.
  * @param transport the MCP client transport.

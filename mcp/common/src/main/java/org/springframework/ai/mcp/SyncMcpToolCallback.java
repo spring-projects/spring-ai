@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.Map;
+import java.util.UUID;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -70,6 +71,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
 		this.mcpClient = mcpClient;
 		this.tool = tool;
+
 	}
 
 	/**
@@ -86,7 +88,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(this.tool.name())
+			.name(mcpClient.getClientInfo().name() + "-" + this.tool.name())
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
