@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration
 org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAutoConfiguration
 org.springframework.ai.model.oci.genai.autoconfigure.OCIGenAiAutoConfiguration
 org.springframework.ai.model.stabilityai.autoconfigure.StabilityAiImageAutoConfiguration
@@ -24,9 +22,9 @@ gemini.org.springframework.ai.model.vertexai.autoconfigure.VertexAiGeminiAutoCon
 cohere.org.springframework.ai.model.bedrock.autoconfigure.BedrockCohereEmbeddingAutoConfiguration
 titan.org.springframework.ai.model.bedrock.autoconfigure.BedrockTitanEmbeddingAutoConfiguration
 converse.org.springframework.ai.model.bedrock.autoconfigure.BedrockConverseProxyChatAutoConfiguration
-org.springframework.ai.autoconfigure.chat.observation.ChatObservationAutoConfiguration
-org.springframework.ai.autoconfigure.embedding.observation.EmbeddingObservationAutoConfiguration
-org.springframework.ai.autoconfigure.image.observation.ImageObservationAutoConfiguration
+org.springframework.ai.model.chat.observation.autoconfigure.ChatObservationAutoConfiguration
+org.springframework.ai.model.embedding.observation.autoconfigure.EmbeddingObservationAutoConfiguration
+org.springframework.ai.model.image.observation.autoconfigure.ImageObservationAutoConfiguration
 org.springframework.ai.model.ollama.autoconfigure.OllamaAutoConfiguration
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiAutoConfiguration
 org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration

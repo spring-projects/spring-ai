@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfiguration;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -41,8 +41,8 @@ public class HanaCloudVectorStoreAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(HanaCloudVectorStoreAutoConfiguration.class,
-				OpenAiAutoConfiguration.class, RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-				JdbcRepositoriesAutoConfiguration.class))
+				OpenAiEmbeddingAutoConfiguration.class, RestClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, JdbcRepositoriesAutoConfiguration.class))
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.embedding.options.model=text-embedding-ada-002",
 				"spring.datasource.url=" + System.getenv("HANA_DATASOURCE_URL"),

@@ -28,6 +28,8 @@ import com.azure.core.util.ClientOptions;
 import com.azure.core.util.Header;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
@@ -122,7 +124,7 @@ public class AzureOpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = AzureOpenAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.AZURE_OPENAI,
 			matchIfMissing = true)
 	public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder,
 			AzureOpenAiChatProperties chatProperties, ToolCallingManager toolCallingManager,
@@ -142,8 +144,8 @@ public class AzureOpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = AzureOpenAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
-			havingValue = "true", matchIfMissing = true)
+	@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.AZURE_OPENAI,
+			matchIfMissing = true)
 	public AzureOpenAiEmbeddingModel azureOpenAiEmbeddingModel(OpenAIClientBuilder openAIClient,
 			AzureOpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
@@ -160,17 +162,9 @@ public class AzureOpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setApplicationContext(context);
-		return manager;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = AzureOpenAiImageOptionsProperties.CONFIG_PREFIX, name = "enabled",
-			havingValue = "true", matchIfMissing = true)
-	public AzureOpenAiImageModel azureOpenAiImageClient(OpenAIClientBuilder openAIClientBuilder,
+	@ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.AZURE_OPENAI,
+			matchIfMissing = true)
+	public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClientBuilder openAIClientBuilder,
 			AzureOpenAiImageOptionsProperties imageProperties) {
 
 		return new AzureOpenAiImageModel(openAIClientBuilder.buildClient(), imageProperties.getOptions());
@@ -178,8 +172,8 @@ public class AzureOpenAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = AzureOpenAiAudioTranscriptionProperties.CONFIG_PREFIX, name = "enabled",
-			havingValue = "true", matchIfMissing = true)
+	@ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_TRANSCRIPTION_MODEL,
+			havingValue = SpringAIModels.AZURE_OPENAI, matchIfMissing = true)
 	public AzureOpenAiAudioTranscriptionModel azureOpenAiAudioTranscriptionModel(OpenAIClientBuilder openAIClient,
 			AzureOpenAiAudioTranscriptionProperties audioProperties) {
 		return new AzureOpenAiAudioTranscriptionModel(openAIClient.buildClient(), audioProperties.getOptions());
@@ -188,6 +182,14 @@ public class AzureOpenAiAutoConfiguration {
 	private void applyOpenAIClientBuilderCustomizers(OpenAIClientBuilder clientBuilder,
 			ObjectProvider<AzureOpenAIClientBuilderCustomizer> customizers) {
 		customizers.orderedStream().forEach(customizer -> customizer.customize(clientBuilder));
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
+		manager.setApplicationContext(context);
+		return manager;
 	}
 
 }

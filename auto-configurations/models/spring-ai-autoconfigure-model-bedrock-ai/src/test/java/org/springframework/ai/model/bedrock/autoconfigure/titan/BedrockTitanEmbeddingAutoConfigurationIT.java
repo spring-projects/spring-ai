@@ -108,19 +108,18 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 	}
 
 	@Test
-	public void embeddingDisabled() {
+	public void embeddingActivation() {
 
-		// It is disabled by default
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
 			.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(BedrockTitanEmbeddingProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(BedrockTitanEmbeddingModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(BedrockTitanEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(BedrockTitanEmbeddingModel.class)).isNotEmpty();
 			});
 
 		// Explicitly enable the embedding auto-configuration.
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
-			.withPropertyValues("spring.ai.bedrock.titan.embedding.enabled=true")
+			.withPropertyValues("spring.ai.model.embedding=bedrock-titan")
 			.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockTitanEmbeddingProperties.class)).isNotEmpty();
@@ -129,7 +128,7 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 
 		// Explicitly disable the embedding auto-configuration.
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
-			.withPropertyValues("spring.ai.bedrock.titan.embedding.enabled=false")
+			.withPropertyValues("spring.ai.model.embedding=none")
 			.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockTitanEmbeddingProperties.class)).isEmpty();

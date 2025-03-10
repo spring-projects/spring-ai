@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.watsonxai.autoconfigure;
 
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.watsonx.WatsonxAiChatModel;
 import org.springframework.ai.watsonx.WatsonxAiEmbeddingModel;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;
@@ -41,8 +43,6 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(WatsonxAiApi.class)
 @EnableConfigurationProperties({ WatsonxAiConnectionProperties.class, WatsonxAiChatProperties.class,
 		WatsonxAiEmbeddingProperties.class })
-@ConditionalOnProperty(prefix = WatsonxAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
 public class WatsonxAiAutoConfiguration {
 
 	@Bean
@@ -56,7 +56,7 @@ public class WatsonxAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = WatsonxAiChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.WATSONX_AI,
 			matchIfMissing = true)
 	public WatsonxAiChatModel watsonxChatModel(WatsonxAiApi watsonxApi, WatsonxAiChatProperties chatProperties) {
 		return new WatsonxAiChatModel(watsonxApi, chatProperties.getOptions());
@@ -64,7 +64,7 @@ public class WatsonxAiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = WatsonxAiEmbeddingProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+	@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.WATSONX_AI,
 			matchIfMissing = true)
 	public WatsonxAiEmbeddingModel watsonxAiEmbeddingModel(WatsonxAiApi watsonxApi,
 			WatsonxAiEmbeddingProperties properties) {
