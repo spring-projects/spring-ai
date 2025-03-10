@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
+import org.springframework.ai.azure.openai.AzureOpenAiResponseFormat.Type;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,7 +69,7 @@ public class AzureChatCompletionsOptionsTests {
 			.logprobs(true)
 			.topLogprobs(5)
 			.enhancements(mockAzureChatEnhancementConfiguration)
-			.responseFormat(AzureOpenAiResponseFormat.TEXT)
+			.responseFormat(AzureOpenAiResponseFormat.builder().type(Type.TEXT).build())
 			.build();
 
 		var client = AzureOpenAiChatModel.builder()
@@ -114,7 +115,7 @@ public class AzureChatCompletionsOptionsTests {
 			.logprobs(true)
 			.topLogprobs(4)
 			.enhancements(anotherMockAzureChatEnhancementConfiguration)
-			.responseFormat(AzureOpenAiResponseFormat.JSON)
+			.responseFormat(AzureOpenAiResponseFormat.builder().type(Type.JSON_OBJECT).build())
 			.build();
 
 		requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content", runtimeOptions));
