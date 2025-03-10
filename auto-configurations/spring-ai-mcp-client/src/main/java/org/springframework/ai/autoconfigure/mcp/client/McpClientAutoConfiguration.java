@@ -268,7 +268,7 @@ public class McpClientAutoConfiguration {
 				var syncClient = syncSpec.build();
 
 				if (commonProperties.isInitialized()) {
-					syncClient.initialize();
+					syncClient.initialize().block();
 				}
 
 				mcpSyncClients.add(syncClient);
