@@ -74,7 +74,7 @@ public class MessageTypeContentTests {
 
 	@BeforeEach
 	public void beforeEach() {
-		this.chatModel = new OpenAiChatModel(this.openAiApi);
+		this.chatModel = OpenAiChatModel.builder().openAiApi(this.openAiApi).build();
 	}
 
 	@Test

@@ -24,8 +24,8 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.MockWeatherService;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 /**
  * Used for reverse engineering the protocol
@@ -48,18 +48,17 @@ public final class BedrockConverseChatModelMain3 {
 				// "What's the weather like in San Francisco, Tokyo, and Paris? Return the
 				// temperature in Celsius.",
 				"What's the weather like in Paris? Return the temperature in Celsius.",
-				FunctionCallingOptions.builder()
+				ToolCallingChatOptions.builder()
 					.model(modelId)
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function("getCurrentWeather", new MockWeatherService())
+					.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
 					.build());
 
 		BedrockProxyChatModel chatModel = BedrockProxyChatModel.builder()
-			.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
-			.withRegion(Region.US_EAST_1)
+			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+			.region(Region.US_EAST_1)
 			.build();
 
 		var response = chatModel.call(prompt);

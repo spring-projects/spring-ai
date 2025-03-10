@@ -330,12 +330,15 @@ class DeepSeekWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(DEEPSEEK_BASE_URL, System.getenv("DEEPSEEK_API_KEY"));
+			return OpenAiApi.builder().baseUrl(DEEPSEEK_BASE_URL).apiKey(System.getenv("DEEPSEEK_API_KEY")).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().model(DEFAULT_DEEPSEEK_MODEL).build());
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(OpenAiChatOptions.builder().model(DEFAULT_DEEPSEEK_MODEL).build())
+				.build();
 		}
 
 	}

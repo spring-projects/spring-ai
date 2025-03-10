@@ -34,8 +34,6 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -44,7 +42,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Description;
 import org.springframework.core.ParameterizedTypeReference;
@@ -217,25 +214,17 @@ public class OpenAiPaymentTransactionIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 		}
 
 		@Bean
-		public OpenAiChatModel openAiClient(OpenAiApi openAiApi, FunctionCallbackResolver functionCallbackResolver) {
-			return new OpenAiChatModel(openAiApi,
-					OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build(),
-					functionCallbackResolver, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-		}
-
-		/**
-		 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
-		 * different from the other JSON schema types.
-		 */
-		@Bean
-		public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-			DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-			manager.setApplicationContext(context);
-			return manager;
+		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(
+						OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI.getName()).temperature(0.1).build())
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+				.build();
 		}
 
 	}
