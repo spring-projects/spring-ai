@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.Map;
+
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -24,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.ai.chat.model.ToolContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,6 +70,22 @@ class SyncMcpToolCallbackTests {
 
 		// Act
 		String response = callback.call("{\"param\":\"value\"}");
+
+		// Assert
+		assertThat(response).isNotNull();
+	}
+
+	@Test
+	void callShoulIngroeToolContext() {
+		// Arrange
+		when(tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+
+		// Act
+		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
 		// Assert
 		assertThat(response).isNotNull();

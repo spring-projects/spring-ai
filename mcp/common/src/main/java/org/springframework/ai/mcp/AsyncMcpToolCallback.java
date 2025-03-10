@@ -22,6 +22,7 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -108,6 +109,12 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		return this.asyncMcpClient.callTool(new CallToolRequest(this.getToolDefinition().name(), arguments))
 			.map(response -> ModelOptionsUtils.toJsonString(response.content()))
 			.block();
+	}
+
+	@Override
+	public String call(String toolArguments, ToolContext toolContext) {
+		// ToolContext is not supported by the MCP tools
+		return this.call(toolArguments);
 	}
 
 }
