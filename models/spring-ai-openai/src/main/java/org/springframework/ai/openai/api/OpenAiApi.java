@@ -28,14 +28,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.model.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.model.ApiKey;
-import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.NoopApiKey;
-import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.ParameterizedTypeReference;
@@ -62,6 +58,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author David Frizelle
  * @author Alexandros Pappas
+ * @author Chen Yang
  */
 public class OpenAiApi {
 
@@ -622,7 +619,7 @@ public class OpenAiApi {
 	 * OpenAI Embeddings Models:
 	 * <a href="https://platform.openai.com/docs/models/embeddings">Embeddings</a>.
 	 */
-	public enum EmbeddingModel {
+	public enum EmbeddingModel implements EmbeddingModelDescription {
 
 		/**
 		 * Most capable embedding model for both english and non-english tasks. DIMENSION:
@@ -651,6 +648,10 @@ public class OpenAiApi {
 			return this.value;
 		}
 
+		@Override
+		public String getName() {
+			return this.value;
+		}
 	}
 
 	/**
