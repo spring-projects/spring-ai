@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -337,10 +338,14 @@ public class MiniMaxChatModel extends AbstractToolCallSupport implements ChatMod
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
 								Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
-							var toolCallConversation = handleToolCalls(prompt, response);
-							// Recursively call the stream method with the tool call message
-							// conversation that contains the call responses.
-							return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+							// FIXME: bounded elastic needs to be used since tool calling
+							//  is currently only synchronous
+							return Flux.defer(() -> {
+								var toolCallConversation = handleToolCalls(prompt, response);
+								// Recursively call the stream method with the tool call message
+								// conversation that contains the call responses.
+								return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+							}).subscribeOn(Schedulers.boundedElastic());
 						}
 						return Flux.just(response);
 					})
