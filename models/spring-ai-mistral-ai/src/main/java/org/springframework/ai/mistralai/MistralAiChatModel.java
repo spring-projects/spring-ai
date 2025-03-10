@@ -35,6 +35,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -369,17 +370,21 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
 				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response.hasToolCalls()) {
-					var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-					if (toolExecutionResult.returnDirect()) {
-						// Return tool execution result directly to the client.
-						return Flux.just(ChatResponse.builder().from(response)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build());
-					} else {
-						// Send the tool execution result back to the model.
-						return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-								response);
-					}
+					// FIXME: bounded elastic needs to be used since tool calling
+					//  is currently only synchronous
+					return Flux.defer(() -> {
+						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder().from(response)
+									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+									.build());
+						} else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									response);
+						}
+					}).subscribeOn(Schedulers.boundedElastic());
 				}
 				else {
 					return Flux.just(response);

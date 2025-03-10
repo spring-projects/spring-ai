@@ -59,6 +59,7 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -404,20 +405,24 @@ public class AzureOpenAiChatModel extends AbstractToolCallSupport implements Cha
 			return chatResponseFlux.flatMap(chatResponse -> {
 				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions())
 						&& chatResponse.hasToolCalls()) {
-					var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-					if (toolExecutionResult.returnDirect()) {
-						// Return tool execution result directly to the client.
-						return Flux.just(ChatResponse.builder()
-							.from(chatResponse)
-							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-							.build());
-					}
-					else {
-						// Send the tool execution result back to the model.
-						return this.internalStream(
-								new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-								chatResponse);
-					}
+					// FIXME: bounded elastic needs to be used since tool calling
+					// is currently only synchronous
+					return Flux.defer(() -> {
+						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder()
+								.from(chatResponse)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
+						}
+						else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(
+									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									chatResponse);
+						}
+					}).subscribeOn(Schedulers.boundedElastic());
 				}
 
 				Flux<ChatResponse> flux = Flux.just(chatResponse)

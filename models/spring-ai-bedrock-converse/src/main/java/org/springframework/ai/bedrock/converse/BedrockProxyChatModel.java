@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
+import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
@@ -703,21 +704,25 @@ public class BedrockProxyChatModel extends AbstractToolCallSupport implements Ch
 						&& chatResponse.hasToolCalls()
 						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 
-					var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+					// FIXME: bounded elastic needs to be used since tool calling
+					// is currently only synchronous
+					return Flux.defer(() -> {
+						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 
-					if (toolExecutionResult.returnDirect()) {
-						// Return tool execution result directly to the client.
-						return Flux.just(ChatResponse.builder()
-							.from(chatResponse)
-							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-							.build());
-					}
-					else {
-						// Send the tool execution result back to the model.
-						return this.internalStream(
-								new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-								chatResponse);
-					}
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder()
+								.from(chatResponse)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
+						}
+						else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(
+									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									chatResponse);
+						}
+					}).subscribeOn(Schedulers.boundedElastic());
 				}
 				else {
 					return Flux.just(chatResponse);
