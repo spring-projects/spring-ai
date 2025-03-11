@@ -56,6 +56,26 @@ public final class McpToolUtils {
 	private McpToolUtils() {
 	}
 
+	public static String prefixedToolName(String prefix, String toolName) {
+
+		String input = prefix + "-" + toolName;
+
+		if (input == null || input.isEmpty()) {
+			throw new IllegalArgumentException("Input string cannot be null or empty");
+		}
+
+		// Replace any character that isn't alphanumeric, underscore, or hyphen with
+		// concatenation
+		String formatted = input.replaceAll("[^a-zA-Z0-9_-]", "");
+
+		// If the string is longer than 64 characters, keep the last 64 characters
+		if (formatted.length() > 64) {
+			formatted = formatted.substring(formatted.length() - 64);
+		}
+
+		return formatted;
+	}
+
 	/**
 	 * Converts a list of Spring AI tool callbacks to MCP synchronous tool registrations.
 	 * <p>

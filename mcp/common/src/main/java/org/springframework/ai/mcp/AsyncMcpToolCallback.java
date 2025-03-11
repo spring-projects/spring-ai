@@ -86,7 +86,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(this.asyncMcpClient.getClientInfo().name() + "-" + this.tool.name())
+			.name(McpToolUtils.prefixedToolName(this.asyncMcpClient.getClientInfo().name(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
@@ -107,7 +107,9 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String functionInput) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		return this.asyncMcpClient.callTool(new CallToolRequest(this.getToolDefinition().name(), arguments))
+		// Note that we use the original tool name here, not the adapted one from
+		// getToolDefinition
+		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments))
 			.map(response -> ModelOptionsUtils.toJsonString(response.content()))
 			.block();
 	}
