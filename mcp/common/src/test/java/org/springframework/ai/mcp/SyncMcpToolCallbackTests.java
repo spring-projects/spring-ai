@@ -63,7 +63,8 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void callShouldHandleJsonInputAndOutput() {
 
-		when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient", "1.0.0"));
+		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
+		// "1.0.0"));
 
 		when(tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
@@ -79,7 +80,8 @@ class SyncMcpToolCallbackTests {
 
 	@Test
 	void callShoulIngroeToolContext() {
-		when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient", "1.0.0"));
+		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
+		// "1.0.0"));
 
 		when(tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);

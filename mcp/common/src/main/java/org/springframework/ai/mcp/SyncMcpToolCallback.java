@@ -17,7 +17,6 @@
 package org.springframework.ai.mcp;
 
 import java.util.Map;
-import java.util.UUID;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -42,7 +41,9 @@ import org.springframework.ai.tool.definition.ToolDefinition;
  * <li>Manages JSON serialization/deserialization of tool inputs and outputs</li>
  * </ul>
  * <p>
- * Example usage: <pre>{@code
+ * Example usage:
+ *
+ * <pre>{@code
  * McpSyncClient mcpClient = // obtain MCP client
  * Tool mcpTool = // obtain MCP tool definition
  * ToolCallback callback = new McpToolCallback(mcpClient, mcpTool);
@@ -88,7 +89,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(mcpClient.getClientInfo().name() + "-" + this.tool.name())
+			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
@@ -109,8 +110,12 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String functionInput) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		CallToolResult response = this.mcpClient
-			.callTool(new CallToolRequest(this.getToolDefinition().name(), arguments));
+		// Note that we use the original tool name here, not the adapted one from
+		// getToolDefinition
+		CallToolResult response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
+		if (response.isError()) {
+			throw new IllegalStateException("Error calling tool: " + response.content());
+		}
 		return ModelOptionsUtils.toJsonString(response.content());
 	}
 
