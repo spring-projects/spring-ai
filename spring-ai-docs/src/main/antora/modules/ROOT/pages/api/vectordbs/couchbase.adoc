@@ -75,20 +75,14 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sprin
 === Configuration Properties
 
 To connect to Couchbase and use the `CouchbaseSearchVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's `application.yml`,
+A simple configuration can either be provided via Spring Boot's `application.properties`,
 
-[source,yaml]
+[application,properties]
 ----
-spring:
-  couchbase:
-    connection-string: <couchbase connection string like couchbase://localhost>
-    username: <couchbase username>
-    password: <couchbase password>
-# API key if needed, e.g. OpenAI
-  ai:
-    openai:
-      api:
-        key: <api-key>
+spring.ai.openai.api-key=<key>
+spring.couchbase.connection-string=<conn_string>
+spring.couchbase.username=<username>
+spring.couchbase.password=<password>
 ----
 
 environment variables,
@@ -171,9 +165,9 @@ For example, you can use either the text expression language:
 ----
 vectorStore.similaritySearch(
     SearchRequest.defaults()
-    .withQuery("The World")
-    .withTopK(TOP_K)
-    .withFilterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
+    .query("The World")
+    .topK(TOP_K)
+    .filterExpression("author in ['john', 'jill'] && article_type == 'blog'"));
 ----
 
 or programmatically using the `Filter.Expression` DSL:
@@ -183,9 +177,9 @@ or programmatically using the `Filter.Expression` DSL:
 FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 vectorStore.similaritySearch(SearchRequest.defaults()
-    .withQuery("The World")
-    .withTopK(TOP_K)
-    .withFilterExpression(b.and(
+    .query("The World")
+    .topK(TOP_K)
+    .filterExpression(b.and(
         b.in("author","john", "jill"),
         b.eq("article_type", "blog")).build()));
 ----
@@ -226,21 +220,29 @@ public Cluster cluster() {
 }
 ----
 
-and then create the `CouchbaseSearchVectorStore` bean:
+and then create the `CouchbaseSearchVectorStore` bean using the builder pattern:
 
-// This needs to be changed
 [source,java]
 ----
 @Bean
 public CouchbaseSearchVectorStore vectorStore(Cluster cluster, EmbeddingModel embeddingModel) {
-    CouchbaseSearchVectorStore.CouchbaseSearcgVectorStoreConfig config = CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig
-        .builder()
-        .withBucketName("myBucket")
-        .withScopeName("myScope")
-        .withCollectionName("myCollection")
+    // Create a configuration using the builder pattern
+    CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig config = 
+        CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig.builder()
+            .withBucketName("myBucket")
+            .withScopeName("myScope")
+            .withCollectionName("myCollection")
+            .withDimensions(1536)
+            .withSimilarityFunction(CouchbaseSimilarityFunction.dot_product)
+            .withIndexOptimization(CouchbaseIndexOptimization.recall)
+            .build();
+    
+    // Create the vector store using the builder pattern
+    return CouchbaseSearchVectorStore.builder(cluster, config, embeddingModel)
+        .initializeSchema(true) // Set to true to initialize the required schema
         .build();
-    return new CouchbaseSearchVectorStore(cluster, embeddingModel, config, true);
 }
+
 // This can be any EmbeddingModel implementation.
 @Bean
 public EmbeddingModel embeddingModel() {
@@ -251,5 +253,3 @@ public EmbeddingModel embeddingModel() {
 == Limitations
 
 NOTE: It is mandatory to have the following Couchbase services activated: Data, Query, Index, Search. While Data and Seach could be enough, Query and Index are necessary to support the complete metadata filtering mechanism.
-
-NOTE: There is currently no similarity threshold metadata available, using the SearchRequest.withSimilarityThreshold method will do nothing.
