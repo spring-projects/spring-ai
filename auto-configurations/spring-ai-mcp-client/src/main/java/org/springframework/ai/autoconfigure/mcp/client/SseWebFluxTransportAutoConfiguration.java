@@ -26,9 +26,9 @@ import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties.SseParameters;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -73,16 +73,20 @@ public class SseWebFluxTransportAutoConfiguration {
 	 * <li>Server connection parameters from properties
 	 * </ul>
 	 * @param sseProperties the SSE client properties containing server configurations
-	 * @param webClientBuilderTemplate the template WebClient.Builder to clone for each
-	 * connection
-	 * @param objectMapper the ObjectMapper for JSON serialization/deserialization
+	 * @param webClientBuilderProvider the provider for WebClient.Builder
+	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
+	 * available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> webFluxClientTransports(McpSseClientProperties sseProperties,
-			WebClient.Builder webClientBuilderTemplate, ObjectMapper objectMapper) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ObjectMapper> objectMapperProvider) {
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
+
+		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
+		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		for (Map.Entry<String, SseParameters> serverParameters : sseProperties.getConnections().entrySet()) {
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
@@ -91,34 +95,6 @@ public class SseWebFluxTransportAutoConfiguration {
 		}
 
 		return sseTransports;
-	}
-
-	/**
-	 * Creates the default WebClient.Builder if none is provided.
-	 *
-	 * <p>
-	 * This builder serves as a template for creating server-specific WebClient instances
-	 * used in SSE transport implementation.
-	 * @return the configured WebClient.Builder instance
-	 */
-	@Bean
-	@ConditionalOnMissingBean
-	public WebClient.Builder webClientBuilder() {
-		return WebClient.builder();
-	}
-
-	/**
-	 * Creates the default ObjectMapper if none is provided.
-	 *
-	 * <p>
-	 * This ObjectMapper is used for JSON serialization and deserialization in the SSE
-	 * transport implementation.
-	 * @return the configured ObjectMapper instance
-	 */
-	@Bean
-	@ConditionalOnMissingBean
-	public ObjectMapper objectMapper() {
-		return new ObjectMapper();
 	}
 
 }
