@@ -19,8 +19,10 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
@@ -66,13 +68,13 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 	}
 
 	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			String systemTextAdvise) {
+								   String systemTextAdvise) {
 		this(chatMemory, defaultConversationId, chatHistoryWindowSize, systemTextAdvise,
 				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
 	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			String systemTextAdvise, int order) {
+								   String systemTextAdvise, int order) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
 		this.systemTextAdvise = systemTextAdvise;
 	}
@@ -106,13 +108,13 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 		// 1. Advise system parameters.
 		List<Message> memoryMessages = this.getChatMemoryStore()
-			.get(this.doGetConversationId(request.adviseContext()),
-					this.doGetChatMemoryRetrieveSize(request.adviseContext()));
+				.get(this.doGetConversationId(request.adviseContext()),
+						this.doGetChatMemoryRetrieveSize(request.adviseContext()));
 
 		String memory = (memoryMessages != null) ? memoryMessages.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(m -> m.getMessageType() + ":" + ((Content) m).getText())
-			.collect(Collectors.joining(System.lineSeparator())) : "";
+				.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
+				.map(m -> m.getMessageType() + ":" + ((Content) m).getText())
+				.collect(Collectors.joining(System.lineSeparator())) : "";
 
 		Map<String, Object> advisedSystemParams = new HashMap<>(request.systemParams());
 		advisedSystemParams.put("memory", memory);
@@ -122,12 +124,13 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 		// 3. Create a new request with the advised system text and parameters.
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
-			.systemText(advisedSystemText)
-			.systemParams(advisedSystemParams)
-			.build();
+				.systemText(advisedSystemText)
+				.systemParams(advisedSystemParams)
+				.build();
 
 		// 4. Add the new user input to the conversation memory.
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		Map<String, Object> metadata = new HashMap<>(request.adviseContext());
+		UserMessage userMessage = new UserMessage(request.userText(), request.media(), metadata);
 		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
 
 		return advisedRequest;
@@ -136,10 +139,17 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 	private void observeAfter(AdvisedResponse advisedResponse) {
 
 		List<Message> assistantMessages = advisedResponse.response()
-			.getResults()
-			.stream()
-			.map(g -> (Message) g.getOutput())
-			.toList();
+				.getResults()
+				.stream()
+				.map(g -> {
+					AssistantMessage output = g.getOutput();
+					Map<String, Object> metadata = Optional.ofNullable(output.getMetadata()).orElse(new HashMap<>());
+					metadata.putAll(advisedResponse.adviseContext());
+					AssistantMessage assistantMessage = new AssistantMessage(output.getText(),
+							metadata, output.getToolCalls(), output.getMedia());
+					return (Message) assistantMessage;
+				})
+				.toList();
 
 		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
 	}
