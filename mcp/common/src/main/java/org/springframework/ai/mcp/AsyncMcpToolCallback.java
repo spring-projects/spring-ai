@@ -109,9 +109,12 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
 		// Note that we use the original tool name here, not the adapted one from
 		// getToolDefinition
-		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments))
-			.map(response -> ModelOptionsUtils.toJsonString(response.content()))
-			.block();
+		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).map(response -> {
+			if (response.isError() != null && response.isError()) {
+				throw new IllegalStateException("Error calling tool: " + response.content());
+			}
+			return ModelOptionsUtils.toJsonString(response.content());
+		}).block();
 	}
 
 	@Override
