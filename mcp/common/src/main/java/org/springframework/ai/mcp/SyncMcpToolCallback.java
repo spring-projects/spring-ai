@@ -113,7 +113,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 		// Note that we use the original tool name here, not the adapted one from
 		// getToolDefinition
 		CallToolResult response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
-		if (response.isError()) {
+		if (response.isError() != null && response.isError()) {
 			throw new IllegalStateException("Error calling tool: " + response.content());
 		}
 		return ModelOptionsUtils.toJsonString(response.content());
