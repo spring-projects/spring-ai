@@ -75,6 +75,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Jihoon Kim
+ * @author YeongMin Song
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -227,6 +228,47 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 				initSchema(context);
 
 				vectorStore.add(List.of(new Document("NOT_UUID", "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testBulkOperationWithUuidIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				List<Document> documents = List.of(
+						new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>()),
+						new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>()),
+						new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>()));
+				vectorStore.add(documents);
+
+				List<String> idList = documents.stream().map(Document::getId).toList();
+				vectorStore.delete(idList);
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testBulkOperationWithNonUuidIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.initializeSchema=" + false)
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "TEXT")
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				initSchema(context);
+
+				List<Document> documents = List.of(new Document("NON_UUID_1", "TEXT", new HashMap<>()),
+						new Document("NON_UUID_2", "TEXT", new HashMap<>()),
+						new Document("NON_UUID_3", "TEXT", new HashMap<>()));
+				vectorStore.add(documents);
+
+				List<String> idList = documents.stream().map(Document::getId).toList();
+				vectorStore.delete(idList);
 
 				dropTable(context);
 			});
@@ -436,6 +478,8 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 			PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
 			Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
+
+			dropTable(context);
 		});
 	}
 

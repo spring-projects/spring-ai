@@ -152,6 +152,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Sebastien Deleuze
  * @author Jihoon Kim
+ * @author YeongMin Song
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -319,12 +320,21 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public void doDelete(List<String> idList) {
-		int updateCount = 0;
-		for (String id : idList) {
-			int count = this.jdbcTemplate.update("DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?",
-					UUID.fromString(id));
-			updateCount = updateCount + count;
-		}
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?";
+
+		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				var id = idList.get(i);
+				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, convertIdToPgType(id));
+			}
+
+			@Override
+			public int getBatchSize() {
+				return idList.size();
+			}
+		});
 	}
 
 	@Override
