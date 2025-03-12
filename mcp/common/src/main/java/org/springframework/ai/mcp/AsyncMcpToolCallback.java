@@ -17,11 +17,13 @@
 package org.springframework.ai.mcp;
 
 import java.util.Map;
+import java.util.UUID;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -84,7 +86,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(this.tool.name())
+			.name(McpToolUtils.prefixedToolName(this.asyncMcpClient.getClientInfo().name(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
@@ -105,9 +107,20 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String functionInput) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		return this.asyncMcpClient.callTool(new CallToolRequest(this.getToolDefinition().name(), arguments))
-			.map(response -> ModelOptionsUtils.toJsonString(response.content()))
-			.block();
+		// Note that we use the original tool name here, not the adapted one from
+		// getToolDefinition
+		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).map(response -> {
+			if (response.isError() != null && response.isError()) {
+				throw new IllegalStateException("Error calling tool: " + response.content());
+			}
+			return ModelOptionsUtils.toJsonString(response.content());
+		}).block();
+	}
+
+	@Override
+	public String call(String toolArguments, ToolContext toolContext) {
+		// ToolContext is not supported by the MCP tools
+		return this.call(toolArguments);
 	}
 
 }

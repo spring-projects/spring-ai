@@ -17,7 +17,6 @@
 package org.springframework.ai.openai.api;
 
 import java.util.List;
-import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -30,7 +29,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -46,56 +44,6 @@ public class OpenAiImageApi {
 	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
 
 	private final RestClient restClient;
-
-	/**
-	 * Create a new OpenAI Image api with base URL set to {@code https://api.openai.com}.
-	 * @param openAiToken OpenAI apiKey.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiImageApi(String openAiToken) {
-		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder());
-	}
-
-	/**
-	 * Create a new OpenAI Image API with the provided base URL.
-	 * @param baseUrl the base URL for the OpenAI API.
-	 * @param openAiToken OpenAI apiKey.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiImageApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder) {
-		this(baseUrl, openAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new OpenAI Image API with the provided base URL.
-	 * @param baseUrl the base URL for the OpenAI API.
-	 * @param apiKey OpenAI apiKey.
-	 * @param restClientBuilder the rest client builder to use.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiImageApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), restClientBuilder, responseErrorHandler);
-	}
-
-	/**
-	 * Create a new OpenAI Image API with the provided base URL.
-	 * @param baseUrl the base URL for the OpenAI API.
-	 * @param apiKey OpenAI apiKey.
-	 * @param headers the http headers to use.
-	 * @param restClientBuilder the rest client builder to use.
-	 * @param responseErrorHandler the response error handler to use.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiImageApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
-		this(baseUrl, new SimpleApiKey(apiKey), headers, restClientBuilder, responseErrorHandler);
-	}
 
 	/**
 	 * Create a new OpenAI Image API with the provided base URL.

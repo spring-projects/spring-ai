@@ -327,14 +327,20 @@ class PerplexityWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(PERPLEXITY_BASE_URL, System.getenv("PERPLEXITY_API_KEY"), PERPLEXITY_COMPLETIONS_PATH,
-					"/v1/embeddings", RestClient.builder(), WebClient.builder(),
-					RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+			return OpenAiApi.builder()
+				.baseUrl(PERPLEXITY_BASE_URL)
+				.apiKey(System.getenv("PERPLEXITY_API_KEY"))
+				.completionsPath(PERPLEXITY_COMPLETIONS_PATH)
+				.embeddingsPath("/v1/embeddings")
+				.build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().model(DEFAULT_PERPLEXITY_MODEL).build());
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(OpenAiChatOptions.builder().model(DEFAULT_PERPLEXITY_MODEL).build())
+				.build();
 		}
 
 	}

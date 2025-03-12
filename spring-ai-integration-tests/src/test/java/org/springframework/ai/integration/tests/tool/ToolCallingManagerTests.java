@@ -74,18 +74,6 @@ public class ToolCallingManagerTests {
 	}
 
 	@Test
-	void explicitToolCallingExecutionWithLegacyOptions() {
-		ChatOptions chatOptions = FunctionCallingOptions.builder()
-			.functionCallbacks(ToolCallbacks.from(tools))
-			.proxyToolCalls(true)
-			.build();
-		Prompt prompt = new Prompt(
-				new UserMessage("What books written by %s are available in the library?".formatted("J.R.R. Tolkien")),
-				chatOptions);
-		runExplicitToolCallingExecutionWithOptions(chatOptions, prompt);
-	}
-
-	@Test
 	void explicitToolCallingExecutionWithNewOptionsStream() {
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(ToolCallbacks.from(tools))

@@ -505,7 +505,7 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 		@Bean

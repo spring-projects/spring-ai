@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -545,18 +546,22 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 					}));
 
 				// @formatter:off
-				Flux<ChatResponse> chatResponseFlux = chatResponse1.flatMap(response -> {					
+				Flux<ChatResponse> chatResponseFlux = chatResponse1.flatMap(response -> {
 					if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response.hasToolCalls()) {
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
-									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-									.build());
-						} else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()));
-						}
+						// FIXME: bounded elastic needs to be used since tool calling
+						// is currently only synchronous
+						return Flux.defer(() -> {
+							var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+							if (toolExecutionResult.returnDirect()) {
+								// Return tool execution result directly to the client.
+								return Flux.just(ChatResponse.builder().from(response)
+										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+										.build());
+							} else {
+								// Send the tool execution result back to the model.
+								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()));
+							}
+						}).subscribeOn(Schedulers.boundedElastic());
 					}
 					else {
 						return Flux.just(response);

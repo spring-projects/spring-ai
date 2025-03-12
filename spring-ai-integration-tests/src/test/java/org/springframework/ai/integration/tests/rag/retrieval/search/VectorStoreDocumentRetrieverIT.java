@@ -46,20 +46,21 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
 class VectorStoreDocumentRetrieverIT {
 
-	private static final Map<String, Document> documents = Map.of("1", new Document(
-			"Anacletus was a majestic snowy owl with unusually bright golden eyes and distinctive black speckles across his wings.",
-			Map.of("location", "Whispering Woods")), "2",
-			new Document(
+	// @formatter:off
+	private static final Map<String, Document> documents = Map.of(
+			"1", new Document(
+					"Anacletus was a majestic snowy owl with unusually bright golden eyes and distinctive black speckles across his wings.",
+					Map.of("location", "Whispering Woods")),
+			"2", new Document(
 					"Anacletus made his home in an ancient hollow oak tree deep within the Whispering Woods, where local villagers often heard his haunting calls at midnight.",
 					Map.of("location", "Whispering Woods")),
-			"3",
-			new Document(
+			"3", new Document(
 					"Despite being a nocturnal hunter like other owls, Anacletus had developed a peculiar habit of collecting shiny objects, especially lost coins and jewelry that glinted in the moonlight.",
 					Map.of()),
-			"4",
-			new Document(
+			"4", new Document(
 					"Birba was a plump Siamese cat with mismatched eyes - one blue and one green - who spent her days lounging on velvet cushions and judging everyone with a perpetual look of disdain.",
 					Map.of("location", "Alfea")));
+	// @formatter:on
 
 	@Autowired
 	PgVectorStore pgVectorStore;
@@ -75,7 +76,7 @@ class VectorStoreDocumentRetrieverIT {
 	}
 
 	@Test
-	void withFilter() {
+	void withBuildFilter() {
 		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
 			.vectorStore(this.pgVectorStore)
 			.similarityThreshold(0.50)
@@ -95,7 +96,7 @@ class VectorStoreDocumentRetrieverIT {
 	}
 
 	@Test
-	void withNoFilter() {
+	void withNoBuildFilter() {
 		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
 			.vectorStore(this.pgVectorStore)
 			.similarityThreshold(0.50)
@@ -108,6 +109,29 @@ class VectorStoreDocumentRetrieverIT {
 		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("1").getId()));
 		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("2").getId()));
 		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("3").getId()));
+	}
+
+	@Test
+	void withRequestFilter() {
+		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
+			.vectorStore(this.pgVectorStore)
+			.similarityThreshold(0.50)
+			.topK(3)
+			.build();
+
+		Query query = Query.builder()
+			.text("Who is Anacletus?")
+			.context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "location == 'Whispering Woods'"))
+			.build();
+		List<Document> retrievedDocuments = documentRetriever.retrieve(query);
+
+		assertThat(retrievedDocuments).hasSize(2);
+		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("1").getId()));
+		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("2").getId()));
+
+		// No request filter expression applied, so full access to all documents.
+		retrievedDocuments = documentRetriever.retrieve(new Query("Who is Birba?"));
+		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("4").getId()));
 	}
 
 }

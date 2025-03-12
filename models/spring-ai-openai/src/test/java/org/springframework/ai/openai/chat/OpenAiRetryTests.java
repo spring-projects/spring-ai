@@ -110,8 +110,11 @@ public class OpenAiRetryTests {
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new OpenAiChatModel(this.openAiApi, OpenAiChatOptions.builder().build(), null,
-				this.retryTemplate);
+		this.chatModel = OpenAiChatModel.builder()
+			.openAiApi(this.openAiApi)
+			.defaultOptions(OpenAiChatOptions.builder().build())
+			.retryTemplate(this.retryTemplate)
+			.build();
 		this.embeddingModel = new OpenAiEmbeddingModel(this.openAiApi, MetadataMode.EMBED,
 				OpenAiEmbeddingOptions.builder().build(), this.retryTemplate);
 		this.audioTranscriptionModel = new OpenAiAudioTranscriptionModel(this.openAiAudioApi,

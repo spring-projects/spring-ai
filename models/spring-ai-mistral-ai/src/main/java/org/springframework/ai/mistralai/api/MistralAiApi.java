@@ -265,12 +265,6 @@ public class MistralAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		OPEN_MISTRAL_7B("open-mistral-7b"),
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
 		// Premier Models
 		CODESTRAL("codestral-latest"),
 		LARGE("mistral-large-latest"),

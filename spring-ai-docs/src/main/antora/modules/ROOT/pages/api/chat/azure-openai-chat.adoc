@@ -121,7 +121,7 @@ A customizer might be used for example to change the default response timeout:
 public class AzureOpenAiConfig {
 
 	@Bean
-	public OpenAIClientBuilderCustomizer responseTimeoutCustomizer() {
+	public AzureOpenAIClientBuilderCustomizer responseTimeoutCustomizer() {
 		return openAiClientBuilder -> {
 			HttpClientOptions clientOptions = new HttpClientOptions()
 					.setResponseTimeout(Duration.ofMinutes(5));

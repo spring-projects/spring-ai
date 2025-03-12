@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 
@@ -40,23 +41,24 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void getToolCallbacksShouldReturnEmptyArrayWhenNoTools() {
-		// Arrange
+
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of());
 		when(mcpClient.listTools()).thenReturn(listToolsResult);
 
 		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
 
-		// Act
 		var callbacks = provider.getToolCallbacks();
 
-		// Assert
 		assertThat(callbacks).isEmpty();
 	}
 
 	@Test
 	void getToolCallbacksShouldReturnCallbacksForEachTool() {
-		// Arrange
+
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
+
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("tool1");
 
@@ -69,16 +71,16 @@ class SyncMcpToolCallbackProviderTests {
 
 		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
 
-		// Act
 		var callbacks = provider.getToolCallbacks();
 
-		// Assert
 		assertThat(callbacks).hasSize(2);
 	}
 
 	@Test
 	void getToolCallbacksShouldThrowExceptionForDuplicateToolNames() {
-		// Arrange
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
+
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("sameName");
 
@@ -91,9 +93,40 @@ class SyncMcpToolCallbackProviderTests {
 
 		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
 
-		// Act & Assert
 		assertThatThrownBy(() -> provider.getToolCallbacks()).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Multiple tools with the same name");
+	}
+
+	@Test
+	void getSameNameToolsButDifferntClientInfoNamesShouldProduceDifferentToolCallbackNames() {
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("sameName");
+
+		Tool tool2 = mock(Tool.class);
+		when(tool2.name()).thenReturn("sameName");
+
+		McpSyncClient mcpClient1 = mock(McpSyncClient.class);
+		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
+		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
+		when(mcpClient1.listTools()).thenReturn(listToolsResult1);
+
+		var clientInfo1 = new Implementation("testClient1", "1.0.0");
+		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
+
+		McpSyncClient mcpClient2 = mock(McpSyncClient.class);
+		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
+		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
+		when(mcpClient2.listTools()).thenReturn(listToolsResult2);
+
+		var clientInfo2 = new Implementation("testClient2", "1.0.0");
+		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
+
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient1, mcpClient2);
+
+		var callbacks = provider.getToolCallbacks();
+
+		assertThat(callbacks).hasSize(2);
 	}
 
 }

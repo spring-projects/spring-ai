@@ -15,19 +15,15 @@ Head on over to https://start.spring.io/[start.spring.io] and select the AI Mode
 [[artifact-repositories]]
 == Artifact Repositories
 
-=== 1.0 M6 and after - Use Maven Central
+=== Milestones - Use Maven Central
 
-As of 1.0 M6, releases are available in Maven Central.
+As of 1.0.0-M6, releases are available in Maven Central.
 No changes to your build file are required.
 
 
-=== Pre 1.0 M6 - Add Spring Repositories
+=== Snapshots - Add Snapshot Repositories
 
-You will need to add Spring milestone and snapshot repositories to your build system.
-
-If you prefer to add the dependency snippets by hand, follow the directions in the following sections.
-
-To use the Milestone and Snapshot version, you need to add references to the Spring Milestone and/or Snapshot repositories in your build file.
+To use the Snapshot (and pre 1.0.0-M6 milestone) versions, you need to add the following snapshot repositories in your build file.
 
 Add the following repository definitions to your Maven or Gradle build file:
 
@@ -54,6 +50,17 @@ Maven::
         <enabled>false</enabled>
       </releases>
     </repository>
+    <repository>
+      <name>Central Portal Snapshots</name>
+      <id>central-portal-snapshots</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
   </repositories>
 ----
 
@@ -65,6 +72,10 @@ repositories {
   mavenCentral()
   maven { url 'https://repo.spring.io/milestone' }
   maven { url 'https://repo.spring.io/snapshot' }
+  maven {
+    name = 'Central Portal Snapshots'
+    url = 'https://central.sonatype.com/repository/maven-snapshots/'
+  }  
 }
 ----
 ======

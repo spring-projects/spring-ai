@@ -16,14 +16,19 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.Map;
+
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.ai.chat.model.ToolContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,33 +46,51 @@ class SyncMcpToolCallbackTests {
 
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
-		// Arrange
+
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 		when(tool.name()).thenReturn("testTool");
 		when(tool.description()).thenReturn("Test tool description");
 
 		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
 
-		// Act
 		var toolDefinition = callback.getToolDefinition();
 
-		// Assert
-		assertThat(toolDefinition.name()).isEqualTo("testTool");
+		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "-testTool");
 		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
 	}
 
 	@Test
 	void callShouldHandleJsonInputAndOutput() {
-		// Arrange
+
+		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
+		// "1.0.0"));
+
 		when(tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
 		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
 
-		// Act
 		String response = callback.call("{\"param\":\"value\"}");
 
 		// Assert
+		assertThat(response).isNotNull();
+	}
+
+	@Test
+	void callShoulIngroeToolContext() {
+		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
+		// "1.0.0"));
+
+		when(tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+
+		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
+
 		assertThat(response).isNotNull();
 	}
 
