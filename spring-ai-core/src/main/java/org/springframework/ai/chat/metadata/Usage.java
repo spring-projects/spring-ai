@@ -34,11 +34,6 @@ public interface Usage {
 	 */
 	Integer getPromptTokens();
 
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	default Long getGenerationTokens() {
-		return getCompletionTokens().longValue();
-	}
-
 	/**
 	 * Returns the number of tokens returned in the {@literal generation (aka completion)}
 	 * of the AI's response.

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.autoconfigure.mcp.client.properties;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,6 @@ import io.modelcontextprotocol.client.transport.ServerParameters;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
-import org.springframework.util.Assert;
 
 /**
  * Configuration properties for the Model Context Protocol (MCP) stdio client.

@@ -106,6 +106,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		Query originalQuery = Query.builder()
 			.text(new PromptTemplate(request.userText(), request.userParams()).render())
 			.history(request.messages())
+			.context(context)
 			.build();
 
 		// 1. Transform original user query based on a chain of query transformers.

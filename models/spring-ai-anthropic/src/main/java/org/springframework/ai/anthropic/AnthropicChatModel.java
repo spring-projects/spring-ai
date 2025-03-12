@@ -30,15 +30,9 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
@@ -58,7 +52,6 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.metadata.UsageUtils;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -71,10 +64,12 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -93,7 +88,7 @@ import org.springframework.util.StringUtils;
  * @author Alexandros Pappas
  * @since 1.0.0
  */
-public class AnthropicChatModel extends AbstractToolCallSupport implements ChatModel {
+public class AnthropicChatModel implements ChatModel {
 
 	public static final String DEFAULT_MODEL_NAME = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue();
 
@@ -134,111 +129,9 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	/**
-	 * Construct a new {@link AnthropicChatModel} instance.
-	 * @param anthropicApi the lower-level API for the Anthropic service.
-	 * @deprecated Use {@link AnthropicChatModel.Builder}.
-	 */
-	@Deprecated
-	public AnthropicChatModel(AnthropicApi anthropicApi) {
-		this(anthropicApi,
-				AnthropicChatOptions.builder()
-					.model(DEFAULT_MODEL_NAME)
-					.maxTokens(DEFAULT_MAX_TOKENS)
-					.temperature(DEFAULT_TEMPERATURE)
-					.build());
-	}
-
-	/**
-	 * Construct a new {@link AnthropicChatModel} instance.
-	 * @param anthropicApi the lower-level API for the Anthropic service.
-	 * @param defaultOptions the default options used for the chat completion requests.
-	 * @deprecated Use {@link AnthropicChatModel.Builder}.
-	 */
-	@Deprecated
-	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions) {
-		this(anthropicApi, defaultOptions, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	/**
-	 * Construct a new {@link AnthropicChatModel} instance.
-	 * @param anthropicApi the lower-level API for the Anthropic service.
-	 * @param defaultOptions the default options used for the chat completion requests.
-	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @deprecated Use {@link AnthropicChatModel.Builder}.
-	 */
-	@Deprecated
-	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate) {
-		this(anthropicApi, defaultOptions, retryTemplate, null);
-	}
-
-	/**
-	 * Construct a new {@link AnthropicChatModel} instance.
-	 * @param anthropicApi the lower-level API for the Anthropic service.
-	 * @param defaultOptions the default options used for the chat completion requests.
-	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackResolver the function callback resolver used to resolve the
-	 * function by its name.
-	 * @deprecated Use {@link AnthropicChatModel.Builder}.
-	 */
-	@Deprecated
-	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver) {
-		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackResolver, List.of());
-	}
-
-	/**
-	 * Construct a new {@link AnthropicChatModel} instance.
-	 * @param anthropicApi the lower-level API for the Anthropic service.
-	 * @param defaultOptions the default options used for the chat completion requests.
-	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackResolver the function callback resolver used to resolve the
-	 * function by its name.
-	 * @param toolFunctionCallbacks the tool function callbacks used to handle the tool
-	 * calls.
-	 * @deprecated Use {@link AnthropicChatModel.Builder}.
-	 */
-	@Deprecated
-	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, FunctionCallbackResolver functionCallbackResolver,
-			List<FunctionCallback> toolFunctionCallbacks) {
-		this(anthropicApi, defaultOptions, retryTemplate, functionCallbackResolver, toolFunctionCallbacks,
-				ObservationRegistry.NOOP);
-	}
-
-	/**
-	 * Construct a new {@link AnthropicChatModel} instance.
-	 * @param anthropicApi the lower-level API for the Anthropic service.
-	 * @param defaultOptions the default options used for the chat completion requests.
-	 * @param retryTemplate the retry template used to retry the Anthropic API calls.
-	 * @param functionCallbackResolver the function callback resolver used to resolve the
-	 * function by its name.
-	 * @param toolFunctionCallbacks the tool function callbacks used to handle the tool
-	 * calls.
-	 * @deprecated Use {@link AnthropicChatModel.Builder}.
-	 */
-	@Deprecated
-	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
-			RetryTemplate retryTemplate, @Nullable FunctionCallbackResolver functionCallbackResolver,
-			@Nullable List<FunctionCallback> toolFunctionCallbacks, ObservationRegistry observationRegistry) {
-		this(anthropicApi, defaultOptions,
-				LegacyToolCallingManager.builder()
-					.functionCallbackResolver(functionCallbackResolver)
-					.functionCallbacks(toolFunctionCallbacks)
-					.build(),
-				retryTemplate, observationRegistry);
-		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the MistralAiChatModel.Builder or the new constructor accepting ToolCallingManager instead.");
-	}
-
 	public AnthropicChatModel(AnthropicApi anthropicApi, AnthropicChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-		// We do not pass the 'defaultOptions' to the AbstractToolSupport,
-		// because it modifies them. We are using ToolCallingManager instead,
-		// so we just pass empty options here.
-		super(null, AnthropicChatOptions.builder().build(), List.of());
 
 		Assert.notNull(anthropicApi, "anthropicApi cannot be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
@@ -351,17 +244,21 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
 				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && chatResponse.hasToolCalls() && chatResponse.hasFinishReasons(Set.of("tool_use"))) {
-					var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-					if (toolExecutionResult.returnDirect()) {
-						// Return tool execution result directly to the client.
-						return Flux.just(ChatResponse.builder().from(chatResponse)
-							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-							.build());
-					} else {
-						// Send the tool execution result back to the model.
-						return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-								chatResponse);
-					}
+					// FIXME: bounded elastic needs to be used since tool calling
+					//  is currently only synchronous
+					return Flux.defer(() -> {
+						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder().from(chatResponse)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
+						} else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									chatResponse);
+						}
+					}).subscribeOn(Schedulers.boundedElastic());
 				}
 
 				return Mono.just(chatResponse);
@@ -481,10 +378,6 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						AnthropicChatOptions.class);
-			}
-			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
 						AnthropicChatOptions.class);
 			}
 			else {
@@ -643,10 +536,6 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
-		private FunctionCallbackResolver functionCallbackResolver;
-
-		private List<FunctionCallback> toolCallbacks;
-
 		private ToolCallingManager toolCallingManager;
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -674,18 +563,6 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 			return this;
 		}
 
-		@Deprecated
-		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		@Deprecated
-		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
-			this.toolCallbacks = toolCallbacks;
-			return this;
-		}
-
 		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
@@ -693,22 +570,9 @@ public class AnthropicChatModel extends AbstractToolCallSupport implements ChatM
 
 		public AnthropicChatModel build() {
 			if (toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
-						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolCallbacks, "toolCallbacks cannot be set when toolCallingManager is set");
-
 				return new AnthropicChatModel(anthropicApi, defaultOptions, toolCallingManager, retryTemplate,
 						observationRegistry);
 			}
-			if (functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
-						"toolCallingManager cannot be set when functionCallbackResolver is set");
-				List<FunctionCallback> toolCallbacks = this.toolCallbacks != null ? this.toolCallbacks : List.of();
-
-				return new AnthropicChatModel(anthropicApi, defaultOptions, retryTemplate, functionCallbackResolver,
-						toolCallbacks, observationRegistry);
-			}
-
 			return new AnthropicChatModel(anthropicApi, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
 					observationRegistry);
 		}

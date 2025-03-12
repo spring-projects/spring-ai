@@ -23,6 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -40,7 +41,9 @@ import org.springframework.ai.tool.definition.ToolDefinition;
  * <li>Manages JSON serialization/deserialization of tool inputs and outputs</li>
  * </ul>
  * <p>
- * Example usage: <pre>{@code
+ * Example usage:
+ *
+ * <pre>{@code
  * McpSyncClient mcpClient = // obtain MCP client
  * Tool mcpTool = // obtain MCP tool definition
  * ToolCallback callback = new McpToolCallback(mcpClient, mcpTool);
@@ -69,6 +72,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
 		this.mcpClient = mcpClient;
 		this.tool = tool;
+
 	}
 
 	/**
@@ -85,7 +89,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return ToolDefinition.builder()
-			.name(this.tool.name())
+			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
@@ -106,9 +110,19 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String functionInput) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		CallToolResult response = this.mcpClient
-			.callTool(new CallToolRequest(this.getToolDefinition().name(), arguments));
+		// Note that we use the original tool name here, not the adapted one from
+		// getToolDefinition
+		CallToolResult response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
+		if (response.isError() != null && response.isError()) {
+			throw new IllegalStateException("Error calling tool: " + response.content());
+		}
 		return ModelOptionsUtils.toJsonString(response.content());
+	}
+
+	@Override
+	public String call(String toolArguments, ToolContext toolContext) {
+		// ToolContext is not supported by the MCP tools
+		return this.call(toolArguments);
 	}
 
 }

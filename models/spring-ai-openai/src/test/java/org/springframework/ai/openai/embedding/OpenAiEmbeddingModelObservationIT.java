@@ -104,7 +104,7 @@ public class OpenAiEmbeddingModelObservationIT {
 
 		@Bean
 		public OpenAiApi openAiApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 		}
 
 		@Bean

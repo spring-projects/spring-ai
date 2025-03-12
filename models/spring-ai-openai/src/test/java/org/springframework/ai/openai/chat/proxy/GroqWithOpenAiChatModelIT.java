@@ -383,12 +383,15 @@ class GroqWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(GROQ_BASE_URL, System.getenv("GROQ_API_KEY"));
+			return OpenAiApi.builder().baseUrl(GROQ_BASE_URL).apiKey(System.getenv("GROQ_API_KEY")).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().model(DEFAULT_GROQ_MODEL).build());
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.defaultOptions(OpenAiChatOptions.builder().model(DEFAULT_GROQ_MODEL).build())
+				.build();
 		}
 
 	}

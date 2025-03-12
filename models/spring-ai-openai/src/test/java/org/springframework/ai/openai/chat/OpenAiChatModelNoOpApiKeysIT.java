@@ -62,7 +62,7 @@ public class OpenAiChatModelNoOpApiKeysIT {
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi);
+			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
 		}
 
 	}

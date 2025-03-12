@@ -61,6 +61,12 @@
             </dependency>
 
             <!-- Document Readers -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-jsoup-document-reader</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-markdown-document-reader</artifactId>

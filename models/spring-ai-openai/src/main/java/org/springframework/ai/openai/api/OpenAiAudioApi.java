@@ -59,79 +59,6 @@ public class OpenAiAudioApi {
 
 	/**
 	 * Create a new audio api.
-	 * @param openAiToken OpenAI apiKey.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiAudioApi(String openAiToken) {
-		this(OpenAiApiConstants.DEFAULT_BASE_URL, openAiToken, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new audio api.
-	 * @param baseUrl api base URL.
-	 * @param openAiToken OpenAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiAudioApi(String baseUrl, String openAiToken, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		Consumer<HttpHeaders> authHeaders;
-		if (openAiToken != null && !openAiToken.isEmpty()) {
-			authHeaders = h -> h.setBearerAuth(openAiToken);
-		}
-		else {
-			authHeaders = h -> {
-			};
-		}
-
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
-			.defaultHeaders(authHeaders)
-			.defaultStatusHandler(responseErrorHandler)
-			.build();
-
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(authHeaders).build();
-	}
-
-	/**
-	 * Create a new audio api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey OpenAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiAudioApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
-		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), restClientBuilder, webClientBuilder,
-				responseErrorHandler);
-	}
-
-	/**
-	 * Create a new audio api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey OpenAI apiKey.
-	 * @param headers the http headers to use.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 * @deprecated use {@link Builder} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	public OpenAiAudioApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, new SimpleApiKey(apiKey), headers, restClientBuilder, webClientBuilder, responseErrorHandler);
-	}
-
-	/**
-	 * Create a new audio api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey OpenAI apiKey.
 	 * @param headers the http headers to use.
@@ -496,26 +423,8 @@ public class OpenAiAudioApi {
 
 			private Float speed;
 
-			/**
-			 * @deprecated use {@link #model(String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withModel(String model) {
-				this.model = model;
-				return this;
-			}
-
 			public Builder model(String model) {
 				this.model = model;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #input(String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withInput(String input) {
-				this.input = input;
 				return this;
 			}
 
@@ -524,40 +433,13 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #voice(Voice)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withVoice(Voice voice) {
-				this.voice = voice;
-				return this;
-			}
-
 			public Builder voice(Voice voice) {
 				this.voice = voice;
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #responseFormat(AudioResponseFormat)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withResponseFormat(AudioResponseFormat responseFormat) {
-				this.responseFormat = responseFormat;
-				return this;
-			}
-
 			public Builder responseFormat(AudioResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #speed(Float)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withSpeed(Float speed) {
-				this.speed = speed;
 				return this;
 			}
 
@@ -653,26 +535,8 @@ public class OpenAiAudioApi {
 
 			private GranularityType granularityType;
 
-			/**
-			 * @deprecated use {@link #file(byte[])} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withFile(byte[] file) {
-				this.file = file;
-				return this;
-			}
-
 			public Builder file(byte[] file) {
 				this.file = file;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #model(String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withModel(String model) {
-				this.model = model;
 				return this;
 			}
 
@@ -681,26 +545,8 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #language(String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withLanguage(String language) {
-				this.language = language;
-				return this;
-			}
-
 			public Builder language(String language) {
 				this.language = language;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #prompt(String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withPrompt(String prompt) {
-				this.prompt = prompt;
 				return this;
 			}
 
@@ -709,40 +555,13 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #responseFormat(TranscriptResponseFormat)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withResponseFormat(TranscriptResponseFormat response_format) {
-				this.responseFormat = response_format;
-				return this;
-			}
-
 			public Builder responseFormat(TranscriptResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #temperature(Float)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withTemperature(Float temperature) {
-				this.temperature = temperature;
-				return this;
-			}
-
 			public Builder temperature(Float temperature) {
 				this.temperature = temperature;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #granularityType(GranularityType)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withGranularityType(GranularityType granularityType) {
-				this.granularityType = granularityType;
 				return this;
 			}
 
@@ -805,26 +624,8 @@ public class OpenAiAudioApi {
 
 			private Float temperature;
 
-			/**
-			 * @deprecated use {@link #file(byte[])} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withFile(byte[] file) {
-				this.file = file;
-				return this;
-			}
-
 			public Builder file(byte[] file) {
 				this.file = file;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #model(String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withModel(String model) {
-				this.model = model;
 				return this;
 			}
 
@@ -833,40 +634,13 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #prompt(String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withPrompt(String prompt) {
-				this.prompt = prompt;
-				return this;
-			}
-
 			public Builder prompt(String prompt) {
 				this.prompt = prompt;
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #responseFormat(TranscriptResponseFormat)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withResponseFormat(TranscriptResponseFormat responseFormat) {
-				this.responseFormat = responseFormat;
-				return this;
-			}
-
 			public Builder responseFormat(TranscriptResponseFormat responseFormat) {
 				this.responseFormat = responseFormat;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #temperature(Float)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M6")
-			public Builder withTemperature(Float temperature) {
-				this.temperature = temperature;
 				return this;
 			}
 

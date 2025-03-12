@@ -29,6 +29,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties.SseParameters;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -80,12 +81,15 @@ public class SseHttpClientTransportAutoConfiguration {
 	 * <li>ObjectMapper for JSON processing
 	 * </ul>
 	 * @param sseProperties the SSE client properties containing server configurations
-	 * @param objectMapper the ObjectMapper for JSON serialization/deserialization
+	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
+	 * available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> mcpHttpClientTransports(McpSseClientProperties sseProperties,
-			ObjectMapper objectMapper) {
+			ObjectProvider<ObjectMapper> objectMapperProvider) {
+
+		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
@@ -97,20 +101,6 @@ public class SseHttpClientTransportAutoConfiguration {
 		}
 
 		return sseTransports;
-	}
-
-	/**
-	 * Creates the default ObjectMapper if none is provided.
-	 *
-	 * <p>
-	 * This ObjectMapper is used for JSON serialization and deserialization in the SSE
-	 * transport implementation.
-	 * @return the configured ObjectMapper instance
-	 */
-	@Bean
-	@ConditionalOnMissingBean
-	public ObjectMapper objectMapper() {
-		return new ObjectMapper();
 	}
 
 }

@@ -46,6 +46,7 @@
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-spring-cloud-bindings</module>
 
+		<module>document-readers/jsoup-reader</module>
 		<module>document-readers/markdown-reader</module>
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
@@ -191,7 +192,7 @@
 		<!-- production dependencies -->
 		<spring-boot.version>3.4.2</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
-		<azure-open-ai-client.version>1.0.0-beta.13</azure-open-ai-client.version>
+		<azure-open-ai-client.version>1.0.0-beta.14</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<victools.version>4.37.0</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
@@ -242,7 +243,7 @@
 		<okhttp3.version>4.12.0</okhttp3.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.7.0</mcp.sdk.version>
+		<mcp.sdk.version>0.8.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
