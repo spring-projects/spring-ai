@@ -178,6 +178,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final boolean initializeSchema;
 
+	private final BatchingStrategy batchingStrategy;
+
 	protected Neo4jVectorStore(Builder builder) {
 		super(builder);
 
@@ -194,6 +196,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		this.idProperty = SchemaNames.sanitize(builder.idProperty).orElseThrow();
 		this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
 		this.initializeSchema = builder.initializeSchema;
+		this.batchingStrategy = new TokenCountBatchingStrategy();
 	}
 
 	@Override
@@ -413,6 +416,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private String constraintName = DEFAULT_CONSTRAINT_NAME;
 
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
 		private boolean initializeSchema = false;
 
 		private Builder(Driver driver, EmbeddingModel embeddingModel) {
@@ -535,6 +540,11 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		public Builder batchingStrategy(BatchingStrategy batchingStrategy){
+			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 
