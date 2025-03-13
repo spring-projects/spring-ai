@@ -475,7 +475,21 @@ public class OpenAiApi {
 		 * Context window: 4,096 tokens. Max output tokens: 4,096 tokens. Knowledge
 		 * cutoff: September, 2021.
 		 */
-		GPT_3_5_TURBO_INSTRUCT("gpt-3.5-turbo-instruct");
+		GPT_3_5_TURBO_INSTRUCT("gpt-3.5-turbo-instruct"),
+
+		/**
+		 * <b>GPT-4o Search Preview</b> is a specialized model for web search in Chat
+		 * Completions. It is trained to understand and execute web search queries. See
+		 * the web search guide for more information.
+		 */
+		GPT_4_O_SEARCH_PREVIEW("gpt-4o-search-preview"),
+
+		/**
+		 * <b>GPT-4o mini Search Preview</b> is a specialized model for web search in Chat
+		 * Completions. It is trained to understand and execute web search queries. See
+		 * the web search guide for more information.
+		 */
+		GPT_4_O_MINI_SEARCH_PREVIEW("gpt-4o-mini-search-preview");
 
 		public final String value;
 
@@ -835,6 +849,10 @@ public class OpenAiApi {
 	 * @param parallelToolCalls If set to true, the model will call all functions in the
 	 * tools list in parallel. Otherwise, the model will call the functions in the tools
 	 * list in the order they are provided.
+	 * @param reasoningEffort Constrains effort on reasoning for reasoning models.
+	 * Currently supported values are low, medium, and high. Reducing reasoning effort can
+	 * result in faster responses and fewer tokens used on reasoning in a response.
+	 * @param webSearchOptions Options for web search.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -864,7 +882,8 @@ public class OpenAiApi {
 			@JsonProperty("tool_choice") Object toolChoice,
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
 			@JsonProperty("user") String user,
-			@JsonProperty("reasoning_effort") String reasoningEffort) {
+			@JsonProperty("reasoning_effort") String reasoningEffort,
+			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -876,7 +895,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -890,7 +909,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -905,7 +924,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -921,7 +940,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null, null);
+					tools, toolChoice, null, null, null, null);
 		}
 
 		/**
@@ -934,7 +953,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null, null);
+					null, null, null, null, null, null);
 		}
 
 		/**
@@ -947,7 +966,7 @@ public class OpenAiApi {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort);
+			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions);
 		}
 
 		/**
@@ -1029,6 +1048,61 @@ public class OpenAiApi {
 
 			public static StreamOptions INCLUDE_USAGE = new StreamOptions(true);
 		}
+
+		/**
+		 * This tool searches the web for relevant results to use in a response.
+		 *
+		 * @param searchContextSize
+		 * @param userLocation
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record WebSearchOptions(@JsonProperty("search_context_size") SearchContextSize searchContextSize,
+									   @JsonProperty("user_location") UserLocation userLocation) {
+
+			/**
+			 * High level guidance for the amount of context window space to use for the
+			 * search. One of low, medium, or high. medium is the default.
+			 */
+			public enum SearchContextSize {
+
+				/**
+				 * Low context size.
+				 */
+				@JsonProperty("low")
+				LOW,
+
+				/**
+				 * Medium context size. This is the default.
+				 */
+				@JsonProperty("medium")
+				MEDIUM,
+
+				/**
+				 * High context size.
+				 */
+				@JsonProperty("high")
+				HIGH
+
+			}
+
+			/**
+			 * Approximate location parameters for the search.
+			 *
+			 * @param type The type of location approximation. Always "approximate".
+			 * @param approximate The approximate location details.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public record UserLocation(@JsonProperty("type") String type,
+									   @JsonProperty("approximate") Approximate approximate) {
+
+				@JsonInclude(Include.NON_NULL)
+				public record Approximate(@JsonProperty("city") String city, @JsonProperty("country") String country,
+										  @JsonProperty("region") String region, @JsonProperty("timezone") String timezone) {
+				}
+			}
+
+		}
+
 	} // @formatter:on
 
 	/**
@@ -1047,19 +1121,22 @@ public class OpenAiApi {
 	 * Applicable only for {@link Role#ASSISTANT} role and null otherwise.
 	 * @param refusal The refusal message by the assistant. Applicable only for
 	 * {@link Role#ASSISTANT} role and null otherwise.
-	 * @param audioOutput Audio response from the model. >>>>>>> bdb66e577 (OpenAI -
-	 * Support audio input modality)
+	 * @param audioOutput Audio response from the model.
+	 * @param annotations Annotations for the message, when applicable, as when using the
+	 * web search tool.
 	 */
-	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionMessage(// @formatter:off
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record ChatCompletionMessage(
+	// @formatter:off
 			@JsonProperty("content") Object rawContent,
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls")
-			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
+			@JsonProperty("tool_calls") @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("refusal") String refusal,
-			@JsonProperty("audio") AudioOutput audioOutput) { // @formatter:on
+			@JsonProperty("audio") AudioOutput audioOutput,
+			@JsonProperty("annotations") List<Annotation> annotations
+	) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -1068,8 +1145,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null, null);
-
+			this(content, role, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1245,6 +1321,29 @@ public class OpenAiApi {
 				@JsonProperty("expires_at") Long expiresAt,
 				@JsonProperty("transcript") String transcript
 		) { // @formatter:on
+		}
+
+		/**
+		 * Represents an annotation within a message, specifically for URL citations.
+		 */
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		public record Annotation(@JsonProperty("type") String type,
+				@JsonProperty("url_citation") UrlCitation urlCitation) {
+			/**
+			 * A URL citation when using web search.
+			 *
+			 * @param endIndex The index of the last character of the URL citation in the
+			 * message.
+			 * @param startIndex The index of the first character of the URL citation in
+			 * the message.
+			 * @param title The title of the web resource.
+			 * @param url The URL of the web resource.
+			 */
+			@JsonInclude(JsonInclude.Include.NON_NULL)
+			public record UrlCitation(@JsonProperty("end_index") Integer endIndex,
+					@JsonProperty("start_index") Integer startIndex, @JsonProperty("title") String title,
+					@JsonProperty("url") String url) {
+			}
 		}
 	}
 
