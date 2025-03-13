@@ -709,6 +709,72 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 	}
 
+	@Test
+	void webSearchAnnotationsTest() {
+		UserMessage userMessage = new UserMessage("What is the latest news on the Mars rover?");
+
+		var promptOptions = OpenAiChatOptions.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O_SEARCH_PREVIEW.getValue())
+			.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(
+					OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM,
+					new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation("approximate",
+							new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation.Approximate(
+									"San Francisco", "US", "California", "America/Los_Angeles"))))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+
+		Object annotationsRaw = response.getResult().getOutput().getMetadata().get("annotations");
+		assertThat(annotationsRaw).isNotNull().isInstanceOf(List.class);
+
+		List<OpenAiApi.ChatCompletionMessage.Annotation> annotations = (List<OpenAiApi.ChatCompletionMessage.Annotation>) annotationsRaw;
+		assertThat(annotations).isNotEmpty();
+		assertThat(annotations.get(0).type()).isEqualTo("url_citation");
+		assertThat(annotations.get(0).urlCitation()).isNotNull();
+		assertThat(annotations.get(0).urlCitation().url()).isNotEmpty();
+	}
+
+	@Test
+	void streamWebSearchAnnotationsTest() {
+		UserMessage userMessage = new UserMessage("What is the weather in San Francisco?");
+
+		var promptOptions = OpenAiChatOptions.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O_SEARCH_PREVIEW.getValue())
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.streamingChatModel
+			.stream(new Prompt(List.of(userMessage), promptOptions));
+
+		// Collect all streamed ChatResponses into a list.
+		List<ChatResponse> responses = responseFlux.collectList().block();
+		assert responses != null;
+		assertThat(responses).isNotEmpty();
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		logger.info("Last Response: {}", lastResponse);
+
+		Object annotationsRaw = lastResponse.getResult().getOutput().getMetadata().get("annotations");
+		assertThat(annotationsRaw).isNotNull().isInstanceOf(List.class);
+
+		List<OpenAiApi.ChatCompletionMessage.Annotation> annotations = (List<OpenAiApi.ChatCompletionMessage.Annotation>) annotationsRaw;
+		assertThat(annotations).isNotEmpty();
+		assertThat(annotations.get(0).type()).isEqualTo("url_citation");
+		assertThat(annotations.get(0).urlCitation()).isNotNull();
+		assertThat(annotations.get(0).urlCitation().url()).isNotEmpty();
+
+		// For debugging, log fullContent
+		String fullContent = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.collect(Collectors.joining());
+		logger.info("Full Content: {}", fullContent);
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
 	}
