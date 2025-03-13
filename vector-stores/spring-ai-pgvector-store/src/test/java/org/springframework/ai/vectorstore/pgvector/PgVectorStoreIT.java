@@ -112,27 +112,6 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 		}
 	}
 
-	private static void initSchema(ApplicationContext context) {
-		PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
-		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
-		// Enable the PGVector, JSONB and UUID support.
-		jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
-		jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
-		jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
-
-		jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", PgVectorStore.DEFAULT_SCHEMA_NAME));
-
-		jdbcTemplate.execute(String.format("""
-				CREATE TABLE IF NOT EXISTS %s.%s (
-					id text PRIMARY KEY,
-					content text,
-					metadata json,
-					embedding vector(%d)
-				)
-				""", PgVectorStore.DEFAULT_SCHEMA_NAME, PgVectorStore.DEFAULT_TABLE_NAME,
-				vectorStore.embeddingDimensions()));
-	}
-
 	private static void dropTable(ApplicationContext context) {
 		JdbcTemplate jdbcTemplate = context.getBean(JdbcTemplate.class);
 		jdbcTemplate.execute("DROP TABLE IF EXISTS vector_store");
@@ -218,16 +197,42 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
-	public void testToPgTypeWithNonUuidIdType() {
+	public void testToPgTypeWithTextIdType() {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
-			.withPropertyValues("test.spring.ai.vectorstore.pgvector.initializeSchema=" + false)
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "TEXT")
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
-				initSchema(context);
 
 				vectorStore.add(List.of(new Document("NOT_UUID", "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithSerialIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "SERIAL")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(List.of(new Document("1", "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithBigSerialIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "BIGSERIAL")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(List.of(new Document("1", "TEXT", new HashMap<>())));
 
 				dropTable(context);
 			});
@@ -256,11 +261,9 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 	@Test
 	public void testBulkOperationWithNonUuidIdType() {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
-			.withPropertyValues("test.spring.ai.vectorstore.pgvector.initializeSchema=" + false)
 			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "TEXT")
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
-				initSchema(context);
 
 				List<Document> documents = List.of(new Document("NON_UUID_1", "TEXT", new HashMap<>()),
 						new Document("NON_UUID_2", "TEXT", new HashMap<>()),
