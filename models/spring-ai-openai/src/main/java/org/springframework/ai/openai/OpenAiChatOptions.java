@@ -37,6 +37,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -193,6 +194,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 * Only for 'o1' models.
 	 */
 	private @JsonProperty("reasoning_effort") String reasoningEffort;
+
+	/**
+	 * This tool searches the web for relevant results to use in a response.
+	 */
+	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
@@ -593,6 +599,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.reasoningEffort = reasoningEffort;
 	}
 
+	public WebSearchOptions getWebSearchOptions() {
+		return this.webSearchOptions;
+	}
+
+	public void setWebSearchOptions(WebSearchOptions webSearchOptions) {
+		this.webSearchOptions = webSearchOptions;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -605,7 +619,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions);
 	}
 
 	@Override
@@ -637,7 +651,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.outputModalities, other.outputModalities)
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
 				&& Objects.equals(this.metadata, other.metadata)
-				&& Objects.equals(this.reasoningEffort, other.reasoningEffort);
+				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
+				&& Objects.equals(this.webSearchOptions, other.webSearchOptions);
 	}
 
 	@Override
@@ -845,6 +860,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder reasoningEffort(String reasoningEffort) {
 			this.options.reasoningEffort = reasoningEffort;
+			return this;
+		}
+
+		public Builder webSearchOptions(WebSearchOptions webSearchOptions) {
+			this.options.webSearchOptions = webSearchOptions;
 			return this;
 		}
 

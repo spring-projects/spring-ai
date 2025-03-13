@@ -218,7 +218,8 @@ public class OpenAiChatModel implements ChatModel {
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
 							"index", choice.index(),
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
+							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 				// @formatter:on
@@ -316,8 +317,8 @@ public class OpenAiChatModel implements ChatModel {
 									"role", roleMap.getOrDefault(id, ""),
 									"index", choice.index(),
 									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
-
+									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
 							return buildGeneration(choice, metadata, request);
 						}).toList();
 						// @formatter:on
@@ -580,7 +581,7 @@ public class OpenAiChatModel implements ChatModel {
 
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -590,7 +591,7 @@ public class OpenAiChatModel implements ChatModel {
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null, null))
+							tr.id(), null, null, null, null))
 					.toList();
 			}
 			else {
