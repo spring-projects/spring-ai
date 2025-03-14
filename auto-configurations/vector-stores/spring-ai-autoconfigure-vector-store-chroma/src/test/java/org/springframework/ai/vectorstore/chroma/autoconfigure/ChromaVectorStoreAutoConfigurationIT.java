@@ -28,6 +28,7 @@ import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -143,6 +144,38 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.hasRootCauseExactlyInstanceOf(RuntimeException.class)
 				.hasRootCauseMessage(
 						"Collection TestCollection doesn't exist and won't be created as the initializeSchema is set to false."));
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(ChromaVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(ChromaVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	@Disabled
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=true").run(context -> {
+			assertThat(context.getBeansOfType(ChromaVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(ChromaVectorStore.class);
+		});
+	}
+
+	@Test
+	@Disabled
+	public void autoConfigurationEnabledWhenTypeIsChroma() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.type=chroma",
+					"spring.ai.vectorstore.chroma.initializeSchema=true")
+			.run(context -> {
+				assertThat(context.getBeansOfType(ChromaVectorStoreProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+				assertThat(context.getBean(VectorStore.class)).isInstanceOf(ChromaVectorStore.class);
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)

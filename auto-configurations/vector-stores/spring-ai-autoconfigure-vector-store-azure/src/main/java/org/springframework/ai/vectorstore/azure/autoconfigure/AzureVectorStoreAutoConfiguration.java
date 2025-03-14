@@ -28,6 +28,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -47,7 +48,8 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, SearchIndexClient.class, AzureVectorStore.class })
 @EnableConfigurationProperties({ AzureVectorStoreProperties.class })
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.azure", value = { "url", "api-key", "index-name" })
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.AZURE,
+		matchIfMissing = true)
 public class AzureVectorStoreAutoConfiguration {
 
 	private static final String APPLICATION_ID = "spring-ai";

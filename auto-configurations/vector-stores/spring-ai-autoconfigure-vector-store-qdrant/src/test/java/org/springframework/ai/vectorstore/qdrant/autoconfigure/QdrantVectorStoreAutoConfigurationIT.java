@@ -35,6 +35,7 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -111,6 +112,33 @@ public class QdrantVectorStoreAutoConfigurationIT {
 			ObservationTestUtil.assertObservationRegistry(observationRegistry, VectorStoreProvider.QDRANT,
 					VectorStoreObservationContext.Operation.DELETE);
 			observationRegistry.clear();
+		});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(QdrantVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(QdrantVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(QdrantVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(QdrantVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsQdrant() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=qdrant").run(context -> {
+			assertThat(context.getBeansOfType(QdrantVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(QdrantVectorStore.class);
 		});
 	}
 

@@ -33,6 +33,7 @@ import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.MetadataField;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -143,6 +144,33 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 
 			assertObservationRegistry(observationRegistry, VectorStoreProvider.WEAVIATE,
 					VectorStoreObservationContext.Operation.DELETE);
+		});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(WeaviateVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(WeaviateVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(WeaviateVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(WeaviateVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsWeaviate() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=weaviate").run(context -> {
+			assertThat(context.getBeansOfType(WeaviateVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(WeaviateVectorStore.class);
 		});
 	}
 

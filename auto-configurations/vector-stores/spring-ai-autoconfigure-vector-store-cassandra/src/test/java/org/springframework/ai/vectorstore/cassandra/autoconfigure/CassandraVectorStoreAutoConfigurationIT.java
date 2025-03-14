@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -34,6 +35,7 @@ import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
@@ -108,6 +110,42 @@ class CassandraVectorStoreAutoConfigurationIT {
 				ObservationTestUtil.assertObservationRegistry(observationRegistry, VectorStoreProvider.CASSANDRA,
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
+			});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(CassandraVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(CassandraVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
+			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
+			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
+			.withPropertyValues("spring.ai.vectorstore.cassandra.fixedThreadPoolExecutorSize=8")
+			.run(context -> {
+				assertThat(context.getBeansOfType(CassandraVectorStoreProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+				assertThat(context.getBean(VectorStore.class)).isInstanceOf(CassandraVectorStore.class);
+			});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsCassandra() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=cassandra")
+			.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
+			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
+			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
+			.withPropertyValues("spring.ai.vectorstore.cassandra.fixedThreadPoolExecutorSize=8")
+			.run(context -> {
+				assertThat(context.getBeansOfType(CassandraVectorStoreProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+				assertThat(context.getBean(VectorStore.class)).isInstanceOf(CassandraVectorStore.class);
 			});
 	}
 

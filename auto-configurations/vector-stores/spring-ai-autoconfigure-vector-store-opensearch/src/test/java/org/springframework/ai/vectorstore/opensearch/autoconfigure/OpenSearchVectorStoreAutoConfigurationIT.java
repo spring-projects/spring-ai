@@ -37,6 +37,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.opensearch.OpenSearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -139,6 +140,33 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(1).similarityThreshold(0).build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(OpenSearchVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(OpenSearchVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsOpensearch() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=opensearch").run(context -> {
+			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(OpenSearchVectorStore.class);
 		});
 	}
 

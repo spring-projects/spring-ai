@@ -35,6 +35,7 @@ import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
@@ -160,6 +161,33 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 				context.getBean(MongoTemplate.class).dropCollection("test_collection");
 			});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(MongoDBAtlasVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(MongoDBAtlasVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(MongoDBAtlasVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(MongoDBAtlasVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsMongodbAtlas() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=mongodb-atlas").run(context -> {
+			assertThat(context.getBeansOfType(MongoDBAtlasVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(MongoDBAtlasVectorStore.class);
+		});
 	}
 
 	@Configuration(proxyBeanMethods = false)

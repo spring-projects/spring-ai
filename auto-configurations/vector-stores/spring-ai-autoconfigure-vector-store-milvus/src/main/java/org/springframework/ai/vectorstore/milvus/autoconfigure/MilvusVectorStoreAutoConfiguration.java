@@ -27,12 +27,14 @@ import io.milvus.param.MetricType;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -48,6 +50,8 @@ import org.springframework.util.StringUtils;
 @AutoConfiguration
 @ConditionalOnClass({ MilvusVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties({ MilvusServiceClientProperties.class, MilvusVectorStoreProperties.class })
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.MILVUS,
+		matchIfMissing = true)
 public class MilvusVectorStoreAutoConfiguration {
 
 	@Bean
