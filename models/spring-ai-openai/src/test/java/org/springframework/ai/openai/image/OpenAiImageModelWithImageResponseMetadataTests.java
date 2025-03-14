@@ -29,7 +29,6 @@ import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiImageApi;
-import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;

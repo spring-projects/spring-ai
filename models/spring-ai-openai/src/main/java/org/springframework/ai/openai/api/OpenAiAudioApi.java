@@ -17,7 +17,6 @@
 package org.springframework.ai.openai.api;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -36,7 +35,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
