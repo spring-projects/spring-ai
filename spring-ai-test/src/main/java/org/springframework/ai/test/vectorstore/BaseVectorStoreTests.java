@@ -18,10 +18,8 @@ package org.springframework.ai.test.vectorstore;
 
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.either;
 
 import java.time.Duration;
 import java.util.HashMap;
