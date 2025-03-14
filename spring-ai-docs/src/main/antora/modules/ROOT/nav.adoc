@@ -73,6 +73,7 @@
 ** xref:api/vectordbs/azure-cosmos-db.adoc[]
 ** xref:api/vectordbs/apache-cassandra.adoc[]
 ** xref:api/vectordbs/chroma.adoc[]
+** xref:api/vectordbs/couchbase.adoc[]
 ** xref:api/vectordbs/elasticsearch.adoc[]
 ** xref:api/vectordbs/gemfire.adoc[GemFire]
 ** xref:api/vectordbs/mariadb.adoc[]

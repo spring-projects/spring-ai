@@ -291,11 +291,17 @@
 				<version>${project.version}</version>
 			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-opensearch-store</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-opensearch-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-couchbase-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -599,11 +605,17 @@
 				<version>${project.version}</version>
 			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-qianfan-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-qianfan-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-couchbase-store-spring-boot-starter</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
