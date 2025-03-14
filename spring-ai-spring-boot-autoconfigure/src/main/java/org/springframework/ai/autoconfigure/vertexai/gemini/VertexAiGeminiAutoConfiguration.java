@@ -17,7 +17,6 @@
 package org.springframework.ai.autoconfigure.vertexai.gemini;
 
 import java.io.IOException;
-import java.util.List;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
@@ -26,10 +25,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.autoconfigure.chat.model.ToolCallingAutoConfiguration;
 import org.springframework.ai.autoconfigure.retry.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallback.SchemaType;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.beans.factory.ObjectProvider;

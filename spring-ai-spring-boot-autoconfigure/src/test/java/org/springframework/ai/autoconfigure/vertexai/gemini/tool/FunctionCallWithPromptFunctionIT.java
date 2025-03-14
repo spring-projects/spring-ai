@@ -27,8 +27,6 @@ import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoCo
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallback.SchemaType;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
