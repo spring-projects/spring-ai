@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.elasticsearch;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
+import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStoreOptions;
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -46,6 +47,11 @@ public class ElasticsearchVectorStoreProperties extends CommonVectorStorePropert
 	 */
 	private SimilarityFunction similarity;
 
+	/**
+	 * The field name to store the vector.
+	 */
+	private String filedName = "embedding";
+
 	public String getIndexName() {
 		return this.indexName;
 	}
@@ -68,6 +74,14 @@ public class ElasticsearchVectorStoreProperties extends CommonVectorStorePropert
 
 	public void setSimilarity(SimilarityFunction similarity) {
 		this.similarity = similarity;
+	}
+
+	public String getFiledName() {
+		return filedName;
+	}
+
+	public void setFiledName(String filedName) {
+		this.filedName = filedName;
 	}
 
 }

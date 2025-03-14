@@ -72,6 +72,9 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 		if (properties.getSimilarity() != null) {
 			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
 		}
+		if (properties.getFiledName() != null) {
+			elasticsearchVectorStoreOptions.setFiledName(properties.getFiledName());
+		}
 
 		return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 			.options(elasticsearchVectorStoreOptions)

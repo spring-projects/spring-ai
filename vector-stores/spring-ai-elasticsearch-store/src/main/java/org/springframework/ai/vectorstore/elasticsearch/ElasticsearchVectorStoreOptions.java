@@ -40,6 +40,11 @@ public class ElasticsearchVectorStoreOptions {
 	 */
 	private SimilarityFunction similarity = SimilarityFunction.cosine;
 
+	/**
+	 * The field name to store the vector.
+	 */
+	private String filedName = "embedding";
+
 	public String getIndexName() {
 		return this.indexName;
 	}
@@ -62,6 +67,14 @@ public class ElasticsearchVectorStoreOptions {
 
 	public void setSimilarity(SimilarityFunction similarity) {
 		this.similarity = similarity;
+	}
+
+	public String getFiledName() {
+		return filedName;
+	}
+
+	public void setFiledName(String filedName) {
+		this.filedName = filedName;
 	}
 
 }
