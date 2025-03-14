@@ -146,6 +146,33 @@ public class AzureVectorStoreAutoConfigurationIT {
 			});
 	}
 
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(AzureVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(AzureVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(AzureVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(AzureVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsAzure() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=azure").run(context -> {
+			assertThat(context.getBeansOfType(AzureVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(AzureVectorStore.class);
+		});
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
 

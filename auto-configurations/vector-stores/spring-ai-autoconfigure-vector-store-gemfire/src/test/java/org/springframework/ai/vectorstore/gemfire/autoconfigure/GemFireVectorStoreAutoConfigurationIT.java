@@ -185,6 +185,33 @@ class GemFireVectorStoreAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(GemFireVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(GemFireVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(GemFireVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(GemFireVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsGemfire() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=gemfire").run(context -> {
+			assertThat(context.getBeansOfType(GemFireVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(GemFireVectorStore.class);
+		});
+	}
+
 	private Map<String, Object> parseIndex(String json) {
 		try {
 			JsonNode rootNode = new ObjectMapper().readTree(json);

@@ -21,6 +21,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.gemfire.GemFireVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -41,7 +42,8 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 @ConditionalOnClass({ GemFireVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties(GemFireVectorStoreProperties.class)
-@ConditionalOnProperty(prefix = "spring.ai.vectorstore.gemfire", value = { "index-name" })
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.GEMFIRE,
+		matchIfMissing = true)
 public class GemFireVectorStoreAutoConfiguration {
 
 	@Bean
