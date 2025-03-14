@@ -50,7 +50,6 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.NoopApiKey;
-import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
