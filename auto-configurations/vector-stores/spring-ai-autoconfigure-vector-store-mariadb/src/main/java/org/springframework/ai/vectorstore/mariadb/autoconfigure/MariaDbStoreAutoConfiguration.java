@@ -20,12 +20,14 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -40,6 +42,8 @@ import javax.sql.DataSource;
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ MariaDBVectorStore.class, DataSource.class, JdbcTemplate.class })
 @EnableConfigurationProperties(org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreProperties.class)
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.MARIADB,
+		matchIfMissing = true)
 public class MariaDbStoreAutoConfiguration {
 
 	@Bean

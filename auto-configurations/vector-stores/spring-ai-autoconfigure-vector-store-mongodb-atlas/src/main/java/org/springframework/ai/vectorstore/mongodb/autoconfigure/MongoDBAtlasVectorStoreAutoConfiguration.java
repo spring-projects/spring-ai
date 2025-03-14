@@ -24,12 +24,14 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
@@ -51,6 +53,8 @@ import org.springframework.util.StringUtils;
 @AutoConfiguration
 @ConditionalOnClass({ MongoDBAtlasVectorStore.class, EmbeddingModel.class, MongoTemplate.class })
 @EnableConfigurationProperties(MongoDBAtlasVectorStoreProperties.class)
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.MONGODB_ATLAS,
+		matchIfMissing = true)
 public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean

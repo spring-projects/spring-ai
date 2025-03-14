@@ -34,6 +34,7 @@ import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
@@ -112,6 +113,33 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).isEmpty();
 			});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(Neo4jVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(Neo4jVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(Neo4jVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(Neo4jVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsNeo4j() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=neo4j").run(context -> {
+			assertThat(context.getBeansOfType(Neo4jVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(Neo4jVectorStore.class);
+		});
 	}
 
 	@Configuration(proxyBeanMethods = false)

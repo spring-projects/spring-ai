@@ -24,11 +24,13 @@ import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
+import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -45,6 +47,8 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, RestClient.class, ChromaVectorStore.class, ObjectMapper.class })
 @EnableConfigurationProperties({ ChromaApiProperties.class, ChromaVectorStoreProperties.class })
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.CHROMA,
+		matchIfMissing = true)
 public class ChromaVectorStoreAutoConfiguration {
 
 	@Bean

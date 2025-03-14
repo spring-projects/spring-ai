@@ -34,6 +34,7 @@ import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration
 import org.springframework.ai.document.Document;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
@@ -147,6 +148,33 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 
 				assertThat(elasticsearchVectorStore).isNotNull();
 			});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(ElasticsearchVectorStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(ElasticsearchVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(ElasticsearchVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(ElasticsearchVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsElasticsearch() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=elasticsearch").run(context -> {
+			assertThat(context.getBeansOfType(ElasticsearchVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(ElasticsearchVectorStore.class);
+		});
 	}
 
 	private String getText(String uri) {

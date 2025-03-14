@@ -25,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -33,6 +34,7 @@ import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfigurati
 import org.springframework.boot.autoconfigure.cassandra.DriverConfigLoaderBuilderCustomizer;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
@@ -47,6 +49,8 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration(after = CassandraAutoConfiguration.class)
 @ConditionalOnClass({ CassandraVectorStore.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraVectorStoreProperties.class)
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.CASSANDRA,
+		matchIfMissing = true)
 public class CassandraVectorStoreAutoConfiguration {
 
 	@Bean

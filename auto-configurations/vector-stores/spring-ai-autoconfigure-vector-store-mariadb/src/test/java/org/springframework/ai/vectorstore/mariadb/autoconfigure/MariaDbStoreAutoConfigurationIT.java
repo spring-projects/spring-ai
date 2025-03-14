@@ -25,6 +25,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -177,6 +178,33 @@ public class MariaDbStoreAutoConfigurationIT {
 			.run(context -> {
 				assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isFalse();
 			});
+	}
+
+	@Test
+	public void autoConfigurationDisabledWhenTypeIsNone() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+			assertThat(context.getBeansOfType(MariaDbStoreProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(MariaDBVectorStore.class)).isEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledByDefault() {
+		this.contextRunner.run(context -> {
+			assertThat(context.getBeansOfType(MariaDbStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(MariaDBVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationEnabledWhenTypeIsMariaDB() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=mariadb").run(context -> {
+			assertThat(context.getBeansOfType(MariaDbStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(MariaDBVectorStore.class);
+		});
 	}
 
 	@Configuration(proxyBeanMethods = false)
