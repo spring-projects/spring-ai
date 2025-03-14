@@ -24,6 +24,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -59,7 +60,9 @@ public class MethodToolCallbackProvider implements ToolCallbackProvider {
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 		var toolCallbacks = toolObjects.stream()
-			.map(toolObject -> Stream.of(ReflectionUtils.getDeclaredMethods(toolObject.getClass()))
+			.map(toolObject -> Stream
+				.of(ReflectionUtils.getDeclaredMethods(
+						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
 				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
 				.map(toolMethod -> MethodToolCallback.builder()
