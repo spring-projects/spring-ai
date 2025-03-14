@@ -16,16 +16,14 @@
 
 package org.springframework.ai.integration.tests.client.advisor;
 
-import java.util.List;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.NoOpUserTextProcessor;
 import org.springframework.ai.chat.client.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -48,6 +46,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -129,6 +129,31 @@ class RetrievalAugmentationAdvisorIT {
 		// documents in the vector store.
 		assertThat((String) chatResponse.getResult().getMetadata().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT))
 			.isNull();
+	}
+
+	@Test
+	void ragWithCustomUserTextProcessor() {
+		String question = "Where does the adventure of {Anacletus} and {Birba} take place?";
+
+		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
+			.userTextProcessor(new NoOpUserTextProcessor())
+			.build();
+
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(question)
+			.advisors(ragAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(chatResponse).isNotNull();
+
+		String response = chatResponse.getResult().getOutput().getText();
+		System.out.println(response);
+		assertThat(response).containsIgnoringCase("Highlands");
+
+		evaluateRelevancy(question, chatResponse);
 	}
 
 	@Test

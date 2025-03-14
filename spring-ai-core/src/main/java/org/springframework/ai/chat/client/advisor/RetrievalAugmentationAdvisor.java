@@ -29,7 +29,6 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
@@ -61,6 +60,8 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	public static final String DOCUMENT_CONTEXT = "rag_document_context";
 
+	private final UserTextProcessor userTextProcessor;
+
 	private final List<QueryTransformer> queryTransformers;
 
 	@Nullable
@@ -78,10 +79,12 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	private final int order;
 
-	public RetrievalAugmentationAdvisor(@Nullable List<QueryTransformer> queryTransformers,
-			@Nullable QueryExpander queryExpander, DocumentRetriever documentRetriever,
-			@Nullable DocumentJoiner documentJoiner, @Nullable QueryAugmenter queryAugmenter,
-			@Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler, @Nullable Integer order) {
+	public RetrievalAugmentationAdvisor(@Nullable UserTextProcessor userTextProcessor,
+			@Nullable List<QueryTransformer> queryTransformers, @Nullable QueryExpander queryExpander,
+			DocumentRetriever documentRetriever, @Nullable DocumentJoiner documentJoiner,
+			@Nullable QueryAugmenter queryAugmenter, @Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler,
+			@Nullable Integer order) {
+		this.userTextProcessor = userTextProcessor != null ? userTextProcessor : new PromptTemplateUserTextProcessor();
 		Assert.notNull(documentRetriever, "documentRetriever cannot be null");
 		Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
 		this.queryTransformers = queryTransformers != null ? queryTransformers : List.of();
@@ -102,9 +105,11 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	public AdvisedRequest before(AdvisedRequest request) {
 		Map<String, Object> context = new HashMap<>(request.adviseContext());
 
+		String processedUserText = this.userTextProcessor.apply(request.userText(), request.userParams());
+
 		// 0. Create a query from the user text, parameters, and conversation history.
 		Query originalQuery = Query.builder()
-			.text(new PromptTemplate(request.userText(), request.userParams()).render())
+			.text(processedUserText)
 			.history(request.messages())
 			.context(context)
 			.build();
@@ -183,6 +188,8 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	public static final class Builder {
 
+		private UserTextProcessor userTextProcessor;
+
 		private List<QueryTransformer> queryTransformers;
 
 		private QueryExpander queryExpander;
@@ -200,6 +207,11 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		private Integer order;
 
 		private Builder() {
+		}
+
+		public Builder userTextProcessor(UserTextProcessor userTextProcessor) {
+			this.userTextProcessor = userTextProcessor;
+			return this;
 		}
 
 		public Builder queryTransformers(List<QueryTransformer> queryTransformers) {
@@ -248,8 +260,9 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		}
 
 		public RetrievalAugmentationAdvisor build() {
-			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.queryExpander, this.documentRetriever,
-					this.documentJoiner, this.queryAugmenter, this.taskExecutor, this.scheduler, this.order);
+			return new RetrievalAugmentationAdvisor(this.userTextProcessor, this.queryTransformers, this.queryExpander,
+					this.documentRetriever, this.documentJoiner, this.queryAugmenter, this.taskExecutor, this.scheduler,
+					this.order);
 		}
 
 	}
