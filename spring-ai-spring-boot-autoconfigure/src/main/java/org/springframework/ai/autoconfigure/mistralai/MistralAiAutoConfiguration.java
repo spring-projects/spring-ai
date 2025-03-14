@@ -24,7 +24,9 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
+import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -55,7 +57,7 @@ import org.springframework.web.client.RestClient;
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ MistralAiEmbeddingProperties.class, MistralAiCommonProperties.class,
-		MistralAiChatProperties.class })
+		MistralAiChatProperties.class, MistralAiModerationProperties.class })
 @ConditionalOnClass(MistralAiApi.class)
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
@@ -109,6 +111,27 @@ public class MistralAiAutoConfiguration {
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public MistralAiModerationModel mistralAiModerationModel(MistralAiCommonProperties commonProperties,
+			MistralAiModerationProperties moderationProperties, RetryTemplate retryTemplate,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+
+		var apiKey = moderationProperties.getApiKey();
+		var baseUrl = moderationProperties.getBaseUrl();
+
+		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonProperties.getApiKey();
+		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonProperties.getBaseUrl();
+
+		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
+		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
+
+		var mistralAiModerationAi = new MistralAiModerationApi(resoledBaseUrl, resolvedApiKey,
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+
+		return new MistralAiModerationModel(mistralAiModerationAi, retryTemplate, moderationProperties.getOptions());
 	}
 
 	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
