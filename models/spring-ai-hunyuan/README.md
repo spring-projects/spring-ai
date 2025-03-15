@@ -1,0 +1,1 @@
+[Hunyuan Chat Documentation](https://docs.spring.io/spring-ai/reference/api/chat/hunyuan-chat.html)
