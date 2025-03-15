@@ -17,6 +17,7 @@
 package org.springframework.ai.rag.retrieval.join;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -54,7 +55,10 @@ public class ConcatenationDocumentJoiner implements DocumentJoiner {
 			.flatMap(List::stream)
 			.flatMap(List::stream)
 			.collect(Collectors.toMap(Document::getId, Function.identity(), (existing, duplicate) -> existing))
-			.values());
+			.values()
+			.stream()
+			.sorted(Comparator.comparing((Document d1) -> (d1.getScore() != null) ? d1.getScore() : 0.0).reversed())
+			.toList());
 	}
 
 }
