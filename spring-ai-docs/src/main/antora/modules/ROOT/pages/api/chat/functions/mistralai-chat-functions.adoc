@@ -1,4 +1,6 @@
-= Mistral AI Function Calling
+= Mistral AI Function Calling (Deprecated)
+
+WARNING: This page describes the previous version of the Function Calling API, which has been deprecated and marked for remove in the next release. The current version is available at xref:api/tools.adoc[Tool Calling]. See the xref:api/tools-migration.adoc[Migration Guide] for more information.
 
 You can register custom Java functions with the `MistralAiChatModel` and have the Mistral AI models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.

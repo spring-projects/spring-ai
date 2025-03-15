@@ -29,13 +29,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -63,7 +67,6 @@ import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionMessage.Too
 import org.springframework.ai.moonshot.api.MoonshotApi.ChatCompletionRequest;
 import org.springframework.ai.moonshot.api.MoonshotApi.FunctionTool;
 import org.springframework.ai.moonshot.api.MoonshotConstants;
-import org.springframework.ai.moonshot.metadata.MoonshotUsage;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -75,6 +78,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Geng Rong
  * @author Alexandros Pappas
+ * @author Ilayaperumal Gopinathan
  */
 public class MoonshotChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
@@ -180,6 +184,10 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		return this.internalCall(prompt, null);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -218,8 +226,11 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 					// @formatter:on
 					return buildGeneration(choice, metadata);
 				}).toList();
-
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+				MoonshotApi.Usage usage = completionEntity.getBody().usage();
+				Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+				Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
+				ChatResponse chatResponse = new ChatResponse(generations,
+						from(completionEntity.getBody(), cumulativeUsage));
 
 				observationContext.setResponse(chatResponse);
 
@@ -232,9 +243,13 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 			var toolCallConversation = handleToolCalls(prompt, response);
 			// Recursively call the call method with the tool call message
 			// conversation that contains the call responses.
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+			return this.internalCall(new Prompt(toolCallConversation, prompt.getOptions()), response);
 		}
 		return response;
+	}
+
+	private DefaultUsage getDefaultUsage(MoonshotApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	@Override
@@ -244,6 +259,10 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return this.internalStream(prompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -287,8 +306,11 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 							// @formatter:on
 							return buildGeneration(choice, metadata);
 						}).toList();
+						MoonshotApi.Usage usage = chatCompletion2.usage();
+						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+						Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
 
-						return new ChatResponse(generations, from(chatCompletion2));
+						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
 					}
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
@@ -300,10 +322,14 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response,
 						Set.of(ChatCompletionFinishReason.TOOL_CALLS.name(), ChatCompletionFinishReason.STOP.name()))) {
-					var toolCallConversation = handleToolCalls(prompt, response);
-					// Recursively call the stream method with the tool call message
-					// conversation that contains the call responses.
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+					// FIXME: bounded elastic needs to be used since tool calling
+					// is currently only synchronous
+					return Flux.defer(() -> {
+						var toolCallConversation = handleToolCalls(prompt, response);
+						// Recursively call the stream method with the tool call message
+						// conversation that contains the call responses.
+						return this.internalStream(new Prompt(toolCallConversation, prompt.getOptions()), response);
+					}).subscribeOn(Schedulers.boundedElastic());
 				}
 				return Flux.just(response);
 			})
@@ -319,7 +345,17 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 		Assert.notNull(result, "Moonshot ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
-			.usage(result.usage() != null ? MoonshotUsage.from(result.usage()) : new EmptyUsage())
+			.usage(result.usage() != null ? getDefaultUsage(result.usage()) : new EmptyUsage())
+			.model(result.model() != null ? result.model() : "")
+			.keyValue("created", result.created() != null ? result.created() : 0L)
+			.build();
+	}
+
+	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
+		Assert.notNull(result, "Moonshot ChatCompletionResult must not be null");
+		return ChatResponseMetadata.builder()
+			.id(result.id() != null ? result.id() : "")
+			.usage(usage)
 			.model(result.model() != null ? result.model() : "")
 			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.build();
@@ -336,10 +372,11 @@ public class MoonshotChatModel extends AbstractToolCallSupport implements ChatMo
 			if (delta == null) {
 				delta = new ChatCompletionMessage("", ChatCompletionMessage.Role.ASSISTANT);
 			}
-			return new ChatCompletion.Choice(cc.index(), delta, cc.finishReason());
+			return new ChatCompletion.Choice(cc.index(), delta, cc.finishReason(), cc.usage());
 		}).toList();
-
-		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices, null);
+		// Get the usage from the latest choice
+		MoonshotApi.Usage usage = choices.get(choices.size() - 1).usage();
+		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices, usage);
 	}
 
 	/**

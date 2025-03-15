@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Content;
 import org.springframework.util.StringUtils;
 
 @FunctionalInterface

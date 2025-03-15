@@ -34,6 +34,8 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,7 +149,7 @@ public class AnthropicChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
+					String.valueOf(responseMetadata.getUsage().getCompletionTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
@@ -171,8 +173,7 @@ public class AnthropicChatModelObservationIT {
 		public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi,
 				TestObservationRegistry observationRegistry) {
 			return new AnthropicChatModel(anthropicApi, AnthropicChatOptions.builder().build(),
-					RetryTemplate.defaultInstance(), new DefaultFunctionCallbackResolver(), List.of(),
-					observationRegistry);
+					ToolCallingManager.builder().build(), RetryTemplate.defaultInstance(), observationRegistry);
 		}
 
 	}

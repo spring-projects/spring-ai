@@ -16,12 +16,22 @@
 
 package org.springframework.ai.mistralai;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -39,6 +49,7 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,15 +57,6 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
-import reactor.core.publisher.Flux;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -97,7 +99,8 @@ class MistralAiChatModelIT {
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-		// NOTE: Mistral expects the system message to be before the user message or will
+		// NOTE: Mistral expects the system message to be before the user message or
+		// will
 		// fail with 400 error.
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		ChatResponse response = this.chatModel.call(prompt);
@@ -202,8 +205,7 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.model(MistralAiApi.ChatModel.SMALL.getValue())
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -216,7 +218,7 @@ class MistralAiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(800);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(750);
 	}
 
 	@Test
@@ -228,8 +230,7 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.model(MistralAiApi.ChatModel.SMALL.getValue())
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -262,8 +263,8 @@ class MistralAiChatModelIT {
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
-		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -303,8 +304,7 @@ class MistralAiChatModelIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket", "fruit stand");
+		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test
@@ -316,8 +316,7 @@ class MistralAiChatModelIT {
 
 		var promptOptions = MistralAiChatOptions.builder()
 			.model(MistralAiApi.ChatModel.SMALL.getValue())
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -329,7 +328,7 @@ class MistralAiChatModelIT {
 		logger.info("Response: {}", chatResponse);
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(800);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(650);
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
@@ -42,16 +45,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -65,7 +70,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class ElasticsearchVectorStoreIT {
+class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
@@ -107,6 +112,14 @@ class ElasticsearchVectorStoreIT {
 			if (!indices.isEmpty()) {
 				elasticsearchClient.indices().delete(del -> del.index(indices));
 			}
+		});
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		getContextRunner().run(context -> {
+			VectorStore vectorStore = context.getBean("vectorStore_cosine", VectorStore.class);
+			testFunction.accept(vectorStore);
 		});
 	}
 
@@ -164,7 +177,7 @@ class ElasticsearchVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
@@ -316,7 +329,7 @@ class ElasticsearchVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -331,7 +344,7 @@ class ElasticsearchVectorStoreIT {
 				.build();
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
+				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getText(),
 						equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
 			results = vectorStore.similaritySearch(fooBarSearchRequest);
@@ -339,7 +352,7 @@ class ElasticsearchVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -385,7 +398,7 @@ class ElasticsearchVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
@@ -397,6 +410,65 @@ class ElasticsearchVectorStoreIT {
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(50).similarityThresholdAll().build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void overDefaultSizeTest() {
+
+		var overDefaultSize = 12;
+
+		getContextRunner().run(context -> {
+
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			var testDocs = new ArrayList<Document>();
+			for (int i = 0; i < overDefaultSize; i++) {
+				testDocs.add(new Document(String.valueOf(i), "Great Depression " + i, Map.of()));
+			}
+			vectorStore.add(testDocs);
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
+						hasSize(1));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Great Depression")
+				.topK(overDefaultSize)
+				.similarityThresholdAll()
+				.build());
+
+			assertThat(results).hasSize(overDefaultSize);
+
+			// Remove all documents from the store
+			vectorStore.delete(testDocs.stream().map(Document::getId).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("Great Depression").topK(1).similarityThresholdAll().build()),
+						hasSize(0));
+		});
+	}
+
+	@Test
+	public void getNativeClientTest() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			// Test successful native client retrieval
+			Optional<ElasticsearchClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+
+			// Verify client functionality
+			ElasticsearchClient client = nativeClient.get();
+			IndicesStats stats = client.indices()
+				.stats(s -> s.index("spring-ai-document-index"))
+				.indices()
+				.get("spring-ai-document-index");
+			assertThat(stats).isNotNull();
 		});
 	}
 
@@ -433,7 +505,7 @@ class ElasticsearchVectorStoreIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 		@Bean

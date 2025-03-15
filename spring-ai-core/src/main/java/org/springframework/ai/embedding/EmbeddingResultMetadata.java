@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,13 +81,13 @@ public class EmbeddingResultMetadata implements ResultMetadata {
 
 	public static class ModalityUtils {
 
-		private static MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
+		private static final MimeType TEXT_MIME_TYPE = MimeTypeUtils.parseMimeType("text/*");
 
-		private static MimeType IMAGE_MIME_TYPE = MimeTypeUtils.parseMimeType("image/*");
+		private static final MimeType IMAGE_MIME_TYPE = MimeTypeUtils.parseMimeType("image/*");
 
-		private static MimeType VIDEO_MIME_TYPE = MimeTypeUtils.parseMimeType("video/*");
+		private static final MimeType VIDEO_MIME_TYPE = MimeTypeUtils.parseMimeType("video/*");
 
-		private static MimeType AUDIO_MIME_TYPE = MimeTypeUtils.parseMimeType("audio/*");
+		private static final MimeType AUDIO_MIME_TYPE = MimeTypeUtils.parseMimeType("audio/*");
 
 		/**
 		 * Infers the {@link ModalityType} of the source data used to generate the

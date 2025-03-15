@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -45,6 +44,7 @@ import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
 import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -227,7 +227,7 @@ class CassandraRichSchemaVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(0).getId());
 
-				assertThat(resultDoc.getContent()).contains("Neptunes gravity makes its atmosphere");
+				assertThat(resultDoc.getText()).contains("Neptunes gravity makes its atmosphere");
 
 				assertThat(resultDoc.getMetadata()).hasSize(3);
 
@@ -490,7 +490,7 @@ class CassandraRichSchemaVectorStoreIT {
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getContent()).contains(URANUS_ORBIT_QUERY);
+				assertThat(resultDoc.getText()).contains(URANUS_ORBIT_QUERY);
 				assertThat(resultDoc.getMetadata()).containsKey("revision");
 
 				String newContent = "The World is Big and Salvation Lurks Around the Corner";
@@ -523,7 +523,7 @@ class CassandraRichSchemaVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isNotEqualTo(sameIdDocument.getId());
-				assertThat(resultDoc.getContent()).doesNotContain(newContent);
+				assertThat(resultDoc.getText()).doesNotContain(newContent);
 
 				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 			}
@@ -555,7 +555,7 @@ class CassandraRichSchemaVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents.get(1).getId());
 
-				assertThat(resultDoc.getContent()).contains(URANUS_ORBIT_QUERY);
+				assertThat(resultDoc.getText()).contains(URANUS_ORBIT_QUERY);
 
 				assertThat(resultDoc.getMetadata()).containsKeys("id", "revision", DocumentMetadata.DISTANCE.value());
 				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);

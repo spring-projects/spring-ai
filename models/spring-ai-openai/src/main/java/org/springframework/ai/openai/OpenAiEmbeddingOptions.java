@@ -117,42 +117,6 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #encodingFormat(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withEncodingFormat(String encodingFormat) {
-			this.options.setEncodingFormat(encodingFormat);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #dimensions(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withDimensions(Integer dimensions) {
-			this.options.dimensions = dimensions;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #user(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUser(String user) {
-			this.options.setUser(user);
-			return this;
-		}
-
 		public OpenAiEmbeddingOptions build() {
 			return this.options;
 		}

@@ -37,7 +37,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the requisite schema for you but you must opt-in by setting `...initialize-schema=true` in the `application.properties` file.
 
@@ -229,3 +229,20 @@ If you are not retrieving the documents in the expected order or the search resu
 
 Embedding models can have a significant impact on the search results (i.e. make sure if your data is in Spanish to use a Spanish or multilingual embedding model).
 ====
+
+== Accessing the Native Client
+
+The Typesense Vector Store implementation provides access to the underlying native Typesense client (`Client`) through the `getNativeClient()` method:
+
+[source,java]
+----
+TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+Optional<Client> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    Client client = nativeClient.get();
+    // Use the native client for Typesense-specific operations
+}
+----
+
+The native client gives you access to Typesense-specific features and operations that might not be exposed through the `VectorStore` interface.

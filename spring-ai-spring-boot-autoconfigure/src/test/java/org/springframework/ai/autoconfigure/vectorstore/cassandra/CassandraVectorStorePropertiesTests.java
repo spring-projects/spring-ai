@@ -19,7 +19,6 @@ package org.springframework.ai.autoconfigure.vectorstore.cassandra;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
-import org.springframework.ai.vectorstore.cassandra.CassandraVectorStoreConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

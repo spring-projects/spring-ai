@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import org.mariadb.jdbc.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -151,8 +153,9 @@ public class MariaDBSchemaValidator {
 		try {
 			String quotedId = Driver.enquoteIdentifier(identifier, alwaysQuote);
 			// force use of simple table name
-			if (Pattern.compile("`?[\\p{Alnum}_]*`?").matcher(identifier).matches())
+			if (Pattern.compile("`?[\\p{Alnum}_]*`?").matcher(identifier).matches()) {
 				return quotedId;
+			}
 			throw new IllegalArgumentException(String
 				.format("Identifier '%s' should only contain alphanumeric characters and underscores", quotedId));
 		}

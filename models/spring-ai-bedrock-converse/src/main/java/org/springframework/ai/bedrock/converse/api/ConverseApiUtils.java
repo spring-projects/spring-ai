@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,8 +68,8 @@ import org.springframework.util.StringUtils;
 public final class ConverseApiUtils {
 
 	public static final ChatResponse EMPTY_CHAT_RESPONSE = ChatResponse.builder()
-		.withGenerations(List.of())
-		.withMetadata("empty", true)
+		.generations(List.of())
+		.metadata("empty", true)
 		.build();
 
 	private ConverseApiUtils() {
@@ -122,9 +122,9 @@ public final class ConverseApiUtils {
 
 				List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
 
-				Long promptTokens = 0L;
-				Long generationTokens = 0L;
-				Long totalTokens = 0L;
+				Integer promptTokens = 0;
+				Integer generationTokens = 0;
+				Integer totalTokens = 0;
 
 				for (ToolUseAggregationEvent.ToolUseEntry toolUseEntry : toolUseAggregationEvent.toolUseEntries()) {
 					var functionCallId = toolUseEntry.id();
@@ -135,7 +135,7 @@ public final class ConverseApiUtils {
 
 					if (toolUseEntry.usage() != null) {
 						promptTokens += toolUseEntry.usage().getPromptTokens();
-						generationTokens += toolUseEntry.usage().getGenerationTokens();
+						generationTokens += toolUseEntry.usage().getCompletionTokens();
 						totalTokens += toolUseEntry.usage().getTotalTokens();
 					}
 				}
@@ -207,9 +207,8 @@ public final class ConverseApiUtils {
 				Document modelResponseFields = lastAggregation.metadataAggregation().additionalModelResponseFields();
 				ConverseStreamMetrics metrics = metadataEvent.metrics();
 
-				DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens().longValue(),
-						metadataEvent.usage().outputTokens().longValue(),
-						metadataEvent.usage().totalTokens().longValue());
+				DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens(),
+						metadataEvent.usage().outputTokens(), metadataEvent.usage().totalTokens());
 
 				var chatResponseMetaData = ChatResponseMetadata.builder().usage(usage).build();
 
@@ -231,9 +230,9 @@ public final class ConverseApiUtils {
 
 					var metadataBuilder = ChatResponseMetadata.builder();
 
-					Long promptTokens = perviousChatResponse.getMetadata().getUsage().getPromptTokens();
-					Long generationTokens = perviousChatResponse.getMetadata().getUsage().getGenerationTokens();
-					Long totalTokens = perviousChatResponse.getMetadata().getUsage().getTotalTokens();
+					Integer promptTokens = perviousChatResponse.getMetadata().getUsage().getPromptTokens();
+					Integer generationTokens = perviousChatResponse.getMetadata().getUsage().getCompletionTokens();
+					int totalTokens = perviousChatResponse.getMetadata().getUsage().getTotalTokens();
 
 					if (chatResponse.getMetadata() != null) {
 						metadataBuilder.id(chatResponse.getMetadata().getId());
@@ -244,7 +243,7 @@ public final class ConverseApiUtils {
 						if (chatResponse.getMetadata().getUsage() != null) {
 							promptTokens = promptTokens + chatResponse.getMetadata().getUsage().getPromptTokens();
 							generationTokens = generationTokens
-									+ chatResponse.getMetadata().getUsage().getGenerationTokens();
+									+ chatResponse.getMetadata().getUsage().getCompletionTokens();
 							totalTokens = totalTokens + chatResponse.getMetadata().getUsage().getTotalTokens();
 						}
 					}
@@ -290,8 +289,8 @@ public final class ConverseApiUtils {
 		}
 		else if (event.sdkEventType() == EventType.METADATA) {
 			ConverseStreamMetadataEvent metadataEvent = (ConverseStreamMetadataEvent) event;
-			DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens().longValue(),
-					metadataEvent.usage().outputTokens().longValue(), metadataEvent.usage().totalTokens().longValue());
+			DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens(),
+					metadataEvent.usage().outputTokens(), metadataEvent.usage().totalTokens());
 			toolUseEventAggregator.withUsage(usage);
 
 			if (!toolUseEventAggregator.isEmpty()) {
@@ -331,6 +330,10 @@ public final class ConverseApiUtils {
 		attributes.remove("functions");
 		attributes.remove("toolContext");
 		attributes.remove("functionCallbacks");
+
+		attributes.remove("toolCallbacks");
+		attributes.remove("toolNames");
+		attributes.remove("internalToolExecutionEnabled");
 
 		attributes.remove("temperature");
 		attributes.remove("topK");
@@ -484,7 +487,7 @@ public final class ConverseApiUtils {
 			return new Builder();
 		}
 
-		public final static class Builder {
+		public static final class Builder {
 
 			private String role;
 

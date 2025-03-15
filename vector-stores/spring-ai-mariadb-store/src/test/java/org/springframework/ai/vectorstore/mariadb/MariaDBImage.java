@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2024-2024 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,12 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * @author Diego Dupin
  */
-public class MariaDBImage {
+public final class MariaDBImage {
 
 	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("mariadb:11.7-rc");
+
+	private MariaDBImage() {
+		throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+	}
 
 }

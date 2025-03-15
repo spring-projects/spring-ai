@@ -77,14 +77,16 @@ public class MistralAiRetryTests {
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new MistralAiChatModel(this.mistralAiApi,
-				MistralAiChatOptions.builder()
-					.temperature(0.7)
-					.topP(1.0)
-					.safePrompt(false)
-					.model(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-					.build(),
-				null, this.retryTemplate);
+		this.chatModel = MistralAiChatModel.builder()
+			.mistralAiApi(this.mistralAiApi)
+			.defaultOptions(MistralAiChatOptions.builder()
+				.temperature(0.7)
+				.topP(1.0)
+				.safePrompt(false)
+				.model(MistralAiApi.ChatModel.SMALL.getValue())
+				.build())
+			.retryTemplate(this.retryTemplate)
+			.build();
 		this.embeddingModel = new MistralAiEmbeddingModel(this.mistralAiApi, MetadataMode.EMBED,
 				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build(),
 				this.retryTemplate);

@@ -30,6 +30,7 @@ you'll need to develop a low-level client API class. This often involves utilizi
 Ensure your client conforms to the link:https://docs.spring.io/spring-ai/reference/api/generic-model.html[Generic Model API].
 Use existing request and response classes if your model's inputs and outputs are supported.
 If not, create new classes for the Generic Model API and establish a new Java package.
+When logging Personally Identifiable Information (PII), mark it with https://github.com/spring-projects/spring-ai/tree/main/spring-ai-core/src/main/java/org/springframework/ai/util/LoggingMarkers.java[`PII_MARKER`] Slf4j marker.
 
 . *Implement Auto-Configuration and a Spring Boot Starter*: This step involves creating the
 necessary auto-configuration and Spring Boot Starter to easily instantiate the new model with

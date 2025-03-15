@@ -156,10 +156,10 @@ var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
 var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(this.openAiAudioApi);
 
 OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-    .withVoice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
-    .withSpeed(1.0f)
-    .withResponseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-    .withModel(OpenAiAudioApi.TtsModel.TTS_1.value)
+    .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+    .speed(1.0f)
+    .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .model(OpenAiAudioApi.TtsModel.TTS_1.value)
     .build();
 
 SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!", this.speechOptions);

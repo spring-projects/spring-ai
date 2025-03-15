@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,13 @@ package org.springframework.ai.vectorstore.cassandra;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -30,18 +34,21 @@ import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore.SchemaColumn;
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore.SchemaColumnTags;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -57,10 +64,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Mick Semb Wever
  * @author Thomas Vitale
+ * @author Soby Chacko
  * @since 1.0.0
  */
 @Testcontainers
-class CassandraVectorStoreIT {
+class CassandraVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static CassandraContainer<?> cassandraContainer = new CassandraContainer<>(CassandraImage.DEFAULT_IMAGE);
@@ -106,6 +114,24 @@ class CassandraVectorStoreIT {
 		return store;
 	}
 
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
+	}
+
+	@Override
+	protected Document createDocument(String country, Integer year) {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("country", country);
+		if (year != null) {
+			metadata.put("year", year.shortValue());
+		}
+		return new Document("The World is Big and Salvation Lurks Around the Corner", metadata);
+	}
+
 	@Test
 	void ensureBeanGetsCreated() {
 		this.contextRunner.run(context -> {
@@ -132,7 +158,7 @@ class CassandraVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
 
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
 				assertThat(resultDoc.getMetadata()).hasSize(2);
@@ -165,7 +191,7 @@ class CassandraVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
 
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
 				assertThat(resultDoc.getMetadata()).hasSize(1);
@@ -361,7 +387,7 @@ class CassandraVectorStoreIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 				assertThat(resultDoc.getMetadata()).containsKey("meta1");
 
 				Document sameIdDocument = new Document(document.getId(),
@@ -375,7 +401,7 @@ class CassandraVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				store.delete(List.of(document.getId()));
@@ -408,12 +434,125 @@ class CassandraVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
 
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 				assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 			}
+		});
+	}
+
+	@Test
+	protected void deleteByFilter() {
+		this.contextRunner.run(context -> {
+			try (CassandraVectorStore store = createTestStore(context,
+					new SchemaColumn("country", DataTypes.TEXT, SchemaColumnTags.INDEXED),
+					new SchemaColumn("year", DataTypes.SMALLINT, SchemaColumnTags.INDEXED))) {
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", (short) 2020));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", (short) 2023));
+
+				store.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				// Verify initial state
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
+				assertThat(results).hasSize(3);
+
+				// Delete documents with country = BG
+				Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
+						new Filter.Key("country"), new Filter.Value("BG"));
+
+				store.delete(filterExpression);
+
+				results = store.similaritySearch(
+						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+			}
+		});
+	}
+
+	@Test
+	protected void deleteWithStringFilterExpression() {
+		this.contextRunner.run(context -> {
+			try (CassandraVectorStore store = createTestStore(context,
+					new SchemaColumn("country", DataTypes.TEXT, SchemaColumnTags.INDEXED),
+					new SchemaColumn("year", DataTypes.SMALLINT, SchemaColumnTags.INDEXED))) {
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", (short) 2020));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", (short) 2023));
+
+				store.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				// Verify initial state
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
+				assertThat(results).hasSize(3);
+
+				store.delete("country == 'BG'");
+
+				results = store.similaritySearch(
+						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
+
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
+			}
+		});
+	}
+
+	@Test
+	void deleteWithComplexFilterExpression() {
+		this.contextRunner.run(context -> {
+			try (CassandraVectorStore store = createTestStore(context,
+					new SchemaColumn("type", DataTypes.TEXT, SchemaColumnTags.INDEXED),
+					new SchemaColumn("priority", DataTypes.SMALLINT, SchemaColumnTags.INDEXED))) {
+
+				var doc1 = new Document("Content 1", Map.of("type", "A", "priority", (short) 1));
+				var doc2 = new Document("Content 2", Map.of("type", "A", "priority", (short) 2));
+				var doc3 = new Document("Content 3", Map.of("type", "B", "priority", (short) 1));
+
+				store.add(List.of(doc1, doc2, doc3));
+
+				// Complex filter expression: (type == 'A' AND priority > 1)
+				Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
+						new Filter.Key("priority"), new Filter.Value((short) 1));
+				Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+						new Filter.Value("A"));
+				Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+						priorityFilter);
+
+				store.delete(complexFilter);
+
+				var results = store.similaritySearch(
+						SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+
+				assertThat(results).hasSize(2);
+				assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+					.containsExactlyInAnyOrder("A", "B");
+				assertThat(results.stream()
+					.map(doc -> ((Short) doc.getMetadata().get("priority")).intValue())
+					.collect(Collectors.toList())).containsExactlyInAnyOrder(1, 1);
+			}
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			CassandraVectorStore vectorStore = context.getBean(CassandraVectorStore.class);
+			Optional<CqlSession> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 

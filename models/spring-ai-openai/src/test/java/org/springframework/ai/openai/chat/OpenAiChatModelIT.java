@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,6 +62,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioPa
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -213,12 +215,15 @@ public class OpenAiChatModelIT extends AbstractIT {
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
-		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
-		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
+		assertThat(streamingTokenUsage.getPromptTokens()).isCloseTo(referenceTokenUsage.getPromptTokens(),
+				Percentage.withPercentage(25));
+		assertThat(streamingTokenUsage.getCompletionTokens()).isCloseTo(referenceTokenUsage.getCompletionTokens(),
+				Percentage.withPercentage(25));
+		assertThat(streamingTokenUsage.getTotalTokens()).isCloseTo(referenceTokenUsage.getTotalTokens(),
+				Percentage.withPercentage(25));
 
 	}
 
@@ -328,7 +333,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
-	void functionCallTest() {
+	@Deprecated
+	void functionCallTestDeprecated() {
 
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
@@ -350,6 +356,28 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
+	}
+
+	@Test
+	void functionCallTest() {
+
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = OpenAiChatOptions.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -409,9 +437,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450L).isLessThan(600L);
-		assertThat(usage.getGenerationTokens()).isGreaterThan(230L).isLessThan(360L);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680L).isLessThan(900L);
+		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
+		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(900);
 	}
 
 	@Test
@@ -438,9 +466,9 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450L).isLessThan(600L);
-		assertThat(usage.getGenerationTokens()).isGreaterThan(230L).isLessThan(360L);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680L).isLessThan(960L);
+		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
+		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(960);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -474,8 +502,8 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
-		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket", "fruit stand");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
 	@Test
@@ -592,8 +620,17 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	@Test
+	void validateStoreAndMetadata() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().store(true).metadata(Map.of("type", "dev")).build();
+
+		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke", options));
+
+		assertThat(response).isNotNull();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

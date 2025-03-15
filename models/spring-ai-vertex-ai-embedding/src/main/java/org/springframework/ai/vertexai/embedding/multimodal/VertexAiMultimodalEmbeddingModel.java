@@ -32,6 +32,7 @@ import com.google.protobuf.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
@@ -44,7 +45,6 @@ import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
 import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.ImageBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.MultimodalInstanceBuilder;
@@ -141,10 +141,10 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		}
 
 		// optional text parameter
-		if (StringUtils.hasText(document.getContent())) {
-			instanceBuilder.text(document.getContent());
+		if (StringUtils.hasText(document.getText())) {
+			instanceBuilder.text(document.getText());
 			documentMetadata.put(ModalityType.TEXT,
-					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getContent()));
+					new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, document.getText()));
 		}
 
 		Media media = document.getMedia();
@@ -153,7 +153,7 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 				instanceBuilder.text(media.getData().toString());
 				documentMetadata.put(ModalityType.TEXT,
 						new DocumentMetadata(document.getId(), MimeTypeUtils.TEXT_PLAIN, media.getData()));
-				if (StringUtils.hasText(document.getContent())) {
+				if (StringUtils.hasText(document.getText())) {
 					logger.warn("Media type String overrides the Document text content!");
 				}
 			}
@@ -242,8 +242,12 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens,
 			Map<String, Object> metadataToUse) {
-		Usage usage = new VertexAiEmbeddingUsage(totalTokens);
+		Usage usage = getDefaultUsage(totalTokens);
 		return new EmbeddingResponseMetadata(model, usage, metadataToUse);
+	}
+
+	private DefaultUsage getDefaultUsage(Integer totalTokens) {
+		return new DefaultUsage(0, 0, totalTokens);
 	}
 
 	@Override
