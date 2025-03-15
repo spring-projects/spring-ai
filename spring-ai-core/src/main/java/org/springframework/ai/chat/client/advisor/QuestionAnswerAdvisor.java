@@ -19,19 +19,13 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.client.advisor.api.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -201,7 +195,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		// @formatter:on
 
 		return advisedResponses.map(ar -> {
-			if (onFinishReason().test(ar)) {
+			if (AdvisedResponseStreamUtils.onFinishReason().test(ar)) {
 				ar = after(ar);
 			}
 			return ar;
@@ -258,16 +252,6 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		}
 		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
 
-	}
-
-	private Predicate<AdvisedResponse> onFinishReason() {
-		return advisedResponse -> advisedResponse.response()
-			.getResults()
-			.stream()
-			.filter(result -> result != null && result.getMetadata() != null
-					&& StringUtils.hasText(result.getMetadata().getFinishReason()))
-			.findFirst()
-			.isPresent();
 	}
 
 	public static final class Builder {
