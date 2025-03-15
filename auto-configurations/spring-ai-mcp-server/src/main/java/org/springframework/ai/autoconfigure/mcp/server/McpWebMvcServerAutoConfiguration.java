@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebMvcSseServerTransport;
 import io.modelcontextprotocol.spec.ServerMcpTransport;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -68,8 +69,9 @@ public class McpWebMvcServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper objectMapper,
+	public WebMvcSseServerTransport webMvcSseServerTransport(ObjectProvider<ObjectMapper> objectMapperProvider,
 			McpServerProperties serverProperties) {
+		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 		return new WebMvcSseServerTransport(objectMapper, serverProperties.getSseMessageEndpoint());
 	}
 

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransport;
 import io.modelcontextprotocol.spec.ServerMcpTransport;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -72,8 +73,10 @@ public class McpWebFluxServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebFluxSseServerTransport webFluxTransport(McpServerProperties serverProperties) {
-		return new WebFluxSseServerTransport(new ObjectMapper(), serverProperties.getSseMessageEndpoint());
+	public WebFluxSseServerTransport webFluxTransport(ObjectProvider<ObjectMapper> objectMapperProvider,
+			McpServerProperties serverProperties) {
+		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		return new WebFluxSseServerTransport(objectMapper, serverProperties.getSseMessageEndpoint());
 	}
 
 	// Router function for SSE transport used by Spring WebFlux to start an HTTP server.
