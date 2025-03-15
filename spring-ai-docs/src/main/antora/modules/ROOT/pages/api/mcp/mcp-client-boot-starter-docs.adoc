@@ -233,7 +233,7 @@ Sync::
 @Component
 public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
     @Override
-    public void customize(String serverConfiurationName, McpClient.SyncSpec spec) {
+    public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
 
         // Customize the request configuration
         spec.requestTimeout(Duration.ofSeconds(30));
