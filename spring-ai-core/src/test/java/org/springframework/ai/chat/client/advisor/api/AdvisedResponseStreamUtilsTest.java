@@ -13,6 +13,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+/**
+ * Unit tests for {@link AdvisedResponseStreamUtils}.
+ *
+ * @author ghdcksgml1
+ */
 class AdvisedResponseStreamUtilsTest {
 
 	@Nested
