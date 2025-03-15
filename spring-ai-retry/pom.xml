@@ -50,7 +50,6 @@
 		<dependency>
 			<groupId>org.springframework.retry</groupId>
 			<artifactId>spring-retry</artifactId>
-			<version>${spring-retry.version}</version>
 		</dependency>
 		
 		<dependency>

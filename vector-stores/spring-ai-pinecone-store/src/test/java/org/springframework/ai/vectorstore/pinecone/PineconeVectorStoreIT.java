@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,18 @@ package org.springframework.ai.vectorstore.pinecone;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
+import io.pinecone.clients.Pinecone;
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -33,10 +37,11 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore.PineconeVectorStoreConfig;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -50,15 +55,11 @@ import static org.hamcrest.Matchers.hasSize;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
-public class PineconeVectorStoreIT {
-
-	// Replace the PINECONE_ENVIRONMENT, PINECONE_PROJECT_ID, PINECONE_INDEX_NAME and
-	// PINECONE_API_KEY with your pinecone credentials.
-	private static final String PINECONE_ENVIRONMENT = "gcp-starter";
-
-	private static final String PINECONE_PROJECT_ID = "814621f";
+public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
@@ -66,6 +67,8 @@ public class PineconeVectorStoreIT {
 	private static final String PINECONE_NAMESPACE = "";
 
 	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";
+
+	private static final int DEFAULT_TOP_K = 50;
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -89,7 +92,15 @@ public class PineconeVectorStoreIT {
 	public static void beforeAll() {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
-		Awaitility.setDefaultTimeout(Duration.ONE_MINUTE);
+		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@Test
@@ -111,7 +122,7 @@ public class PineconeVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).hasSize(2);
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
@@ -207,7 +218,7 @@ public class PineconeVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -220,7 +231,7 @@ public class PineconeVectorStoreIT {
 			SearchRequest fooBarSearchRequest = SearchRequest.builder().query("FooBar").topK(5).build();
 
 			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getContent(),
+				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getText(),
 						equalTo("The World is Big and Salvation Lurks Around the Corner"));
 
 			results = vectorStore.similaritySearch(fooBarSearchRequest);
@@ -228,7 +239,7 @@ public class PineconeVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -271,7 +282,7 @@ public class PineconeVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-			assertThat(resultDoc.getContent()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
@@ -284,6 +295,91 @@ public class PineconeVectorStoreIT {
 		});
 	}
 
+	@Test
+	void deleteWithComplexFilterExpression() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			cleanupExistingDocuments(vectorStore, "Content");
+
+			var documents = createContentDocuments();
+			vectorStore.add(documents);
+
+			awaitDocumentsCount(vectorStore, "Content", 3);
+
+			Filter.Expression complexFilter = createComplexFilter();
+			vectorStore.delete(complexFilter);
+
+			awaitDocumentsCount(vectorStore, "Content", 2);
+
+			List<Document> results = searchDocuments(vectorStore, "Content", 5);
+			assertThat(results).hasSize(2);
+			assertComplexFilterResults(results);
+
+			vectorStore.delete(List.of(documents.get(0).getId(), documents.get(2).getId())); // doc1
+																								// and
+																								// doc3
+			awaitDocumentsCount(vectorStore, "Content", 0);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+			Optional<Pinecone> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+		});
+	}
+
+	private void cleanupExistingDocuments(VectorStore vectorStore, String query) {
+		List<Document> existingDocs = searchDocuments(vectorStore, query, DEFAULT_TOP_K);
+		if (!existingDocs.isEmpty()) {
+			vectorStore.delete(existingDocs.stream().map(Document::getId).toList());
+		}
+		awaitDocumentsCount(vectorStore, query, 0);
+	}
+
+	private List<Document> createWorldDocuments() {
+		return List.of(
+				new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020)),
+				new Document("The World is Big and Salvation Lurks Around the Corner", Map.of("country", "NL")),
+				new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023)));
+	}
+
+	private List<Document> createContentDocuments() {
+		return List.of(new Document("Content 1", Map.of("type", "A", "priority", 1)),
+				new Document("Content 2", Map.of("type", "A", "priority", 2)),
+				new Document("Content 3", Map.of("type", "B", "priority", 1)));
+	}
+
+	private Filter.Expression createComplexFilter() {
+		Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT, new Filter.Key("priority"),
+				new Filter.Value(1));
+		Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+				new Filter.Value("A"));
+		return new Filter.Expression(Filter.ExpressionType.AND, typeFilter, priorityFilter);
+	}
+
+	private void assertComplexFilterResults(List<Document> results) {
+		assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+			.containsExactlyInAnyOrder("A", "B");
+		assertThat(results.stream()
+			.map(doc -> ((Number) doc.getMetadata().get("priority")).intValue())
+			.collect(Collectors.toList())).containsExactlyInAnyOrder(1, 1);
+	}
+
+	private List<Document> searchDocuments(VectorStore vectorStore, String query, int topK) {
+		return vectorStore
+			.similaritySearch(SearchRequest.builder().query(query).topK(topK).similarityThresholdAll().build());
+	}
+
+	private void awaitDocumentsCount(VectorStore vectorStore, String query, int expectedCount) {
+		Awaitility.await().until(() -> searchDocuments(vectorStore, query, DEFAULT_TOP_K), hasSize(expectedCount));
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration
 	public static class TestApplication {
@@ -291,8 +387,10 @@ public class PineconeVectorStoreIT {
 		@Bean
 		public VectorStore vectorStore(EmbeddingModel embeddingModel) {
 			String apikey = System.getenv("PINECONE_API_KEY");
-			return PineconeVectorStore
-				.builder(embeddingModel, apikey, PINECONE_PROJECT_ID, PINECONE_ENVIRONMENT, PINECONE_INDEX_NAME)
+
+			return PineconeVectorStore.builder(embeddingModel)
+				.apiKey(apikey)
+				.indexName(PINECONE_INDEX_NAME)
 				.namespace(PINECONE_NAMESPACE)
 				.contentFieldName(CUSTOM_CONTENT_FIELD_NAME)
 				.build();

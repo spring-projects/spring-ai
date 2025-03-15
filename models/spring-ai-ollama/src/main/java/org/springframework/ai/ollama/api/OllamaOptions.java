@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.ai.ollama.api;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -48,7 +51,7 @@ import org.springframework.util.Assert;
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
+public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
@@ -305,6 +308,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	@JsonProperty("truncate")
 	private Boolean truncate;
 
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
+
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
@@ -312,38 +318,24 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
 	 * the chat completion requests.
 	 * Functions with those names must exist in the functionCallbacks registry.
-	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Boolean proxyToolCalls;
-
-	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-
-	/**
-	 * Helper factory method to create a new {@link OllamaOptions} instance.
-	 * @return A new {@link OllamaOptions} instance.
-	 * @deprecated Use {@link OllamaOptions#builder()} instead
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public static OllamaOptions create() {
-		return new OllamaOptions();
 	}
 
 	/**
@@ -392,379 +384,10 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				.mirostatEta(fromOptions.getMirostatEta())
 				.penalizeNewline(fromOptions.getPenalizeNewline())
 				.stop(fromOptions.getStop())
-				.functions(fromOptions.getFunctions())
-				.proxyToolCalls(fromOptions.getProxyToolCalls())
-				.functionCallbacks(fromOptions.getFunctionCallbacks())
+				.toolNames(fromOptions.getToolNames())
+				.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+				.toolCallbacks(fromOptions.getToolCallbacks())
 				.toolContext(fromOptions.getToolContext()).build();
-	}
-
-	/**
-	 * @deprecated Use {@link Builder#build()} instead
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions build() {
-		return this;
-	}
-
-
-
-
-
-	/**
-	 * @deprecated use {@link Builder#model( String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withModel(String model) {
-		this.model = model;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#model( OllamaModel)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withModel(OllamaModel model) {
-		this.model = model.getName();
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#format} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withFormat(Object format) {
-		this.format = format;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#keepAlive} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withKeepAlive(String keepAlive) {
-		this.keepAlive = keepAlive;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#truncate( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withTruncate(Boolean truncate) {
-		this.truncate = truncate;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#useNUMA( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withUseNUMA(Boolean useNUMA) {
-		this.useNUMA = useNUMA;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#numCtx( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withNumCtx(Integer numCtx) {
-		this.numCtx = numCtx;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#numBatch( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withNumBatch(Integer numBatch) {
-		this.numBatch = numBatch;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#numGPU( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withNumGPU(Integer numGPU) {
-		this.numGPU = numGPU;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#mainGPU( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withMainGPU(Integer mainGPU) {
-		this.mainGPU = mainGPU;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#lowVRAM( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withLowVRAM(Boolean lowVRAM) {
-		this.lowVRAM = lowVRAM;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#f16KV( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withF16KV(Boolean f16KV) {
-		this.f16KV = f16KV;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#logitsAll( Boolean)}  instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withLogitsAll(Boolean logitsAll) {
-		this.logitsAll = logitsAll;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#vocabOnly( Boolean)}  instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withVocabOnly(Boolean vocabOnly) {
-		this.vocabOnly = vocabOnly;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#useMMap( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withUseMMap(Boolean useMMap) {
-		this.useMMap = useMMap;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#useMLock( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withUseMLock(Boolean useMLock) {
-		this.useMLock = useMLock;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#numThread( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withNumThread(Integer numThread) {
-		this.numThread = numThread;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#numKeep( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withNumKeep(Integer numKeep) {
-		this.numKeep = numKeep;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#seed( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withSeed(Integer seed) {
-		this.seed = seed;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#numPredict( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withNumPredict(Integer numPredict) {
-		this.numPredict = numPredict;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#topK( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withTopK(Integer topK) {
-		this.topK = topK;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#topP( Double)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withTopP(Double topP) {
-		this.topP = topP;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#tfsZ( Float)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withTfsZ(Float tfsZ) {
-		this.tfsZ = tfsZ;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#typicalP( Float)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withTypicalP(Float typicalP) {
-		this.typicalP = typicalP;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#repeatLastN( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withRepeatLastN(Integer repeatLastN) {
-		this.repeatLastN = repeatLastN;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#temperature( Double)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withTemperature(Double temperature) {
-		this.temperature = temperature;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#repeatPenalty( Double)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withRepeatPenalty(Double repeatPenalty) {
-		this.repeatPenalty = repeatPenalty;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#presencePenalty( Double)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#frequencyPenalty( Double)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#mirostat( Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withMirostat(Integer mirostat) {
-		this.mirostat = mirostat;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#mirostatTau( Float)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withMirostatTau(Float mirostatTau) {
-		this.mirostatTau = mirostatTau;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#mirostatEta( Float)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withMirostatEta(Float mirostatEta) {
-		this.mirostatEta = mirostatEta;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#penalizeNewline( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withPenalizeNewline(Boolean penalizeNewline) {
-		this.penalizeNewline = penalizeNewline;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#stop( List)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withStop(List<String> stop) {
-		this.stop = stop;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#functionCallbacks( List)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#functions( Set)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withFunctions(Set<String> functions) {
-		this.functions = functions;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#function( String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withFunction(String functionName) {
-		Assert.hasText(functionName, "Function name must not be empty");
-		this.functions.add(functionName);
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#proxyToolCalls( Boolean)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link Builder#toolContext( Map)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public OllamaOptions withToolContext(Map<String, Object> toolContext) {
-		if (this.toolContext == null) {
-			this.toolContext = toolContext;
-		}
-		else {
-			this.toolContext.putAll(toolContext);
-		}
-		return this;
 	}
 
 	// -------------------
@@ -1063,23 +686,73 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	}
 
 	@Override
+	@JsonIgnore
+	public List<FunctionCallback> getToolCallbacks() {
+    	return this.toolCallbacks;
+    }
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+    }
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+    	return this.toolNames;
+    }
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+    	this.toolNames = toolNames;
+    }
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean isInternalToolExecutionEnabled() {
+    	return internalToolExecutionEnabled;
+    }
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+    	this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+    }
+
+	@Override
+	@Deprecated
+	@JsonIgnore
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
+		return this.getToolCallbacks();
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
+		this.setToolCallbacks(functionCallbacks);
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Set<String> getFunctions() {
-		return this.functions;
+		return this.getToolNames();
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public void setFunctions(Set<String> functions) {
-		this.functions = functions;
+		this.setToolNames(functions);
 	}
 
 	@Override
@@ -1089,20 +762,26 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
+		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
 	}
 
+	@Deprecated
+	@JsonIgnore
 	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
+		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
+	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
+	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
@@ -1149,9 +828,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
-				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
-				&& Objects.equals(this.functions, that.functions) && Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
@@ -1161,7 +840,7 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
 				this.topP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
+				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
 				this.toolContext);
 	}
 
@@ -1339,25 +1018,53 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 			return this;
 		}
 
+		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		@Deprecated
 		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
-			return this;
+			return toolCallbacks(functionCallbacks);
 		}
 
+		@Deprecated
 		public Builder functions(Set<String> functions) {
-			Assert.notNull(functions, "Function names must not be null");
-			this.options.functions = functions;
-			return this;
+			return toolNames(functions);
 		}
 
+		@Deprecated
 		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
-			return this;
+			return toolNames(functionName);
 		}
 
+		@Deprecated
 		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+			if (proxyToolCalls != null) {
+				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
+			}
 			return this;
 		}
 
@@ -1369,318 +1076,6 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				this.options.toolContext.putAll(toolContext);
 			}
 			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			return model(model);
-		}
-
-		/**
-		 * @deprecated use {@link #model(OllamaModel)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(OllamaModel model) {
-			return model(model);
-		}
-
-		/**
-		 * @deprecated use {@link #format(Object)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFormat(Object format) {
-			return format(format);
-		}
-
-		/**
-		 * @deprecated use {@link #keepAlive(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withKeepAlive(String keepAlive) {
-			return keepAlive(keepAlive);
-		}
-
-		/**
-		 * @deprecated use {@link #truncate(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTruncate(Boolean truncate) {
-			return truncate(truncate);
-		}
-
-		/**
-		 * @deprecated use {@link #useNUMA(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUseNUMA(Boolean useNUMA) {
-			return useNUMA(useNUMA);
-		}
-
-		/**
-		 * @deprecated use {@link #numCtx(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withNumCtx(Integer numCtx) {
-			return numCtx(numCtx);
-		}
-
-		/**
-		 * @deprecated use {@link #numBatch(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withNumBatch(Integer numBatch) {
-			return numBatch(numBatch);
-		}
-
-		/**
-		 * @deprecated use {@link #numGPU(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withNumGPU(Integer numGPU) {
-			return numGPU(numGPU);
-		}
-
-		/**
-		 * @deprecated use {@link #mainGPU(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMainGPU(Integer mainGPU) {
-			return mainGPU(mainGPU);
-		}
-
-		/**
-		 * @deprecated use {@link #lowVRAM(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withLowVRAM(Boolean lowVRAM) {
-			return lowVRAM(lowVRAM);
-		}
-
-		/**
-		 * @deprecated use {@link #f16KV(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withF16KV(Boolean f16KV) {
-			return f16KV(f16KV);
-		}
-
-		/**
-		 * @deprecated use {@link #logitsAll(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withLogitsAll(Boolean logitsAll) {
-			return logitsAll(logitsAll);
-		}
-
-		/**
-		 * @deprecated use {@link #vocabOnly(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withVocabOnly(Boolean vocabOnly) {
-			return vocabOnly(vocabOnly);
-		}
-
-		/**
-		 * @deprecated use {@link #useMMap(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUseMMap(Boolean useMMap) {
-			return useMMap(useMMap);
-		}
-
-		/**
-		 * @deprecated use {@link #useMLock(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUseMLock(Boolean useMLock) {
-			return useMLock(useMLock);
-		}
-
-		/**
-		 * @deprecated use {@link #numThread(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withNumThread(Integer numThread) {
-			return numThread(numThread);
-		}
-
-		/**
-		 * @deprecated use {@link #numKeep(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withNumKeep(Integer numKeep) {
-			return numKeep(numKeep);
-		}
-
-		/**
-		 * @deprecated use {@link #seed(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withSeed(Integer seed) {
-			return seed(seed);
-		}
-
-		/**
-		 * @deprecated use {@link #numPredict(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withNumPredict(Integer numPredict) {
-			return numPredict(numPredict);
-		}
-
-		/**
-		 * @deprecated use {@link #topK(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopK(Integer topK) {
-			return topK(topK);
-		}
-
-		/**
-		 * @deprecated use {@link #topP(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopP(Double topP) {
-			return topP(topP);
-		}
-
-		/**
-		 * @deprecated use {@link #tfsZ(Float)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTfsZ(Float tfsZ) {
-			return tfsZ(tfsZ);
-		}
-
-		/**
-		 * @deprecated use {@link #typicalP(Float)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTypicalP(Float typicalP) {
-			return typicalP(typicalP);
-		}
-
-		/**
-		 * @deprecated use {@link #repeatLastN(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withRepeatLastN(Integer repeatLastN) {
-			return repeatLastN(repeatLastN);
-		}
-
-		/**
-		 * @deprecated use {@link #temperature(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTemperature(Double temperature) {
-			return temperature(temperature);
-		}
-
-		/**
-		 * @deprecated use {@link #repeatPenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withRepeatPenalty(Double repeatPenalty) {
-			return repeatPenalty(repeatPenalty);
-		}
-
-		/**
-		 * @deprecated use {@link #presencePenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPresencePenalty(Double presencePenalty) {
-			return presencePenalty(presencePenalty);
-		}
-
-		/**
-		 * @deprecated use {@link #frequencyPenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
-			return frequencyPenalty(frequencyPenalty);
-		}
-
-		/**
-		 * @deprecated use {@link #mirostat(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMirostat(Integer mirostat) {
-			return mirostat(mirostat);
-		}
-
-		/**
-		 * @deprecated use {@link #mirostatTau(Float)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMirostatTau(Float mirostatTau) {
-			return mirostatTau(mirostatTau);
-		}
-
-		/**
-		 * @deprecated use {@link #mirostatEta(Float)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMirostatEta(Float mirostatEta) {
-			return mirostatEta(mirostatEta);
-		}
-
-		/**
-		 * @deprecated use {@link #penalizeNewline(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPenalizeNewline(Boolean penalizeNewline) {
-			return penalizeNewline(penalizeNewline);
-		}
-
-		/**
-		 * @deprecated use {@link #stop(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withStop(List<String> stop) {
-			return stop(stop);
-		}
-
-		/**
-		 * @deprecated use {@link #functionCallbacks(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return functionCallbacks(functionCallbacks);
-		}
-
-		/**
-		 * @deprecated use {@link #functions(Set)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctions(Set<String> functions) {
-			return functions(functions);
-		}
-
-		/**
-		 * @deprecated use {@link #function(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunction(String functionName) {
-			return function(functionName);
-		}
-
-		/**
-		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
-			return proxyToolCalls(proxyToolCalls);
-		}
-
-		/**
-		 * @deprecated use {@link #toolContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withToolContext(Map<String, Object> toolContext) {
-			return toolContext(toolContext);
 		}
 
 		public OllamaOptions build() {

@@ -82,7 +82,7 @@ dependencies {
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 To connect to and configure the `PgVectorStore`, you need to provide access details for your instance.
 A simple configuration can be provided via Spring Boot's `application.yml`.
@@ -243,3 +243,20 @@ You can connect to this server like this:
 ----
 psql -U postgres -h localhost -p 5432
 ----
+
+== Accessing the Native Client
+
+The PGVector Store implementation provides access to the underlying native JDBC client (`JdbcTemplate`) through the `getNativeClient()` method:
+
+[source,java]
+----
+PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
+Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    JdbcTemplate jdbc = nativeClient.get();
+    // Use the native client for PostgreSQL-specific operations
+}
+----
+
+The native client gives you access to PostgreSQL-specific features and operations that might not be exposed through the `VectorStore` interface.

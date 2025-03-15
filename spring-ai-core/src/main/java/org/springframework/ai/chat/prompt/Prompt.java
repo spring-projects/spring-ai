@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.ModelRequest;
+import org.springframework.lang.Nullable;
 
 /**
  * The Prompt class represents a prompt used in AI model requests. A prompt consists of
@@ -36,11 +37,13 @@ import org.springframework.ai.model.ModelRequest;
  *
  * @author Mark Pollack
  * @author luocongqiu
+ * @author Thomas Vitale
  */
 public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
+	@Nullable
 	private ChatOptions chatOptions;
 
 	public Prompt(String contents) {
@@ -81,6 +84,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	@Override
+	@Nullable
 	public ChatOptions getOptions() {
 		return this.chatOptions;
 	}

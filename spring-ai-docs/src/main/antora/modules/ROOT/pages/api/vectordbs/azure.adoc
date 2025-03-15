@@ -226,3 +226,20 @@ is converted into the following Azure OData link:https://learn.microsoft.com/en-
 ----
 $filter search.in(meta_country, 'UK,NL', ',') and meta_year ge 2020
 ----
+
+== Accessing the Native Client
+
+The Azure Vector Store implementation provides access to the underlying native Azure Search client (`SearchClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+AzureVectorStore vectorStore = context.getBean(AzureVectorStore.class);
+Optional<SearchClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    SearchClient client = nativeClient.get();
+    // Use the native client for Azure Search-specific operations
+}
+----
+
+The native client gives you access to Azure Search-specific features and operations that might not be exposed through the `VectorStore` interface.

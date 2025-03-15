@@ -42,9 +42,9 @@ import org.springframework.util.CollectionUtils;
  */
 public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
-	private final static String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
+	private static final String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
 
-	private final static int DEFAULT_ORDER = 0;
+	private static final int DEFAULT_ORDER = 0;
 
 	private final String failureResponse;
 
@@ -97,7 +97,7 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 
 	private AdvisedResponse createFailureResponse(AdvisedRequest advisedRequest) {
 		return new AdvisedResponse(ChatResponse.builder()
-			.withGenerations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
+			.generations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
 			.build(), advisedRequest.adviseContext());
 	}
 
@@ -128,33 +128,6 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 		}
 
 		public Builder order(int order) {
-			this.order = order;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #sensitiveWords(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withSensitiveWords(List<String> sensitiveWords) {
-			this.sensitiveWords = sensitiveWords;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #failureResponse(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFailureResponse(String failureResponse) {
-			this.failureResponse = failureResponse;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #order(int)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withOrder(int order) {
 			this.order = order;
 			return this;
 		}

@@ -179,14 +179,6 @@ public class Document {
 	}
 
 	/**
-	 * @deprecated Use getText() instead as it more accurately reflects the content type
-	 */
-	@Deprecated
-	public String getContent() {
-		return this.getText();
-	}
-
-	/**
 	 * Returns the document's text content, if any.
 	 * @return the text content if {@link #isText()} is true, null otherwise
 	 * @see #isText()
@@ -336,20 +328,6 @@ public class Document {
 		 * @see #media(Media)
 		 */
 		public Builder text(@Nullable String text) {
-			this.text = text;
-			return this;
-		}
-
-		/**
-		 * Sets the text content of the document.
-		 * @param text the text content to set
-		 * @return the builder instance
-		 * @deprecated since 1.0.0-M5, use {@link #text(String)} instead as it more
-		 * accurately reflects that this Document instance will contain text rather than
-		 * generic content. This method will be removed in a future release.
-		 */
-		@Deprecated(since = "1.0.0-M5", forRemoval = true)
-		public Builder content(@Nullable String text) {
 			this.text = text;
 			return this;
 		}

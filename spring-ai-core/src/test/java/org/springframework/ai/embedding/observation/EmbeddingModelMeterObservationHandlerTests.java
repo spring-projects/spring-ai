@@ -16,8 +16,10 @@
 
 package org.springframework.ai.embedding.observation;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -104,18 +106,27 @@ class EmbeddingModelMeterObservationHandlerTests {
 	static class TestUsage implements Usage {
 
 		@Override
-		public Long getPromptTokens() {
-			return 1000L;
+		public Integer getPromptTokens() {
+			return 1000;
 		}
 
 		@Override
-		public Long getGenerationTokens() {
-			return 0L;
+		public Integer getCompletionTokens() {
+			return 0;
 		}
 
 		@Override
-		public Long getTotalTokens() {
-			return 1000L;
+		public Integer getTotalTokens() {
+			return 1000;
+		}
+
+		@Override
+		public Map<String, Integer> getNativeUsage() {
+			Map<String, Integer> usage = new HashMap<>();
+			usage.put("promptTokens", getPromptTokens());
+			usage.put("completionTokens", getCompletionTokens());
+			usage.put("totalTokens", getTotalTokens());
+			return usage;
 		}
 
 	}

@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -42,6 +43,8 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -157,12 +160,26 @@ public class AnthropicApi {
 	 * status code and headers.
 	 */
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @param additionalHttpHeader Additional HTTP headers.
+	 * @return Entity response with {@link ChatCompletionResponse} as a body and HTTP
+	 * status code and headers.
+	 */
+	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest,
+			MultiValueMap<String, String> additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
 		return this.restClient.post()
 			.uri("/v1/messages")
+			.headers(headers -> headers.addAll(additionalHttpHeader))
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletionResponse.class);
@@ -175,9 +192,22 @@ public class AnthropicApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest) {
+		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @param additionalHttpHeader Additional HTTP headers.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest,
+			MultiValueMap<String, String> additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -185,6 +215,7 @@ public class AnthropicApi {
 
 		return this.webClient.post()
 			.uri("/v1/messages")
+			.headers(headers -> headers.addAll(additionalHttpHeader))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -228,6 +259,11 @@ public class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-3-7-sonnet-latest model.
+		 */
+		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
+		
+		/**
 		 * The claude-3-5-sonnet-20241022 model.
 		 */
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
@@ -238,7 +274,7 @@ public class AnthropicApi {
 		CLAUDE_3_OPUS("claude-3-opus-latest"),
 
 		/**
-		 * The CLAUDE_3_SONNET
+		 * The CLAUDE_3_SONNET (Deprecated. To be removed on July 21, 2025)
 		 */
 		CLAUDE_3_SONNET("claude-3-sonnet-20240229"),
 
@@ -254,20 +290,15 @@ public class AnthropicApi {
 
 		// Legacy models
 		/**
-		 * The CLAUDE_2_1
+		 * The CLAUDE_2_1 (Deprecated. To be removed on July 21, 2025)
 		 */
 		CLAUDE_2_1("claude-2.1"),
 
 		/**
-		 * The CLAUDE_2_0
+		 * The CLAUDE_2_0 (Deprecated. To be removed on July 21, 2025)
 		 */
-		CLAUDE_2("claude-2.0"),
+		CLAUDE_2("claude-2.0");
 
-		/**
-		 * The CLAUDE_INSTANT_1_2
-		 */
-		@Deprecated
-		CLAUDE_INSTANT_1_2("claude-instant-1.2");
 		// @formatter:on
 
 		private final String value;

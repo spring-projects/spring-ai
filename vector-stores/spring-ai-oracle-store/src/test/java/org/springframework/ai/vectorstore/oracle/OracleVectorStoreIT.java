@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,27 +22,33 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import oracle.jdbc.pool.OracleDataSource;
 import org.junit.Assert;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.ai.document.DocumentMetadata;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.MountableFile;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -62,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
 @Disabled("Oracle image is 2GB")
-public class OracleVectorStoreIT {
+public class OracleVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE).withCopyFileToContainer(
@@ -115,6 +121,17 @@ public class OracleVectorStoreIT {
 			previous = current;
 		}
 		return true;
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				testFunction.accept(vectorStore);
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -255,7 +272,7 @@ public class OracleVectorStoreIT {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 
-				assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 
 				Document sameIdDocument = new Document(document.getId(),
@@ -268,7 +285,7 @@ public class OracleVectorStoreIT {
 				assertThat(results).hasSize(1);
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
-				assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
@@ -313,6 +330,57 @@ public class OracleVectorStoreIT {
 			});
 	}
 
+	@Test
+	void deleteWithComplexFilterExpression() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var doc1 = new Document("Content 1", Map.of("type", "A", "priority", 1));
+				var doc2 = new Document("Content 2", Map.of("type", "A", "priority", 2));
+				var doc3 = new Document("Content 3", Map.of("type", "B", "priority", 1));
+
+				vectorStore.add(List.of(doc1, doc2, doc3));
+
+				// Complex filter expression: (type == 'A' AND priority > 1)
+				Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
+						new Filter.Key("priority"), new Filter.Value(1));
+				Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+						new Filter.Value("A"));
+				Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+						priorityFilter);
+
+				vectorStore.delete(complexFilter);
+
+				var results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+
+				assertThat(results).hasSize(2);
+				assertThat(results.stream()
+					.map(doc -> doc.getMetadata().get("type").toString().replace("\"", ""))
+					.collect(Collectors.toList())).containsExactlyInAnyOrder("A", "B");
+				assertThat(results.stream()
+					.map(doc -> Integer.parseInt(doc.getMetadata().get("priority").toString()))
+					.collect(Collectors.toList())).containsExactlyInAnyOrder(1, 1);
+
+				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
+			});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				OracleVectorStore vectorStore = context.getBean(OracleVectorStore.class);
+				Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+				assertThat(nativeClient).isPresent();
+			});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestClient {
@@ -328,9 +396,9 @@ public class OracleVectorStoreIT {
 			return OracleVectorStore.builder(jdbcTemplate, embeddingModel)
 				.tableName(OracleVectorStore.DEFAULT_TABLE_NAME)
 				.indexType(OracleVectorStore.OracleVectorStoreIndexType.IVF)
-				.distanceType(distanceType)
+				.distanceType(this.distanceType)
 				.dimensions(384)
-				.searchAccuracy(searchAccuracy)
+				.searchAccuracy(this.searchAccuracy)
 				.initializeSchema(true)
 				.removeExistingVectorStoreTable(true)
 				.forcedNormalization(true)

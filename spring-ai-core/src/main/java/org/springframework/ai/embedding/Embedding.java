@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.embedding;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResult;
@@ -25,11 +26,11 @@ import org.springframework.ai.model.ModelResult;
  */
 public class Embedding implements ModelResult<float[]> {
 
-	private float[] embedding;
+	private final float[] embedding;
 
-	private Integer index;
+	private final Integer index;
 
-	private EmbeddingResultMetadata metadata;
+	private final EmbeddingResultMetadata metadata;
 
 	/**
 	 * Creates a new {@link Embedding} instance.
@@ -83,12 +84,12 @@ public class Embedding implements ModelResult<float[]> {
 			return false;
 		}
 		Embedding other = (Embedding) o;
-		return Objects.equals(this.embedding, other.embedding) && Objects.equals(this.index, other.index);
+		return Arrays.equals(this.embedding, other.embedding) && Objects.equals(this.index, other.index);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.embedding, this.index);
+		return Objects.hash(Arrays.hashCode(this.embedding), this.index);
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,24 +51,20 @@ import com.azure.cosmos.util.CosmosPagedFlux;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -98,53 +94,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	private final List<String> metadataFieldsList;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private CosmosAsyncContainer container;
-
-	/**
-	 * Creates a new CosmosDBVectorStore with basic configuration.
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @param cosmosClient the Cosmos DB client
-	 * @param properties the configuration properties
-	 * @param embeddingModel the embedding model
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(CosmosAsyncClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
-			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel) {
-		this(observationRegistry, customObservationConvention, cosmosClient, properties, embeddingModel,
-				new TokenCountBatchingStrategy());
-	}
-
-	/**
-	 * Creates a new CosmosDBVectorStore with full configuration.
-	 * @param observationRegistry the observation registry
-	 * @param customObservationConvention the custom observation convention
-	 * @param cosmosClient the Cosmos DB client
-	 * @param properties the configuration properties
-	 * @param embeddingModel the embedding model
-	 * @param batchingStrategy the batching strategy
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(CosmosAsyncClient, EmbeddingModel)}
-	 * ()} instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CosmosDBVectorStore(ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention, CosmosAsyncClient cosmosClient,
-			CosmosDBVectorStoreConfig properties, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
-		this(builder(cosmosClient, embeddingModel).containerName(properties.getContainerName())
-			.databaseName(properties.getDatabaseName())
-			.partitionKeyPath(properties.getPartitionKeyPath())
-			.vectorStoreThroughput(properties.getVectorStoreThroughput())
-			.vectorDimensions(properties.getVectorDimensions())
-			.metadataFields(properties.getMetadataFieldsList())
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
@@ -166,10 +116,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.vectorStoreThroughput = builder.vectorStoreThroughput;
 		this.vectorDimensions = builder.vectorDimensions;
 		this.metadataFieldsList = builder.metadataFieldsList;
-		this.batchingStrategy = builder.batchingStrategy;
 
-		cosmosClient.createDatabaseIfNotExists(databaseName).block();
-		initializeContainer(containerName, databaseName, vectorStoreThroughput, vectorDimensions, partitionKeyPath);
+		this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
+				this.partitionKeyPath);
 	}
 
 	public static Builder builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
@@ -180,10 +130,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			long vectorDimensions, String partitionKeyPath) {
 
 		// Set defaults if not provided
-		if (vectorStoreThroughput == 0) {
+		if (this.vectorStoreThroughput == 0) {
 			vectorStoreThroughput = 400;
 		}
-		if (partitionKeyPath == null) {
+		if (this.partitionKeyPath == null) {
 			partitionKeyPath = "/id";
 		}
 
@@ -197,17 +147,17 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			subPartitionKeyDefinition.setKind(PartitionKind.MULTI_HASH);
 		}
 		else {
-			subPartitionKeyDefinition.setPaths(Collections.singletonList(partitionKeyPath));
+			subPartitionKeyDefinition.setPaths(Collections.singletonList(this.partitionKeyPath));
 			subPartitionKeyDefinition.setKind(PartitionKind.HASH);
 		}
-		CosmosContainerProperties collectionDefinition = new CosmosContainerProperties(containerName,
+		CosmosContainerProperties collectionDefinition = new CosmosContainerProperties(this.containerName,
 				subPartitionKeyDefinition);
 		// Set vector embedding policy
 		CosmosVectorEmbeddingPolicy embeddingPolicy = new CosmosVectorEmbeddingPolicy();
 		CosmosVectorEmbedding embedding = new CosmosVectorEmbedding();
 		embedding.setPath("/embedding");
 		embedding.setDataType(CosmosVectorDataType.FLOAT32);
-		embedding.setDimensions(vectorDimensions);
+		embedding.setDimensions(this.vectorDimensions);
 		embedding.setDistanceFunction(CosmosVectorDistanceFunction.COSINE);
 		embeddingPolicy.setCosmosVectorEmbeddings(Collections.singletonList(embedding));
 		collectionDefinition.setVectorEmbeddingPolicy(embeddingPolicy);
@@ -226,10 +176,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		indexingPolicy.setVectorIndexes(List.of(cosmosVectorIndexSpec));
 		collectionDefinition.setIndexingPolicy(indexingPolicy);
 
-		ThroughputProperties throughputProperties = ThroughputProperties.createManualThroughput(vectorStoreThroughput);
-		CosmosAsyncDatabase cosmosAsyncDatabase = this.cosmosClient.getDatabase(databaseName);
+		ThroughputProperties throughputProperties = ThroughputProperties
+			.createManualThroughput(this.vectorStoreThroughput);
+		CosmosAsyncDatabase cosmosAsyncDatabase = this.cosmosClient.getDatabase(this.databaseName);
 		cosmosAsyncDatabase.createContainerIfNotExists(collectionDefinition, throughputProperties).block();
-		this.container = cosmosAsyncDatabase.getContainer(containerName);
+		this.container = cosmosAsyncDatabase.getContainer(this.containerName);
 	}
 
 	@Override
@@ -319,7 +270,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		try {
 			// Convert the list of IDs into bulk delete operations
 			List<CosmosItemOperation> itemOperations = idList.stream()
@@ -333,12 +284,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 						response.getResponse().getStatusCode()))
 				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
 				.blockLast(); // This will block until all operations have finished
-
-			return Optional.of(true);
 		}
 		catch (Exception e) {
 			logger.error("Exception while deleting documents: {}", e.getMessage());
-			return Optional.of(false);
 		}
 	}
 
@@ -422,6 +370,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			.similarityMetric("cosine");
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.container;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Builder class for creating {@link CosmosDBVectorStore} instances.
 	 * <p>
@@ -447,8 +402,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		private long vectorDimensions = 1536;
 
 		private List<String> metadataFieldsList = new ArrayList<>();
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		private Builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -522,20 +475,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 */
 		public Builder metadataFields(List<String> metadataFieldsList) {
-			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
+			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(this.metadataFieldsList)
 					: new ArrayList<>();
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "BatchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

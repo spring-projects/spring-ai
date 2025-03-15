@@ -38,6 +38,7 @@ import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -69,7 +70,7 @@ class SimpleVectorStoreTests {
 		List<Document> results = this.vectorStore.similaritySearch("test content");
 		assertThat(results).hasSize(1).first().satisfies(result -> {
 			assertThat(result.getId()).isEqualTo("1");
-			assertThat(result.getContent()).isEqualTo("test content");
+			assertThat(result.getText()).isEqualTo("test content");
 			assertThat(result.getMetadata()).containsEntry("key", "value");
 		});
 	}
@@ -112,8 +113,8 @@ class SimpleVectorStoreTests {
 	@Test
 	void shouldHandleDeleteOfNonexistentDocument() {
 		this.vectorStore.delete(List.of("nonexistent-id"));
-		// Should not throw exception and return true
-		assertThat(this.vectorStore.delete(List.of("nonexistent-id")).get()).isTrue();
+		// Should not throw exception
+		assertDoesNotThrow(() -> this.vectorStore.delete(List.of("nonexistent-id")));
 	}
 
 	@Test
@@ -150,7 +151,7 @@ class SimpleVectorStoreTests {
 		List<Document> results = loadedStore.similaritySearch("test content");
 		assertThat(results).hasSize(1).first().satisfies(result -> {
 			assertThat(result.getId()).isEqualTo("1");
-			assertThat(result.getContent()).isEqualTo("test content");
+			assertThat(result.getText()).isEqualTo("test content");
 			assertThat(result.getMetadata()).containsEntry("key", "value");
 		});
 	}
@@ -208,7 +209,7 @@ class SimpleVectorStoreTests {
 		assertThat(resultIds).containsExactlyInAnyOrderElementsOf(expectedIds);
 
 		// Verify content integrity
-		results.forEach(doc -> assertThat(doc.getContent()).isEqualTo("content " + doc.getId()));
+		results.forEach(doc -> assertThat(doc.getText()).isEqualTo("content " + doc.getId()));
 	}
 
 	@Test

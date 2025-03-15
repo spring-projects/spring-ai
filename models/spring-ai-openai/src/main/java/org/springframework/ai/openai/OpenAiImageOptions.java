@@ -16,11 +16,12 @@
 
 package org.springframework.ai.openai;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.image.ImageOptions;
 
-import java.util.Objects;
+import org.springframework.ai.image.ImageOptions;
 
 /**
  * OpenAI Image API options. OpenAiImageOptions.java

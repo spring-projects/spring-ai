@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,10 +47,14 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.converter.SimpleVectorStoreFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.core.io.Resource;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -69,6 +73,7 @@ import org.springframework.core.io.Resource;
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Jemin Huh
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
@@ -76,29 +81,17 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private final ObjectMapper objectMapper;
 
+	private final ExpressionParser expressionParser;
+
+	private final FilterExpressionConverter filterExpressionConverter;
+
 	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
-
-	/**
-	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SimpleVectorStore(EmbeddingModel embeddingModel) {
-		this(embeddingModel, ObservationRegistry.NOOP, null);
-	}
-
-	/**
-	 * use {@link #SimpleVectorStore(SimpleVectorStoreBuilder)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public SimpleVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
-			VectorStoreObservationConvention customObservationConvention) {
-		this(builder(embeddingModel).observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention));
-	}
 
 	protected SimpleVectorStore(SimpleVectorStoreBuilder builder) {
 		super(builder);
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.expressionParser = new SpelExpressionParser();
+		this.filterExpressionConverter = new SimpleVectorStoreFilterExpressionConverter();
 	}
 
 	/**
@@ -119,36 +112,42 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
-			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
-					document.getContent(), document.getMetadata(), embedding);
+			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(), document.getText(),
+					document.getMetadata(), embedding);
 			this.store.put(document.getId(), storeContent);
 		}
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		for (String id : idList) {
 			this.store.remove(id);
 		}
-		return Optional.of(true);
 	}
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
-		if (request.getFilterExpression() != null) {
-			throw new UnsupportedOperationException(
-					"The [" + this.getClass() + "] doesn't support metadata filtering!");
-		}
-
+		Predicate<SimpleVectorStoreContent> documentFilterPredicate = doFilterPredicate(request);
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
+			.filter(documentFilterPredicate)
 			.map(content -> content
 				.toDocument(EmbeddingMath.cosineSimilarity(userQueryEmbedding, content.getEmbedding())))
 			.filter(document -> document.getScore() >= request.getSimilarityThreshold())
 			.sorted(Comparator.comparing(Document::getScore).reversed())
 			.limit(request.getTopK())
 			.toList();
+	}
+
+	private Predicate<SimpleVectorStoreContent> doFilterPredicate(SearchRequest request) {
+		return request.hasFilterExpression() ? document -> {
+			StandardEvaluationContext context = new StandardEvaluationContext();
+			context.setVariable("metadata", document.getMetadata());
+			return this.expressionParser
+				.parseExpression(this.filterExpressionConverter.convertExpression(request.getFilterExpression()))
+				.getValue(context, Boolean.class);
+		} : document -> true;
 	}
 
 	/**
@@ -227,14 +226,12 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private String getVectorDbAsJson() {
 		ObjectWriter objectWriter = this.objectMapper.writerWithDefaultPrettyPrinter();
-		String json;
 		try {
-			json = objectWriter.writeValueAsString(this.store);
+			return objectWriter.writeValueAsString(this.store);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException("Error serializing documentMap to JSON.", e);
 		}
-		return json;
 	}
 
 	private float[] getUserQueryEmbedding(String query) {

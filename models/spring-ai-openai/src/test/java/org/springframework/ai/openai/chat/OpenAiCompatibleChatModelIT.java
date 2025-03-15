@@ -55,17 +55,27 @@ public class OpenAiCompatibleChatModelIT {
 	static Stream<ChatModel> openAiCompatibleApis() {
 		Stream.Builder<ChatModel> builder = Stream.builder();
 
-		builder.add(new OpenAiChatModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")), forModelName("gpt-3.5-turbo")));
+		builder.add(OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build())
+			.defaultOptions(forModelName("gpt-3.5-turbo"))
+			.build());
 
-		if (System.getenv("GROQ_API_KEY") != null) {
-			builder.add(new OpenAiChatModel(new OpenAiApi("https://api.groq.com/openai", System.getenv("GROQ_API_KEY")),
-					forModelName("llama3-8b-8192")));
-		}
+		// (26.01.2025) Disable because the Groq API is down. TODO: Re-enable when the API
+		// is back up.
+		// if (System.getenv("GROQ_API_KEY") != null) {
+		// builder.add(new OpenAiChatModel(new OpenAiApi("https://api.groq.com/openai",
+		// System.getenv("GROQ_API_KEY")),
+		// forModelName("llama3-8b-8192")));
+		// }
 
 		if (System.getenv("OPEN_ROUTER_API_KEY") != null) {
-			builder.add(new OpenAiChatModel(
-					new OpenAiApi("https://openrouter.ai/api", System.getenv("OPEN_ROUTER_API_KEY")),
-					forModelName("meta-llama/llama-3-8b-instruct")));
+			builder.add(OpenAiChatModel.builder()
+				.openAiApi(OpenAiApi.builder()
+					.baseUrl("https://openrouter.ai/api")
+					.apiKey(System.getenv("OPEN_ROUTER_API_KEY"))
+					.build())
+				.defaultOptions(forModelName("meta-llama/llama-3-8b-instruct"))
+				.build());
 		}
 
 		return builder.build();

@@ -12,12 +12,18 @@ NOTE: Spring AI supports Spring Boot 3.2.x and 3.3.x
 
 Head on over to https://start.spring.io/[start.spring.io] and select the AI Models and Vector Stores that you want to use in your new applications.
 
-[[repositories]]
-== Add Milestone and Snapshot Repositories
+[[artifact-repositories]]
+== Artifact Repositories
 
-If you prefer to add the dependency snippets by hand, follow the directions in the following sections.
+=== Milestones - Use Maven Central
 
-To use the Milestone and Snapshot version, you need to add references to the Spring Milestone and/or Snapshot repositories in your build file.
+As of 1.0.0-M6, releases are available in Maven Central.
+No changes to your build file are required.
+
+
+=== Snapshots - Add Snapshot Repositories
+
+To use the Snapshot (and pre 1.0.0-M6 milestone) versions, you need to add the following snapshot repositories in your build file.
 
 Add the following repository definitions to your Maven or Gradle build file:
 
@@ -44,6 +50,17 @@ Maven::
         <enabled>false</enabled>
       </releases>
     </repository>
+    <repository>
+      <name>Central Portal Snapshots</name>
+      <id>central-portal-snapshots</id>
+      <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
   </repositories>
 ----
 
@@ -55,6 +72,10 @@ repositories {
   mavenCentral()
   maven { url 'https://repo.spring.io/milestone' }
   maven { url 'https://repo.spring.io/snapshot' }
+  maven {
+    name = 'Central Portal Snapshots'
+    url = 'https://central.sonatype.com/repository/maven-snapshots/'
+  }  
 }
 ----
 ======
@@ -115,28 +136,6 @@ Each of the following sections in the documentation shows which dependencies you
 * xref:api/audio/speech.adoc[Text-To-Speech (TTS) Models]
 * xref:api/vectordbs.adoc[Vector Databases]
 
-== Sample Projects
+== Spring AI samples
 
-You can clone these projects on GitHub to get started.
-
-=== Flight Booking Assistant
-
-https://github.com/tzolov/playground-flight-booking
-
-AI-powered system that has access to terms and conditions (Retrieval Augmented Generation, RAG),
-access tools (Java methods) to perform actions (Function Calling) and uses an LLM to interact with the user
-
-
-=== OpenAI
-
-* https://github.com/rd-1-2022/ai-openai-helloworld
-
-=== Azure OpenAI
-
-* https://github.com/rd-1-2022/ai-azure-openai-helloworld
-* https://github.com/Azure-Samples/spring-ai-azure-workshop
-
-// * https://github.com/rd-1-2022/ai-azure-stuff-prompt
-// * https://github.com/rd-1-2022/ai-azure-prompt-template
-// * https://github.com/rd-1-2022/ai-azure-openai-prompt-roles
-// * https://github.com/rd-1-2022/ai-azure-retrieval-augmented-generation
+Please refer to https://github.com/danvega/awesome-spring-ai[this page] for more resources and samples related to Spring AI.

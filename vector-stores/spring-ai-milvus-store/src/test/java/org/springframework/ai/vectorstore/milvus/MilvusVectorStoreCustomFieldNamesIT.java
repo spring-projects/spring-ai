@@ -103,21 +103,19 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				List<Document> fullResult = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Spring").build());
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.toList();
+				List<Double> scores = fullResult.stream().map(doc -> doc.getScore()).toList();
 
-				assertThat(distances).hasSize(3);
+				assertThat(scores).hasSize(3);
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double threshold = (scores.get(0) + scores.get(1)) / 2;
 
 				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(1 - threshold).build());
+						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(String.valueOf(resultDoc.getId())).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
@@ -144,21 +142,19 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				List<Document> fullResult = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Spring").build());
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.toList();
+				List<Double> scores = fullResult.stream().map(doc -> doc.getScore()).toList();
 
-				assertThat(distances).hasSize(3);
+				assertThat(scores).hasSize(3);
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double threshold = (scores.get(0) + scores.get(1)) / 2;
 
 				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(1 - threshold).build());
+						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(String.valueOf(resultDoc.getId())).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
@@ -187,22 +183,20 @@ class MilvusVectorStoreCustomFieldNamesIT {
 				List<Document> fullResult = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Spring").build());
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.toList();
+				List<Double> scores = fullResult.stream().map(doc -> doc.getScore()).toList();
 
-				assertThat(distances).hasSize(3);
+				assertThat(scores).hasSize(3);
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double threshold = (scores.get(0) + scores.get(1)) / 2;
 
 				List<Document> results = vectorStore.similaritySearch(
-						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(1 - threshold).build());
+						SearchRequest.builder().query("Spring").topK(5).similarityThreshold(threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				// Verify that the auto ID is used
 				assertThat(String.valueOf(resultDoc.getId())).isNotEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
 
@@ -258,7 +252,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 		@Bean
 		EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 	}

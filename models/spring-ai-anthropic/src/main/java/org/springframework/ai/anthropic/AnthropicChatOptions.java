@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,12 @@
 package org.springframework.ai.anthropic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -30,7 +33,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -42,7 +47,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class AnthropicChatOptions implements FunctionCallingOptions {
+public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	private @JsonProperty("model") String model;
@@ -54,34 +59,34 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 	private @JsonProperty("top_k") Integer topK;
 
 	/**
-	 * Tool Function Callbacks to register with the ChatModel. For Prompt
-	 * Options the functionCallbacks are automatically enabled for the duration of the
-	 * prompt execution. For Default Options the functionCallbacks are registered but
-	 * disabled by default. Use the enableFunctions to set the functions from the registry
-	 * to be used by the ChatModel chat completion requests.
+	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
+	 * completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
 	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests. Functions with those names must exist in the
-	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
-	 * are automatically enabled for the duration of the prompt execution.
-	 *
-	 * Note that function enabled with the default options are enabled for all chat
-	 * completion requests. This could impact the token count and the billing. If the
-	 * functions is set in a prompt options, then the enabled functions are only active
-	 * for the duration of this prompt execution.
+	 * Collection of tool names to be resolved at runtime and used for tool calling in the
+	 * chat completion requests.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
+
+	/**
+	 * Whether to enable the tool execution lifecycle internally in ChatModel.
+	 */
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Boolean proxyToolCalls;
+	private Map<String, Object> toolContext = new HashMap<>();
 
+
+	/**
+	 * Optional HTTP headers to be added to the chat completion request.
+	 */
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, String> httpHeaders = new HashMap<>();
 
 	// @formatter:on
 
@@ -93,14 +98,17 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 		return builder().model(fromOptions.getModel())
 			.maxTokens(fromOptions.getMaxTokens())
 			.metadata(fromOptions.getMetadata())
-			.stopSequences(fromOptions.getStopSequences())
+			.stopSequences(
+					fromOptions.getStopSequences() != null ? new ArrayList<>(fromOptions.getStopSequences()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.topK(fromOptions.getTopK())
-			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
-			.proxyToolCalls(fromOptions.getProxyToolCalls())
-			.toolContext(fromOptions.getToolContext())
+			.toolCallbacks(
+					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
+			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.build();
 	}
 
@@ -167,25 +175,73 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
+	@JsonIgnore
+	public List<FunctionCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean isInternalToolExecutionEnabled() {
+		return internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	@Deprecated
+	@JsonIgnore
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
+		return this.getToolCallbacks();
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
-		this.functionCallbacks = functionCallbacks;
+		this.setToolCallbacks(functionCallbacks);
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Set<String> getFunctions() {
-		return this.functions;
+		return this.getToolNames();
 	}
 
 	@Override
-	public void setFunctions(Set<String> functions) {
-		Assert.notNull(functions, "Function must not be null");
-		this.functions = functions;
+	@Deprecated
+	@JsonIgnore
+	public void setFunctions(Set<String> functionNames) {
+		this.setToolNames(functionNames);
 	}
 
 	@Override
@@ -201,27 +257,68 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
+		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
 	}
 
+	@Deprecated
+	@JsonIgnore
 	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
+		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
+	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
+	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
 
+	@JsonIgnore
+	public Map<String, String> getHttpHeaders() {
+		return httpHeaders;
+	}
+
+	public void setHttpHeaders(Map<String, String> httpHeaders) {
+		this.httpHeaders = httpHeaders;
+	}
+
 	@Override
+	@SuppressWarnings("unchecked")
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof AnthropicChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.model, that.model) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.metadata, that.metadata)
+				&& Objects.equals(this.stopSequences, that.stopSequences)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.httpHeaders, that.httpHeaders);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(model, maxTokens, metadata, stopSequences, temperature, topP, topK, toolCallbacks,
+				toolNames, internalToolExecutionEnabled, toolContext, httpHeaders);
 	}
 
 	public static class Builder {
@@ -268,25 +365,54 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
+		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		@Deprecated
 		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
-			return this;
+			return toolCallbacks(functionCallbacks);
 		}
 
+		@Deprecated
 		public Builder functions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
-			return this;
+			return toolNames(functionNames);
 		}
 
+		@Deprecated
 		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
-			return this;
+			return toolNames(functionName);
 		}
 
+		@Deprecated
 		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+			if (proxyToolCalls != null) {
+				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
+			}
 			return this;
 		}
 
@@ -300,108 +426,9 @@ public class AnthropicChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			return model(model);
-		}
-
-		/**
-		 * @deprecated use {@link #model(AnthropicApi.ChatModel)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(AnthropicApi.ChatModel model) {
-			return model(model);
-		}
-
-		/**
-		 * @deprecated use {@link #maxTokens(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMaxTokens(Integer maxTokens) {
-			return maxTokens(maxTokens);
-		}
-
-		/**
-		 * @deprecated use {@link #metadata(ChatCompletionRequest.Metadata)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMetadata(ChatCompletionRequest.Metadata metadata) {
-			return metadata(metadata);
-		}
-
-		/**
-		 * @deprecated use {@link #stopSequences(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withStopSequences(List<String> stopSequences) {
-			return stopSequences(stopSequences);
-		}
-
-		/**
-		 * @deprecated use {@link #temperature(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTemperature(Double temperature) {
-			return temperature(temperature);
-		}
-
-		/**
-		 * @deprecated use {@link #topP(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopP(Double topP) {
-			return topP(topP);
-		}
-
-		/**
-		 * @deprecated use {@link #topK(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTopK(Integer topK) {
-			return topK(topK);
-		}
-
-		/**
-		 * @deprecated use {@link #functionCallbacks(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return functionCallbacks(functionCallbacks);
-		}
-
-		/**
-		 * @deprecated use {@link #functions(Set)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunctions(Set<String> functionNames) {
-			return functions(functionNames);
-		}
-
-		/**
-		 * @deprecated use {@link #function(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withFunction(String functionName) {
-			return function(functionName);
-		}
-
-		/**
-		 * @deprecated use {@link #proxyToolCalls(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
-			return proxyToolCalls(proxyToolCalls);
-		}
-
-		/**
-		 * @deprecated use {@link #toolContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withToolContext(Map<String, Object> toolContext) {
-			return toolContext(toolContext);
+		public Builder httpHeaders(Map<String, String> httpHeaders) {
+			this.options.setHttpHeaders(httpHeaders);
+			return this;
 		}
 
 		public AnthropicChatOptions build() {

@@ -43,7 +43,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 
@@ -84,7 +84,7 @@ A simple configuration can be provided via Spring Boot's `application.yml`,
 spring:
   data:
     redis:
-      uri: <redis instance uri>
+      url: <redis instance url>
   ai:
     vectorstore:
       redis:
@@ -212,3 +212,20 @@ public EmbeddingModel embeddingModel() {
 You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expressions.
 The `metadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
 ====
+
+== Accessing the Native Client
+
+The Redis Vector Store implementation provides access to the underlying native Redis client (`JedisPooled`) through the `getNativeClient()` method:
+
+[source,java]
+----
+RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    JedisPooled jedis = nativeClient.get();
+    // Use the native client for Redis-specific operations
+}
+----
+
+The native client gives you access to Redis-specific features and operations that might not be exposed through the `VectorStore` interface.

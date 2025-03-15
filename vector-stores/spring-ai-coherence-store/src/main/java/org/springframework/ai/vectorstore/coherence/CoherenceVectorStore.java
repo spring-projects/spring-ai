@@ -140,18 +140,6 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	private IndexType indexType;
 
 	/**
-	 * Creates a new CoherenceVectorStore with minimal configuration.
-	 * @param embeddingModel the embedding model to use
-	 * @param session the Coherence session
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore(EmbeddingModel embeddingModel, Session session) {
-		this(builder(session, embeddingModel));
-	}
-
-	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
 	 * create new CoherenceVectorStore instances.
 	 * @param builder the configured builder instance
@@ -177,46 +165,6 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		return new Builder(session, embeddingModel);
 	}
 
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setMapName(String mapName) {
-		this.mapName = mapName;
-		return this;
-	}
-
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setDistanceType(DistanceType distanceType) {
-		this.distanceType = distanceType;
-		return this;
-	}
-
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setIndexType(IndexType indexType) {
-		this.indexType = indexType;
-		return this;
-	}
-
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setForcedNormalization(boolean forcedNormalization) {
-		this.forcedNormalization = forcedNormalization;
-		return this;
-	}
-
 	@Override
 	public void doAdd(final List<Document> documents) {
 		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(documents.size() / 0.75f));
@@ -230,21 +178,15 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(final List<String> idList) {
+	public void doDelete(final List<String> idList) {
 		var chunkIds = idList.stream().map(this::toChunkId).toList();
-		Map<DocumentChunk.Id, Boolean> results = this.documentChunks.invokeAll(chunkIds, entry -> {
+		this.documentChunks.invokeAll(chunkIds, entry -> {
 			if (entry.isPresent()) {
 				entry.remove(false);
 				return true;
 			}
 			return false;
 		});
-		for (boolean r : results.values()) {
-			if (!r) {
-				return Optional.of(false);
-			}
-		}
-		return Optional.of(true);
 	}
 
 	@Override
@@ -325,6 +267,13 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		return VectorStoreObservationContext.builder(VectorStoreProvider.NEO4J.value(), operationName)
 			.collectionName(this.mapName)
 			.dimensions(this.embeddingModel.dimensions());
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.session;
+		return Optional.of(client);
 	}
 
 	/**
