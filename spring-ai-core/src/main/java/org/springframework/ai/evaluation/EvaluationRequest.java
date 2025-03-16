@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.springframework.ai.model.Content;
+import org.springframework.ai.document.Document;
 
 /**
  * Represents an evaluation request, which includes the user's text, a list of content
@@ -35,7 +35,7 @@ public class EvaluationRequest {
 
 	private final String userText;
 
-	private final List<Content> dataList;
+	private final List<Document> dataList;
 
 	private final String responseContent;
 
@@ -43,11 +43,11 @@ public class EvaluationRequest {
 		this(userText, Collections.emptyList(), responseContent);
 	}
 
-	public EvaluationRequest(List<Content> dataList, String responseContent) {
+	public EvaluationRequest(List<Document> dataList, String responseContent) {
 		this("", dataList, responseContent);
 	}
 
-	public EvaluationRequest(String userText, List<Content> dataList, String responseContent) {
+	public EvaluationRequest(String userText, List<Document> dataList, String responseContent) {
 		this.userText = userText;
 		this.dataList = dataList;
 		this.responseContent = responseContent;
@@ -57,7 +57,7 @@ public class EvaluationRequest {
 		return this.userText;
 	}
 
-	public List<Content> getDataList() {
+	public List<Document> getDataList() {
 		return this.dataList;
 	}
 

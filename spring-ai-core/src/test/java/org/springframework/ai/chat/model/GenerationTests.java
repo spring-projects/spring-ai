@@ -52,7 +52,7 @@ public class GenerationTests {
 		AssistantMessage assistantMessage = new AssistantMessage(expectedText);
 		Generation generation = new Generation(assistantMessage);
 
-		assertEquals(expectedText, generation.getOutput().getContent());
+		assertEquals(expectedText, generation.getOutput().getText());
 	}
 
 	@Test

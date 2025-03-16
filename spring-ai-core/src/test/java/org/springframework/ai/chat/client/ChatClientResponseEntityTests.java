@@ -42,6 +42,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientResponseEntityTests {
@@ -55,7 +56,7 @@ public class ChatClientResponseEntityTests {
 	@Test
 	public void responseEntityTest() {
 
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder().withKeyValue("key1", "value1").build();
+		ChatResponseMetadata metadata = ChatResponseMetadata.builder().keyValue("key1", "value1").build();
 
 		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				{"name":"John", "age":30}
@@ -77,7 +78,7 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about John");
+		assertThat(userMessage.getText()).contains("Tell me about John");
 	}
 
 	@Test
@@ -107,7 +108,7 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about them");
+		assertThat(userMessage.getText()).contains("Tell me about them");
 	}
 
 	@Test
@@ -132,7 +133,7 @@ public class ChatClientResponseEntityTests {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
-		assertThat(userMessage.getContent()).contains("Tell me about Max");
+		assertThat(userMessage.getText()).contains("Tell me about Max");
 	}
 
 	record MyBean(String name, int age) {

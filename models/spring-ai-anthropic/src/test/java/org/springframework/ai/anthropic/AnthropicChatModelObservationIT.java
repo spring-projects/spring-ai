@@ -33,7 +33,9 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for observation instrumentation in {@link AnthropicChatModel}.
  *
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @SpringBootTest(classes = AnthropicChatModelObservationIT.Config.class,
 		properties = "spring.ai.retry.on-http-codes=429")
@@ -68,18 +71,18 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
-			.withMaxTokens(2048)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopK(1)
-			.withTopP(1.0)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.maxTokens(2048)
+			.stopSequences(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topK(1)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -90,12 +93,12 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
-			.withMaxTokens(2048)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopK(1)
-			.withTopP(1.0)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.maxTokens(2048)
+			.stopSequences(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topK(1)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -109,7 +112,7 @@ public class AnthropicChatModelObservationIT {
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
 			.filter(r -> r.getResult() != null)
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -146,7 +149,7 @@ public class AnthropicChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
+					String.valueOf(responseMetadata.getUsage().getCompletionTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
@@ -170,7 +173,7 @@ public class AnthropicChatModelObservationIT {
 		public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi,
 				TestObservationRegistry observationRegistry) {
 			return new AnthropicChatModel(anthropicApi, AnthropicChatOptions.builder().build(),
-					RetryTemplate.defaultInstance(), new FunctionCallbackContext(), List.of(), observationRegistry);
+					ToolCallingManager.builder().build(), RetryTemplate.defaultInstance(), observationRegistry);
 		}
 
 	}

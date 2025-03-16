@@ -1,4 +1,6 @@
-= Azure OpenAI Function Calling
+= Azure OpenAI Function Calling (Deprecated)
+
+WARNING: This page describes the previous version of the Function Calling API, which has been deprecated and marked for remove in the next release. The current version is available at xref:api/tools.adoc[Tool Calling]. See the xref:api/tools-migration.adoc[Migration Guide] for more information.
 
 Function calling lets developers create a description of a function in their code, then pass that description to a language model in a request. The response from the model includes the name of a function that matches the description and the arguments to call it with.
 
@@ -124,8 +126,8 @@ static class Config {
 	public FunctionCallback weatherFunctionInfo() {
 
 		return FunctionCallback.builder()
-			.description("Get the current weather in a given location") // (2) function description
 			.function("CurrentWeather", new MockWeatherService()) // (1) function name
+			.description("Get the current weather in a given location") // (2) function description
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build();
 	}
@@ -150,7 +152,7 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage),
-		AzureOpenAiChatOptions.builder().withFunction("CurrentWeather").build())); // (1) Enable the function
+		AzureOpenAiChatOptions.builder().function("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -180,9 +182,9 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?  Use Multi-turn function calling.");
 
 var promptOptions = AzureOpenAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder()
-			.description("Get the current weather in a given location") // (2) function description
+	.functionCallbacks(List.of(FunctionCallback.builder()
 			.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+			.description("Get the current weather in a given location") // (2) function description
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build()))
 	.build();

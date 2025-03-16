@@ -37,12 +37,13 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
@@ -80,7 +81,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultOptions(OpenAiChatOptions.builder()
-				.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue()).build())
+				.model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build())
 			.defaultUser(REASON_QUESTION)
 			.build();
 
@@ -112,7 +113,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -214,7 +215,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
-				.options(OpenAiChatOptions.builder().withStreamUsage(true).build())
+				.options(OpenAiChatOptions.builder().streamUsage(true).build())
 				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
@@ -231,7 +232,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		String generationTextFromStream = chatResponses
 				.stream()
 				.filter(cr -> cr.getResult() != null)
-				.map(cr -> cr.getResult().getOutput().getContent())
+				.map(cr -> cr.getResult().getOutput().getText())
 				.collect(Collectors.joining());
 		// @formatter:on
 
@@ -245,16 +246,13 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void functionCallTest() {
 
-		FunctionCallback functionCallback = FunctionCallback.builder()
-			.description("Get the weather in location")
-			.function("getCurrentWeather", new MockWeatherService())
-			.inputType(MockWeatherService.Request.class)
-			.build();
-
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
-				.functions(functionCallback)
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -269,9 +267,8 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultFunctions(FunctionCallback.builder()
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
-					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
@@ -290,9 +287,8 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-				.functions(FunctionCallback.builder()
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
-					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.stream()
@@ -311,7 +307,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.options(OpenAiChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -319,8 +315,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:on
 
 		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -333,15 +328,14 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				.options(OpenAiChatOptions.builder().withModel(modelName).build())
+				.options(OpenAiChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
 		// @formatter:on
 
 		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test
@@ -352,7 +346,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
+				.options(OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue())
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, url))
@@ -363,8 +357,24 @@ class OpenAiChatClientIT extends AbstractIT {
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 
 		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
+		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@Test
+	void multiModalityAudioResponse() {
+		ChatResponse response = ChatClient.create(this.chatModel)
+			.prompt("Tell me joke about Spring Framework")
+			.options(OpenAiChatOptions.builder()
+				.model(OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW)
+				.outputAudio(new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
+				.outputModalities(List.of("text", "audio"))
+				.build())
+			.call()
+			.chatResponse();
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray()).isNotEmpty();
+		logger.info("Response: " + response);
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

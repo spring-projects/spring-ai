@@ -54,6 +54,31 @@ class VectorStoreDocumentRetrieverTests {
 	}
 
 	@Test
+	void whenTopKIsZeroThenThrow() {
+		assertThatThrownBy(
+				() -> VectorStoreDocumentRetriever.builder().topK(0).vectorStore(mock(VectorStore.class)).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("topK must be greater than 0");
+	}
+
+	@Test
+	void whenTopKIsNegativeThenThrow() {
+		assertThatThrownBy(
+				() -> VectorStoreDocumentRetriever.builder().topK(-1).vectorStore(mock(VectorStore.class)).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("topK must be greater than 0");
+	}
+
+	@Test
+	void whenSimilarityThresholdIsNegativeThenThrow() {
+		assertThatThrownBy(() -> VectorStoreDocumentRetriever.builder()
+			.similarityThreshold(-1.0)
+			.vectorStore(mock(VectorStore.class))
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("similarityThreshold must be equal to or greater than 0.0");
+	}
+
+	@Test
 	void searchRequestParameters() {
 		var mockVectorStore = mock(VectorStore.class);
 		var documentRetriever = VectorStoreDocumentRetriever.builder()
@@ -183,6 +208,30 @@ class VectorStoreDocumentRetrieverTests {
 
 		// Verify the returned documents
 		assertThat(result).hasSize(2).containsExactlyElementsOf(mockDocuments);
+	}
+
+	@Test
+	void retrieveWithQueryObjectAndRequestFilterExpression() {
+		var mockVectorStore = mock(VectorStore.class);
+		var documentRetriever = VectorStoreDocumentRetriever.builder().vectorStore(mockVectorStore).build();
+
+		var query = Query.builder()
+			.text("test query")
+			.context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "location == 'Rivendell'"))
+			.build();
+		documentRetriever.retrieve(query);
+
+		// Verify the mock interaction
+		var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+		verify(mockVectorStore).similaritySearch(searchRequestCaptor.capture());
+
+		// Verify the search request
+		var searchRequest = searchRequestCaptor.getValue();
+		assertThat(searchRequest.getQuery()).isEqualTo("test query");
+		assertThat(searchRequest.getSimilarityThreshold()).isEqualTo(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
+		assertThat(searchRequest.getTopK()).isEqualTo(SearchRequest.DEFAULT_TOP_K);
+		assertThat(searchRequest.getFilterExpression())
+			.isEqualTo(new FilterExpressionBuilder().eq("location", "Rivendell").build());
 	}
 
 	static final class TenantContextHolder {

@@ -37,7 +37,7 @@ public final class ModerationOptionsBuilder {
 		return new ModerationOptionsBuilder();
 	}
 
-	public ModerationOptionsBuilder withModel(String model) {
+	public ModerationOptionsBuilder model(String model) {
 		this.options.setModel(model);
 		return this;
 	}

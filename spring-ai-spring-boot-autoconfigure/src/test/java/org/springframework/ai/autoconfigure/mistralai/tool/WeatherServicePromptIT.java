@@ -37,9 +37,8 @@ import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -47,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
@@ -72,19 +72,19 @@ public class WeatherServicePromptIT {
 				// Paris?");
 
 				var promptOptions = MistralAiChatOptions.builder()
-					.withToolChoice(ToolChoice.AUTO)
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Get the current weather in requested location")
-						.function("CurrentWeatherService", new MyWeatherService())
-						.inputType(MyWeatherService.Request.class)
-						.build()))
+					.toolChoice(ToolChoice.AUTO)
+					.functionCallbacks(
+							List.of(FunctionToolCallback.builder("CurrentWeatherService", new MyWeatherService())
+								.description("Get the current weather in requested location")
+								.inputType(MyWeatherService.Request.class)
+								.build()))
 					.build();
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
+				assertThat(response.getResult().getOutput().getText()).containsAnyOf("15", "15.0");
 			});
 	}
 
@@ -98,10 +98,9 @@ public class WeatherServicePromptIT {
 
 				UserMessage userMessage = new UserMessage("What's the weather like in Paris? Use Celsius.");
 
-				PortableFunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
+				ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
+					.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MyWeatherService())
 						.description("Get the current weather in requested location")
-						.function("CurrentWeatherService", new MyWeatherService())
 						.inputType(MyWeatherService.Request.class)
 						.build()))
 
@@ -111,7 +110,7 @@ public class WeatherServicePromptIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("15", "15.0");
+				assertThat(response.getResult().getOutput().getText()).containsAnyOf("15", "15.0");
 			});
 	}
 

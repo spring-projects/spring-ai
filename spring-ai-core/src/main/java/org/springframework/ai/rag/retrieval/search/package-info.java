@@ -15,7 +15,7 @@
  */
 
 /**
- * RAG Component: Document Search.
+ * RAG Sub-Module: Document Search.
  */
 @NonNullApi
 @NonNullFields

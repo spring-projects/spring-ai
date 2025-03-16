@@ -63,10 +63,10 @@ For example:
 AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat responseFormat = AzureOpenAiAudioTranscriptionOptions.TranscriptResponseFormat.VTT;
 
 AzureOpenAiAudioTranscriptionOptions transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
-    .withLanguage("en")
-    .withPrompt("Ask not this, but ask that")
-    .withTemperature(0f)
-    .withResponseFormat(this.responseFormat)
+    .language("en")
+    .prompt("Ask not this, but ask that")
+    .temperature(0f)
+    .responseFormat(this.responseFormat)
     .build();
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, this.transcriptionOptions);
 AudioTranscriptionResponse response = azureOpenAiTranscriptionModel.call(this.transcriptionRequest);
@@ -107,8 +107,8 @@ var openAIClient = new OpenAIClientBuilder()
 var azureOpenAiAudioTranscriptionModel = new AzureOpenAiAudioTranscriptionModel(this.openAIClient, null);
 
 var transcriptionOptions = AzureOpenAiAudioTranscriptionOptions.builder()
-    .withResponseFormat(TranscriptResponseFormat.TEXT)
-    .withTemperature(0f)
+    .responseFormat(TranscriptResponseFormat.TEXT)
+    .temperature(0f)
     .build();
 
 var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac");

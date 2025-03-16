@@ -26,9 +26,8 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
-import org.springframework.ai.model.function.FunctionCallbackWrapper;
 import org.springframework.aot.hint.ExecutableMode;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -43,8 +42,8 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 
 		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ToolResponseMessage.class, Message.class,
-				MessageType.class, UserMessage.class, SystemMessage.class, FunctionCallbackContext.class,
-				FunctionCallback.class, FunctionCallbackWrapper.class);
+				MessageType.class, UserMessage.class, SystemMessage.class, DefaultFunctionCallbackResolver.class,
+				FunctionCallback.class);
 		for (var c : chatTypes) {
 			hints.reflection().registerType(c);
 		}

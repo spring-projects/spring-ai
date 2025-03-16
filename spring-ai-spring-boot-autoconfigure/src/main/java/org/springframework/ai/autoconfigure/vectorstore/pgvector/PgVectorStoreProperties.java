@@ -17,9 +17,9 @@
 package org.springframework.ai.autoconfigure.vectorstore.pgvector;
 
 import org.springframework.ai.autoconfigure.vectorstore.CommonVectorStoreProperties;
-import org.springframework.ai.vectorstore.PgVectorStore;
-import org.springframework.ai.vectorstore.PgVectorStore.PgDistanceType;
-import org.springframework.ai.vectorstore.PgVectorStore.PgIndexType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgDistanceType;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -46,6 +46,8 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 	private String tableName = PgVectorStore.DEFAULT_TABLE_NAME;
 
 	private String schemaName = PgVectorStore.DEFAULT_SCHEMA_NAME;
+
+	private PgVectorStore.PgIdType idType = PgVectorStore.PgIdType.UUID;
 
 	private boolean schemaValidation = PgVectorStore.DEFAULT_SCHEMA_VALIDATION;
 
@@ -97,6 +99,14 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setSchemaName(String schemaName) {
 		this.schemaName = schemaName;
+	}
+
+	public PgVectorStore.PgIdType getIdType() {
+		return idType;
+	}
+
+	public void setIdType(PgVectorStore.PgIdType idType) {
+		this.idType = idType;
 	}
 
 	public boolean isSchemaValidation() {

@@ -11,7 +11,7 @@ The `OllamaEmbeddingModel` implementation leverages the Ollama https://github.co
 
 You first need access to an Ollama instance. There are a few options, including the following:
 
-* xref:https://ollama.com/download[Download and install Ollama] on your local machine.
+* link:https://ollama.com/download[Download and install Ollama] on your local machine.
 * Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
 * Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
@@ -22,7 +22,8 @@ You can pull the models you want to use in your application from the https://oll
 ollama pull <model-name>
 ----
 
-You can also pull any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
+
+You can also pull any of the thousands, free, link:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
 
 [source,shellscript]
 ----
@@ -59,7 +60,8 @@ dependencies {
 ======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories. Refer to the Repositories section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the Repositories section to add these repositories to your build system.
 
 === Base Properties
 
@@ -155,8 +157,8 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.builder()
-            .withModel("Different-Embedding-Model-Deployment-Name"))
-            .withtTuncates(false)
+            .model("Different-Embedding-Model-Deployment-Name"))
+            .truncates(false)
             .build());
 ----
 
@@ -166,7 +168,7 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
 Spring AI Ollama can automatically pull models when they are not available in your Ollama instance.
 This feature is particularly useful for development and testing as well as for deploying your applications to new environments.
 
-TIP: You can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
+TIP: You can also pull, by name, any of the thousands, free, link:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
 
 There are three strategies for pulling models:
 
@@ -221,6 +223,21 @@ spring:
 ----
 
 This configuration will apply the pulling strategy to all models except embedding models.
+
+== HuggingFace Models
+
+Ollama can access, out of the box, all https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face] Embedding models.
+You can pull any of these models by name: `ollama pull hf.co/<username>/<model-repository>` or configure the auto-pulling strategy: xref:auto-pulling-models[Auto-pulling Models]:
+
+[source]
+----
+spring.ai.ollama.embedding.options.model=hf.co/mixedbread-ai/mxbai-embed-large-v1
+spring.ai.ollama.init.pull-model-strategy=always
+----
+
+- `spring.ai.ollama.embedding.options.model`: Specifies the https://huggingface.co/models?library=gguf&sort=trending[Hugging Face GGUF model] to use. 
+- `spring.ai.ollama.init.pull-model-strategy=always`: (optional) Enables automatic model pulling at startup time. 
+For production, you should pre-download the models to avoid delays: `ollama pull hf.co/mixedbread-ai/mxbai-embed-large-v1`.
 
 == Sample Controller
 
@@ -287,14 +304,14 @@ var ollamaApi = new OllamaApi();
 
 var embeddingModel = new OllamaEmbeddingModel(this.ollamaApi,
         OllamaOptions.builder()
-			.withModel(OllamaModel.MISTRAL.id())
+			.model(OllamaModel.MISTRAL.id())
             .build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OllamaOptions.builder()
-            .withModel("chroma/all-minilm-l6-v2-f32"))
-            .withTruncate(false)
+            .model("chroma/all-minilm-l6-v2-f32"))
+            .truncate(false)
             .build());
 ----
 

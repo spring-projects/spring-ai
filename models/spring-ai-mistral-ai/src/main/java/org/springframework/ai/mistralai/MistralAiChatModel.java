@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 
 package org.springframework.ai.mistralai;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.micrometer.observation.Observation;
@@ -27,8 +27,15 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.LegacyToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -36,6 +43,9 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -46,7 +56,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -56,16 +65,17 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
-import org.springframework.ai.mistralai.metadata.MistralAiUsage;
+import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 
 /**
  * Represents a Mistral AI Chat Model.
@@ -75,11 +85,15 @@ import org.springframework.util.CollectionUtils;
  * @author Grogdunn
  * @author Thomas Vitale
  * @author luocongqiu
+ * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
-public class MistralAiChatModel extends AbstractToolCallSupport implements ChatModel {
+public class MistralAiChatModel implements ChatModel {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -100,71 +114,69 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 	 */
 	private final ObservationRegistry observationRegistry;
 
+	private final ToolCallingManager toolCallingManager;
+
 	/**
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public MistralAiChatModel(MistralAiApi mistralAiApi) {
-		this(mistralAiApi,
-				MistralAiChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withSafePrompt(false)
-					.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-					.build());
-	}
-
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options) {
-		this(mistralAiApi, options, null, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, RetryTemplate retryTemplate) {
-		this(mistralAiApi, options, functionCallbackContext, List.of(), retryTemplate);
-	}
-
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate) {
-		this(mistralAiApi, options, functionCallbackContext, toolFunctionCallbacks, retryTemplate,
-				ObservationRegistry.NOOP);
-	}
-
-	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions options,
-			FunctionCallbackContext functionCallbackContext, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-		super(functionCallbackContext, options, toolFunctionCallbacks);
-		Assert.notNull(mistralAiApi, "mistralAiApi must not be null");
-		Assert.notNull(options, "options must not be null");
-		Assert.notNull(retryTemplate, "retryTemplate must not be null");
-		Assert.notNull(observationRegistry, "observationRegistry must not be null");
+	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
+		Assert.notNull(mistralAiApi, "mistralAiApi cannot be null");
+		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
+		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
+		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
+		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		this.mistralAiApi = mistralAiApi;
-		this.defaultOptions = options;
+		this.defaultOptions = defaultOptions;
+		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 	}
 
 	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result) {
 		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
-		MistralAiUsage usage = MistralAiUsage.from(result.usage());
+		DefaultUsage usage = getDefaultUsage(result.usage());
 		return ChatResponseMetadata.builder()
-			.withId(result.id())
-			.withModel(result.model())
-			.withUsage(usage)
-			.withKeyValue("created", result.created())
+			.id(result.id())
+			.model(result.model())
+			.usage(usage)
+			.keyValue("created", result.created())
 			.build();
+	}
+
+	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result, Usage usage) {
+		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
+		return ChatResponseMetadata.builder()
+			.id(result.id())
+			.model(result.model())
+			.usage(usage)
+			.keyValue("created", result.created())
+			.build();
+	}
+
+	private static DefaultUsage getDefaultUsage(MistralAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		// Before moving any further, build the final request Prompt,
+		// merging runtime and default options.
+		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return this.internalCall(requestPrompt, null);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		MistralAiApi.ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(MistralAiApi.PROVIDER_NAME)
-			.requestOptions(buildRequestOptions(request))
+			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -193,20 +205,31 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 					return buildGeneration(choice, metadata);
 				}).toList();
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+				DefaultUsage usage = getDefaultUsage(completionEntity.getBody().usage());
+				Usage cumulativeUsage = UsageUtils.getCumulativeUsage(usage, previousChatResponse);
+				ChatResponse chatResponse = new ChatResponse(generations,
+						from(completionEntity.getBody(), cumulativeUsage));
 
 				observationContext.setResponse(chatResponse);
 
 				return chatResponse;
 			});
 
-		if (!isProxyToolCalls(prompt, this.defaultOptions) && response != null
-				&& isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name(),
-						MistralAiApi.ChatCompletionFinishReason.STOP.name()))) {
-			var toolCallConversation = handleToolCalls(prompt, response);
-			// Recursively call the call method with the tool call message
-			// conversation that contains the call responses.
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response != null
+				&& response.hasToolCalls()) {
+			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			if (toolExecutionResult.returnDirect()) {
+				// Return tool execution result directly to the client.
+				return ChatResponse.builder()
+					.from(response)
+					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					.build();
+			}
+			else {
+				// Send the tool execution result back to the model.
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+						response);
+			}
 		}
 
 		return response;
@@ -214,13 +237,20 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		// Before moving any further, build the final request Prompt,
+		// merging runtime and default options.
+		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return this.internalStream(requestPrompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			var request = createRequest(prompt, true);
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(MistralAiApi.PROVIDER_NAME)
-				.requestOptions(buildRequestOptions(request))
+				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -259,7 +289,9 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 							// @formatter:on
 
 						if (chatCompletion2.usage() != null) {
-							return new ChatResponse(generations, from(chatCompletion2));
+							DefaultUsage usage = getDefaultUsage(chatCompletion2.usage());
+							Usage cumulativeUsage = UsageUtils.getCumulativeUsage(usage, previousChatResponse);
+							return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
 						}
 						else {
 							return new ChatResponse(generations);
@@ -273,11 +305,22 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(MistralAiApi.ChatCompletionFinishReason.TOOL_CALLS.name()))) {
-					var toolCallConversation = handleToolCalls(prompt, response);
-					// Recursively call the stream method with the tool call message
-					// conversation that contains the call responses.
-					return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
+				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response.hasToolCalls()) {
+					// FIXME: bounded elastic needs to be used since tool calling
+					//  is currently only synchronous
+					return Flux.defer(() -> {
+						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder().from(response)
+									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+									.build());
+						} else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									response);
+						}
+					}).subscribeOn(Schedulers.boundedElastic());
 				}
 				else {
 					return Flux.just(response);
@@ -304,7 +347,7 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadata = ChatGenerationMetadata.from(finishReason, null);
+		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
 	}
 
@@ -314,23 +357,79 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 			.map(cc -> new Choice(cc.index(), cc.delta(), cc.finishReason(), cc.logprobs()))
 			.toList();
 
-		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices, null);
+		return new ChatCompletion(chunk.id(), "chat.completion", chunk.created(), chunk.model(), choices,
+				chunk.usage());
+	}
+
+	Prompt buildRequestPrompt(Prompt prompt) {
+		// Process runtime options
+		MistralAiChatOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						MistralAiChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
+						MistralAiChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						MistralAiChatOptions.class);
+			}
+		}
+
+		// Define request options by merging runtime options and default options
+		MistralAiChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				MistralAiChatOptions.class);
+
+		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
+		// Jackson, used by ModelOptionsUtils.
+		if (runtimeOptions != null) {
+			requestOptions.setInternalToolExecutionEnabled(
+					ModelOptionsUtils.mergeOption(runtimeOptions.isInternalToolExecutionEnabled(),
+							this.defaultOptions.isInternalToolExecutionEnabled()));
+			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
+					this.defaultOptions.getToolNames()));
+			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
+					this.defaultOptions.getToolCallbacks()));
+			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
+					this.defaultOptions.getToolContext()));
+		}
+		else {
+			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.isInternalToolExecutionEnabled());
+			requestOptions.setToolNames(this.defaultOptions.getToolNames());
+			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
+			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+		}
+
+		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
+
+		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	/**
 	 * Accessible for testing.
 	 */
 	MistralAiApi.ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
-
-		Set<String> functionsForThisRequest = new HashSet<>();
-
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message instanceof UserMessage userMessage) {
-				return List.of(new MistralAiApi.ChatCompletionMessage(userMessage.getContent(),
-						MistralAiApi.ChatCompletionMessage.Role.USER));
+				Object content = message.getText();
+
+				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+					List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
+							List.of(new ChatCompletionMessage.MediaContent(message.getText())));
+
+					contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
+
+					content = contentList;
+				}
+
+				return List
+					.of(new MistralAiApi.ChatCompletionMessage(content, MistralAiApi.ChatCompletionMessage.Role.USER));
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(systemMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.SYSTEM));
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
@@ -338,15 +437,14 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
 						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
-						return new ToolCall(toolCall.id(), toolCall.type(), function);
+						return new ToolCall(toolCall.id(), toolCall.type(), function, null);
 					}).toList();
 				}
 
-				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getContent(),
+				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getText(),
 						MistralAiApi.ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null));
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
-
 				toolResponseMessage.getResponses()
 					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
 
@@ -363,56 +461,47 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 
 		var request = new MistralAiApi.ChatCompletionRequest(chatCompletionMessages, stream);
 
-		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
-			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
-		}
+		MistralAiChatOptions requestOptions = (MistralAiChatOptions) prompt.getOptions();
+		request = ModelOptionsUtils.merge(requestOptions, request, MistralAiApi.ChatCompletionRequest.class);
 
-		request = ModelOptionsUtils.merge(request, this.defaultOptions, MistralAiApi.ChatCompletionRequest.class);
-
-		if (prompt.getOptions() != null) {
-			MistralAiChatOptions updatedRuntimeOptions;
-
-			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions,
-						FunctionCallingOptions.class, MistralAiChatOptions.class);
-			}
-			else {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						MistralAiChatOptions.class);
-			}
-
-			functionsForThisRequest.addAll(this.runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
-
-			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, MistralAiApi.ChatCompletionRequest.class);
-		}
-
-		// Add the enabled functions definitions to the request's tools parameter.
-		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
-
+		// Add the tool definitions to the request's tools parameter.
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
+		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = ModelOptionsUtils.merge(
-					MistralAiChatOptions.builder().withTools(this.getFunctionTools(functionsForThisRequest)).build(),
-					request, ChatCompletionRequest.class);
+					MistralAiChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
+					ChatCompletionRequest.class);
 		}
 
 		return request;
 	}
 
-	private List<MistralAiApi.FunctionTool> getFunctionTools(Set<String> functionNames) {
-		return this.resolveFunctionCallbacks(functionNames).stream().map(functionCallback -> {
-			var function = new MistralAiApi.FunctionTool.Function(functionCallback.getDescription(),
-					functionCallback.getName(), functionCallback.getInputTypeSchema());
-			return new MistralAiApi.FunctionTool(function);
-		}).toList();
+	private ChatCompletionMessage.MediaContent mapToMediaContent(Media media) {
+		return new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.ImageUrl(
+				this.fromMediaData(media.getMimeType(), media.getData())));
 	}
 
-	private ChatOptions buildRequestOptions(MistralAiApi.ChatCompletionRequest request) {
-		return ChatOptionsBuilder.builder()
-			.withModel(request.model())
-			.withMaxTokens(request.maxTokens())
-			.withStopSequences(request.stop())
-			.withTemperature(request.temperature())
-			.withTopP(request.topP())
-			.build();
+	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
+		if (mediaContentData instanceof byte[] bytes) {
+			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
+			// following the prefix pattern.
+			return String.format("data:%s;base64,%s", mimeType.toString(), Base64.getEncoder().encodeToString(bytes));
+		}
+		else if (mediaContentData instanceof String text) {
+			// Assume the text is a URLs or a base64 encoded image prefixed by the user.
+			return text;
+		}
+		else {
+			throw new IllegalArgumentException(
+					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
+		}
+	}
+
+	private List<MistralAiApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
+		return toolDefinitions.stream().map(toolDefinition -> {
+			var function = new MistralAiApi.FunctionTool.Function(toolDefinition.description(), toolDefinition.name(),
+					toolDefinition.inputSchema());
+			return new MistralAiApi.FunctionTool(function);
+		}).toList();
 	}
 
 	@Override
@@ -427,6 +516,66 @@ public class MistralAiChatModel extends AbstractToolCallSupport implements ChatM
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private MistralAiApi mistralAiApi;
+
+		private MistralAiChatOptions defaultOptions = MistralAiChatOptions.builder()
+			.temperature(0.7)
+			.topP(1.0)
+			.safePrompt(false)
+			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.build();
+
+		private ToolCallingManager toolCallingManager;
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private Builder() {
+		}
+
+		public Builder mistralAiApi(MistralAiApi mistralAiApi) {
+			this.mistralAiApi = mistralAiApi;
+			return this;
+		}
+
+		public Builder defaultOptions(MistralAiChatOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public MistralAiChatModel build() {
+			if (toolCallingManager != null) {
+				return new MistralAiChatModel(mistralAiApi, defaultOptions, toolCallingManager, retryTemplate,
+						observationRegistry);
+			}
+			return new MistralAiChatModel(mistralAiApi, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
+					observationRegistry);
+		}
+
 	}
 
 }

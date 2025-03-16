@@ -52,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @since 0.8.1
  */
+// @Disabled("See https://github.com/spring-projects/spring-ai/issues/1853")
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class PaymentStatusFunctionCallingIT {
 
@@ -129,7 +130,7 @@ public class PaymentStatusFunctionCallingIT {
 
 			// Extend conversation with function response.
 			// The functionName is used to identify the function response!
-			messages.add(new ChatCompletionMessage(result.toString(), Role.TOOL, functionName, null));
+			messages.add(new ChatCompletionMessage(result.toString(), Role.TOOL, functionName, null, toolCall.id()));
 		}
 
 		response = mistralApi

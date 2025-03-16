@@ -23,6 +23,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -37,7 +38,6 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
-import org.springframework.ai.minimax.metadata.MiniMaxUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.lang.Nullable;
@@ -90,7 +90,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public MiniMaxEmbeddingModel(MiniMaxApi miniMaxApi, MetadataMode metadataMode) {
 		this(miniMaxApi, metadataMode,
-				MiniMaxEmbeddingOptions.builder().withModel(MiniMaxApi.DEFAULT_EMBEDDING_MODEL).build(),
+				MiniMaxEmbeddingOptions.builder().model(MiniMaxApi.DEFAULT_EMBEDDING_MODEL).build(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE, ObservationRegistry.NOOP);
 	}
 
@@ -171,8 +171,7 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 					return new EmbeddingResponse(List.of());
 				}
 
-				var metadata = new EmbeddingResponseMetadata(apiRequest.model(),
-						MiniMaxUsage.from(new MiniMaxApi.Usage(0, 0, apiEmbeddingResponse.totalTokens())));
+				var metadata = new EmbeddingResponseMetadata(apiRequest.model(), getDefaultUsage(apiEmbeddingResponse));
 
 				List<Embedding> embeddings = new ArrayList<>();
 				for (int i = 0; i < apiEmbeddingResponse.vectors().size(); i++) {
@@ -183,6 +182,10 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 				observationContext.setResponse(embeddingResponse);
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(MiniMaxApi.EmbeddingList apiEmbeddingList) {
+		return new DefaultUsage(0, 0, apiEmbeddingList.totalTokens());
 	}
 
 	/**
@@ -196,13 +199,13 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
 		var optionBuilder = MiniMaxEmbeddingOptions.builder();
 		if (runtimeOptionsForProvider != null && runtimeOptionsForProvider.getModel() != null) {
-			optionBuilder.withModel(runtimeOptionsForProvider.getModel());
+			optionBuilder.model(runtimeOptionsForProvider.getModel());
 		}
 		else if (defaultOptions.getModel() != null) {
-			optionBuilder.withModel(defaultOptions.getModel());
+			optionBuilder.model(defaultOptions.getModel());
 		}
 		else {
-			optionBuilder.withModel(MiniMaxApi.DEFAULT_EMBEDDING_MODEL);
+			optionBuilder.model(MiniMaxApi.DEFAULT_EMBEDDING_MODEL);
 		}
 		return optionBuilder.build();
 	}

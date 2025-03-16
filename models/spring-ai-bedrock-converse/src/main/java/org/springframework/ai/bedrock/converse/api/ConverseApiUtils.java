@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,13 +62,14 @@ import org.springframework.util.StringUtils;
  *
  * @author Wei Jiang
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public final class ConverseApiUtils {
 
 	public static final ChatResponse EMPTY_CHAT_RESPONSE = ChatResponse.builder()
-		.withGenerations(List.of())
-		.withMetadata("empty", true)
+		.generations(List.of())
+		.metadata("empty", true)
 		.build();
 
 	private ConverseApiUtils() {
@@ -90,7 +91,8 @@ public final class ConverseApiUtils {
 		return true;
 	}
 
-	public static Flux<ChatResponse> toChatResponse(Flux<ConverseStreamOutput> responses) {
+	public static Flux<ChatResponse> toChatResponse(Flux<ConverseStreamOutput> responses,
+			ChatResponse perviousChatResponse) {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -120,20 +122,30 @@ public final class ConverseApiUtils {
 
 				List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
 
+				Integer promptTokens = 0;
+				Integer generationTokens = 0;
+				Integer totalTokens = 0;
+
 				for (ToolUseAggregationEvent.ToolUseEntry toolUseEntry : toolUseAggregationEvent.toolUseEntries()) {
 					var functionCallId = toolUseEntry.id();
 					var functionName = toolUseEntry.name();
 					var functionArguments = toolUseEntry.input();
 					toolCalls.add(
 							new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
+
+					if (toolUseEntry.usage() != null) {
+						promptTokens += toolUseEntry.usage().getPromptTokens();
+						generationTokens += toolUseEntry.usage().getCompletionTokens();
+						totalTokens += toolUseEntry.usage().getTotalTokens();
+					}
 				}
 
 				AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
 				Generation toolCallGeneration = new Generation(assistantMessage,
-						ChatGenerationMetadata.from("tool_use", null));
+						ChatGenerationMetadata.builder().finishReason("tool_use").build());
 
 				var chatResponseMetaData = ChatResponseMetadata.builder()
-					.withUsage(toolUseAggregationEvent.usage)
+					.usage(new DefaultUsage(promptTokens, generationTokens, totalTokens))
 					.build();
 
 				return new Aggregation(
@@ -165,7 +177,9 @@ public final class ConverseApiUtils {
 
 					var generation = new Generation(
 							new AssistantMessage(contentBlockDeltaEvent.delta().text(), Map.of()),
-							ChatGenerationMetadata.from(lastAggregation.metadataAggregation().stopReason(), null));
+							ChatGenerationMetadata.builder()
+								.finishReason(lastAggregation.metadataAggregation().stopReason())
+								.build());
 
 					return new Aggregation(
 							MetadataAggregation.builder().copy(lastAggregation.metadataAggregation()).build(),
@@ -181,7 +195,7 @@ public final class ConverseApiUtils {
 				return new Aggregation();
 			}
 			else if (nextEvent instanceof ConverseStreamMetadataEvent metadataEvent) {
-				// return new Aggregation();
+
 				var newMeta = MetadataAggregation.builder()
 					.copy(lastAggregation.metadataAggregation())
 					.withTokenUsage(metadataEvent.usage())
@@ -189,15 +203,14 @@ public final class ConverseApiUtils {
 					.withTrace(metadataEvent.trace())
 					.build();
 
-				DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens().longValue(),
-						metadataEvent.usage().outputTokens().longValue(),
-						metadataEvent.usage().totalTokens().longValue());
-
 				// TODO
 				Document modelResponseFields = lastAggregation.metadataAggregation().additionalModelResponseFields();
 				ConverseStreamMetrics metrics = metadataEvent.metrics();
 
-				var chatResponseMetaData = ChatResponseMetadata.builder().withUsage(usage).build();
+				DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens(),
+						metadataEvent.usage().outputTokens(), metadataEvent.usage().totalTokens());
+
+				var chatResponseMetaData = ChatResponseMetadata.builder().usage(usage).build();
 
 				return new Aggregation(newMeta, new ChatResponse(List.of(), chatResponseMetaData));
 			}
@@ -206,8 +219,42 @@ public final class ConverseApiUtils {
 			}
 		})
 			// .skip(1)
-			.map(aggregation -> aggregation.chatResponse())
-			.filter(chatResponse -> chatResponse != ConverseApiUtils.EMPTY_CHAT_RESPONSE);
+			.filter(aggregation -> aggregation.chatResponse() != ConverseApiUtils.EMPTY_CHAT_RESPONSE)
+			.map(aggregation -> {
+
+				var chatResponse = aggregation.chatResponse();
+
+				// Merge the previous chat response metadata with the current one.
+				if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
+						&& perviousChatResponse.getMetadata().getUsage() != null) {
+
+					var metadataBuilder = ChatResponseMetadata.builder();
+
+					Integer promptTokens = perviousChatResponse.getMetadata().getUsage().getPromptTokens();
+					Integer generationTokens = perviousChatResponse.getMetadata().getUsage().getCompletionTokens();
+					int totalTokens = perviousChatResponse.getMetadata().getUsage().getTotalTokens();
+
+					if (chatResponse.getMetadata() != null) {
+						metadataBuilder.id(chatResponse.getMetadata().getId());
+						metadataBuilder.model(chatResponse.getMetadata().getModel());
+						metadataBuilder.rateLimit(chatResponse.getMetadata().getRateLimit());
+						metadataBuilder.promptMetadata(chatResponse.getMetadata().getPromptMetadata());
+
+						if (chatResponse.getMetadata().getUsage() != null) {
+							promptTokens = promptTokens + chatResponse.getMetadata().getUsage().getPromptTokens();
+							generationTokens = generationTokens
+									+ chatResponse.getMetadata().getUsage().getCompletionTokens();
+							totalTokens = totalTokens + chatResponse.getMetadata().getUsage().getTotalTokens();
+						}
+					}
+
+					metadataBuilder.usage(new DefaultUsage(promptTokens, generationTokens, totalTokens));
+
+					return new ChatResponse(chatResponse.getResults(), metadataBuilder.build());
+				}
+
+				return aggregation.chatResponse();
+			});
 	}
 
 	public static ConverseStreamOutput mergeToolUseEvents(ConverseStreamOutput previousEvent,
@@ -242,10 +289,10 @@ public final class ConverseApiUtils {
 		}
 		else if (event.sdkEventType() == EventType.METADATA) {
 			ConverseStreamMetadataEvent metadataEvent = (ConverseStreamMetadataEvent) event;
-			DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens().longValue(),
-					metadataEvent.usage().outputTokens().longValue(), metadataEvent.usage().totalTokens().longValue());
+			DefaultUsage usage = new DefaultUsage(metadataEvent.usage().inputTokens(),
+					metadataEvent.usage().outputTokens(), metadataEvent.usage().totalTokens());
 			toolUseEventAggregator.withUsage(usage);
-			// TODO
+
 			if (!toolUseEventAggregator.isEmpty()) {
 				toolUseEventAggregator.squashIntoContentBlock();
 				return toolUseEventAggregator;
@@ -283,6 +330,10 @@ public final class ConverseApiUtils {
 		attributes.remove("functions");
 		attributes.remove("toolContext");
 		attributes.remove("functionCallbacks");
+
+		attributes.remove("toolCallbacks");
+		attributes.remove("toolNames");
+		attributes.remove("internalToolExecutionEnabled");
 
 		attributes.remove("temperature");
 		attributes.remove("topK");
@@ -400,7 +451,7 @@ public final class ConverseApiUtils {
 		}
 
 		void squashIntoContentBlock() {
-			this.toolUseEntries.add(new ToolUseEntry(this.index, this.id, this.name, this.partialJson));
+			this.toolUseEntries.add(new ToolUseEntry(this.index, this.id, this.name, this.partialJson, this.usage));
 			this.index = null;
 			this.id = null;
 			this.name = null;
@@ -424,7 +475,7 @@ public final class ConverseApiUtils {
 			throw new UnsupportedOperationException();
 		}
 
-		public record ToolUseEntry(Integer index, String id, String name, String input) {
+		public record ToolUseEntry(Integer index, String id, String name, String input, DefaultUsage usage) {
 		}
 
 	}
@@ -436,7 +487,7 @@ public final class ConverseApiUtils {
 			return new Builder();
 		}
 
-		public final static class Builder {
+		public static final class Builder {
 
 			private String role;
 

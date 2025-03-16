@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.ai.ollama.api;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +34,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -40,6 +43,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -47,7 +51,7 @@ import org.springframework.util.Assert;
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
+public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
@@ -79,7 +83,7 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
 	 * (Default: -1, which indicates that numGPU should be set dynamically)
-	*/
+	 */
 	@JsonProperty("num_gpu")
 	private Integer numGPU;
 
@@ -287,7 +291,7 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
 	@JsonProperty("format")
-	private String format;
+	private Object format;
 
 	/**
 	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
@@ -304,6 +308,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	@JsonProperty("truncate")
 	private Boolean truncate;
 
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
+
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
@@ -311,35 +318,24 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
 	 * the chat completion requests.
 	 * Functions with those names must exist in the functionCallbacks registry.
-	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Boolean proxyToolCalls;
+	private Map<String, Object> toolContext = new HashMap<>();
 
-	@JsonIgnore
-	private Map<String, Object> toolContext;
-
-	public static OllamaOptions builder() {
-		return new OllamaOptions();
-	}
-
-	/**
-	 * Helper factory method to create a new {@link OllamaOptions} instance.
-	 * @return A new {@link OllamaOptions} instance.
-	 */
-	public static OllamaOptions create() {
-		return new OllamaOptions();
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -349,257 +345,49 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	 */
 	public static Map<String, Object> filterNonSupportedFields(Map<String, Object> options) {
 		return options.entrySet().stream()
-			.filter(e -> !NON_SUPPORTED_FIELDS.contains(e.getKey()))
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+				.filter(e -> !NON_SUPPORTED_FIELDS.contains(e.getKey()))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
-		return new OllamaOptions()
-			.withModel(fromOptions.getModel())
-			.withFormat(fromOptions.getFormat())
-			.withKeepAlive(fromOptions.getKeepAlive())
-			.withTruncate(fromOptions.getTruncate())
-			.withUseNUMA(fromOptions.getUseNUMA())
-			.withNumCtx(fromOptions.getNumCtx())
-			.withNumBatch(fromOptions.getNumBatch())
-			.withNumGPU(fromOptions.getNumGPU())
-			.withMainGPU(fromOptions.getMainGPU())
-			.withLowVRAM(fromOptions.getLowVRAM())
-			.withF16KV(fromOptions.getF16KV())
-			.withLogitsAll(fromOptions.getLogitsAll())
-			.withVocabOnly(fromOptions.getVocabOnly())
-			.withUseMMap(fromOptions.getUseMMap())
-			.withUseMLock(fromOptions.getUseMLock())
-			.withNumThread(fromOptions.getNumThread())
-			.withNumKeep(fromOptions.getNumKeep())
-			.withSeed(fromOptions.getSeed())
-			.withNumPredict(fromOptions.getNumPredict())
-			.withTopK(fromOptions.getTopK())
-			.withTopP(fromOptions.getTopP())
-			.withTfsZ(fromOptions.getTfsZ())
-			.withTypicalP(fromOptions.getTypicalP())
-			.withRepeatLastN(fromOptions.getRepeatLastN())
-			.withTemperature(fromOptions.getTemperature())
-			.withRepeatPenalty(fromOptions.getRepeatPenalty())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withMirostat(fromOptions.getMirostat())
-			.withMirostatTau(fromOptions.getMirostatTau())
-			.withMirostatEta(fromOptions.getMirostatEta())
-			.withPenalizeNewline(fromOptions.getPenalizeNewline())
-			.withStop(fromOptions.getStop())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withToolContext(fromOptions.getToolContext());
-	}
-
-	public OllamaOptions build() {
-		return this;
-	}
-
-	/**
-	 * @param model The ollama model names to use. See the {@link OllamaModel} for the common models.
-	 */
-	public OllamaOptions withModel(String model) {
-		this.model = model;
-		return this;
-	}
-
-	public OllamaOptions withModel(OllamaModel model) {
-		this.model = model.getName();
-		return this;
-	}
-
-	public OllamaOptions withFormat(String format) {
-		this.format = format;
-		return this;
-	}
-
-	public OllamaOptions withKeepAlive(String keepAlive) {
-		this.keepAlive = keepAlive;
-		return this;
-	}
-
-	public OllamaOptions withTruncate(Boolean truncate) {
-		this.truncate = truncate;
-		return this;
-	}
-
-	public OllamaOptions withUseNUMA(Boolean useNUMA) {
-		this.useNUMA = useNUMA;
-		return this;
-	}
-
-	public OllamaOptions withNumCtx(Integer numCtx) {
-		this.numCtx = numCtx;
-		return this;
-	}
-
-	public OllamaOptions withNumBatch(Integer numBatch) {
-		this.numBatch = numBatch;
-		return this;
-	}
-
-	public OllamaOptions withNumGPU(Integer numGPU) {
-		this.numGPU = numGPU;
-		return this;
-	}
-
-	public OllamaOptions withMainGPU(Integer mainGPU) {
-		this.mainGPU = mainGPU;
-		return this;
-	}
-
-	public OllamaOptions withLowVRAM(Boolean lowVRAM) {
-		this.lowVRAM = lowVRAM;
-		return this;
-	}
-
-	public OllamaOptions withF16KV(Boolean f16KV) {
-		this.f16KV = f16KV;
-		return this;
-	}
-
-	public OllamaOptions withLogitsAll(Boolean logitsAll) {
-		this.logitsAll = logitsAll;
-		return this;
-	}
-
-	public OllamaOptions withVocabOnly(Boolean vocabOnly) {
-		this.vocabOnly = vocabOnly;
-		return this;
-	}
-
-	public OllamaOptions withUseMMap(Boolean useMMap) {
-		this.useMMap = useMMap;
-		return this;
-	}
-
-	public OllamaOptions withUseMLock(Boolean useMLock) {
-		this.useMLock = useMLock;
-		return this;
-	}
-
-	public OllamaOptions withNumThread(Integer numThread) {
-		this.numThread = numThread;
-		return this;
-	}
-
-	public OllamaOptions withNumKeep(Integer numKeep) {
-		this.numKeep = numKeep;
-		return this;
-	}
-
-	public OllamaOptions withSeed(Integer seed) {
-		this.seed = seed;
-		return this;
-	}
-
-	public OllamaOptions withNumPredict(Integer numPredict) {
-		this.numPredict = numPredict;
-		return this;
-	}
-
-	public OllamaOptions withTopK(Integer topK) {
-		this.topK = topK;
-		return this;
-	}
-
-	public OllamaOptions withTopP(Double topP) {
-		this.topP = topP;
-		return this;
-	}
-
-	public OllamaOptions withTfsZ(Float tfsZ) {
-		this.tfsZ = tfsZ;
-		return this;
-	}
-
-	public OllamaOptions withTypicalP(Float typicalP) {
-		this.typicalP = typicalP;
-		return this;
-	}
-
-	public OllamaOptions withRepeatLastN(Integer repeatLastN) {
-		this.repeatLastN = repeatLastN;
-		return this;
-	}
-
-	public OllamaOptions withTemperature(Double temperature) {
-		this.temperature = temperature;
-		return this;
-	}
-
-	public OllamaOptions withRepeatPenalty(Double repeatPenalty) {
-		this.repeatPenalty = repeatPenalty;
-		return this;
-	}
-
-	public OllamaOptions withPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-		return this;
-	}
-
-	public OllamaOptions withFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-		return this;
-	}
-
-	public OllamaOptions withMirostat(Integer mirostat) {
-		this.mirostat = mirostat;
-		return this;
-	}
-
-	public OllamaOptions withMirostatTau(Float mirostatTau) {
-		this.mirostatTau = mirostatTau;
-		return this;
-	}
-
-	public OllamaOptions withMirostatEta(Float mirostatEta) {
-		this.mirostatEta = mirostatEta;
-		return this;
-	}
-
-	public OllamaOptions withPenalizeNewline(Boolean penalizeNewline) {
-		this.penalizeNewline = penalizeNewline;
-		return this;
-	}
-
-	public OllamaOptions withStop(List<String> stop) {
-		this.stop = stop;
-		return this;
-	}
-
-	public OllamaOptions withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
-		return this;
-	}
-
-	public OllamaOptions withFunctions(Set<String> functions) {
-		this.functions = functions;
-		return this;
-	}
-
-	public OllamaOptions withFunction(String functionName) {
-		Assert.hasText(functionName, "Function name must not be empty");
-		this.functions.add(functionName);
-		return this;
-	}
-
-	public OllamaOptions withProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
-		return this;
-	}
-
-	public OllamaOptions withToolContext(Map<String, Object> toolContext) {
-		if (this.toolContext == null) {
-			this.toolContext = toolContext;
-		}
-		else {
-			this.toolContext.putAll(toolContext);
-		}
-		return this;
+		return builder()
+				.model(fromOptions.getModel())
+				.format(fromOptions.getFormat())
+				.keepAlive(fromOptions.getKeepAlive())
+				.truncate(fromOptions.getTruncate())
+				.useNUMA(fromOptions.getUseNUMA())
+				.numCtx(fromOptions.getNumCtx())
+				.numBatch(fromOptions.getNumBatch())
+				.numGPU(fromOptions.getNumGPU())
+				.mainGPU(fromOptions.getMainGPU())
+				.lowVRAM(fromOptions.getLowVRAM())
+				.f16KV(fromOptions.getF16KV())
+				.logitsAll(fromOptions.getLogitsAll())
+				.vocabOnly(fromOptions.getVocabOnly())
+				.useMMap(fromOptions.getUseMMap())
+				.useMLock(fromOptions.getUseMLock())
+				.numThread(fromOptions.getNumThread())
+				.numKeep(fromOptions.getNumKeep())
+				.seed(fromOptions.getSeed())
+				.numPredict(fromOptions.getNumPredict())
+				.topK(fromOptions.getTopK())
+				.topP(fromOptions.getTopP())
+				.tfsZ(fromOptions.getTfsZ())
+				.typicalP(fromOptions.getTypicalP())
+				.repeatLastN(fromOptions.getRepeatLastN())
+				.temperature(fromOptions.getTemperature())
+				.repeatPenalty(fromOptions.getRepeatPenalty())
+				.presencePenalty(fromOptions.getPresencePenalty())
+				.frequencyPenalty(fromOptions.getFrequencyPenalty())
+				.mirostat(fromOptions.getMirostat())
+				.mirostatTau(fromOptions.getMirostatTau())
+				.mirostatEta(fromOptions.getMirostatEta())
+				.penalizeNewline(fromOptions.getPenalizeNewline())
+				.stop(fromOptions.getStop())
+				.toolNames(fromOptions.getToolNames())
+				.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+				.toolCallbacks(fromOptions.getToolCallbacks())
+				.toolContext(fromOptions.getToolContext()).build();
 	}
 
 	// -------------------
@@ -614,11 +402,11 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 		this.model = model;
 	}
 
-	public String getFormat() {
+	public Object getFormat() {
 		return this.format;
 	}
 
-	public void setFormat(String format) {
+	public void setFormat(Object format) {
 		this.format = format;
 	}
 
@@ -898,23 +686,73 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	}
 
 	@Override
+	@JsonIgnore
+	public List<FunctionCallback> getToolCallbacks() {
+    	return this.toolCallbacks;
+    }
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+    }
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+    	return this.toolNames;
+    }
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+    	this.toolNames = toolNames;
+    }
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean isInternalToolExecutionEnabled() {
+    	return internalToolExecutionEnabled;
+    }
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+    	this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+    }
+
+	@Override
+	@Deprecated
+	@JsonIgnore
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
+		return this.getToolCallbacks();
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
+		this.setToolCallbacks(functionCallbacks);
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Set<String> getFunctions() {
-		return this.functions;
+		return this.getToolNames();
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public void setFunctions(Set<String> functions) {
-		this.functions = functions;
+		this.setToolNames(functions);
 	}
 
 	@Override
@@ -924,20 +762,26 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
+		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
 	}
 
+	@Deprecated
+	@JsonIgnore
 	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
+		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
+	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
+	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
@@ -984,9 +828,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
-				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
-				&& Objects.equals(this.functions, that.functions) && Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
@@ -996,8 +840,248 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
 				this.topP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
+				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
 				this.toolContext);
+	}
+
+	public static class Builder {
+
+		private final OllamaOptions options = new OllamaOptions();
+
+		public Builder model(String model) {
+			this.options.model = model;
+			return this;
+		}
+
+		public Builder model(OllamaModel model) {
+			this.options.model = model.getName();
+			return this;
+		}
+
+		public Builder format(Object format) {
+			this.options.format = format;
+			return this;
+		}
+
+		public Builder keepAlive(String keepAlive) {
+			this.options.keepAlive = keepAlive;
+			return this;
+		}
+
+		public Builder truncate(Boolean truncate) {
+			this.options.truncate = truncate;
+			return this;
+		}
+
+		public Builder useNUMA(Boolean useNUMA) {
+			this.options.useNUMA = useNUMA;
+			return this;
+		}
+
+		public Builder numCtx(Integer numCtx) {
+			this.options.numCtx = numCtx;
+			return this;
+		}
+
+		public Builder numBatch(Integer numBatch) {
+			this.options.numBatch = numBatch;
+			return this;
+		}
+
+		public Builder numGPU(Integer numGPU) {
+			this.options.numGPU = numGPU;
+			return this;
+		}
+
+		public Builder mainGPU(Integer mainGPU) {
+			this.options.mainGPU = mainGPU;
+			return this;
+		}
+
+		public Builder lowVRAM(Boolean lowVRAM) {
+			this.options.lowVRAM = lowVRAM;
+			return this;
+		}
+
+		public Builder f16KV(Boolean f16KV) {
+			this.options.f16KV = f16KV;
+			return this;
+		}
+
+		public Builder logitsAll(Boolean logitsAll) {
+			this.options.logitsAll = logitsAll;
+			return this;
+		}
+
+		public Builder vocabOnly(Boolean vocabOnly) {
+			this.options.vocabOnly = vocabOnly;
+			return this;
+		}
+
+		public Builder useMMap(Boolean useMMap) {
+			this.options.useMMap = useMMap;
+			return this;
+		}
+
+		public Builder useMLock(Boolean useMLock) {
+			this.options.useMLock = useMLock;
+			return this;
+		}
+
+		public Builder numThread(Integer numThread) {
+			this.options.numThread = numThread;
+			return this;
+		}
+
+		public Builder numKeep(Integer numKeep) {
+			this.options.numKeep = numKeep;
+			return this;
+		}
+
+		public Builder seed(Integer seed) {
+			this.options.seed = seed;
+			return this;
+		}
+
+		public Builder numPredict(Integer numPredict) {
+			this.options.numPredict = numPredict;
+			return this;
+		}
+
+		public Builder topK(Integer topK) {
+			this.options.topK = topK;
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder tfsZ(Float tfsZ) {
+			this.options.tfsZ = tfsZ;
+			return this;
+		}
+
+		public Builder typicalP(Float typicalP) {
+			this.options.typicalP = typicalP;
+			return this;
+		}
+
+		public Builder repeatLastN(Integer repeatLastN) {
+			this.options.repeatLastN = repeatLastN;
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder repeatPenalty(Double repeatPenalty) {
+			this.options.repeatPenalty = repeatPenalty;
+			return this;
+		}
+
+		public Builder presencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder mirostat(Integer mirostat) {
+			this.options.mirostat = mirostat;
+			return this;
+		}
+
+		public Builder mirostatTau(Float mirostatTau) {
+			this.options.mirostatTau = mirostatTau;
+			return this;
+		}
+
+		public Builder mirostatEta(Float mirostatEta) {
+			this.options.mirostatEta = mirostatEta;
+			return this;
+		}
+
+		public Builder penalizeNewline(Boolean penalizeNewline) {
+			this.options.penalizeNewline = penalizeNewline;
+			return this;
+		}
+
+		public Builder stop(List<String> stop) {
+			this.options.stop = stop;
+			return this;
+		}
+
+		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		@Deprecated
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			return toolCallbacks(functionCallbacks);
+		}
+
+		@Deprecated
+		public Builder functions(Set<String> functions) {
+			return toolNames(functions);
+		}
+
+		@Deprecated
+		public Builder function(String functionName) {
+			return toolNames(functionName);
+		}
+
+		@Deprecated
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
+			if (proxyToolCalls != null) {
+				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
+			}
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		public OllamaOptions build() {
+			return this.options;
+		}
+
 	}
 
 }

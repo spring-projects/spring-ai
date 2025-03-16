@@ -18,9 +18,12 @@ package org.springframework.ai.openai.moderation;
 
 import java.util.List;
 
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
 import org.springframework.ai.moderation.Generation;
@@ -130,7 +133,7 @@ public class OpenAiModerationModelTests {
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_REMAINING_HEADER.getName(), "112358");
 		httpHeaders.set(OpenAiApiResponseHeaders.TOKENS_RESET_HEADER.getName(), "27h55s451ms");
 
-		this.server.expect(requestTo("v1/moderations"))
+		this.server.expect(requestTo(StringContains.containsString("v1/moderations")))
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + TEST_API_KEY))
 			.andRespond(withSuccess(getJson(), MediaType.APPLICATION_JSON).headers(httpHeaders));
@@ -182,7 +185,11 @@ public class OpenAiModerationModelTests {
 
 		@Bean
 		public OpenAiModerationApi moderationGenerationApi(RestClient.Builder builder) {
-			return new OpenAiModerationApi("", TEST_API_KEY, builder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+			return OpenAiModerationApi.builder()
+				.apiKey(new SimpleApiKey(TEST_API_KEY))
+				.restClientBuilder(builder)
+				.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
+				.build();
 		}
 
 		@Bean

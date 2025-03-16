@@ -24,6 +24,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.OpenAiImageModel;
@@ -57,11 +58,11 @@ public class OpenAiImageModelObservationIT {
 	@Test
 	void observationForImageOperation() {
 		var options = OpenAiImageOptions.builder()
-			.withModel(OpenAiImageApi.ImageModel.DALL_E_3.getValue())
-			.withHeight(1024)
-			.withWidth(1024)
-			.withResponseFormat("url")
-			.withStyle("natural")
+			.model(OpenAiImageApi.ImageModel.DALL_E_3.getValue())
+			.height(1024)
+			.width(1024)
+			.responseFormat("url")
+			.style("natural")
 			.build();
 
 		var instructions = "Here comes the sun";
@@ -97,7 +98,7 @@ public class OpenAiImageModelObservationIT {
 
 		@Bean
 		public OpenAiImageApi openAiImageApi() {
-			return new OpenAiImageApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiImageApi.builder().apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY"))).build();
 		}
 
 		@Bean

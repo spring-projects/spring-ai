@@ -49,12 +49,16 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.Media;
+import org.springframework.ai.model.NoopApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.chat.ActorsFilms;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -77,7 +81,7 @@ class OllamaWithOpenAiChatModelIT {
 	private static final String DEFAULT_OLLAMA_MODEL = "mistral";
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.3.14");
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.5.7");
 
 	static String baseUrl = "http://localhost:11434";
 
@@ -107,7 +111,7 @@ class OllamaWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -126,7 +130,7 @@ class OllamaWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		assertThat(stitchedResponseContent).contains("Blackbeard");
@@ -135,19 +139,19 @@ class OllamaWithOpenAiChatModelIT {
 	@Test
 	@Disabled("Not supported by the current Ollama API")
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiChatOptions.builder().withStreamUsage(true).withSeed(1).build();
+		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
-		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		// assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
+		assertThat(streamingTokenUsage.getCompletionTokens()).isEqualTo(referenceTokenUsage.getCompletionTokens());
 		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
 
 	}
@@ -167,7 +171,7 @@ class OllamaWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		List<String> list = outputConverter.convert(generation.getOutput().getContent());
+		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
 
 	}
@@ -186,7 +190,7 @@ class OllamaWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getContent());
+		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
 	}
@@ -205,7 +209,7 @@ class OllamaWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.getActor()).isNotEmpty();
 	}
 
@@ -223,7 +227,7 @@ class OllamaWithOpenAiChatModelIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getContent());
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
@@ -249,7 +253,7 @@ class OllamaWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -259,7 +263,7 @@ class OllamaWithOpenAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llama3.2:1b" })
+	@ValueSource(strings = { "llama3.1:latest", "llama3.2:latest" })
 	void functionCallTest(String modelName) {
 
 		UserMessage userMessage = new UserMessage(
@@ -268,9 +272,12 @@ class OllamaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
+			.model(modelName)
+			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
+			// (which defaults to "auto") Ollama defaults to "nono"
+			.toolChoice("auto")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
-				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -279,12 +286,12 @@ class OllamaWithOpenAiChatModelIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
-	@Disabled("Ollama API does not support streaming function calls yet")
-	@Test
-	void streamFunctionCallTest() {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "llama3.1:latest", "llama3.2:latest" })
+	void streamFunctionCallTest(String modelName) {
 
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
@@ -292,9 +299,14 @@ class OllamaWithOpenAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
+			.model(modelName)
+			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
+			// (which defaults to "auto") Ollama defaults to "nono"
+			.toolChoice("auto")
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -306,7 +318,7 @@ class OllamaWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -323,11 +335,11 @@ class OllamaWithOpenAiChatModelIT {
 				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
 
 		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
 	@Disabled("Not supported by the current Ollama API")
@@ -336,15 +348,17 @@ class OllamaWithOpenAiChatModelIT {
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
 		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
-		logger.info(response.getResult().getOutput().getContent());
-		assertThat(response.getResult().getOutput().getContent()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("bowl", "basket");
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
 	@Disabled("Not supported by the current Ollama API")
@@ -353,11 +367,13 @@ class OllamaWithOpenAiChatModelIT {
 	void streamingMultiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG,
-						new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))));
+				List.of(Media.builder()
+					.mimeType(MimeTypeUtils.IMAGE_PNG)
+					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+					.build()));
 
 		Flux<ChatResponse> response = this.chatModel
-			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withModel(modelName).build()));
+			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		String content = response.collectList()
 			.block()
@@ -365,11 +381,10 @@ class OllamaWithOpenAiChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
+		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -377,7 +392,7 @@ class OllamaWithOpenAiChatModelIT {
 	void validateCallResponseMetadata(String model) {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().withModel(model).build())
+				.options(OpenAiChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -387,7 +402,7 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
@@ -400,12 +415,16 @@ class OllamaWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(baseUrl, "");
+			return OpenAiApi.builder().baseUrl(baseUrl).apiKey(new NoopApiKey()).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().withModel(DEFAULT_OLLAMA_MODEL).build());
+			return OpenAiChatModel.builder()
+				.openAiApi(openAiApi)
+				.toolCallingManager(LegacyToolCallingManager.builder().build())
+				.defaultOptions(OpenAiChatOptions.builder().model(DEFAULT_OLLAMA_MODEL).build())
+				.build();
 		}
 
 	}

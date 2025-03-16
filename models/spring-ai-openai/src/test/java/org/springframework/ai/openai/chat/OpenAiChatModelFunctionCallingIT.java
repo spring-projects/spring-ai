@@ -83,10 +83,10 @@ class OpenAiChatModelFunctionCallingIT {
 	@Test
 	void functionCallTest() {
 		functionCallTest(OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build());
@@ -119,13 +119,13 @@ class OpenAiChatModelFunctionCallingIT {
 		};
 
 		functionCallTest(OpenAiChatOptions.builder()
-			.withModel(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", biFunction)
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.withToolContext(Map.of("sessionId", "123"))
+			.toolContext(Map.of("sessionId", "123"))
 			.build());
 	}
 
@@ -139,16 +139,16 @@ class OpenAiChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
 	void streamFunctionCallTest() {
 
 		streamFunctionCallTest(OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of((FunctionCallback.builder()
-				.description("Get the weather in location")
+			.functionCallbacks(List.of((FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				// .responseConverter(response -> "" + response.temp() + response.unit())
 				.build())))
@@ -182,12 +182,12 @@ class OpenAiChatModelFunctionCallingIT {
 		};
 
 		OpenAiChatOptions promptOptions = OpenAiChatOptions.builder()
-			.withFunctionCallbacks(List.of((FunctionCallback.builder()
-				.description("Get the weather in location")
+			.functionCallbacks(List.of((FunctionCallback.builder()
 				.function("getCurrentWeather", biFunction)
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build())))
-			.withToolContext(Map.of("sessionId", "123"))
+			.toolContext(Map.of("sessionId", "123"))
 			.build();
 
 		streamFunctionCallTest(promptOptions);
@@ -207,7 +207,7 @@ class OpenAiChatModelFunctionCallingIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
@@ -219,12 +219,12 @@ class OpenAiChatModelFunctionCallingIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-			return new OpenAiChatModel(openAiApi);
+			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
 		}
 
 	}

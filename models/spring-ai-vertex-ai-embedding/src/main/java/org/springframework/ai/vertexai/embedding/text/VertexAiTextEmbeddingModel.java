@@ -30,11 +30,11 @@ import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.Value;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -46,7 +46,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextParametersBuilder;
@@ -167,7 +166,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 		VertexAiTextEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null && request.getOptions() != EmbeddingOptions.EMPTY) {
+		if (request.getOptions() != null) {
 			var defaultOptionsCopy = VertexAiTextEmbeddingOptions.builder().from(this.defaultOptions).build();
 			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
 					VertexAiTextEmbeddingOptions.class);
@@ -183,11 +182,11 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		TextParametersBuilder parametersBuilder = TextParametersBuilder.of();
 
 		if (finalOptions.getAutoTruncate() != null) {
-			parametersBuilder.withAutoTruncate(finalOptions.getAutoTruncate());
+			parametersBuilder.autoTruncate(finalOptions.getAutoTruncate());
 		}
 
 		if (finalOptions.getDimensions() != null) {
-			parametersBuilder.withOutputDimensionality(finalOptions.getDimensions());
+			parametersBuilder.outputDimensionality(finalOptions.getDimensions());
 		}
 
 		predictRequestBuilder.setParameters(VertexAiEmbeddingUtils.valueOf(parametersBuilder.build()));
@@ -195,9 +194,9 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		for (int i = 0; i < request.getInstructions().size(); i++) {
 
 			TextInstanceBuilder instanceBuilder = TextInstanceBuilder.of(request.getInstructions().get(i))
-				.withTaskType(finalOptions.getTaskType().name());
+				.taskType(finalOptions.getTaskType().name());
 			if (StringUtils.hasText(finalOptions.getTitle())) {
-				instanceBuilder.withTitle(finalOptions.getTitle());
+				instanceBuilder.title(finalOptions.getTitle());
 			}
 			predictRequestBuilder.addInstances(VertexAiEmbeddingUtils.valueOf(instanceBuilder.build()));
 		}
@@ -223,9 +222,13 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens) {
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
 		metadata.setModel(model);
-		Usage usage = new VertexAiEmbeddingUsage(totalTokens);
+		Usage usage = getDefaultUsage(totalTokens);
 		metadata.setUsage(usage);
 		return metadata;
+	}
+
+	private DefaultUsage getDefaultUsage(Integer totalTokens) {
+		return new DefaultUsage(0, 0, totalTokens);
 	}
 
 	@Override

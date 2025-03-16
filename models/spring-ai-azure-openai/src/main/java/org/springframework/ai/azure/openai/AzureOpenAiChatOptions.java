@@ -17,19 +17,25 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
+import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -40,9 +46,11 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  */
 @JsonInclude(Include.NON_NULL)
-public class AzureOpenAiChatOptions implements FunctionCallingOptions {
+public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 	/**
 	 * The maximum number of tokens to generate.
@@ -137,33 +145,6 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	private AzureOpenAiResponseFormat responseFormat;
 
 	/**
-	 * OpenAI Tool Function Callbacks to register with the ChatModel. For Prompt Options
-	 * the functionCallbacks are automatically enabled for the duration of the prompt
-	 * execution. For Default Options the functionCallbacks are registered but disabled by
-	 * default. Use the enableFunctions to set the functions from the registry to be used
-	 * by the ChatModel chat completion requests.
-	 */
-	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
-
-	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests. Functions with those names must exist in the
-	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
-	 * are automatically enabled for the duration of the prompt execution.
-	 *
-	 * Note that function enabled with the default options are enabled for all chat
-	 * completion requests. This could impact the token count and the billing. If the
-	 * functions is set in a prompt options, then the enabled functions are only active
-	 * for the duration of this prompt execution.
-	 */
-	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
-
-	@JsonIgnore
-	private Boolean proxyToolCalls;
-
-	/**
 	 * Seed value for deterministic sampling such that the same seed and parameters return
 	 * the same result.
 	 */
@@ -193,32 +174,102 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	@JsonIgnore
 	private AzureChatEnhancementConfiguration enhancements;
 
+	@JsonProperty("stream_options")
+	private ChatCompletionStreamOptions streamOptions;
+
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
+
+	/**
+	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
+	 * completion requests.
+	 */
+	@JsonIgnore
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+
+	/**
+	 * Collection of tool names to be resolved at runtime and used for tool calling in the
+	 * chat completion requests.
+	 */
+	@JsonIgnore
+	private Set<String> toolNames = new HashSet<>();
+
+	/**
+	 * Whether to enable the tool execution lifecycle internally in ChatModel.
+	 */
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
+
+	@Override
+	@JsonIgnore
+	public List<FunctionCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean isInternalToolExecutionEnabled() {
+		return internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	public static AzureOpenAiChatOptions fromOptions(AzureOpenAiChatOptions fromOptions) {
-		return builder().withDeploymentName(fromOptions.getDeploymentName())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty() : null)
-			.withLogitBias(fromOptions.getLogitBias())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withN(fromOptions.getN())
-			.withPresencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withUser(fromOptions.getUser())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withSeed(fromOptions.getSeed())
-			.withLogprobs(fromOptions.isLogprobs())
-			.withTopLogprobs(fromOptions.getTopLogProbs())
-			.withEnhancements(fromOptions.getEnhancements())
-			.withToolContext(fromOptions.getToolContext())
+		return builder().deploymentName(fromOptions.getDeploymentName())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty() : null)
+			.logitBias(fromOptions.getLogitBias())
+			.maxTokens(fromOptions.getMaxTokens())
+			.N(fromOptions.getN())
+			.presencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.user(fromOptions.getUser())
+			.functionCallbacks(fromOptions.getFunctionCallbacks() != null
+					? new ArrayList<>(fromOptions.getFunctionCallbacks()) : null)
+			.functions(fromOptions.getFunctions() != null ? new HashSet<>(fromOptions.getFunctions()) : null)
+			.responseFormat(fromOptions.getResponseFormat())
+			.seed(fromOptions.getSeed())
+			.logprobs(fromOptions.isLogprobs())
+			.topLogprobs(fromOptions.getTopLogProbs())
+			.enhancements(fromOptions.getEnhancements())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+			.streamOptions(fromOptions.getStreamOptions())
+			.toolCallbacks(
+					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.build();
 	}
 
@@ -330,21 +381,28 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
-	}
-
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
+		return this.getToolCallbacks();
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
+	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		this.setToolCallbacks(functionCallbacks);
+	}
+
+	@Override
+	@Deprecated
+	@JsonIgnore
 	public Set<String> getFunctions() {
-		return this.functions;
+		return this.getToolNames();
 	}
 
 	public void setFunctions(Set<String> functions) {
-		this.functions = functions;
+		this.setToolNames(functions);
 	}
 
 	public AzureOpenAiResponseFormat getResponseFormat() {
@@ -394,12 +452,16 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
+	@Deprecated
+	@JsonIgnore
 	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
+		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
 	}
 
+	@Deprecated
+	@JsonIgnore
 	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
+		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
@@ -412,9 +474,51 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 		this.toolContext = toolContext;
 	}
 
+	public ChatCompletionStreamOptions getStreamOptions() {
+		return this.streamOptions;
+	}
+
+	public void setStreamOptions(ChatCompletionStreamOptions streamOptions) {
+		this.streamOptions = streamOptions;
+	}
+
 	@Override
+	@SuppressWarnings("unchecked")
 	public AzureOpenAiChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof AzureOpenAiChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.logitBias, that.logitBias) && Objects.equals(this.user, that.user)
+				&& Objects.equals(this.n, that.n) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.deploymentName, that.deploymentName)
+				&& Objects.equals(this.responseFormat, that.responseFormat)
+
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.topLogProbs, that.topLogProbs)
+				&& Objects.equals(this.enhancements, that.enhancements)
+				&& Objects.equals(this.streamOptions, that.streamOptions)
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.logitBias, this.user, this.n, this.stop, this.deploymentName, this.responseFormat,
+				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.seed, this.logprobs,
+				this.topLogProbs, this.enhancements, this.streamOptions, this.toolContext, this.maxTokens,
+				this.frequencyPenalty, this.presencePenalty, this.temperature, this.topP);
 	}
 
 	public static class Builder {
@@ -429,110 +533,144 @@ public class AzureOpenAiChatOptions implements FunctionCallingOptions {
 			this.options = options;
 		}
 
-		public Builder withDeploymentName(String deploymentName) {
+		public Builder deploymentName(String deploymentName) {
 			this.options.deploymentName = deploymentName;
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
-		public Builder withLogitBias(Map<String, Integer> logitBias) {
+		public Builder logitBias(Map<String, Integer> logitBias) {
 			this.options.logitBias = logitBias;
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withN(Integer n) {
+		public Builder N(Integer n) {
 			this.options.n = n;
 			return this;
 		}
 
-		public Builder withPresencePenalty(Double presencePenalty) {
+		public Builder presencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder withUser(String user) {
+		public Builder user(String user) {
 			this.options.user = user;
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
-			return this;
+		@Deprecated
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			return toolCallbacks(functionCallbacks);
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
-			return this;
+		@Deprecated
+		public Builder functions(Set<String> functionNames) {
+			return toolNames(functionNames);
 		}
 
-		public Builder withFunction(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
-			return this;
+		@Deprecated
+		public Builder function(String functionName) {
+			return toolNames(functionName);
 		}
 
-		public Builder withResponseFormat(AzureOpenAiResponseFormat responseFormat) {
+		public Builder responseFormat(AzureOpenAiResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+		@Deprecated
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
+			if (proxyToolCalls != null) {
+				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
+			}
 			return this;
 		}
 
-		public Builder withSeed(Long seed) {
+		public Builder seed(Long seed) {
 			this.options.seed = seed;
 			return this;
 		}
 
-		public Builder withLogprobs(Boolean logprobs) {
+		public Builder logprobs(Boolean logprobs) {
 			this.options.logprobs = logprobs;
 			return this;
 		}
 
-		public Builder withTopLogprobs(Integer topLogprobs) {
+		public Builder topLogprobs(Integer topLogprobs) {
 			this.options.topLogProbs = topLogprobs;
 			return this;
 		}
 
-		public Builder withEnhancements(AzureChatEnhancementConfiguration enhancements) {
+		public Builder enhancements(AzureChatEnhancementConfiguration enhancements) {
 			this.options.enhancements = enhancements;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder streamOptions(ChatCompletionStreamOptions streamOptions) {
+			this.options.streamOptions = streamOptions;
+			return this;
+		}
+
+		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,16 @@ package org.springframework.ai.vectorstore;
 import java.util.List;
 import java.util.Optional;
 
+import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
+import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * The {@code VectorStore} interface defines the operations for managing and querying
@@ -51,9 +59,30 @@ public interface VectorStore extends DocumentWriter {
 	/**
 	 * Deletes documents from the vector store.
 	 * @param idList list of document ids for which documents will be removed.
-	 * @return Returns true if the documents were successfully deleted.
 	 */
-	Optional<Boolean> delete(List<String> idList);
+	void delete(List<String> idList);
+
+	/**
+	 * Deletes documents from the vector store based on filter criteria.
+	 * @param filterExpression Filter expression to identify documents to delete
+	 * @throws IllegalStateException if the underlying delete causes an exception
+	 */
+	void delete(Filter.Expression filterExpression);
+
+	/**
+	 * Deletes documents from the vector store using a string filter expression. Converts
+	 * the string filter to an Expression object and delegates to
+	 * {@link #delete(Filter.Expression)}.
+	 * @param filterExpression String representation of the filter criteria
+	 * @throws IllegalArgumentException if the filter expression is null
+	 * @throws IllegalStateException if the underlying delete causes an exception
+	 */
+	default void delete(String filterExpression) {
+		SearchRequest searchRequest = SearchRequest.builder().filterExpression(filterExpression).build();
+		Filter.Expression textExpression = searchRequest.getFilterExpression();
+		Assert.notNull(textExpression, "Filter expression must not be null");
+		this.delete(textExpression);
+	}
 
 	/**
 	 * Retrieves documents by query embedding similarity and metadata filters to retrieve
@@ -62,6 +91,7 @@ public interface VectorStore extends DocumentWriter {
 	 * topK, similarity threshold and metadata filter expressions.
 	 * @return Returns documents th match the query request conditions.
 	 */
+	@Nullable
 	List<Document> similaritySearch(SearchRequest request);
 
 	/**
@@ -71,8 +101,67 @@ public interface VectorStore extends DocumentWriter {
 	 * @return Returns a list of documents that have embeddings similar to the query text
 	 * embedding.
 	 */
+	@Nullable
 	default List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.query(query));
+		return this.similaritySearch(SearchRequest.builder().query(query).build());
+	}
+
+	/**
+	 * Returns the native client if available in this vector store implementation.
+	 *
+	 * Note on usage: 1. Returns empty Optional when no native client is available 2. Due
+	 * to Java type erasure, runtime type checking is not possible
+	 *
+	 * Example usage: When working with implementation with known native client:
+	 * Optional<NativeClientType> client = vectorStore.getNativeClient();
+	 *
+	 * Note: Using Optional<?> will return the native client if one exists, rather than an
+	 * empty Optional. For type safety, prefer using the specific client type.
+	 * @return Optional containing native client if available, empty Optional otherwise
+	 * @param <T> The type of the native client
+	 */
+	default <T> Optional<T> getNativeClient() {
+		return Optional.empty();
+	}
+
+	/**
+	 * Builder interface for creating VectorStore instances. Implements a fluent builder
+	 * pattern for configuring observation-related settings.
+	 *
+	 * @param <T> the concrete builder type, enabling method chaining with the correct
+	 * return type
+	 */
+	interface Builder<T extends Builder<T>> {
+
+		/**
+		 * Sets the registry for collecting observations and metrics. Defaults to
+		 * {@link ObservationRegistry#NOOP} if not specified.
+		 * @param observationRegistry the registry to use for observations
+		 * @return the builder instance for method chaining
+		 */
+		T observationRegistry(ObservationRegistry observationRegistry);
+
+		/**
+		 * Sets a custom convention for creating observations. If not specified,
+		 * {@link DefaultVectorStoreObservationConvention} will be used.
+		 * @param convention the custom observation convention to use
+		 * @return the builder instance for method chaining
+		 */
+		T customObservationConvention(VectorStoreObservationConvention convention);
+
+		/**
+		 * Sets the batching strategy.
+		 * @param batchingStrategy the strategy to use
+		 * @return the builder instance for method chaining
+		 */
+		T batchingStrategy(BatchingStrategy batchingStrategy);
+
+		/**
+		 * Builds and returns a new VectorStore instance with the configured settings.
+		 * @return a new VectorStore instance
+		 */
+		VectorStore build();
+
 	}
 
 }

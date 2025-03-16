@@ -34,7 +34,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -70,7 +70,7 @@ class MistralAiChatClientIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -85,7 +85,7 @@ class MistralAiChatClientIT {
 				.call()
 				.chatResponse();
 		// @formatter:on
-		assertThat(response.getResult().getOutput().getContent()).containsAnyOf("Blackbeard");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
 
 		// @formatter:off
 		response = ChatClient.create(this.chatModel).prompt()
@@ -96,7 +96,7 @@ class MistralAiChatClientIT {
 		// @formatter:on
 
 		logger.info("" + response);
-		assertThat(response.getResult().getOutput().getContent().toLowerCase()).containsAnyOf("blackbeard",
+		assertThat(response.getResult().getOutput().getText().toLowerCase()).containsAnyOf("blackbeard",
 				"bartholomew roberts");
 	}
 
@@ -223,13 +223,12 @@ class MistralAiChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).withToolChoice(ToolChoice.AUTO).build())
+				.options(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.SMALL).toolChoice(ToolChoice.AUTO).build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
-				.functions(FunctionCallback.builder()
-						.description("Get the weather in location")
-						.function("getCurrentWeather", new MockWeatherService())
-						.inputType(MockWeatherService.Request.class)
-						.build())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -246,10 +245,9 @@ class MistralAiChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultOptions(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
-				.defaultFunctions(FunctionCallback.builder()
+				.defaultOptions(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.SMALL).build())
+				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
-					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
@@ -269,11 +267,10 @@ class MistralAiChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(MistralAiChatOptions.builder().withModel(MistralAiApi.ChatModel.SMALL).build())
+				.options(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.SMALL).build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")
-				.functions(FunctionCallback.builder()
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
-					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.stream()
@@ -290,10 +287,12 @@ class MistralAiChatClientIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getName();
+		// String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getName();
+		String model = MistralAiApi.ChatModel.PIXTRAL.getName();
+		// String model = MistralAiApi.ChatModel.PIXTRAL_LARGE.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(MistralAiChatOptions.builder().withModel(model).build())
+				.options(MistralAiChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -303,7 +302,7 @@ class MistralAiChatClientIT {
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 

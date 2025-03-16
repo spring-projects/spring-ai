@@ -30,7 +30,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.moonshot.MoonshotChatModel;
 import org.springframework.ai.moonshot.MoonshotChatOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
@@ -50,6 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * Integration tests for observation instrumentation in {@link MoonshotChatModel}.
  *
  * @author Geng Rong
+ * @author Alexandros Pappas
  */
 @SpringBootTest(classes = MoonshotChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".+")
@@ -70,19 +71,19 @@ public class MoonshotChatModelObservationIT {
 	void observationForChatOperation() {
 
 		var options = MoonshotChatOptions.builder()
-			.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-			.withFrequencyPenalty(0.0)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+			.frequencyPenalty(0.0)
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -93,13 +94,13 @@ public class MoonshotChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = MoonshotChatOptions.builder()
-			.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-			.withFrequencyPenalty(0.0)
-			.withMaxTokens(2048)
-			.withPresencePenalty(0.0)
-			.withStop(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+			.model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+			.frequencyPenalty(0.0)
+			.maxTokens(2048)
+			.presencePenalty(0.0)
+			.stop(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -112,7 +113,7 @@ public class MoonshotChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -149,7 +150,7 @@ public class MoonshotChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
+					String.valueOf(responseMetadata.getUsage().getCompletionTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
@@ -173,7 +174,8 @@ public class MoonshotChatModelObservationIT {
 		public MoonshotChatModel moonshotChatModel(MoonshotApi moonshotApi,
 				TestObservationRegistry observationRegistry) {
 			return new MoonshotChatModel(moonshotApi, MoonshotChatOptions.builder().build(),
-					new FunctionCallbackContext(), List.of(), RetryTemplate.defaultInstance(), observationRegistry);
+					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					observationRegistry);
 		}
 
 	}

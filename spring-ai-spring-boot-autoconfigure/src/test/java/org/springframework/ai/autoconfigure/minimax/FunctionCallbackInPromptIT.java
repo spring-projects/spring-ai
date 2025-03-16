@@ -63,9 +63,9 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = MiniMaxChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder()
-					.description("Get the weather in location")
+				.functionCallbacks(List.of(FunctionCallback.builder()
 					.function("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
@@ -74,7 +74,7 @@ public class FunctionCallbackInPromptIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
@@ -89,9 +89,9 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = MiniMaxChatOptions.builder()
-				.withFunctionCallbacks(List.of(FunctionCallback.builder()
-					.description("Get the weather in location")
+				.functionCallbacks(List.of(FunctionCallback.builder()
 					.function("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
@@ -104,7 +104,7 @@ public class FunctionCallbackInPromptIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 

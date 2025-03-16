@@ -24,6 +24,7 @@ import java.util.Objects;
  * false (indicating that the content does not belong to the category).
  *
  * @author Ahmed Yousri
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public final class Categories {
@@ -168,57 +169,57 @@ public final class Categories {
 
 		private boolean violence;
 
-		public Builder withSexual(boolean sexual) {
+		public Builder sexual(boolean sexual) {
 			this.sexual = sexual;
 			return this;
 		}
 
-		public Builder withHate(boolean hate) {
+		public Builder hate(boolean hate) {
 			this.hate = hate;
 			return this;
 		}
 
-		public Builder withHarassment(boolean harassment) {
+		public Builder harassment(boolean harassment) {
 			this.harassment = harassment;
 			return this;
 		}
 
-		public Builder withSelfHarm(boolean selfHarm) {
+		public Builder selfHarm(boolean selfHarm) {
 			this.selfHarm = selfHarm;
 			return this;
 		}
 
-		public Builder withSexualMinors(boolean sexualMinors) {
+		public Builder sexualMinors(boolean sexualMinors) {
 			this.sexualMinors = sexualMinors;
 			return this;
 		}
 
-		public Builder withHateThreatening(boolean hateThreatening) {
+		public Builder hateThreatening(boolean hateThreatening) {
 			this.hateThreatening = hateThreatening;
 			return this;
 		}
 
-		public Builder withViolenceGraphic(boolean violenceGraphic) {
+		public Builder violenceGraphic(boolean violenceGraphic) {
 			this.violenceGraphic = violenceGraphic;
 			return this;
 		}
 
-		public Builder withSelfHarmIntent(boolean selfHarmIntent) {
+		public Builder selfHarmIntent(boolean selfHarmIntent) {
 			this.selfHarmIntent = selfHarmIntent;
 			return this;
 		}
 
-		public Builder withSelfHarmInstructions(boolean selfHarmInstructions) {
+		public Builder selfHarmInstructions(boolean selfHarmInstructions) {
 			this.selfHarmInstructions = selfHarmInstructions;
 			return this;
 		}
 
-		public Builder withHarassmentThreatening(boolean harassmentThreatening) {
+		public Builder harassmentThreatening(boolean harassmentThreatening) {
 			this.harassmentThreatening = harassmentThreatening;
 			return this;
 		}
 
-		public Builder withViolence(boolean violence) {
+		public Builder violence(boolean violence) {
 			this.violence = violence;
 			return this;
 		}

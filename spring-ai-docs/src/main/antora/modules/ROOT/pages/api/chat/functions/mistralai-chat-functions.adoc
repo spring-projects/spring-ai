@@ -1,4 +1,6 @@
-= Mistral AI Function Calling
+= Mistral AI Function Calling (Deprecated)
+
+WARNING: This page describes the previous version of the Function Calling API, which has been deprecated and marked for remove in the next release. The current version is available at xref:api/tools.adoc[Tool Calling]. See the xref:api/tools-migration.adoc[Migration Guide] for more information.
 
 You can register custom Java functions with the `MistralAiChatModel` and have the Mistral AI models intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
@@ -126,8 +128,8 @@ static class Config {
 	public FunctionCallback weatherFunctionInfo() {
 
     return FunctionCallback.builder()
-        .description("Get the weather in location") // (2) function description
 		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+        .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
 	}
@@ -153,7 +155,7 @@ MistralAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		MistralAiChatOptions.builder().withFunction("CurrentWeather").build())); // Enable the function
+		MistralAiChatOptions.builder().function("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -173,9 +175,9 @@ MistralAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 var promptOptions = MistralAiChatOptions.builder()
-	.withFunctionCallbacks(List.of(FunctionCallback.builder()
-        .description("Get the weather in location") // (2) function description
+	.functionCallbacks(List.of(FunctionCallback.builder()
 		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+        .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build())) // function code
 	.build();

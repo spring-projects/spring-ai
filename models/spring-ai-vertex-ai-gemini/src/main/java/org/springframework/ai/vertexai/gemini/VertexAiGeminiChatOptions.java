@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.springframework.ai.vertexai.gemini;
 
+import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +31,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -39,10 +44,11 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Grogdunn
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
+public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	// https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerationConfig
 
@@ -66,7 +72,7 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	/**
 	 * Optional. If specified, top k sampling will be used.
 	 */
-	private @JsonProperty("topK") Float topK;
+	private @JsonProperty("topK") Integer topK;
 
 	/**
 	 * Optional. The maximum number of tokens to generate.
@@ -91,43 +97,41 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
-	 * Tool Function Callbacks to register with the ChatModel.
-	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
-	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
-	 * from the registry to be used by the ChatModel chat completion requests.
+	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
+	 * completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
 
 	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests.
-	 * Functions with those names must exist in the functionCallbacks registry.
-	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
-	 *
-	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
-	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
+     * Collection of tool names to be resolved at runtime and used for tool calling in the
+	 * chat completion requests.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
+
+	/**
+	 * Whether to enable the tool execution lifecycle internally in ChatModel.
+	 */
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
+
+	@JsonIgnore
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
 	 * Use Google search Grounding feature
 	 */
 	@JsonIgnore
-	private boolean googleSearchRetrieval = false;
+	private Boolean googleSearchRetrieval = false;
 
 	@JsonIgnore
-	private Boolean proxyToolCalls;
-
-	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private List<VertexAiGeminiSafetySetting> safetySettings = new ArrayList<>();
+	// @formatter:on
 
 	public static Builder builder() {
 		return new Builder();
 	}
-
-	// @formatter:on
 
 	public static VertexAiGeminiChatOptions fromOptions(VertexAiGeminiChatOptions fromOptions) {
 		VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
@@ -138,12 +142,13 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		options.setCandidateCount(fromOptions.getCandidateCount());
 		options.setMaxOutputTokens(fromOptions.getMaxOutputTokens());
 		options.setModel(fromOptions.getModel());
-		options.setFunctionCallbacks(fromOptions.getFunctionCallbacks());
+		options.setToolCallbacks(fromOptions.getToolCallbacks());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
-		options.setFunctions(fromOptions.getFunctions());
+		options.setToolNames(fromOptions.getToolNames());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
-		options.setProxyToolCalls(fromOptions.getProxyToolCalls());
+		options.setSafetySettings(fromOptions.getSafetySettings());
+		options.setInternalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
 	}
@@ -177,16 +182,11 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public Integer getTopK() {
-		return (this.topK != null) ? this.topK.intValue() : null;
+		return this.topK;
 	}
 
-	public void setTopK(Float topK) {
-		this.topK = topK;
-	}
-
-	@JsonIgnore
 	public void setTopK(Integer topK) {
-		this.topK = (topK != null) ? topK.floatValue() : null;
+		this.topK = topK;
 	}
 
 	public Integer getCandidateCount() {
@@ -233,20 +233,67 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		this.responseMimeType = mimeType;
 	}
 
+	@Override
+	@JsonIgnore
+	@Deprecated
 	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
+		return this.getToolCallbacks();
 	}
 
+	@Override
+	@JsonIgnore
+	@Deprecated
 	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
+		this.setToolCallbacks(functionCallbacks);
 	}
 
+	@Override
+	public List<FunctionCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	@Deprecated
 	public Set<String> getFunctions() {
-		return this.functions;
+		return this.getToolNames();
 	}
 
+	@JsonIgnore
+	@Deprecated
 	public void setFunctions(Set<String> functions) {
-		this.functions = functions;
+		this.setToolNames(functions);
+	}
+
+	@Override
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	public Boolean isInternalToolExecutionEnabled() {
+		return internalToolExecutionEnabled;
+	}
+
+	@Override
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -261,21 +308,34 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		return null;
 	}
 
-	public boolean getGoogleSearchRetrieval() {
+	public Boolean getGoogleSearchRetrieval() {
 		return this.googleSearchRetrieval;
 	}
 
-	public void setGoogleSearchRetrieval(boolean googleSearchRetrieval) {
+	public void setGoogleSearchRetrieval(Boolean googleSearchRetrieval) {
 		this.googleSearchRetrieval = googleSearchRetrieval;
 	}
 
-	@Override
-	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
+	public List<VertexAiGeminiSafetySetting> getSafetySettings() {
+		return this.safetySettings;
 	}
 
+	public void setSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+		Assert.notNull(safetySettings, "safetySettings must not be null");
+		this.safetySettings = safetySettings;
+	}
+
+	@Deprecated
+	@Override
+	@JsonIgnore
+	public Boolean getProxyToolCalls() {
+		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
+	}
+
+	@Deprecated
+	@JsonIgnore
 	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
+		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
@@ -302,17 +362,18 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.candidateCount, that.candidateCount)
 				&& Objects.equals(this.maxOutputTokens, that.maxOutputTokens) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
-				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(this.functions, that.functions)
-				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.safetySettings, that.safetySettings)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
-				this.maxOutputTokens, this.model, this.responseMimeType, this.functionCallbacks, this.functions,
-				this.googleSearchRetrieval, this.proxyToolCalls, this.toolContext);
+				this.maxOutputTokens, this.model, this.responseMimeType, this.toolCallbacks, this.toolNames,
+				this.googleSearchRetrieval, this.safetySettings, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
@@ -320,9 +381,9 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 		return "VertexAiGeminiChatOptions{" + "stopSequences=" + this.stopSequences + ", temperature="
 				+ this.temperature + ", topP=" + this.topP + ", topK=" + this.topK + ", candidateCount="
 				+ this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='" + this.model + '\''
-				+ ", responseMimeType='" + this.responseMimeType + '\'' + ", functionCallbacks="
-				+ this.functionCallbacks + ", functions=" + this.functions + ", googleSearchRetrieval="
-				+ this.googleSearchRetrieval + '}';
+				+ ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks=" + this.toolCallbacks
+				+ ", toolNames=" + this.toolNames + ", googleSearchRetrieval=" + this.googleSearchRetrieval
+				+ ", safetySettings=" + this.safetySettings + '}';
 	}
 
 	@Override
@@ -340,80 +401,112 @@ public class VertexAiGeminiChatOptions implements FunctionCallingOptions {
 
 		private VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
 
-		public Builder withStopSequences(List<String> stopSequences) {
+		public Builder stopSequences(List<String> stopSequences) {
 			this.options.setStopSequences(stopSequences);
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.setTopP(topP);
 			return this;
 		}
 
-		public Builder withTopK(Float topK) {
+		public Builder topK(Integer topK) {
 			this.options.setTopK(topK);
 			return this;
 		}
 
-		public Builder withCandidateCount(Integer candidateCount) {
+		public Builder candidateCount(Integer candidateCount) {
 			this.options.setCandidateCount(candidateCount);
 			return this;
 		}
 
-		public Builder withMaxOutputTokens(Integer maxOutputTokens) {
+		public Builder maxOutputTokens(Integer maxOutputTokens) {
 			this.options.setMaxOutputTokens(maxOutputTokens);
 			return this;
 		}
 
-		public Builder withModel(String modelName) {
+		public Builder model(String modelName) {
 			this.options.setModel(modelName);
 			return this;
 		}
 
-		public Builder withModel(ChatModel model) {
+		public Builder model(ChatModel model) {
 			this.options.setModel(model.getValue());
 			return this;
 		}
 
-		public Builder withResponseMimeType(String mimeType) {
+		public Builder responseMimeType(String mimeType) {
 			Assert.notNull(mimeType, "mimeType must not be null");
 			this.options.setResponseMimeType(mimeType);
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
+		@Deprecated
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
+			return toolCallbacks(functionCallbacks);
+		}
+
+		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+			this.options.toolCallbacks = toolCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
+		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
+		@Deprecated
+		public Builder functions(Set<String> functionNames) {
+			return this.toolNames(functionNames);
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "Function names must not be null");
+			this.options.toolNames = toolNames;
 			return this;
 		}
 
-		public Builder withGoogleSearchRetrieval(boolean googleSearch) {
+		@Deprecated
+		public Builder function(String functionName) {
+			return this.toolName(functionName);
+		}
+
+		public Builder toolName(String toolName) {
+			Assert.hasText(toolName, "Function name must not be empty");
+			this.options.toolNames.add(toolName);
+			return this;
+		}
+
+		public Builder googleSearchRetrieval(boolean googleSearch) {
 			this.options.googleSearchRetrieval = googleSearch;
 			return this;
 		}
 
-		public Builder withProxyToolCalls(boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+		public Builder safetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
+			Assert.notNull(safetySettings, "safetySettings must not be null");
+			this.options.safetySettings = safetySettings;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		@Deprecated
+		public Builder proxyToolCalls(boolean proxyToolCalls) {
+			return this.internalToolExecutionEnabled(!proxyToolCalls);
+		}
+
+		public Builder internalToolExecutionEnabled(boolean internalToolExecutionEnabled) {
+			this.options.internalToolExecutionEnabled = internalToolExecutionEnabled;
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}

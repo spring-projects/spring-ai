@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai;
 
+import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -30,57 +32,54 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiApi openAiApi() {
-		return new OpenAiApi(getApiKey());
+		return OpenAiApi.builder().apiKey(getApiKey()).build();
 	}
 
 	@Bean
 	public OpenAiImageApi openAiImageApi() {
-		return new OpenAiImageApi(getApiKey());
+		return OpenAiImageApi.builder().apiKey(getApiKey()).build();
 	}
 
 	@Bean
 	public OpenAiAudioApi openAiAudioApi() {
-		return new OpenAiAudioApi(getApiKey());
+		return OpenAiAudioApi.builder().apiKey(getApiKey()).build();
 	}
 
 	@Bean
 	public OpenAiModerationApi openAiModerationApi() {
-		return new OpenAiModerationApi(getApiKey());
+		return OpenAiModerationApi.builder().apiKey(getApiKey()).build();
 	}
 
-	private String getApiKey() {
+	private ApiKey getApiKey() {
 		String apiKey = System.getenv("OPENAI_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
 					"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 		}
-		return apiKey;
+		return new SimpleApiKey(apiKey);
 	}
 
 	@Bean
 	public OpenAiChatModel openAiChatModel(OpenAiApi api) {
-		OpenAiChatModel openAiChatModel = new OpenAiChatModel(api,
-				OpenAiChatOptions.builder().withModel(ChatModel.GPT_4_O_MINI).build());
-		return openAiChatModel;
+		return OpenAiChatModel.builder()
+			.openAiApi(api)
+			.defaultOptions(OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI).build())
+			.build();
 	}
 
 	@Bean
 	public OpenAiAudioTranscriptionModel openAiTranscriptionModel(OpenAiAudioApi api) {
-		OpenAiAudioTranscriptionModel openAiTranscriptionModel = new OpenAiAudioTranscriptionModel(api);
-		return openAiTranscriptionModel;
+		return new OpenAiAudioTranscriptionModel(api);
 	}
 
 	@Bean
 	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiAudioApi api) {
-		OpenAiAudioSpeechModel openAiAudioSpeechModel = new OpenAiAudioSpeechModel(api);
-		return openAiAudioSpeechModel;
+		return new OpenAiAudioSpeechModel(api);
 	}
 
 	@Bean
 	public OpenAiImageModel openAiImageModel(OpenAiImageApi imageApi) {
-		OpenAiImageModel openAiImageModel = new OpenAiImageModel(imageApi);
-		// openAiImageModel.setModel("foobar");
-		return openAiImageModel;
+		return new OpenAiImageModel(imageApi);
 	}
 
 	@Bean
@@ -90,8 +89,7 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiModerationModel openAiModerationClient(OpenAiModerationApi openAiModerationApi) {
-		OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(openAiModerationApi);
-		return openAiModerationModel;
+		return new OpenAiModerationModel(openAiModerationApi);
 	}
 
 }

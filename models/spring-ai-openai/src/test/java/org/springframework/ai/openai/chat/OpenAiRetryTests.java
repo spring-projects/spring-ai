@@ -78,6 +78,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -109,14 +110,17 @@ public class OpenAiRetryTests {
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new OpenAiChatModel(this.openAiApi, OpenAiChatOptions.builder().build(), null,
-				this.retryTemplate);
+		this.chatModel = OpenAiChatModel.builder()
+			.openAiApi(this.openAiApi)
+			.defaultOptions(OpenAiChatOptions.builder().build())
+			.retryTemplate(this.retryTemplate)
+			.build();
 		this.embeddingModel = new OpenAiEmbeddingModel(this.openAiApi, MetadataMode.EMBED,
 				OpenAiEmbeddingOptions.builder().build(), this.retryTemplate);
 		this.audioTranscriptionModel = new OpenAiAudioTranscriptionModel(this.openAiAudioApi,
 				OpenAiAudioTranscriptionOptions.builder()
-					.withModel("model")
-					.withResponseFormat(TranscriptResponseFormat.JSON)
+					.model("model")
+					.responseFormat(TranscriptResponseFormat.JSON)
 					.build(),
 				this.retryTemplate);
 		this.imageModel = new OpenAiImageModel(this.openAiImageApi, OpenAiImageOptions.builder().build(),
@@ -129,7 +133,7 @@ public class OpenAiRetryTests {
 		var choice = new ChatCompletion.Choice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletion expectedChatCompletion = new ChatCompletion("id", List.of(choice), 666L, "model", null, null,
-				new OpenAiApi.Usage(10, 10, 10));
+				null, new OpenAiApi.Usage(10, 10, 10));
 
 		given(this.openAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class), any()))
 			.willThrow(new TransientAiException("Transient Error 1"))
@@ -139,7 +143,7 @@ public class OpenAiRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
@@ -158,7 +162,7 @@ public class OpenAiRetryTests {
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666L, "model", null,
-				null, null);
+				null, null, null);
 
 		given(this.openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 			.willThrow(new TransientAiException("Transient Error 1"))
@@ -168,7 +172,7 @@ public class OpenAiRetryTests {
 		var result = this.chatModel.stream(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.collectList().block().get(0).getResult().getOutput().getContent()).isSameAs("Response");
+		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

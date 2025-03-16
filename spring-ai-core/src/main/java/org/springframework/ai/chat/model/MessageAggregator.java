@@ -41,6 +41,7 @@ import org.springframework.util.StringUtils;
  * single AssistantMessage. Job is performed in parallel to the chat response processing.
  *
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public class MessageAggregator {
@@ -59,8 +60,8 @@ public class MessageAggregator {
 		}), aggregatedChatResponse -> {
 
 			AdvisedResponse aggregatedAdvisedResponse = AdvisedResponse.builder()
-				.withResponse(aggregatedChatResponse)
-				.withAdviseContext(adviseContext.get())
+				.response(aggregatedChatResponse)
+				.adviseContext(adviseContext.get())
 				.build();
 
 			aggregationHandler.accept(aggregatedAdvisedResponse);
@@ -80,9 +81,9 @@ public class MessageAggregator {
 				ChatGenerationMetadata.NULL);
 
 		// Usage
-		AtomicReference<Long> metadataUsagePromptTokensRef = new AtomicReference<>(0L);
-		AtomicReference<Long> metadataUsageGenerationTokensRef = new AtomicReference<>(0L);
-		AtomicReference<Long> metadataUsageTotalTokensRef = new AtomicReference<>(0L);
+		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<Integer>(0);
+		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<Integer>(0);
+		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<Integer>(0);
 
 		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
 		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
@@ -95,9 +96,9 @@ public class MessageAggregator {
 			messageMetadataMapRef.set(new HashMap<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
-			metadataUsagePromptTokensRef.set(0L);
-			metadataUsageGenerationTokensRef.set(0L);
-			metadataUsageTotalTokensRef.set(0L);
+			metadataUsagePromptTokensRef.set(0);
+			metadataUsageGenerationTokensRef.set(0);
+			metadataUsageTotalTokensRef.set(0);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
@@ -108,8 +109,8 @@ public class MessageAggregator {
 						&& chatResponse.getResult().getMetadata() != ChatGenerationMetadata.NULL) {
 					generationMetadataRef.set(chatResponse.getResult().getMetadata());
 				}
-				if (chatResponse.getResult().getOutput().getContent() != null) {
-					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getContent());
+				if (chatResponse.getResult().getOutput().getText() != null) {
+					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getText());
 				}
 				if (chatResponse.getResult().getOutput().getMetadata() != null) {
 					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
@@ -120,7 +121,7 @@ public class MessageAggregator {
 					Usage usage = chatResponse.getMetadata().getUsage();
 					metadataUsagePromptTokensRef.set(
 							usage.getPromptTokens() > 0 ? usage.getPromptTokens() : metadataUsagePromptTokensRef.get());
-					metadataUsageGenerationTokensRef.set(usage.getGenerationTokens() > 0 ? usage.getGenerationTokens()
+					metadataUsageGenerationTokensRef.set(usage.getCompletionTokens() > 0 ? usage.getCompletionTokens()
 							: metadataUsageGenerationTokensRef.get());
 					metadataUsageTotalTokensRef
 						.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens() : metadataUsageTotalTokensRef.get());
@@ -146,11 +147,11 @@ public class MessageAggregator {
 					metadataUsageTotalTokensRef.get());
 
 			var chatResponseMetadata = ChatResponseMetadata.builder()
-				.withId(metadataIdRef.get())
-				.withModel(metadataModelRef.get())
-				.withRateLimit(metadataRateLimitRef.get())
-				.withUsage(usage)
-				.withPromptMetadata(metadataPromptMetadataRef.get())
+				.id(metadataIdRef.get())
+				.model(metadataModelRef.get())
+				.rateLimit(metadataRateLimitRef.get())
+				.usage(usage)
+				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(
@@ -161,32 +162,40 @@ public class MessageAggregator {
 			messageMetadataMapRef.set(new HashMap<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
-			metadataUsagePromptTokensRef.set(0L);
-			metadataUsageGenerationTokensRef.set(0L);
-			metadataUsageTotalTokensRef.set(0L);
+			metadataUsagePromptTokensRef.set(0);
+			metadataUsageGenerationTokensRef.set(0);
+			metadataUsageTotalTokensRef.set(0);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
 		}).doOnError(e -> logger.error("Aggregation Error", e));
 	}
 
-	public record DefaultUsage(long promptTokens, long generationTokens, long totalTokens) implements Usage {
+	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) implements Usage {
 
 		@Override
-		public Long getPromptTokens() {
+		public Integer getPromptTokens() {
 			return promptTokens();
 		}
 
 		@Override
-		public Long getGenerationTokens() {
-			return generationTokens();
+		public Integer getCompletionTokens() {
+			return completionTokens();
 		}
 
 		@Override
-		public Long getTotalTokens() {
+		public Integer getTotalTokens() {
 			return totalTokens();
 		}
 
+		@Override
+		public Map<String, Integer> getNativeUsage() {
+			Map<String, Integer> usage = new HashMap<>();
+			usage.put("promptTokens", promptTokens());
+			usage.put("completionTokens", completionTokens());
+			usage.put("totalTokens", totalTokens());
+			return usage;
+		}
 	}
 
 }

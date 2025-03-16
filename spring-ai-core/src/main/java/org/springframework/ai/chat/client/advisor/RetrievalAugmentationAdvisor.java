@@ -16,71 +16,81 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.rag.analysis.query.transformation.QueryTransformer;
-import org.springframework.ai.rag.augmentation.ContextualQueryAugmentor;
-import org.springframework.ai.rag.augmentation.QueryAugmentor;
+import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
+import org.springframework.ai.rag.generation.augmentation.QueryAugmenter;
+import org.springframework.ai.rag.preretrieval.query.expansion.QueryExpander;
+import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
+import org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner;
+import org.springframework.ai.rag.retrieval.join.DocumentJoiner;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.support.ContextPropagatingTaskDecorator;
 import org.springframework.lang.Nullable;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * Advisor that implements common Retrieval Augmented Generation (RAG) flows using the
  * building blocks defined in the {@link org.springframework.ai.rag} package and following
  * the Modular RAG Architecture.
- * <p>
- * It's the successor of the {@link QuestionAnswerAdvisor}.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
  * @see <a href="http://export.arxiv.org/abs/2407.21059">arXiv:2407.21059</a>
  * @see <a href="https://export.arxiv.org/abs/2312.10997">arXiv:2312.10997</a>
+ * @see <a href="https://export.arxiv.org/abs/2410.20878">arXiv:2410.20878</a>
  */
-public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	public static final String DOCUMENT_CONTEXT = "rag_document_context";
 
 	private final List<QueryTransformer> queryTransformers;
 
+	@Nullable
+	private final QueryExpander queryExpander;
+
 	private final DocumentRetriever documentRetriever;
 
-	private final QueryAugmentor queryAugmentor;
+	private final DocumentJoiner documentJoiner;
 
-	private final boolean protectFromBlocking;
+	private final QueryAugmenter queryAugmenter;
+
+	private final TaskExecutor taskExecutor;
+
+	private final Scheduler scheduler;
 
 	private final int order;
 
-	public RetrievalAugmentationAdvisor(List<QueryTransformer> queryTransformers, DocumentRetriever documentRetriever,
-			@Nullable QueryAugmentor queryAugmentor, @Nullable Boolean protectFromBlocking, @Nullable Integer order) {
-		Assert.notNull(queryTransformers, "queryTransformers cannot be null");
-		Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
+	public RetrievalAugmentationAdvisor(@Nullable List<QueryTransformer> queryTransformers,
+			@Nullable QueryExpander queryExpander, DocumentRetriever documentRetriever,
+			@Nullable DocumentJoiner documentJoiner, @Nullable QueryAugmenter queryAugmenter,
+			@Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler, @Nullable Integer order) {
 		Assert.notNull(documentRetriever, "documentRetriever cannot be null");
-		this.queryTransformers = queryTransformers;
+		Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
+		this.queryTransformers = queryTransformers != null ? queryTransformers : List.of();
+		this.queryExpander = queryExpander;
 		this.documentRetriever = documentRetriever;
-		this.queryAugmentor = queryAugmentor != null ? queryAugmentor : ContextualQueryAugmentor.builder().build();
-		this.protectFromBlocking = protectFromBlocking != null ? protectFromBlocking : true;
+		this.documentJoiner = documentJoiner != null ? documentJoiner : new ConcatenationDocumentJoiner();
+		this.queryAugmenter = queryAugmenter != null ? queryAugmenter : ContextualQueryAugmenter.builder().build();
+		this.taskExecutor = taskExecutor != null ? taskExecutor : buildDefaultTaskExecutor();
+		this.scheduler = scheduler != null ? scheduler : BaseAdvisor.DEFAULT_SCHEDULER;
 		this.order = order != null ? order : 0;
 	}
 
@@ -89,45 +99,15 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-		Assert.notNull(advisedRequest, "advisedRequest cannot be null");
-		Assert.notNull(chain, "chain cannot be null");
-
-		AdvisedRequest processedAdvisedRequest = before(advisedRequest);
-		AdvisedResponse advisedResponse = chain.nextAroundCall(processedAdvisedRequest);
-		return after(advisedResponse);
-	}
-
-	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-		Assert.notNull(advisedRequest, "advisedRequest cannot be null");
-		Assert.notNull(chain, "chain cannot be null");
-
-		// This can be executed by both blocking and non-blocking Threads
-		// E.g. a command line or Tomcat blocking Thread implementation
-		// or by a WebFlux dispatch in a non-blocking manner.
-		Flux<AdvisedResponse> advisedResponses = (this.protectFromBlocking) ?
-		// @formatter:off
-				Mono.just(advisedRequest)
-						.publishOn(Schedulers.boundedElastic())
-						.map(this::before)
-						.flatMapMany(chain::nextAroundStream)
-				: chain.nextAroundStream(before(advisedRequest));
-		// @formatter:on
-
-		return advisedResponses.map(ar -> {
-			if (onFinishReason().test(ar)) {
-				ar = after(ar);
-			}
-			return ar;
-		});
-	}
-
-	private AdvisedRequest before(AdvisedRequest request) {
+	public AdvisedRequest before(AdvisedRequest request) {
 		Map<String, Object> context = new HashMap<>(request.adviseContext());
 
-		// 0. Create a query from the user text and parameters.
-		Query originalQuery = new Query(new PromptTemplate(request.userText(), request.userParams()).render());
+		// 0. Create a query from the user text, parameters, and conversation history.
+		Query originalQuery = Query.builder()
+			.text(new PromptTemplate(request.userText(), request.userParams()).render())
+			.history(request.messages())
+			.context(context)
+			.build();
 
 		// 1. Transform original user query based on a chain of query transformers.
 		Query transformedQuery = originalQuery;
@@ -135,17 +115,41 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 			transformedQuery = queryTransformer.apply(transformedQuery);
 		}
 
-		// 2. Retrieve similar documents for the original query.
-		List<Document> documents = this.documentRetriever.retrieve(transformedQuery);
+		// 2. Expand query into one or multiple queries.
+		List<Query> expandedQueries = this.queryExpander != null ? this.queryExpander.expand(transformedQuery)
+				: List.of(transformedQuery);
+
+		// 3. Get similar documents for each query.
+		Map<Query, List<List<Document>>> documentsForQuery = expandedQueries.stream()
+			.map(query -> CompletableFuture.supplyAsync(() -> getDocumentsForQuery(query), this.taskExecutor))
+			.toList()
+			.stream()
+			.map(CompletableFuture::join)
+			.collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of(entry.getValue())));
+
+		// 4. Combine documents retrieved based on multiple queries and from multiple data
+		// sources.
+		List<Document> documents = this.documentJoiner.join(documentsForQuery);
 		context.put(DOCUMENT_CONTEXT, documents);
 
-		// 3. Augment user query with the document contextual data.
-		Query augmentedQuery = this.queryAugmentor.augment(transformedQuery, documents);
+		// 5. Augment user query with the document contextual data.
+		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
 
-		return AdvisedRequest.from(request).withUserText(augmentedQuery.text()).withAdviseContext(context).build();
+		// 6. Update advised request with augmented prompt.
+		return AdvisedRequest.from(request).userText(augmentedQuery.text()).adviseContext(context).build();
 	}
 
-	private AdvisedResponse after(AdvisedResponse advisedResponse) {
+	/**
+	 * Processes a single query by routing it to document retrievers and collecting
+	 * documents.
+	 */
+	private Map.Entry<Query, List<Document>> getDocumentsForQuery(Query query) {
+		List<Document> documents = this.documentRetriever.retrieve(query);
+		return Map.entry(query, documents);
+	}
+
+	@Override
+	public AdvisedResponse after(AdvisedResponse advisedResponse) {
 		ChatResponse.Builder chatResponseBuilder;
 		if (advisedResponse.response() == null) {
 			chatResponseBuilder = ChatResponse.builder();
@@ -153,24 +157,13 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 		else {
 			chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
 		}
-		chatResponseBuilder.withMetadata(DOCUMENT_CONTEXT, advisedResponse.adviseContext().get(DOCUMENT_CONTEXT));
+		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, advisedResponse.adviseContext().get(DOCUMENT_CONTEXT));
 		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
 	}
 
-	private Predicate<AdvisedResponse> onFinishReason() {
-		return advisedResponse -> {
-			ChatResponse chatResponse = advisedResponse.response();
-			return chatResponse != null && chatResponse.getResults() != null
-					&& chatResponse.getResults()
-						.stream()
-						.anyMatch(result -> result != null && result.getMetadata() != null
-								&& StringUtils.hasText(result.getMetadata().getFinishReason()));
-		};
-	}
-
 	@Override
-	public String getName() {
-		return this.getClass().getSimpleName();
+	public Scheduler getScheduler() {
+		return this.scheduler;
 	}
 
 	@Override
@@ -178,15 +171,31 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 		return this.order;
 	}
 
+	private static TaskExecutor buildDefaultTaskExecutor() {
+		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+		taskExecutor.setThreadNamePrefix("ai-advisor-");
+		taskExecutor.setCorePoolSize(4);
+		taskExecutor.setMaxPoolSize(16);
+		taskExecutor.setTaskDecorator(new ContextPropagatingTaskDecorator());
+		taskExecutor.initialize();
+		return taskExecutor;
+	}
+
 	public static final class Builder {
 
-		private final List<QueryTransformer> queryTransformers = new ArrayList<>();
+		private List<QueryTransformer> queryTransformers;
+
+		private QueryExpander queryExpander;
 
 		private DocumentRetriever documentRetriever;
 
-		private QueryAugmentor queryAugmentor;
+		private DocumentJoiner documentJoiner;
 
-		private Boolean protectFromBlocking;
+		private QueryAugmenter queryAugmenter;
+
+		private TaskExecutor taskExecutor;
+
+		private Scheduler scheduler;
 
 		private Integer order;
 
@@ -194,14 +203,17 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 		}
 
 		public Builder queryTransformers(List<QueryTransformer> queryTransformers) {
-			Assert.notNull(queryTransformers, "queryTransformers cannot be null");
-			this.queryTransformers.addAll(queryTransformers);
+			this.queryTransformers = queryTransformers;
 			return this;
 		}
 
 		public Builder queryTransformers(QueryTransformer... queryTransformers) {
-			Assert.notNull(queryTransformers, "queryTransformers cannot be null");
-			this.queryTransformers.addAll(Arrays.asList(queryTransformers));
+			this.queryTransformers = Arrays.asList(queryTransformers);
+			return this;
+		}
+
+		public Builder queryExpander(QueryExpander queryExpander) {
+			this.queryExpander = queryExpander;
 			return this;
 		}
 
@@ -210,13 +222,23 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 			return this;
 		}
 
-		public Builder queryAugmentor(QueryAugmentor queryAugmentor) {
-			this.queryAugmentor = queryAugmentor;
+		public Builder documentJoiner(DocumentJoiner documentJoiner) {
+			this.documentJoiner = documentJoiner;
 			return this;
 		}
 
-		public Builder protectFromBlocking(Boolean protectFromBlocking) {
-			this.protectFromBlocking = protectFromBlocking;
+		public Builder queryAugmenter(QueryAugmenter queryAugmenter) {
+			this.queryAugmenter = queryAugmenter;
+			return this;
+		}
+
+		public Builder taskExecutor(TaskExecutor taskExecutor) {
+			this.taskExecutor = taskExecutor;
+			return this;
+		}
+
+		public Builder scheduler(Scheduler scheduler) {
+			this.scheduler = scheduler;
 			return this;
 		}
 
@@ -226,8 +248,8 @@ public final class RetrievalAugmentationAdvisor implements CallAroundAdvisor, St
 		}
 
 		public RetrievalAugmentationAdvisor build() {
-			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.documentRetriever, this.queryAugmentor,
-					this.protectFromBlocking, this.order);
+			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.queryExpander, this.documentRetriever,
+					this.documentJoiner, this.queryAugmenter, this.taskExecutor, this.scheduler, this.order);
 		}
 
 	}

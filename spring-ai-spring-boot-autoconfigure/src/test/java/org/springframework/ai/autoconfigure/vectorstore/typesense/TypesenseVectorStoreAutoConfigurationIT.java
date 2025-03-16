@@ -16,15 +16,14 @@
 
 package org.springframework.ai.autoconfigure.vectorstore.typesense;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.typesense.TypesenseContainer;
 
 import org.springframework.ai.ResourceUtils;
 import org.springframework.ai.document.Document;
@@ -53,10 +52,7 @@ import static org.springframework.ai.autoconfigure.vectorstore.observation.Obser
 public class TypesenseVectorStoreAutoConfigurationIT {
 
 	@Container
-	private static final GenericContainer<?> typesenseContainer = new GenericContainer<>("typesense/typesense:26.0")
-		.withExposedPorts(8108)
-		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors")
-		.withStartupTimeout(Duration.ofSeconds(100));
+	private static final TypesenseContainer typesense = new TypesenseContainer("typesense/typesense:26.0");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(TypesenseVectorStoreAutoConfiguration.class))
@@ -73,10 +69,10 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 			.withPropertyValues("spring.ai.vectorstore.typesense.embeddingDimension=384",
 					"spring.ai.vectorstore.typesense.collectionName=myTestCollection",
 					"spring.ai.vectorstore.typesense.initialize-schema=true",
-					"spring.ai.vectorstore.typesense.client.apiKey=xyz",
+					"spring.ai.vectorstore.typesense.client.apiKey=" + typesense.getApiKey(),
 					"spring.ai.vectorstore.typesense.client.protocol=http",
-					"spring.ai.vectorstore.typesense.client.host=" + typesenseContainer.getHost(),
-					"spring.ai.vectorstore.typesense.client.port=" + typesenseContainer.getMappedPort(8108).toString())
+					"spring.ai.vectorstore.typesense.client.host=" + typesense.getHost(),
+					"spring.ai.vectorstore.typesense.client.port=" + typesense.getHttpPort())
 			.run(context -> {
 				VectorStore vectorStore = context.getBean(VectorStore.class);
 				TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
@@ -87,12 +83,13 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.ADD);
 				observationRegistry.clear();
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 				assertThat(resultDoc.getMetadata()).hasSize(2);
 				assertThat(resultDoc.getMetadata()).containsKeys("spring", "distance");
@@ -107,7 +104,7 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 						VectorStoreObservationContext.Operation.DELETE);
 				observationRegistry.clear();
 
-				results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(1));
+				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).hasSize(0);
 			});
 	}

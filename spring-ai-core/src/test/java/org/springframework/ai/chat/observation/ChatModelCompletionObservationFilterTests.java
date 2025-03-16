@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +53,7 @@ class ChatModelCompletionObservationFilterTests {
 		var expectedContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var actualContext = this.observationFilter.map(expectedContext);
 
@@ -65,7 +65,7 @@ class ChatModelCompletionObservationFilterTests {
 		var expectedContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		expectedContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("")))));
 		var actualContext = this.observationFilter.map(expectedContext);
@@ -78,7 +78,7 @@ class ChatModelCompletionObservationFilterTests {
 		var originalContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt())
 			.provider("superprovider")
-			.requestOptions(ChatOptionsBuilder.builder().withModel("mistral").build())
+			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		originalContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));

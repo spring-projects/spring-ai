@@ -48,6 +48,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
@@ -64,16 +65,16 @@ public class MessageTypeContentTests {
 	@Captor
 	ArgumentCaptor<MultiValueMap<String, String>> headersCaptor;
 
-	Flux<ChatCompletionChunk> fluxResponse = Flux
-		.generate(() -> new ChatCompletionChunk("id", List.of(), 0L, "model", "fp", "object", null), (state, sink) -> {
-			sink.next(state);
-			sink.complete();
-			return state;
-		});
+	Flux<ChatCompletionChunk> fluxResponse = Flux.generate(
+			() -> new ChatCompletionChunk("id", List.of(), 0L, "model", null, "fp", "object", null), (state, sink) -> {
+				sink.next(state);
+				sink.complete();
+				return state;
+			});
 
 	@BeforeEach
 	public void beforeEach() {
-		this.chatModel = new OpenAiChatModel(this.openAiApi);
+		this.chatModel = OpenAiChatModel.builder().openAiApi(this.openAiApi).build();
 	}
 
 	@Test
@@ -126,8 +127,8 @@ public class MessageTypeContentTests {
 			.willReturn(Mockito.mock(ResponseEntity.class));
 
 		URL mediaUrl = new URL("http://test");
-		this.chatModel.call(new Prompt(
-				List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))));
+		this.chatModel.call(new Prompt(List.of(new UserMessage("test message",
+				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))));
 
 		validateComplexContent(this.pomptCaptor.getValue());
 	}
@@ -139,9 +140,8 @@ public class MessageTypeContentTests {
 			.willReturn(this.fluxResponse);
 
 		URL mediaUrl = new URL("http://test");
-		this.chatModel
-			.stream(new Prompt(
-					List.of(new UserMessage("test message", List.of(new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl))))))
+		this.chatModel.stream(new Prompt(List.of(new UserMessage("test message",
+				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))))
 			.subscribe();
 
 		validateComplexContent(this.pomptCaptor.getValue());

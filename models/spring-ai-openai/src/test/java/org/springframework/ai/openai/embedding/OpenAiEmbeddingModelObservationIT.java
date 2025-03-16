@@ -61,9 +61,9 @@ public class OpenAiEmbeddingModelObservationIT {
 	@Test
 	void observationForEmbeddingOperation() {
 		var options = OpenAiEmbeddingOptions.builder()
-			.withModel(OpenAiApi.EmbeddingModel.TEXT_EMBEDDING_3_SMALL.getValue())
-			.withDimensions(1536)
-			.withEncodingFormat("float")
+			.model(OpenAiApi.EmbeddingModel.TEXT_EMBEDDING_3_SMALL.getValue())
+			.dimensions(1536)
+			.encodingFormat("float")
 			.build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
@@ -104,7 +104,7 @@ public class OpenAiEmbeddingModelObservationIT {
 
 		@Bean
 		public OpenAiApi openAiApi() {
-			return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 		}
 
 		@Bean

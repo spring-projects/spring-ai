@@ -98,7 +98,7 @@ public abstract class AbstractMessage implements Message {
 	 * @return the content of the message
 	 */
 	@Override
-	public String getContent() {
+	public String getText() {
 		return this.textContent;
 	}
 

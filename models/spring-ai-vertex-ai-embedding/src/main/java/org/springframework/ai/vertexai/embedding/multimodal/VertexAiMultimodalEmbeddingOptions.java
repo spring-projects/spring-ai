@@ -58,6 +58,7 @@ import org.springframework.util.StringUtils;
  * </p>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -174,32 +175,32 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder withModel(VertexAiMultimodalEmbeddingModelName model) {
+		public Builder model(VertexAiMultimodalEmbeddingModelName model) {
 			this.options.setModel(model.getName());
 			return this;
 		}
 
-		public Builder withDimensions(Integer dimensions) {
+		public Builder dimensions(Integer dimensions) {
 			this.options.setDimensions(dimensions);
 			return this;
 		}
 
-		public Builder withVideoStartOffsetSec(Integer videoStartOffsetSec) {
+		public Builder videoStartOffsetSec(Integer videoStartOffsetSec) {
 			this.options.setVideoStartOffsetSec(videoStartOffsetSec);
 			return this;
 		}
 
-		public Builder withVideoEndOffsetSec(Integer videoEndOffsetSec) {
+		public Builder videoEndOffsetSec(Integer videoEndOffsetSec) {
 			this.options.setVideoEndOffsetSec(videoEndOffsetSec);
 			return this;
 		}
 
-		public Builder withVideoIntervalSec(Integer videoIntervalSec) {
+		public Builder videoIntervalSec(Integer videoIntervalSec) {
 			this.options.setVideoIntervalSec(videoIntervalSec);
 			return this;
 		}

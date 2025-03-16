@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * @see ChatOptions
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -154,23 +155,23 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 	}
 
 	public static MiniMaxChatOptions fromOptions(MiniMaxChatOptions fromOptions) {
-		return builder().withModel(fromOptions.getModel())
-			.withFrequencyPenalty(fromOptions.getFrequencyPenalty())
-			.withMaxTokens(fromOptions.getMaxTokens())
-			.withN(fromOptions.getN())
-			.withPresencePenalty(fromOptions.getPresencePenalty())
-			.withResponseFormat(fromOptions.getResponseFormat())
-			.withSeed(fromOptions.getSeed())
-			.withStop(fromOptions.getStop())
-			.withTemperature(fromOptions.getTemperature())
-			.withTopP(fromOptions.getTopP())
-			.withMaskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
-			.withTools(fromOptions.getTools())
-			.withToolChoice(fromOptions.getToolChoice())
-			.withFunctionCallbacks(fromOptions.getFunctionCallbacks())
-			.withFunctions(fromOptions.getFunctions())
-			.withProxyToolCalls(fromOptions.getProxyToolCalls())
-			.withToolContext(fromOptions.getToolContext())
+		return builder().model(fromOptions.getModel())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.maxTokens(fromOptions.getMaxTokens())
+			.N(fromOptions.getN())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.responseFormat(fromOptions.getResponseFormat())
+			.seed(fromOptions.getSeed())
+			.stop(fromOptions.getStop())
+			.temperature(fromOptions.getTemperature())
+			.topP(fromOptions.getTopP())
+			.maskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
+			.tools(fromOptions.getTools())
+			.toolChoice(fromOptions.getToolChoice())
+			.functionCallbacks(fromOptions.getFunctionCallbacks())
+			.functions(fromOptions.getFunctions())
+			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
 
@@ -515,94 +516,94 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 			this.options = options;
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder withFrequencyPenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
-		public Builder withMaxTokens(Integer maxTokens) {
+		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
-		public Builder withN(Integer n) {
+		public Builder N(Integer n) {
 			this.options.n = n;
 			return this;
 		}
 
-		public Builder withPresencePenalty(Double presencePenalty) {
+		public Builder presencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
 		}
 
-		public Builder withResponseFormat(MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat) {
+		public Builder responseFormat(MiniMaxApi.ChatCompletionRequest.ResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder withSeed(Integer seed) {
+		public Builder seed(Integer seed) {
 			this.options.seed = seed;
 			return this;
 		}
 
-		public Builder withStop(List<String> stop) {
+		public Builder stop(List<String> stop) {
 			this.options.stop = stop;
 			return this;
 		}
 
-		public Builder withTemperature(Double temperature) {
+		public Builder temperature(Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder withTopP(Double topP) {
+		public Builder topP(Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder withMaskSensitiveInfo(Boolean maskSensitiveInfo) {
+		public Builder maskSensitiveInfo(Boolean maskSensitiveInfo) {
 			this.options.maskSensitiveInfo = maskSensitiveInfo;
 			return this;
 		}
 
-		public Builder withTools(List<MiniMaxApi.FunctionTool> tools) {
+		public Builder tools(List<MiniMaxApi.FunctionTool> tools) {
 			this.options.tools = tools;
 			return this;
 		}
 
-		public Builder withToolChoice(String toolChoice) {
+		public Builder toolChoice(String toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
-		public Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
+		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
 			this.options.functionCallbacks = functionCallbacks;
 			return this;
 		}
 
-		public Builder withFunctions(Set<String> functionNames) {
+		public Builder functions(Set<String> functionNames) {
 			Assert.notNull(functionNames, "Function names must not be null");
 			this.options.functions = functionNames;
 			return this;
 		}
 
-		public Builder withFunction(String functionName) {
+		public Builder function(String functionName) {
 			Assert.hasText(functionName, "Function name must not be empty");
 			this.options.functions.add(functionName);
 			return this;
 		}
 
-		public Builder withProxyToolCalls(Boolean proxyToolCalls) {
+		public Builder proxyToolCalls(Boolean proxyToolCalls) {
 			this.options.proxyToolCalls = proxyToolCalls;
 			return this;
 		}
 
-		public Builder withToolContext(Map<String, Object> toolContext) {
+		public Builder toolContext(Map<String, Object> toolContext) {
 			if (this.options.toolContext == null) {
 				this.options.toolContext = toolContext;
 			}

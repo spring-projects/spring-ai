@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -133,11 +134,40 @@ public class OllamaApi {
 		Assert.notNull(chatRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
+		AtomicBoolean isInsideTool = new AtomicBoolean(false);
+
 		return this.webClient.post()
 			.uri("/api/chat")
 			.body(Mono.just(chatRequest), ChatRequest.class)
 			.retrieve()
 			.bodyToFlux(ChatResponse.class)
+			.map(chunk -> {
+				if (OllamaApiHelper.isStreamingToolCall(chunk)) {
+					isInsideTool.set(true);
+				}
+				return chunk;
+			})
+			// Group all chunks belonging to the same function call.
+			// Flux<ChatChatResponse> -> Flux<Flux<ChatChatResponse>>
+			.windowUntil(chunk -> {
+				if (isInsideTool.get() && OllamaApiHelper.isStreamingDone(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			// Merging the window chunks into a single chunk.
+			// Reduce the inner Flux<ChatChatResponse> window into a single
+			// Mono<ChatChatResponse>,
+			// Flux<Flux<ChatChatResponse>> -> Flux<Mono<ChatChatResponse>>
+			.concatMapIterable(window -> {
+				Mono<ChatResponse> monoChunk = window.reduce(
+						new ChatResponse(),
+						(previous, current) -> OllamaApiHelper.merge(previous, current));
+				return List.of(monoChunk);
+			})
+			// Flux<Mono<ChatChatResponse>> -> Flux<ChatChatResponse>
+			.flatMap(mono -> mono)
 			.handle((data, sink) -> {
 				if (logger.isTraceEnabled()) {
 					logger.trace(data);
@@ -332,17 +362,17 @@ public class OllamaApi {
 				this.role = role;
 			}
 
-			public Builder withContent(String content) {
+			public Builder content(String content) {
 				this.content = content;
 				return this;
 			}
 
-			public Builder withImages(List<String> images) {
+			public Builder images(List<String> images) {
 				this.images = images;
 				return this;
 			}
 
-			public Builder withToolCalls(List<ToolCall> toolCalls) {
+			public Builder toolCalls(List<ToolCall> toolCalls) {
 				this.toolCalls = toolCalls;
 				return this;
 			}
@@ -350,7 +380,6 @@ public class OllamaApi {
 			public Message build() {
 				return new Message(this.role, this.content, this.images, this.toolCalls);
 			}
-
 		}
 	}
 
@@ -360,7 +389,7 @@ public class OllamaApi {
 	 * @param model The model to use for completion. It should be a name familiar to Ollama from the <a href="https://ollama.com/library">Library</a>.
 	 * @param messages The list of messages in the chat. This can be used to keep a chat memory.
 	 * @param stream Whether to stream the response. If false, the response will be returned as a single response object rather than a stream of objects.
-	 * @param format The format to return the response in. Currently, the only accepted value is "json".
+	 * @param format The format to return the response in. It can either be the String "json" or a Map containing a JSON Schema definition.
 	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
 	 * @param tools List of tools the model has access to.
 	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
@@ -377,7 +406,7 @@ public class OllamaApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("format") String format,
+			@JsonProperty("format") Object format,
 			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("tools") List<Tool> tools,
 			@JsonProperty("options") Map<String, Object> options
@@ -449,7 +478,7 @@ public class OllamaApi {
 			private final String model;
 			private List<Message> messages = List.of();
 			private boolean stream = false;
-			private String format;
+			private Object format;
 			private String keepAlive;
 			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
@@ -459,39 +488,39 @@ public class OllamaApi {
 				this.model = model;
 			}
 
-			public Builder withMessages(List<Message> messages) {
+			public Builder messages(List<Message> messages) {
 				this.messages = messages;
 				return this;
 			}
 
-			public Builder withStream(boolean stream) {
+			public Builder stream(boolean stream) {
 				this.stream = stream;
 				return this;
 			}
 
-			public Builder withFormat(String format) {
+			public Builder format(Object format) {
 				this.format = format;
 				return this;
 			}
 
-			public Builder withKeepAlive(String keepAlive) {
+			public Builder keepAlive(String keepAlive) {
 				this.keepAlive = keepAlive;
 				return this;
 			}
 
-			public Builder withTools(List<Tool> tools) {
+			public Builder tools(List<Tool> tools) {
 				this.tools = tools;
 				return this;
 			}
 
-			public Builder withOptions(Map<String, Object> options) {
+			public Builder options(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 
 				this.options = OllamaOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
-			public Builder withOptions(OllamaOptions options) {
+			public Builder options(OllamaOptions options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
@@ -538,13 +567,36 @@ public class OllamaApi {
 			@JsonProperty("message") Message message,
 			@JsonProperty("done_reason") String doneReason,
 			@JsonProperty("done") Boolean done,
-			@JsonProperty("total_duration") Duration totalDuration,
-			@JsonProperty("load_duration") Duration loadDuration,
+			@JsonProperty("total_duration") Long totalDuration,
+			@JsonProperty("load_duration") Long loadDuration,
 			@JsonProperty("prompt_eval_count") Integer promptEvalCount,
-			@JsonProperty("prompt_eval_duration") Duration promptEvalDuration,
+			@JsonProperty("prompt_eval_duration") Long promptEvalDuration,
 			@JsonProperty("eval_count") Integer evalCount,
-			@JsonProperty("eval_duration") Duration evalDuration
+			@JsonProperty("eval_duration") Long evalDuration
 	) {
+		ChatResponse() {
+			this(null, null, null, null, null, null, null, null, null, null, null);
+		}
+
+		public Duration getTotalDuration() {
+			return (this.totalDuration() != null) ? Duration.ofNanos(this.totalDuration()) : null;
+		}
+
+		public Duration getLoadDuration() {
+			return (this.loadDuration() != null) ? Duration.ofNanos(this.loadDuration()) : null;
+		}
+
+		public Duration getPromptEvalDuration() {
+			return (this.promptEvalDuration() != null) ? Duration.ofNanos(this.promptEvalDuration()) : null;
+		}
+
+		public Duration getEvalDuration() {
+			if (this.evalDuration() == null) {
+				return null;
+			}
+			return Duration.ofNanos(this.evalDuration());
+			// return (this.evalDuration() != null)? Duration.ofNanos(this.evalDuration()) : null;
+		}
 	}
 
 	/**

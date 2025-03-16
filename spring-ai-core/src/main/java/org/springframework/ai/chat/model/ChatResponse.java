@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,18 @@ import java.util.Set;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ModelResponse;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
  * The chat completion (e.g. generation) response returned by an AI provider.
+ *
+ * @author Christian Tzolov
+ * @author Mark Pollack
+ * @author Soby Chacko
+ * @author John Blum
+ * @author Alexandros Pappas
+ * @author Thomas Vitale
  */
 public class ChatResponse implements ModelResponse<Generation> {
 
@@ -94,6 +102,31 @@ public class ChatResponse implements ModelResponse<Generation> {
 		return this.chatResponseMetadata;
 	}
 
+	/**
+	 * Whether the model has requested the execution of a tool.
+	 */
+	public boolean hasToolCalls() {
+		if (CollectionUtils.isEmpty(generations)) {
+			return false;
+		}
+		return generations.stream().anyMatch(generation -> generation.getOutput().hasToolCalls());
+	}
+
+	/**
+	 * Whether the model has finished with any of the given finish reasons.
+	 */
+	public boolean hasFinishReasons(Set<String> finishReasons) {
+		Assert.notNull(finishReasons, "finishReasons cannot be null");
+		if (CollectionUtils.isEmpty(generations)) {
+			return false;
+		}
+		return generations.stream().anyMatch(generation -> {
+			var finishReason = (generation.getMetadata().getFinishReason() != null)
+					? generation.getMetadata().getFinishReason() : "";
+			return finishReasons.stream().map(String::toLowerCase).toList().contains(finishReason.toLowerCase());
+		});
+	}
+
 	@Override
 	public String toString() {
 		return "ChatResponse [metadata=" + this.chatResponseMetadata + ", generations=" + this.generations + "]";
@@ -128,24 +161,28 @@ public class ChatResponse implements ModelResponse<Generation> {
 
 		public Builder from(ChatResponse other) {
 			this.generations = other.generations;
-			this.chatResponseMetadataBuilder.withModel(other.chatResponseMetadata.getModel());
-			this.chatResponseMetadataBuilder.withId(other.chatResponseMetadata.getId());
-			this.chatResponseMetadataBuilder.withRateLimit(other.chatResponseMetadata.getRateLimit());
-			this.chatResponseMetadataBuilder.withUsage(other.chatResponseMetadata.getUsage());
-			this.chatResponseMetadataBuilder.withPromptMetadata(other.chatResponseMetadata.getPromptMetadata());
-			Set<Map.Entry<String, Object>> entries = other.chatResponseMetadata.entrySet();
+			return this.metadata(other.chatResponseMetadata);
+		}
+
+		public Builder metadata(String key, Object value) {
+			this.chatResponseMetadataBuilder.keyValue(key, value);
+			return this;
+		}
+
+		public Builder metadata(ChatResponseMetadata other) {
+			this.chatResponseMetadataBuilder.model(other.getModel());
+			this.chatResponseMetadataBuilder.id(other.getId());
+			this.chatResponseMetadataBuilder.rateLimit(other.getRateLimit());
+			this.chatResponseMetadataBuilder.usage(other.getUsage());
+			this.chatResponseMetadataBuilder.promptMetadata(other.getPromptMetadata());
+			Set<Map.Entry<String, Object>> entries = other.entrySet();
 			for (Map.Entry<String, Object> entry : entries) {
-				this.chatResponseMetadataBuilder.withKeyValue(entry.getKey(), entry.getValue());
+				this.chatResponseMetadataBuilder.keyValue(entry.getKey(), entry.getValue());
 			}
 			return this;
 		}
 
-		public Builder withMetadata(String key, Object value) {
-			this.chatResponseMetadataBuilder.withKeyValue(key, value);
-			return this;
-		}
-
-		public Builder withGenerations(List<Generation> generations) {
+		public Builder generations(List<Generation> generations) {
 			this.generations = generations;
 			return this;
 

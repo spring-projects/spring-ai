@@ -45,6 +45,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  */
 @ExtendWith(MockitoExtension.class)
 public class ChatClientAdvisorTests {
@@ -63,11 +64,11 @@ public class ChatClientAdvisorTests {
 	public void promptChatMemory() {
 
 		var builder = ChatResponseMetadata.builder()
-			.withId("124")
-			.withUsage(new MessageAggregator.DefaultUsage(1, 2, 3))
-			.withModel("gpt4o")
-			.withKeyValue("created", 0L)
-			.withKeyValue("system-fingerprint", "john doe");
+			.id("124")
+			.usage(new MessageAggregator.DefaultUsage(1, 2, 3))
+			.model("gpt4o")
+			.keyValue("created", 0L)
+			.keyValue("system-fingerprint", "john doe");
 		ChatResponseMetadata chatResponseMetadata = builder.build();
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -85,11 +86,11 @@ public class ChatClientAdvisorTests {
 
 		ChatResponse chatResponse = chatClient.prompt().user("my name is John").call().chatResponse();
 
-		String content = chatResponse.getResult().getOutput().getContent();
+		String content = chatResponse.getResult().getOutput().getText();
 		assertThat(content).isEqualTo("Hello John");
 
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 
 				Use the conversation memory from the MEMORY section to provide accurate answers.
@@ -101,14 +102,14 @@ public class ChatClientAdvisorTests {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("my name is John");
+		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("my name is John");
 
 		content = chatClient.prompt().user("What is my name?").call().content();
 
 		assertThat(content).isEqualTo("Your name is John");
 
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 
 				Use the conversation memory from the MEMORY section to provide accurate answers.
@@ -122,7 +123,7 @@ public class ChatClientAdvisorTests {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("What is my name?");
+		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("What is my name?");
 	}
 
 	@Test
@@ -154,7 +155,7 @@ public class ChatClientAdvisorTests {
 		assertThat(content).isEqualTo("Hello John");
 
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 
 				Use the conversation memory from the MEMORY section to provide accurate answers.
@@ -166,14 +167,14 @@ public class ChatClientAdvisorTests {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("my name is John");
+		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("my name is John");
 
 		content = join(chatClient.prompt().user("What is my name?").stream().content());
 
 		assertThat(content).isEqualTo("Your name is John");
 
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getContent()).isEqualToIgnoringWhitespace("""
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 
 				Use the conversation memory from the MEMORY section to provide accurate answers.
@@ -187,7 +188,7 @@ public class ChatClientAdvisorTests {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		userMessage = this.promptCaptor.getValue().getInstructions().get(1);
-		assertThat(userMessage.getContent()).isEqualToIgnoringWhitespace("What is my name?");
+		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("What is my name?");
 	}
 
 }

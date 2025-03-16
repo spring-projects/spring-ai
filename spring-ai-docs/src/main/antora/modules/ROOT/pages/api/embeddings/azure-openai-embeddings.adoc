@@ -52,7 +52,8 @@ If this bean is available, an `OpenAIClient` instance will be created using the 
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -126,7 +127,7 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         AzureOpenAiEmbeddingOptions.builder()
-        .withModel("Different-Embedding-Model-Deployment-Name")
+        .model("Different-Embedding-Model-Deployment-Name")
         .build()));
 ----
 
@@ -199,8 +200,8 @@ var openAIClient = OpenAIClientBuilder()
 
 var embeddingModel = new AzureOpenAiEmbeddingModel(this.openAIClient)
     .withDefaultOptions(AzureOpenAiEmbeddingOptions.builder()
-        .withModel("text-embedding-ada-002")
-        .withUser("user-6")
+        .model("text-embedding-ada-002")
+        .user("user-6")
         .build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel

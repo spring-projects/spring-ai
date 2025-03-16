@@ -47,6 +47,11 @@
 			<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-weaviate-store-spring-boot-autoconfigure</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
@@ -187,7 +192,6 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>${postgresql.version}</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -285,6 +289,13 @@
 			<artifactId>ollama</artifactId>
 			<optional>true</optional>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>typesense</artifactId>
+			<version>1.20.4</version>
+			<optional>true</optional>
+		</dependency>
 
 		<dependency>
 			<groupId>org.opensearch</groupId>
@@ -294,26 +305,5 @@
 		</dependency>
 
 	</dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-failsafe-plugin</artifactId>
-				<version>${maven-failsafe-plugin.version}</version>
-				<configuration>
-					<skipITs>${skip.testcontainers}</skipITs>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>integration-test</goal>
-							<goal>verify</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 
 </project>

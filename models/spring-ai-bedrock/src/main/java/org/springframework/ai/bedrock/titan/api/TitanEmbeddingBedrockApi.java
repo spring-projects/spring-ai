@@ -143,12 +143,12 @@ public class TitanEmbeddingBedrockApi extends
 			private String inputText;
 			private String inputImage;
 
-			public Builder withInputText(String inputText) {
+			public Builder inputText(String inputText) {
 				this.inputText = inputText;
 				return this;
 			}
 
-			public Builder withInputImage(String inputImage) {
+			public Builder inputImage(String inputImage) {
 				this.inputImage = inputImage;
 				return this;
 			}

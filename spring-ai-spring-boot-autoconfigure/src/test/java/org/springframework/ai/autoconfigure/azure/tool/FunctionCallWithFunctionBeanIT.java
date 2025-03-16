@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -67,18 +67,18 @@ class FunctionCallWithFunctionBeanIT {
 						"What's the weather like in San Francisco, Paris and in Tokyo? Use Multi-turn function calling.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						AzureOpenAiChatOptions.builder().withFunction("weatherFunction").build()));
+						AzureOpenAiChatOptions.builder().function("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						AzureOpenAiChatOptions.builder().withFunction("weatherFunction3").build()));
+						AzureOpenAiChatOptions.builder().function("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			});
 	}
@@ -96,11 +96,11 @@ class FunctionCallWithFunctionBeanIT {
 						"What's the weather like in San Francisco, Paris and in Tokyo? Use Multi-turn function calling.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						PortableFunctionCallingOptions.builder().withFunction("weatherFunction").build()));
+						ToolCallingChatOptions.builder().toolNames("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			});
 	}

@@ -21,7 +21,8 @@ gcloud auth application-default login <ACCOUNT>
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -146,12 +147,12 @@ Next, create a `VertexAiTextEmbeddingModel` and use it for text generations:
 ----
 VertexAiEmbeddingConnectionDetails connectionDetails =
     VertexAiEmbeddingConnectionDetails.builder()
-        .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
-        .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+        .projectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .location(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
         .build();
 
 VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
-    .withModel(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
+    .model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
     .build();
 
 var embeddingModel = new VertexAiTextEmbeddingModel(this.connectionDetails, this.options);
@@ -172,10 +173,10 @@ credentials.refreshIfExpired();
 
 VertexAiEmbeddingConnectionDetails connectionDetails =
     VertexAiEmbeddingConnectionDetails.builder()
-        .withProjectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
-        .withLocation(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
-        .withApiEndpoint(endpoint)
-        .withPredictionServiceSettings(
+        .projectId(System.getenv(<VERTEX_AI_GEMINI_PROJECT_ID>))
+        .location(System.getenv(<VERTEX_AI_GEMINI_LOCATION>))
+        .apiEndpoint(endpoint)
+        .predictionServiceSettings(
             PredictionServiceSettings.newBuilder()
                 .setEndpoint(endpoint)
                 .setCredentialsProvider(FixedCredentialsProvider.create(credentials))

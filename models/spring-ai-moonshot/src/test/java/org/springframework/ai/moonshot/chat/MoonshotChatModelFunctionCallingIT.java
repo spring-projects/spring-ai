@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.moonshot.chat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -53,6 +54,33 @@ class MoonshotChatModelFunctionCallingIT {
 	@Autowired
 	ChatModel chatModel;
 
+	private static final MoonshotApi.FunctionTool FUNCTION_TOOL = new MoonshotApi.FunctionTool(
+			MoonshotApi.FunctionTool.Type.FUNCTION, new MoonshotApi.FunctionTool.Function(
+					"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather", """
+							{
+								"type": "object",
+								"properties": {
+									"location": {
+										"type": "string",
+										"description": "The city and state e.g. San Francisco, CA"
+									},
+									"lat": {
+										"type": "number",
+										"description": "The city latitude"
+									},
+									"lon": {
+										"type": "number",
+										"description": "The city longitude"
+									},
+									"unit": {
+										"type": "string",
+										"enum": ["C", "F"]
+									}
+								},
+								"required": ["location", "lat", "lon", "unit"]
+							}
+							"""));
+
 	@Test
 	void functionCallTest() {
 
@@ -62,10 +90,10 @@ class MoonshotChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MoonshotChatOptions.builder()
-			.withModel(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
+			.model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -74,7 +102,7 @@ class MoonshotChatModelFunctionCallingIT {
 
 		logger.info("Response: {}", response);
 
-		assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -86,9 +114,10 @@ class MoonshotChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MoonshotChatOptions.builder()
-			.withFunctionCallbacks(List.of(FunctionCallback.builder()
-				.description("Get the weather in location")
+			.functionCallbacks(List.of(FunctionCallback.builder()
 				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
@@ -100,12 +129,55 @@ class MoonshotChatModelFunctionCallingIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getContent)
+			.map(AssistantMessage::getText)
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
+	}
+
+	@Test
+	public void toolFunctionCallWithUsage() {
+		var promptOptions = MoonshotChatOptions.builder()
+			.model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+			.tools(Arrays.asList(FUNCTION_TOOL))
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+		Prompt prompt = new Prompt("What's the weather like in San Francisco? Return the temperature in Celsius.",
+				promptOptions);
+
+		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getResult().getOutput());
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("San Francisco");
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30.0");
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(450).isGreaterThan(280);
+	}
+
+	@Test
+	public void testStreamFunctionCallUsage() {
+		var promptOptions = MoonshotChatOptions.builder()
+			.model(MoonshotApi.ChatModel.MOONSHOT_V1_8K.getValue())
+			.tools(Arrays.asList(FUNCTION_TOOL))
+			.functionCallbacks(List.of(FunctionCallback.builder()
+				.function("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+		Prompt prompt = new Prompt("What's the weather like in San Francisco? Return the temperature in Celsius.",
+				promptOptions);
+
+		ChatResponse chatResponse = this.chatModel.stream(prompt).blockLast();
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getMetadata()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(450).isGreaterThan(280);
 	}
 
 }

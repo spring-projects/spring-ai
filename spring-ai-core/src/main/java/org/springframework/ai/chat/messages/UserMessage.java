@@ -64,23 +64,19 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 		this.media = new ArrayList<>(media);
 	}
 
-	public List<Media> getMedia(String... dummy) {
-		return this.media;
-	}
-
 	@Override
 	public String toString() {
-		return "UserMessage{" + "content='" + getContent() + '\'' + ", properties=" + this.metadata + ", messageType="
+		return "UserMessage{" + "content='" + getText() + '\'' + ", properties=" + this.metadata + ", messageType="
 				+ this.messageType + '}';
 	}
 
 	@Override
-	public Collection<Media> getMedia() {
+	public List<Media> getMedia() {
 		return this.media;
 	}
 
 	@Override
-	public String getContent() {
+	public String getText() {
 		return this.textContent;
 	}
 

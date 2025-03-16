@@ -27,15 +27,27 @@ Spring AI offers an abstracted API for interacting with vector databases through
 Here is the `VectorStore` interface definition:
 
 ```java
-public interface VectorStore {
+public interface VectorStore extends DocumentWriter {
+
+    default String getName() {
+		return this.getClass().getSimpleName();
+	}
 
     void add(List<Document> documents);
 
-    Optional<Boolean> delete(List<String> idList);
+    void delete(List<String> idList);
+
+    void delete(Filter.Expression filterExpression);
+
+    default void delete(String filterExpression) { ... };
 
     List<Document> similaritySearch(String query);
 
     List<Document> similaritySearch(SearchRequest request);
+
+    default <T> Optional<T> getNativeClient() {
+		return Optional.empty();
+	}
 }
 ```
 
@@ -44,20 +56,69 @@ and the related `SearchRequest` builder:
 ```java
 public class SearchRequest {
 
-	public final String query;
-	private int topK = 4;
-	private double similarityThreshold = SIMILARITY_THRESHOLD_ALL;
+	public static final double SIMILARITY_THRESHOLD_ACCEPT_ALL = 0.0;
+
+	public static final int DEFAULT_TOP_K = 4;
+
+	private String query = "";
+
+	private int topK = DEFAULT_TOP_K;
+
+	private double similarityThreshold = SIMILARITY_THRESHOLD_ACCEPT_ALL;
+
+	@Nullable
 	private Filter.Expression filterExpression;
 
-	public static SearchRequest query(String query) { return new SearchRequest(query); }
+    public static Builder from(SearchRequest originalSearchRequest) {
+		return builder().query(originalSearchRequest.getQuery())
+			.topK(originalSearchRequest.getTopK())
+			.similarityThreshold(originalSearchRequest.getSimilarityThreshold())
+			.filterExpression(originalSearchRequest.getFilterExpression());
+	}
 
-	private SearchRequest(String query) { this.query = query; }
+	public static class Builder {
 
-	public SearchRequest withTopK(int topK) {...}
-	public SearchRequest withSimilarityThreshold(double threshold) {...}
-	public SearchRequest withSimilarityThresholdAll() {...}
-	public SearchRequest withFilterExpression(Filter.Expression expression) {...}
-	public SearchRequest withFilterExpression(String textExpression) {...}
+		private final SearchRequest searchRequest = new SearchRequest();
+
+		public Builder query(String query) {
+			Assert.notNull(query, "Query can not be null.");
+			this.searchRequest.query = query;
+			return this;
+		}
+
+		public Builder topK(int topK) {
+			Assert.isTrue(topK >= 0, "TopK should be positive.");
+			this.searchRequest.topK = topK;
+			return this;
+		}
+
+		public Builder similarityThreshold(double threshold) {
+			Assert.isTrue(threshold >= 0 && threshold <= 1, "Similarity threshold must be in [0,1] range.");
+			this.searchRequest.similarityThreshold = threshold;
+			return this;
+		}
+
+		public Builder similarityThresholdAll() {
+			this.searchRequest.similarityThreshold = 0.0;
+			return this;
+		}
+
+		public Builder filterExpression(@Nullable Filter.Expression expression) {
+			this.searchRequest.filterExpression = expression;
+			return this;
+		}
+
+		public Builder filterExpression(@Nullable String textExpression) {
+			this.searchRequest.filterExpression = (textExpression != null)
+					? new FilterExpressionTextParser().parse(textExpression) : null;
+			return this;
+		}
+
+		public SearchRequest build() {
+			return this.searchRequest;
+		}
+
+	}
 
 	public String getQuery() {...}
 	public int getTopK() {...}
@@ -207,6 +268,7 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/chroma.adoc[Chroma Vector Store] - The https://www.trychroma.com/[Chroma] vector store.
 * xref:api/vectordbs/elasticsearch.adoc[Elasticsearch Vector Store] - The https://www.elastic.co/[Elasticsearch] vector store.
 * xref:api/vectordbs/gemfire.adoc[GemFire Vector Store] - The https://tanzu.vmware.com/content/blog/vmware-gemfire-vector-database-extension[GemFire] vector store.
+* xref:api/vectordbs/mariadb.adoc[MariaDB Vector Store] - The https://mariadb.com/[MariaDB] vector store.
 * xref:api/vectordbs/milvus.adoc[Milvus Vector Store] - The https://milvus.io/[Milvus] vector store.
 * xref:api/vectordbs/mongodb.adoc[MongoDB Atlas Vector Store] - The https://www.mongodb.com/atlas/database[MongoDB Atlas] vector store.
 * xref:api/vectordbs/neo4j.adoc[Neo4j Vector Store] - The https://neo4j.com/[Neo4j] vector store.
@@ -330,6 +392,204 @@ Consider the following example:
 Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
 ----
 
+== Deleting Documents from Vector Store
+
+The Vector Store interface provides multiple methods for deleting documents, allowing you to remove data either by specific document IDs or using filter expressions.
+
+=== Delete by Document IDs
+
+The simplest way to delete documents is by providing a list of document IDs:
+
+[source,java]
+----
+void delete(List<String> idList);
+----
+
+This method removes all documents whose IDs match those in the provided list.
+If any ID in the list doesn't exist in the store, it will be ignored.
+
+.Example usage
+[source,java]
+----
+// Create and add document
+Document document = new Document("The World is Big",
+    Map.of("country", "Netherlands"));
+vectorStore.add(List.of(document));
+
+// Delete document by ID
+vectorStore.delete(List.of(document.getId()));
+----
+
+=== Delete by Filter Expression
+
+For more complex deletion criteria, you can use filter expressions:
+
+[source,java]
+----
+void delete(Filter.Expression filterExpression);
+----
+
+This method accepts a `Filter.Expression` object that defines the criteria for which documents should be deleted.
+It's particularly useful when you need to delete documents based on their metadata properties.
+
+.Example usage
+[source,java]
+----
+// Create test documents with different metadata
+Document bgDocument = new Document("The World is Big",
+    Map.of("country", "Bulgaria"));
+Document nlDocument = new Document("The World is Big",
+    Map.of("country", "Netherlands"));
+
+// Add documents to the store
+vectorStore.add(List.of(bgDocument, nlDocument));
+
+// Delete documents from Bulgaria using filter expression
+Filter.Expression filterExpression = new Filter.Expression(
+    Filter.ExpressionType.EQ,
+    new Filter.Key("country"),
+    new Filter.Value("Bulgaria")
+);
+vectorStore.delete(filterExpression);
+
+// Verify deletion with search
+SearchRequest request = SearchRequest.builder()
+    .query("World")
+    .filterExpression("country == 'Bulgaria'")
+    .build();
+List<Document> results = vectorStore.similaritySearch(request);
+// results will be empty as Bulgarian document was deleted
+----
+
+=== Delete by String Filter Expression
+
+For convenience, you can also delete documents using a string-based filter expression:
+
+[source,java]
+----
+void delete(String filterExpression);
+----
+
+This method converts the provided string filter into a `Filter.Expression` object internally.
+It's useful when you have filter criteria in string format.
+
+.Example usage
+[source,java]
+----
+// Create and add documents
+Document bgDocument = new Document("The World is Big",
+    Map.of("country", "Bulgaria"));
+Document nlDocument = new Document("The World is Big",
+    Map.of("country", "Netherlands"));
+vectorStore.add(List.of(bgDocument, nlDocument));
+
+// Delete Bulgarian documents using string filter
+vectorStore.delete("country == 'Bulgaria'");
+
+// Verify remaining documents
+SearchRequest request = SearchRequest.builder()
+    .query("World")
+    .topK(5)
+    .build();
+List<Document> results = vectorStore.similaritySearch(request);
+// results will only contain the Netherlands document
+----
+
+=== Error Handling When Calling the Delete API
+
+All deletion methods may throw exceptions in case of errors:
+
+The best practice is to wrap delete operations in try-catch blocks:
+
+.Example usage
+[source,java]
+----
+try {
+    vectorStore.delete("country == 'Bulgaria'");
+}
+catch (Exception  e) {
+    logger.error("Invalid filter expression", e);
+}
+----
+
+=== Document Versioning Use Case
+
+A common scenario is managing document versions where you need to upload a new version of a document while removing the old version. Here's how to handle this using filter expressions:
+
+.Example usage
+[source,java]
+----
+// Create initial document (v1) with version metadata
+Document documentV1 = new Document(
+    "AI and Machine Learning Best Practices",
+    Map.of(
+        "docId", "AIML-001",
+        "version", "1.0",
+        "lastUpdated", "2024-01-01"
+    )
+);
+
+// Add v1 to the vector store
+vectorStore.add(List.of(documentV1));
+
+// Create updated version (v2) of the same document
+Document documentV2 = new Document(
+    "AI and Machine Learning Best Practices - Updated",
+    Map.of(
+        "docId", "AIML-001",
+        "version", "2.0",
+        "lastUpdated", "2024-02-01"
+    )
+);
+
+// First, delete the old version using filter expression
+Filter.Expression deleteOldVersion = new Filter.Expression(
+    Filter.ExpressionType.AND,
+    Arrays.asList(
+        new Filter.Expression(
+            Filter.ExpressionType.EQ,
+            new Filter.Key("docId"),
+            new Filter.Value("AIML-001")
+        ),
+        new Filter.Expression(
+            Filter.ExpressionType.EQ,
+            new Filter.Key("version"),
+            new Filter.Value("1.0")
+        )
+    )
+);
+vectorStore.delete(deleteOldVersion);
+
+// Add the new version
+vectorStore.add(List.of(documentV2));
+
+// Verify only v2 exists
+SearchRequest request = SearchRequest.builder()
+    .query("AI and Machine Learning")
+    .filterExpression("docId == 'AIML-001'")
+    .build();
+List<Document> results = vectorStore.similaritySearch(request);
+// results will contain only v2 of the document
+----
+
+You can also accomplish the same using the string filter expression:
+
+.Example usage
+[source,java]
+----
+// Delete old version using string filter
+vectorStore.delete("docId == 'AIML-001' AND version == '1.0'");
+
+// Add new version
+vectorStore.add(List.of(documentV2));
+----
+
+=== Performance Considerations While Deleting Documents
+
+* Deleting by ID list is generally faster when you know exactly which documents to remove.
+* Filter-based deletion may require scanning the index to find matching documents; however, this is vector store implementation-specific.
+* Large deletion operations should be batched to avoid overwhelming the system.
+* Consider using filter expressions when deleting based on document properties rather than collecting IDs first.
 
 == Understanding Vectors
 

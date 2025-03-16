@@ -34,8 +34,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,19 +67,19 @@ public class BedrockProxyChatModelObservationIT {
 
 	@Test
 	void observationForChatOperation() {
-		var options = PortableFunctionCallingOptions.builder()
-			.withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
-			.withMaxTokens(2048)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7)
+		var options = ToolCallingChatOptions.builder()
+			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.maxTokens(2048)
+			.stopSequences(List.of("this-is-the-end"))
+			.temperature(0.7)
 			// .withTopK(1)
-			.withTopP(1.0)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
-		assertThat(chatResponse.getResult().getOutput().getContent()).isNotEmpty();
+		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
@@ -90,12 +89,12 @@ public class BedrockProxyChatModelObservationIT {
 
 	@Test
 	void observationForStreamingChatOperation() {
-		var options = PortableFunctionCallingOptions.builder()
-			.withModel("anthropic.claude-3-5-sonnet-20240620-v1:0")
-			.withMaxTokens(2048)
-			.withStopSequences(List.of("this-is-the-end"))
-			.withTemperature(0.7)
-			.withTopP(1.0)
+		var options = ToolCallingChatOptions.builder()
+			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.maxTokens(2048)
+			.stopSequences(List.of("this-is-the-end"))
+			.temperature(0.7)
+			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -109,7 +108,7 @@ public class BedrockProxyChatModelObservationIT {
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
 			.filter(r -> r.getResult() != null)
-			.map(r -> r.getResult().getOutput().getContent())
+			.map(r -> r.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -150,7 +149,7 @@ public class BedrockProxyChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
+					String.valueOf(responseMetadata.getUsage().getCompletionTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
@@ -171,10 +170,10 @@ public class BedrockProxyChatModelObservationIT {
 			String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 
 			return BedrockProxyChatModel.builder()
-				.withCredentialsProvider(EnvironmentVariableCredentialsProvider.create())
-				.withRegion(Region.US_EAST_1)
-				.withObservationRegistry(observationRegistry)
-				.withDefaultOptions(FunctionCallingOptions.builder().withModel(modelId).build())
+				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+				.region(Region.US_EAST_1)
+				.observationRegistry(observationRegistry)
+				.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

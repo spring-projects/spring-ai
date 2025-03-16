@@ -18,13 +18,15 @@ package org.springframework.ai.autoconfigure.vectorstore.pinecone;
 
 import java.time.Duration;
 
-import org.springframework.ai.vectorstore.PineconeVectorStore;
+import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for Pinecone Vector Store.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @ConfigurationProperties(PineconeVectorStoreProperties.CONFIG_PREFIX)
 public class PineconeVectorStoreProperties {
@@ -43,7 +45,7 @@ public class PineconeVectorStoreProperties {
 
 	private String contentFieldName = PineconeVectorStore.CONTENT_FIELD_NAME;
 
-	private String distanceMetadataFieldName = PineconeVectorStore.DISTANCE_METADATA_FIELD_NAME;
+	private String distanceMetadataFieldName = DocumentMetadata.DISTANCE.value();
 
 	private Duration serverSideTimeout = Duration.ofSeconds(20);
 

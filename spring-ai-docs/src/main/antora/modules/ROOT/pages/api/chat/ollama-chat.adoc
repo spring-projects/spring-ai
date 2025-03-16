@@ -10,18 +10,18 @@ The xref:_openai_api_compatibility[OpenAI API compatibility] section explains ho
 
 You first need access to an Ollama instance. There are a few options, including the following:
 
-* xref:https://ollama.com/download[Download and install Ollama] on your local machine.
+* link:https://ollama.com/download[Download and install Ollama] on your local machine.
 * Configure and xref:api/testcontainers.adoc[run Ollama via Testcontainers].
 * Bind to an Ollama instance via xref:api/cloud-bindings.adoc[Kubernetes Service Bindings].
 
-You can pull the models you want to use in your application from the xref:https://ollama.com/library[Ollama model library]:
+You can pull the models you want to use in your application from the link:https://ollama.com/library[Ollama model library]:
 
 [source,shellscript]
 ----
 ollama pull <model-name>
 ----
 
-You can also pull any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
+You can also pull any of the thousands, free, link:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models]:
 
 [source,shellscript]
 ----
@@ -152,8 +152,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         OllamaOptions.builder()
-            .withModel(OllamaModel.LLAMA3_1)
-            .withTemperature(0.4)
+            .model(OllamaModel.LLAMA3_1)
+            .temperature(0.4)
             .build()
     ));
 ----
@@ -166,7 +166,7 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 Spring AI Ollama can automatically pull models when they are not available in your Ollama instance.
 This feature is particularly useful for development and testing as well as for deploying your applications to new environments.
 
-TIP: You can also pull, by name, any of the thousands, free, xref:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
+TIP: You can also pull, by name, any of the thousands, free, link:https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face Models].
 
 There are three strategies for pulling models:
 
@@ -228,9 +228,7 @@ You can register custom Java functions with the `OllamaChatModel` and have the O
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/chat/functions/ollama-chat-functions.adoc[Ollama Function Calling].
 
-TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities.
-
-NOTE: Currently, the Ollama API (0.3.8) does not support function calling in streaming mode.
+TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
 
 == Multimodal
 
@@ -254,7 +252,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OllamaOptions.builder().withModel(OllamaModel.LLAVA)).build());
+        OllamaOptions.builder().model(OllamaModel.LLAVA)).build());
 ----
 
 The example shows a model taking as an input the `multimodal.test.png` image:
@@ -271,6 +269,90 @@ photo was taken in an area with metallic decorations or fixtures. The overall se
 where fruits are being displayed, possibly for convenience or aesthetic purposes.
 ----
 
+== Structured Outputs
+
+Ollama provides custom https://ollama.com/blog/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`.
+In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
+
+=== Configuration
+
+Spring AI allows you to configure your response format programmatically using the `OllamaOptions` builder.
+
+==== Using the Chat Options Builder
+
+You can set the response format programmatically with the `OllamaOptions` builder as shown below:
+
+[source,java]
+----
+String jsonSchema = """
+        {
+            "type": "object",
+            "properties": {
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "explanation": { "type": "string" },
+                            "output": { "type": "string" }
+                        },
+                        "required": ["explanation", "output"],
+                        "additionalProperties": false
+                    }
+                },
+                "final_answer": { "type": "string" }
+            },
+            "required": ["steps", "final_answer"],
+            "additionalProperties": false
+        }
+        """;
+
+Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
+        OllamaOptions.builder()
+            .model(OllamaModel.LLAMA3_2.getName())
+            .format(new ObjectMapper().readValue(jsonSchema, Map.class))
+            .build());
+
+ChatResponse response = this.ollamaChatModel.call(this.prompt);
+----
+
+==== Integrating with BeanOutputConverter Utilities
+
+You can leverage existing xref::api/structured-output-converter.adoc#_bean_output_converter[BeanOutputConverter] utilities to automatically generate the JSON Schema from your domain objects and later convert the structured response into domain-specific instances:
+
+[source,java]
+----
+record MathReasoning(
+    @JsonProperty(required = true, value = "steps") Steps steps,
+    @JsonProperty(required = true, value = "final_answer") String finalAnswer) {
+
+    record Steps(
+        @JsonProperty(required = true, value = "items") Items[] items) {
+
+        record Items(
+            @JsonProperty(required = true, value = "explanation") String explanation,
+            @JsonProperty(required = true, value = "output") String output) {
+        }
+    }
+}
+
+var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
+
+Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
+        OllamaOptions.builder()
+            .model(OllamaModel.LLAMA3_2.getName())
+            .format(outputConverter.getJsonSchemaMap())
+            .build());
+
+ChatResponse response = this.ollamaChatModel.call(this.prompt);
+String content = this.response.getResult().getOutput().getText();
+
+MathReasoning mathReasoning = this.outputConverter.convert(this.content);
+----
+
+NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation for generating a schema that accurately marks fields as `required`.
+Although this is optional for JSON Schema, it's recommended for the structured response to function correctly.
+
 == OpenAI API Compatibility
 
 Ollama is OpenAI API-compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools.
@@ -279,6 +361,21 @@ For this, you need to configure the OpenAI base URL to your Ollama instance: `sp
 image::spring-ai-ollama-over-openai.jpg[Ollama OpenAI API compatibility, 800, 600, align="center"]
 
 Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
+
+== HuggingFace Models
+
+Ollama can access, out of the box, all https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face ] Chat Models.
+You can pull any of these models by name: `ollama pull hf.co/<username>/<model-repository>` or configure the auto-pulling strategy: xref:auto-pulling-models[Auto-pulling Models]:
+
+[source]
+----
+spring.ai.ollama.chat.options.model=hf.co/bartowski/gemma-2-2b-it-GGUF
+spring.ai.ollama.init.pull-model-strategy=always
+----
+
+- `spring.ai.ollama.chat.options.model`: Specifies the https://huggingface.co/models?library=gguf&sort=trending[Hugging Face GGUF model] to use. 
+- `spring.ai.ollama.init.pull-model-strategy=always`: (optional) Enables automatic model pulling at startup time. 
+For production, you should pre-download the models to avoid delays: `ollama pull hf.co/bartowski/gemma-2-2b-it-GGUF`.
 
 == Sample Controller
 
@@ -369,10 +466,14 @@ Next, create an `OllamaChatModel` instance and use it to send requests for text 
 ----
 var ollamaApi = new OllamaApi();
 
-var chatModel = new OllamaChatModel(this.ollamaApi,
-            OllamaOptions.create()
-                .withModel(OllamaOptions.DEFAULT_MODEL)
-                .withTemperature(0.9));
+var chatModel = OllamaChatModel.builder()
+                    .ollamaApi(ollamaApi)
+                    .defaultOptions(
+                        OllamaOptions.builder()
+                            .model(OllamaModel.MISTRAL)
+                            .temperature(0.9)
+                            .build())
+                    .build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -402,27 +503,27 @@ OllamaApi ollamaApi = new OllamaApi("YOUR_HOST:YOUR_PORT");
 
 // Sync request
 var request = ChatRequest.builder("orca-mini")
-    .withStream(false) // not streaming
-    .withMessages(List.of(
+    .stream(false) // not streaming
+    .messages(List.of(
             Message.builder(Role.SYSTEM)
-                .withContent("You are a geography teacher. You are talking to a student.")
+                .content("You are a geography teacher. You are talking to a student.")
                 .build(),
             Message.builder(Role.USER)
-                .withContent("What is the capital of Bulgaria and what is the size? "
+                .content("What is the capital of Bulgaria and what is the size? "
                         + "What is the national anthem?")
                 .build()))
-    .withOptions(OllamaOptions.create().withTemperature(0.9))
+    .options(OllamaOptions.builder().temperature(0.9).build())
     .build();
 
 ChatResponse response = this.ollamaApi.chat(this.request);
 
 // Streaming request
 var request2 = ChatRequest.builder("orca-mini")
-    .withStream(true) // streaming
-    .withMessages(List.of(Message.builder(Role.USER)
-        .withContent("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
+    .ttream(true) // streaming
+    .messages(List.of(Message.builder(Role.USER)
+        .content("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
-    .withOptions(OllamaOptions.create().withTemperature(0.9).toMap())
+    .options(OllamaOptions.builder().temperature(0.9).build().toMap())
     .build();
 
 Flux<ChatResponse> streamingResponse = this.ollamaApi.streamingChat(this.request2);

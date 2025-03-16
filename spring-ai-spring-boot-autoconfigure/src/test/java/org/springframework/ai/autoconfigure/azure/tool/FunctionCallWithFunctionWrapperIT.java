@@ -29,7 +29,8 @@ import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -64,11 +65,11 @@ public class FunctionCallWithFunctionWrapperIT {
 						"What's the weather like in San Francisco, Paris and in Tokyo?");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						AzureOpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
+						AzureOpenAiChatOptions.builder().function("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsAnyOf("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).containsAnyOf("30", "10", "15");
 
 			});
 	}
@@ -77,11 +78,10 @@ public class FunctionCallWithFunctionWrapperIT {
 	static class Config {
 
 		@Bean
-		public FunctionCallback weatherFunctionInfo() {
+		public ToolCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder()
+			return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
 				.description("Get the current weather in a given location")
-				.function("WeatherInfo", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

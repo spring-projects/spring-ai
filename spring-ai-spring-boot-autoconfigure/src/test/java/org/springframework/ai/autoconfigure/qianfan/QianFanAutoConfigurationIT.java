@@ -75,7 +75,7 @@ public class QianFanAutoConfigurationIT {
 			Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
 			String response = Objects.requireNonNull(responseFlux.collectList().block())
 				.stream()
-				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
 				.collect(Collectors.joining());
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);

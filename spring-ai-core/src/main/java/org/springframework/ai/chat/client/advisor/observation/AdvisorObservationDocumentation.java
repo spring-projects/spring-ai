@@ -21,6 +21,8 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
+import org.springframework.ai.observation.conventions.AiObservationAttributes;
+
 /**
  * AI Advisor observation documentation.
  *
@@ -54,6 +56,26 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 	 * Low cardinality key names.
 	 */
 	public enum LowCardinalityKeyNames implements KeyName {
+
+		/**
+		 * The name of the operation being performed.
+		 */
+		AI_OPERATION_TYPE {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.AI_OPERATION_TYPE.value();
+			}
+		},
+
+		/**
+		 * The model provider as identified by the client instrumentation.
+		 */
+		AI_PROVIDER {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.AI_PROVIDER.value();
+			}
+		},
 
 		/**
 		 * Spring AI kind.

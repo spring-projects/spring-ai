@@ -17,8 +17,8 @@
 /**
  * RAG Module: Information Retrieval.
  * <p>
- * This package includes submodules for handling the retrieval process in
- * retrieval-augmented generation flows.
+ * This package includes components for handling the retrieval stage in Retrieval
+ * Augmented Generation flows.
  */
 @NonNullApi
 @NonNullFields

@@ -8,7 +8,8 @@ The https://docs.oracle.com/en-us/iaas/Content/generative-ai/embed-models.htm[OC
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -88,7 +89,7 @@ For example to override the default model name for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         OCIEmbeddingOptions.builder()
-            .withModel("my-other-embedding-model")
+            .model("my-other-embedding-model")
             .build()
 ));
 ----
@@ -164,9 +165,9 @@ var aiClient = GenerativeAiInferenceClient.builder()
     .region(Region.valueOf(this.REGION))
     .build(this.authProvider);
 var options = OCIEmbeddingOptions.builder()
-    .withModel(this.EMBEDDING_MODEL)
-    .withCompartment(this.COMPARTMENT_ID)
-    .withServingMode("on-demand")
+    .model(this.EMBEDDING_MODEL)
+    .compartment(this.COMPARTMENT_ID)
+    .servingMode("on-demand")
     .build();
 var embeddingModel = new OCIEmbeddingModel(this.aiClient, this.options);
 List<Double> embedding = this.embeddingModel.embed(new Document("How many provinces are in Canada?"));

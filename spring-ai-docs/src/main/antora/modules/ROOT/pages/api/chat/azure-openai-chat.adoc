@@ -76,7 +76,8 @@ For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -109,6 +110,29 @@ dependencies {
 ======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+The Azure OpenAI Chat Client is created using the link:https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/src/main/java/com/azure/ai/openai/OpenAIClientBuilder.java[OpenAIClientBuilder] provided by the Azure SDK. Spring AI allows to customize the builder by providing link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/main/java/org/springframework/ai/autoconfigure/azure/openai/AzureOpenAIClientBuilderCustomizer.java[AzureOpenAIClientBuilderCustomizer] beans.
+
+A customizer might be used for example to change the default response timeout:
+
+[source,java]
+----
+@Configuration
+public class AzureOpenAiConfig {
+
+	@Bean
+	public AzureOpenAIClientBuilderCustomizer responseTimeoutCustomizer() {
+		return openAiClientBuilder -> {
+			HttpClientOptions clientOptions = new HttpClientOptions()
+					.setResponseTimeout(Duration.ofMinutes(5));
+			openAiClientBuilder.httpClient(HttpClient.createDefault(clientOptions));
+		};
+	}
+
+}
+----
+
+
 
 === Chat Properties
 
@@ -168,8 +192,8 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         AzureOpenAiChatOptions.builder()
-            .withDeploymentName("gpt-4o")
-            .withTemperature(0.4)
+            .deploymentName("gpt-4o")
+            .temperature(0.4)
         .build()
     ));
 ----
@@ -198,7 +222,7 @@ Below is a code example excerpted from link:https://github.com/spring-projects/s
 ----
 URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 String response = ChatClient.create(chatModel).prompt()
-        .options(AzureOpenAiChatOptions.builder().withDeploymentName("gpt-4o").build())
+        .options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
         .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, this.url))
         .call()
         .content();
@@ -229,7 +253,7 @@ Resource resource = new ClassPathResource("multimodality/multimodal.test.png");
 
 String response = ChatClient.create(chatModel).prompt()
     .options(AzureOpenAiChatOptions.builder()
-    .withDeploymentName("gpt-4o").build())
+    .deploymentName("gpt-4o").build())
     .user(u -> u.text("Explain what do you see on this picture?")
     .media(MimeTypeUtils.IMAGE_PNG, this.resource))
     .call()
@@ -311,24 +335,26 @@ Next, create an `AzureOpenAiChatModel` instance and use it to generate text resp
 
 [source,java]
 ----
-var openAIClient = new OpenAIClientBuilder()
+var openAIClientBuilder = new OpenAIClientBuilder()
   .credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_API_KEY")))
-  .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"))
-  .buildClient();
+  .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"));
 
 var openAIChatOptions = AzureOpenAiChatOptions.builder()
-  .withDeploymentName("gpt-4o")
-  .withTemperature(0.4)
-  .withMaxTokens(200)
+  .deploymentName("gpt-4o")
+  .temperature(0.4)
+  .maxTokens(200)
   .build();
 
-var chatModel = new AzureOpenAiChatModel(this.openAIClient, this.openAIChatOptions);
+var chatModel = AzureOpenAiChatModel.builder()
+				.openAIClientBuilder(openAIClientBuilder)
+				.defaultOptions(openAIChatOptions)
+				.build();
 
-ChatResponse response = this.chatModel.call(
+ChatResponse response = chatModel.call(
   new Prompt("Generate the names of 5 famous pirates."));
 
 // Or with streaming responses
-Flux<ChatResponse> response = this.chatModel.stream(
+Flux<ChatResponse> streamingResponses = chatModel.stream(
   new Prompt("Generate the names of 5 famous pirates."));
 
 ----

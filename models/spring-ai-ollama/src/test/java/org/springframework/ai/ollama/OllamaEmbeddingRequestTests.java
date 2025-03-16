@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.ollama;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -28,13 +29,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonghoon Park
  */
 public class OllamaEmbeddingRequestTests {
 
 	OllamaEmbeddingModel embeddingModel = OllamaEmbeddingModel.builder()
-		.withOllamaApi(new OllamaApi())
-		.withDefaultOptions(
-				OllamaOptions.create().withModel("DEFAULT_MODEL").withMainGPU(11).withUseMMap(true).withNumGPU(1))
+		.ollamaApi(new OllamaApi())
+		.defaultOptions(OllamaOptions.builder().model("DEFAULT_MODEL").mainGPU(11).useMMap(true).numGPU(1).build())
 		.build();
 
 	@Test
@@ -52,11 +53,12 @@ public class OllamaEmbeddingRequestTests {
 	@Test
 	public void ollamaEmbeddingRequestRequestOptions() {
 
-		var promptOptions = new OllamaOptions()//
-			.withModel("PROMPT_MODEL")//
-			.withMainGPU(22)//
-			.withUseMMap(true)//
-			.withNumGPU(2);
+		var promptOptions = OllamaOptions.builder()//
+			.model("PROMPT_MODEL")//
+			.mainGPU(22)//
+			.useMMap(true)//
+			.numGPU(2)
+			.build();
 
 		var request = this.embeddingModel.ollamaEmbeddingRequest(List.of("Hello"), promptOptions);
 
@@ -65,6 +67,16 @@ public class OllamaEmbeddingRequestTests {
 		assertThat(request.options().get("main_gpu")).isEqualTo(22);
 		assertThat(request.options().get("use_mmap")).isEqualTo(true);
 		assertThat(request.input()).isEqualTo(List.of("Hello"));
+	}
+
+	@Test
+	public void ollamaEmbeddingRequestWithNegativeKeepAlive() {
+
+		var promptOptions = OllamaOptions.builder().model("PROMPT_MODEL").keepAlive("-1m").build();
+
+		var request = this.embeddingModel.ollamaEmbeddingRequest(List.of("Hello"), promptOptions);
+
+		assertThat(request.keepAlive()).isEqualTo(Duration.ofMinutes(-1));
 	}
 
 }

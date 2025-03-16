@@ -32,7 +32,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -64,10 +64,10 @@ public class PaymentStatusPromptIT {
 				UserMessage userMessage = new UserMessage("What's the status of my transaction with id T1001?");
 
 				var promptOptions = MistralAiChatOptions.builder()
-					.withFunctionCallbacks(List.of(FunctionCallback.builder()
-						.description("Get payment status of a transaction")
-						.function("retrievePaymentStatus",
+					.functionCallbacks(List.of(FunctionToolCallback
+						.builder("retrievePaymentStatus",
 								(Transaction transaction) -> new Status(DATA.get(transaction).status()))
+						.description("Get payment status of a transaction")
 						.inputType(Transaction.class)
 						.build()))
 					.build();
@@ -76,8 +76,8 @@ public class PaymentStatusPromptIT {
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("T1001");
-				assertThat(response.getResult().getOutput().getContent()).containsIgnoringCase("paid");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("T1001");
+				assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("paid");
 			});
 	}
 

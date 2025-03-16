@@ -63,11 +63,11 @@ public class OllamaEmbeddingModelTests {
 					List.of(new float[] { 7f, 8f, 9f }, new float[] { 10f, 11f, 12f }), 0L, 0L, 0));
 
 		// Tests default options
-		var defaultOptions = OllamaOptions.builder().withModel("DEFAULT_MODEL").build();
+		var defaultOptions = OllamaOptions.builder().model("DEFAULT_MODEL").build();
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
-			.withOllamaApi(this.ollamaApi)
-			.withDefaultOptions(defaultOptions)
+			.ollamaApi(this.ollamaApi)
+			.defaultOptions(defaultOptions)
 			.build();
 
 		EmbeddingResponse response = embeddingModel.call(
@@ -90,10 +90,10 @@ public class OllamaEmbeddingModelTests {
 
 		// Tests runtime options
 		var runtimeOptions = OllamaOptions.builder()
-			.withModel("RUNTIME_MODEL")
-			.withKeepAlive("10m")
-			.withTruncate(false)
-			.withMainGPU(666)
+			.model("RUNTIME_MODEL")
+			.keepAlive("10m")
+			.truncate(false)
+			.mainGPU(666)
 			.build();
 
 		response = embeddingModel.call(new EmbeddingRequest(List.of("Input4", "Input5", "Input6"), runtimeOptions));

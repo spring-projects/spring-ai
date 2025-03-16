@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@ package org.springframework.ai.ollama;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
@@ -45,7 +47,6 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-import org.springframework.ai.ollama.metadata.OllamaEmbeddingUsage;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -58,6 +59,8 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 0.8.0
  */
 public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
@@ -95,7 +98,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getContent());
+		return embed(document.getText());
 	}
 
 	@Override
@@ -125,7 +128,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 					.toList();
 
 				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
-						OllamaEmbeddingUsage.from(response));
+						getDefaultUsage(response));
 
 				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 
@@ -133,6 +136,10 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(OllamaApi.EmbeddingsResponse response) {
+		return new DefaultUsage(Optional.ofNullable(response.promptEvalCount()).orElse(0), 0);
 	}
 
 	/**
@@ -182,7 +189,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	public static class DurationParser {
 
-		private static final Pattern PATTERN = Pattern.compile("(\\d+)(ms|s|m|h)");
+		private static final Pattern PATTERN = Pattern.compile("(-?\\d+)(ms|s|m|h)");
 
 		public static Duration parse(String input) {
 
@@ -215,7 +222,9 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.create().withModel(OllamaModel.MXBAI_EMBED_LARGE.id());
+		private OllamaOptions defaultOptions = OllamaOptions.builder()
+			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
+			.build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
@@ -224,22 +233,22 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		private Builder() {
 		}
 
-		public Builder withOllamaApi(OllamaApi ollamaApi) {
+		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
 			return this;
 		}
 
-		public Builder withDefaultOptions(OllamaOptions defaultOptions) {
+		public Builder defaultOptions(OllamaOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
 			return this;
 		}
 
-		public Builder withObservationRegistry(ObservationRegistry observationRegistry) {
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
 		}
 
-		public Builder withModelManagementOptions(ModelManagementOptions modelManagementOptions) {
+		public Builder modelManagementOptions(ModelManagementOptions modelManagementOptions) {
 			this.modelManagementOptions = modelManagementOptions;
 			return this;
 		}

@@ -27,6 +27,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 @ConfigurationProperties(MistralAiChatProperties.CONFIG_PREFIX)
@@ -34,7 +35,7 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue();
+	public static final String DEFAULT_CHAT_MODEL = MistralAiApi.ChatModel.SMALL.getValue();
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
@@ -49,10 +50,10 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	@NestedConfigurationProperty
 	private MistralAiChatOptions options = MistralAiChatOptions.builder()
-		.withModel(DEFAULT_CHAT_MODEL)
-		.withTemperature(DEFAULT_TEMPERATURE)
-		.withSafePrompt(!IS_ENABLED)
-		.withTopP(DEFAULT_TOP_P)
+		.model(DEFAULT_CHAT_MODEL)
+		.temperature(DEFAULT_TEMPERATURE)
+		.safePrompt(!IS_ENABLED)
+		.topP(DEFAULT_TOP_P)
 		.build();
 
 	public MistralAiChatProperties() {

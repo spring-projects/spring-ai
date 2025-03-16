@@ -24,12 +24,15 @@ import org.springframework.ai.rag.Query;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
- * Document retriever that uses a vector store to search for documents. It supports
- * filtering based on metadata, similarity threshold, and top-k results.
+ * Retrieves documents from a vector store that are semantically similar to the input
+ * query. It supports filtering based on metadata, similarity threshold, and top-k
+ * results.
  *
  * <p>
  * Example usage: <pre>{@code
@@ -47,6 +50,8 @@ import org.springframework.util.Assert;
  */
 public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 
+	public static final String FILTER_EXPRESSION = "vector_store_filter_expression";
+
 	private final VectorStore vectorStore;
 
 	private final Double similarityThreshold;
@@ -61,6 +66,9 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 	public VectorStoreDocumentRetriever(VectorStore vectorStore, @Nullable Double similarityThreshold,
 			@Nullable Integer topK, @Nullable Supplier<Filter.Expression> filterExpression) {
 		Assert.notNull(vectorStore, "vectorStore cannot be null");
+		Assert.isTrue(similarityThreshold == null || similarityThreshold >= 0.0,
+				"similarityThreshold must be equal to or greater than 0.0");
+		Assert.isTrue(topK == null || topK > 0, "topK must be greater than 0");
 		this.vectorStore = vectorStore;
 		this.similarityThreshold = similarityThreshold != null ? similarityThreshold
 				: SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL;
@@ -71,11 +79,22 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 	@Override
 	public List<Document> retrieve(Query query) {
 		Assert.notNull(query, "query cannot be null");
-		var searchRequest = SearchRequest.query(query.text())
-			.withFilterExpression(this.filterExpression.get())
-			.withSimilarityThreshold(this.similarityThreshold)
-			.withTopK(this.topK);
+		var requestFilterExpression = computeRequestFilterExpression(query);
+		var searchRequest = SearchRequest.builder()
+			.query(query.text())
+			.filterExpression(requestFilterExpression)
+			.similarityThreshold(this.similarityThreshold)
+			.topK(this.topK)
+			.build();
 		return this.vectorStore.similaritySearch(searchRequest);
+	}
+
+	private Filter.Expression computeRequestFilterExpression(Query query) {
+		var contextFilterExpression = query.context().get(FILTER_EXPRESSION);
+		if (contextFilterExpression != null && StringUtils.hasText(contextFilterExpression.toString())) {
+			return new FilterExpressionTextParser().parse(contextFilterExpression.toString());
+		}
+		return this.filterExpression.get();
 	}
 
 	public static Builder builder() {
@@ -104,14 +123,11 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 		}
 
 		public Builder similarityThreshold(Double similarityThreshold) {
-			Assert.notNull(similarityThreshold, "similarityThreshold cannot be null");
 			this.similarityThreshold = similarityThreshold;
 			return this;
 		}
 
 		public Builder topK(Integer topK) {
-			Assert.notNull(topK, "topK cannot be null");
-			Assert.isTrue(topK > 0, "topK must be greater than 0");
 			this.topK = topK;
 			return this;
 		}

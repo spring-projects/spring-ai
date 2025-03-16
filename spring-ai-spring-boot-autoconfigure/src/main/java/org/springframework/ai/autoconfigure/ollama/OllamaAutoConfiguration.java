@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,14 @@
 
 package org.springframework.ai.autoconfigure.ollama;
 
-import java.util.List;
-
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.autoconfigure.chat.model.ToolCallingAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackContext;
+import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -51,11 +51,12 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @since 0.8.0
  */
-@AutoConfiguration(after = RestClientAutoConfiguration.class)
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
 		OllamaConnectionProperties.class, OllamaInitializationProperties.class })
-@ImportAutoConfiguration(classes = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class })
+@ImportAutoConfiguration(classes = { RestClientAutoConfiguration.class, ToolCallingAutoConfiguration.class,
+		WebClientAutoConfiguration.class })
 public class OllamaAutoConfiguration {
 
 	@Bean
@@ -79,19 +80,18 @@ public class OllamaAutoConfiguration {
 	@ConditionalOnProperty(prefix = OllamaChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 			matchIfMissing = true)
 	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
-			OllamaInitializationProperties initProperties, List<FunctionCallback> toolFunctionCallbacks,
-			FunctionCallbackContext functionCallbackContext, ObjectProvider<ObservationRegistry> observationRegistry,
+			OllamaInitializationProperties initProperties, ToolCallingManager toolCallingManager,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 		var chatModelPullStrategy = initProperties.getChat().isInclude() ? initProperties.getPullModelStrategy()
 				: PullModelStrategy.NEVER;
 
 		var chatModel = OllamaChatModel.builder()
-			.withOllamaApi(ollamaApi)
-			.withDefaultOptions(properties.getOptions())
-			.withFunctionCallbackContext(functionCallbackContext)
-			.withToolFunctionCallbacks(toolFunctionCallbacks)
-			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withModelManagementOptions(
+			.ollamaApi(ollamaApi)
+			.defaultOptions(properties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.modelManagementOptions(
 					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),
 							initProperties.getTimeout(), initProperties.getMaxRetries()))
 			.build();
@@ -112,10 +112,10 @@ public class OllamaAutoConfiguration {
 				? initProperties.getPullModelStrategy() : PullModelStrategy.NEVER;
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
-			.withOllamaApi(ollamaApi)
-			.withDefaultOptions(properties.getOptions())
-			.withObservationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withModelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
+			.ollamaApi(ollamaApi)
+			.defaultOptions(properties.getOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.modelManagementOptions(new ModelManagementOptions(embeddingModelPullStrategy,
 					initProperties.getEmbedding().getAdditionalModels(), initProperties.getTimeout(),
 					initProperties.getMaxRetries()))
 			.build();
@@ -127,8 +127,8 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public FunctionCallbackContext springAiFunctionManager(ApplicationContext context) {
-		FunctionCallbackContext manager = new FunctionCallbackContext();
+	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
+		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
 		manager.setApplicationContext(context);
 		return manager;
 	}

@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Geng Rong
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -38,6 +39,10 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 	 * ID of the model to use.
 	 */
 	private @JsonProperty("model") String model;
+	/**
+	 * Dimension value of the model to use.
+	 */
+	private @JsonProperty("dimensions") Integer dimensions;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -51,6 +56,10 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 	@Override
@@ -67,8 +76,13 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 			this.options = new ZhiPuAiEmbeddingOptions();
 		}
 
-		public Builder withModel(String model) {
+		public Builder model(String model) {
 			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.setDimensions(dimensions);
 			return this;
 		}
 

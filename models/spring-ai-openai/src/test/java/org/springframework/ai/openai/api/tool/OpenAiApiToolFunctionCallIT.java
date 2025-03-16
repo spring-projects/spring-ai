@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * https://platform.openai.com/docs/guides/function-calling/parallel-function-calling
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiApiToolFunctionCallIT {
@@ -51,7 +52,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 	MockWeatherService weatherService = new MockWeatherService();
 
-	OpenAiApi completionApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+	OpenAiApi completionApi = OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
 		try {
@@ -95,7 +96,7 @@ public class OpenAiApiToolFunctionCallIT {
 									},
 									"required": ["location", "lat", "lon", "unit"]
 								}
-								""")));
+								"""), null));
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
@@ -128,7 +129,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 				// extend conversation with function response.
 				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
-						functionName, toolCall.id(), null, null));
+						functionName, toolCall.id(), null, null, null));
 			}
 		}
 

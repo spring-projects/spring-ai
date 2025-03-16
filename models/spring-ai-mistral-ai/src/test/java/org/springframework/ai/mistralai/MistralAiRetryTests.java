@@ -55,6 +55,7 @@ import static org.mockito.BDDMockito.given;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -76,14 +77,16 @@ public class MistralAiRetryTests {
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new MistralAiChatModel(this.mistralAiApi,
-				MistralAiChatOptions.builder()
-					.withTemperature(0.7)
-					.withTopP(1.0)
-					.withSafePrompt(false)
-					.withModel(MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getValue())
-					.build(),
-				null, this.retryTemplate);
+		this.chatModel = MistralAiChatModel.builder()
+			.mistralAiApi(this.mistralAiApi)
+			.defaultOptions(MistralAiChatOptions.builder()
+				.temperature(0.7)
+				.topP(1.0)
+				.safePrompt(false)
+				.model(MistralAiApi.ChatModel.SMALL.getValue())
+				.build())
+			.retryTemplate(this.retryTemplate)
+			.build();
 		this.embeddingModel = new MistralAiEmbeddingModel(this.mistralAiApi, MetadataMode.EMBED,
 				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build(),
 				this.retryTemplate);
@@ -105,7 +108,7 @@ public class MistralAiRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getContent()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
@@ -124,7 +127,7 @@ public class MistralAiRetryTests {
 		var choice = new ChatCompletionChunk.ChunkChoice(0, new ChatCompletionMessage("Response", Role.ASSISTANT),
 				ChatCompletionFinishReason.STOP, null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", "chat.completion.chunk", 789L,
-				"model", List.of(choice));
+				"model", List.of(choice), null);
 
 		given(this.mistralAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
@@ -134,7 +137,7 @@ public class MistralAiRetryTests {
 		var result = this.chatModel.stream(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.collectList().block().get(0).getResult().getOutput().getContent()).isSameAs("Response");
+		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

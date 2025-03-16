@@ -19,7 +19,6 @@ package org.springframework.ai.document;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -36,19 +35,15 @@ public class DocumentBuilderTests {
 
 	private Document.Builder builder;
 
-	private static List<Media> getMediaList() {
+	private static Media getMedia() {
 		try {
 			URL mediaUrl1 = new URL("http://type1");
-			URL mediaUrl2 = new URL("http://type2");
 			Media media1 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl1);
-			Media media2 = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl2);
-			List<Media> mediaList = List.of(media1, media2);
-			return mediaList;
+			return media1;
 		}
 		catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
-
 	}
 
 	@BeforeEach
@@ -58,32 +53,26 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithIdGenerator() {
-		IdGenerator mockGenerator = new IdGenerator() {
+		IdGenerator mockGenerator = contents -> "mockedId";
 
-			@Override
-			public String generateId(Object... contents) {
-				return "mockedId";
-			}
-		};
-
-		Document.Builder result = this.builder.withIdGenerator(mockGenerator);
+		Document.Builder result = this.builder.idGenerator(mockGenerator);
 
 		assertThat(result).isSameAs(this.builder);
 
-		Document document = result.withContent("Test content").withMetadata("key", "value").build();
+		Document document = result.text("Test content").metadata("key", "value").build();
 
 		assertThat(document.getId()).isEqualTo("mockedId");
 	}
 
 	@Test
 	void testWithIdGeneratorNull() {
-		assertThatThrownBy(() -> this.builder.withIdGenerator(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("idGenerator must not be null");
+		assertThatThrownBy(() -> this.builder.idGenerator(null).build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("idGenerator cannot be null");
 	}
 
 	@Test
 	void testWithId() {
-		Document.Builder result = this.builder.withId("testId");
+		Document.Builder result = this.builder.text("text").id("testId");
 
 		assertThat(result).isSameAs(this.builder);
 		assertThat(result.build().getId()).isEqualTo("testId");
@@ -91,58 +80,31 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithIdNullOrEmpty() {
-		assertThatThrownBy(() -> this.builder.withId(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("id must not be null or empty");
+		assertThatThrownBy(() -> this.builder.text("text").id(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("id cannot be null or empty");
 
-		assertThatThrownBy(() -> this.builder.withId("")).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("id must not be null or empty");
+		assertThatThrownBy(() -> this.builder.text("text").id("").build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("id cannot be null or empty");
 	}
 
 	@Test
 	void testWithContent() {
-		Document.Builder result = this.builder.withContent("Test content");
+		Document.Builder result = this.builder.text("Test content");
 
 		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getContent()).isEqualTo("Test content");
-	}
-
-	@Test
-	void testWithContentNull() {
-		assertThatThrownBy(() -> this.builder.withContent(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("content must not be null");
-	}
-
-	@Test
-	void testWithMediaList() {
-		List<Media> mediaList = getMediaList();
-		Document.Builder result = this.builder.withMedia(mediaList);
-
-		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getMedia()).isEqualTo(mediaList);
-	}
-
-	@Test
-	void testWithMediaListNull() {
-		assertThatThrownBy(() -> this.builder.withMedia((List<Media>) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("media must not be null");
+		assertThat(result.build().getText()).isEqualTo("Test content");
 	}
 
 	@Test
 	void testWithMediaSingle() throws MalformedURLException {
 		URL mediaUrl = new URL("http://test");
-		Media media = new Media(MimeTypeUtils.IMAGE_JPEG, mediaUrl);
+		Media media = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build();
 
-		Document.Builder result = this.builder.withMedia(media);
+		Document.Builder result = this.builder.media(media);
 
 		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getMedia()).contains(media);
-	}
-
-	@Test
-	void testWithMediaSingleNull() {
-		assertThatThrownBy(() -> this.builder.withMedia((Media) null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("media must not be null");
+		assertThat(result.build().getMedia()).isEqualTo(media);
 	}
 
 	@Test
@@ -150,7 +112,7 @@ public class DocumentBuilderTests {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key1", "value1");
 		metadata.put("key2", 2);
-		Document.Builder result = this.builder.withMetadata(metadata);
+		Document.Builder result = this.builder.text("text").metadata(metadata);
 
 		assertThat(result).isSameAs(this.builder);
 		assertThat(result.build().getMetadata()).isEqualTo(metadata);
@@ -158,52 +120,52 @@ public class DocumentBuilderTests {
 
 	@Test
 	void testWithMetadataMapNull() {
-		assertThatThrownBy(() -> this.builder.withMetadata((Map<String, Object>) null))
+		assertThatThrownBy(() -> this.builder.text("text").metadata(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("metadata must not be null");
+			.hasMessageContaining("metadata cannot be null");
 	}
 
 	@Test
 	void testWithMetadataKeyValue() {
-		Document.Builder result = this.builder.withMetadata("key", "value");
+		Document.Builder result = this.builder.metadata("key", "value");
 
 		assertThat(result).isSameAs(this.builder);
-		assertThat(result.build().getMetadata()).containsEntry("key", "value");
+		assertThat(result.text("text").build().getMetadata()).containsEntry("key", "value");
 	}
 
 	@Test
-	void testWithMetadataKeyValueNull() {
-		assertThatThrownBy(() -> this.builder.withMetadata(null, "value")).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("key must not be null");
+	void testWithMetadataKeyNull() {
+		assertThatThrownBy(() -> this.builder.text("text").metadata(null, "value").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("metadata key cannot be null");
+	}
 
-		assertThatThrownBy(() -> this.builder.withMetadata("key", null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("value must not be null");
+	@Test
+	void testWithMetadataValueNull() {
+		assertThatThrownBy(() -> this.builder.text("text").metadata("key", null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("metadata value cannot be null");
 	}
 
 	@Test
 	void testBuildWithoutId() {
-		Document document = this.builder.withContent("Test content").build();
+		Document document = this.builder.text("text").text("Test content").build();
 
 		assertThat(document.getId()).isNotNull().isNotEmpty();
-		assertThat(document.getContent()).isEqualTo("Test content");
+		assertThat(document.getText()).isEqualTo("Test content");
 	}
 
 	@Test
-	void testBuildWithAllProperties() throws MalformedURLException {
+	void testBuildWithAllProperties() {
 
-		List<Media> mediaList = getMediaList();
+		Media media = getMedia();
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("key", "value");
 
-		Document document = this.builder.withId("customId")
-			.withContent("Test content")
-			.withMedia(mediaList)
-			.withMetadata(metadata)
-			.build();
+		Document document = this.builder.id("customId").text("Test content").metadata(metadata).build();
 
 		assertThat(document.getId()).isEqualTo("customId");
-		assertThat(document.getContent()).isEqualTo("Test content");
-		assertThat(document.getMedia()).isEqualTo(mediaList);
+		assertThat(document.getText()).isEqualTo("Test content");
 		assertThat(document.getMetadata()).isEqualTo(metadata);
 	}
 

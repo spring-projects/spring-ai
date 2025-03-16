@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
@@ -37,8 +36,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,8 +50,7 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = BedrockConverseTestConfiguration.class)
-@EnabledIfEnvironmentVariable(named = "AWS_ACCESS_KEY_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "AWS_SECRET_ACCESS_KEY", matches = ".*")
+@RequiresAwsCredentials
 class BedrockConverseChatClientIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(BedrockConverseChatClientIT.class);
@@ -79,7 +77,7 @@ class BedrockConverseChatClientIT {
 
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getContent()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 	}
 
 	@Test
@@ -196,7 +194,7 @@ class BedrockConverseChatClientIT {
 		String generationTextFromStream = chatResponses
 				.stream()
 				.filter(cr -> cr.getResult() != null)
-				.map(cr -> cr.getResult().getOutput().getContent())
+				.map(cr -> cr.getResult().getOutput().getText())
 				.collect(Collectors.joining());
 		// @formatter:on
 
@@ -213,11 +211,10 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.functions(FunctionCallback.builder()
-						.description("Get the weather in location")
-						.function("getCurrentWeather", new MockWeatherService())
-						.inputType(MockWeatherService.Request.class)
-						.build())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.call()
 				.content();
 		// @formatter:on
@@ -228,16 +225,49 @@ class BedrockConverseChatClientIT {
 	}
 
 	@Test
+	void functionCallWithUsageMetadataTest() {
+
+		// @formatter:off
+		ChatResponse response = ChatClient.create(this.chatModel)
+				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		var metadata = response.getMetadata();
+
+		assertThat(metadata.getUsage()).isNotNull();
+
+		logger.info(metadata.getUsage().toString());
+
+		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(500);
+		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(3500);
+
+		assertThat(metadata.getUsage().getCompletionTokens()).isGreaterThan(0);
+		assertThat(metadata.getUsage().getCompletionTokens()).isLessThan(1500);
+
+		assertThat(metadata.getUsage().getTotalTokens())
+			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getCompletionTokens());
+
+		logger.info("Response: {}", response);
+
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
 	void functionCallWithAdvisorTest() {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.functions(FunctionCallback.builder()
-						.description("Get the weather in location")
-						.function("getCurrentWeather", new MockWeatherService())
-						.inputType(MockWeatherService.Request.class)
-						.build())
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
 				.advisors(new SimpleLoggerAdvisor())
 				.call()
 				.content();
@@ -253,9 +283,8 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-			.defaultFunctions(FunctionCallback.builder()
+			.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
-				.function("getCurrentWeather", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build())
 			.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius."))
@@ -274,18 +303,38 @@ class BedrockConverseChatClientIT {
 	void streamFunctionCallTest() {
 
 		// @formatter:off
-		Flux<String> response = ChatClient.create(this.chatModel).prompt()
+		Flux<ChatResponse> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.functions(FunctionCallback.builder()
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
-					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.stream()
-				.content();
+				.chatResponse();
 		// @formatter:on
 
-		String content = response.collectList().block().stream().collect(Collectors.joining());
+		List<ChatResponse> chatResponses = response.collectList().block();
+
+		// chatResponses.forEach(cr -> logger.info("Response: {}", cr));
+		var lastChatResponse = chatResponses.get(chatResponses.size() - 1);
+		var metadata = lastChatResponse.getMetadata();
+		assertThat(metadata.getUsage()).isNotNull();
+
+		logger.info(metadata.getUsage().toString());
+
+		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(1500);
+		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(3500);
+
+		assertThat(metadata.getUsage().getCompletionTokens()).isGreaterThan(0);
+		assertThat(metadata.getUsage().getCompletionTokens()).isLessThan(1500);
+
+		assertThat(metadata.getUsage().getTotalTokens())
+			.isEqualTo(metadata.getUsage().getPromptTokens() + metadata.getUsage().getCompletionTokens());
+
+		String content = chatResponses.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("30", "10", "15");
@@ -297,9 +346,8 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in Paris? Return the temperature in Celsius.")
-				.functions(FunctionCallback.builder()
+				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
-					.function("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.stream()
@@ -318,7 +366,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(FunctionCallingOptions.builder().withModel(modelName).build())
+				.options(ToolCallingChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -326,8 +374,28 @@ class BedrockConverseChatClientIT {
 		// @formatter:on
 
 		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@Deprecated
+	void multiModalityImageUrl2(String modelName) throws IOException {
+
+		// TODO: add url method that wrapps the checked exception.
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
+
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+		// TODO consider adding model(...) method to ChatClient as a shortcut to
+		.options(ToolCallingChatOptions.builder().model(modelName).build())
+		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+		.call()
+		.content();
+		// @formatter:on
+
+		logger.info(response);
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -340,15 +408,14 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(FunctionCallingOptions.builder().withModel(modelName).build())
+		.options(ToolCallingChatOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();
 		// @formatter:on
 
 		logger.info(response);
-		assertThat(response).contains("bananas", "apple");
-		assertThat(response).containsAnyOf("bowl", "basket");
+		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test
@@ -368,8 +435,7 @@ class BedrockConverseChatClientIT {
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 
 		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
+		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

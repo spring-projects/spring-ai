@@ -37,13 +37,14 @@ import org.springframework.util.CollectionUtils;
  * response if the user input contains any of the sensitive words.
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
-	private final static String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
+	private static final String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
 
-	private final static int DEFAULT_ORDER = 0;
+	private static final int DEFAULT_ORDER = 0;
 
 	private final String failureResponse;
 
@@ -96,7 +97,7 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 
 	private AdvisedResponse createFailureResponse(AdvisedRequest advisedRequest) {
 		return new AdvisedResponse(ChatResponse.builder()
-			.withGenerations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
+			.generations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
 			.build(), advisedRequest.adviseContext());
 	}
 
@@ -116,17 +117,17 @@ public class SafeGuardAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 		private Builder() {
 		}
 
-		public Builder withSensitiveWords(List<String> sensitiveWords) {
+		public Builder sensitiveWords(List<String> sensitiveWords) {
 			this.sensitiveWords = sensitiveWords;
 			return this;
 		}
 
-		public Builder withFailureResponse(String failureResponse) {
+		public Builder failureResponse(String failureResponse) {
 			this.failureResponse = failureResponse;
 			return this;
 		}
 
-		public Builder withOrder(int order) {
+		public Builder order(int order) {
 			this.order = order;
 			return this;
 		}

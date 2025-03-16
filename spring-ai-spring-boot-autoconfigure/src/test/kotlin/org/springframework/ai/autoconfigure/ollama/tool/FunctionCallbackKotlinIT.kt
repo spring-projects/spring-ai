@@ -20,26 +20,24 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.Prompt
-import org.springframework.ai.model.function.FunctionCallback
-import org.springframework.ai.model.function.FunctionCallingOptions
+import org.springframework.ai.model.tool.ToolCallingChatOptions
 import org.springframework.ai.ollama.OllamaChatModel
-import org.springframework.ai.ollama.api.OllamaModel
-import org.springframework.ai.ollama.api.OllamaOptions
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Description
+
 
 class FunctionCallbackKotlinIT : BaseOllamaIT() {
 
 	companion object {
 
-		private val MODEL_NAME = OllamaModel.LLAMA3_2.getName();
+		private val MODEL_NAME = "qwen2.5:3b";
 
 		@JvmStatic
 		@BeforeAll
@@ -69,12 +67,14 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 			val userMessage = UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
+			val functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build()
+
 			val response = chatModel
-					.call(Prompt(listOf(userMessage), OllamaOptions.builder().withFunction("WeatherInfo").build()))
+					.call(Prompt(listOf(userMessage), functionOptions))
 
-			logger.info("Response: " + response)
+			logger.info("Response: $response")
 
-			assertThat(response.getResult().output.content).contains("30", "10", "15")
+			assertThat(response.getResult().output.text).contains("30", "10", "15")
 		}
 	}
 
@@ -88,15 +88,13 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 			val userMessage = UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
-			val functionOptions = FunctionCallingOptions.builder()
-				.withFunction("WeatherInfo")
-				.build()
+			val functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build()
 
 			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
+			val output = response.getResult().output.text
+			logger.info("Response: $output");
 
-			logger.info("Response: " + response.getResult().getOutput().getContent());
-
-			assertThat(response.getResult().output.content).contains("30", "10", "15");
+			assertThat(output).contains("30", "10", "15");
 		}
 	}
 
@@ -104,14 +102,9 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 	open class Config {
 
 		@Bean
-		open fun weatherFunctionInfo(): FunctionCallback {
-			return FunctionCallback.builder()
-				.description(
-					"Find the weather conditions, forecasts, and temperatures for a location, like a city or state."
-				)
-				.function("WeatherInfo", MockKotlinWeatherService())
-				.inputType(KotlinRequest::class.java)
-				.build()
+		@Description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+		open fun weatherInfo(): Function1<KotlinRequest, KotlinResponse> {
+			return MockKotlinWeatherService()
 		}
 
 	}

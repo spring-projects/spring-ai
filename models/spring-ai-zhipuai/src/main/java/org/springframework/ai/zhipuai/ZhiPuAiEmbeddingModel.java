@@ -24,6 +24,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -40,7 +41,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
-import org.springframework.ai.zhipuai.metadata.ZhiPuAiUsage;
 import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -90,7 +90,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public ZhiPuAiEmbeddingModel(ZhiPuAiApi zhiPuAiApi, MetadataMode metadataMode) {
 		this(zhiPuAiApi, metadataMode,
-				ZhiPuAiEmbeddingOptions.builder().withModel(ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL).build(),
+				ZhiPuAiEmbeddingOptions.builder().model(ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL).build(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
@@ -190,7 +190,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 				String model = (request.getOptions() != null && request.getOptions().getModel() != null)
 						? request.getOptions().getModel() : "unknown";
 
-				var metadata = new EmbeddingResponseMetadata(model, ZhiPuAiUsage.from(totalUsage));
+				var metadata = new EmbeddingResponseMetadata(model, getDefaultUsage(totalUsage));
 
 				var indexCounter = new AtomicInteger(0);
 
@@ -204,6 +204,10 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	private DefaultUsage getDefaultUsage(ZhiPuAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	/**
@@ -220,12 +224,14 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return ZhiPuAiEmbeddingOptions.builder()
-			.withModel(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
+			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
+					defaultOptions.getDimensions()))
 			.build();
 	}
 
 	private ZhiPuAiApi.EmbeddingRequest<String> createEmbeddingRequest(String text, EmbeddingOptions requestOptions) {
-		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel());
+		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel(), requestOptions.getDimensions());
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {

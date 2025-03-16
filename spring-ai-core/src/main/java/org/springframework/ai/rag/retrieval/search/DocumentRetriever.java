@@ -40,12 +40,6 @@ public interface DocumentRetriever extends Function<Query, List<Document>> {
 	 */
 	List<Document> retrieve(Query query);
 
-	/**
-	 * Retrieves relevant documents from an underlying data source based on the given
-	 * query.
-	 * @param query The query to use for retrieving documents
-	 * @return The list of relevant documents
-	 */
 	default List<Document> apply(Query query) {
 		return retrieve(query);
 	}

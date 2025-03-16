@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.util.function.Function;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.ai.tool.ToolCallback;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -43,7 +44,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.ChatOptionsBuilder;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
@@ -97,7 +97,7 @@ class DefaultChatClientTests {
 		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt("my question");
 		assertThat(spec.getMessages()).hasSize(1);
-		assertThat(spec.getMessages().get(0).getContent()).isEqualTo("my question");
+		assertThat(spec.getMessages().get(0).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -107,15 +107,15 @@ class DefaultChatClientTests {
 		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt(prompt);
 		assertThat(spec.getMessages()).hasSize(2);
-		assertThat(spec.getMessages().get(0).getContent()).isEqualTo("instructions");
-		assertThat(spec.getMessages().get(1).getContent()).isEqualTo("my question");
+		assertThat(spec.getMessages().get(0).getText()).isEqualTo("instructions");
+		assertThat(spec.getMessages().get(1).getText()).isEqualTo("my question");
 		assertThat(spec.getChatOptions()).isNull();
 	}
 
 	@Test
 	void whenPromptWithOptionsThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
-		ChatOptions chatOptions = ChatOptionsBuilder.builder().build();
+		ChatOptions chatOptions = ChatOptions.builder().build();
 		Prompt prompt = new Prompt(List.of(), chatOptions);
 		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt(prompt);
@@ -169,7 +169,8 @@ class DefaultChatClientTests {
 	void whenUserMediaThenReturn() throws MalformedURLException {
 		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
 		URL mediaUrl = URI.create("http://example.com/image.png").toURL();
-		spec = (DefaultChatClient.DefaultPromptUserSpec) spec.media(new Media(MimeTypeUtils.IMAGE_PNG, mediaUrl));
+		spec = (DefaultChatClient.DefaultPromptUserSpec) spec
+			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(mediaUrl).build());
 		assertThat(spec.media()).hasSize(1);
 		assertThat(spec.media().get(0).getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG);
 		assertThat(spec.media().get(0).getData()).isEqualTo(mediaUrl.toString());
@@ -627,11 +628,11 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(1);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -650,12 +651,12 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(2);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -675,13 +676,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test
@@ -702,13 +703,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test
@@ -1090,11 +1091,11 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(1);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -1113,12 +1114,12 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(2);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
 	}
 
 	@Test
@@ -1138,13 +1139,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test
@@ -1165,13 +1166,13 @@ class DefaultChatClientTests {
 
 		ChatResponse chatResponse = spec.chatResponse().blockLast();
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getContent()).isEqualTo("response");
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
 
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(3);
-		assertThat(actualPrompt.getInstructions().get(0).getContent()).isEqualTo("instructions");
-		assertThat(actualPrompt.getInstructions().get(1).getContent()).isEqualTo("my question");
-		assertThat(actualPrompt.getInstructions().get(2).getContent()).isEqualTo("another question");
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("instructions");
+		assertThat(actualPrompt.getInstructions().get(1).getText()).isEqualTo("my question");
+		assertThat(actualPrompt.getInstructions().get(2).getText()).isEqualTo("another question");
 	}
 
 	@Test
@@ -1344,10 +1345,47 @@ class DefaultChatClientTests {
 	void whenOptionsThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		ChatOptions options = ChatOptionsBuilder.builder().build();
+		ChatOptions options = ChatOptions.builder().build();
 		spec = spec.options(options);
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getChatOptions()).isEqualTo(options);
+	}
+
+	@Test
+	void whenToolNamesElementIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.tools("myTool", null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolNames cannot contain null elements");
+	}
+
+	@Test
+	void whenToolNamesThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		String toolName = "myTool";
+		spec = spec.tools(toolName);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getFunctionNames()).contains(toolName);
+	}
+
+	@Test
+	void whenToolCallbacksElementIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.tools(mock(ToolCallback.class), null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolCallbacks cannot contain null elements");
+	}
+
+	@Test
+	void whenToolCallbacksThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		spec = spec.tools(toolCallback);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getFunctionCallbacks()).contains(toolCallback);
 	}
 
 	// FunctionCallback.builder().description("description").function(null,input->"hello").inputType(String.class).build()
@@ -1357,8 +1395,8 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.description("description")
 			.function(null, input -> "hello")
+			.description("description")
 			.inputType(String.class)
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
 	}
@@ -1368,8 +1406,8 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.description("description")
 			.function("", input -> "hello")
+			.description("description")
 			.inputType(String.class)
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
 	}
@@ -1379,8 +1417,8 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
 			.description(null)
-			.function("", input -> "hello")
 			.inputType(String.class)
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
 	}
@@ -1389,25 +1427,22 @@ class DefaultChatClientTests {
 	void whenFunctionDescriptionIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "", input -> "hello"))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("description cannot be null or empty");
-	}
-
-	@Test
-	void whenFunctionLambdaIsNullThenThrow() {
-		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
-		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "description", (Function) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("function cannot be null");
+		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
+			.description("")
+			.inputType(String.class)
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
 	}
 
 	@Test
 	void whenFunctionThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.function("name", "description", String.class, input -> "hello");
+		spec = spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
+			.inputType(String.class)
+			.description("description")
+			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
@@ -1416,7 +1451,11 @@ class DefaultChatClientTests {
 	void whenFunctionAndInputTypeThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.function("name", "description", String.class, input -> "hello");
+		spec = spec.functions(FunctionCallback.builder()
+			.function("name", input -> "hello")
+			.inputType(String.class)
+			.description("description")
+			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
@@ -1425,52 +1464,51 @@ class DefaultChatClientTests {
 	void whenBiFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function(null, "description", (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec.functions(
+				FunctionCallback.builder().function(null, (input, ctx) -> "hello").description("description").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("name cannot be null or empty");
+			.hasMessage("Name must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionNameIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("", "description", (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec.functions(
+				FunctionCallback.builder().function("", (input, ctx) -> "hello").description("description").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("name cannot be null or empty");
+			.hasMessage("Name must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionDescriptionIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", null, (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec
+			.functions(FunctionCallback.builder().function("name", (input, ctx) -> "hello").description(null).build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("description cannot be null or empty");
+			.hasMessage("Description must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionDescriptionIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "", (input, ctx) -> "hello"))
+		assertThatThrownBy(() -> spec
+			.functions(FunctionCallback.builder().function("name", (input, ctx) -> "hello").description("").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("description cannot be null or empty");
-	}
-
-	@Test
-	void whenBiFunctionLambdaIsNullThenThrow() {
-		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
-		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.function("name", "description", (BiFunction) null))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("biFunction cannot be null");
+			.hasMessage("Description must not be empty");
 	}
 
 	@Test
 	void whenBiFunctionThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.function("name", "description", (input, ctx) -> "hello");
+		spec = spec.functions(FunctionCallback.builder()
+			.function("name", (input, ctx) -> "hello")
+			.description("description")
+			.inputType(String.class)
+			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
@@ -1480,7 +1518,7 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.functions("myFunction", null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("functionBeanNames cannot contain null elements");
+			.hasMessage("toolNames cannot contain null elements");
 	}
 
 	@Test

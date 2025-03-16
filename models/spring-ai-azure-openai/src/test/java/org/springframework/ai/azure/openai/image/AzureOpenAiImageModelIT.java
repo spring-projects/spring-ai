@@ -53,7 +53,7 @@ public class AzureOpenAiImageModelIT {
 
 	@Test
 	void imageAsUrlTest() {
-		var options = ImageOptionsBuilder.builder().withHeight(1024).withWidth(1024).build();
+		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
 
 		var instructions = """
 				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
@@ -87,16 +87,21 @@ public class AzureOpenAiImageModelIT {
 
 		@Bean
 		public OpenAIClient openAIClient() {
-			return new OpenAIClientBuilder()
-				.credential(new AzureKeyCredential(System.getenv("AZURE_OPENAI_IMAGE_API_KEY")))
-				.endpoint(System.getenv("AZURE_OPENAI_IMAGE_ENDPOINT"))
+			String apiKey = System.getenv("AZURE_OPENAI_IMAGE_API_KEY");
+			String endpoint = System.getenv("AZURE_OPENAI_IMAGE_ENDPOINT");
+
+			// System.out.println("API Key: " + apiKey);
+			// System.out.println("Endpoint: " + endpoint);
+
+			return new OpenAIClientBuilder().credential(new AzureKeyCredential(apiKey))
+				.endpoint(endpoint)
 				.buildClient();
 		}
 
 		@Bean
 		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiImageModel(openAIClient,
-					AzureOpenAiImageOptions.builder().withDeploymentName("dall-e-3").build());
+					AzureOpenAiImageOptions.builder().deploymentName("dall-e-3").build());
 
 		}
 

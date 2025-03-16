@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.ModelRequest;
+import org.springframework.lang.Nullable;
 
 /**
  * The Prompt class represents a prompt used in AI model requests. A prompt consists of
@@ -36,11 +37,13 @@ import org.springframework.ai.model.ModelRequest;
  *
  * @author Mark Pollack
  * @author luocongqiu
+ * @author Thomas Vitale
  */
 public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
+	@Nullable
 	private ChatOptions chatOptions;
 
 	public Prompt(String contents) {
@@ -75,12 +78,13 @@ public class Prompt implements ModelRequest<List<Message>> {
 	public String getContents() {
 		StringBuilder sb = new StringBuilder();
 		for (Message message : getInstructions()) {
-			sb.append(message.getContent());
+			sb.append(message.getText());
 		}
 		return sb.toString();
 	}
 
 	@Override
+	@Nullable
 	public ChatOptions getOptions() {
 		return this.chatOptions;
 	}
@@ -119,14 +123,13 @@ public class Prompt implements ModelRequest<List<Message>> {
 		List<Message> messagesCopy = new ArrayList<>();
 		this.messages.forEach(message -> {
 			if (message instanceof UserMessage userMessage) {
-				messagesCopy
-					.add(new UserMessage(userMessage.getContent(), userMessage.getMedia(), message.getMetadata()));
+				messagesCopy.add(new UserMessage(userMessage.getText(), userMessage.getMedia(), message.getMetadata()));
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				messagesCopy.add(new SystemMessage(systemMessage.getContent()));
+				messagesCopy.add(new SystemMessage(systemMessage.getText()));
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
-				messagesCopy.add(new AssistantMessage(assistantMessage.getContent(), assistantMessage.getMetadata(),
+				messagesCopy.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
 						assistantMessage.getToolCalls()));
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {

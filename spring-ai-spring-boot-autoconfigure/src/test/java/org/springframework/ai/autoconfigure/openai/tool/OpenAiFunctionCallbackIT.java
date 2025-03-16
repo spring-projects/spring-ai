@@ -31,10 +31,11 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -61,12 +62,12 @@ public class OpenAiFunctionCallbackIT {
 
 			UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
-			ChatResponse response = chatModel.call(
-					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
+			ChatResponse response = chatModel
+				.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		});
 	}
@@ -80,8 +81,8 @@ public class OpenAiFunctionCallbackIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? You can call the following functions 'WeatherInfo'");
 
-			Flux<ChatResponse> response = chatModel.stream(
-					new Prompt(List.of(userMessage), OpenAiChatOptions.builder().withFunction("WeatherInfo").build()));
+			Flux<ChatResponse> response = chatModel
+				.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().function("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()
@@ -89,7 +90,7 @@ public class OpenAiFunctionCallbackIT {
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
-				.map(AssistantMessage::getContent)
+				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 
@@ -104,11 +105,10 @@ public class OpenAiFunctionCallbackIT {
 	static class Config {
 
 		@Bean
-		public FunctionCallback weatherFunctionInfo() {
+		public ToolCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder()
+			return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
 				.description("Get the weather in location")
-				.function("WeatherInfo", new MockWeatherService())
 				.inputType(MockWeatherService.Request.class)
 				.build();
 		}

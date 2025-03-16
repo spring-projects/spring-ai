@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.vertexai.gemini.tool;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,8 @@ import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoCo
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptionsBuilder.PortableFunctionCallingOptions;
+import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -57,7 +59,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
 				// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
-				+ VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH.getValue())
+				+ VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
@@ -69,25 +71,25 @@ class FunctionCallWithFunctionBeanIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction").build()));
+						VertexAiGeminiChatOptions.builder().function("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
+						VertexAiGeminiChatOptions.builder().function("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel
 					.call(new Prompt(List.of(userMessage), VertexAiGeminiChatOptions.builder().build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).doesNotContain("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).doesNotContain("30", "10", "15");
 
 			});
 	}
@@ -97,7 +99,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
 				// + VertexAiGeminiChatModel.ChatModel.GEMINI_PRO_1_5_PRO.getValue())
-				+ VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_FLASH.getValue())
+				+ VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
@@ -109,18 +111,18 @@ class FunctionCallWithFunctionBeanIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						PortableFunctionCallingOptions.builder().withFunction("weatherFunction").build()));
+						ToolCallingChatOptions.builder().toolNames("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().withFunction("weatherFunction3").build()));
+						VertexAiGeminiChatOptions.builder().toolNames(Set.of("weatherFunction3")).build()));
 
 				logger.info("Response: {}", response);
 
-				assertThat(response.getResult().getOutput().getContent()).contains("30", "10", "15");
+				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 			});
 	}

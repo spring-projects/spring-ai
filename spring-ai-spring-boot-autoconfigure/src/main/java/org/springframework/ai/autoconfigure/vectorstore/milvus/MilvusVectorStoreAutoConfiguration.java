@@ -21,14 +21,13 @@ import java.util.concurrent.TimeUnit;
 import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
+
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
-
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.vectorstore.MilvusVectorStore;
-import org.springframework.ai.vectorstore.MilvusVectorStore.MilvusVectorStoreConfig;
+import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -71,23 +70,23 @@ public class MilvusVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		MilvusVectorStoreConfig config = MilvusVectorStoreConfig.builder()
-			.withCollectionName(properties.getCollectionName())
-			.withDatabaseName(properties.getDatabaseName())
-			.withIndexType(IndexType.valueOf(properties.getIndexType().name()))
-			.withMetricType(MetricType.valueOf(properties.getMetricType().name()))
-			.withIndexParameters(properties.getIndexParameters())
-			.withEmbeddingDimension(properties.getEmbeddingDimension())
-			.withIDFieldName(properties.getIdFieldName())
-			.withAutoId(properties.isAutoId())
-			.withContentFieldName(properties.getContentFieldName())
-			.withMetadataFieldName(properties.getMetadataFieldName())
-			.withEmbeddingFieldName(properties.getEmbeddingFieldName())
+		return MilvusVectorStore.builder(milvusClient, embeddingModel)
+			.initializeSchema(properties.isInitializeSchema())
+			.databaseName(properties.getDatabaseName())
+			.collectionName(properties.getCollectionName())
+			.embeddingDimension(properties.getEmbeddingDimension())
+			.indexType(IndexType.valueOf(properties.getIndexType().name()))
+			.metricType(MetricType.valueOf(properties.getMetricType().name()))
+			.indexParameters(properties.getIndexParameters())
+			.iDFieldName(properties.getIdFieldName())
+			.autoId(properties.isAutoId())
+			.contentFieldName(properties.getContentFieldName())
+			.metadataFieldName(properties.getMetadataFieldName())
+			.embeddingFieldName(properties.getEmbeddingFieldName())
+			.batchingStrategy(batchingStrategy)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.build();
-
-		return new MilvusVectorStore(milvusClient, embeddingModel, config, properties.isInitializeSchema(),
-				batchingStrategy, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				customObservationConvention.getIfAvailable(() -> null));
 	}
 
 	@Bean

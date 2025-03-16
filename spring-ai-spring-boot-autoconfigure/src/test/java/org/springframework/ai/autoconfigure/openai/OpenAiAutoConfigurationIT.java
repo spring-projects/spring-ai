@@ -38,6 +38,7 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -55,13 +56,32 @@ public class OpenAiAutoConfigurationIT {
 		.withConfiguration(AutoConfigurations.of(OpenAiAutoConfiguration.class));
 
 	@Test
-	void generate() {
+	void chatCall() {
 		this.contextRunner.run(context -> {
 			OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
 			logger.info("Response: " + response);
 		});
+	}
+
+	@Test
+	void chatCallAudioResponse() {
+		this.contextRunner
+			.withPropertyValues(
+					"spring.ai.openai.chat.options.model=" + OpenAiApi.ChatModel.GPT_4_O_AUDIO_PREVIEW.getValue(),
+					"spring.ai.openai.chat.options.output-modalities=text,audio",
+					"spring.ai.openai.chat.options.output-audio.voice=ALLOY",
+					"spring.ai.openai.chat.options.output-audio.format=WAV")
+			.run(context -> {
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				ChatResponse response = chatModel
+					.call(new Prompt(new UserMessage("Tell me joke about Spring Framework")));
+				assertThat(response).isNotNull();
+				logger.info("Response: " + response);
+				// AudioPlayer.play(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray());
+			});
 	}
 
 	@Test
@@ -109,7 +129,7 @@ public class OpenAiAutoConfigurationIT {
 			String response = responseFlux.collectList()
 				.block()
 				.stream()
-				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getContent())
+				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
@@ -127,11 +147,11 @@ public class OpenAiAutoConfigurationIT {
 			Usage[] streamingTokenUsage = new Usage[1];
 			String response = responseFlux.collectList().block().stream().map(chatResponse -> {
 				streamingTokenUsage[0] = chatResponse.getMetadata().getUsage();
-				return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getContent() : "";
+				return (chatResponse.getResult() != null) ? chatResponse.getResult().getOutput().getText() : "";
 			}).collect(Collectors.joining());
 
 			assertThat(streamingTokenUsage[0].getPromptTokens()).isGreaterThan(0);
-			assertThat(streamingTokenUsage[0].getGenerationTokens()).isGreaterThan(0);
+			assertThat(streamingTokenUsage[0].getCompletionTokens()).isGreaterThan(0);
 			assertThat(streamingTokenUsage[0].getTotalTokens()).isGreaterThan(0);
 
 			assertThat(response).isNotEmpty();
