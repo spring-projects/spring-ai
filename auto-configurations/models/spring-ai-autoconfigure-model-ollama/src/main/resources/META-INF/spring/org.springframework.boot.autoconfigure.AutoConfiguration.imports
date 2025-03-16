@@ -13,4 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.ollama.autoconfigure.OllamaAutoConfiguration
+org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
+org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration

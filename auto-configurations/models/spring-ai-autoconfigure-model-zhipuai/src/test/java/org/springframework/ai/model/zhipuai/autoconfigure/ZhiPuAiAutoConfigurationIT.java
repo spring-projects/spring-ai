@@ -25,13 +25,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
 import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
@@ -51,12 +51,12 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.zhipuai.apiKey=" + System.getenv("ZHIPU_AI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, ZhiPuAiAutoConfiguration.class));
+		.withConfiguration(
+				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class));
 
 	@Test
 	void generate() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class)).run(context -> {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
@@ -66,7 +66,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class)).run(context -> {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
 			String response = responseFlux.collectList()
@@ -82,30 +82,33 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner.run(context -> {
-			ZhiPuAiEmbeddingModel embeddingModel = context.getBean(ZhiPuAiEmbeddingModel.class);
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				ZhiPuAiEmbeddingModel embeddingModel = context.getBean(ZhiPuAiEmbeddingModel.class);
 
-			EmbeddingResponse embeddingResponse = embeddingModel
-				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-			assertThat(embeddingResponse.getResults()).hasSize(2);
-			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
-			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+				EmbeddingResponse embeddingResponse = embeddingModel
+					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				assertThat(embeddingResponse.getResults()).hasSize(2);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+				assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
-		});
+				assertThat(embeddingModel.dimensions()).isEqualTo(1024);
+			});
 	}
 
 	@Test
 	void generateImage() {
-		this.contextRunner.withPropertyValues("spring.ai.zhipuai.image.options.size=1024x1024").run(context -> {
-			ZhiPuAiImageModel ImageModel = context.getBean(ZhiPuAiImageModel.class);
-			ImageResponse imageResponse = ImageModel.call(new ImagePrompt("forest"));
-			assertThat(imageResponse.getResults()).hasSize(1);
-			assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
-			logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
+			.withPropertyValues("spring.ai.zhipuai.image.options.size=1024x1024")
+			.run(context -> {
+				ZhiPuAiImageModel ImageModel = context.getBean(ZhiPuAiImageModel.class);
+				ImageResponse imageResponse = ImageModel.call(new ImagePrompt("forest"));
+				assertThat(imageResponse.getResults()).hasSize(1);
+				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
+				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+			});
 	}
 
 }

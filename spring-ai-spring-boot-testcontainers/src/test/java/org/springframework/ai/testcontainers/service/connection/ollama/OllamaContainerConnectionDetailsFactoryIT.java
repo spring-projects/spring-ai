@@ -28,8 +28,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 
-import org.springframework.ai.model.ollama.autoconfigure.OllamaAutoConfiguration;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.model.ollama.autoconfigure.OllamaEmbeddingAutoConfiguration;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -79,7 +79,7 @@ class OllamaContainerConnectionDetailsFactoryIT {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ImportAutoConfiguration({ RestClientAutoConfiguration.class, OllamaAutoConfiguration.class })
+	@ImportAutoConfiguration({ RestClientAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class })
 	static class Config {
 
 	}

@@ -42,7 +42,7 @@ public class HuggingfaceModelConfigurationTests {
 		});
 
 		this.contextRunner.withPropertyValues("spring.ai.model.chat=none").run(context -> {
-			assertThat(context.getBeansOfType(HuggingfaceChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(HuggingfaceChatProperties.class)).isEmpty();
 			assertThat(context.getBeansOfType(HuggingfaceChatModel.class)).isEmpty();
 		});
 

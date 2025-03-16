@@ -24,7 +24,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiAutoConfiguration;
+import org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -49,7 +49,7 @@ class FunctionCallWithFunctionBeanIT {
 		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
 				"spring.ai.vertex.ai.gemini.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"))
 
-		.withConfiguration(AutoConfigurations.of(VertexAiGeminiAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

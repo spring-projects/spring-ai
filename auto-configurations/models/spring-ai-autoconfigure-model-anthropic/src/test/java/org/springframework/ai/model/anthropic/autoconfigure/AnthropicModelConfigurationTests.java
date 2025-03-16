@@ -25,7 +25,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link AnthropicAutoConfiguration}'s conditional enabling of models.
+ * Unit Tests for {@link AnthropicChatAutoConfiguration}'s conditional enabling of models.
  *
  * @author Ilayaperumal Gopinathan
  */
@@ -33,7 +33,7 @@ public class AnthropicModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(AnthropicAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(AnthropicChatAutoConfiguration.class));
 
 	@Test
 	void chatModelActivation() {
@@ -42,7 +42,7 @@ public class AnthropicModelConfigurationTests {
 		});
 
 		this.contextRunner.withPropertyValues("spring.ai.model.chat=none").run(context -> {
-			assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isEmpty();
 			assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty();
 		});
 

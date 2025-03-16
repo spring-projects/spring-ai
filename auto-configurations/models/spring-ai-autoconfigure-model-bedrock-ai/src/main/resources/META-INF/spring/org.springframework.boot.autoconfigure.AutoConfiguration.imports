@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-cohere.org.springframework.ai.model.bedrock.autoconfigure.BedrockCohereEmbeddingAutoConfiguration
-titan.org.springframework.ai.model.bedrock.autoconfigure.BedrockTitanEmbeddingAutoConfiguration
-converse.org.springframework.ai.model.bedrock.autoconfigure.BedrockConverseProxyChatAutoConfiguration
+org.springframework.ai.model.bedrock.cohere.autoconfigure.BedrockCohereEmbeddingAutoConfiguration
+org.springframework.ai.model.bedrock.titan.autoconfigure.BedrockTitanEmbeddingAutoConfiguration
+org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyChatAutoConfiguration

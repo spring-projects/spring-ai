@@ -43,7 +43,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.resolveConnectionProperties;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for OpenAI.
+ * Embedding {@link AutoConfiguration Auto-configuration} for OpenAI.
  *
  * @author Christian Tzolov
  * @author Stefan Vassilev
