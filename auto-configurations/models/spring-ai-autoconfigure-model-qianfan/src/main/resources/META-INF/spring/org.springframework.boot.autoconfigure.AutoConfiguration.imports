@@ -13,4 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.qianfan.autoconfigure.QianFanAutoConfiguration
+org.springframework.ai.model.qianfan.autoconfigure.QianFanChatAutoConfiguration
+org.springframework.ai.model.qianfan.autoconfigure.QianFanEmbeddingAutoConfiguration
+org.springframework.ai.model.qianfan.autoconfigure.QianFanImageAutoConfiguration

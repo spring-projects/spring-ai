@@ -38,7 +38,7 @@ public class MistralAiPropertiesTests {
 			.withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL", "spring.ai.mistralai.api-key=abc123",
 					"spring.ai.mistralai.embedding.options.model=MODEL_XYZ")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MistralAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(MistralAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
@@ -87,7 +87,7 @@ public class MistralAiPropertiesTests {
 				"spring.ai.mistralai.api-key=abc123", "spring.ai.mistralai.embedding.base-url=TEST_BASE_URL2",
 				"spring.ai.mistralai.embedding.api-key=456", "spring.ai.mistralai.embedding.options.model=MODEL_XYZ")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MistralAiChatAutoConfiguration.class))
 			.run(context -> {
 
 				var chatProperties = context.getBean(MistralAiChatProperties.class);
@@ -108,7 +108,7 @@ public class MistralAiPropertiesTests {
 				"spring.ai.mistralai.api-key=abc123", "spring.ai.mistralai.embedding.base-url=TEST_BASE_URL2",
 				"spring.ai.mistralai.embedding.api-key=456", "spring.ai.mistralai.embedding.options.model=MODEL_XYZ")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MistralAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(MistralAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
@@ -132,7 +132,7 @@ public class MistralAiPropertiesTests {
 					"spring.ai.mistralai.embedding.options.model=MODEL_XYZ",
 					"spring.ai.mistralai.embedding.options.encodingFormat=MyEncodingFormat")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MistralAiAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MistralAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
 				var embeddingProperties = context.getBean(MistralAiEmbeddingProperties.class);

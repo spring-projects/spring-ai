@@ -13,4 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.minimax.autoconfigure.MiniMaxAutoConfiguration
+org.springframework.ai.model.minimax.autoconfigure.MiniMaxChatAutoConfiguration
+org.springframework.ai.model.minimax.autoconfigure.MiniMaxEmbeddingAutoConfiguration

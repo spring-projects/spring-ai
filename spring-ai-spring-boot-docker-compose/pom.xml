@@ -43,12 +43,6 @@
 
 		<!-- TODO: Once all the per module autoconfigurations are updated, the following autoconfiguration should be removed -->
 
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-opensearch</artifactId>
@@ -106,6 +100,13 @@
             <version>${project.parent.version}</version>
             <optional>true</optional>
         </dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-ollama</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
 
         <!-- Transformers Embedding Model -->
         <dependency>

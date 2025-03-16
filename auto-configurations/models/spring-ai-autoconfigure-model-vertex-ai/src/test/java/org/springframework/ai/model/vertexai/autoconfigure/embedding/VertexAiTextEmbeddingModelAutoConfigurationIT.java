@@ -37,107 +37,119 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 public class VertexAiTextEmbeddingModelAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.vertex.ai.embedding.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
-				"spring.ai.vertex.ai.embedding.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"))
-		.withConfiguration(AutoConfigurations.of(VertexAiEmbeddingAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
+			"spring.ai.vertex.ai.embedding.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
+			"spring.ai.vertex.ai.embedding.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"));
 
 	@TempDir
 	File tempDir;
 
 	@Test
 	public void textEmbedding() {
-		this.contextRunner.run(context -> {
-			var conntectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
-			var textEmbeddingProperties = context.getBean(VertexAiTextEmbeddingProperties.class);
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				var conntectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
+				var textEmbeddingProperties = context.getBean(VertexAiTextEmbeddingProperties.class);
 
-			assertThat(conntectionProperties).isNotNull();
-			assertThat(textEmbeddingProperties.isEnabled()).isTrue();
+				assertThat(conntectionProperties).isNotNull();
+				assertThat(textEmbeddingProperties.isEnabled()).isTrue();
 
-			VertexAiTextEmbeddingModel embeddingModel = context.getBean(VertexAiTextEmbeddingModel.class);
-			assertThat(embeddingModel).isInstanceOf(VertexAiTextEmbeddingModel.class);
+				VertexAiTextEmbeddingModel embeddingModel = context.getBean(VertexAiTextEmbeddingModel.class);
+				assertThat(embeddingModel).isInstanceOf(VertexAiTextEmbeddingModel.class);
 
-			List<float[]> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
+				List<float[]> embeddings = embeddingModel.embed(List.of("Spring Framework", "Spring AI"));
 
-			assertThat(embeddings.size()).isEqualTo(2); // batch size
-			assertThat(embeddings.get(0).length).isEqualTo(embeddingModel.dimensions());
-		});
+				assertThat(embeddings.size()).isEqualTo(2); // batch size
+				assertThat(embeddings.get(0).length).isEqualTo(embeddingModel.dimensions());
+			});
 	}
 
 	@Test
 	void textEmbeddingActivation() {
-		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.text.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.text.embedding=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isEmpty();
+			});
 
-		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.text.enabled=true").run(context -> {
-			assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.text.embedding=vertexai")
+			.run(context -> {
+				assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
+			});
 
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiTextEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(VertexAiTextEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(VertexAiTextEmbeddingModel.class)).isNotEmpty();
+			});
 
 	}
 
 	@Test
 	public void multimodalEmbedding() {
-		this.contextRunner.run(context -> {
-			var conntectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
-			var multimodalEmbeddingProperties = context.getBean(VertexAiMultimodalEmbeddingProperties.class);
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				var conntectionProperties = context.getBean(VertexAiEmbeddingConnectionProperties.class);
+				var multimodalEmbeddingProperties = context.getBean(VertexAiMultimodalEmbeddingProperties.class);
 
-			assertThat(conntectionProperties).isNotNull();
-			assertThat(multimodalEmbeddingProperties.isEnabled()).isTrue();
+				assertThat(conntectionProperties).isNotNull();
+				assertThat(multimodalEmbeddingProperties.isEnabled()).isTrue();
 
-			VertexAiMultimodalEmbeddingModel multiModelEmbeddingModel = context
-				.getBean(VertexAiMultimodalEmbeddingModel.class);
+				VertexAiMultimodalEmbeddingModel multiModelEmbeddingModel = context
+					.getBean(VertexAiMultimodalEmbeddingModel.class);
 
-			assertThat(multiModelEmbeddingModel).isNotNull();
+				assertThat(multiModelEmbeddingModel).isNotNull();
 
-			var document = new Document("Hello World");
+				var document = new Document("Hello World");
 
-			DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(document),
-					EmbeddingOptionsBuilder.builder().build());
+				DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(document),
+						EmbeddingOptionsBuilder.builder().build());
 
-			EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
-			assertThat(embeddingResponse.getResults()).hasSize(1);
-			assertThat(embeddingResponse.getResults().get(0)).isNotNull();
-			assertThat(embeddingResponse.getResults().get(0).getMetadata().getModalityType())
-				.isEqualTo(EmbeddingResultMetadata.ModalityType.TEXT);
-			assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1408);
+				EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+				assertThat(embeddingResponse.getResults()).hasSize(1);
+				assertThat(embeddingResponse.getResults().get(0)).isNotNull();
+				assertThat(embeddingResponse.getResults().get(0).getMetadata().getModalityType())
+					.isEqualTo(EmbeddingResultMetadata.ModalityType.TEXT);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1408);
 
-			assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
-			assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(0);
+				assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("multimodalembedding@001");
+				assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(0);
 
-			assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
+				assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1408);
 
-		});
+			});
 	}
 
 	@Test
 	void multimodalEmbeddingActivation() {
-		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.multimodal.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.multi-modal.embedding=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isEmpty();
+			});
 
-		this.contextRunner.withPropertyValues("spring.ai.vertex.ai.embedding.multimodal.enabled=true").run(context -> {
-			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.multi-modal.embedding=vertexai")
+			.run(context -> {
+				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();
+			});
 
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(VertexAiMultiModalEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(VertexAiMultimodalEmbeddingModel.class)).isNotEmpty();
+			});
 
 	}
 

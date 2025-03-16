@@ -52,7 +52,7 @@ public class OCIGenAiAutoConfigurationIT {
 				"spring.ai.oci.genai.embedding.servingMode=on-demand",
 				"spring.ai.oci.genai.embedding.model=cohere.embed-english-light-v2.0"
 				// @formatter:on
-	).withConfiguration(AutoConfigurations.of(OCIGenAiAutoConfiguration.class));
+	).withConfiguration(AutoConfigurations.of(OCIGenAiEmbeddingAutoConfiguration.class));
 
 	private final ApplicationContextRunner cohereChatContextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -62,7 +62,7 @@ public class OCIGenAiAutoConfigurationIT {
 			"spring.ai.oci.genai.cohere.chat.options.servingMode=on-demand",
 			"spring.ai.oci.genai.cohere.chat.options.model=" + this.CHAT_MODEL_ID
 			// @formatter:on
-	).withConfiguration(AutoConfigurations.of(OCIGenAiAutoConfiguration.class));
+	).withConfiguration(AutoConfigurations.of(OCIGenAiChatAutoConfiguration.class));
 
 	@Test
 	void embeddings() {

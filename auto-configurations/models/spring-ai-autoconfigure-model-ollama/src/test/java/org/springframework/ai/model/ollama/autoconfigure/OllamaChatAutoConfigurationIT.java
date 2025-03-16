@@ -55,7 +55,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
 				// @formatter:on
-		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class));
 
 	private final UserMessage userMessage = new UserMessage("What's the capital of Denmark?");
 

@@ -44,7 +44,7 @@ public class AnthropicPropertiesTests {
 					"spring.ai.anthropic.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
+					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -80,7 +80,7 @@ public class AnthropicPropertiesTests {
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
+					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -104,7 +104,7 @@ public class AnthropicPropertiesTests {
 		// It is enabled by default
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
+					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
@@ -113,7 +113,7 @@ public class AnthropicPropertiesTests {
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.chat.enabled=true")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
+					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
@@ -122,7 +122,7 @@ public class AnthropicPropertiesTests {
 		// Explicitly disable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicAutoConfiguration.class))
+					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty();
 			});

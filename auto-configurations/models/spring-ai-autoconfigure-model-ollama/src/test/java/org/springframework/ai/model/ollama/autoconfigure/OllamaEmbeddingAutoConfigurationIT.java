@@ -45,7 +45,8 @@ public class OllamaEmbeddingAutoConfigurationIT extends BaseOllamaIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.ollama.embedding.options.model=" + MODEL_NAME,
 				"spring.ai.ollama.base-url=" + getBaseUrl())
-		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class));
+		.withConfiguration(
+				AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class));
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {

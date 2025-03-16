@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.model.moonshot.autoconfigure.MoonshotAutoConfiguration;
+import org.springframework.ai.model.moonshot.autoconfigure.MoonshotChatAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -56,7 +56,7 @@ public class MoonshotFunctionCallbackIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.moonshot.apiKey=" + System.getenv("MOONSHOT_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
+				RestClientAutoConfiguration.class, MoonshotChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

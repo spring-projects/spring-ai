@@ -56,7 +56,7 @@ class OCIGenAIAutoConfigurationTest {
 				"spring.ai.oci.genai.cohere.chat.options.frequencyPenalty=0.1",
 				"spring.ai.oci.genai.cohere.chat.options.presencePenalty=0.2"
 				// @formatter:on
-		).withConfiguration(AutoConfigurations.of(OCIGenAiAutoConfiguration.class));
+		).withConfiguration(AutoConfigurations.of(OCIGenAiChatAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 			OCICohereChatModel chatModel = context.getBean(OCICohereChatModel.class);

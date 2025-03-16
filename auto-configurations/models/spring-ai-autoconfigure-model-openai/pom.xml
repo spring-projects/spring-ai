@@ -30,51 +30,38 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-openai</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<!-- Spring AI auto configurations -->
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>
-			<version>${project.parent.version}</version>
-			<optional>true</optional>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-tool</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-retry</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-observation-chat</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-observation-embedding</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-observation-image</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<!-- Boot dependencies -->
@@ -102,6 +89,13 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-test</artifactId>
+			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>

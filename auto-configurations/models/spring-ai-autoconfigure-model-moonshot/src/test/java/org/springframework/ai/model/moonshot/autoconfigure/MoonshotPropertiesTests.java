@@ -42,7 +42,7 @@ public class MoonshotPropertiesTests {
 				"spring.ai.moonshot.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MoonshotChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(MoonshotChatProperties.class);
 				var connectionProperties = context.getBean(MoonshotCommonProperties.class);
@@ -71,7 +71,7 @@ public class MoonshotPropertiesTests {
 				"spring.ai.moonshot.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MoonshotChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(MoonshotChatProperties.class);
 				var connectionProperties = context.getBean(MoonshotCommonProperties.class);
@@ -110,7 +110,7 @@ public class MoonshotPropertiesTests {
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MoonshotChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(MoonshotChatProperties.class);
 				var connectionProperties = context.getBean(MoonshotCommonProperties.class);
@@ -137,16 +137,16 @@ public class MoonshotPropertiesTests {
 			.withPropertyValues("spring.ai.moonshot.api-key=API_KEY", "spring.ai.moonshot.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MoonshotChatAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(MoonshotChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MoonshotChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(MoonshotChatModel.class)).isEmpty();
 			});
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.moonshot.api-key=API_KEY", "spring.ai.moonshot.base-url=TEST_BASE_URL")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MoonshotChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MoonshotChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MoonshotChatModel.class)).isNotEmpty();
@@ -156,7 +156,7 @@ public class MoonshotPropertiesTests {
 			.withPropertyValues("spring.ai.moonshot.api-key=API_KEY", "spring.ai.moonshot.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=moonshot")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MoonshotAutoConfiguration.class))
+					RestClientAutoConfiguration.class, MoonshotChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MoonshotChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MoonshotChatModel.class)).isNotEmpty();

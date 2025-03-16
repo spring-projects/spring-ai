@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,11 @@ package org.springframework.ai.model.qianfan.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.qianfan.QianFanChatModel;
 import org.springframework.ai.qianfan.QianFanEmbeddingModel;
 import org.springframework.ai.qianfan.QianFanImageModel;
 import org.springframework.ai.qianfan.api.QianFanApi;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link QianFanEmbeddingProperties}.
  *
  * @author Geng Rong
+ * @author Ilayaperumal Gopinathan
  */
 public class QianFanPropertiesTests {
 
@@ -50,7 +51,7 @@ public class QianFanPropertiesTests {
 				"spring.ai.qianfan.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(QianFanChatProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
@@ -82,7 +83,7 @@ public class QianFanPropertiesTests {
 				"spring.ai.qianfan.chat.options.temperature=0.55")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(QianFanChatProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
@@ -111,7 +112,7 @@ public class QianFanPropertiesTests {
 				"spring.ai.qianfan.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(QianFanEmbeddingProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
@@ -141,7 +142,7 @@ public class QianFanPropertiesTests {
 				"spring.ai.qianfan.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(QianFanEmbeddingProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
@@ -179,17 +180,14 @@ public class QianFanPropertiesTests {
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(QianFanChatProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
-				var embeddingProperties = context.getBean(QianFanEmbeddingProperties.class);
 
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 				assertThat(connectionProperties.getSecretKey()).isEqualTo("SECRET_KEY");
-
-				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo("bge_large_zh");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getFrequencyPenalty()).isEqualTo(-1.5);
@@ -217,7 +215,7 @@ public class QianFanPropertiesTests {
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
 				var embeddingProperties = context.getBean(QianFanEmbeddingProperties.class);
@@ -237,9 +235,9 @@ public class QianFanPropertiesTests {
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
 					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.embedding=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanEmbeddingAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(QianFanEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(QianFanEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(QianFanEmbeddingModel.class)).isEmpty();
 			});
 
@@ -247,7 +245,7 @@ public class QianFanPropertiesTests {
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
 					"spring.ai.qianfan.base-url=TEST_BASE_URL")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(QianFanEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(QianFanEmbeddingModel.class)).isNotEmpty();
@@ -257,7 +255,7 @@ public class QianFanPropertiesTests {
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
 					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.chat=qianfan")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(QianFanEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(QianFanEmbeddingModel.class)).isNotEmpty();
@@ -270,9 +268,9 @@ public class QianFanPropertiesTests {
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
 					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanChatAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(QianFanChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(QianFanChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(QianFanChatModel.class)).isEmpty();
 			});
 
@@ -280,7 +278,7 @@ public class QianFanPropertiesTests {
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
 					"spring.ai.qianfan.base-url=TEST_BASE_URL")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(QianFanChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(QianFanChatModel.class)).isNotEmpty();
@@ -290,7 +288,7 @@ public class QianFanPropertiesTests {
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
 					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.qianfan.chat.enabled=true")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+					RestClientAutoConfiguration.class, QianFanChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(QianFanChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(QianFanChatModel.class)).isNotEmpty();
@@ -310,7 +308,7 @@ public class QianFanPropertiesTests {
 				// @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+							WebClientAutoConfiguration.class, QianFanImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(QianFanImageProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
@@ -342,7 +340,7 @@ public class QianFanPropertiesTests {
 				// @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+							WebClientAutoConfiguration.class, QianFanImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(QianFanImageProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
@@ -379,7 +377,7 @@ public class QianFanPropertiesTests {
 				// @formatter:on
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+							WebClientAutoConfiguration.class, QianFanImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(QianFanImageProperties.class);
 				var connectionProperties = context.getBean(QianFanConnectionProperties.class);
@@ -405,9 +403,9 @@ public class QianFanPropertiesTests {
 					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.image=none")
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+							WebClientAutoConfiguration.class, QianFanImageAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(QianFanImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(QianFanImageProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(QianFanImageModel.class)).isEmpty();
 			});
 
@@ -416,7 +414,7 @@ public class QianFanPropertiesTests {
 					"spring.ai.qianfan.base-url=TEST_BASE_URL")
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+							WebClientAutoConfiguration.class, QianFanImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(QianFanImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(QianFanImageModel.class)).isNotEmpty();
@@ -427,7 +425,7 @@ public class QianFanPropertiesTests {
 					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.chat=qianfan")
 			.withConfiguration(
 					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, QianFanAutoConfiguration.class))
+							WebClientAutoConfiguration.class, QianFanImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(QianFanImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(QianFanImageModel.class)).isNotEmpty();

@@ -26,56 +26,59 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link OllamaAutoConfiguration}'s conditional enabling of models.
+ * Unit Tests for Ollama auto-configurations conditional enabling of models.
  *
  * @author Ilayaperumal Gopinathan
  */
 public class OllamaModelConfigurationTests {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
 
 	@Test
 	void chatModelActivation() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class)).run(context -> {
 			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(OllamaChatModel.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
 		});
 
-		this.contextRunner.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none")
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.chat=none")
 			.run(context -> {
-				assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OllamaChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OllamaChatModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withPropertyValues("spring.ai.model.chat=ollama", "spring.ai.model.embedding=none")
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.chat=ollama")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OllamaChatModel.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isEmpty();
 			});
 	}
 
 	@Test
 	void embeddingModelActivation() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OllamaEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
+			});
 
-		this.contextRunner.withPropertyValues("spring.ai.model.embedding=none").run(context -> {
-			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OllamaEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.embedding=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isEmpty();
+			});
 
-		this.contextRunner.withPropertyValues("spring.ai.model.embedding=ollama").run(context -> {
-			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OllamaEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.embedding=ollama")
+			.run(context -> {
+				assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
+			});
 	}
 
 }

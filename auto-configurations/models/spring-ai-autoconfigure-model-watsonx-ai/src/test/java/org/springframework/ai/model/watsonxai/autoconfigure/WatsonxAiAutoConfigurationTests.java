@@ -37,8 +37,8 @@ public class WatsonxAiAutoConfigurationTests {
 			"spring.ai.watsonx.ai.projectId=1",
 			"spring.ai.watsonx.ai.IAMToken=123456")
                 // @formatter:on
-			.withConfiguration(
-					AutoConfigurations.of(RestClientAutoConfiguration.class, WatsonxAiAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class,
+					WatsonxAiChatAutoConfiguration.class, WatsonxAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(WatsonxAiConnectionProperties.class);
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");

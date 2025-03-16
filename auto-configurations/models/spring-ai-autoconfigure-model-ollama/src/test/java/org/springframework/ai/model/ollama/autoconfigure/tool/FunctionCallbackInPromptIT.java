@@ -25,13 +25,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
-import org.springframework.ai.model.ollama.autoconfigure.OllamaAutoConfiguration;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
+import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -53,7 +53,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
 				// @formatter:on
-		.withConfiguration(AutoConfigurations.of(OllamaAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class));
 
 	@BeforeAll
 	public static void beforeAll() {

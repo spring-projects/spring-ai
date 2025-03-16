@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -60,7 +59,9 @@ public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 			"spring.ai.azure.openai.chat.options.maxTokens=123",
 			"spring.ai.azure.openai.embedding.options.deployment-name=" + EMBEDDING_MODEL_NAME
 			// @formatter:on
-	).withConfiguration(AutoConfigurations.of(AzureOpenAiAutoConfiguration.class));
+	)
+		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
+				AzureOpenAiEmbeddingAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
