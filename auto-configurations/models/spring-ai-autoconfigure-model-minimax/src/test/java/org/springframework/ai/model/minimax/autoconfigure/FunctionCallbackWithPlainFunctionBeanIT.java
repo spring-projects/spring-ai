@@ -55,7 +55,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.minimax.apiKey=" + System.getenv("MINIMAX_API_KEY"))
 		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, MiniMaxAutoConfiguration.class))
+				RestClientAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	// FIXME: multiple function calls may stop prematurely due to model performance

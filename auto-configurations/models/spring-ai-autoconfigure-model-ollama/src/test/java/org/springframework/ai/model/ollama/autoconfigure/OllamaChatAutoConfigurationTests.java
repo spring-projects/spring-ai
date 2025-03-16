@@ -41,7 +41,8 @@ public class OllamaChatAutoConfigurationTests {
 				"spring.ai.ollama.chat.options.topP=0.56",
 				"spring.ai.ollama.chat.options.topK=123")
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OllamaChatProperties.class);
 				var connectionProperties = context.getBean(OllamaConnectionProperties.class);

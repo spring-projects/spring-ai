@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,13 @@ import org.springframework.web.client.RestClient;
  *
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class })
 @ConditionalOnClass(StabilityAiApi.class)
+@ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.STABILITY_AI,
+		matchIfMissing = true)
 @EnableConfigurationProperties({ StabilityAiConnectionProperties.class, StabilityAiImageProperties.class })
 public class StabilityAiImageAutoConfiguration {
 
@@ -64,8 +67,6 @@ public class StabilityAiImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.STABILITY,
-			matchIfMissing = true)
 	public StabilityAiImageModel stabilityAiImageModel(StabilityAiApi stabilityAiApi,
 			StabilityAiImageProperties stabilityAiImageProperties) {
 		return new StabilityAiImageModel(stabilityAiApi, stabilityAiImageProperties.getOptions());

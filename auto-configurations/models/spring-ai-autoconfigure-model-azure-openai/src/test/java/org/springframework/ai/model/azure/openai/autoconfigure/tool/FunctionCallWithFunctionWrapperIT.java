@@ -23,12 +23,12 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiAutoConfiguration;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiChatOptions;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -49,7 +49,7 @@ public class FunctionCallWithFunctionWrapperIT {
 			"spring.ai.azure.openai.api-key=" + System.getenv("AZURE_OPENAI_API_KEY"),
 			"spring.ai.azure.openai.endpoint=" + System.getenv("AZURE_OPENAI_ENDPOINT"))
 			// @formatter:onn
-		.withConfiguration(AutoConfigurations.of(AzureOpenAiAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

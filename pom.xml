@@ -91,8 +91,6 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 
-		<module>spring-ai-spring-boot-autoconfigure</module>
-
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>

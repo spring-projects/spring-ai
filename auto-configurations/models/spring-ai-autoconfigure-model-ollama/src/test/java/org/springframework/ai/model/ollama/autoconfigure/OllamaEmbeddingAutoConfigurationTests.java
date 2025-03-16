@@ -41,7 +41,8 @@ public class OllamaEmbeddingAutoConfigurationTests {
 				"spring.ai.ollama.embedding.options.topK=13"
 				// @formatter:on
 		)
-			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OllamaEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OllamaConnectionProperties.class);

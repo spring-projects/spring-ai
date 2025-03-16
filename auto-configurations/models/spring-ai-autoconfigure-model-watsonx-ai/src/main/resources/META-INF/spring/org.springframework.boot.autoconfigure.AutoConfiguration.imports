@@ -13,4 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.watsonxai.autoconfigure.WatsonxAiAutoConfiguration
+org.springframework.ai.model.watsonxai.autoconfigure.WatsonxAiChatAutoConfiguration
+org.springframework.ai.model.watsonxai.autoconfigure.WatsonxAiEmbeddingAutoConfiguration

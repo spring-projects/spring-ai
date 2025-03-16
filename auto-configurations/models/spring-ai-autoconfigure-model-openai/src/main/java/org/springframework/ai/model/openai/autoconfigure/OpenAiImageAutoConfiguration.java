@@ -43,7 +43,7 @@ import org.springframework.web.client.RestClient;
 import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.resolveConnectionProperties;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for OpenAI.
+ * Image {@link AutoConfiguration Auto-configuration} for OpenAI.
  *
  * @author Christian Tzolov
  * @author Stefan Vassilev

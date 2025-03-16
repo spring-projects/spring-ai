@@ -26,57 +26,64 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link MistralAiAutoConfiguration}'s conditional enabling of models.
+ * Unit Tests for Mistral AI auto-configurations conditional enabling of models.
  *
  * @author Ilayaperumal Gopinathan
  */
 public class MistralModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(MistralAiAutoConfiguration.class))
 		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"));
 
 	@Test
 	void chatModelActivation() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(MistralAiChatProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(MistralAiChatModel.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isNotEmpty();
-		});
-
-		this.contextRunner.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none")
-			.run(context -> {
-				assertThat(context.getBeansOfType(MistralAiChatProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MistralAiChatModel.class)).isEmpty();
-				assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
-			});
-
-		this.contextRunner.withPropertyValues("spring.ai.model.chat=mistral", "spring.ai.model.embedding=none")
+		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MistralAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MistralAiChatModel.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
+			});
+
+		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(MistralAiChatProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(MistralAiChatModel.class)).isEmpty();
+			});
+
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
+					MistralAiEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.chat=mistral", "spring.ai.model.embedding=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(MistralAiChatProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MistralAiChatModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
 			});
 	}
 
 	@Test
 	void embeddingModelActivation() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isNotEmpty();
+			});
 
-		this.contextRunner.withPropertyValues("spring.ai.model.embedding=none").run(context -> {
-			assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.embedding=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
+			});
 
-		this.contextRunner.withPropertyValues("spring.ai.model.embedding=mistral").run(context -> {
-			assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.embedding=mistral")
+			.run(context -> {
+				assertThat(context.getBeansOfType(MistralAiEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isNotEmpty();
+			});
 	}
 
 }

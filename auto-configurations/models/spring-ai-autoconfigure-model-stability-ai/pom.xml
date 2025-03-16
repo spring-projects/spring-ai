@@ -39,14 +39,12 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-retry</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-image-observation</artifactId>
 			<version>${project.parent.version}</version>
-			<optional>true</optional>
 		</dependency>
 
 		<!-- Boot dependencies -->

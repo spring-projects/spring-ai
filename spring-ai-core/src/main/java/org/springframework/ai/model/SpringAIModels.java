@@ -46,11 +46,11 @@ public class SpringAIModels {
 
 	public static final String QIANFAN = "qianfan";
 
-	public static final String STABILITY = "stabilityai";
+	public static final String STABILITY_AI = "stabilityai";
 
 	public static final String TRANSFORMERS = "transformers";
 
-	public static final String VERTEX_AI = "vertex";
+	public static final String VERTEX_AI = "vertexai";
 
 	public static final String WATSONX_AI = "watsonx";
 

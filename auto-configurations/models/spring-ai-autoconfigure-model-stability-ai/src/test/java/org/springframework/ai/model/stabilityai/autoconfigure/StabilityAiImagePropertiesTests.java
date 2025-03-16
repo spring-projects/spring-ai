@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class StabilityAiImagePropertiesTests {
 					"spring.ai.stabilityai.image.base-url=ENDPOINT", "spring.ai.model.image=none")
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(StabilityAiImageProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(StabilityAiImageModel.class)).isEmpty();
 
 			});
