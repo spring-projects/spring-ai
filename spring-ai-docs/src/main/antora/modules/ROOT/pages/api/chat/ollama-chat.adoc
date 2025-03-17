@@ -43,7 +43,7 @@ Maven::
 ----
 <dependency>
    <groupId>org.springframework.ai</groupId>
-   <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
+   <artifactId>spring-ai-starter-model-ollama</artifactId>
 </dependency>
 ----
 
@@ -52,7 +52,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 }
 ----
 ======
@@ -379,7 +379,7 @@ For production, you should pre-download the models to avoid delays: `ollama pull
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-ollama-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-ollama` to your pom (or gradle) dependencies.
 
 Add a `application.yaml` file, under the `src/main/resources` directory, to enable and configure the Ollama chat model:
 

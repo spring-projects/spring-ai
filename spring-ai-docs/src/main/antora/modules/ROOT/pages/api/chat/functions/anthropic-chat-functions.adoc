@@ -114,7 +114,7 @@ public record Request(String location, Unit unit) {}
 
 It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/anthropic/tool/FunctionCallWithFunctionBeanIT.java[FunctionCallWithFunctionBeanIT.java] demonstrates this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-anthropic/src/test/java/org/springframework/ai/model/anthropic/autoconfigure/tool/FunctionCallWithFunctionBeanIT.java[FunctionCallWithFunctionBeanIT.java] demonstrates this approach.
 
 
 ==== FunctionCallback
@@ -191,4 +191,4 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 
 This approach allows to dynamically chose different functions to be called based on the user input.
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/anthropic/tool/FunctionCallWithPromptFunctionIT.java[FunctionCallWithPromptFunctionIT.java] integration test provides a complete example of how to register a function with the `AnthropicChatModel` and use it in a prompt request.
+The https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-anthropic/src/test/java/org/springframework/ai/model/anthropic/autoconfigure/tool/FunctionCallWithPromptFunctionIT.java[FunctionCallWithPromptFunctionIT.java] integration test provides a complete example of how to register a function with the `AnthropicChatModel` and use it in a prompt request.

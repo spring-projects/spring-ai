@@ -173,7 +173,7 @@ Here is the current weather for the requested cities:
 - Paris, France: 15.0°C
 ----
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/tool/OllamaFunctionCallbackIT.java[OllamaFunctionCallbackIT.java] test demo this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-ollama/src/test/java/org/springframework/ai/model/ollama/autoconfigure/tool/OllamaFunctionCallbackIT.java[OllamaFunctionCallbackIT.java] test demo this approach.
 
 === Register/Call Functions with Prompt Options
 
@@ -200,7 +200,7 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 
 This approach allows you to dynamically choose different functions to be called based on the user input.
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OllamaChatModel` and use it in a prompt request.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-ollama/src/test/java/org/springframework/ai/model/ollama/autoconfigure/tool/auto-configurations/models/spring-ai-autoconfigure-model-ollama/src/test/java/org/springframework/ai/model/ollama/autoconfigure/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OllamaChatModel` and use it in a prompt request.
 
 == Appendices:
 
