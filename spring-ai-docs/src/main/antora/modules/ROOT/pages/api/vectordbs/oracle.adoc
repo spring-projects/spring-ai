@@ -12,7 +12,7 @@ Start by adding the Oracle Vector Store boot starter dependency to your project:
 ----
 <dependency>
 	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai-oracle-store-spring-boot-starter</artifactId>
+	<artifactId>spring-ai-starter-vector-store-oracle</artifactId>
 </dependency>
 ----
 
@@ -21,7 +21,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-oracle-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-oracle'
 }
 ----
 

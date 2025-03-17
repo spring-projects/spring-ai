@@ -22,7 +22,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-opensearch-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
 </dependency>
 ----
 
@@ -31,7 +31,7 @@ or to your Gradle `build.gradle` build file:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-opensearch-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
 }
 ----
 
@@ -43,7 +43,7 @@ For Amazon OpenSearch Service, use these dependencies instead:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-aws-opensearch-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
 </dependency>
 ----
 
@@ -52,7 +52,7 @@ or for Gradle:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-aws-opensearch-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
 }
 ----
 
