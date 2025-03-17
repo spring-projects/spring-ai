@@ -16,27 +16,25 @@
 
 package org.springframework.ai.autoconfigure.mcp.client;
 
-import java.net.http.HttpClient;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
-
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties.SseParameters;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+
+import java.net.http.HttpClient;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Auto-configuration for Server-Sent Events (SSE) HTTP client transport in the Model
@@ -59,6 +57,10 @@ import org.springframework.context.annotation.Bean;
  * <li>Supports multiple named server connections with different URLs
  * </ul>
  *
+ * @author Christian Tzolov
+ * @author qjc
+ * @description Added SSE transport mode configuration to control HTTP Client implementation
+ * @Email qjc1024@aliyun.com
  * @see HttpClientSseClientTransport
  * @see McpSseClientProperties
  */
@@ -66,8 +68,11 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass({ McpSchema.class, McpSyncClient.class })
 @ConditionalOnMissingClass("io.modelcontextprotocol.client.transport.WebFluxSseClientTransport")
 @EnableConfigurationProperties({ McpSseClientProperties.class, McpClientCommonProperties.class })
-@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(
+	prefix = McpSseClientProperties.CONFIG_PREFIX,
+	name = "transport-mode",
+	havingValue = "HTTP_CLIENT"
+)
 public class SseHttpClientTransportAutoConfiguration {
 
 	/**

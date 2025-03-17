@@ -15,10 +15,10 @@
 */
 package org.springframework.ai.autoconfigure.mcp.client.properties;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for Server-Sent Events (SSE) based MCP client connections.
@@ -38,6 +38,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * </pre>
  *
  * @author Christian Tzolov
+ * @author qjc
  * @since 1.0.0
  * @see SseParameters
  */
@@ -63,11 +64,43 @@ public class McpSseClientProperties {
 	private final Map<String, SseParameters> connections = new HashMap<>();
 
 	/**
+	 * The transport mode for SSE connections. Defaults to WEBFLUX.
+	 */
+	private SseTransportMode transportMode = SseTransportMode.WEBFLUX;
+
+	/**
+	 * SSE transport mode for MCP client.
+	 * 
+	 * @author qjc
+	 * @description Controls which transport implementation to use for SSE connections
+	 * @Email qjc1024@aliyun.com
+	 */
+	public enum SseTransportMode {
+		/**
+		 * Use WebFlux for SSE transport (default).
+		 */
+		WEBFLUX,
+		
+		/**
+		 * Use HTTP Client for SSE transport.
+		 */
+		HTTP_CLIENT
+	}
+
+	/**
 	 * Returns the map of configured SSE connections.
 	 * @return map of connection names to their SSE parameters
 	 */
 	public Map<String, SseParameters> getConnections() {
 		return this.connections;
+	}
+
+	public SseTransportMode getTransportMode() {
+		return transportMode;
+	}
+
+	public void setTransportMode(SseTransportMode transportMode) {
+		this.transportMode = transportMode;
 	}
 
 }

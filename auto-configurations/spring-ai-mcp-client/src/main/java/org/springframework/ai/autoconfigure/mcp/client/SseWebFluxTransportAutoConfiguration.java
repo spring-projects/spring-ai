@@ -16,13 +16,8 @@
 
 package org.springframework.ai.autoconfigure.mcp.client;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
-
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpClientCommonProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties;
 import org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties.SseParameters;
@@ -33,6 +28,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Auto-configuration for WebFlux-based Server-Sent Events (SSE) client transport in the
@@ -52,14 +51,22 @@ import org.springframework.web.reactive.function.client.WebClient;
  * <li>Supports multiple named server connections with different base URLs
  * </ul>
  *
+ * @author Christian Tzolov
+ * @author qjc
+ * @description Added SSE transport mode configuration to control WebFlux vs HTTP Client implementation
+ * @Email qjc1024@aliyun.com
  * @see WebFluxSseClientTransport
  * @see McpSseClientProperties
  */
 @AutoConfiguration
 @ConditionalOnClass(WebFluxSseClientTransport.class)
 @EnableConfigurationProperties({ McpSseClientProperties.class, McpClientCommonProperties.class })
-@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(
+	prefix = McpSseClientProperties.CONFIG_PREFIX,
+	name = "transport-mode",
+	havingValue = "WEBFLUX",
+	matchIfMissing = true  // 默认使用 WebFlux
+)
 public class SseWebFluxTransportAutoConfiguration {
 
 	/**
