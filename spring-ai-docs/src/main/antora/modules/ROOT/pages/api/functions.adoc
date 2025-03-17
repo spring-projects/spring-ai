@@ -273,7 +273,7 @@ Here is the current weather for the requested cities:
 - Paris, France: 15.0°C
 ----
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] test demo this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-openai/src/test/java/org/springframework/ai/model/openai/autoconfigure/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] test demo this approach.
 
 == Client-Side Registration
 
@@ -302,7 +302,7 @@ NOTE: The on the fly functions are enabled by default for the duration of this r
 
 This approach allows to choose dynamically different functions to be called based on the user input.
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `ChatClient` and use it in a prompt request.
+The https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-openai/src/test/java/org/springframework/ai/model/openai/autoconfigure/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `ChatClient` and use it in a prompt request.
 
 === Method Invoking
 

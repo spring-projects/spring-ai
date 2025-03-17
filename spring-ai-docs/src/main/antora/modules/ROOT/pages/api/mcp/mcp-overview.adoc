@@ -76,13 +76,13 @@ For simplified setup using Spring Boot, use the MCP Boot Starters described belo
 Spring AI provides MCP integration through the following Spring Boot starters:
 
 === link:mcp-client-boot-starter-docs.html[Client Starters]
-* `spring-ai-mcp-client-spring-boot-starter` - Core starter providing STDIO and HTTP-based SSE support
-* `spring-ai-mcp-client-webflux-spring-boot-starter` - WebFlux-based SSE transport implementation
+* `spring-ai-starter-mcp-client` - Core starter providing STDIO and HTTP-based SSE support
+* `spring-ai-starter-mcp-client-webflux` - WebFlux-based SSE transport implementation
 
 === link:mcp-server-boot-starter-docs.html[Server Starters]
-* `spring-ai-mcp-server-spring-boot-starter` - Core server with STDIO transport support
-* `spring-ai-mcp-server-webmvc-spring-boot-starter` - Spring MVC-based SSE transport implementation
-* `spring-ai-mcp-server-webflux-spring-boot-starter` - WebFlux-based SSE transport implementation
+* `spring-ai-starter-mcp-server` - Core server with STDIO transport support
+* `spring-ai-starter-mcp-server-webmvc` - Spring MVC-based SSE transport implementation
+* `spring-ai-starter-mcp-server-webflux` - WebFlux-based SSE transport implementation
 
 == Additional Resources
 

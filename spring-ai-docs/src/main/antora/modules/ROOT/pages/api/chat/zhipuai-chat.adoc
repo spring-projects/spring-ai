@@ -33,7 +33,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-zhipuai</artifactId>
 </dependency>
 ----
 
@@ -42,7 +42,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-zhipuai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-zhipuai'
 }
 ----
 
@@ -132,7 +132,7 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-zhipuai-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-zhipuai` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the ZhiPuAi chat model:
 
