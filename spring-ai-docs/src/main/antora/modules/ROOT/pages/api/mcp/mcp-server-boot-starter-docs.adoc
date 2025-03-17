@@ -22,7 +22,7 @@ Full MCP Server features support with `STDIO` server transport.
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-server</artifactId>
 </dependency>
 ----
 
@@ -44,7 +44,7 @@ Full MCP Server features support with `SSE` (Server-Sent Events) server transpor
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mcp-server-webmvc-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
 </dependency>
 ----
 
@@ -63,7 +63,7 @@ Full MCP Server features support with `SSE` (Server-Sent Events) server transpor
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mcp-server-webflux-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
 </dependency>
 ----
 
@@ -108,9 +108,9 @@ This server type automatically sets up asynchronous tool registrations with buil
 
 The MCP Server supports three transport mechanisms, each with its dedicated starter:
 
-* Standard Input/Output (STDIO) - `spring-ai-mcp-server-spring-boot-starter`
-* Spring MVC (Server-Sent Events) - `spring-ai-mcp-server-webmvc-spring-boot-starter`
-* Spring WebFlux (Reactive SSE) - `spring-ai-mcp-server-webflux-spring-boot-starter`
+* Standard Input/Output (STDIO) - `spring-ai-starter-mcp-server`
+* Spring MVC (Server-Sent Events) - `spring-ai-starter-mcp-server-webmvc`
+* Spring WebFlux (Reactive SSE) - `spring-ai-starter-mcp-server-webflux`
 
 == Features and Capabilities
 
@@ -225,7 +225,7 @@ public Consumer<List<McpSchema.Root>> rootsChangeConsumer() {
 === Standard STDIO Server Configuration
 [source,yaml]
 ----
-# Using spring-ai-mcp-server-spring-boot-starter
+# Using spring-ai-starter-mcp-server
 spring:
   ai:
     mcp:
@@ -238,7 +238,7 @@ spring:
 === WebMVC Server Configuration
 [source,yaml]
 ----
-# Using spring-ai-mcp-server-webmvc-spring-boot-starter
+# Using spring-ai-starter-mcp-server-webmvc
 spring:
   ai:
     mcp:
@@ -252,7 +252,7 @@ spring:
 === WebFlux Server Configuration
 [source,yaml]
 ----
-# Using spring-ai-mcp-server-webflux-spring-boot-starter
+# Using spring-ai-starter-mcp-server-webflux
 spring:
   ai:
     mcp:

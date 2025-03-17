@@ -45,7 +45,7 @@ Maven::
 ----
 <dependency>
    <groupId>org.springframework.ai</groupId>
-   <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
+   <artifactId>spring-ai-starter-model-ollama</artifactId>
 </dependency>
 ----
 
@@ -54,7 +54,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 }
 ----
 ======

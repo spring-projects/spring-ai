@@ -95,7 +95,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-azure-openai</artifactId>
 </dependency>
 ----
 
@@ -104,14 +104,14 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
+    implementation 'spring-ai-starter-model-azure-openai'
 }
 ----
 ======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-The Azure OpenAI Chat Client is created using the link:https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/src/main/java/com/azure/ai/openai/OpenAIClientBuilder.java[OpenAIClientBuilder] provided by the Azure SDK. Spring AI allows to customize the builder by providing link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/main/java/org/springframework/ai/autoconfigure/azure/openai/AzureOpenAIClientBuilderCustomizer.java[AzureOpenAIClientBuilderCustomizer] beans.
+The Azure OpenAI Chat Client is created using the link:https://github.com/Azure/azure-sdk-for-java/blob/main/sdk/openai/azure-ai-openai/src/main/java/com/azure/ai/openai/OpenAIClientBuilder.java[OpenAIClientBuilder] provided by the Azure SDK. Spring AI allows to customize the builder by providing link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-azure-openai/src/main/java/org/springframework/ai/model/azure/openai/autoconfigure/AzureOpenAIClientBuilderCustomizer.java[AzureOpenAIClientBuilderCustomizer] beans.
 
 A customizer might be used for example to change the default response timeout:
 
@@ -262,7 +262,7 @@ String response = ChatClient.create(chatModel).prompt()
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-azure-openai-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-azure-openai` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi chat model:
 

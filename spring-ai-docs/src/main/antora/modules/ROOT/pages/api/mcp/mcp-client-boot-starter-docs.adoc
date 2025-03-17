@@ -19,7 +19,7 @@ The MCP Client Boot Starter provides:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-client</artifactId>
 </dependency>
 ----
 
@@ -27,7 +27,7 @@ The standard starter connects simultaneously to one or more MCP servers over `ST
 The SSE connection uses the HttpClient-based transport implementation.
 Each connection to an MCP server creates a new MCP client instance.
 You can choose either `SYNC` or `ASYNC` MCP clients (note: you cannot mix sync and async clients).
-For production deployment, we recommend using the WebFlux-based SSE connection with the `spring-ai-mcp-client-webflux-spring-boot-starter`.
+For production deployment, we recommend using the WebFlux-based SSE connection with the `spring-ai-starter-mcp-client-webflux`.
 
 === WebFlux Client
 
@@ -37,7 +37,7 @@ The WebFlux starter provides similar functionality to the standard starter but u
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mcp-client-webflux-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
 </dependency>
 ----
 
@@ -296,8 +296,8 @@ The MCP client auto-configuration automatically detects and applies any customiz
 
 The auto-configuration supports multiple transport types:
 
-* Standard I/O (Stdio) (activated by the `spring-ai-mcp-client-spring-boot-starter`)
-* SSE HTTP (activated by the `spring-ai-mcp-client-spring-boot-starter`)
+* Standard I/O (Stdio) (activated by the `spring-ai-starter-mcp-client`)
+* SSE HTTP (activated by the `spring-ai-starter-mcp-client`)
 * SSE WebFlux (activated by the `spring-ai-starter-mcp-client-webflux`)
 
 === Integration with Spring AI
@@ -364,8 +364,8 @@ ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
 == Example Applications
 
 - link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/web-search/brave-chatbot[Brave Wet Search Chatbot] - A chatbot that uses the Model Context Protocol to interact with a web search server.
-- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Default MCP Client Starter] - A simple example of using the the default `spring-ai-mcp-client-spring-boot-starter` MCP Client Boot Starter.
-- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-webflux-client[WebFlux MCP Client Starter] - A simple example of using the `spring-ai-mcp-client-webflux-spring-boot-starter` the MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Default MCP Client Starter] - A simple example of using the the default `spring-ai-starter-mcp-client` MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-webflux-client[WebFlux MCP Client Starter] - A simple example of using the `spring-ai-starter-mcp-client-webflux` the MCP Client Boot Starter.
 
 == Additional Resources
 

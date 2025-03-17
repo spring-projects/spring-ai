@@ -18,13 +18,13 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
-Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's Maven `pom.xml` file:
+Add the `spring-ai-starter-model-bedrock` dependency to your project's Maven `pom.xml` file:
 
 [source,xml]
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+  <artifactId>spring-ai-starter-model-bedrock</artifactId>
 </dependency>
 ----
 
@@ -33,7 +33,7 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-bedrock'
 }
 ----
 
@@ -102,7 +102,7 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-bedrock` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Cohere Embedding model:
 

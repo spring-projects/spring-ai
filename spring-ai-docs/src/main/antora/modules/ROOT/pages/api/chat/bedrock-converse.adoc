@@ -32,7 +32,7 @@ Refer to https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.ht
 
 == Auto-configuration
 
-Add the `spring-ai-bedrock-converse-spring-boot-starter` dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+Add the `spring-ai-starter-model-bedrock-converse` dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
 [tabs]
 ======
@@ -42,7 +42,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-bedrock-converse-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-bedrock-converse</artifactId>
 </dependency>
 ----
 
@@ -51,7 +51,7 @@ Gradle::
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-converse-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-bedrock-converse'
 }
 ----
 ======
@@ -274,7 +274,7 @@ along with the text message "You are a very professional document summarization 
 
 == Sample Controller
 
-Create a new Spring Boot project and add the `spring-ai-bedrock-converse-spring-boot-starter` to your dependencies.
+Create a new Spring Boot project and add the `spring-ai-starter-model-bedrock-converse` to your dependencies.
 
 Add an `application.properties` file under `src/main/resources`:
 
