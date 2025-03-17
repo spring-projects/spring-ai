@@ -26,7 +26,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-elasticsearch-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
 </dependency>
 ----
 
@@ -35,7 +35,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-elasticsearch-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-elasticsearch'
 }
 ----
 ======

@@ -278,7 +278,7 @@ Renamed POM artifact names:
 - spring-ai-qdrant -> spring-ai-qdrant-store
 - spring-ai-gemfire -> spring-ai-gemfire-store
 - spring-ai-azure-vector-store-spring-boot-starter -> spring-ai-azure-store-spring-boot-starter
-- spring-ai-redis-spring-boot-starter -> spring-ai-redis-store-spring-boot-starter
+- spring-ai-redis-spring-boot-starter -> spring-ai-starter-vector-store-redis
 
 == Upgrading to 0.8.1
 

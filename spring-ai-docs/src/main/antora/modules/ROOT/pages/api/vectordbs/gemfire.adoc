@@ -22,7 +22,7 @@ Add the GemFire VectorStore Spring Boot starter to you project's Maven build fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-gemfire-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-gemfire</artifactId>
 </dependency>
 ----
 
@@ -31,7 +31,7 @@ or to your Gradle `build.gradle` file
 [source, xml]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-gemfire-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-gemfire'
 }
 ----
 
