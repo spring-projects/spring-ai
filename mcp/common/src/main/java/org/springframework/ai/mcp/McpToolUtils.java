@@ -17,6 +17,7 @@ package org.springframework.ai.mcp;
 
 import java.util.List;
 
+import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -58,11 +59,11 @@ public final class McpToolUtils {
 
 	public static String prefixedToolName(String prefix, String toolName) {
 
-		String input = prefix + "-" + toolName;
-
-		if (input == null || input.isEmpty()) {
-			throw new IllegalArgumentException("Input string cannot be null or empty");
+		if (StringUtils.isEmpty(prefix) || StringUtils.isEmpty(toolName)) {
+			throw new IllegalArgumentException("Prefix or toolName cannot be null or empty");
 		}
+
+		String input = prefix + "-" + toolName;
 
 		// Replace any character that isn't alphanumeric, underscore, or hyphen with
 		// concatenation
