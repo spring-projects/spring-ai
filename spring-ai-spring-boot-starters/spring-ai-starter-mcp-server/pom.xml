@@ -23,7 +23,7 @@
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-server</artifactId>
     <packaging>jar</packaging>
     <name>Spring AI Starter - MCP Server</name>
     <description>Spring AI MCP Server Spring Boot Starter</description>
@@ -44,7 +44,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-mcp-server-spring-boot-autoconfigure</artifactId>
+            <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
