@@ -196,7 +196,7 @@ public class OpenAiChatModel implements ChatModel {
 					return new ChatResponse(List.of());
 				}
 
-				// @formatter:off
+			// @formatter:off
 				List<Generation> generations = choices.stream().map(choice -> {
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
