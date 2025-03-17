@@ -196,26 +196,26 @@ public class OpenAiChatModel implements ChatModel {
 					return new ChatResponse(List.of());
 				}
 
-				List<Generation> generations = choices.stream().map(choice -> {
 			// @formatter:off
+				List<Generation> generations = choices.stream().map(choice -> {
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
 							"index", choice.index(),
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
-					// @formatter:on
 					return buildGeneration(choice, metadata, request);
 				}).toList();
+				// @formatter:on
 
 				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
 				// Current usage
-				OpenAiApi.Usage usage = completionEntity.getBody().usage();
+				OpenAiApi.Usage usage = chatCompletion.usage();
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
-						from(completionEntity.getBody(), rateLimit, accumulatedUsage));
+						from(chatCompletion, rateLimit, accumulatedUsage));
 
 				observationContext.setResponse(chatResponse);
 
