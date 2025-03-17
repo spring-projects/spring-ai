@@ -42,11 +42,15 @@
     <dependencyManagement>
         <dependencies>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<!-- Spring AI retry -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-retry</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI core -->
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -54,38 +58,56 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-retry</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<!-- Spring AI MCP -->
 
-            <!-- Document Readers -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mcp</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Document Readers -->
+
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-jsoup-document-reader</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-markdown-document-reader</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-markdown-document-reader</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-pdf-document-reader</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-pdf-document-reader</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-tika-document-reader</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-tika-document-reader</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <!-- Models -->
+			<!-- Spring AI Spring Cloud Bindings -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-spring-cloud-bindings</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+            <!-- Spring AI Models -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-anthropic</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-azure-openai</artifactId>
@@ -109,6 +131,24 @@
                 <artifactId>spring-ai-huggingface</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-minimax</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mistral-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-moonshot</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -134,6 +174,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-qianfan</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-stability-ai</artifactId>
@@ -158,48 +204,31 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mistral-ai</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-anthropic</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-minimax</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-moonshot</artifactId>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-watsonx-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-qianfan</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+				<artifactId>spring-ai-zhipuai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <!-- Vector Databases -->
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-azure-store</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+            <!-- Spring AI Vector Stores -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-azure-cosmos-db-store</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-azure-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -219,17 +248,53 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-elasticsearch-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-gemfire-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-hanadb-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mariadb-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-milvus-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mongodb-atlas-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-neo4j-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-opensearch-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -245,15 +310,15 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-hanadb-store</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-pinecone-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-qdrant-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -261,60 +326,23 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-typesense-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-weaviate-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-qdrant-store</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                 <artifactId>spring-ai-mongodb-atlas-store</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-elasticsearch-store</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-gemfire-store</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-opensearch-store</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-couchbase-store</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-mariadb-store</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-            <!-- Utilities -->
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-test</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
 			<!-- TODO: To be removed in 1-0-0.M7 once individual autoconfigure modules are updated -->
             <dependency>
@@ -328,11 +356,11 @@
 			<!-- Spring AI Retry autoconfiguration-->
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-retry-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-retry</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI Chat autoconfiguration -->
+			<!-- Spring AI Chat client autoconfiguration -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -340,115 +368,147 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-chat-model-spring-boot-autoconfigure</artifactId>
-				<version>${project.version}</version>
-			</dependency>
+			<!-- Spring AI Chat memory autoconfiguration -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-chat-memory-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-chat-memory</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI MCP autoconfiguration -->
+			<!-- Spring AI Chat model observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-chat-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Embedding model observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-embedding-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Image model observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-image-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+
+			<!-- Spring AI MCP client autoconfiguration -->
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp-client-spring-boot-autoconfigure</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
+			<!-- Spring AI MCP server autoconfiguration -->
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp-server-spring-boot-autoconfigure</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+			<!-- Spring AI model tool autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-tool</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 
 			<!-- Spring AI Model autoconfiguration -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-anthroic-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-anthropic</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-azure-openai-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-azure-openai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-bedrock-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-bedrock-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-huggingface-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-huggingface</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-minimax-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-minimax</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-mistral-ai-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-mistral-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-moonshot-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-moonshot</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-oci-genai-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-oci-genai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-ollama-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-ollama</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-openai-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-openai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-postgresml-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-postgresml-embedding</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-qianfan-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-qianfan</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-stability-ai-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-stability-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-transformers-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-transformers</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -460,253 +520,313 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-watsonx-ai-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-watsonx-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-zhipuai-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-zhipuai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI Observation autoconfiguration -->
+			<!-- Spring AI Spring Boot starters for the vector stores -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-chat-observation-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-starter-vector-store-aws-opensearch</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-embedding-observation-spring-boot-autoconfigure</artifactId>
+				<artifactId>spring-ai-starter-vector-store-azure</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-
-
-            <!-- Spring Boot Starters -->
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-azure-cosmos-db-store-spring-boot-starter</artifactId>
+				<artifactId>spring-ai-starter-vector-store-azure-cosmos-db</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-azure-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-bedrock-converse-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-chroma-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-huggingface-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-milvus-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-neo4j-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-oci-genai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-aws-opensearch-store-spring-boot-starter</artifactId>
+				<artifactId>spring-ai-autoconfigure-vector-store-azure</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-opensearch-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-cassandra</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-chroma</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-oracle-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-azure-cosmos-db</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-gemfire</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-hanadb</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-mariadb</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-milvus</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-mongodb-atlas</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-neo4j</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-oracle</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-pinecone</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-qdrant</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-redis</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-typesense</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-weaviate</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- TBD: Replace this with the refactored starter -->
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-coherence-store-spring-boot-starter</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-watsonx-ai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
+			<!-- Spring AI Spring Boot starters for the Models -->
+
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-zhipuai</artifactId>
+                <artifactId>spring-ai-starter-model-anthropic</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-typesense-store</artifactId>
+                <artifactId>spring-ai-starter-model-azure-openai</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-pinecone-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-postgresml-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-redis-store-spring-boot-starter</artifactId>
+                <artifactId>spring-ai-starter-model-bedrock</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-mariadb-store-spring-boot-starter</artifactId>
+				<artifactId>spring-ai-starter-model-bedrock-converse</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-stability-ai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-huggingface</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-minimax</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-mistral-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-moonshot</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-oci-genai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-ollama</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-openai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-postgresml-embedding</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-qianfan</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-stability-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-transformers</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-vertex-ai-embedding</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-vertex-ai-gemini</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-watsonx-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-zhipuai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Starters for MCP -->
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-transformers-spring-boot-starter</artifactId>
+                <artifactId>spring-ai-starter-mcp-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-vertex-ai-embedding-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-vertex-ai-gemini-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-weaviate-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mistral-ai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-qdrant-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<!-- Utilities -->
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mongodb-atlas-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-typesense-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -714,92 +834,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-spring-boot-testcontainers</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-spring-cloud-bindings</artifactId>
+				<artifactId>spring-ai-spring-boot-testcontainers</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-elasticsearch-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-minimax-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-gemfire-store-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-moonshot-spring-boot-starter</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-qianfan-spring-boot-starter</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-couchbase-store-spring-boot-starter</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp-client-webflux-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp-server-webflux-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-mcp-server-webmvc-spring-boot-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
 
         </dependencies>
+		
     </dependencyManagement>
 
     <build>
