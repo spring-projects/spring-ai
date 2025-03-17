@@ -17,7 +17,6 @@
 package org.springframework.ai.vectorstore.observation;
 
 import java.util.List;
-import java.util.Optional;
 
 import io.micrometer.observation.ObservationRegistry;
 

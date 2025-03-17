@@ -16,8 +16,6 @@
 
 package org.springframework.ai.autoconfigure.postgresml;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
