@@ -9,7 +9,7 @@ To use the MCP server functionality, add the following dependency to your projec
 ```xml
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mcp-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-server</artifactId>
     <version>${spring-ai.version}</version>
 </dependency>
 ```
