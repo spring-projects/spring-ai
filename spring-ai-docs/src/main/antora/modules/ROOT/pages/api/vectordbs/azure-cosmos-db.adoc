@@ -93,7 +93,7 @@ Add the following dependency to your Maven project:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-azure-cosmos-db-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-azure-cosmos-db</artifactId>
 </dependency>
 ----
 

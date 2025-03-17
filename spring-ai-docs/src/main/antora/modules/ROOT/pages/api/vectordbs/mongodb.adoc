@@ -27,7 +27,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mongodb-atlas-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-mongodb-atlas</artifactId>
 </dependency>
 ----
 
@@ -36,7 +36,7 @@ or to your Gradle `build.gradle` build file:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-mongodb-atlas-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-mongodb-atlas'
 }
 ----
 

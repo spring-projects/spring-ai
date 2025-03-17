@@ -15,7 +15,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-hana</artifactId>
 </dependency>
 ----
 
@@ -24,7 +24,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-hanadb-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-hana'
 }
 ----
 
@@ -104,7 +104,7 @@ You may set the property `spring-ai-version` as `<spring-ai-version>1.0.0-SNAPSH
 
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-hana</artifactId>
 </dependency>
 
 <dependency>

@@ -72,7 +72,7 @@ Add these dependencies to your project:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-cassandra</artifactId>
 </dependency>
 ----
 
