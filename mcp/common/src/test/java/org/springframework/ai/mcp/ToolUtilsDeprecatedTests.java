@@ -21,10 +21,8 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncToolRegistration;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.junit.jupiter.api.Test;
@@ -34,12 +32,16 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class ToolUtilsTests {
+/**
+ * @deprecated used to test backward compatbility. Replaced by the {@link ToolUtilsTests}
+ * instead
+ */
+@Deprecated
+class ToolUtilsDeprecatedTests {
 
 	@Test
 	void constructorShouldBePrivate() throws Exception {
@@ -50,94 +52,103 @@ class ToolUtilsTests {
 	}
 
 	@Test
-	void toSyncToolSpecificaitonShouldConvertSingleCallback() {
-
+	void toSyncToolRegistrationShouldConvertSingleCallback() {
+		// Arrange
 		ToolCallback callback = createMockToolCallback("test", "success");
 
-		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+		// Act
+		SyncToolRegistration registration = McpToolUtils.toSyncToolRegistration(callback);
 
-		assertThat(toolSpecification).isNotNull();
-		assertThat(toolSpecification.tool().name()).isEqualTo("test");
+		// Assert
+		assertThat(registration).isNotNull();
+		assertThat(registration.tool().name()).isEqualTo("test");
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = registration.call().apply(Map.of());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
 	}
 
 	@Test
-	void toSyncToolSpecificationShouldHandleError() {
+	void toSyncToolRegistrationShouldHandleError() {
+		// Arrange
 		ToolCallback callback = createMockToolCallback("test", new RuntimeException("error"));
 
-		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+		// Act
+		SyncToolRegistration registration = McpToolUtils.toSyncToolRegistration(callback);
 
-		assertThat(toolSpecification).isNotNull();
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		// Assert
+		assertThat(registration).isNotNull();
+		CallToolResult result = registration.call().apply(Map.of());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();
 	}
 
 	@Test
-	void toSyncToolSpecificationShouldConvertMultipleCallbacks() {
-		ToolCallback callback1 = createMockToolCallback("test1", "success1");
-		ToolCallback callback2 = createMockToolCallback("test2", "success2");
-
-		List<SyncToolSpecification> toolSpecification = McpToolUtils.toSyncToolSpecifications(callback1, callback2);
-
-		assertThat(toolSpecification).hasSize(2);
-		assertThat(toolSpecification.get(0).tool().name()).isEqualTo("test1");
-		assertThat(toolSpecification.get(1).tool().name()).isEqualTo("test2");
-	}
-
-	@Test
-	void toAsyncToolSpecificaitonShouldConvertSingleCallback() {
-		ToolCallback callback = createMockToolCallback("test", "success");
-
-		AsyncToolSpecification toolSpecification = McpToolUtils.toAsyncToolSpecification(callback);
-
-		// Assert
-		assertThat(toolSpecification).isNotNull();
-		assertThat(toolSpecification.tool().name()).isEqualTo("test");
-
-		StepVerifier.create(toolSpecification.call().apply(mock(McpAsyncServerExchange.class), Map.of()))
-			.assertNext(result -> {
-				TextContent content = (TextContent) result.content().get(0);
-				assertThat(content.text()).isEqualTo("success");
-				assertThat(result.isError()).isFalse();
-			})
-			.verifyComplete();
-	}
-
-	@Test
-	void toAsyncToolSpecificationShouldHandleError() {
-		ToolCallback callback = createMockToolCallback("test", new RuntimeException("error"));
-
-		AsyncToolSpecification toolSpecificaiton = McpToolUtils.toAsyncToolSpecification(callback);
-
-		assertThat(toolSpecificaiton).isNotNull();
-		StepVerifier.create(toolSpecificaiton.call().apply(mock(McpAsyncServerExchange.class), Map.of()))
-			.assertNext(result -> {
-				TextContent content = (TextContent) result.content().get(0);
-				assertThat(content.text()).isEqualTo("error");
-				assertThat(result.isError()).isTrue();
-			})
-			.verifyComplete();
-	}
-
-	@Test
-	void toAsyncToolSpecificationShouldConvertMultipleCallbacks() {
+	void toSyncToolRegistrationShouldConvertMultipleCallbacks() {
 		// Arrange
 		ToolCallback callback1 = createMockToolCallback("test1", "success1");
 		ToolCallback callback2 = createMockToolCallback("test2", "success2");
 
 		// Act
-		List<AsyncToolSpecification> toolSpecifications = McpToolUtils.toAsyncToolSpecifications(callback1, callback2);
+		List<SyncToolRegistration> registrations = McpToolUtils.toSyncToolRegistrations(callback1, callback2);
 
 		// Assert
-		assertThat(toolSpecifications).hasSize(2);
-		assertThat(toolSpecifications.get(0).tool().name()).isEqualTo("test1");
-		assertThat(toolSpecifications.get(1).tool().name()).isEqualTo("test2");
+		assertThat(registrations).hasSize(2);
+		assertThat(registrations.get(0).tool().name()).isEqualTo("test1");
+		assertThat(registrations.get(1).tool().name()).isEqualTo("test2");
+	}
+
+	@Test
+	void toAsyncToolRegistrationShouldConvertSingleCallback() {
+		// Arrange
+		ToolCallback callback = createMockToolCallback("test", "success");
+
+		// Act
+		AsyncToolRegistration registration = McpToolUtils.toAsyncToolRegistration(callback);
+
+		// Assert
+		assertThat(registration).isNotNull();
+		assertThat(registration.tool().name()).isEqualTo("test");
+
+		StepVerifier.create(registration.call().apply(Map.of())).assertNext(result -> {
+			TextContent content = (TextContent) result.content().get(0);
+			assertThat(content.text()).isEqualTo("success");
+			assertThat(result.isError()).isFalse();
+		}).verifyComplete();
+	}
+
+	@Test
+	void toAsyncToolRegistrationShouldHandleError() {
+		// Arrange
+		ToolCallback callback = createMockToolCallback("test", new RuntimeException("error"));
+
+		// Act
+		AsyncToolRegistration registration = McpToolUtils.toAsyncToolRegistration(callback);
+
+		// Assert
+		assertThat(registration).isNotNull();
+		StepVerifier.create(registration.call().apply(Map.of())).assertNext(result -> {
+			TextContent content = (TextContent) result.content().get(0);
+			assertThat(content.text()).isEqualTo("error");
+			assertThat(result.isError()).isTrue();
+		}).verifyComplete();
+	}
+
+	@Test
+	void toAsyncToolRegistrationShouldConvertMultipleCallbacks() {
+		// Arrange
+		ToolCallback callback1 = createMockToolCallback("test1", "success1");
+		ToolCallback callback2 = createMockToolCallback("test2", "success2");
+
+		// Act
+		List<AsyncToolRegistration> registrations = McpToolUtils.toAsyncToolRegistration(callback1, callback2);
+
+		// Assert
+		assertThat(registrations).hasSize(2);
+		assertThat(registrations.get(0).tool().name()).isEqualTo("test1");
+		assertThat(registrations.get(1).tool().name()).isEqualTo("test2");
 	}
 
 	private ToolCallback createMockToolCallback(String name, String result) {
@@ -148,7 +159,7 @@ class ToolUtilsTests {
 			.inputSchema("{}")
 			.build();
 		when(callback.getToolDefinition()).thenReturn(definition);
-		when(callback.call(anyString(), any())).thenReturn(result);
+		when(callback.call(anyString())).thenReturn(result);
 		return callback;
 	}
 
@@ -160,7 +171,7 @@ class ToolUtilsTests {
 			.inputSchema("{}")
 			.build();
 		when(callback.getToolDefinition()).thenReturn(definition);
-		when(callback.call(anyString(), any())).thenThrow(error);
+		when(callback.call(anyString())).thenThrow(error);
 		return callback;
 	}
 

@@ -18,6 +18,9 @@ package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransport;
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import io.modelcontextprotocol.spec.McpServerTransport;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import io.modelcontextprotocol.spec.ServerMcpTransport;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -34,8 +37,8 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * server, providing reactive Server-Sent Events (SSE) communication through Spring
  * WebFlux. It is activated when:
  * <ul>
- * <li>The WebFluxSseServerTransport class is on the classpath (from mcp-spring-webflux
- * dependency)</li>
+ * <li>The WebFluxSseServerTransportProvider class is on the classpath (from
+ * mcp-spring-webflux dependency)</li>
  * <li>Spring WebFlux's RouterFunction class is available (from
  * spring-boot-starter-webflux)</li>
  * <li>The {@code spring.ai.mcp.server.transport} property is set to {@code WEBFLUX}</li>
@@ -43,7 +46,8 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * <p>
  * The configuration provides:
  * <ul>
- * <li>A WebFluxSseServerTransport bean for handling reactive SSE communication</li>
+ * <li>A WebFluxSseServerTransportProvider bean for handling reactive SSE
+ * communication</li>
  * <li>A RouterFunction bean that sets up the reactive SSE endpoint</li>
  * </ul>
  * <p>
@@ -61,25 +65,25 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * @author Christian Tzolov
  * @since 1.0.0
  * @see McpServerProperties
- * @see WebFluxSseServerTransport
+ * @see WebFluxSseServerTransportProvider
  */
 @AutoConfiguration
-@ConditionalOnClass({ WebFluxSseServerTransport.class })
-@ConditionalOnMissingBean(ServerMcpTransport.class)
+@ConditionalOnClass({ WebFluxSseServerTransportProvider.class })
+@ConditionalOnMissingBean(McpServerTransportProvider.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "stdio", havingValue = "false",
 		matchIfMissing = true)
 public class McpWebFluxServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebFluxSseServerTransport webFluxTransport(McpServerProperties serverProperties) {
-		return new WebFluxSseServerTransport(new ObjectMapper(), serverProperties.getSseMessageEndpoint());
+	public WebFluxSseServerTransportProvider webFluxTransport(McpServerProperties serverProperties) {
+		return new WebFluxSseServerTransportProvider(new ObjectMapper(), serverProperties.getSseMessageEndpoint());
 	}
 
 	// Router function for SSE transport used by Spring WebFlux to start an HTTP server.
 	@Bean
-	public RouterFunction<?> webfluxMcpRouterFunction(WebFluxSseServerTransport webFluxTransport) {
-		return webFluxTransport.getRouterFunction();
+	public RouterFunction<?> webfluxMcpRouterFunction(WebFluxSseServerTransportProvider webFluxProvider) {
+		return webFluxProvider.getRouterFunction();
 	}
 
 }
