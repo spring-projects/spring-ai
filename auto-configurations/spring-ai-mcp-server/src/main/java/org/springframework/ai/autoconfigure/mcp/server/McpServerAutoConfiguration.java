@@ -100,7 +100,7 @@ import org.springframework.util.MimeType;
  * @since 1.0.0
  * @see McpServerProperties
  * @see McpWebMvcServerAutoConfiguration
- * @see org.springframework.ai.mcp.ToolCallback
+ * @see ToolCallback
  */
 @AutoConfiguration(after = { McpWebMvcServerAutoConfiguration.class, McpWebFluxServerAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
