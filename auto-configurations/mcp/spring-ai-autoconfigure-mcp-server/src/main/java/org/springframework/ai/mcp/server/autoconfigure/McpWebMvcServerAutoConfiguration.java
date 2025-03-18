@@ -17,8 +17,8 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.server.transport.WebMvcSseServerTransport;
-import io.modelcontextprotocol.spec.ServerMcpTransport;
+import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -57,25 +57,25 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @author Christian Tzolov
  * @since 1.0.0
  * @see McpServerProperties
- * @see WebMvcSseServerTransport
+ * @see WebMvcSseServerTransportProvider
  */
 @AutoConfiguration
-@ConditionalOnClass({ WebMvcSseServerTransport.class })
-@ConditionalOnMissingBean(ServerMcpTransport.class)
+@ConditionalOnClass({ WebMvcSseServerTransportProvider.class })
+@ConditionalOnMissingBean(McpServerTransportProvider.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "stdio", havingValue = "false",
 		matchIfMissing = true)
 public class McpWebMvcServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper objectMapper,
+	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(ObjectMapper objectMapper,
 			McpServerProperties serverProperties) {
-		return new WebMvcSseServerTransport(objectMapper, serverProperties.getSseMessageEndpoint());
+		return new WebMvcSseServerTransportProvider(objectMapper, serverProperties.getSseMessageEndpoint());
 	}
 
 	@Bean
-	public RouterFunction<ServerResponse> mvcMcpRouterFunction(WebMvcSseServerTransport transport) {
-		return transport.getRouterFunction();
+	public RouterFunction<ServerResponse> mvcMcpRouterFunction(WebMvcSseServerTransportProvider transportProvider) {
+		return transportProvider.getRouterFunction();
 	}
 
 }

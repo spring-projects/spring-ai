@@ -18,25 +18,27 @@ package org.springframework.ai.mcp.server.autoconfigure;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import io.modelcontextprotocol.server.McpAsyncServer;
+import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.McpServer.AsyncSpec;
-import io.modelcontextprotocol.server.McpServer.SyncSpec;
+import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
+import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolRegistration;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.transport.StdioServerTransport;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
-import io.modelcontextprotocol.spec.ServerMcpTransport;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolUtils;
@@ -50,6 +52,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -100,11 +103,13 @@ import org.springframework.util.MimeType;
  * @since 1.0.0
  * @see McpServerProperties
  * @see McpWebMvcServerAutoConfiguration
+ * @see McpWebFluxServerAutoConfiguration
  * @see ToolCallback
  */
 @AutoConfiguration(after = { McpWebMvcServerAutoConfiguration.class, McpWebFluxServerAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
 @EnableConfigurationProperties(McpServerProperties.class)
+@Import(McpBackwardCompatibility.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class McpServerAutoConfiguration {
@@ -113,8 +118,8 @@ public class McpServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ServerMcpTransport stdioServerTransport() {
-		return new StdioServerTransport();
+	public McpServerTransportProvider stdioServerTransport() {
+		return new StdioServerTransportProvider();
 	}
 
 	@Bean
@@ -126,40 +131,46 @@ public class McpServerAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<McpServerFeatures.SyncToolRegistration> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			McpServerProperties serverProperties) {
-		List<ToolCallback> tools = toolCalls.stream().flatMap(List::stream).toList();
+	public List<McpServerFeatures.SyncToolSpecification> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
+			List<ToolCallback> toolCallbacksList, McpServerProperties serverProperties) {
 
-		return this.toSyncToolRegistration(tools, serverProperties);
+		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
+
+		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
+			tools.addAll(toolCallbacksList);
+		}
+
+		return this.toSyncToolSpecifications(tools, serverProperties);
 	}
 
-	private List<McpServerFeatures.SyncToolRegistration> toSyncToolRegistration(List<ToolCallback> tools,
+	private List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecifications(List<ToolCallback> tools,
 			McpServerProperties serverProperties) {
 		return tools.stream().map(tool -> {
 			String toolName = tool.getToolDefinition().name();
 			MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
 					? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-			return McpToolUtils.toSyncToolRegistration(tool, mimeType);
+			return McpToolUtils.toSyncToolSpecification(tool, mimeType);
 		}).toList();
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public McpSyncServer mcpSyncServer(ServerMcpTransport transport,
+	public McpSyncServer mcpSyncServer(McpServerTransportProvider transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			ObjectProvider<List<SyncToolRegistration>> tools, ObjectProvider<List<SyncResourceRegistration>> resources,
-			ObjectProvider<List<SyncPromptRegistration>> prompts,
-			ObjectProvider<Consumer<List<McpSchema.Root>>> rootsChangeConsumers,
+			ObjectProvider<List<SyncToolSpecification>> tools,
+			ObjectProvider<List<SyncResourceSpecification>> resources,
+			ObjectProvider<List<SyncPromptSpecification>> prompts,
+			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
 			List<ToolCallbackProvider> toolCallbackProvider) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
-		SyncSpec serverBuilder = McpServer.sync(transport).serverInfo(serverInfo);
+		SyncSpecification serverBuilder = McpServer.sync(transportProvider).serverInfo(serverInfo);
 
-		List<SyncToolRegistration> toolRegistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
+		List<SyncToolSpecification> toolSpecifications = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
 
 		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
 			.map(pr -> List.of(pr.getToolCallbacks()))
@@ -168,33 +179,35 @@ public class McpServerAutoConfiguration {
 			.map(fc -> (ToolCallback) fc)
 			.toList();
 
-		toolRegistrations.addAll(this.toSyncToolRegistration(providerToolCallbacks, serverProperties));
+		toolSpecifications.addAll(this.toSyncToolSpecifications(providerToolCallbacks, serverProperties));
 
-		if (!CollectionUtils.isEmpty(toolRegistrations)) {
-			serverBuilder.tools(toolRegistrations);
+		if (!CollectionUtils.isEmpty(toolSpecifications)) {
+			serverBuilder.tools(toolSpecifications);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools: " + toolRegistrations.size() + ", notification: "
+			logger.info("Registered tools: " + toolSpecifications.size() + ", notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
 
-		List<SyncResourceRegistration> resourceRegistrations = resources.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(resourceRegistrations)) {
-			serverBuilder.resources(resourceRegistrations);
+		List<SyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(resourceSpecifications)) {
+			serverBuilder.resources(resourceSpecifications);
 			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources: " + resourceRegistrations.size() + ", notification: "
+			logger.info("Registered resources: " + resourceSpecifications.size() + ", notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
 
-		List<SyncPromptRegistration> promptRegistrations = prompts.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(promptRegistrations)) {
-			serverBuilder.prompts(promptRegistrations);
+		List<SyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(promptSpecifications)) {
+			serverBuilder.prompts(promptSpecifications);
 			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts: " + promptRegistrations.size() + ", notification: "
+			logger.info("Registered prompts: " + promptSpecifications.size() + ", notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
 
 		rootsChangeConsumers.ifAvailable(consumer -> {
-			serverBuilder.rootsChangeConsumer(consumer);
+			serverBuilder.rootsChangeHandler((exchange, roots) -> {
+				consumer.accept(exchange, roots);
+			});
 			logger.info("Registered roots change consumer");
 		});
 
@@ -205,40 +218,45 @@ public class McpServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpServerFeatures.AsyncToolRegistration> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			McpServerProperties serverProperties) {
-		var tools = toolCalls.stream().flatMap(List::stream).toList();
+	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
+			List<ToolCallback> toolCallbackList, McpServerProperties serverProperties) {
 
-		return this.toAsyncToolRegistration(tools, serverProperties);
+		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
+		if (!CollectionUtils.isEmpty(toolCallbackList)) {
+			tools.addAll(toolCallbackList);
+		}
+
+		return this.toAsyncToolSpecification(tools, serverProperties);
 	}
 
-	private List<McpServerFeatures.AsyncToolRegistration> toAsyncToolRegistration(List<ToolCallback> tools,
+	private List<McpServerFeatures.AsyncToolSpecification> toAsyncToolSpecification(List<ToolCallback> tools,
 			McpServerProperties serverProperties) {
 		return tools.stream().map(tool -> {
 			String toolName = tool.getToolDefinition().name();
 			MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
 					? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-			return McpToolUtils.toAsyncToolRegistration(tool, mimeType);
+			return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
 		}).toList();
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public McpAsyncServer mcpAsyncServer(ServerMcpTransport transport,
+	public McpAsyncServer mcpAsyncServer(McpServerTransportProvider transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			ObjectProvider<List<AsyncToolRegistration>> tools,
-			ObjectProvider<List<AsyncResourceRegistration>> resources,
-			ObjectProvider<List<AsyncPromptRegistration>> prompts,
-			ObjectProvider<Consumer<List<McpSchema.Root>>> rootsChangeConsumer,
+			ObjectProvider<List<AsyncToolSpecification>> tools,
+			ObjectProvider<List<AsyncResourceSpecification>> resources,
+			ObjectProvider<List<AsyncPromptSpecification>> prompts,
+			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
 			List<ToolCallbackProvider> toolCallbackProvider) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
-		AsyncSpec serverBuilder = McpServer.async(transport).serverInfo(serverInfo);
+		AsyncSpecification serverBuilder = McpServer.async(transportProvider).serverInfo(serverInfo);
 
-		List<AsyncToolRegistration> toolRegistrations = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
+		List<AsyncToolSpecification> toolSpecifications = new ArrayList<>(
+				tools.stream().flatMap(List::stream).toList());
 		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
 			.map(pr -> List.of(pr.getToolCallbacks()))
 			.flatMap(List::stream)
@@ -246,37 +264,37 @@ public class McpServerAutoConfiguration {
 			.map(fc -> (ToolCallback) fc)
 			.toList();
 
-		toolRegistrations.addAll(this.toAsyncToolRegistration(providerToolCallbacks, serverProperties));
+		toolSpecifications.addAll(this.toAsyncToolSpecification(providerToolCallbacks, serverProperties));
 
-		if (!CollectionUtils.isEmpty(toolRegistrations)) {
-			serverBuilder.tools(toolRegistrations);
+		if (!CollectionUtils.isEmpty(toolSpecifications)) {
+			serverBuilder.tools(toolSpecifications);
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools: " + toolRegistrations.size() + ", notification: "
+			logger.info("Registered tools: " + toolSpecifications.size() + ", notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
 
-		List<AsyncResourceRegistration> resourceRegistrations = resources.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(resourceRegistrations)) {
-			serverBuilder.resources(resourceRegistrations);
+		List<AsyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(resourceSpecifications)) {
+			serverBuilder.resources(resourceSpecifications);
 			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources: " + resourceRegistrations.size() + ", notification: "
+			logger.info("Registered resources: " + resourceSpecifications.size() + ", notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
 
-		List<AsyncPromptRegistration> promptRegistrations = prompts.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(promptRegistrations)) {
-			serverBuilder.prompts(promptRegistrations);
+		List<AsyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
+		if (!CollectionUtils.isEmpty(promptSpecifications)) {
+			serverBuilder.prompts(promptSpecifications);
 			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts: " + promptRegistrations.size() + ", notification: "
+			logger.info("Registered prompts: " + promptSpecifications.size() + ", notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
 
 		rootsChangeConsumer.ifAvailable(consumer -> {
-			Function<List<McpSchema.Root>, Mono<Void>> asyncConsumer = roots -> {
-				consumer.accept(roots);
+			BiFunction<McpAsyncServerExchange, List<McpSchema.Root>, Mono<Void>> asyncConsumer = (exchange, roots) -> {
+				consumer.accept(exchange, roots);
 				return Mono.empty();
 			};
-			serverBuilder.rootsChangeConsumer(asyncConsumer);
+			serverBuilder.rootsChangeHandler(asyncConsumer);
 			logger.info("Registered roots change consumer");
 		});
 

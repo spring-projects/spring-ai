@@ -17,5 +17,6 @@ org.springframework.ai.mcp.client.autoconfigure.StdioTransportAutoConfiguration
 org.springframework.ai.mcp.client.autoconfigure.SseWebFluxTransportAutoConfiguration
 org.springframework.ai.mcp.client.autoconfigure.SseHttpClientTransportAutoConfiguration
 org.springframework.ai.mcp.client.autoconfigure.McpClientAutoConfiguration
+org.springframework.ai.mcp.client.autoconfigure.McpToolCallbackAutoConfiguration
 
 

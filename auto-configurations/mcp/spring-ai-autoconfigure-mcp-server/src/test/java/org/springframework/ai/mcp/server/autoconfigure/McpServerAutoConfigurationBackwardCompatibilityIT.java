@@ -17,18 +17,17 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptRegistration;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceRegistration;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpServerTransport;
@@ -48,7 +47,8 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-public class McpServerAutoConfigurationIT {
+@Deprecated
+public class McpServerAutoConfigurationBackwardCompatibilityIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class));
@@ -201,8 +201,8 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
-	void rootsChangeHandlerConfiguration() {
-		this.contextRunner.withUserConfiguration(TestRootsHandlerConfiguration.class).run(context -> {
+	void rootsChangeConsumerConfiguration() {
+		this.contextRunner.withUserConfiguration(TestRootsChangeConfiguration.class).run(context -> {
 			McpSyncServer server = context.getBean(McpSyncServer.class);
 			assertThat(server).isNotNull();
 		});
@@ -212,7 +212,7 @@ public class McpServerAutoConfigurationIT {
 	static class TestResourceConfiguration {
 
 		@Bean
-		List<SyncResourceSpecification> testResources() {
+		List<SyncResourceRegistration> testResources() {
 			return List.of();
 		}
 
@@ -222,7 +222,7 @@ public class McpServerAutoConfigurationIT {
 	static class TestPromptConfiguration {
 
 		@Bean
-		List<SyncPromptSpecification> testPrompts() {
+		List<SyncPromptRegistration> testPrompts() {
 			return List.of();
 		}
 
@@ -264,11 +264,11 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Configuration
-	static class TestRootsHandlerConfiguration {
+	static class TestRootsChangeConfiguration {
 
 		@Bean
-		BiConsumer<McpSyncServerExchange, List<McpSchema.Root>> rootsChangeHandler() {
-			return (exchange, roots) -> {
+		Consumer<List<McpSchema.Root>> rootsChangeConsumer() {
+			return roots -> {
 				// Test implementation
 			};
 		}

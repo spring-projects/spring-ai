@@ -16,17 +16,21 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.CollectionUtils;
@@ -46,7 +50,7 @@ import org.springframework.util.MimeType;
  * <p>
  * This helper class provides methods to:
  * <ul>
- * <li>Convert Spring AI's {@link ToolCallback} instances to MCP tool registrations</li>
+ * <li>Convert Spring AI's {@link ToolCallback} instances to MCP tool specification</li>
  * <li>Generate JSON schemas for tool input validation</li>
  * </ul>
  *
@@ -63,11 +67,13 @@ public final class McpToolUtils {
 			throw new IllegalArgumentException("Prefix or toolName cannot be null or empty");
 		}
 
-		String input = prefix + "-" + toolName;
+		String input = prefix + "_" + toolName;
 
 		// Replace any character that isn't alphanumeric, underscore, or hyphen with
 		// concatenation
 		String formatted = input.replaceAll("[^a-zA-Z0-9_-]", "");
+
+		formatted = formatted.replaceAll("-", "_");
 
 		// If the string is longer than 64 characters, keep the last 64 characters
 		if (formatted.length() > 64) {
@@ -86,10 +92,26 @@ public final class McpToolUtils {
 	 * @param toolCallbacks the list of tool callbacks to convert
 	 * @return a list of MCP synchronous tool registrations
 	 * @see #toSyncToolRegistration(ToolCallback)
+	 * @deprecated Use {@link #toSyncToolSpecification(List)} instead.
 	 */
+	@Deprecated
 	public static List<McpServerFeatures.SyncToolRegistration> toSyncToolRegistration(
 			List<ToolCallback> toolCallbacks) {
 		return toolCallbacks.stream().map(McpToolUtils::toSyncToolRegistration).toList();
+	}
+
+	/**
+	 * Converts a list of Spring AI tool callbacks to MCP synchronous tool specificaiton.
+	 * <p>
+	 * This method processes multiple tool callbacks in bulk, converting each one to its
+	 * corresponding MCP tool registration while maintaining synchronous execution
+	 * semantics.
+	 * @param toolCallbacks the list of tool callbacks to convert
+	 * @return a list of MCP synchronous tool specificaiton
+	 */
+	public static List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecification(
+			List<ToolCallback> toolCallbacks) {
+		return toolCallbacks.stream().map(McpToolUtils::toSyncToolSpecification).toList();
 	}
 
 	/**
@@ -101,13 +123,34 @@ public final class McpToolUtils {
 	 * @param toolCallbacks the tool callbacks to convert
 	 * @return a list of MCP synchronous tool registrations
 	 * @see #toSyncToolRegistration(List)
+	 * @deprecated Use {@link #toSyncToolSpecification(ToolCallback...)} instead.
 	 */
+	@Deprecated
+	public static List<McpServerFeatures.SyncToolRegistration> toSyncToolRegistrations(ToolCallback... toolCallbacks) {
+		return toSyncToolRegistration(List.of(toolCallbacks));
+	}
+
+	@Deprecated
 	public static List<McpServerFeatures.SyncToolRegistration> toSyncToolRegistration(ToolCallback... toolCallbacks) {
 		return toSyncToolRegistration(List.of(toolCallbacks));
 	}
 
 	/**
-	 * Converts a Spring AI FunctionCallback to an MCP SyncToolRegistration. This enables
+	 * Convenience method to convert a variable number of tool callbacks to MCP
+	 * synchronous tool specification.
+	 * <p>
+	 * This is a varargs wrapper around {@link #toSyncToolSpecification(List)} for easier
+	 * usage when working with individual callbacks.
+	 * @param toolCallbacks the tool callbacks to convert
+	 * @return a list of MCP synchronous tool specificaiton
+	 */
+	public static List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecifications(
+			ToolCallback... toolCallbacks) {
+		return toSyncToolSpecification(List.of(toolCallbacks));
+	}
+
+	/**
+	 * Converts a Spring AI ToolCallback to an MCP SyncToolRegistration. This enables
 	 * Spring AI functions to be exposed as MCP tools that can be discovered and invoked
 	 * by language models.
 	 *
@@ -121,18 +164,45 @@ public final class McpToolUtils {
 	 * specifications</li>
 	 * </ul>
 	 *
-	 * You can use the FunctionCallback builder to create a new instance of
-	 * FunctionCallback using either java.util.function.Function or Method reference.
+	 * You can use the ToolCallback builder to create a new instance of ToolCallback using
+	 * either java.util.function.Function or Method reference.
 	 * @param toolCallback the Spring AI function callback to convert
 	 * @return an MCP SyncToolRegistration that wraps the function callback
 	 * @throws RuntimeException if there's an error during the function execution
+	 * @deprecated Use {@link #toSyncToolSpecification(ToolCallback)} instead.
 	 */
+	@Deprecated
 	public static McpServerFeatures.SyncToolRegistration toSyncToolRegistration(ToolCallback toolCallback) {
 		return toSyncToolRegistration(toolCallback, null);
 	}
 
 	/**
-	 * Converts a Spring AI FunctionCallback to an MCP SyncToolRegistration. This enables
+	 * Converts a Spring AI ToolCallback to an MCP SyncToolSpecification. This enables
+	 * Spring AI functions to be exposed as MCP tools that can be discovered and invoked
+	 * by language models.
+	 *
+	 * <p>
+	 * The conversion process:
+	 * <ul>
+	 * <li>Creates an MCP Tool with the function's name and input schema</li>
+	 * <li>Wraps the function's execution in a SyncToolSpecification that handles the MCP
+	 * protocol</li>
+	 * <li>Provides error handling and result formatting according to MCP
+	 * specifications</li>
+	 * </ul>
+	 *
+	 * You can use the ToolCallback builder to create a new instance of ToolCallback using
+	 * either java.util.function.Function or Method reference.
+	 * @param toolCallback the Spring AI function callback to convert
+	 * @return an MCP SyncToolSpecification that wraps the function callback
+	 * @throws RuntimeException if there's an error during the function execution
+	 */
+	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback) {
+		return toSyncToolSpecification(toolCallback, null);
+	}
+
+	/**
+	 * Converts a Spring AI ToolCallback to an MCP SyncToolRegistration. This enables
 	 * Spring AI functions to be exposed as MCP tools that can be discovered and invoked
 	 * by language models.
 	 *
@@ -146,13 +216,15 @@ public final class McpToolUtils {
 	 * specifications</li>
 	 * </ul>
 	 *
-	 * You can use the FunctionCallback builder to create a new instance of
-	 * FunctionCallback using either java.util.function.Function or Method reference.
+	 * You can use the ToolCallback builder to create a new instance of ToolCallback using
+	 * either java.util.function.Function or Method reference.
 	 * @param toolCallback the Spring AI function callback to convert
 	 * @param mimeType the MIME type of the output content
 	 * @return an MCP SyncToolRegistration that wraps the function callback
 	 * @throws RuntimeException if there's an error during the function execution
+	 * @deprecated Use {@link #toSyncToolSpecification(ToolCallback, MimeType)} instead.
 	 */
+	@Deprecated
 	public static McpServerFeatures.SyncToolRegistration toSyncToolRegistration(ToolCallback toolCallback,
 			MimeType mimeType) {
 
@@ -176,6 +248,48 @@ public final class McpToolUtils {
 	}
 
 	/**
+	 * Converts a Spring AI ToolCallback to an MCP SyncToolSpecification. This enables
+	 * Spring AI functions to be exposed as MCP tools that can be discovered and invoked
+	 * by language models.
+	 *
+	 * <p>
+	 * The conversion process:
+	 * <ul>
+	 * <li>Creates an MCP Tool with the function's name and input schema</li>
+	 * <li>Wraps the function's execution in a SyncToolSpecification that handles the MCP
+	 * protocol</li>
+	 * <li>Provides error handling and result formatting according to MCP
+	 * specifications</li>
+	 * </ul>
+	 * @param toolCallback the Spring AI function callback to convert
+	 * @param mimeType the MIME type of the output content
+	 * @return an MCP SyncToolRegistration that wraps the function callback
+	 * @throws RuntimeException if there's an error during the function execution
+	 */
+	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
+			MimeType mimeType) {
+
+		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
+				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+
+		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
+			try {
+				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
+						new ToolContext(Map.of("exchange", exchange)));
+				if (mimeType != null && mimeType.toString().startsWith("image")) {
+					return new McpSchema.CallToolResult(List
+						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
+							false);
+				}
+				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+			}
+			catch (Exception e) {
+				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
+			}
+		});
+	}
+
+	/**
 	 * Converts a list of Spring AI tool callbacks to MCP asynchronous tool registrations.
 	 * <p>
 	 * This method processes multiple tool callbacks in bulk, converting each one to its
@@ -185,15 +299,32 @@ public final class McpToolUtils {
 	 * @param toolCallbacks the list of tool callbacks to convert
 	 * @return a list of MCP asynchronous tool registrations
 	 * @see #toAsyncToolRegistration(ToolCallback)
+	 * @deprecated Use {@link #toAsyncToolSpecification(List)} instead.
 	 */
+	@Deprecated
 	public static List<McpServerFeatures.AsyncToolRegistration> toAsyncToolRegistration(
 			List<ToolCallback> toolCallbacks) {
 		return toolCallbacks.stream().map(McpToolUtils::toAsyncToolRegistration).toList();
 	}
 
 	/**
+	 * Converts a list of Spring AI tool callbacks to MCP asynchronous tool specificaiton.
+	 * <p>
+	 * This method processes multiple tool callbacks in bulk, converting each one to its
+	 * corresponding MCP tool registration while adding asynchronous execution
+	 * capabilities. The resulting specifications will execute their tools on a bounded
+	 * elastic scheduler.
+	 * @param toolCallbacks the list of tool callbacks to convert
+	 * @return a list of MCP asynchronous tool specifications
+	 */
+	public static List<McpServerFeatures.AsyncToolSpecification> toAsyncToolSpecifications(
+			List<ToolCallback> toolCallbacks) {
+		return toolCallbacks.stream().map(McpToolUtils::toAsyncToolSpecification).toList();
+	}
+
+	/**
 	 * Convenience method to convert a variable number of tool callbacks to MCP
-	 * asynchronous tool registrations.
+	 * asynchronous tool specifications.
 	 * <p>
 	 * This is a varargs wrapper around {@link #toAsyncToolRegistration(List)} for easier
 	 * usage when working with individual callbacks.
@@ -203,6 +334,51 @@ public final class McpToolUtils {
 	 */
 	public static List<McpServerFeatures.AsyncToolRegistration> toAsyncToolRegistration(ToolCallback... toolCallbacks) {
 		return toAsyncToolRegistration(List.of(toolCallbacks));
+	}
+
+	/**
+	 * Convenience method to convert a variable number of tool callbacks to MCP
+	 * asynchronous tool specificaiton.
+	 * <p>
+	 * This is a varargs wrapper around {@link #toAsyncToolSpecifications(List)} for
+	 * easier usage when working with individual callbacks.
+	 * @param toolCallbacks the tool callbacks to convert
+	 * @return a list of MCP asynchronous tool specifications
+	 * @see #toAsyncToolSpecifications(List)
+	 */
+	public static List<McpServerFeatures.AsyncToolSpecification> toAsyncToolSpecifications(
+			ToolCallback... toolCallbacks) {
+		return toAsyncToolSpecifications(List.of(toolCallbacks));
+	}
+
+	/**
+	 * Converts a Spring AI tool callback to an MCP asynchronous tool registration.
+	 * <p>
+	 * This method enables Spring AI tools to be exposed as asynchronous MCP tools that
+	 * can be discovered and invoked by language models. The conversion process:
+	 * <ul>
+	 * <li>First converts the callback to a synchronous registration</li>
+	 * <li>Wraps the synchronous execution in a reactive Mono</li>
+	 * <li>Configures execution on a bounded elastic scheduler for non-blocking
+	 * operation</li>
+	 * </ul>
+	 * <p>
+	 * The resulting async registration will:
+	 * <ul>
+	 * <li>Execute the tool without blocking the calling thread</li>
+	 * <li>Handle errors and results asynchronously</li>
+	 * <li>Provide backpressure through Project Reactor</li>
+	 * </ul>
+	 * @param toolCallback the Spring AI tool callback to convert
+	 * @return an MCP asynchronous tool registration that wraps the tool callback
+	 * @see McpServerFeatures.AsyncToolRegistration
+	 * @see Mono
+	 * @see Schedulers#boundedElastic()
+	 * @deprecated Use {@link #toAsyncToolSpecification(ToolCallback)} instead.
+	 */
+	@Deprecated
+	public static McpServerFeatures.AsyncToolRegistration toAsyncToolRegistration(ToolCallback toolCallback) {
+		return toAsyncToolRegistration(toolCallback, null);
 	}
 
 	/**
@@ -229,8 +405,8 @@ public final class McpToolUtils {
 	 * @see Mono
 	 * @see Schedulers#boundedElastic()
 	 */
-	public static McpServerFeatures.AsyncToolRegistration toAsyncToolRegistration(ToolCallback toolCallback) {
-		return toAsyncToolRegistration(toolCallback, null);
+	public static McpServerFeatures.AsyncToolSpecification toAsyncToolSpecification(ToolCallback toolCallback) {
+		return toAsyncToolSpecification(toolCallback, null);
 	}
 
 	/**
@@ -257,7 +433,9 @@ public final class McpToolUtils {
 	 * @see McpServerFeatures.AsyncToolRegistration
 	 * @see Mono
 	 * @see Schedulers#boundedElastic()
+	 * @deprecated Use {@link #toAsyncToolSpecification(ToolCallback, MimeType)} instead.
 	 */
+	@Deprecated
 	public static McpServerFeatures.AsyncToolRegistration toAsyncToolRegistration(ToolCallback toolCallback,
 			MimeType mimeType) {
 
@@ -265,6 +443,41 @@ public final class McpToolUtils {
 
 		return new AsyncToolRegistration(syncToolRegistration.tool(),
 				map -> Mono.fromCallable(() -> syncToolRegistration.call().apply(map))
+					.subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	/**
+	 * Converts a Spring AI tool callback to an MCP asynchronous tool specification.
+	 * <p>
+	 * This method enables Spring AI tools to be exposed as asynchronous MCP tools that
+	 * can be discovered and invoked by language models. The conversion process:
+	 * <ul>
+	 * <li>First converts the callback to a synchronous specificaiton</li>
+	 * <li>Wraps the synchronous execution in a reactive Mono</li>
+	 * <li>Configures execution on a bounded elastic scheduler for non-blocking
+	 * operation</li>
+	 * </ul>
+	 * <p>
+	 * The resulting async specificaiton will:
+	 * <ul>
+	 * <li>Execute the tool without blocking the calling thread</li>
+	 * <li>Handle errors and results asynchronously</li>
+	 * <li>Provide backpressure through Project Reactor</li>
+	 * </ul>
+	 * @param toolCallback the Spring AI tool callback to convert
+	 * @param mimeType the MIME type of the output content
+	 * @return an MCP asynchronous tool specificaiotn that wraps the tool callback
+	 * @see McpServerFeatures.AsyncToolSpecification
+	 * @see Schedulers#boundedElastic()
+	 */
+	public static McpServerFeatures.AsyncToolSpecification toAsyncToolSpecification(ToolCallback toolCallback,
+			MimeType mimeType) {
+
+		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
+
+		return new AsyncToolSpecification(syncToolSpecification.tool(),
+				(exchange, map) -> Mono
+					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
