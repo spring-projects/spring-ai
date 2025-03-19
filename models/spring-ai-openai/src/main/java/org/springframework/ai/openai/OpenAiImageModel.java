@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -127,13 +126,16 @@ public class OpenAiImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		OpenAiImageOptions requestImageOptions = mergeOptions(imagePrompt.getOptions(), this.defaultOptions);
-		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(imagePrompt, requestImageOptions);
+		// Before moving any further, build the final request ImagePrompt,
+		// merging runtime and default options.
+		ImagePrompt requestImagePrompt = buildRequestImagePrompt(imagePrompt);
+
+		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(requestImagePrompt);
 
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
 			.provider(OpenAiApiConstants.PROVIDER_NAME)
-			.requestOptions(requestImageOptions)
+			.requestOptions(requestImagePrompt.getOptions())
 			.build();
 
 		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
@@ -151,14 +153,14 @@ public class OpenAiImageModel implements ImageModel {
 			});
 	}
 
-	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt,
-			OpenAiImageOptions requestImageOptions) {
+	private OpenAiImageApi.OpenAiImageRequest createRequest(ImagePrompt imagePrompt) {
 		String instructions = imagePrompt.getInstructions().get(0).getText();
+		OpenAiImageOptions imageOptions = (OpenAiImageOptions) imagePrompt.getOptions();
 
 		OpenAiImageApi.OpenAiImageRequest imageRequest = new OpenAiImageApi.OpenAiImageRequest(instructions,
 				OpenAiImageApi.DEFAULT_IMAGE_MODEL);
 
-		return ModelOptionsUtils.merge(requestImageOptions, imageRequest, OpenAiImageApi.OpenAiImageRequest.class);
+		return ModelOptionsUtils.merge(imageOptions, imageRequest, OpenAiImageApi.OpenAiImageRequest.class);
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity,
@@ -179,31 +181,29 @@ public class OpenAiImageModel implements ImageModel {
 		return new ImageResponse(imageGenerationList, openAiImageResponseMetadata);
 	}
 
-	/**
-	 * Merge runtime and default {@link ImageOptions} to compute the final options to use
-	 * in the request.
-	 */
-	private OpenAiImageOptions mergeOptions(@Nullable ImageOptions runtimeOptions, OpenAiImageOptions defaultOptions) {
-		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, ImageOptions.class,
-				OpenAiImageOptions.class);
-
-		if (runtimeOptionsForProvider == null) {
-			return defaultOptions;
+	private ImagePrompt buildRequestImagePrompt(ImagePrompt imagePrompt) {
+		// Process runtime options
+		OpenAiImageOptions runtimeOptions = null;
+		if (imagePrompt.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(imagePrompt.getOptions(), ImageOptions.class,
+					OpenAiImageOptions.class);
 		}
 
-		return OpenAiImageOptions.builder()
+		OpenAiImageOptions requestOptions = runtimeOptions == null ? this.defaultOptions : OpenAiImageOptions.builder()
 			// Handle portable image options
-			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-			.N(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getN(), defaultOptions.getN()))
-			.responseFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getResponseFormat(),
+			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
+			.N(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
+			.responseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
 					defaultOptions.getResponseFormat()))
-			.width(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getWidth(), defaultOptions.getWidth()))
-			.height(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getHeight(), defaultOptions.getHeight()))
-			.style(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getStyle(), defaultOptions.getStyle()))
+			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
+			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
+			.style(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
 			// Handle OpenAI specific image options
-			.quality(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getQuality(), defaultOptions.getQuality()))
-			.user(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
+			.quality(ModelOptionsUtils.mergeOption(runtimeOptions.getQuality(), defaultOptions.getQuality()))
+			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), defaultOptions.getUser()))
 			.build();
+
+		return new ImagePrompt(imagePrompt.getInstructions(), requestOptions);
 	}
 
 	/**
