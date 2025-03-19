@@ -16,6 +16,7 @@
 package org.springframework.ai.autoconfigure.vectorstore.couchbase;
 
 import com.couchbase.client.java.Cluster;
+import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.CouchbaseSearchVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -39,32 +40,30 @@ public class CouchbaseSearchVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	public CouchbaseSearchVectorStore vectorStore(CouchbaseSearchVectorStoreProperties properties, Cluster cluster,
 			EmbeddingModel embeddingModel) {
-		var builder = CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig.builder();
+		var builder = CouchbaseSearchVectorStore.builder(cluster, embeddingModel);
 
 		if (StringUtils.hasText(properties.getIndexName())) {
-			builder.withVectorIndexName(properties.getIndexName());
+			builder.vectorIndexName(properties.getIndexName());
 		}
 		if (StringUtils.hasText(properties.getBucketName())) {
-			builder.withBucketName(properties.getBucketName());
+			builder.bucketName(properties.getBucketName());
 		}
 		if (StringUtils.hasText(properties.getScopeName())) {
-			builder.withScopeName(properties.getScopeName());
+			builder.scopeName(properties.getScopeName());
 		}
 		if (StringUtils.hasText(properties.getCollectionName())) {
-			builder.withCollectionName(properties.getCollectionName());
+			builder.collectionName(properties.getCollectionName());
 		}
 		if (properties.getDimensions() != null) {
-			builder.withDimensions(properties.getDimensions());
+			builder.dimensions(properties.getDimensions());
 		}
 		if (properties.getSimilarity() != null) {
-			builder.withSimilarityFunction(properties.getSimilarity());
+			builder.similarityFunction(properties.getSimilarity());
 		}
 		if (properties.getOptimization() != null) {
-			builder.withIndexOptimization(properties.getOptimization());
+			builder.indexOptimization(properties.getOptimization());
 		}
-		return CouchbaseSearchVectorStore.builder(cluster, builder.build(), embeddingModel)
-			.initializeSchema(properties.isInitializeSchema())
-			.build();
+		return builder.initializeSchema(properties.isInitializeSchema()).build();
 	}
 
 }
