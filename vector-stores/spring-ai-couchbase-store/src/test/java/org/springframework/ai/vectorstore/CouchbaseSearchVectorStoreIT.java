@@ -283,18 +283,17 @@ public class CouchbaseSearchVectorStoreIT {
 		public CouchbaseSearchVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			Cluster cluster = Cluster.connect(couchbaseContainer.getConnectionString(),
 					couchbaseContainer.getUsername(), couchbaseContainer.getPassword());
-			CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig config = CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig
-				.builder()
-				.withBucketName("springBucket")
-				.withScopeName("springScope")
-				.withCollectionName("sprtingcollection")
-				.build();
-			return CouchbaseSearchVectorStore.builder(cluster, config, embeddingModel).initializeSchema(true).build();
+			CouchbaseSearchVectorStore.Builder builder = CouchbaseSearchVectorStore.builder(cluster, embeddingModel)
+				.bucketName("springBucket")
+				.scopeName("springScope")
+				.collectionName("sprtingcollection");
+
+			return builder.initializeSchema(true).build();
 		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 	}
