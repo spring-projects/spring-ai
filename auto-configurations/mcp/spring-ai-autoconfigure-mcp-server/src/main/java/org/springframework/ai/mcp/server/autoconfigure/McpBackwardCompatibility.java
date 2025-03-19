@@ -44,12 +44,9 @@ public class McpBackwardCompatibility {
 			return List.of();
 		}
 
-		return rootsChangeConsumers.stream().map(c -> new BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>() {
-			@Override
-			public void accept(McpSyncServerExchange exchange, List<McpSchema.Root> roots) {
-				c.accept(roots);
-			}
-		}).collect(Collectors.toList());
+		return rootsChangeConsumers.stream()
+			.map(c -> (BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>) ((exchange, roots) -> c.accept(roots)))
+			.toList();
 	}
 
 	@Bean

@@ -13,4 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration
+
+org.springframework.ai.autoconfigure.mcp.server.McpServerAutoConfiguration
+org.springframework.ai.autoconfigure.mcp.server.McpWebMvcServerAutoConfiguration
+org.springframework.ai.autoconfigure.mcp.server.McpWebFluxServerAutoConfiguration
