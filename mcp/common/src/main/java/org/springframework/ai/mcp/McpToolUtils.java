@@ -50,7 +50,7 @@ import org.springframework.util.MimeType;
  * <p>
  * This helper class provides methods to:
  * <ul>
- * <li>Convert Spring AI's {@link ToolCallback} instances to MCP tool registrations</li>
+ * <li>Convert Spring AI's {@link ToolCallback} instances to MCP tool specification</li>
  * <li>Generate JSON schemas for tool input validation</li>
  * </ul>
  *
@@ -106,7 +106,6 @@ public final class McpToolUtils {
 	 * semantics.
 	 * @param toolCallbacks the list of tool callbacks to convert
 	 * @return a list of MCP synchronous tool specificaiton
-	 * @see #toSyncToolRegistration(ToolCallback)
 	 */
 	public static List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecification(
 			List<ToolCallback> toolCallbacks) {
@@ -142,7 +141,6 @@ public final class McpToolUtils {
 	 * usage when working with individual callbacks.
 	 * @param toolCallbacks the tool callbacks to convert
 	 * @return a list of MCP synchronous tool specificaiton
-	 * @see #toSyncToolRegistration(List)
 	 */
 	public static List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecifications(
 			ToolCallback... toolCallbacks) {
@@ -312,11 +310,10 @@ public final class McpToolUtils {
 	 * <p>
 	 * This method processes multiple tool callbacks in bulk, converting each one to its
 	 * corresponding MCP tool registration while adding asynchronous execution
-	 * capabilities. The resulting registrations will execute their tools on a bounded
+	 * capabilities. The resulting specifications will execute their tools on a bounded
 	 * elastic scheduler.
 	 * @param toolCallbacks the list of tool callbacks to convert
 	 * @return a list of MCP asynchronous tool specifications
-	 * @see #toAsyncToolRegistration(ToolCallback)
 	 */
 	public static List<McpServerFeatures.AsyncToolSpecification> toAsyncToolSpecifications(
 			List<ToolCallback> toolCallbacks) {
@@ -325,7 +322,7 @@ public final class McpToolUtils {
 
 	/**
 	 * Convenience method to convert a variable number of tool callbacks to MCP
-	 * asynchronous tool registrations.
+	 * asynchronous tool specifications.
 	 * <p>
 	 * This is a varargs wrapper around {@link #toAsyncToolRegistration(List)} for easier
 	 * usage when working with individual callbacks.
@@ -469,7 +466,6 @@ public final class McpToolUtils {
 	 * @param mimeType the MIME type of the output content
 	 * @return an MCP asynchronous tool specificaiotn that wraps the tool callback
 	 * @see McpServerFeatures.AsyncToolSpecification
-	 * @see Mono
 	 * @see Schedulers#boundedElastic()
 	 */
 	public static McpServerFeatures.AsyncToolSpecification toAsyncToolSpecification(ToolCallback toolCallback,

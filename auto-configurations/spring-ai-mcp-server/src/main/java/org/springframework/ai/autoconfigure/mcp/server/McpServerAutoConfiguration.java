@@ -97,7 +97,7 @@ import org.springframework.util.MimeType;
  * </ul>
  * <p>
  * WebMvc transport support is provided separately by
- * {@link McpWebFluxServerAutoConfiguration}.
+ * {@link McpWebMvcServerAutoConfiguration}.
  *
  * @author Christian Tzolov
  * @since 1.0.0
@@ -132,12 +132,12 @@ public class McpServerAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<McpServerFeatures.SyncToolSpecification> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacks2, McpServerProperties serverProperties) {
+			List<ToolCallback> toolCallbacksList, McpServerProperties serverProperties) {
 
 		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
 
-		if (!CollectionUtils.isEmpty(toolCallbacks2)) {
-			tools.addAll(toolCallbacks2);
+		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
+			tools.addAll(toolCallbacksList);
 		}
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
@@ -219,11 +219,11 @@ public class McpServerAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacks2, McpServerProperties serverProperties) {
+			List<ToolCallback> toolCallbackList, McpServerProperties serverProperties) {
 
 		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
-		if (!CollectionUtils.isEmpty(toolCallbacks2)) {
-			tools.addAll(toolCallbacks2);
+		if (!CollectionUtils.isEmpty(toolCallbackList)) {
+			tools.addAll(toolCallbackList);
 		}
 
 		return this.toAsyncToolSpecification(tools, serverProperties);
