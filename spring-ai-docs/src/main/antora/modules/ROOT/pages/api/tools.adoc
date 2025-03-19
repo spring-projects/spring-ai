@@ -970,7 +970,7 @@ ToolCallback[] customerTools = ToolCallbacks.from(new CustomerTools());
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(customerTools)
     .toolContext(Map.of("tenantId", "acme"))
-    .build():
+    .build();
 Prompt prompt = new Prompt("Tell me more about the customer with ID 42", chatOptions);
 chatModel.call(prompt);
 ----
