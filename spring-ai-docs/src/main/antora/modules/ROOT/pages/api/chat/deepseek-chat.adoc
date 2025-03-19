@@ -96,7 +96,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | Property | Description | Default
 
 | spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://api.deepseek.com` | -
-| spring.ai.openai.chat.api-key    | Your DeepSeek API Key | -
+| spring.ai.openai.api-key    | Your DeepSeek API Key | -
 |====
 
 
