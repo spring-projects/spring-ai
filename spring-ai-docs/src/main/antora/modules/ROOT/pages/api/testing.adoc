@@ -50,15 +50,13 @@ The `RelevancyEvaluator` uses the input (`userText`) and the AI model's output (
 
 [source, text]
 ----
-Your task is to evaluate if the response for the query
-is in line with the context information provided.\n
-You have two options to answer. Either YES/ NO.\n
-Answer - YES, if the response for the query
-is in line with context information otherwise NO.\n
-Query: \n {query}\n
-Response: \n {response}\n
-Context: \n {context}\n
-Answer: "
+Your task is to evaluate if the response for the query is in line with the context information provided.
+You have two options to answer. Either YES/ NO.
+Answer - YES, if the response for the query is in line with context information otherwise NO.
+Query: {query}
+Response: {response}
+Context: {context}
+Answer:
 ----
 
 Here is an example of a JUnit test that performs a RAG query over a PDF document loaded into a Vector Store and then evaluates if the response is relevant to the user text.
