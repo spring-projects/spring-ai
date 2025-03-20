@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.transformer.splitter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
@@ -33,8 +34,14 @@ import org.springframework.util.Assert;
  * @author Raphael Yu
  * @author Christian Tzolov
  * @author Ricken Bazolo
+ * @author Nan Chiu
  */
 public class TokenTextSplitter extends TextSplitter {
+
+	public static final Function<String, Integer> DEFAULT_FIND_LAST_PUNCTUATION = chunkText ->
+			Math.max(chunkText.lastIndexOf('.'),
+					Math.max(chunkText.lastIndexOf('?'),
+							Math.max(chunkText.lastIndexOf('!'), chunkText.lastIndexOf('\n'))));
 
 	private static final int DEFAULT_CHUNK_SIZE = 800;
 
@@ -64,21 +71,31 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private final boolean keepSeparator;
 
+	// Finds the last period or punctuation mark in the given chunk
+	private final Function<String, Integer> findLastPunctuation;
+
 	public TokenTextSplitter() {
-		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, KEEP_SEPARATOR);
+		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS,
+				KEEP_SEPARATOR, DEFAULT_FIND_LAST_PUNCTUATION);
 	}
 
 	public TokenTextSplitter(boolean keepSeparator) {
-		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, keepSeparator);
+		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS,
+				keepSeparator, DEFAULT_FIND_LAST_PUNCTUATION);
 	}
 
 	public TokenTextSplitter(int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
-			boolean keepSeparator) {
+			boolean keepSeparator, Function<String, Integer> findLastPunctuation) {
+		Assert.isTrue(chunkSize > 0, "ChunkSize must be greater than 0");
+		Assert.isTrue(minChunkSizeChars >= 0, "MinChunkSizeChars must be a positive value");
+		Assert.isTrue(maxNumChunks > 0, "MaxNumChunks must be greater than 0");
+		Assert.notNull(findLastPunctuation, "FindLastPunctuation must not be null");
 		this.chunkSize = chunkSize;
 		this.minChunkSizeChars = minChunkSizeChars;
 		this.minChunkLengthToEmbed = minChunkLengthToEmbed;
 		this.maxNumChunks = maxNumChunks;
 		this.keepSeparator = keepSeparator;
+		this.findLastPunctuation = findLastPunctuation;
 	}
 
 	public static Builder builder() {
@@ -97,8 +114,7 @@ public class TokenTextSplitter extends TextSplitter {
 
 		List<Integer> tokens = getEncodedTokens(text);
 		List<String> chunks = new ArrayList<>();
-		int num_chunks = 0;
-		while (!tokens.isEmpty() && num_chunks < this.maxNumChunks) {
+		while (!tokens.isEmpty() && chunks.size() < this.maxNumChunks) {
 			List<Integer> chunk = tokens.subList(0, Math.min(chunkSize, tokens.size()));
 			String chunkText = decodeTokens(chunk);
 
@@ -109,10 +125,9 @@ public class TokenTextSplitter extends TextSplitter {
 			}
 
 			// Find the last period or punctuation mark in the chunk
-			int lastPunctuation = Math.max(chunkText.lastIndexOf('.'), Math.max(chunkText.lastIndexOf('?'),
-					Math.max(chunkText.lastIndexOf('!'), chunkText.lastIndexOf('\n'))));
+			int lastPunctuation = findLastPunctuation.apply(chunkText);
 
-			if (lastPunctuation != -1 && lastPunctuation > this.minChunkSizeChars) {
+			if (lastPunctuation > this.minChunkSizeChars && lastPunctuation < chunkText.length() - 1) {
 				// Truncate the chunk text at the punctuation mark
 				chunkText = chunkText.substring(0, lastPunctuation + 1);
 			}
@@ -120,13 +135,15 @@ public class TokenTextSplitter extends TextSplitter {
 			String chunkTextToAppend = (this.keepSeparator) ? chunkText.trim()
 					: chunkText.replace(System.lineSeparator(), " ").trim();
 			if (chunkTextToAppend.length() > this.minChunkLengthToEmbed) {
+				// Reserve capacity for remaining tokens
+				if (chunks.size() == this.maxNumChunks - 1) {
+					break;
+				}
 				chunks.add(chunkTextToAppend);
 			}
 
 			// Remove the tokens corresponding to the chunk text from the remaining tokens
 			tokens = tokens.subList(getEncodedTokens(chunkText).size(), tokens.size());
-
-			num_chunks++;
 		}
 
 		// Handle the remaining tokens
@@ -154,15 +171,17 @@ public class TokenTextSplitter extends TextSplitter {
 
 	public static final class Builder {
 
-		private int chunkSize;
+		private int chunkSize = DEFAULT_CHUNK_SIZE;
 
-		private int minChunkSizeChars;
+		private int minChunkSizeChars = MIN_CHUNK_SIZE_CHARS;
 
-		private int minChunkLengthToEmbed;
+		private int minChunkLengthToEmbed = MIN_CHUNK_LENGTH_TO_EMBED;
 
-		private int maxNumChunks;
+		private int maxNumChunks = MAX_NUM_CHUNKS;
 
-		private boolean keepSeparator;
+		private boolean keepSeparator = KEEP_SEPARATOR;
+
+		private Function<String, Integer> findLastPunctuation = DEFAULT_FIND_LAST_PUNCTUATION;
 
 		private Builder() {
 		}
@@ -192,9 +211,14 @@ public class TokenTextSplitter extends TextSplitter {
 			return this;
 		}
 
+		public Builder withFindLastPunctuation(Function<String, Integer> findLastPunctuation) {
+			this.findLastPunctuation = findLastPunctuation;
+			return this;
+		}
+
 		public TokenTextSplitter build() {
 			return new TokenTextSplitter(this.chunkSize, this.minChunkSizeChars, this.minChunkLengthToEmbed,
-					this.maxNumChunks, this.keepSeparator);
+					this.maxNumChunks, this.keepSeparator, this.findLastPunctuation);
 		}
 
 	}
