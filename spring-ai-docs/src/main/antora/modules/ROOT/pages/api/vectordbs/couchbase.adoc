@@ -225,31 +225,25 @@ and then create the `CouchbaseSearchVectorStore` bean using the builder pattern:
 [source,java]
 ----
 @Bean
-public CouchbaseSearchVectorStore vectorStore(Cluster cluster, EmbeddingModel embeddingModel) {
-    // Create a configuration using the builder pattern
-    CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig config = 
-        CouchbaseSearchVectorStore.CouchbaseSearchVectorStoreConfig.builder()
-            .withBucketName("myBucket")
-            .withScopeName("myScope")
-            .withCollectionName("myCollection")
-            .withDimensions(1536)
-            .withSimilarityFunction(CouchbaseSimilarityFunction.dot_product)
-            .withIndexOptimization(CouchbaseIndexOptimization.recall)
+public VectorStore couchbaseSearchVectorStore(Cluster cluster,
+                                              EmbeddingModel embeddingModel,
+                                              Boolean initializeSchema) {
+    return CouchbaseSearchVectorStore
+            .builder(cluster, embeddingModel)
+            .bucketName("test")
+            .scopeName("test")
+            .collectionName("test")
+            .initializeSchema(initializeSchema)
             .build();
-    
-    // Create the vector store using the builder pattern
-    return CouchbaseSearchVectorStore.builder(cluster, config, embeddingModel)
-        .initializeSchema(true) // Set to true to initialize the required schema
-        .build();
 }
 
 // This can be any EmbeddingModel implementation.
 @Bean
 public EmbeddingModel embeddingModel() {
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+    return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(this.openaiKey).build());
 }
 ----
 
 == Limitations
 
-NOTE: It is mandatory to have the following Couchbase services activated: Data, Query, Index, Search. While Data and Seach could be enough, Query and Index are necessary to support the complete metadata filtering mechanism.
+NOTE: It is mandatory to have the following Couchbase services activated: Data, Query, Index, Search. While Data and Search could be enough, Query and Index are necessary to support the complete metadata filtering mechanism.
