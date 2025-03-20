@@ -32,19 +32,14 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.ChatModelCallAdvisor;
 import org.springframework.ai.chat.client.advisor.ChatModelStreamAdvisor;
+import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.ToolCallbacks;
-import org.springframework.lang.NonNull;
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
@@ -62,9 +57,12 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -135,7 +133,7 @@ public class DefaultChatClient implements ChatClient {
 
 		return new DefaultChatClientRequestSpec(advisedRequest.chatModel(), advisedRequest.userText(),
 				advisedRequest.userParams(), advisedRequest.systemText(), advisedRequest.systemParams(),
-				advisedRequest.functionCallbacks(), advisedRequest.messages(), advisedRequest.functionNames(),
+				advisedRequest.toolCallbacks(), advisedRequest.messages(), advisedRequest.toolNames(),
 				advisedRequest.media(), advisedRequest.chatOptions(), advisedRequest.advisors(),
 				advisedRequest.advisorParams(), observationRegistry, customObservationConvention,
 				advisedRequest.toolContext());
@@ -650,7 +648,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final List<String> toolNames = new ArrayList<>();
 
-		private final List<FunctionCallback> toolCallbacks = new ArrayList<>();
+		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private final List<Message> messages = new ArrayList<>();
 
@@ -684,7 +682,7 @@ public class DefaultChatClient implements ChatClient {
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, @Nullable String systemText, Map<String, Object> systemParams,
-				List<FunctionCallback> toolCallbacks, List<Message> messages, List<String> toolNames, List<Media> media,
+				List<ToolCallback> toolCallbacks, List<Message> messages, List<String> toolNames, List<Media> media,
 				@Nullable ChatOptions chatOptions, List<Advisor> advisors, Map<String, Object> advisorParams,
 				ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext) {
@@ -777,11 +775,11 @@ public class DefaultChatClient implements ChatClient {
 			return this.media;
 		}
 
-		public List<String> getFunctionNames() {
+		public List<String> getToolNames() {
 			return this.toolNames;
 		}
 
-		public List<FunctionCallback> getFunctionCallbacks() {
+		public List<ToolCallback> getToolCallbacks() {
 			return this.toolCallbacks;
 		}
 
@@ -873,7 +871,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(FunctionCallback... toolCallbacks) {
+		public ChatClientRequestSpec tools(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 			this.toolCallbacks.addAll(List.of(toolCallbacks));
@@ -903,19 +901,6 @@ public class DefaultChatClient implements ChatClient {
 			for (ToolCallbackProvider toolCallbackProvider : toolCallbackProviders) {
 				this.toolCallbacks.addAll(List.of(toolCallbackProvider.getToolCallbacks()));
 			}
-			return this;
-		}
-
-		@Deprecated // Use tools()
-		public ChatClientRequestSpec functions(String... functionBeanNames) {
-			return tools(functionBeanNames);
-		}
-
-		@Deprecated // Use tools()
-		public ChatClientRequestSpec functions(FunctionCallback... functionCallbacks) {
-			Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
-			Assert.noNullElements(functionCallbacks, "functionCallbacks cannot contain null elements");
-			this.toolCallbacks.addAll(Arrays.asList(functionCallbacks));
 			return this;
 		}
 

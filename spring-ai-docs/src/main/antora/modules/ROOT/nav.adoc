@@ -107,7 +107,7 @@
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
 * xref:api/functions.adoc[Function Calling (Deprecated)]
-** xref:api/function-callback.adoc[FunctionCallback API (Deprecated)]
+
 
 * Service Connections
 ** xref:api/docker-compose.adoc[Docker Compose]

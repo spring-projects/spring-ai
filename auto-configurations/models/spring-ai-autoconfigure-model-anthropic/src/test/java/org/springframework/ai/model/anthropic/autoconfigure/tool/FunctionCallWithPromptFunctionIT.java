@@ -58,7 +58,7 @@ public class FunctionCallWithPromptFunctionIT {
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Return the temperature in Celsius.");
 
 				var promptOptions = AnthropicChatOptions.builder()
-					.functionCallbacks(
+					.toolCallbacks(
 							List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 								.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 								.inputType(MockWeatherService.Request.class)

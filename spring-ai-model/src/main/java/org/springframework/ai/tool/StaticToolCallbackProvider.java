@@ -18,12 +18,11 @@ package org.springframework.ai.tool;
 
 import java.util.List;
 
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.util.Assert;
 
 /**
  * A simple implementation of {@link ToolCallbackProvider} that maintains a static array
- * of {@link FunctionCallback} objects. This provider is immutable after construction and
+ * of {@link ToolCallback} objects. This provider is immutable after construction and
  * provides a straightforward way to supply a fixed set of tool callbacks to AI models.
  *
  * <p>
@@ -46,11 +45,11 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 1.0.0
  * @see ToolCallbackProvider
- * @see FunctionCallback
+ * @see ToolCallback
  */
 public class StaticToolCallbackProvider implements ToolCallbackProvider {
 
-	private final FunctionCallback[] toolCallbacks;
+	private final ToolCallback[] toolCallbacks;
 
 	/**
 	 * Constructs a new StaticToolCallbackProvider with the specified array of function
@@ -59,7 +58,7 @@ public class StaticToolCallbackProvider implements ToolCallbackProvider {
 	 * provider. Must not be null, though an empty array is permitted.
 	 * @throws IllegalArgumentException if the toolCallbacks array is null
 	 */
-	public StaticToolCallbackProvider(FunctionCallback... toolCallbacks) {
+	public StaticToolCallbackProvider(ToolCallback... toolCallbacks) {
 		Assert.notNull(toolCallbacks, "ToolCallbacks must not be null");
 		this.toolCallbacks = toolCallbacks;
 	}
@@ -72,9 +71,9 @@ public class StaticToolCallbackProvider implements ToolCallbackProvider {
 	 * @throws IllegalArgumentException if the toolCallbacks list is null or contains null
 	 * elements
 	 */
-	public StaticToolCallbackProvider(List<? extends FunctionCallback> toolCallbacks) {
+	public StaticToolCallbackProvider(List<? extends ToolCallback> toolCallbacks) {
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks.toArray(new FunctionCallback[0]);
+		this.toolCallbacks = toolCallbacks.toArray(new ToolCallback[0]);
 	}
 
 	/**
@@ -84,7 +83,7 @@ public class StaticToolCallbackProvider implements ToolCallbackProvider {
 	 * are expected to be immutable.
 	 */
 	@Override
-	public FunctionCallback[] getToolCallbacks() {
+	public ToolCallback[] getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
