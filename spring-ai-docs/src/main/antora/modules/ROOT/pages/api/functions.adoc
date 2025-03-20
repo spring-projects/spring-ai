@@ -34,7 +34,7 @@ As a developer, you need to implement a function that takes the function call ar
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatClient` or registering the function dynamically in your prompt request.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/tool/function/FunctionToolCallback.java[FunctionToolCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 == How it works
 
@@ -110,7 +110,7 @@ We start by describing the most POJO-friendly options.
 
 In this approach, you define a `@Bean` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `FunctionToolCallback` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is used function name.
 
 --
@@ -191,9 +191,9 @@ data class Request(val location: String, val unit: Unit)
 
 It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
-==== FunctionCallback
+==== FunctionToolCallback
 
-Another way to register a function is to create a `FunctionCallback` like this:
+Another way to register a function is to create a `FunctionToolCallback` like this:
 
 --
 [tabs]
@@ -206,10 +206,9 @@ Java::
 static class Config {
 
 	@Bean
-	public FunctionCallback weatherFunctionInfo() {
+	public FunctionToolCallback weatherFunctionInfo() {
 
-        return FunctionCallback.builder()
-            .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+        return FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
             .description("Get the weather in location") // (2) function description
             .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build();
@@ -226,10 +225,9 @@ import org.springframework.ai.model.function.withInputType
 class Config {
 
 	@Bean
-	fun weatherFunctionInfo(): FunctionCallback {
+	fun weatherFunctionInfo(): FunctionToolCallback {
 
-        return FunctionCallback.builder()
-            .function("CurrentWeather", MockWeatherService()) // (1) function name and instance
+        return FunctionToolCallback.builder("CurrentWeather", MockWeatherService()) // (1) function name and instance
             .description("Get the weather in location") // (2) function description
             // (3) Required due to Kotlin SAM conversion being an opaque lambda
             .inputType<MockWeatherService.Request>()
@@ -246,7 +244,7 @@ It also provides a description (2) and an optional response converter to convert
 
 NOTE: By default, the response converter performs a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallback.Builder` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionToolCallback.Builder` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Enable functions by bean name
 
@@ -257,7 +255,7 @@ To let the model know and call your `CurrentWeather` function you need to enable
 ChatClient chatClient = ...
 
 ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-    .functions("CurrentWeather") // Enable the function
+    .tools("CurrentWeather") // Enable the function
     .call().
     chatResponse();
 
@@ -289,8 +287,7 @@ The client-side registration enables you to register functions by default.
 ChatClient chatClient = ...
 	
 ChatResponse response = this.chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-    .functions(FunctionCallback.builder()
-            .function("currentWeather", (Request request) -> new Response(30.0, Unit.C)) // (1) function name and instance
+    .tools(FunctionToolCallback.builder("currentWeather", (Request request) -> new Response(30.0, Unit.C)) // (1) function name and instance
             .description("Get the weather in location") // (2) function description
             .inputType(MockWeatherService.Request.class) // (3) input type to build the JSON schema
             .build())
@@ -317,7 +314,7 @@ The `MethodInvokingFunctionCallback` implements the `FunctionCallback` interface
 - Any parameter/return types (primitives, objects, collections)
 - Special handling for `ToolContext` parameters
 
-You need the `FunctionCallback.Builder` to create `MethodInvokingFunctionCallback` like this:
+You need the `MethodToolCallback.Builder` to create `MethodInvokingFunctionCallback` like this:
 
 [source,java]
 ----
@@ -344,11 +341,14 @@ public class WeatherService {
 }
 
 // Usage
-FunctionCallback callback = FunctionCallback.builder()
-    .method("getWeather", String.class, TemperatureUnit.class)
-    .description("Get weather information for a city")
-    .targetClass(WeatherService.class)
-    .build();
+var toolMethod = ReflectionUtils.findMethod(WeatherService.class, "getWeather", String.class, TemperatureUnit.class);
+MethodToolCallback callback = MethodToolCallback.builder()
+					.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Get the weather in location")
+						.build())
+					.toolMethod(toolMethod)
+					.toolObject(targetObject)
+					.build();
 ----
 Instance Method with ToolContext::
 +
@@ -363,19 +363,21 @@ public class DeviceController {
 
 // Usage
 DeviceController controller = new DeviceController();
-
+var toolMethod = ReflectionUtils.findMethod(
+        DeviceController.class, "setDeviceState", String.class, Boolean.class, ToolContext.class);
 String response = ChatClient.create(chatModel).prompt()
-    .user("Turn on the living room lights")
-    .functions(FunctionCallback.builder()
-        .method("setDeviceState", String.class,boolean.class,ToolContext.class)
-        .description("Control device state")
-        .targetObject(controller)
-        .build())
-    .toolContext(Map.of("location", "home"))
-    .call()
-    .content();
+				.user("Turn on the living room lights")
+				.tools(MethodToolCallback.builder()
+						.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Control device state")
+						.build())
+						.toolMethod(toolMethod)
+						.toolObject(controller)
+						.build())
+				.toolContext(Map.of("location", "home"))
+				.call()
+				.content();
 ----
-
 ======
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/client/OpenAiChatClientMethodInvokingFunctionCallbackIT.java[OpenAiChatClientMethodInvokingFunctionCallbackIT]
@@ -425,8 +427,7 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 
 ChatResponse response = chatClient.prompt("What's the weather like in San Francisco, Tokyo, and Paris?")
-    .functions(FunctionCallback.builder()
-        .function("getCurrentWeather", this.weatherFunction)
+    .tools(FunctionToolCallback.builder("getCurrentWeather", this.weatherFunction)
         .description("Get the weather in location")
         .inputType(MockWeatherService.Request.class)
         .build())
@@ -452,15 +453,18 @@ public class DeviceController {
 
 // Usage
 DeviceController controller = new DeviceController();
-
+var toolMethod = ReflectionUtils.findMethod(
+        DeviceController.class, "setDeviceState", String.class, Boolean.class, ToolContext.class);
 String response = ChatClient.create(chatModel).prompt()
-    .user("Turn on the living room lights")
-    .functions(FunctionCallback.builder()
-        .method("setDeviceState", String.class,boolean.class,ToolContext.class)
-        .description("Control device state")
-        .targetObject(controller)
-        .build())
-    .toolContext(Map.of("location", "home"))
-    .call()
-    .content();
+				.user("Turn on the living room lights")
+				.tools(MethodToolCallback.builder()
+						.toolDefinition(ToolDefinition.builder(toolMethod)
+						.description("Control device state")
+						.build())
+						.toolMethod(toolMethod)
+						.toolObject(controller)
+						.build())
+				.toolContext(Map.of("location", "home"))
+				.call()
+				.content();
 ----

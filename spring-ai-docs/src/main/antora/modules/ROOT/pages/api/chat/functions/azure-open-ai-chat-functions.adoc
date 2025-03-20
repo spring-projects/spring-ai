@@ -123,10 +123,9 @@ Another way to register a function is to create a `FunctionCallback` instance li
 static class Config {
 
 	@Bean
-	public FunctionCallback weatherFunctionInfo() {
+	public FunctionToolCallback weatherFunctionInfo() {
 
-		return FunctionCallback.builder()
-			.function("CurrentWeather", new MockWeatherService()) // (1) function name
+		return FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name
 			.description("Get the current weather in a given location") // (2) function description
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build();
@@ -139,7 +138,7 @@ It wraps the 3rd party `MockWeatherService` function and registers it as a `Curr
 
 NOTE: The default response converter does a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class and internally generates an JSON schema for the function call.
+NOTE: The `FunctionToolCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class and internally generates an JSON schema for the function call.
 
 === Specifying functions in Chat Options
 
@@ -152,7 +151,7 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage),
-		AzureOpenAiChatOptions.builder().function("CurrentWeather").build())); // (1) Enable the function
+		AzureOpenAiChatOptions.builder().tools("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -182,8 +181,7 @@ AzureOpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?  Use Multi-turn function calling.");
 
 var promptOptions = AzureOpenAiChatOptions.builder()
-	.functionCallbacks(List.of(FunctionCallback.builder()
-			.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
 			.description("Get the current weather in a given location") // (2) function description
 			.inputType(MockWeatherService.Request.class) // (3) function input type
 			.build()))

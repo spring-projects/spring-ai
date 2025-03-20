@@ -40,9 +40,9 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.function.DefaultFunctionCallingOptions;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.MimeTypeUtils;
 
@@ -198,7 +198,7 @@ public class ChatClientTest {
 	@Test
 	void mutateDefaults() {
 
-		FunctionCallingOptions options = new DefaultFunctionCallingOptions();
+		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -216,9 +216,8 @@ public class ChatClientTest {
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
-				.defaultFunctions("fun1", "fun2")
-				.defaultFunctions(FunctionCallback.builder()
-						.function("fun3", mockFunction)
+				.defaultTools("fun1", "fun2")
+				.defaultTools(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
 						.inputType(String.class)
 						.build())
@@ -246,10 +245,10 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
 
-		var fco = (FunctionCallingOptions) prompt.getOptions();
+		var fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2");
-		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
+		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -268,16 +267,16 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
 
-		fco = (FunctionCallingOptions) prompt.getOptions();
+		fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2");
-		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
+		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
 
 		// mutate builder
 		// @formatter:off
 		chatClient = chatClient.mutate()
 				.defaultSystem("Mutated default system text {param1}, {param2}")
-				.defaultFunctions("fun4")
+				.defaultTools("fun4")
 				.defaultUser("Mutated default user text {uparam1}, {uparam2}")
 				.build();
 		// @formatter:on
@@ -298,10 +297,10 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
 
-		fco = (FunctionCallingOptions) prompt.getOptions();
+		fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun4");
-		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
+		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -320,17 +319,17 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
 
-		fco = (FunctionCallingOptions) prompt.getOptions();
+		fco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun4");
-		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
+		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
 
 	}
 
 	@Test
 	void mutatePrompt() {
 
-		FunctionCallingOptions options = new DefaultFunctionCallingOptions();
+		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -347,9 +346,8 @@ public class ChatClientTest {
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
-				.defaultFunctions("fun1", "fun2")
-				.defaultFunctions(FunctionCallback.builder()
-						.function("fun3", mockFunction)
+				.defaultTools("fun1", "fun2")
+				.defaultTools(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
 						.inputType(String.class)
 						.build())
@@ -365,7 +363,7 @@ public class ChatClientTest {
 					.system("New default system text {param1}, {param2}")
 					.user(u -> u.param("uparam1", "userValue1")
 						.param("uparam2", "userValue2"))
-					.functions("fun5")
+					.tools("fun5")
 				.mutate().build() // mutate and build new prompt
 				.prompt().call().content();
 		// @formatter:on
@@ -384,10 +382,10 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
 
-		var fco = (FunctionCallingOptions) prompt.getOptions();
+		var tco = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun5");
-		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(tco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
+		assertThat(tco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
 
 		// Streaming
 		// @formatter:off
@@ -396,7 +394,7 @@ public class ChatClientTest {
 						.system("New default system text {param1}, {param2}")
 						.user(u -> u.param("uparam1", "userValue1")
 							.param("uparam2", "userValue2"))
-						.functions("fun5")
+						.tools("fun5")
 					.mutate().build() // mutate and build new prompt
 					.prompt().stream().content());
 		// @formatter:on
@@ -415,10 +413,10 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
 
-		fco = (FunctionCallingOptions) prompt.getOptions();
+		var tcoptions = (ToolCallingChatOptions) prompt.getOptions();
 
-		assertThat(fco.getFunctions()).containsExactly("fun1", "fun2", "fun5");
-		assertThat(fco.getFunctionCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(tcoptions.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
+		assertThat(tcoptions.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
 	}
 
 	@Test
@@ -517,7 +515,7 @@ public class ChatClientTest {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		var options = FunctionCallingOptions.builder().build();
+		var options = ToolCallingChatOptions.builder().build();
 		given(this.chatModel.getDefaultOptions()).willReturn(options);
 
 		var url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
@@ -525,7 +523,7 @@ public class ChatClientTest {
 		// @formatter:off
 		ChatClient client = ChatClient.builder(this.chatModel)
 				.defaultSystem("System text")
-				.defaultFunctions("function1")
+				.defaultTools("function1")
 				.build();
 
 		String response = client.prompt()
@@ -549,10 +547,10 @@ public class ChatClientTest {
 		assertThat(userMessage.getMedia().iterator().next().getData())
 			.isEqualTo("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
-		FunctionCallingOptions runtieOptions = (FunctionCallingOptions) this.promptCaptor.getValue().getOptions();
+		ToolCallingChatOptions runtieOptions = (ToolCallingChatOptions) this.promptCaptor.getValue().getOptions();
 
-		assertThat(runtieOptions.getFunctions()).containsExactly("function1");
-		assertThat(options.getFunctions()).isEmpty();
+		assertThat(runtieOptions.getToolNames()).containsExactly("function1");
+		assertThat(options.getToolNames()).isEmpty();
 	}
 
 	// Constructors

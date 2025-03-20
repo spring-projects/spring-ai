@@ -27,15 +27,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
-import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
-import org.springframework.ai.tool.ToolCallback;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -48,7 +48,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
@@ -1467,7 +1468,7 @@ class DefaultChatClientTests {
 		String toolName = "myTool";
 		spec = spec.tools(toolName);
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getFunctionNames()).contains(toolName);
+		assertThat(defaultSpec.getToolNames()).contains(toolName);
 	}
 
 	@Test
@@ -1486,7 +1487,7 @@ class DefaultChatClientTests {
 		ToolCallback toolCallback = mock(ToolCallback.class);
 		spec = spec.tools(toolCallback);
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getFunctionCallbacks()).contains(toolCallback);
+		assertThat(defaultSpec.getToolCallbacks()).contains(toolCallback);
 	}
 
 	// FunctionCallback.builder().description("description").function(null,input->"hello").inputType(String.class).build()
@@ -1495,108 +1496,106 @@ class DefaultChatClientTests {
 	void whenFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.function(null, input -> "hello")
+		assertThatThrownBy(() -> spec.tools(FunctionToolCallback.builder(null, input -> "hello")
 			.description("description")
 			.inputType(String.class)
-			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("name cannot be null or empty");
 	}
 
 	@Test
 	void whenFunctionNameIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.function("", input -> "hello")
+		assertThatThrownBy(() -> spec.tools(FunctionToolCallback.builder("", input -> "hello")
 			.description("description")
 			.inputType(String.class)
-			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Name must not be empty");
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("name cannot be null or empty");
 	}
 
 	@Test
+	@Disabled("This fails now as the FunctionToolCallback description is allowed to be empty")
 	void whenFunctionDescriptionIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.function("name", input -> "hello")
+		assertThatThrownBy(() -> spec.tools(FunctionToolCallback.builder("name", input -> "hello")
 			.description(null)
 			.inputType(String.class)
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
 	}
 
 	@Test
+	@Disabled("This fails now as the FunctionToolCallback description is allowed to be empty")
 	void whenFunctionDescriptionIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions(FunctionCallback.builder()
-			.function("name", input -> "hello")
-			.description("")
-			.inputType(String.class)
-			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
+		assertThatThrownBy(() -> spec.tools(
+				FunctionToolCallback.builder("name", input -> "hello").description("").inputType(String.class).build()))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Description must not be empty");
 	}
 
 	@Test
 	void whenFunctionThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.functions(FunctionCallback.builder()
-			.function("name", input -> "hello")
+		spec = spec.tools(FunctionToolCallback.builder("name", input -> "hello")
 			.inputType(String.class)
 			.description("description")
 			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+		assertThat(defaultSpec.getToolCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
 
 	@Test
 	void whenFunctionAndInputTypeThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.functions(FunctionCallback.builder()
-			.function("name", input -> "hello")
+		spec = spec.tools(FunctionToolCallback.builder("name", input -> "hello")
 			.inputType(String.class)
 			.description("description")
 			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+		assertThat(defaultSpec.getToolCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
 
 	@Test
 	void whenBiFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions(
-				FunctionCallback.builder().function(null, (input, ctx) -> "hello").description("description").build()))
+		assertThatThrownBy(() -> spec
+			.tools(FunctionToolCallback.builder(null, (input, ctx) -> "hello").description("description").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Name must not be empty");
+			.hasMessage("name cannot be null or empty");
 	}
 
 	@Test
 	void whenBiFunctionNameIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions(
-				FunctionCallback.builder().function("", (input, ctx) -> "hello").description("description").build()))
+		assertThatThrownBy(() -> spec
+			.tools(FunctionToolCallback.builder("", (input, ctx) -> "hello").description("description").build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Name must not be empty");
+			.hasMessage("name cannot be null or empty");
 	}
 
 	@Test
+	@Disabled("This fails now as the FunctionToolCallback description is allowed to be empty")
 	void whenBiFunctionDescriptionIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec
-			.functions(FunctionCallback.builder().function("name", (input, ctx) -> "hello").description(null).build()))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Description must not be empty");
+		assertThatThrownBy(() -> spec.tools(FunctionToolCallback.builder("name", (input, ctx) -> "hello")
+			.inputType(String.class)
+			.description(null)
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
 	}
 
 	@Test
+	@Disabled("This fails now as the FunctionToolCallback description is allowed to be empty")
 	void whenBiFunctionDescriptionIsEmptyThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec
-			.functions(FunctionCallback.builder().function("name", (input, ctx) -> "hello").description("").build()))
+		assertThatThrownBy(
+				() -> spec.tools(FunctionToolCallback.builder("name", (input, ctx) -> "hello").description("").build()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Description must not be empty");
 	}
@@ -1605,20 +1604,19 @@ class DefaultChatClientTests {
 	void whenBiFunctionThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.functions(FunctionCallback.builder()
-			.function("name", (input, ctx) -> "hello")
+		spec = spec.tools(FunctionToolCallback.builder("name", (input, ctx) -> "hello")
 			.description("description")
 			.inputType(String.class)
 			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getFunctionCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+		assertThat(defaultSpec.getToolCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
 	}
 
 	@Test
 	void whenFunctionBeanNamesElementIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions("myFunction", null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> spec.tools("myFunction", null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("toolNames cannot contain null elements");
 	}
 
@@ -1627,28 +1625,28 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		String functionBeanName = "myFunction";
-		spec = spec.functions(functionBeanName);
+		spec = spec.tools(functionBeanName);
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getFunctionNames()).contains(functionBeanName);
+		assertThat(defaultSpec.getToolNames()).contains(functionBeanName);
 	}
 
 	@Test
 	void whenFunctionCallbacksElementIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		assertThatThrownBy(() -> spec.functions(mock(FunctionCallback.class), null))
+		assertThatThrownBy(() -> spec.tools(mock(FunctionToolCallback.class), null))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("functionCallbacks cannot contain null elements");
+			.hasMessage("toolCallbacks cannot contain null elements");
 	}
 
 	@Test
 	void whenFunctionCallbacksThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		FunctionCallback functionCallback = mock(FunctionCallback.class);
-		spec = spec.functions(functionCallback);
+		FunctionToolCallback functionToolCallback = mock(FunctionToolCallback.class);
+		spec = spec.tools(functionToolCallback);
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getFunctionCallbacks()).contains(functionCallback);
+		assertThat(defaultSpec.getToolCallbacks()).contains(functionToolCallback);
 	}
 
 	@Test

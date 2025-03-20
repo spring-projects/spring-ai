@@ -22,8 +22,8 @@ import java.util.List;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -52,9 +52,9 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			List<FunctionCallback> functionCallbacks, List<ToolCallbackProvider> tcbProviders) {
+			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
 
-		List<FunctionCallback> allFunctionAndToolCallbacks = new ArrayList<>(functionCallbacks);
+		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
 		tcbProviders.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionAndToolCallbacks::addAll);
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);

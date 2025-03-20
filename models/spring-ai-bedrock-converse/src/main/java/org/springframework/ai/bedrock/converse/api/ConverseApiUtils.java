@@ -329,7 +329,7 @@ public final class ConverseApiUtils {
 		attributes.remove("proxyToolCalls");
 		attributes.remove("functions");
 		attributes.remove("toolContext");
-		attributes.remove("functionCallbacks");
+		attributes.remove("toolCallbacks");
 
 		attributes.remove("toolCallbacks");
 		attributes.remove("toolNames");
