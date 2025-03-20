@@ -77,12 +77,13 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
@@ -139,7 +140,7 @@ import org.springframework.util.StringUtils;
  * @see ToolCallingManager
  * @see ChatModel
  */
-public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
+public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -174,70 +175,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI) {
-		this(vertexAI, VertexAiGeminiChatOptions.builder().model(ChatModel.GEMINI_1_5_PRO).temperature(0.8).build());
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {
-		this(vertexAI, options, null);
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver) {
-		this(vertexAI, options, functionCallbackResolver, List.of());
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks) {
-		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate) {
-		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
-				ObservationRegistry.NOOP);
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-
-		this(vertexAI, options,
-				LegacyToolCallingManager.builder()
-					.functionCallbackResolver(functionCallbackResolver)
-					.functionCallbacks(toolFunctionCallbacks)
-					.build(),
-				retryTemplate, observationRegistry);
-		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the new constructor accepting ToolCallingManager instead.");
-
-	}
-
-	/**
 	 * Creates a new instance of VertexAiGeminiChatModel.
 	 * @param vertexAI the Vertex AI instance to use
 	 * @param defaultOptions the default options to use
@@ -250,8 +187,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
-
-		super(null, VertexAiGeminiChatOptions.builder().build(), List.of());
 
 		Assert.notNull(vertexAI, "VertexAI must not be null");
 		Assert.notNull(defaultOptions, "VertexAiGeminiChatOptions must not be null");
@@ -456,10 +391,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						VertexAiGeminiChatOptions.class);
-			}
-			else if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions, FunctionCallingOptions.class,
 						VertexAiGeminiChatOptions.class);
 			}
 			else {
@@ -879,9 +810,9 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		private ToolCallingManager toolCallingManager;
 
-		private FunctionCallbackResolver functionCallbackResolver;
+		private ToolCallbackResolver toolCallbackResolver;
 
-		private List<FunctionCallback> toolFunctionCallbacks;
+		private List<ToolCallback> toolCallbacks;
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
@@ -905,18 +836,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			return this;
 		}
 
-		@Deprecated
-		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		@Deprecated
-		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
-			this.toolFunctionCallbacks = toolFunctionCallbacks;
-			return this;
-		}
-
 		public Builder retryTemplate(RetryTemplate retryTemplate) {
 			this.retryTemplate = retryTemplate;
 			return this;
@@ -929,25 +848,9 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		public VertexAiGeminiChatModel build() {
 			if (toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
-						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolFunctionCallbacks,
-						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
-
 				return new VertexAiGeminiChatModel(vertexAI, defaultOptions, toolCallingManager, retryTemplate,
 						observationRegistry);
 			}
-
-			if (functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
-						"toolCallingManager cannot be set when functionCallbackResolver is set");
-				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
-						: List.of();
-
-				return new VertexAiGeminiChatModel(vertexAI, defaultOptions, functionCallbackResolver, toolCallbacks,
-						retryTemplate, observationRegistry);
-			}
-
 			return new VertexAiGeminiChatModel(vertexAI, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
 					observationRegistry);
 		}

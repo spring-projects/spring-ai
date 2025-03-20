@@ -109,9 +109,9 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void whenMergeRuntimeAndDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
-		List<FunctionCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
+		List<ToolCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
 		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
@@ -119,9 +119,9 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void whenMergeRuntimeAndEmptyDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
-		List<FunctionCallback> defaultToolCallbacks = List.of();
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
+		List<ToolCallback> defaultToolCallbacks = List.of();
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
 		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
@@ -129,9 +129,9 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void whenMergeEmptyRuntimeAndDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of();
-		List<FunctionCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of();
+		List<ToolCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
 		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolB");
@@ -139,9 +139,9 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void whenMergeEmptyRuntimeAndEmptyDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of();
-		List<FunctionCallback> defaultToolCallbacks = List.of();
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of();
+		List<ToolCallback> defaultToolCallbacks = List.of();
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(0);
 	}
@@ -189,7 +189,7 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void shouldEnsureUniqueToolNames() {
-		List<FunctionCallback> toolCallbacks = List.of(new TestToolCallback("toolA"), new TestToolCallback("toolA"));
+		List<ToolCallback> toolCallbacks = List.of(new TestToolCallback("toolA"), new TestToolCallback("toolA"));
 		assertThatThrownBy(() -> ToolCallingChatOptions.validateToolCallbacks(toolCallbacks))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Multiple tools with the same name (toolA)");

@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
@@ -84,7 +85,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					""";
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.functionCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputSchema(openApiSchema)
 				.inputType(MockWeatherService.Request.class)
@@ -108,7 +109,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
-			.functionCallbacks(List.of(
+			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.inputSchema(JsonSchemaGenerator.generateForType(MockWeatherService.Request.class,
 								JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES))
@@ -149,7 +150,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
-			.functionCallbacks(List.of(
+			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
 						.inputType(MockWeatherService.Request.class)
@@ -186,7 +187,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.inputSchema(JsonSchemaGenerator.generateForType(MockWeatherService.Request.class,
 						JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES))
 				.description("Get the current weather in a given location")
@@ -247,7 +248,8 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 					VertexAiGeminiChatOptions.builder()
 						.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
 						.temperature(0.9)
-						.build());
+						.build(),
+					ToolCallingManager.builder().build(), null, null);
 		}
 
 	}
