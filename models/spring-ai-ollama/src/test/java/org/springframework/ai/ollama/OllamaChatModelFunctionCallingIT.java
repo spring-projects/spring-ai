@@ -62,7 +62,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.model(MODEL)
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
@@ -85,7 +85,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.model(MODEL)
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)

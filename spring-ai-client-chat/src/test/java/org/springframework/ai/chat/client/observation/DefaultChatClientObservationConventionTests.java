@@ -39,6 +39,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -79,24 +81,12 @@ class DefaultChatClientObservationConventionTests {
 		};
 	}
 
-	static FunctionCallback dummyFunction(String name) {
-		return new FunctionCallback() {
+	static ToolCallback dummyFunction(String name) {
+		return new ToolCallback() {
 
 			@Override
-			public String getName() {
-				return name;
-			}
-
-			@Override
-			public String getDescription() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("Unimplemented method 'getDescription'");
-			}
-
-			@Override
-			public String getInputTypeSchema() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("Unimplemented method 'getInputTypeSchema'");
+			public ToolDefinition getToolDefinition() {
+				return ToolDefinition.builder().name(name).inputSchema("{}").build();
 			}
 
 			@Override

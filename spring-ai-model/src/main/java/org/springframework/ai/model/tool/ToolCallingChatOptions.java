@@ -27,6 +27,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.util.ToolUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -39,19 +40,19 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface ToolCallingChatOptions extends FunctionCallingOptions {
+public interface ToolCallingChatOptions extends ChatOptions {
 
 	boolean DEFAULT_TOOL_EXECUTION_ENABLED = true;
 
 	/**
 	 * ToolCallbacks to be registered with the ChatModel.
 	 */
-	List<FunctionCallback> getToolCallbacks();
+	List<ToolCallback> getToolCallbacks();
 
 	/**
 	 * Set the ToolCallbacks to be registered with the ChatModel.
 	 */
-	void setToolCallbacks(List<FunctionCallback> toolCallbacks);
+	void setToolCallbacks(List<ToolCallback> toolCallbacks);
 
 	/**
 	 * Names of the tools to register with the ChatModel.
@@ -76,6 +77,10 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 	 */
 	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
+	Map<String, Object> getToolContext();
+
+	void setToolContext(Map<String, Object> tooContext);
+
 	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.
 	 */
@@ -86,17 +91,17 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 	/**
 	 * A builder to create a {@link ToolCallingChatOptions} instance.
 	 */
-	interface Builder extends FunctionCallingOptions.Builder {
+	interface Builder extends ChatOptions.Builder {
 
 		/**
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
-		Builder toolCallbacks(List<FunctionCallback> functionCallbacks);
+		Builder toolCallbacks(List<ToolCallback> toolCallbacks);
 
 		/**
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
-		Builder toolCallbacks(FunctionCallback... functionCallbacks);
+		Builder toolCallbacks(ToolCallback... toolCallbacks);
 
 		/**
 		 * Names of the tools to register with the ChatModel.
@@ -114,33 +119,20 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		 */
 		Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
-		// FunctionCallingOptions.Builder methods
-
-		@Override
+		/**
+		 * Add a {@link Map} of context values into tool context.
+		 * @param context the map representing the tool context.
+		 * @return the {@link ToolCallingChatOptions} Builder.
+		 */
 		Builder toolContext(Map<String, Object> context);
 
-		@Override
+		/**
+		 * Add a specific key/value pair to the tool context.
+		 * @param key the key to use.
+		 * @param value the corresponding value.
+		 * @return the {@link ToolCallingChatOptions} Builder.
+		 */
 		Builder toolContext(String key, Object value);
-
-		@Override
-		@Deprecated // Use toolCallbacks() instead
-		Builder functionCallbacks(List<FunctionCallback> functionCallbacks);
-
-		@Override
-		@Deprecated // Use toolCallbacks() instead
-		Builder functionCallbacks(FunctionCallback... functionCallbacks);
-
-		@Override
-		@Deprecated // Use tools() instead
-		Builder functions(Set<String> functions);
-
-		@Override
-		@Deprecated // Use tools() instead
-		Builder function(String function);
-
-		@Override
-		@Deprecated // Use internalToolExecutionEnabled() instead
-		Builder proxyToolCalls(@Nullable Boolean proxyToolCalls);
 
 		// ChatOptions.Builder methods
 
@@ -199,8 +191,8 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		return new HashSet<>(runtimeToolNames);
 	}
 
-	static List<FunctionCallback> mergeToolCallbacks(List<FunctionCallback> runtimeToolCallbacks,
-			List<FunctionCallback> defaultToolCallbacks) {
+	static List<ToolCallback> mergeToolCallbacks(List<ToolCallback> runtimeToolCallbacks,
+			List<ToolCallback> defaultToolCallbacks) {
 		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
 		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
 		if (CollectionUtils.isEmpty(runtimeToolCallbacks)) {
@@ -220,7 +212,7 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		return mergedToolContext;
 	}
 
-	static void validateToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	static void validateToolCallbacks(List<ToolCallback> toolCallbacks) {
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
 		if (!duplicateToolNames.isEmpty()) {
 			throw new IllegalStateException("Multiple tools with the same name (%s) found in ToolCallingChatOptions"
