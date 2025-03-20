@@ -75,7 +75,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
+				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().toolNames("WeatherInfo").build()));
 
 			logger.info("Response: " + response);
 
@@ -93,7 +93,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
+				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().toolNames("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()

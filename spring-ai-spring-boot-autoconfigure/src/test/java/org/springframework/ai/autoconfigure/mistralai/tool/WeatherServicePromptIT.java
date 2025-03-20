@@ -73,11 +73,10 @@ public class WeatherServicePromptIT {
 
 				var promptOptions = MistralAiChatOptions.builder()
 					.toolChoice(ToolChoice.AUTO)
-					.functionCallbacks(
-							List.of(FunctionToolCallback.builder("CurrentWeatherService", new MyWeatherService())
-								.description("Get the current weather in requested location")
-								.inputType(MyWeatherService.Request.class)
-								.build()))
+					.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MyWeatherService())
+						.description("Get the current weather in requested location")
+						.inputType(MyWeatherService.Request.class)
+						.build()))
 					.build();
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));

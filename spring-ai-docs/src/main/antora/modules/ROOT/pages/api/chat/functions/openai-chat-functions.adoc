@@ -122,10 +122,9 @@ Another way to register a function is to create a `FunctionCallback` like this:
 static class Config {
 
 	@Bean
-	public FunctionCallback weatherFunctionInfo() {
+	public FunctionToolCallback weatherFunctionInfo() {
 
-	    return FunctionCallback.builder()
-	        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	    return FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
 	        .description("Get the weather in location") // (2) function description
 	        .inputType(MockWeatherService.Request.class) // (3) function input type
 	        .build();
@@ -139,7 +138,7 @@ It also provides a description (2) and an input type (3) used to generate the JS
 
 NOTE: By default, the response converter performs a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionToolCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -152,7 +151,7 @@ OpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		OpenAiChatOptions.builder().function("CurrentWeather").build())); // Enable the function
+		OpenAiChatOptions.builder().tools("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -181,8 +180,7 @@ OpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OpenAiChatOptions.builder()
-	.functionCallbacks(List.of(FunctionCallback.builder()
-        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
         .inputType(MockWeatherService.Request.class) // (3) function input type
         .build())) // function code
@@ -232,8 +230,7 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 OpenAiChatOptions options = OpenAiChatOptions.builder()
     .model(OpenAiApi.ChatModel.GPT_4_O.getValue())
-    .functionCallbacks(List.of(FunctionCallback.builder()
-        .function("getCurrentWeather", this.weatherFunction)
+    .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", this.weatherFunction)
         .description("Get the weather in location")
         .inputType(MockWeatherService.Request.class)
         .build()))

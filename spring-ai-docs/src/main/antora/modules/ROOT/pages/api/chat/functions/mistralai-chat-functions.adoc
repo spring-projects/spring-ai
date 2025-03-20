@@ -117,7 +117,7 @@ Mistral AI is almost identical to OpenAI in this regard.
 
 ==== FunctionCallback Wrapper
 
-Another way to register a function is to create a `FunctionCallback` like this:
+Another way to register a function is to create a `FunctionToolCallback` like this:
 
 [source,java]
 ----
@@ -125,10 +125,9 @@ Another way to register a function is to create a `FunctionCallback` like this:
 static class Config {
 
 	@Bean
-	public FunctionCallback weatherFunctionInfo() {
+	public FunctionToolCallback weatherFunctionInfo() {
 
-    return FunctionCallback.builder()
-		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+    return FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
@@ -155,7 +154,7 @@ MistralAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		MistralAiChatOptions.builder().function("CurrentWeather").build())); // Enable the function
+		MistralAiChatOptions.builder().tools("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -175,8 +174,7 @@ MistralAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 var promptOptions = MistralAiChatOptions.builder()
-	.functionCallbacks(List.of(FunctionCallback.builder()
-		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build())) // function code

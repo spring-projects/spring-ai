@@ -16,9 +16,16 @@
 
 package org.springframework.ai.model.tool;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -27,22 +34,15 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
-import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Default implementation of {@link ToolCallingManager}.
@@ -88,7 +88,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	public List<ToolDefinition> resolveToolDefinitions(ToolCallingChatOptions chatOptions) {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 
-		List<FunctionCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
+		List<ToolCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
 		for (String toolName : chatOptions.getToolNames()) {
 			// Skip the tool if it is already present in the request toolCallbacks.
 			// That might happen if a tool is defined in the options
@@ -96,25 +96,14 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			if (chatOptions.getToolCallbacks().stream().anyMatch(tool -> tool.getName().equals(toolName))) {
 				continue;
 			}
-			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
+			ToolCallback toolCallback = toolCallbackResolver.resolve(toolName);
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 			toolCallbacks.add(toolCallback);
 		}
 
-		return toolCallbacks.stream().map(functionCallback -> {
-			if (functionCallback instanceof ToolCallback toolCallback) {
-				return toolCallback.getToolDefinition();
-			}
-			else {
-				return ToolDefinition.builder()
-					.name(functionCallback.getName())
-					.description(functionCallback.getDescription())
-					.inputSchema(functionCallback.getInputTypeSchema())
-					.build();
-			}
-		}).toList();
+		return toolCallbacks.stream().map(toolCallback -> toolCallback.getToolDefinition()).toList();
 	}
 
 	@Override
@@ -150,9 +139,9 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
 		Map<String, Object> toolContextMap = Map.of();
 
-		if (prompt.getOptions() instanceof FunctionCallingOptions functionOptions
-				&& !CollectionUtils.isEmpty(functionOptions.getToolContext())) {
-			toolContextMap = new HashMap<>(functionOptions.getToolContext());
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions
+				&& !CollectionUtils.isEmpty(toolCallingChatOptions.getToolContext())) {
+			toolContextMap = new HashMap<>(toolCallingChatOptions.getToolContext());
 
 			List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
 			messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
@@ -180,12 +169,9 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	 */
 	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
 			ToolContext toolContext) {
-		List<FunctionCallback> toolCallbacks = List.of();
+		List<ToolCallback> toolCallbacks = List.of();
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			toolCallbacks = toolCallingChatOptions.getToolCallbacks();
-		}
-		else if (prompt.getOptions() instanceof FunctionCallingOptions functionOptions) {
-			toolCallbacks = functionOptions.getFunctionCallbacks();
 		}
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
@@ -199,7 +185,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			String toolName = toolCall.name();
 			String toolInputArguments = toolCall.arguments();
 
-			FunctionCallback toolCallback = toolCallbacks.stream()
+			ToolCallback toolCallback = toolCallbacks.stream()
 				.filter(tool -> toolName.equals(tool.getName()))
 				.findFirst()
 				.orElseGet(() -> toolCallbackResolver.resolve(toolName));
@@ -208,17 +194,11 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 
-			if (returnDirect == null && toolCallback instanceof ToolCallback callback) {
-				returnDirect = callback.getToolMetadata().returnDirect();
+			if (returnDirect == null) {
+				returnDirect = toolCallback.getToolMetadata().returnDirect();
 			}
-			else if (toolCallback instanceof ToolCallback callback) {
-				returnDirect = returnDirect && callback.getToolMetadata().returnDirect();
-			}
-			else if (returnDirect == null) {
-				// This is a temporary solution to ensure backward compatibility with
-				// FunctionCallback.
-				// TODO: remove this block when FunctionCallback is removed.
-				returnDirect = false;
+			else {
+				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 			}
 
 			String toolResult;

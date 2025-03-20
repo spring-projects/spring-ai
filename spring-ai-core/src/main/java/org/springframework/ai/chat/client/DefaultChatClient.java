@@ -65,7 +65,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -132,7 +131,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		return new AdvisedRequest(inputRequest.chatModel, userText, inputRequest.systemText, inputRequest.chatOptions,
-				media, inputRequest.functionNames, inputRequest.functionCallbacks, messages, inputRequest.userParams,
+				media, inputRequest.toolNames, inputRequest.toolCallbacks, messages, inputRequest.userParams,
 				inputRequest.systemParams, inputRequest.advisors, inputRequest.advisorParams, advisorContext,
 				inputRequest.toolContext);
 	}
@@ -142,7 +141,7 @@ public class DefaultChatClient implements ChatClient {
 
 		return new DefaultChatClientRequestSpec(advisedRequest.chatModel(), advisedRequest.userText(),
 				advisedRequest.userParams(), advisedRequest.systemText(), advisedRequest.systemParams(),
-				advisedRequest.functionCallbacks(), advisedRequest.messages(), advisedRequest.functionNames(),
+				advisedRequest.toolCallbacks(), advisedRequest.messages(), advisedRequest.toolNames(),
 				advisedRequest.media(), advisedRequest.chatOptions(), advisedRequest.advisors(),
 				advisedRequest.advisorParams(), observationRegistry, customObservationConvention,
 				advisedRequest.toolContext());
@@ -586,9 +585,9 @@ public class DefaultChatClient implements ChatClient {
 
 		private final List<Media> media = new ArrayList<>();
 
-		private final List<String> functionNames = new ArrayList<>();
+		private final List<String> toolNames = new ArrayList<>();
 
-		private final List<FunctionCallback> functionCallbacks = new ArrayList<>();
+		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private final List<Message> messages = new ArrayList<>();
 
@@ -615,25 +614,25 @@ public class DefaultChatClient implements ChatClient {
 
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
-			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.functionCallbacks,
-					ccr.messages, ccr.functionNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
+			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.toolCallbacks,
+					ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
 					ccr.observationRegistry, ccr.customObservationConvention, ccr.toolContext);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, @Nullable String systemText, Map<String, Object> systemParams,
-				List<FunctionCallback> functionCallbacks, List<Message> messages, List<String> functionNames,
-				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
-				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
+				List<ToolCallback> toolCallbacks, List<Message> messages, List<String> toolNames, List<Media> media,
+				@Nullable ChatOptions chatOptions, List<Advisor> advisors, Map<String, Object> advisorParams,
+				ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention customObservationConvention,
 				Map<String, Object> toolContext) {
 
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
 			Assert.notNull(systemParams, "systemParams cannot be null");
-			Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.notNull(messages, "messages cannot be null");
-			Assert.notNull(functionNames, "functionNames cannot be null");
+			Assert.notNull(toolNames, "functionNames cannot be null");
 			Assert.notNull(media, "media cannot be null");
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.notNull(advisorParams, "advisorParams cannot be null");
@@ -649,8 +648,8 @@ public class DefaultChatClient implements ChatClient {
 			this.systemText = systemText;
 			this.systemParams.putAll(systemParams);
 
-			this.functionNames.addAll(functionNames);
-			this.functionCallbacks.addAll(functionCallbacks);
+			this.toolNames.addAll(toolNames);
+			this.toolCallbacks.addAll(toolCallbacks);
 			this.messages.addAll(messages);
 			this.media.addAll(media);
 			this.advisors.addAll(advisors);
@@ -753,12 +752,12 @@ public class DefaultChatClient implements ChatClient {
 			return this.media;
 		}
 
-		public List<String> getFunctionNames() {
-			return this.functionNames;
+		public List<String> getToolNames() {
+			return this.toolNames;
 		}
 
-		public List<FunctionCallback> getFunctionCallbacks() {
-			return this.functionCallbacks;
+		public List<ToolCallback> getToolCallbacks() {
+			return this.toolCallbacks;
 		}
 
 		public Map<String, Object> getToolContext() {
@@ -772,7 +771,7 @@ public class DefaultChatClient implements ChatClient {
 		public Builder mutate() {
 			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
 				.builder(this.chatModel, this.observationRegistry, this.customObservationConvention)
-				.defaultFunctions(StringUtils.toStringArray(this.functionNames));
+				.defaultTools(StringUtils.toStringArray(this.toolNames));
 
 			if (StringUtils.hasText(this.userText)) {
 				builder.defaultUser(
@@ -788,7 +787,7 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			builder.addMessages(this.messages);
-			builder.addToolCallbacks(this.functionCallbacks);
+			builder.addToolCallbacks(this.toolCallbacks);
 			builder.addToolContext(this.toolContext);
 
 			return builder;
@@ -844,15 +843,15 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec tools(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
 			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-			this.functionNames.addAll(List.of(toolNames));
+			this.toolNames.addAll(List.of(toolNames));
 			return this;
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(FunctionCallback... toolCallbacks) {
+		public ChatClientRequestSpec tools(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.functionCallbacks.addAll(List.of(toolCallbacks));
+			this.toolCallbacks.addAll(List.of(toolCallbacks));
 			return this;
 		}
 
@@ -860,7 +859,7 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec tools(List<ToolCallback> toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-			this.functionCallbacks.addAll(toolCallbacks);
+			this.toolCallbacks.addAll(toolCallbacks);
 			return this;
 		}
 
@@ -868,7 +867,7 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec tools(Object... toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
-			this.functionCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
 			return this;
 		}
 
@@ -877,21 +876,8 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
 			Assert.noNullElements(toolCallbackProviders, "toolCallbackProviders cannot contain null elements");
 			for (ToolCallbackProvider toolCallbackProvider : toolCallbackProviders) {
-				this.functionCallbacks.addAll(List.of(toolCallbackProvider.getToolCallbacks()));
+				this.toolCallbacks.addAll(List.of(toolCallbackProvider.getToolCallbacks()));
 			}
-			return this;
-		}
-
-		@Deprecated // Use tools()
-		public ChatClientRequestSpec functions(String... functionBeanNames) {
-			return tools(functionBeanNames);
-		}
-
-		@Deprecated // Use tools()
-		public ChatClientRequestSpec functions(FunctionCallback... functionCallbacks) {
-			Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
-			Assert.noNullElements(functionCallbacks, "functionCallbacks cannot contain null elements");
-			this.functionCallbacks.addAll(Arrays.asList(functionCallbacks));
 			return this;
 		}
 

@@ -36,13 +36,13 @@ import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -171,7 +171,7 @@ public class OpenAiPaymentTransactionIT {
 			logger.info("System params: " + request.systemParams());
 			logger.info("User text: \n" + request.userText());
 			logger.info("User params:" + request.userParams());
-			logger.info("Function names: " + request.functionNames());
+			logger.info("Function names: " + request.toolNames());
 
 			logger.info("Options: " + request.chatOptions().toString());
 
@@ -245,9 +245,9 @@ public class OpenAiPaymentTransactionIT {
 		@Bean
 		@ConditionalOnMissingBean
 		ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-				List<FunctionCallback> functionCallbacks, List<ToolCallbackProvider> tcbProviders) {
+				List<ToolCallback> toolCallback, List<ToolCallbackProvider> tcbProviders) {
 
-			List<FunctionCallback> allFunctionAndToolCallbacks = new ArrayList<>(functionCallbacks);
+			List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallback);
 			tcbProviders.stream()
 				.map(pr -> List.of(pr.getToolCallbacks()))
 				.forEach(allFunctionAndToolCallbacks::addAll);
