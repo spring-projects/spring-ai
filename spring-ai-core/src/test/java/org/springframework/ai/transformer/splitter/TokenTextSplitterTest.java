@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Ricken Bazolo
+ * @author Nan Chiu
  */
 public class TokenTextSplitterTest {
 
@@ -88,6 +89,7 @@ public class TokenTextSplitterTest {
 			.withMinChunkLengthToEmbed(3)
 			.withMaxNumChunks(50)
 			.withKeepSeparator(true)
+			.withFindLastPunctuation(TokenTextSplitter.DEFAULT_FIND_LAST_PUNCTUATION)
 			.build();
 
 		var chunks = tokenTextSplitter.apply(List.of(doc1, doc2));
@@ -110,6 +112,82 @@ public class TokenTextSplitterTest {
 
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
 		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
+	}
+
+	@Test
+	public void testTokenTextSplitterBuilderWithCustomFindLastPunctuationFunction() {
+
+		var contentFormatter1 = DefaultContentFormatter.defaultConfig();
+		var contentFormatter2 = DefaultContentFormatter.defaultConfig();
+
+		assertThat(contentFormatter1).isNotSameAs(contentFormatter2);
+
+		var doc1 = new Document("In the end, writing arises when man realizes that memory is not enough.",
+				Map.of("key1", "value1", "key2", "value2"));
+		doc1.setContentFormatter(contentFormatter1);
+
+		var doc2 = new Document("The most oppressive thing about the labyrinth is that you are constantly "
+				+ "being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
+				Map.of("key2", "value22", "key3", "value3"));
+		doc2.setContentFormatter(contentFormatter2);
+
+		var tokenTextSplitter = TokenTextSplitter.builder()
+				.withMinChunkSizeChars(5)
+				.withFindLastPunctuation(text -> text.lastIndexOf(','))
+				.build();
+
+		var chunks = tokenTextSplitter.apply(List.of(doc1, doc2));
+
+		assertThat(chunks.size()).isEqualTo(4);
+
+		// Doc 1
+		assertThat(chunks.get(0).getText()).isEqualTo("In the end,");
+		assertThat(chunks.get(1).getText()).isEqualTo("writing arises when man realizes that memory is not enough.");
+
+		// Doc 2
+		assertThat(chunks.get(2).getText()).isEqualTo("The most oppressive thing about the labyrinth is that you are constantly being forced to choose. It isn’t the lack of an exit,");
+		assertThat(chunks.get(3).getText()).isEqualTo("but the abundance of exits that is so disorienting.");
+
+		// Verify that the same, merged metadata is copied to all chunks.
+		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());
+		assertThat(chunks.get(2).getMetadata()).isEqualTo(chunks.get(3).getMetadata());
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
+		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
+	}
+
+	@Test
+	public void testDoSplitRespectsMaxNumChunksAndAvoidsEarlyRemainingProcessing() {
+		var doc1 = new Document("In the end, writing arises when man realizes that memory is not enough.");
+		var tokenTextSplitter1 = TokenTextSplitter.builder()
+				.withChunkSize(5)
+				.withMinChunkSizeChars(1)
+				.withMaxNumChunks(2)
+				.build();
+		List<Document> chunks1 = tokenTextSplitter1.apply(List.of(doc1));
+
+		// equal to MaxNumChunks
+		assertThat(chunks1.size()).isEqualTo(2);
+
+
+		var doc2 = new Document("d d d d d d d d. " +
+				"The most oppressive thing about the labyrinth is that you are constantly being forced to choose. " +
+				"d d d d d d d d. " +
+				"It isn’t the lack of an exit, but the abundance of exits that is so disorienting.");
+		var tokenTextSplitter2 = TokenTextSplitter.builder()
+				.withChunkSize(20)
+				.withMinChunkSizeChars(1)
+				.withMinChunkLengthToEmbed(20)
+				.withMaxNumChunks(2)
+				.build();
+		List<Document> chunks2 = tokenTextSplitter2.apply(List.of(doc2));
+
+		assertThat(chunks2.size()).isEqualTo(2);
+
+		// Doc 2
+		assertThat(chunks2.get(0).getText()).isEqualTo(
+				"The most oppressive thing about the labyrinth is that you are constantly being forced to choose.");
+		assertThat(chunks2.get(1).getText()).isEqualTo(
+				"It isn’t the lack of an exit, but the abundance of exits that is so disorienting.");
 	}
 
 }
