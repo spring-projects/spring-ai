@@ -17,7 +17,6 @@
 package org.springframework.ai.mcp;
 
 import java.util.Map;
-import java.util.UUID;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
