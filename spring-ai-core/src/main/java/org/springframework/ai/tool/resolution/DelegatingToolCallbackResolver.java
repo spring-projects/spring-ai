@@ -16,11 +16,11 @@
 
 package org.springframework.ai.tool.resolution;
 
-import org.springframework.ai.model.function.FunctionCallback;
+import java.util.List;
+
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import java.util.List;
 
 /**
  * A {@link ToolCallbackResolver} that delegates to a list of {@link ToolCallbackResolver}
@@ -41,11 +41,11 @@ public class DelegatingToolCallbackResolver implements ToolCallbackResolver {
 
 	@Override
 	@Nullable
-	public FunctionCallback resolve(String toolName) {
+	public ToolCallback resolve(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 
 		for (ToolCallbackResolver toolCallbackResolver : toolCallbackResolvers) {
-			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
+			ToolCallback toolCallback = toolCallbackResolver.resolve(toolName);
 			if (toolCallback != null) {
 				return toolCallback;
 			}

@@ -24,6 +24,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MockWeatherService;
 import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,16 +65,13 @@ public class ChatCompletionRequestTests {
 		var client = new MiniMaxChatModel(new MiniMaxApi("TEST"),
 				MiniMaxChatOptions.builder().model("DEFAULT_MODEL").build());
 
-		var request = client.createRequest(new Prompt("Test message content",
-				MiniMaxChatOptions.builder()
-					.model("PROMPT_MODEL")
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
-						.description("Get the weather in location")
-						.inputType(MockWeatherService.Request.class)
-						.build()))
-					.build()),
-				false);
+		var request = client.createRequest(new Prompt("Test message content", MiniMaxChatOptions.builder()
+			.model("PROMPT_MODEL")
+			.functionCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build()), false);
 
 		assertThat(client.getFunctionCallbackRegister()).hasSize(1);
 		assertThat(client.getFunctionCallbackRegister()).containsKeys(TOOL_FUNCTION_NAME);

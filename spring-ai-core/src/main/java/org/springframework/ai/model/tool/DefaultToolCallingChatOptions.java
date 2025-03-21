@@ -16,11 +16,6 @@
 
 package org.springframework.ai.model.tool;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,6 +23,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Default implementation of {@link ToolCallingChatOptions}.
@@ -37,7 +37,7 @@ import java.util.Set;
  */
 public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
-	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	private Set<String> toolNames = new HashSet<>();
 
@@ -71,12 +71,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	private Double topP;
 
 	@Override
-	public List<FunctionCallback> getToolCallbacks() {
+	public List<ToolCallback> getToolCallbacks() {
 		return List.copyOf(this.toolCallbacks);
 	}
 
 	@Override
-	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = new ArrayList<>(toolCallbacks);
@@ -116,37 +116,6 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	@Override
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return getToolCallbacks();
-	}
-
-	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		setToolCallbacks(functionCallbacks);
-	}
-
-	@Override
-	public Set<String> getFunctions() {
-		return getToolNames();
-	}
-
-	@Override
-	public void setFunctions(Set<String> functions) {
-		setToolNames(functions);
-	}
-
-	@Override
-	@Nullable
-	public Boolean getProxyToolCalls() {
-		return isInternalToolExecutionEnabled() != null ? !isInternalToolExecutionEnabled() : null;
-	}
-
-	@Override
-	public void setProxyToolCalls(@Nullable Boolean proxyToolCalls) {
-		setInternalToolExecutionEnabled(proxyToolCalls == null || !proxyToolCalls);
 	}
 
 	@Override
@@ -260,13 +229,13 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		private final DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
 		@Override
-		public ToolCallingChatOptions.Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+		public ToolCallingChatOptions.Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+		public ToolCallingChatOptions.Builder toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			this.options.setToolCallbacks(Arrays.asList(toolCallbacks));
 			return this;
@@ -306,37 +275,6 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 				@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
-		}
-
-		@Override
-		@Deprecated // Use toolCallbacks() instead
-		public ToolCallingChatOptions.Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return toolCallbacks(functionCallbacks);
-		}
-
-		@Override
-		@Deprecated // Use toolCallbacks() instead
-		public ToolCallingChatOptions.Builder functionCallbacks(FunctionCallback... functionCallbacks) {
-			Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
-			return functionCallbacks(List.of(functionCallbacks));
-		}
-
-		@Override
-		@Deprecated // Use toolNames() instead
-		public ToolCallingChatOptions.Builder functions(Set<String> functions) {
-			return toolNames(functions);
-		}
-
-		@Override
-		@Deprecated // Use toolNames() instead
-		public ToolCallingChatOptions.Builder function(String function) {
-			return toolNames(function);
-		}
-
-		@Override
-		@Deprecated // Use internalToolExecutionEnabled() instead
-		public ToolCallingChatOptions.Builder proxyToolCalls(@Nullable Boolean proxyToolCalls) {
-			return internalToolExecutionEnabled(proxyToolCalls == null || !proxyToolCalls);
 		}
 
 		@Override

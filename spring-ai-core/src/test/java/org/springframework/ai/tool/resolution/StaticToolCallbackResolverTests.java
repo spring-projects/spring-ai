@@ -43,7 +43,7 @@ class StaticToolCallbackResolverTests {
 
 	@Test
 	void whenToolCallbacksContainNullElementsThenThrowException() {
-		var toolCallbacks = new ArrayList<FunctionCallback>();
+		var toolCallbacks = new ArrayList<ToolCallback>();
 		toolCallbacks.add(null);
 		assertThatThrownBy(() -> new StaticToolCallbackResolver(toolCallbacks))
 			.isInstanceOf(IllegalArgumentException.class);

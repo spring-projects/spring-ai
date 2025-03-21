@@ -127,11 +127,10 @@ Another way to register a function is to create a `FunctionCallback` instance li
 static class Config {
 
 	@Bean
-	public FunctionCallback weatherFunctionInfo() {
+	public FunctionToolCallback weatherFunctionInfo() {
 
-    return FunctionCallback.builder()
+    return FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
-		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
 	}
@@ -144,7 +143,7 @@ It also provides a description (2) and input type (3) used to generate the JSON 
 
 NOTE: By default, the response converter does a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionToolCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -157,7 +156,7 @@ AnthropicChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(List.of(this.userMessage),
-		AnthropicChatOptions.builder().function("CurrentWeather").build())); // (1) Enable the function
+		AnthropicChatOptions.builder().toolNames("CurrentWeather").build())); // (1) Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -177,8 +176,7 @@ AnthropicChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in Paris?");
 
 var promptOptions = AnthropicChatOptions.builder()
-	.functionCallbacks(List.of(FunctionCallback.builder()
-		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build())) // function code

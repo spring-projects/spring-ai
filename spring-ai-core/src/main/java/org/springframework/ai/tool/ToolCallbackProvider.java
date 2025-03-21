@@ -28,13 +28,13 @@ import org.springframework.ai.model.function.FunctionCallback;
  */
 public interface ToolCallbackProvider {
 
-	FunctionCallback[] getToolCallbacks();
+	ToolCallback[] getToolCallbacks();
 
-	static ToolCallbackProvider from(List<? extends FunctionCallback> toolCallbacks) {
+	static ToolCallbackProvider from(List<? extends ToolCallback> toolCallbacks) {
 		return new StaticToolCallbackProvider(toolCallbacks);
 	}
 
-	static ToolCallbackProvider from(FunctionCallback... toolCallbacks) {
+	static ToolCallbackProvider from(ToolCallback... toolCallbacks) {
 		return new StaticToolCallbackProvider(toolCallbacks);
 	}
 

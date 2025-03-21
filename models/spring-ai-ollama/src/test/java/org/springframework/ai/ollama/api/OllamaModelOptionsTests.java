@@ -101,7 +101,6 @@ public class OllamaModelOptionsTests {
 			.useMMap(true)
 			.useMLock(false)
 			.penalizeNewline(true)
-			.proxyToolCalls(true)
 			.build();
 
 		var optionsMap = options.toMap();
@@ -128,9 +127,9 @@ public class OllamaModelOptionsTests {
 	@Test
 	public void testFunctionAndToolOptions() {
 		var options = OllamaOptions.builder()
-			.function("function1")
-			.function("function2")
-			.function("function3")
+			.toolNames("function1")
+			.toolNames("function2")
+			.toolNames("function3")
 			.toolContext(Map.of("key1", "value1", "key2", "value2"))
 			.build();
 
@@ -140,7 +139,7 @@ public class OllamaModelOptionsTests {
 		assertThat(optionsMap).doesNotContainKey("tool_context");
 
 		// But they are accessible through getters
-		assertThat(options.getFunctions()).containsExactlyInAnyOrder("function1", "function2", "function3");
+		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
 		assertThat(options.getToolContext())
 			.containsExactlyInAnyOrderEntriesOf(Map.of("key1", "value1", "key2", "value2"));
 	}
@@ -151,9 +150,9 @@ public class OllamaModelOptionsTests {
 		functionSet.add("function1");
 		functionSet.add("function2");
 
-		var options = OllamaOptions.builder().functions(functionSet).function("function3").build();
+		var options = OllamaOptions.builder().toolNames(functionSet).toolNames("function3").build();
 
-		assertThat(options.getFunctions()).containsExactlyInAnyOrder("function1", "function2", "function3");
+		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
 	}
 
 	@Test
@@ -162,7 +161,7 @@ public class OllamaModelOptionsTests {
 			.model("llama2")
 			.temperature(0.7)
 			.topK(40)
-			.functions(Set.of("function1"))
+			.toolNames(Set.of("function1"))
 			.build();
 
 		var copiedOptions = OllamaOptions.fromOptions(originalOptions);
@@ -171,30 +170,30 @@ public class OllamaModelOptionsTests {
 		assertThat(copiedOptions.getModel()).isEqualTo("llama2");
 		assertThat(copiedOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(copiedOptions.getTopK()).isEqualTo(40);
-		assertThat(copiedOptions.getFunctions()).containsExactly("function1");
+		assertThat(copiedOptions.getToolNames()).containsExactly("function1");
 	}
 
 	@Test
 	public void testFunctionOptionsNotInMap() {
-		var options = OllamaOptions.builder().model("llama2").functions(Set.of("function1")).build();
+		var options = OllamaOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
 
 		var optionsMap = options.toMap();
 
 		// Verify function-related fields are not included in the map due to @JsonIgnore
 		assertThat(optionsMap).containsEntry("model", "llama2");
 		assertThat(optionsMap).doesNotContainKey("functions");
-		assertThat(optionsMap).doesNotContainKey("functionCallbacks");
+		assertThat(optionsMap).doesNotContainKey("toolCallbacks");
 		assertThat(optionsMap).doesNotContainKey("proxyToolCalls");
 		assertThat(optionsMap).doesNotContainKey("toolContext");
 
 		// But verify they are still accessible through getters
-		assertThat(options.getFunctions()).containsExactly("function1");
+		assertThat(options.getToolNames()).containsExactly("function1");
 	}
 
 	@SuppressWarnings("deprecation")
 	@Test
 	public void testDeprecatedMethods() {
-		var options = OllamaOptions.builder().model("llama2").temperature(0.7).topK(40).function("function1").build();
+		var options = OllamaOptions.builder().model("llama2").temperature(0.7).topK(40).toolNames("function1").build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("model", "llama2");
@@ -202,7 +201,7 @@ public class OllamaModelOptionsTests {
 		assertThat(optionsMap).containsEntry("top_k", 40);
 
 		// Function is not in map but accessible via getter
-		assertThat(options.getFunctions()).containsExactly("function1");
+		assertThat(options.getToolNames()).containsExactly("function1");
 	}
 
 }
