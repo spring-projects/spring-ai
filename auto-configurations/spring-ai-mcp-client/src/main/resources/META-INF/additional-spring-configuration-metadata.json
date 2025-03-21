@@ -1,0 +1,26 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.mcp.client.sse.transport-mode",
+      "type": "org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties$SseTransportMode",
+      "description": "The transport mode for SSE connections. Can be either 'WEBFLUX' (default) or 'HTTP_CLIENT'.",
+      "defaultValue": "WEBFLUX",
+      "sourceType": "org.springframework.ai.autoconfigure.mcp.client.properties.McpSseClientProperties"
+    }
+  ],
+  "hints": [
+    {
+      "name": "spring.ai.mcp.client.sse.transport-mode",
+      "values": [
+        {
+          "value": "WEBFLUX",
+          "description": "Use WebFlux for SSE transport (default). Provides reactive streaming support."
+        },
+        {
+          "value": "HTTP_CLIENT",
+          "description": "Use HTTP Client for SSE transport. Traditional blocking HTTP client implementation."
+        }
+      ]
+    }
+  ]
+} 
