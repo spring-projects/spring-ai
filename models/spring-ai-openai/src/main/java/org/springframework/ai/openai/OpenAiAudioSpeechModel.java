@@ -79,7 +79,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 	public OpenAiAudioSpeechModel(OpenAiAudioApi audioApi) {
 		this(audioApi,
 				OpenAiAudioSpeechOptions.builder()
-					.model(OpenAiAudioApi.TtsModel.TTS_1.getValue())
+					.model(OpenAiAudioApi.TtsModel.GPT_4O_MINI_TTS.getValue())
 					.responseFormat(AudioResponseFormat.MP3)
 					.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
 					.speed(SPEED)
