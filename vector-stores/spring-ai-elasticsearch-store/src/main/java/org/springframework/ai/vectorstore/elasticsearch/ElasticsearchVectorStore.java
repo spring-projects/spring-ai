@@ -263,7 +263,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 					.similarity(finalThreshold)
 					.k(searchRequest.getTopK())
-					.field("embedding")
+					.field(this.options.getFiledName())
 					.numCandidates((int) (1.5 * searchRequest.getTopK()))
 					.filter(fl -> fl
 						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
@@ -321,7 +321,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		try {
 			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(this.options.getIndexName())
-					.mappings(map -> map.properties("embedding",
+					.mappings(map -> map.properties(this.options.getFiledName(),
 							p -> p.denseVector(dv -> dv.similarity(this.options.getSimilarity().toString())
 								.dims(this.options.getDimensions())))));
 		}
