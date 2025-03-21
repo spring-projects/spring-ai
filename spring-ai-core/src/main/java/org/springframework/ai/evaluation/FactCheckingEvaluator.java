@@ -64,15 +64,15 @@ import org.springframework.ai.chat.client.ChatClient;
 public class FactCheckingEvaluator implements Evaluator {
 
 	private static final String DEFAULT_EVALUATION_PROMPT_TEXT = """
-				Evaluate whether or not the following claim is supported by the provided document.
-				Respond with "yes" if the claim is supported, or "no" if it is not.
-				Document: \\n {document}\\n
-				Claim: \\n {claim}
+			Evaluate whether or not the following claim is supported by the provided document.
+			Respond with "yes" if the claim is supported, or "no" if it is not.
+			Document: {document}
+			Claim: {claim}
 			""";
 
 	private static final String BESPOKE_EVALUATION_PROMPT_TEXT = """
-				Document: \\n {document}\\n
-				Claim: \\n {claim}
+			Document: {document}
+			Claim: {claim}
 			""";
 
 	private final ChatClient.Builder chatClientBuilder;
