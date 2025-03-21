@@ -16,9 +16,9 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
@@ -48,7 +48,7 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 	}
 
 	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			int order) {
+									int order) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
 	}
 
@@ -92,9 +92,9 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 
 		// 3. Create a new request with the advised messages.
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request).messages(advisedMessages).build();
-
 		// 4. Add the new user input to the conversation memory.
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		Map<String, Object> metadata = new HashMap<>(request.adviseContext());
+		UserMessage userMessage = new UserMessage(request.userText(), request.media(), metadata);
 		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
 
 		return advisedRequest;
@@ -103,10 +103,17 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 	private void observeAfter(AdvisedResponse advisedResponse) {
 
 		List<Message> assistantMessages = advisedResponse.response()
-			.getResults()
-			.stream()
-			.map(g -> (Message) g.getOutput())
-			.toList();
+				.getResults()
+				.stream()
+				.map(g -> {
+					AssistantMessage output = g.getOutput();
+					Map<String, Object> metadata = Optional.ofNullable(output.getMetadata()).orElse(new HashMap<>());
+					metadata.putAll(advisedResponse.adviseContext());
+					AssistantMessage assistantMessage = new AssistantMessage(output.getText(),
+							metadata, output.getToolCalls(), output.getMedia());
+					return (Message) assistantMessage;
+				})
+				.toList();
 
 		this.getChatMemoryStore().add(this.doGetConversationId(advisedResponse.adviseContext()), assistantMessages);
 	}
