@@ -138,6 +138,24 @@ String answer = chatClient.prompt()
 
 See xref:api/retrieval-augmented-generation.adoc#_vectorstoredocumentretriever for more information.
 
+By default, the `RetrievalAugmentationAdvisor` process the input user text with a `PromptTemplate`, ensuring that any template placeholder is correctly rendered before using the text for the retrieval process.
+If you want to customize the processing logic, you can provide a custom `UserTextProcessor` to the advisor, either as a lambda or a class.
+For example, in case you want to skip the rendering step, you can provide a `NoOpUserTextProcessor`. That is useful if you're planning to use the templating special characters in the user text for other purposes.
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore().build())
+			.userTextProcessor(new NoOpUserTextProcessor())
+			.build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+----
+
 ===== Advanced RAG
 
 [source,java]
