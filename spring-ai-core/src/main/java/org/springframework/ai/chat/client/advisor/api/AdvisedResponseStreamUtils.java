@@ -12,20 +12,20 @@ public final class AdvisedResponseStreamUtils {
 
 	/**
 	 * Returns a predicate that checks whether the provided {@link AdvisedResponse}
-	 * contains a {@link ChatResponse} with at least one result having a non-empty
-	 * finish reason in its metadata.
-	 *
-	 * @return a {@link Predicate} that evaluates whether the finish reason exists
-	 *         within the response metadata.
+	 * contains a {@link ChatResponse} with at least one result having a non-empty finish
+	 * reason in its metadata.
+	 * @return a {@link Predicate} that evaluates whether the finish reason exists within
+	 * the response metadata.
 	 */
 	public static Predicate<AdvisedResponse> onFinishReason() {
 		return advisedResponse -> {
 			ChatResponse chatResponse = advisedResponse.response();
 			return chatResponse != null && chatResponse.getResults() != null
 					&& chatResponse.getResults()
-					.stream()
-					.anyMatch(result -> result != null && result.getMetadata() != null
-							&& StringUtils.hasText(result.getMetadata().getFinishReason()));
+						.stream()
+						.anyMatch(result -> result != null && result.getMetadata() != null
+								&& StringUtils.hasText(result.getMetadata().getFinishReason()));
 		};
 	}
+
 }

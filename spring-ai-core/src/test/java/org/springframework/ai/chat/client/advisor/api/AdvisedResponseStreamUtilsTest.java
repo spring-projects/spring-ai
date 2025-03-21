@@ -22,6 +22,7 @@ class AdvisedResponseStreamUtilsTest {
 
 	@Nested
 	class OnFinishReason {
+
 		@Test
 		void whenChatResponseIsNullThenReturnFalse() {
 			AdvisedResponse response = mock(AdvisedResponse.class);
@@ -75,6 +76,7 @@ class AdvisedResponseStreamUtilsTest {
 
 			assertTrue(result);
 		}
+
 	}
 
 }
