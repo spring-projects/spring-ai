@@ -16,7 +16,6 @@
 package org.springframework.ai.autoconfigure.vectorstore.couchbase;
 
 import com.couchbase.client.java.Cluster;
-import org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.CouchbaseSearchVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
