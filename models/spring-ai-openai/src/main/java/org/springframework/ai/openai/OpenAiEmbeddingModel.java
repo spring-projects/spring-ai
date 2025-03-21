@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -148,13 +147,16 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-		OpenAiEmbeddingOptions requestOptions = mergeOptions(request.getOptions(), this.defaultOptions);
-		OpenAiApi.EmbeddingRequest<List<String>> apiRequest = createRequest(request, requestOptions);
+		// Before moving any further, build the final request EmbeddingRequest,
+		// merging runtime and default options.
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+
+		OpenAiApi.EmbeddingRequest<List<String>> apiRequest = createRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(OpenAiApiConstants.PROVIDER_NAME)
-			.requestOptions(requestOptions)
+			.requestOptions(embeddingRequest.getOptions())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -190,35 +192,32 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
-	private OpenAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request,
-			OpenAiEmbeddingOptions requestOptions) {
+	private OpenAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request) {
+		OpenAiEmbeddingOptions requestOptions = (OpenAiEmbeddingOptions) request.getOptions();
 		return new OpenAiApi.EmbeddingRequest<>(request.getInstructions(), requestOptions.getModel(),
 				requestOptions.getEncodingFormat(), requestOptions.getDimensions(), requestOptions.getUser());
 	}
 
-	/**
-	 * Merge runtime and default {@link EmbeddingOptions} to compute the final options to
-	 * use in the request.
-	 */
-	private OpenAiEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions runtimeOptions,
-			OpenAiEmbeddingOptions defaultOptions) {
-		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, EmbeddingOptions.class,
-				OpenAiEmbeddingOptions.class);
-
-		if (runtimeOptionsForProvider == null) {
-			return defaultOptions;
+	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		OpenAiEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OpenAiEmbeddingOptions.class);
 		}
 
-		return OpenAiEmbeddingOptions.builder()
+		OpenAiEmbeddingOptions requestOptions = runtimeOptions == null ? this.defaultOptions : OpenAiEmbeddingOptions
+			.builder()
 			// Handle portable embedding options
-			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getDimensions(),
-					defaultOptions.getDimensions()))
+			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.defaultOptions.getModel()))
+			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), defaultOptions.getDimensions()))
 			// Handle OpenAI specific embedding options
-			.encodingFormat(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getEncodingFormat(),
+			.encodingFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getEncodingFormat(),
 					defaultOptions.getEncodingFormat()))
-			.user(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getUser(), defaultOptions.getUser()))
+			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), this.defaultOptions.getUser()))
 			.build();
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
 	}
 
 	/**
