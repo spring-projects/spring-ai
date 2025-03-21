@@ -89,9 +89,8 @@ spring:
     vectorstore:
       redis:
         initialize-schema: true
-        index-name: custom-index
+        index: custom-index
         prefix: custom-prefix
-        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
 ----
 
 Properties starting with `spring.ai.vectorstore.redis.*` are used to configure the `RedisVectorStore`:
@@ -101,9 +100,8 @@ Properties starting with `spring.ai.vectorstore.redis.*` are used to configure t
 |Property | Description | Default Value
 
 |`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema | `false`
-|`spring.ai.vectorstore.redis.index-name` | The name of the index to store the vectors | `spring-ai-index`
+|`spring.ai.vectorstore.redis.index` | The name of the index to store the vectors | `spring-ai-index`
 |`spring.ai.vectorstore.redis.prefix` | The prefix for Redis keys | `embedding:`
-|`spring.ai.vectorstore.redis.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |===
 
 == Metadata Filtering
