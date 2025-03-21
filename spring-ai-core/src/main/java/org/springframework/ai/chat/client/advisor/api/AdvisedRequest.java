@@ -150,7 +150,12 @@ public record AdvisedRequest(
 	public Prompt toPrompt() {
 		List<Message> promptMessages = new ArrayList<>();
 
-		// 1. Always add the SystemMessage first (if present)
+		// 1. Start with existing conversation messages, if present
+		if (!CollectionUtils.isEmpty(this.messages())) {
+			promptMessages.addAll(this.messages());
+		}
+
+		// 2. Process the new SystemMessage, if present
 		String processedSystemText = this.systemText();
 		if (StringUtils.hasText(processedSystemText)) {
 			if (!CollectionUtils.isEmpty(this.systemParams())) {
@@ -159,13 +164,7 @@ public record AdvisedRequest(
 			promptMessages.add(new SystemMessage(processedSystemText));
 		}
 
-		// 2. Add any existing conversation messages
-		List<Message> existingMessages = this.messages();
-		if (!CollectionUtils.isEmpty(existingMessages)) {
-			promptMessages.addAll(existingMessages);
-		}
-
-		// 3. Process and append the UserMessage (if present)
+		// 3. Process the new UserMessage, if present
 		String formatParam = (String) this.adviseContext().get("formatParam");
 		var processedUserText = StringUtils.hasText(formatParam)
 				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
@@ -181,7 +180,7 @@ public record AdvisedRequest(
 			promptMessages.add(new UserMessage(processedUserText, this.media()));
 		}
 
-		// 4. Configure function-calling options
+		// 4. Configure function-calling options, if applicable
 		if (this.chatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
 			if (!this.functionNames().isEmpty()) {
 				functionCallingOptions.setFunctions(new HashSet<>(this.functionNames()));
