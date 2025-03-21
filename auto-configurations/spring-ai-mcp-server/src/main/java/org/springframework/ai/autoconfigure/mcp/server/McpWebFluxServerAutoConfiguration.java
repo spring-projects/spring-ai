@@ -72,8 +72,8 @@ public class McpWebFluxServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebFluxSseServerTransport webFluxTransport(McpServerProperties serverProperties) {
-		return new WebFluxSseServerTransport(new ObjectMapper(), serverProperties.getSseMessageEndpoint());
+	public WebFluxSseServerTransport webFluxTransport(McpServerProperties serverProperties, ObjectMapper objectMapper) {
+		return new WebFluxSseServerTransport(objectMapper, serverProperties.getSseMessageEndpoint());
 	}
 
 	// Router function for SSE transport used by Spring WebFlux to start an HTTP server.
