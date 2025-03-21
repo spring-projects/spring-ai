@@ -17,9 +17,11 @@
 package org.springframework.ai.minimax;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -43,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -146,7 +149,7 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 	private Boolean proxyToolCalls;
 
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	// @formatter:on
 
@@ -162,16 +165,17 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 			.presencePenalty(fromOptions.getPresencePenalty())
 			.responseFormat(fromOptions.getResponseFormat())
 			.seed(fromOptions.getSeed())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.maskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
-			.tools(fromOptions.getTools())
+			.tools(fromOptions.getTools() != null ? new ArrayList<>(fromOptions.getTools()) : null)
 			.toolChoice(fromOptions.getToolChoice())
-			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
+			.functionCallbacks(fromOptions.getFunctionCallbacks() != null
+					? new ArrayList<>(fromOptions.getFunctionCallbacks()) : null)
+			.functions(fromOptions.getFunctions() != null ? new HashSet<>(fromOptions.getFunctions()) : null)
 			.proxyToolCalls(fromOptions.getProxyToolCalls())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.build();
 	}
 
@@ -342,164 +346,32 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.n == null) ? 0 : this.n.hashCode());
-		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
-		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
-		result = prime * result + ((this.seed == null) ? 0 : this.seed.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.maskSensitiveInfo == null) ? 0 : this.maskSensitiveInfo.hashCode());
-		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
-		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
-		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
-		return result;
+		return Objects.hash(model, frequencyPenalty, maxTokens, n, presencePenalty, responseFormat, seed, stop,
+				temperature, topP, maskSensitiveInfo, tools, toolChoice, proxyToolCalls, toolContext);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
 		}
-		if (obj == null) {
+		if (!(o instanceof MiniMaxChatOptions that)) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		MiniMaxChatOptions other = (MiniMaxChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.n == null) {
-			if (other.n != null) {
-				return false;
-			}
-		}
-		else if (!this.n.equals(other.n)) {
-			return false;
-		}
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty)) {
-			return false;
-		}
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null) {
-				return false;
-			}
-		}
-		else if (!this.responseFormat.equals(other.responseFormat)) {
-			return false;
-		}
-		if (this.seed == null) {
-			if (other.seed != null) {
-				return false;
-			}
-		}
-		else if (!this.seed.equals(other.seed)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.maskSensitiveInfo == null) {
-			if (other.maskSensitiveInfo != null) {
-				return false;
-			}
-		}
-		else if (!this.maskSensitiveInfo.equals(other.maskSensitiveInfo)) {
-			return false;
-		}
-		if (this.tools == null) {
-			if (other.tools != null) {
-				return false;
-			}
-		}
-		else if (!this.tools.equals(other.tools)) {
-			return false;
-		}
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null) {
-				return false;
-			}
-		}
-		else if (!this.toolChoice.equals(other.toolChoice)) {
-			return false;
-		}
-		if (this.proxyToolCalls == null) {
-			if (other.proxyToolCalls != null) {
-				return false;
-			}
-		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
-			return false;
-		}
-
-		if (this.toolContext == null) {
-			if (other.toolContext != null) {
-				return false;
-			}
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-
-		return true;
+		return Objects.equals(this.model, that.model) && Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.maxTokens, that.maxTokens) && Objects.equals(this.n, that.n)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.stop, that.stop) && Objects.equals(this.temperature, that.temperature)
+				&& Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.maskSensitiveInfo, that.maskSensitiveInfo)
+				&& Objects.equals(this.tools, that.tools) && Objects.equals(this.toolChoice, that.toolChoice)
+				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
+				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public MiniMaxChatOptions copy() {
 		return fromOptions(this);
 	}
