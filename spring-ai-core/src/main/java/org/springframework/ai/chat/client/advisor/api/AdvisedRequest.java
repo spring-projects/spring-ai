@@ -60,6 +60,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 1.0.0
  */
 public record AdvisedRequest(
@@ -147,18 +148,25 @@ public record AdvisedRequest(
 	}
 
 	public Prompt toPrompt() {
-		var messages = new ArrayList<>(this.messages());
+		List<Message> promptMessages = new ArrayList<>();
 
+		// 1. Always add the SystemMessage first (if present)
 		String processedSystemText = this.systemText();
 		if (StringUtils.hasText(processedSystemText)) {
 			if (!CollectionUtils.isEmpty(this.systemParams())) {
 				processedSystemText = new PromptTemplate(processedSystemText, this.systemParams()).render();
 			}
-			messages.add(new SystemMessage(processedSystemText));
+			promptMessages.add(new SystemMessage(processedSystemText));
 		}
 
-		String formatParam = (String) this.adviseContext().get("formatParam");
+		// 2. Add any existing conversation messages
+		List<Message> existingMessages = this.messages();
+		if (!CollectionUtils.isEmpty(existingMessages)) {
+			promptMessages.addAll(existingMessages);
+		}
 
+		// 3. Process and append the UserMessage (if present)
+		String formatParam = (String) this.adviseContext().get("formatParam");
 		var processedUserText = StringUtils.hasText(formatParam)
 				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
 
@@ -170,9 +178,10 @@ public record AdvisedRequest(
 			if (!CollectionUtils.isEmpty(userParams)) {
 				processedUserText = new PromptTemplate(processedUserText, userParams).render();
 			}
-			messages.add(new UserMessage(processedUserText, this.media()));
+			promptMessages.add(new UserMessage(processedUserText, this.media()));
 		}
 
+		// 4. Configure function-calling options
 		if (this.chatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
 			if (!this.functionNames().isEmpty()) {
 				functionCallingOptions.setFunctions(new HashSet<>(this.functionNames()));
@@ -185,7 +194,7 @@ public record AdvisedRequest(
 			}
 		}
 
-		return new Prompt(messages, this.chatOptions());
+		return new Prompt(promptMessages, chatOptions);
 	}
 
 	/**
