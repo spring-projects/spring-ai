@@ -192,6 +192,16 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	private Double topP;
 
 	/**
+	 * Alternative to the top_p, and aims to ensure a balance of quality and variety.
+	 * The parameter p represents the minimum probability for a token to be considered,
+	 * relative to the probability of the most likely token. For example, with p=0.05 and
+	 * the most likely token having a probability of 0.9, logits with a value
+	 * less than 0.045 are filtered out. (Default: 0.0)
+	 */
+	@JsonProperty("min_p")
+	private Double minP;
+
+	/**
 	 * Tail free sampling is used to reduce the impact of less probable tokens
 	 * from the output. A higher value (e.g., 2.0) will reduce the impact more, while a
 	 * value of 1.0 disables this setting. (default: 1)
@@ -372,6 +382,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.numPredict(fromOptions.getNumPredict())
 				.topK(fromOptions.getTopK())
 				.topP(fromOptions.getTopP())
+				.minP(fromOptions.getMinP())
 				.tfsZ(fromOptions.getTfsZ())
 				.typicalP(fromOptions.getTypicalP())
 				.repeatLastN(fromOptions.getRepeatLastN())
@@ -565,6 +576,14 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	public void setTopP(Double topP) {
 		this.topP = topP;
+	}
+
+	public Double getMinP() {
+		return this.minP;
+	}
+
+	public void setMinP(Double minP) {
+		this.minP = minP;
 	}
 
 	public Float getTfsZ() {
@@ -819,8 +838,9 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				&& Objects.equals(this.useMLock, that.useMLock) && Objects.equals(this.numThread, that.numThread)
 				&& Objects.equals(this.numKeep, that.numKeep) && Objects.equals(this.seed, that.seed)
 				&& Objects.equals(this.numPredict, that.numPredict) && Objects.equals(this.topK, that.topK)
-				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.tfsZ, that.tfsZ)
-				&& Objects.equals(this.typicalP, that.typicalP) && Objects.equals(this.repeatLastN, that.repeatLastN)
+				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.minP, that.minP)
+				&& Objects.equals(this.tfsZ, that.tfsZ) && Objects.equals(this.typicalP, that.typicalP)
+				&& Objects.equals(this.repeatLastN, that.repeatLastN)
 				&& Objects.equals(this.temperature, that.temperature)
 				&& Objects.equals(this.repeatPenalty, that.repeatPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
@@ -838,7 +858,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
 				this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
-				this.topP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
+				this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
 				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
 				this.toolContext);
@@ -955,6 +975,11 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 		public Builder topP(Double topP) {
 			this.options.topP = topP;
+			return this;
+		}
+
+		public Builder minP(Double minP) {
+			this.options.minP = minP;
 			return this;
 		}
 
