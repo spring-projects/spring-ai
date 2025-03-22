@@ -7,7 +7,7 @@ The MCP Server Boot Starter offers:
 * Automatic configuration of MCP server components
 * Support for both synchronous and asynchronous operation modes
 * Multiple transport layer options
-* Flexible tool, resource, and prompt registration
+* Flexible tool, resource, and prompt specification
 * Change notification capabilities
 
 == Starters
@@ -32,7 +32,7 @@ Full MCP Server features support with `STDIO` server transport.
 The starter activates the `McpServerAutoConfiguration` auto-configuration responsible for:
 
 * Configuring the basic server components
-* Handling tool, resource, and prompt registrations
+* Handling tool, resource, and prompt specifications
 * Managing server capabilities and change notifications
 * Providing both sync and async server implementations
 
@@ -50,7 +50,7 @@ Full MCP Server features support with `SSE` (Server-Sent Events) server transpor
 
 The starter activates the `McpWebMvcServerAutoConfiguration` and `McpServerAutoConfiguration` auto-configurations to provide:
 
-* HTTP-based transport using Spring MVC (`WebMvcSseServerTransport`)
+* HTTP-based transport using Spring MVC (`WebMvcSseServerTransportProvider`)
 * Automatically configured SSE endpoints
 * Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
 * Included `spring-boot-starter-web` and `mcp-spring-webmvc` dependencies
@@ -69,7 +69,7 @@ Full MCP Server features support with `SSE` (Server-Sent Events) server transpor
 
 The starter activates the `McpWebFluxServerAutoConfiguration` and `McpServerAutoConfiguration` auto-configurations to provide:
 
-* Reactive transport using Spring WebFlux (`WebFluxSseServerTransport`)
+* Reactive transport using Spring WebFlux (`WebFluxSseServerTransportProvider`)
 * Automatically configured reactive SSE endpoints
 * Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
 * Included `spring-boot-starter-webflux` and `mcp-spring-webflux` dependencies
@@ -89,7 +89,7 @@ All properties are prefixed with `spring.ai.mcp.server`:
 |`resource-change-notification` |Enable resource change notifications |`true`
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
-|`tool-response-mime-type` |(optinal) response MIME type per tool name. For example `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will assosiate the `image/png` mime type with the `generateImage()` tool name |`-`
+|`tool-response-mime-type` |(optional) response MIME type per tool name. For example `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will associate the `image/png` mime type with the `generateImage()` tool name |`-`
 |`sse-message-endpoint` |SSE endpoint path for web transport |`/mcp/message`
 |===
 
@@ -98,11 +98,11 @@ All properties are prefixed with `spring.ai.mcp.server`:
 * **Synchronous Server** - The default server type implemented using `McpSyncServer`. 
 It is designed for straightforward request-response patterns in your applications. 
 To enable this server type, set `spring.ai.mcp.server.type=SYNC` in your configuration. 
-When activated, it automatically handles the configuration of synchronous tool registrations.
+When activated, it automatically handles the configuration of synchronous tool specifications.
 
 * **Asynchronous Server** - The asynchronous server implementation uses `McpAsyncServer` and is optimized for non-blocking operations. 
 To enable this server type, configure your application with `spring.ai.mcp.server.type=ASYNC`. 
-This server type automatically sets up asynchronous tool registrations with built-in Project Reactor support.
+This server type automatically sets up asynchronous tool specifications with built-in Project Reactor support.
 
 == Transport Options
 
@@ -115,14 +115,14 @@ The MCP Server supports three transport mechanisms, each with its dedicated star
 == Features and Capabilities
 
 The MCP Server Boot Starter allows servers to expose tools, resources, and prompts to clients.
-It automatically converts custom capability handlers registered as Spring beans to sync/async registrations based on server type:
+It automatically converts custom capability handlers registered as Spring beans to sync/async specifications based on server type:
 
 === link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/tools/[Tools]
 Allows servers to expose tools that can be invoked by language models. The MCP Server Boot Starter provides:
 
 * Change notification support
-* Tools are automatically converted to sync/async registrations based on server type
-* Automatic tool registration through Spring beans:
+* Tools are automatically converted to sync/async specifications based on server type
+* Automatic tool specification through Spring beans:
 
 [source,java]
 ----
@@ -138,8 +138,8 @@ or using the low-level API:
 [source,java]
 ----
 @Bean
-public List<McpServerFeatures.SyncToolRegistration> myTools(...) {
-    List<McpServerFeatures.SyncToolRegistration> tools = ...
+public List<McpServerFeatures.SyncToolSpecification> myTools(...) {
+    List<McpServerFeatures.SyncToolSpecification> tools = ...
     return tools;
 }
 ----
@@ -148,18 +148,18 @@ public List<McpServerFeatures.SyncToolRegistration> myTools(...) {
 
 Provides a standardized way for servers to expose resources to clients.
 
-* Static and dynamic resource registration
+* Static and dynamic resource specifications
 * Optional change notifications
 * Support for resource templates
-* Automatic conversion between sync/async resource registrations
-* Automatic resource registration through Spring beans:
+* Automatic conversion between sync/async resource specifications
+* Automatic resource specification through Spring beans:
 
 [source,java]
 ----
 @Bean
-public List<McpServerFeatures.SyncResourceRegistration> myResources(...) {
+public List<McpServerFeatures.SyncResourceSpecification> myResources(...) {
     var systemInfoResource = new McpSchema.Resource(...);
-    var resourceRegistration = new McpServerFeatures.SyncResourceRegistration(systemInfoResource, request -> {
+    var resourceSpecification = new McpServerFeatures.SyncResourceSpecification(systemInfoResource, (exchange, request) -> {
         try {
             var systemInfo = Map.of(...);
             String jsonContent = new ObjectMapper().writeValueAsString(systemInfo);
@@ -171,7 +171,7 @@ public List<McpServerFeatures.SyncResourceRegistration> myResources(...) {
         }
     });
 
-    return List.of(resourceRegistration);
+    return List.of(resourceSpecification);
 }
 ----
 
@@ -181,24 +181,24 @@ Provides a standardized way for servers to expose prompt templates to clients.
 
 * Change notification support
 * Template versioning
-* Automatic conversion between sync/async prompt registrations
-* Automatic prompt registration through Spring beans:
+* Automatic conversion between sync/async prompt specifications
+* Automatic prompt specification through Spring beans:
 
 [source,java]
 ----
 @Bean
-public List<McpServerFeatures.SyncPromptRegistration> myPrompts() {
+public List<McpServerFeatures.SyncPromptSpecification> myPrompts() {
     var prompt = new McpSchema.Prompt("greeting", "A friendly greeting prompt",
         List.of(new McpSchema.PromptArgument("name", "The name to greet", true)));
 
-    var promptRegistration = new McpServerFeatures.SyncPromptRegistration(prompt, getPromptRequest -> {
+    var promptSpecification = new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, getPromptRequest) -> {
         String nameArgument = (String) getPromptRequest.arguments().get("name");
         if (nameArgument == null) { nameArgument = "friend"; }
         var userMessage = new PromptMessage(Role.USER, new TextContent("Hello " + nameArgument + "! How can I assist you today?"));
         return new GetPromptResult("A personalized greeting message", List.of(userMessage));
     });
 
-    return List.of(promptRegistration);
+    return List.of(promptSpecification);
 }
 ----
 
@@ -213,8 +213,8 @@ When roots change, clients that support `listChanged` send a Root Change notific
 [source,java]
 ----
 @Bean
-public Consumer<List<McpSchema.Root>> rootsChangeConsumer() {
-    return roots -> {
+public BiConsumer<McpSyncServerExchange, List<McpSchema.Root>> rootsChangeHandler() {
+    return (exchange, roots) -> {
         logger.info("Registering root resources: {}", roots);
     };
 }
