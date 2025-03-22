@@ -35,7 +35,8 @@ import org.springframework.util.Assert;
  * by concatenating them into a single collection of documents. In case of duplicate
  * documents, the first occurrence is kept. The score of each document is kept as is.
  *
- * @author Thomas Vitale, ghdcksgml1
+ * @author Thomas Vitale
+ * @author ghdcksgml1
  * @since 1.0.0
  */
 public class ConcatenationDocumentJoiner implements DocumentJoiner {

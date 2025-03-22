@@ -31,7 +31,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Unit tests for {@link ConcatenationDocumentJoiner}.
  *
- * @author Thomas Vitale, ghdcksgml1
+ * @author Thomas Vitale
+ * @author ghdcksgml1
  */
 class ConcatenationDocumentJoinerTests {
 
