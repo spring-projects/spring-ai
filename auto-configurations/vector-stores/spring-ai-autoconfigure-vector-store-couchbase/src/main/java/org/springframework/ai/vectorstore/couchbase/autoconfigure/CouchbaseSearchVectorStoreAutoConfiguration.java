@@ -23,11 +23,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
 
 /**
  * @author Laurent Doguin
+ * @author Eddú Meléndez
  * @since 1.0.0
  */
 @AutoConfiguration(after = CouchbaseAutoConfiguration.class)
@@ -41,27 +42,15 @@ public class CouchbaseSearchVectorStoreAutoConfiguration {
 			EmbeddingModel embeddingModel) {
 		var builder = CouchbaseSearchVectorStore.builder(cluster, embeddingModel);
 
-		if (StringUtils.hasText(properties.getIndexName())) {
-			builder.vectorIndexName(properties.getIndexName());
-		}
-		if (StringUtils.hasText(properties.getBucketName())) {
-			builder.bucketName(properties.getBucketName());
-		}
-		if (StringUtils.hasText(properties.getScopeName())) {
-			builder.scopeName(properties.getScopeName());
-		}
-		if (StringUtils.hasText(properties.getCollectionName())) {
-			builder.collectionName(properties.getCollectionName());
-		}
-		if (properties.getDimensions() != null) {
-			builder.dimensions(properties.getDimensions());
-		}
-		if (properties.getSimilarity() != null) {
-			builder.similarityFunction(properties.getSimilarity());
-		}
-		if (properties.getOptimization() != null) {
-			builder.indexOptimization(properties.getOptimization());
-		}
+		PropertyMapper mapper = PropertyMapper.get();
+		mapper.from(properties::getIndexName).whenHasText().to(builder::vectorIndexName);
+		mapper.from(properties::getBucketName).whenHasText().to(builder::bucketName);
+		mapper.from(properties::getScopeName).whenHasText().to(builder::scopeName);
+		mapper.from(properties::getCollectionName).whenHasText().to(builder::collectionName);
+		mapper.from(properties::getDimensions).whenNonNull().to(builder::dimensions);
+		mapper.from(properties::getSimilarity).whenNonNull().to(builder::similarityFunction);
+		mapper.from(properties::getOptimization).whenNonNull().to(builder::indexOptimization);
+
 		return builder.initializeSchema(properties.isInitializeSchema()).build();
 	}
 

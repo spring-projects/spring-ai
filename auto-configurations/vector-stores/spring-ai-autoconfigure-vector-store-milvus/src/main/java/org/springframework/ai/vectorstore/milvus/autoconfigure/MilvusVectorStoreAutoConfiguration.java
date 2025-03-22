@@ -36,8 +36,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Milvus Vector Store.
@@ -110,32 +110,15 @@ public class MilvusVectorStoreAutoConfiguration {
 			.withIdleTimeout(clientProperties.getIdleTimeoutMs(), TimeUnit.MILLISECONDS)
 			.withAuthorization(clientProperties.getUsername(), clientProperties.getPassword());
 
-		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getUri())) {
-			builder.withUri(clientProperties.getUri());
-		}
-
-		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getToken())) {
-			builder.withToken(clientProperties.getToken());
-		}
-
-		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getClientKeyPath())) {
-			builder.withClientKeyPath(clientProperties.getClientKeyPath());
-		}
-
-		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getClientPemPath())) {
-			builder.withClientPemPath(clientProperties.getClientPemPath());
-		}
-
-		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getCaPemPath())) {
-			builder.withCaPemPath(clientProperties.getCaPemPath());
-		}
-
-		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getServerPemPath())) {
-			builder.withServerPemPath(clientProperties.getServerPemPath());
-		}
-
-		if (clientProperties.isSecure() && StringUtils.hasText(clientProperties.getServerName())) {
-			builder.withServerName(clientProperties.getServerName());
+		if (clientProperties.isSecure()) {
+			PropertyMapper mapper = PropertyMapper.get();
+			mapper.from(clientProperties::getUri).whenHasText().to(builder::withUri);
+			mapper.from(clientProperties::getToken).whenHasText().to(builder::withToken);
+			mapper.from(clientProperties::getClientKeyPath).whenHasText().to(builder::withClientKeyPath);
+			mapper.from(clientProperties::getClientPemPath).whenHasText().to(builder::withClientPemPath);
+			mapper.from(clientProperties::getCaPemPath).whenHasText().to(builder::withCaPemPath);
+			mapper.from(clientProperties::getServerPemPath).whenHasText().to(builder::withServerPemPath);
+			mapper.from(clientProperties::getServerName).whenHasText().to(builder::withServerName);
 		}
 
 		return new MilvusServiceClient(builder.build());
