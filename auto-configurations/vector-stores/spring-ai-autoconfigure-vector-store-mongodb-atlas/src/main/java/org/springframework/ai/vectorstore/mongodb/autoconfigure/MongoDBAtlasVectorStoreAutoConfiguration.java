@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
-import org.springframework.util.StringUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for MongoDB Atlas Vector Store.
@@ -76,20 +76,10 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy);
 
-		String collectionName = properties.getCollectionName();
-		if (StringUtils.hasText(collectionName)) {
-			builder.collectionName(collectionName);
-		}
-
-		String pathName = properties.getPathName();
-		if (StringUtils.hasText(pathName)) {
-			builder.pathName(pathName);
-		}
-
-		String indexName = properties.getIndexName();
-		if (StringUtils.hasText(indexName)) {
-			builder.vectorIndexName(indexName);
-		}
+		PropertyMapper mapper = PropertyMapper.get();
+		mapper.from(properties::getCollectionName).whenHasText().to(builder::collectionName);
+		mapper.from(properties::getPathName).whenHasText().to(builder::pathName);
+		mapper.from(properties::getIndexName).whenHasText().to(builder::vectorIndexName);
 
 		List<String> metadataFields = properties.getMetadataFieldsToFilter();
 		if (!CollectionUtils.isEmpty(metadataFields)) {
