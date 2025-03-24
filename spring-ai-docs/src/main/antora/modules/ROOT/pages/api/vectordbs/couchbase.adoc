@@ -215,9 +215,9 @@ Read the link:https://docs.couchbase.com/java-sdk/current/hello-world/start-usin
 ----
 @Bean
 public Cluster cluster() {
-    Cluster cluster = Cluster.connect("couchbase://localhost",
-	    "username", "password");
+    return Cluster.connect("couchbase://localhost", "username", "password");
 }
+
 ----
 
 and then create the `CouchbaseSearchVectorStore` bean using the builder pattern:
