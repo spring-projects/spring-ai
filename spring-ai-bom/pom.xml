@@ -778,15 +778,7 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- TBD: Replace this with the refactored starter -->
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-coherence-store-spring-boot-starter</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
 			<!-- Spring AI Spring Boot starters for the Models -->
-
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
