@@ -23,7 +23,7 @@ import java.util.function.Function;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.spec.ClientMcpTransport;
+import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -44,8 +44,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Disabled
 public class McpClientAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
+			AutoConfigurations.of(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -131,7 +131,7 @@ public class McpClientAutoConfigurationIT {
 
 		@Bean
 		List<NamedClientMcpTransport> testTransports() {
-			return List.of(new NamedClientMcpTransport("test", Mockito.mock(ClientMcpTransport.class)));
+			return List.of(new NamedClientMcpTransport("test", Mockito.mock(McpClientTransport.class)));
 		}
 
 	}
@@ -157,7 +157,7 @@ public class McpClientAutoConfigurationIT {
 
 	}
 
-	static class CustomClientTransport implements ClientMcpTransport {
+	static class CustomClientTransport implements McpClientTransport {
 
 		@Override
 		public void close() {

@@ -78,6 +78,10 @@ The common properties are prefixed with `spring.ai.mcp.client`:
 |`root-change-notification`
 |Enable/disable root change notifications for all clients
 |`true`
+
+|`toolcallback.enabled`
+|Enable/disable the MCP tool callback integration with Spring AI's tool execution framework
+|`false`
 |===
 
 === Stdio Transport Properties
@@ -302,7 +306,7 @@ The auto-configuration supports multiple transport types:
 
 === Integration with Spring AI
 
-The starter automatically configures tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions.
+The starter can configure tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions. This integration is opt-in and must be explicitly enabled with the `spring.ai.mcp.client.toolcallback.enabled=true` property.
 
 == Usage Example
 
@@ -351,14 +355,25 @@ private List<McpSyncClient> mcpSyncClients;  // For sync client
 private List<McpAsyncClient> mcpAsyncClients;  // For async client
 ----
 
-Additionally, the registered MCP Tools with all MCP clients are provided as a list of ToolCallback 
-through a ToolCallbackProvider instance:
+When tool callbacks are enabled, the registered MCP Tools with all MCP clients are provided as a ToolCallbackProvider instance:
 
 [source,java]
 ----
 @Autowired
 private SyncMcpToolCallbackProvider toolCallbackProvider;
 ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
+----
+
+Note that the tool callback functionality is disabled by default and must be explicitly enabled with:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        toolcallback:
+          enabled: true
 ----
 
 == Example Applications
