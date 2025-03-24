@@ -114,8 +114,8 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 
 	@Test
 	void chatActivation() {
-		this.contextRunner.withPropertyValues("spring.ai.ollama.chat.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
+		this.contextRunner.withPropertyValues("spring.ai.model.chat=none").run(context -> {
+			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isEmpty();
 			assertThat(context.getBeansOfType(OllamaChatModel.class)).isEmpty();
 		});
 
@@ -124,7 +124,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 			assertThat(context.getBeansOfType(OllamaChatModel.class)).isNotEmpty();
 		});
 
-		this.contextRunner.withPropertyValues("spring.ai.ollama.chat.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.model.chat=ollama").run(context -> {
 			assertThat(context.getBeansOfType(OllamaChatProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(OllamaChatModel.class)).isNotEmpty();
 		});

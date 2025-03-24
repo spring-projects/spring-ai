@@ -20,12 +20,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-
-import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
-import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.Prompt
-import org.springframework.ai.model.function.FunctionCallingOptions
+import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
+import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
+import org.springframework.ai.model.tool.ToolCallingChatOptions
 import org.springframework.ai.ollama.OllamaChatModel
 import org.springframework.ai.ollama.api.OllamaOptions
 import org.springframework.boot.autoconfigure.AutoConfigurations
@@ -87,8 +86,8 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 			val userMessage = UserMessage(
 				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
 
-			val functionOptions = FunctionCallingOptions.builder()
-				.function("weatherInfo")
+			val functionOptions = ToolCallingChatOptions.builder()
+				.toolNames("weatherInfo")
 				.build()
 
 			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
