@@ -425,7 +425,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-
 			<!-- Spring AI Model autoconfiguration -->
 
 			<dependency>
@@ -530,6 +529,133 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI vector store autoconfiguration -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-azure</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-azure-cosmos-db</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-cassandra</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-chroma</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-couchbase</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-elasticsearch</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-gemfire</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-hanadb</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-mariadb</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-milvus</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-mongodb-atlas</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-neo4j</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-opensearch</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-oracle</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-pgvector</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-pinecone</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-qdrant</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-redis</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-typesense</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-weaviate</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Spring Boot starters for the vector stores -->
 
 			<dependency>
@@ -552,12 +678,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-vector-store-azure</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-cassandra</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -571,12 +691,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-vector-store-azure-cosmos-db</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
