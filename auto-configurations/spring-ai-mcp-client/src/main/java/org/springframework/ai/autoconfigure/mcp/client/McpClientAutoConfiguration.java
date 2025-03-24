@@ -102,12 +102,19 @@ import org.springframework.util.CollectionUtils;
  * @see SseHttpClientTransportAutoConfiguration
  * @see SseWebFluxTransportAutoConfiguration
  */
-@AutoConfiguration(after = { StdioTransportAutoConfiguration.class, SseHttpClientTransportAutoConfiguration.class,
-		SseWebFluxTransportAutoConfiguration.class })
+@AutoConfiguration(after = {
+		StdioTransportAutoConfiguration.class,
+		SseWebFluxTransportAutoConfiguration.class,  // WebFlux
+		SseHttpClientTransportAutoConfiguration.class // HTTP Client
+})
 @ConditionalOnClass({ McpSchema.class })
 @EnableConfigurationProperties(McpClientCommonProperties.class)
-@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@ConditionalOnProperty(
+		prefix = McpClientCommonProperties.CONFIG_PREFIX,
+		name = "enabled",
+		havingValue = "true",
+		matchIfMissing = true
+)
 public class McpClientAutoConfiguration {
 
 	/**
@@ -146,8 +153,8 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<McpSyncClient> mcpSyncClients(McpSyncClientConfigurer mcpSyncClientConfigurer,
-			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
+											  McpClientCommonProperties commonProperties,
+											  ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
 		List<McpSyncClient> mcpSyncClients = new ArrayList<>();
 
@@ -161,8 +168,8 @@ public class McpClientAutoConfiguration {
 						commonProperties.getVersion());
 
 				McpClient.SyncSpec syncSpec = McpClient.sync(namedTransport.transport())
-					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
+						.clientInfo(clientInfo)
+						.requestTimeout(commonProperties.getRequestTimeout());
 
 				syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
 
@@ -259,8 +266,8 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpSyncClientConfigurer,
-			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
+												McpClientCommonProperties commonProperties,
+												ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
 		List<McpAsyncClient> mcpSyncClients = new ArrayList<>();
 
@@ -274,8 +281,8 @@ public class McpClientAutoConfiguration {
 						commonProperties.getVersion());
 
 				McpClient.AsyncSpec syncSpec = McpClient.async(namedTransport.transport())
-					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
+						.clientInfo(clientInfo)
+						.requestTimeout(commonProperties.getRequestTimeout());
 
 				syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
 
