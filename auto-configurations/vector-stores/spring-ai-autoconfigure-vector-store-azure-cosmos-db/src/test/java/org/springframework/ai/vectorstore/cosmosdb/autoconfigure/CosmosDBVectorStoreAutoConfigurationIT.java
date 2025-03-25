@@ -55,13 +55,13 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		String key = System.getenv("AZURE_COSMOSDB_KEY");
 
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-				.withConfiguration(AutoConfigurations.of(CosmosDBVectorStoreAutoConfiguration.class))
-				.withPropertyValues("spring.ai.vectorstore.cosmosdb.databaseName=test-database")
-				.withPropertyValues("spring.ai.vectorstore.cosmosdb.containerName=test-container")
-				.withPropertyValues("spring.ai.vectorstore.cosmosdb.partitionKeyPath=/id")
-				.withPropertyValues("spring.ai.vectorstore.cosmosdb.metadataFields=country,year,city")
-				.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThroughput=1000")
-				.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorDimensions=384");
+			.withConfiguration(AutoConfigurations.of(CosmosDBVectorStoreAutoConfiguration.class))
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.databaseName=test-database")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.containerName=test-container")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.partitionKeyPath=/id")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.metadataFields=country,year,city")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThroughput=1000")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorDimensions=384");
 
 		if (endpoint != null && !"null".equalsIgnoreCase(endpoint)) {
 			contextRunner = contextRunner.withPropertyValues("spring.ai.vectorstore.cosmosdb.endpoint=" + endpoint);
@@ -93,7 +93,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 
 		// Perform a similarity search
 		List<Document> results = this.vectorStore
-				.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
+			.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
 
 		// Verify the search results
 		assertThat(results).isNotEmpty();
@@ -104,7 +104,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 
 		// Perform a similarity search again
 		List<Document> results2 = this.vectorStore
-				.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
+			.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
 
 		// Verify the search results
 		assertThat(results2).isEmpty();
@@ -147,29 +147,29 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 
 		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder()
-				.query("The World")
-				.topK(10)
-				.filterExpression((b.in("country", "UK", "NL").build()))
-				.build());
+			.query("The World")
+			.topK(10)
+			.filterExpression((b.in("country", "UK", "NL").build()))
+			.build());
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
 
 		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.builder()
-				.query("The World")
-				.topK(10)
-				.filterExpression(
-						b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build())
-				.build());
+			.query("The World")
+			.topK(10)
+			.filterExpression(
+					b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build())
+			.build());
 
 		assertThat(results2).hasSize(1);
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
 
 		List<Document> results3 = this.vectorStore.similaritySearch(SearchRequest.builder()
-				.query("The World")
-				.topK(10)
-				.filterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build())
-				.build());
+			.query("The World")
+			.topK(10)
+			.filterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build())
+			.build());
 
 		assertThat(results3).hasSize(1);
 		assertThat(results3).extracting(Document::getId).containsExactlyInAnyOrder("4");
@@ -178,7 +178,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 
 		// Perform a similarity search again
 		List<Document> results4 = this.vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(1).build());
+			.similaritySearch(SearchRequest.builder().query("The World").topK(1).build());
 
 		// Verify the search results
 		assertThat(results4).isEmpty();
@@ -223,5 +223,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		public TestObservationRegistry observationRegistry() {
 			return TestObservationRegistry.create();
 		}
+
 	}
+
 }
