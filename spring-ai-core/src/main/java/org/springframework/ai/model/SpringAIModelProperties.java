@@ -24,9 +24,9 @@ public class SpringAIModelProperties {
 
 	public static final String EMBEDDING_MODEL = MODEL_PREFIX + ".embedding";
 
-	public static final String TEXT_EMBEDDING_MODEL = MODEL_PREFIX + ".text.embedding";
+	public static final String TEXT_EMBEDDING_MODEL = MODEL_PREFIX + ".embedding.text";
 
-	public static final String MULTI_MODAL_EMBEDDING_MODEL = MODEL_PREFIX + ".multi-modal.embedding";
+	public static final String MULTI_MODAL_EMBEDDING_MODEL = MODEL_PREFIX + ".embedding.multimodal";
 
 	public static final String IMAGE_MODEL = MODEL_PREFIX + ".image";
 

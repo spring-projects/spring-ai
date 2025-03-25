@@ -16,6 +16,12 @@ An option that runs locally on your machine is xref:api/embeddings/onnx.adoc[ONN
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Add the GemFire VectorStore Spring Boot starter to you project's Maven build file `pom.xml`:
 
 [source, xml]

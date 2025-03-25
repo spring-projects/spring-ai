@@ -32,11 +32,6 @@ public class QianFanEmbeddingProperties extends QianFanParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.qianfan.embedding";
 
-	/**
-	 * Enable QianFan embedding client.
-	 */
-	private boolean enabled = true;
-
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
@@ -58,14 +53,6 @@ public class QianFanEmbeddingProperties extends QianFanParentProperties {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

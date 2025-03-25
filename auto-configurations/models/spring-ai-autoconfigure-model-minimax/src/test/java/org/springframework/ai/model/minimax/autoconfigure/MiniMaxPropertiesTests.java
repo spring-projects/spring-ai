@@ -281,7 +281,7 @@ public class MiniMaxPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
-					"spring.ai.minimax.embedding.enabled=true")
+					"spring.ai.model.embedding=minimax")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, MiniMaxEmbeddingAutoConfiguration.class))
 			.run(context -> {

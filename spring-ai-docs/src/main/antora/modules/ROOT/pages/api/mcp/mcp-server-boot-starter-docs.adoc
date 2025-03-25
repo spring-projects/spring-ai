@@ -12,6 +12,12 @@ The MCP Server Boot Starter offers:
 
 == Starters
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Choose one of the following starters based on your transport requirements:
 
 === Standard MCP Server

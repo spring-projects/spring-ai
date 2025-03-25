@@ -15,6 +15,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the OCI GenAI Embedding Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -58,6 +64,16 @@ The prefix `spring.ai.oci.genai` is the property prefix to configure the connect
 
 |====
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=oci-genai (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match oci-genai)
+
+This change is done to allow configuration of multiple models.
+====
 
 The prefix `spring.ai.oci.genai.embedding` is the property prefix that configures the `EmbeddingModel` implementation for OCI GenAI
 
@@ -65,7 +81,8 @@ The prefix `spring.ai.oci.genai.embedding` is the property prefix that configure
 |====
 | Property | Description | Default
 
-| spring.ai.oci.genai.embedding.enabled | Enable OCI GenAI embedding model.  | true
+| spring.ai.oci.genai.embedding.enabled (Removed and no longer valid) | Enable OCI GenAI embedding model.  | true
+| spring.ai.model.embedding | Enable OCI GenAI embedding model.  | oci-genai
 | spring.ai.oci.genai.embedding.compartment | Model compartment OCID.    | -
 | spring.ai.oci.genai.embedding.servingMode | The model serving mode to be used. May be `on-demand`, or `dedicated`.  | on-demand
 | spring.ai.oci.genai.embedding.truncate | How to truncate text if it overruns the embedding context. May be `START`, or `END`.  | END

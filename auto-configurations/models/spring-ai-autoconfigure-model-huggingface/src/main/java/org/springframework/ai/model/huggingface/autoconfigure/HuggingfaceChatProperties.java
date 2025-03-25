@@ -41,11 +41,6 @@ public class HuggingfaceChatProperties {
 	 */
 	private String url;
 
-	/**
-	 * Enable Hugging Face chat model.
-	 */
-	private boolean enabled = true;
-
 	public String getApiKey() {
 		return this.apiKey;
 	}
@@ -60,14 +55,6 @@ public class HuggingfaceChatProperties {
 
 	public void setUrl(String url) {
 		this.url = url;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

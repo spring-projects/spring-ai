@@ -47,6 +47,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the OpenAI Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
@@ -108,11 +114,23 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=openai (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match openai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat model implementation for OpenAI.
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
+| spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.model      | One of the supported https://docs.perplexity.ai/guides/model-cards[Perplexity models]. Example: `llama-3.1-sonar-small-128k-online`. | -
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://api.perplexity.ai` |  -
 | spring.ai.openai.chat.completions-path | Must be set to `/chat/completions` | `/v1/chat/completions`

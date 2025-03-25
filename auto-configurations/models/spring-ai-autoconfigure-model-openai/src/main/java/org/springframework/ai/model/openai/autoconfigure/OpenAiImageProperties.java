@@ -35,11 +35,6 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 	public static final String DEFAULT_IMAGE_MODEL = OpenAiImageApi.ImageModel.DALL_E_3.getValue();
 
 	/**
-	 * Enable OpenAI image model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Options for OpenAI Image API.
 	 */
 	@NestedConfigurationProperty
@@ -51,14 +46,6 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiImageOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

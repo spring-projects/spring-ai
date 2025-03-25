@@ -32,6 +32,12 @@ Alternatively, you can enable the option to download automatically any needed mo
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Ollama chat integration.
 To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
@@ -83,6 +89,17 @@ Here are the properties for initializing the Ollama integration and xref:auto-pu
 
 === Chat Properties
 
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=ollama (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match ollama)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.ollama.chat.options` is the property prefix that configures the Ollama chat model.
 It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, and `format` as well as the Ollama model `options` properties.
 
@@ -91,7 +108,8 @@ Here are the advanced request parameter for the Ollama chat model:
 [cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.ollama.chat.enabled      | Enable Ollama chat model. | true
+| spring.ai.ollama.chat.enabled (Removed and no longer valid)     | Enable Ollama chat model. | true
+| spring.ai.model.chat      | Enable Ollama chat model. | ollama
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
 | spring.ai.ollama.chat.options.format  | The format to return a response in. Currently, the only accepted value is `json` | -
 | spring.ai.ollama.chat.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m

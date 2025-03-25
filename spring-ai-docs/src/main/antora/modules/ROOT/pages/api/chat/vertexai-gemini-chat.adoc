@@ -22,6 +22,12 @@ gcloud auth application-default login <ACCOUNT>
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the VertexAI Gemini Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
@@ -51,12 +57,24 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Chat Properties
 
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=vertexai (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match vertexai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.vertex.ai.gemini` is used as the property prefix that lets you connect to VertexAI.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
+| spring.ai.model.chat   | Enable Chat Model client |  vertexai
 | spring.ai.vertex.ai.gemini.projectId   | Google Cloud Platform project ID |  -
 | spring.ai.vertex.ai.gemini.location    | Region           |  -
 | spring.ai.vertex.ai.gemini.credentialsUri    | URI to Vertex AI Gemini credentials. When provided it is used to create an a `GoogleCredentials` instance to authenticate the `VertexAI`. |  -

@@ -11,6 +11,12 @@ Exporting an environment variable is one way to set that configuration property:
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Transcription Generation Client.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
@@ -35,13 +41,25 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Transcription Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.audio.transcription=azure-openai (It is enabled by default)
+
+To disable, spring.ai.model.audio.transcription=none (or any value which doesn't match azure-openai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.openai.audio.transcription` is used as the property prefix that lets you configure the retry mechanism for the OpenAI image model.
 
 [cols="3,5,2"]
 |====
 | Property | Description | Default
 
-| spring.ai.azure.openai.audio.transcription.enabled  | Enable Azure OpenAI transcription model. | true
+| spring.ai.azure.openai.audio.transcription.enabled (Removed and no longer valid)  | Enable Azure OpenAI transcription model. | true
+| spring.ai.model.audio.transcription  | Enable Azure OpenAI transcription model. | azure-openai
 | spring.ai.azure.openai.audio.transcription.options.model  | ID of the model to use. Only whisper is currently available. | whisper
 | spring.ai.azure.openai.audio.transcription.options.deployment-name  | The deployment name under which the model is deployed. |
 | spring.ai.azure.openai.audio.transcription.options.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. | json

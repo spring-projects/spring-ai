@@ -30,6 +30,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Anthropic Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` file:
 
@@ -95,13 +101,25 @@ the output tokens limit is increased from `4096` to `8192` tokens (for claude-3-
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=anthropic (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match anthropic)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.anthropic.chat` is the property prefix that lets you configure the chat model implementation for Anthropic.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.anthropic.chat.enabled | Enable Anthropic chat model.  | true
+| spring.ai.anthropic.chat.enabled (Removed and no longer valid) | Enable Anthropic chat model.  | true
+| spring.ai.model.chat | Enable Anthropic chat model.  | anthropic
 | spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307` | `claude-3-7-sonnet-latest`
 | spring.ai.anthropic.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.anthropic.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | 500

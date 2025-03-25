@@ -43,11 +43,6 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	private static final OpenAiAudioApi.SpeechRequest.AudioResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
 
-	/**
-	 * Enable OpenAI audio speech model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
 		.model(DEFAULT_SPEECH_MODEL)
@@ -62,14 +57,6 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiAudioSpeechOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

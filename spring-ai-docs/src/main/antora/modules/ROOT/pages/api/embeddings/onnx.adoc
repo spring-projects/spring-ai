@@ -30,6 +30,12 @@ In place of the all-MiniLM-L6-v2 you can pick any huggingface transformer identi
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the ONNX Transformer Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -66,11 +72,23 @@ The complete list of supported properties are:
 
 === Embedding Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=transformers (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match transformers)
+
+This change is done to allow configuration of multiple models.
+====
+
 [cols="3*"", stripes=even]
 |===
 | Property    | Description | Default
 
-| spring.ai.embedding.transformer.enabled | Enable the Transformer Embedding model. | true
+| spring.ai.embedding.transformer.enabled (Removed and no longer valid) | Enable the Transformer Embedding model. | true
+| spring.ai.model.embedding | Enable the Transformer Embedding model. | transformers
 | spring.ai.embedding.transformer.tokenizer.uri  | URI of a pre-trained HuggingFaceTokenizer created by the ONNX engine (e.g. tokenizer.json).   | onnx/all-MiniLM-L6-v2/tokenizer.json
 | spring.ai.embedding.transformer.tokenizer.options  | HuggingFaceTokenizer options such as '`addSpecialTokens`', '`modelMaxLength`', '`truncation`', '`padding`', '`maxLength`', '`stride`', '`padToMultipleOf`'. Leave empty to fallback to the defaults. | empty
 | spring.ai.embedding.transformer.cache.enabled  | Enable remote Resource caching.  | true

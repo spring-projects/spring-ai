@@ -39,8 +39,6 @@ public class OCIEmbeddingModelProperties {
 
 	private String model;
 
-	private boolean enabled;
-
 	public OCIEmbeddingOptions getEmbeddingOptions() {
 		return OCIEmbeddingOptions.builder()
 			.compartment(this.compartment)
@@ -72,14 +70,6 @@ public class OCIEmbeddingModelProperties {
 
 	public void setModel(String model) {
 		this.model = model;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 	public EmbedTextDetails.Truncate getTruncate() {

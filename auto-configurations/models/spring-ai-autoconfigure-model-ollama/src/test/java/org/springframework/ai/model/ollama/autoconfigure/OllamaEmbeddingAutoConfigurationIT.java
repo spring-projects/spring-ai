@@ -94,7 +94,7 @@ public class OllamaEmbeddingAutoConfigurationIT extends BaseOllamaIT {
 			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
 		});
 
-		this.contextRunner.withPropertyValues("spring.ai.ollama.embedding.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.model.embedding=ollama").run(context -> {
 			assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
 		});

@@ -32,11 +32,6 @@ public class BedrockTitanEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.titan.embedding";
 
 	/**
-	 * Enable Bedrock Titan Embedding Model. False by default.
-	 */
-	private boolean enabled = false;
-
-	/**
 	 * Bedrock Titan Embedding generative name. Defaults to 'amazon.titan-embed-image-v1'.
 	 */
 	private String model = TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id();
@@ -49,14 +44,6 @@ public class BedrockTitanEmbeddingProperties {
 
 	public static String getConfigPrefix() {
 		return CONFIG_PREFIX;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 	public String getModel() {
