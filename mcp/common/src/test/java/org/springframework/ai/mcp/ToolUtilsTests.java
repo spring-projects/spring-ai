@@ -34,12 +34,59 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ToolUtilsTests {
+
+	@Test
+	void prefixedToolNameShouldConcatenateWithUnderscore() {
+		String result = McpToolUtils.prefixedToolName("prefix", "toolName");
+		assertThat(result).isEqualTo("prefix_toolName");
+	}
+
+	@Test
+	void prefixedToolNameShouldReplaceSpecialCharacters() {
+		String result = McpToolUtils.prefixedToolName("pre.fix", "tool@Name");
+		assertThat(result).isEqualTo("prefix_toolName");
+	}
+
+	@Test
+	void prefixedToolNameShouldReplaceHyphensWithUnderscores() {
+		String result = McpToolUtils.prefixedToolName("pre-fix", "tool-name");
+		assertThat(result).isEqualTo("pre_fix_tool_name");
+	}
+
+	@Test
+	void prefixedToolNameShouldTruncateLongStrings() {
+		String longPrefix = "a".repeat(40);
+		String longToolName = "b".repeat(40);
+		String result = McpToolUtils.prefixedToolName(longPrefix, longToolName);
+		assertThat(result).hasSize(64);
+		assertThat(result).endsWith("_" + longToolName);
+	}
+
+	@Test
+	void prefixedToolNameShouldThrowExceptionForNullOrEmptyInputs() {
+		assertThatThrownBy(() -> McpToolUtils.prefixedToolName(null, "toolName"))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Prefix or toolName cannot be null or empty");
+
+		assertThatThrownBy(() -> McpToolUtils.prefixedToolName("", "toolName"))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Prefix or toolName cannot be null or empty");
+
+		assertThatThrownBy(() -> McpToolUtils.prefixedToolName("prefix", null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Prefix or toolName cannot be null or empty");
+
+		assertThatThrownBy(() -> McpToolUtils.prefixedToolName("prefix", ""))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Prefix or toolName cannot be null or empty");
+	}
 
 	@Test
 	void constructorShouldBePrivate() throws Exception {

@@ -67,11 +67,13 @@ public final class McpToolUtils {
 			throw new IllegalArgumentException("Prefix or toolName cannot be null or empty");
 		}
 
-		String input = prefix + "-" + toolName;
+		String input = prefix + "_" + toolName;
 
 		// Replace any character that isn't alphanumeric, underscore, or hyphen with
 		// concatenation
 		String formatted = input.replaceAll("[^a-zA-Z0-9_-]", "");
+
+		formatted = formatted.replaceAll("-", "_");
 
 		// If the string is longer than 64 characters, keep the last 64 characters
 		if (formatted.length() > 64) {
