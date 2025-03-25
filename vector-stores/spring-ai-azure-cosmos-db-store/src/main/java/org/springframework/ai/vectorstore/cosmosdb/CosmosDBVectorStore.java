@@ -48,6 +48,7 @@ import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.azure.cosmos.models.ThroughputProperties;
 import com.azure.cosmos.util.CosmosPagedFlux;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -97,8 +98,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	private CosmosAsyncContainer container;
 
 	/**
-	 * Protected constructor that accepts a builder instance. This is the preferred way to
+	 * Protected constructor that accepts a builder instance. This is the preferred
+	 * way to
 	 * create new CosmosDBVectorStore instances.
+	 * 
 	 * @param builder the configured builder instance
 	 */
 	protected CosmosDBVectorStore(Builder builder) {
@@ -117,7 +120,14 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.vectorDimensions = builder.vectorDimensions;
 		this.metadataFieldsList = builder.metadataFieldsList;
 
-		this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		try {
+			this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		} catch (Exception e) {
+			// likely failed due to RBAC, so database is assumed to be already created (and
+			// if not, it will fail later)
+			logger.error("Error creating database: {}", e.getMessage());
+		}
+
 		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
 				this.partitionKeyPath);
 	}
@@ -145,8 +155,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		if (subPartitionKeyPaths.length > 1) {
 			subPartitionKeyDefinition.setPaths(pathsFromCommaSeparatedList);
 			subPartitionKeyDefinition.setKind(PartitionKind.MULTI_HASH);
-		}
-		else {
+		} else {
 			subPartitionKeyDefinition.setPaths(Collections.singletonList(this.partitionKeyPath));
 			subPartitionKeyDefinition.setKind(PartitionKind.HASH);
 		}
@@ -177,7 +186,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		collectionDefinition.setIndexingPolicy(indexingPolicy);
 
 		ThroughputProperties throughputProperties = ThroughputProperties
-			.createManualThroughput(this.vectorStoreThroughput);
+				.createManualThroughput(this.vectorStoreThroughput);
 		CosmosAsyncDatabase cosmosAsyncDatabase = this.cosmosClient.getDatabase(this.databaseName);
 		cosmosAsyncDatabase.createContainerIfNotExists(collectionDefinition, throughputProperties).block();
 		this.container = cosmosAsyncDatabase.getContainer(this.containerName);
@@ -232,8 +241,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		try {
 			// Extract just the CosmosItemOperations from the pairs
 			List<CosmosItemOperation> itemOperations = itemOperationsWithIds.stream()
-				.map(ImmutablePair::getValue)
-				.collect(Collectors.toList());
+					.map(ImmutablePair::getValue)
+					.collect(Collectors.toList());
 
 			this.container.executeBulkOperations(Flux.fromIterable(itemOperations)).doOnNext(response -> {
 				if (response != null && response.getResponse() != null) {
@@ -241,29 +250,26 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 					if (statusCode == 409) {
 						// Retrieve the ID associated with the failed operation
 						String documentId = itemOperationsWithIds.stream()
-							.filter(pair -> pair.getValue().equals(response.getOperation()))
-							.findFirst()
-							.map(ImmutablePair::getKey)
-							.orElse("Unknown ID"); // Fallback if the ID can't be found
+								.filter(pair -> pair.getValue().equals(response.getOperation()))
+								.findFirst()
+								.map(ImmutablePair::getKey)
+								.orElse("Unknown ID"); // Fallback if the ID can't be found
 
 						String errorMessage = String.format("Duplicate document id: %s", documentId);
 						logger.error(errorMessage);
 						throw new RuntimeException(errorMessage); // Throw an exception
 						// for status code 409
-					}
-					else {
+					} else {
 						logger.info("Document added with status: {}", statusCode);
 					}
-				}
-				else {
+				} else {
 					logger.warn("Received a null response or null status code for a document operation.");
 				}
 			})
-				.doOnError(error -> logger.error("Error adding document: {}", error.getMessage()))
-				.doOnComplete(() -> logger.info("Bulk operation completed successfully."))
-				.blockLast(); // Block until the last item of the Flux is processed
-		}
-		catch (Exception e) {
+					.doOnError(error -> logger.error("Error adding document: {}", error.getMessage()))
+					.doOnComplete(() -> logger.info("Bulk operation completed successfully."))
+					.blockLast(); // Block until the last item of the Flux is processed
+		} catch (Exception e) {
 			logger.error("Exception occurred during bulk add operation: {}", e.getMessage(), e);
 			throw e; // Rethrow the exception after logging
 		}
@@ -274,18 +280,17 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		try {
 			// Convert the list of IDs into bulk delete operations
 			List<CosmosItemOperation> itemOperations = idList.stream()
-				.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
-				.collect(Collectors.toList());
+					.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
+					.collect(Collectors.toList());
 
 			// Execute bulk delete operations synchronously by using blockLast() on the
 			// Flux
 			this.container.executeBulkOperations(Flux.fromIterable(itemOperations))
-				.doOnNext(response -> logger.info("Document deleted with status: {}",
-						response.getResponse().getStatusCode()))
-				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
-				.blockLast(); // This will block until all operations have finished
-		}
-		catch (Exception e) {
+					.doOnNext(response -> logger.info("Document deleted with status: {}",
+							response.getResponse().getStatusCode()))
+					.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
+					.blockLast(); // This will block until all operations have finished
+		} catch (Exception e) {
 			logger.error("Exception while deleting documents: {}", e.getMessage());
 		}
 	}
@@ -308,8 +313,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		logger.info("similarity threshold: {}", request.getSimilarityThreshold());
 
 		List<Float> embeddingList = IntStream.range(0, embedding.length)
-			.mapToObj(i -> embedding[i])
-			.collect(Collectors.toList());
+				.mapToObj(i -> embedding[i])
+				.collect(Collectors.toList());
 
 		// Start building query for similarity search
 		StringBuilder queryBuilder = new StringBuilder("SELECT TOP @topK * FROM c WHERE ");
@@ -345,17 +350,16 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		try {
 			// Collect documents from the paged flux
 			List<JsonNode> documents = pagedFlux.byPage()
-				.flatMap(page -> Flux.fromIterable(page.getResults()))
-				.collectList()
-				.block();
+					.flatMap(page -> Flux.fromIterable(page.getResults()))
+					.collectList()
+					.block();
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-				.map(doc -> Document.builder().id(doc.get("id").asText()).text(doc.get("content").asText()).build())
-				.collect(Collectors.toList());
+					.map(doc -> Document.builder().id(doc.get("id").asText()).text(doc.get("content").asText()).build())
+					.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			logger.error("Error during similarity search: {}", e.getMessage());
 			return List.of();
 		}
@@ -364,10 +368,10 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.COSMOSDB.value(), operationName)
-			.collectionName(this.container.getId())
-			.dimensions(this.embeddingModel.dimensions())
-			.namespace(this.container.getDatabase().getId())
-			.similarityMetric("cosine");
+				.collectionName(this.container.getId())
+				.dimensions(this.embeddingModel.dimensions())
+				.namespace(this.container.getDatabase().getId())
+				.similarityMetric("cosine");
 	}
 
 	@Override
@@ -380,7 +384,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	/**
 	 * Builder class for creating {@link CosmosDBVectorStore} instances.
 	 * <p>
-	 * Provides a fluent API for configuring all aspects of the Cosmos DB vector store.
+	 * Provides a fluent API for configuring all aspects of the Cosmos DB vector
+	 * store.
 	 *
 	 * @since 1.0.0
 	 */
@@ -411,6 +416,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		/**
 		 * Sets the container name.
+		 * 
 		 * @param containerName the name of the container
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if containerName is null or empty
@@ -423,6 +429,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		/**
 		 * Sets the database name.
+		 * 
 		 * @param databaseName the name of the database
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if databaseName is null or empty
@@ -435,6 +442,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		/**
 		 * Sets the partition key path.
+		 * 
 		 * @param partitionKeyPath the partition key path
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if partitionKeyPath is null or empty
@@ -447,6 +455,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		/**
 		 * Sets the vector store throughput.
+		 * 
 		 * @param vectorStoreThroughput the throughput value
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if vectorStoreThroughput is not positive
@@ -459,6 +468,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		/**
 		 * Sets the vector dimensions.
+		 * 
 		 * @param vectorDimensions the number of dimensions
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if vectorDimensions is not positive
@@ -471,11 +481,12 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		/**
 		 * Sets the metadata fields list.
+		 * 
 		 * @param metadataFieldsList the list of metadata fields
 		 * @return the builder instance
 		 */
 		public Builder metadataFields(List<String> metadataFieldsList) {
-			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(this.metadataFieldsList)
+			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
 					: new ArrayList<>();
 			return this;
 		}

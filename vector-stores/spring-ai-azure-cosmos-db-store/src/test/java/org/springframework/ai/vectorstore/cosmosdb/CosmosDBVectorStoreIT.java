@@ -25,6 +25,7 @@ import java.util.UUID;
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosAsyncContainer;
 import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -50,11 +51,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @since 1.0.0
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
 public class CosmosDBVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class);
+			.withUserConfiguration(TestApplication.class);
 
 	private VectorStore vectorStore;
 
@@ -76,11 +76,11 @@ public class CosmosDBVectorStoreIT {
 		// create duplicate docs and assert that second one throws exception
 		Document document3 = new Document(document1.getId(), "Sample content3", Map.of("key3", "value3"));
 		assertThatThrownBy(() -> this.vectorStore.add(List.of(document3))).isInstanceOf(Exception.class)
-			.hasMessageContaining("Duplicate document id: " + document1.getId());
+				.hasMessageContaining("Duplicate document id: " + document1.getId());
 
 		// Perform a similarity search
 		List<Document> results = this.vectorStore
-			.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
+				.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
 
 		// Verify the search results
 		assertThat(results).isNotEmpty();
@@ -91,7 +91,7 @@ public class CosmosDBVectorStoreIT {
 
 		// Perform a similarity search again
 		List<Document> results2 = this.vectorStore
-			.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
+				.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
 
 		// Verify the search results
 		assertThat(results2).isEmpty();
@@ -134,29 +134,29 @@ public class CosmosDBVectorStoreIT {
 		this.vectorStore.add(List.of(document1, document2, document3, document4));
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
 		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder()
-			.query("The World")
-			.topK(10)
-			.filterExpression((b.in("country", "UK", "NL")).build())
-			.build());
+				.query("The World")
+				.topK(10)
+				.filterExpression((b.in("country", "UK", "NL")).build())
+				.build());
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
 
 		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.builder()
-			.query("The World")
-			.topK(10)
-			.filterExpression(
-					b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build())
-			.build());
+				.query("The World")
+				.topK(10)
+				.filterExpression(
+						b.and(b.or(b.gte("year", 2021), b.eq("country", "NL")), b.ne("city", "Amsterdam")).build())
+				.build());
 
 		assertThat(results2).hasSize(1);
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
 
 		List<Document> results3 = this.vectorStore.similaritySearch(SearchRequest.builder()
-			.query("The World")
-			.topK(10)
-			.filterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build())
-			.build());
+				.query("The World")
+				.topK(10)
+				.filterExpression(b.and(b.eq("country", "US"), b.eq("year", 2020)).build())
+				.build());
 
 		assertThat(results3).hasSize(1);
 		assertThat(results3).extracting(Document::getId).containsExactlyInAnyOrder("4");
@@ -165,7 +165,7 @@ public class CosmosDBVectorStoreIT {
 
 		// Perform a similarity search again
 		List<Document> results4 = this.vectorStore
-			.similaritySearch(SearchRequest.builder().query("The World").topK(1).build());
+				.similaritySearch(SearchRequest.builder().query("The World").topK(1).build());
 
 		// Verify the search results
 		assertThat(results4).isEmpty();
@@ -188,21 +188,22 @@ public class CosmosDBVectorStoreIT {
 		public VectorStore vectorStore(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel,
 				VectorStoreObservationConvention convention) {
 			return CosmosDBVectorStore.builder(cosmosClient, embeddingModel)
-				.databaseName("test-database")
-				.containerName("test-container")
-				.metadataFields(List.of("country", "year", "city"))
-				.vectorStoreThroughput(1000)
-				.customObservationConvention(convention)
-				.build();
+					.databaseName("test-database")
+					.containerName("test-container")
+					.metadataFields(List.of("country", "year", "city"))
+					.partitionKeyPath("/id")
+					.vectorStoreThroughput(1000)
+					.customObservationConvention(convention)
+					.build();
 		}
 
 		@Bean
 		public CosmosAsyncClient cosmosClient() {
 			return new CosmosClientBuilder().endpoint(System.getenv("AZURE_COSMOSDB_ENDPOINT"))
-				.key(System.getenv("AZURE_COSMOSDB_KEY"))
-				.userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
-				.gatewayMode()
-				.buildAsyncClient();
+					.credential(new DefaultAzureCredentialBuilder().build())
+					.userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
+					.gatewayMode()
+					.buildAsyncClient();
 		}
 
 		@Bean
