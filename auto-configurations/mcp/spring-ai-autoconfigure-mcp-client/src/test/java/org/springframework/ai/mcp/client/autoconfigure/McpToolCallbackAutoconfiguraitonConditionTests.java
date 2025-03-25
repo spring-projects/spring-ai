@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.mcp.client;
+package org.springframework.ai.mcp.client.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.autoconfigure.mcp.client.McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfiguraitonCondition;
+import org.springframework.ai.mcp.client.autoconfigure.McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfiguraitonCondition;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;

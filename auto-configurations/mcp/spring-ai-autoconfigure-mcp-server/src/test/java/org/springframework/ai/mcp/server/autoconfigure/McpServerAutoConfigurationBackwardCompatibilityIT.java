@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.mcp.server;
+package org.springframework.ai.mcp.server.autoconfigure;
 
 import java.util.List;
 import java.util.function.Consumer;
