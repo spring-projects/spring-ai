@@ -68,10 +68,8 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public List<String> getMetadataFieldList() {
-		return this.metadataFields != null ? Arrays.stream(this.metadataFields.split(","))
-				.map(String::trim)
-				.filter(s -> !s.isEmpty())
-				.toList()
+		return this.metadataFields != null
+				? Arrays.stream(this.metadataFields.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList()
 				: List.of();
 	}
 
@@ -130,4 +128,5 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 	public void setVectorDimensions(long vectorDimensions) {
 		this.vectorDimensions = vectorDimensions;
 	}
+
 }
