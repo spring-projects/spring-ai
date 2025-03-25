@@ -13,6 +13,12 @@ The MCP Client Boot Starter provides:
 
 == Starters
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 === Standard MCP Client
 
 [source,xml]

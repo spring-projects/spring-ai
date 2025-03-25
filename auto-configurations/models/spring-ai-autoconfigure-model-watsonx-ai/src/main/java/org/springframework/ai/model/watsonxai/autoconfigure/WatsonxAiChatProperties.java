@@ -35,11 +35,6 @@ public class WatsonxAiChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai.chat";
 
 	/**
-	 * Enable Watsonx.AI chat model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Watsonx AI generative options.
 	 */
 	@NestedConfigurationProperty
@@ -54,14 +49,6 @@ public class WatsonxAiChatProperties {
 		.repetitionPenalty(1.0)
 		.stopSequences(List.of())
 		.build();
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public WatsonxAiChatOptions getOptions() {
 		return this.options;

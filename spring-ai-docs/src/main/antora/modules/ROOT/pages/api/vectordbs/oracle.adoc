@@ -6,6 +6,12 @@ TIP: The <<Run Oracle Database 23ai locally,Run Oracle Database 23ai locally>> a
 
 == Auto-Configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Start by adding the Oracle Vector Store boot starter dependency to your project:
 
 [source,xml]

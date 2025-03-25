@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockTitanEmbeddingAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withPropertyValues("spring.ai.bedrock.titan.embedding.enabled=true",
+		.withPropertyValues("spring.ai.model.embedding=bedrock-titan",
 				"spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 				"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
 				"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
@@ -86,7 +86,7 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 	public void propertiesTest() {
 
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
-			.withPropertyValues("spring.ai.bedrock.titan.embedding.enabled=true",
+			.withPropertyValues("spring.ai.model.embedding=bedrock-titan",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 					"spring.ai.bedrock.titan.embedding.model=MODEL_XYZ",
@@ -96,7 +96,6 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 				var properties = context.getBean(BedrockTitanEmbeddingProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
 
-				assertThat(properties.isEnabled()).isTrue();
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.US_EAST_1.id());
 				assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
 

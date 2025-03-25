@@ -34,11 +34,6 @@ public class QianFanImageProperties extends QianFanParentProperties {
 	public static final String DEFAULT_IMAGE_MODEL = QianFanImageApi.ImageModel.Stable_Diffusion_XL.getValue();
 
 	/**
-	 * Enable QianFan image model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Options for QianFan Image API.
 	 */
 	@NestedConfigurationProperty
@@ -50,14 +45,6 @@ public class QianFanImageProperties extends QianFanParentProperties {
 
 	public void setOptions(QianFanImageOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

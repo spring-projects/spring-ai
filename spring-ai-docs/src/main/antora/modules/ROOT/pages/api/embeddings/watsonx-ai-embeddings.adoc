@@ -25,6 +25,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Watsonx.ai Embedding Model.
 To enable it add the following dependency to your Maven `pom.xml` file:
 
@@ -63,13 +69,25 @@ The prefix `spring.ai.watsonx.ai` is used as the property prefix that lets you c
 | spring.ai.watsonx.ai.iam-token            | The IBM Cloud account IAM token   |  -
 |====
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=watsonx (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match watsonx)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.watsonx.embedding.options` is the property prefix that configures the `EmbeddingModel` implementation for Watsonx.ai.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.watsonx.ai.embedding.enabled       | Enable Watsonx.ai embedding model | true
+| spring.ai.watsonx.ai.embedding.enabled (Removed and no longer valid)      | Enable Watsonx.ai embedding model | true
+| spring.ai.model.embedding       | Enable Watsonx.ai embedding model | watsonx
 | spring.ai.watsonx.ai.embedding.options.model | The embedding model to be used    | ibm/slate-30m-english-rtrvr
 |====
 

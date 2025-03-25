@@ -34,6 +34,12 @@ Alternatively, you can enable the option to download automatically any needed mo
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Model.
 To enable it add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
@@ -87,6 +93,17 @@ Here are the properties for initializing the Ollama integration and xref:auto-pu
 
 === Embedding Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=ollama (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match ollama)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.ollama.embedding.options` is the property prefix that configures the Ollama embedding model.
 It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, and `truncate` as well as the Ollama model `options` properties.
 
@@ -95,8 +112,9 @@ Here are the advanced request parameter for the Ollama embedding model:
 [cols="4,5,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.ollama.embedding.enabled      | Enables the Ollama embedding model auto-configuration. | true
-| spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. 
+| spring.ai.ollama.embedding.enabled (Removed and no longer valid)     | Enables the Ollama embedding model auto-configuration. | true
+| spring.ai.model.embedding      | Enables the Ollama embedding model auto-configuration. | ollama
+| spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use.
 You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mistral
 | spring.ai.ollama.embedding.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 | spring.ai.ollama.embedding.options.truncate  | Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.  | true

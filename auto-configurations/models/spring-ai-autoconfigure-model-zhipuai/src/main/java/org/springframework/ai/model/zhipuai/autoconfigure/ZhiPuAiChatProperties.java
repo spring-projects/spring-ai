@@ -35,11 +35,6 @@ public class ZhiPuAiChatProperties extends ZhiPuAiParentProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	/**
-	 * Enable ZhiPuAI chat model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private ZhiPuAiChatOptions options = ZhiPuAiChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
@@ -52,14 +47,6 @@ public class ZhiPuAiChatProperties extends ZhiPuAiParentProperties {
 
 	public void setOptions(ZhiPuAiChatOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

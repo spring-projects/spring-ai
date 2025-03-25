@@ -35,11 +35,6 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	/**
-	 * Enable MiniMax chat model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private MiniMaxChatOptions options = MiniMaxChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
@@ -52,14 +47,6 @@ public class MiniMaxChatProperties extends MiniMaxParentProperties {
 
 	public void setOptions(MiniMaxChatOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

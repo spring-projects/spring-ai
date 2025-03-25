@@ -286,7 +286,7 @@ public class QianFanPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.qianfan.api-key=API_KEY", "spring.ai.qianfan.secret-key=SECRET_KEY",
-					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.qianfan.chat.enabled=true")
+					"spring.ai.qianfan.base-url=TEST_BASE_URL", "spring.ai.model.chat=qianfan")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, QianFanChatAutoConfiguration.class))
 			.run(context -> {

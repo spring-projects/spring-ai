@@ -25,6 +25,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Add the `spring-ai-starter-model-bedrock` dependency to your project's Maven `pom.xml` file:
 
 [source,xml]
@@ -70,12 +76,24 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=bedrock-titan (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match bedrock-titan)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.bedrock.titan.embedding` (defined in `BedrockTitanEmbeddingProperties`) is the property prefix that configures the embedding model implementation for Titan.
 
 [cols="3,4,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.bedrock.titan.embedding.enabled              | Enable or disable support for Titan  embedding | false
+| spring.ai.bedrock.titan.embedding.enabled (Removed and no longer valid)             | Enable or disable support for Titan  embedding | false
+| spring.ai.model.embedding              | Enable or disable support for Titan  embedding | bedrock-titan
 | spring.ai.bedrock.titan.embedding.model                | The model id to use. See the `TitanEmbeddingModel` for the supported models.  | amazon.titan-embed-image-v1
 |====
 

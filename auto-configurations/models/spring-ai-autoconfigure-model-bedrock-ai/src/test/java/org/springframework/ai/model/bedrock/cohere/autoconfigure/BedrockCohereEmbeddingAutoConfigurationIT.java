@@ -85,7 +85,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	public void propertiesTest() {
 
 		BedrockTestUtils.getContextRunnerWithUserConfiguration()
-			.withPropertyValues("spring.ai.bedrock.cohere.embedding.enabled=true",
+			.withPropertyValues("spring.ai.model.embedding=bedrock-cohere",
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 					"spring.ai.bedrock.cohere.embedding.model=MODEL_XYZ",
@@ -96,7 +96,6 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				var properties = context.getBean(BedrockCohereEmbeddingProperties.class);
 				var awsProperties = context.getBean(BedrockAwsConnectionProperties.class);
 
-				assertThat(properties.isEnabled()).isTrue();
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.US_EAST_1.id());
 				assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
 

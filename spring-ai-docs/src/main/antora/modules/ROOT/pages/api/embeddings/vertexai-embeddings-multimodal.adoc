@@ -37,6 +37,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -73,13 +79,25 @@ The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that l
 
 |====
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding.multimodal=vertexai (It is enabled by default)
+
+To disable, spring.ai.model.embedding.multimodal=none (or any value which doesn't match vertexai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.vertex.ai.embedding.multimodal` is the property prefix that lets you configure the embedding model implementation for VertexAI Multimodal Embedding.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.vertex.ai.embedding.multimodal.enabled | Enable Vertex AI Embedding API model. | true
+| spring.ai.vertex.ai.embedding.multimodal.enabled (Removed and no longer valid) | Enable Vertex AI Embedding API model. | true
+| spring.ai.model.embedding.multimodal=vertexai | Enable Vertex AI Embedding API model. | vertexai
 | spring.ai.vertex.ai.embedding.multimodal.options.model | You can get multimodal embeddings by using the following model: | multimodalembedding@001
 | spring.ai.vertex.ai.embedding.multimodal.options.dimensions | Specify lower-dimension embeddings. By default, an embedding request returns a 1408 float vector for a data type. You can also specify lower-dimension embeddings (128, 256, or 512 float vectors) for text and image data.  | 1408
 | spring.ai.vertex.ai.embedding.multimodal.options.video-start-offset-sec | The start offset of the video segment in seconds. If not specified, it's calculated with max(0, endOffsetSec - 120).  | -

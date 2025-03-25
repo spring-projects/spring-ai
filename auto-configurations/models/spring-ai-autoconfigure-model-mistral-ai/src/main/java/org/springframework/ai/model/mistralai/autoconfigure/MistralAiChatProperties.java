@@ -43,11 +43,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	private static final Boolean IS_ENABLED = false;
 
-	/**
-	 * Enable OpenAI chat model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private MistralAiChatOptions options = MistralAiChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
@@ -66,14 +61,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	public void setOptions(MistralAiChatOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

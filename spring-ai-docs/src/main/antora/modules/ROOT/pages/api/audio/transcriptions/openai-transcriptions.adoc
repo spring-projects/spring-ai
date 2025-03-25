@@ -13,6 +13,12 @@ Exporting an environment variable is one way to set that configuration property:
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the OpenAI Transcription Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -55,12 +61,24 @@ Usage from these API requests will count as usage for the specified organization
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.audio.transcription=openai (It is enabled by default)
+
+To disable, spring.ai.model.audio.transcription=none (or any value which doesn't match openai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.openai.audio.transcription` is used as the property prefix that lets you configure the retry mechanism for the OpenAI transcription model.
 
 [cols="3,5,2"]
 |====
 | Property | Description | Default
 
+| spring.ai.model.audio.transcription   | Enable OpenAI Audio Transcription Model |  openai
 | spring.ai.openai.audio.transcription.base-url   | The URL to connect to |  https://api.openai.com
 | spring.ai.openai.audio.transcription.api-key    | The API Key           |  -
 | spring.ai.openai.audio.transcription.organization-id | Optionally you can specify which organization  used for an API request. |  -

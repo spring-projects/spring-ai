@@ -19,6 +19,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Azure PostgresML Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -45,12 +51,24 @@ Use the `spring.ai.postgresml.embedding.options.*` properties to configure your 
 
 === Embedding Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=postgresml (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match postgresml)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.postgresml.embedding` is property prefix that configures the `EmbeddingModel` implementation for PostgresML embeddings.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.postgresml.embedding.enabled | Enable PostgresML embedding model.  | true
+| spring.ai.postgresml.embedding.enabled (Removed and no longer valid) | Enable PostgresML embedding model.  | true
+| spring.ai.model.embedding | Enable PostgresML embedding model.  | postgresml
 | spring.ai.postgresml.embedding.create-extension | Execute the SQL 'CREATE EXTENSION IF NOT EXISTS pgml' to enable the extesnion | false
 | spring.ai.postgresml.embedding.options.transformer  | The Hugging Face transformer model to use for the embedding.  | distilbert-base-uncased
 | spring.ai.postgresml.embedding.options.kwargs   | Additional transformer specific options.  | empty map

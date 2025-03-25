@@ -31,11 +31,6 @@ public class AzureOpenAiImageOptionsProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.image";
 
-	/**
-	 * Enable Azure OpenAI chat client.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private AzureOpenAiImageOptions options = AzureOpenAiImageOptions.builder().build();
 
@@ -45,14 +40,6 @@ public class AzureOpenAiImageOptionsProperties {
 
 	public void setOptions(AzureOpenAiImageOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

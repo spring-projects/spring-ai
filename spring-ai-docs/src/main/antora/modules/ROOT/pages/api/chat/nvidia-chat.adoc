@@ -22,6 +22,12 @@ image::spring-ai-nvidia-registration.jpg[w=800,align="center"]
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the OpenAI Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -77,13 +83,25 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=openai (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match openai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat model implementation for OpenAI.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.openai.chat.enabled | Enable OpenAI chat model.  | true
+| spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
+| spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://integrate.api.nvidia.com` |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.options.model | The link:https://docs.api.nvidia.com/nim/reference/llm-apis#models[NVIDIA LLM model] to use | -

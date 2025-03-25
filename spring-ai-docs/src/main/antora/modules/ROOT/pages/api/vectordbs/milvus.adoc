@@ -11,6 +11,12 @@ link:https://milvus.io/[Milvus] is an open-source vector database that has garne
 
 == Dependencies
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Then add the Milvus VectorStore boot starter dependency to your project:
 
 [source,xml]
