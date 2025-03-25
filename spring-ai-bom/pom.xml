@@ -344,13 +344,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- TODO: To be removed in 1-0-0.M7 once individual autoconfigure modules are updated -->
-            <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
 			<!-- Spring AI Spring Boot Auto-configurations -->
 
 			<!-- Spring AI Retry autoconfiguration-->
