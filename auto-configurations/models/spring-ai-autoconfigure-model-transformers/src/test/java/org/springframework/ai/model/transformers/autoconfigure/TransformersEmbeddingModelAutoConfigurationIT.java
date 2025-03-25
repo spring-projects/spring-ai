@@ -92,12 +92,12 @@ public class TransformersEmbeddingModelAutoConfigurationIT {
 
 	@Test
 	void embeddingActivation() {
-		this.contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=false").run(context -> {
-			assertThat(context.getBeansOfType(TransformersEmbeddingModelProperties.class)).isNotEmpty();
+		this.contextRunner.withPropertyValues("spring.ai.model.embedding=none").run(context -> {
+			assertThat(context.getBeansOfType(TransformersEmbeddingModelProperties.class)).isEmpty();
 			assertThat(context.getBeansOfType(TransformersEmbeddingModel.class)).isEmpty();
 		});
 
-		this.contextRunner.withPropertyValues("spring.ai.embedding.transformer.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.model.embedding=transformers").run(context -> {
 			assertThat(context.getBeansOfType(TransformersEmbeddingModelProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(TransformersEmbeddingModel.class)).isNotEmpty();
 		});
