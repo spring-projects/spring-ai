@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;

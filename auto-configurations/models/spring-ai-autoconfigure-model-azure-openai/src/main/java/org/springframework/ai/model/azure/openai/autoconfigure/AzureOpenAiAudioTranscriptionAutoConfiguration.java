@@ -19,7 +19,6 @@ package org.springframework.ai.model.azure.openai.autoconfigure;
 import com.azure.ai.openai.OpenAIClientBuilder;
 
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;
-import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

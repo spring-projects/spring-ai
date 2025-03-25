@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore.MariaDBDistanceType;
-import org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
