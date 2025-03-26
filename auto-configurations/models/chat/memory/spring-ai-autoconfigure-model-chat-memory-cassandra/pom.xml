@@ -9,10 +9,10 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../../../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-autoconfigure-model-chat-memory</artifactId>
+	<artifactId>spring-ai-autoconfigure-model-chat-memory-cassandra</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Chat Memory Auto Configuration</name>
-	<description>Spring AI Chat Memory Auto Configuration</description>
+	<name>Spring AI Cassandra Chat Memory Auto Configuration</name>
+	<description>Spring AI Cassandra Chat Memory Auto Configuration</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

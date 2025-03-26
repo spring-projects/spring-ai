@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.autoconfigure;
+package org.springframework.ai.model.chat.memory.cassandra.autoconfigure;
 
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.chat.memory.cassandra.autoconfigure.CassandraChatMemoryProperties;
 import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;

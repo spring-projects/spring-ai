@@ -21,7 +21,6 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.model.chat.memory.autoconfigure.CommonChatMemoryProperties;
 import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.lang.Nullable;
@@ -34,7 +33,7 @@ import org.springframework.lang.Nullable;
  * @since 1.0.0
  */
 @ConfigurationProperties(CassandraChatMemoryProperties.CONFIG_PREFIX)
-public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
+public class CassandraChatMemoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.cassandra";
 
@@ -47,6 +46,16 @@ public class CassandraChatMemoryProperties extends CommonChatMemoryProperties {
 	private String assistantColumn = CassandraChatMemoryConfig.DEFAULT_ASSISTANT_COLUMN_NAME;
 
 	private String userColumn = CassandraChatMemoryConfig.DEFAULT_USER_COLUMN_NAME;
+
+	private boolean initializeSchema = true;
+
+	public boolean isInitializeSchema() {
+		return this.initializeSchema;
+	}
+
+	public void setInitializeSchema(boolean initializeSchema) {
+		this.initializeSchema = initializeSchema;
+	}
 
 	private Duration timeToLive = null;
 
