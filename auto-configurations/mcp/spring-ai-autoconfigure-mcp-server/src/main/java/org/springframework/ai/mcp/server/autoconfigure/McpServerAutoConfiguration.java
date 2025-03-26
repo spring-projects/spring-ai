@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
@@ -145,12 +146,25 @@ public class McpServerAutoConfiguration {
 
 	private List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecifications(List<ToolCallback> tools,
 			McpServerProperties serverProperties) {
-		return tools.stream().map(tool -> {
-			String toolName = tool.getToolDefinition().name();
-			MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
-					? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-			return McpToolUtils.toSyncToolSpecification(tool, mimeType);
-		}).toList();
+
+		// De-duplicate tools by their name, keeping the first occurrence of each tool
+		// name
+		return tools.stream()
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), // Key:
+																				// tool
+																				// name
+					tool -> tool, // Value: the tool itself
+					(existing, replacement) -> existing)) // On duplicate key, keep the
+															// existing tool
+			.values()
+			.stream()
+			.map(tool -> {
+				String toolName = tool.getToolDefinition().name();
+				MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
+						? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
+				return McpToolUtils.toSyncToolSpecification(tool, mimeType);
+			})
+			.toList();
 	}
 
 	@Bean
@@ -231,12 +245,24 @@ public class McpServerAutoConfiguration {
 
 	private List<McpServerFeatures.AsyncToolSpecification> toAsyncToolSpecification(List<ToolCallback> tools,
 			McpServerProperties serverProperties) {
-		return tools.stream().map(tool -> {
-			String toolName = tool.getToolDefinition().name();
-			MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
-					? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-			return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
-		}).toList();
+		// De-duplicate tools by their name, keeping the first occurrence of each tool
+		// name
+		return tools.stream()
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), // Key:
+																				// tool
+																				// name
+					tool -> tool, // Value: the tool itself
+					(existing, replacement) -> existing)) // On duplicate key, keep the
+															// existing tool
+			.values()
+			.stream()
+			.map(tool -> {
+				String toolName = tool.getToolDefinition().name();
+				MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
+						? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
+				return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
+			})
+			.toList();
 	}
 
 	@Bean

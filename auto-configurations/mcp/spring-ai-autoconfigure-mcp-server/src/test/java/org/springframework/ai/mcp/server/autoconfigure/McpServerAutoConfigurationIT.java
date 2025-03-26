@@ -161,7 +161,7 @@ public class McpServerAutoConfigurationIT {
 	void toolRegistrationConfiguration() {
 		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
 			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
-			assertThat(tools).hasSize(2);
+			assertThat(tools).hasSize(1);
 		});
 	}
 
@@ -187,7 +187,7 @@ public class McpServerAutoConfigurationIT {
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
 				List<AsyncToolSpecification> tools = context.getBean("asyncTools", List.class);
-				assertThat(tools).hasSize(2);
+				assertThat(tools).hasSize(1);
 			});
 	}
 
