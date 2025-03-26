@@ -480,7 +480,8 @@ You can customize what data from `AdvisedRequest` and `ChatResponse` is logged b
 ----
 SimpleLoggerAdvisor(
     Function<AdvisedRequest, String> requestToString,
-    Function<ChatResponse, String> responseToString
+    Function<ChatResponse, String> responseToString,
+    int order
 )
 ----
 
@@ -489,11 +490,14 @@ Example usage:
 [source,java]
 ----
 SimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
-    request -> "Custom request: " + request.userText,
-    response -> "Custom response: " + response.getResult()
+    request -> "Custom request: " + request.userText(),
+    response -> "Custom response: " + response.getResult(),
+    1
 );
 ----
 
 This allows you to tailor the logged information to your specific needs.
+
+TIP: At present, no specific function of this order parameter has been found.
 
 TIP: Be cautious about logging sensitive information in production environments.
