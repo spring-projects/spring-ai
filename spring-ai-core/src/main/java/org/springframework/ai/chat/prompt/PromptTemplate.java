@@ -19,6 +19,7 @@ package org.springframework.ai.chat.prompt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.Set;
 
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
+import org.springframework.util.Assert;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.STLexer;
 
@@ -48,32 +50,20 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	private Map<String, Object> dynamicModel = new HashMap<>();
 
 	public PromptTemplate(Resource resource) {
-		try (InputStream inputStream = resource.getInputStream()) {
-			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to read resource", ex);
-		}
-		try {
-			this.st = new ST(this.template, '{', '}');
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		this(resource, Collections.emptyMap());
+	}
+
+	public PromptTemplate(Resource resource, Map<String, Object> model) {
+		this(readTemplateFromResource(resource), model);
 	}
 
 	public PromptTemplate(String template) {
-		this.template = template;
-		// If the template string is not valid, an exception will be thrown
-		try {
-			this.st = new ST(this.template, '{', '}');
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		this(template, Collections.emptyMap());
 	}
 
 	public PromptTemplate(String template, Map<String, Object> model) {
+		Assert.notNull(template, "template must not be null");
+		Assert.notNull(model, "model must not be null");
 		this.template = template;
 		// If the template string is not valid, an exception will be thrown
 		try {
@@ -87,22 +77,13 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		}
 	}
 
-	public PromptTemplate(Resource resource, Map<String, Object> model) {
+	private static String readTemplateFromResource(Resource resource) {
+		Assert.notNull(resource, "resource must not be null");
 		try (InputStream inputStream = resource.getInputStream()) {
-			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+			return StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
-		}
-		// If the template string is not valid, an exception will be thrown
-		try {
-			this.st = new ST(this.template, '{', '}');
-			for (Entry<String, Object> entry : model.entrySet()) {
-				this.add(entry.getKey(), entry.getValue());
-			}
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
 		}
 	}
 
