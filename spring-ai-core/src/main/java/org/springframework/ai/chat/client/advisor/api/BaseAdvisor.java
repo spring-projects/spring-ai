@@ -16,16 +16,12 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
-import java.util.function.Predicate;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * Base advisor that implements common aspects of the {@link CallAroundAdvisor} and
@@ -65,22 +61,11 @@ public interface BaseAdvisor extends CallAroundAdvisor, StreamAroundAdvisor {
 			.flatMapMany(chain::nextAroundStream);
 
 		return advisedResponses.map(ar -> {
-			if (onFinishReason().test(ar)) {
+			if (AdvisedResponseStreamUtils.onFinishReason().test(ar)) {
 				ar = after(ar);
 			}
 			return ar;
 		}).onErrorResume(error -> Flux.error(new IllegalStateException("Stream processing failed", error)));
-	}
-
-	private Predicate<AdvisedResponse> onFinishReason() {
-		return advisedResponse -> {
-			ChatResponse chatResponse = advisedResponse.response();
-			return chatResponse != null && chatResponse.getResults() != null
-					&& chatResponse.getResults()
-						.stream()
-						.anyMatch(result -> result != null && result.getMetadata() != null
-								&& StringUtils.hasText(result.getMetadata().getFinishReason()));
-		};
 	}
 
 	@Override

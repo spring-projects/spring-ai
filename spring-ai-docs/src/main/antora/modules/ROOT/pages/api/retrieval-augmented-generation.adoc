@@ -136,7 +136,7 @@ String answer = chatClient.prompt()
         .content();
 ----
 
-See xref:api/retrieval-augmented-generation.adoc#_vectorstoredocumentretriever for more information.
+See xref:api/retrieval-augmented-generation.adoc#_vectorstoredocumentretriever[VectorStoreDocumentRetriever] for more information.
 
 ===== Advanced RAG
 

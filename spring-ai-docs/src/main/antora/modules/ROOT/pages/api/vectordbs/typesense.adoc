@@ -13,6 +13,12 @@ link:https://typesense.org[Typesense] is an open source typo tolerant search eng
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Typesense Vector Store.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -20,7 +26,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-typesense-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-typesense</artifactId>
 </dependency>
 ----
 
@@ -29,7 +35,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-typesense-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-typesense'
 }
 ----
 

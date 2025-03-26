@@ -30,6 +30,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Hugging Face Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -37,7 +43,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-huggingface-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-huggingface</artifactId>
 </dependency>
 ----
 
@@ -46,13 +52,24 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-huggingface-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-huggingface'
 }
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 === Chat Properties
+
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=huggingface (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match huggingface)
+
+This change is done to allow configuration of multiple models.
+====
 
 The prefix `spring.ai.huggingface` is the property prefix that lets you configure the chat model implementation for Hugging Face.
 
@@ -61,12 +78,13 @@ The prefix `spring.ai.huggingface` is the property prefix that lets you configur
 | Property | Description | Default
 | spring.ai.huggingface.chat.api-key    | API Key to authenticate with the Inference Endpoint.  |  -
 | spring.ai.huggingface.chat.url        | URL of the Inference Endpoint to connect to           |  -
-| spring.ai.huggingface.chat.enabled    | Enable Hugging Face chat model.                       | true
+| spring.ai.huggingface.chat.enabled (Removed and no longer valid)   | Enable Hugging Face chat model.                       | true
+| spring.ai.model.chat (Removed and no longer valid)   | Enable Hugging Face chat model.                       | huggingface
 |====
 
 == Sample Controller (Auto-configuration)
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-huggingface-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-huggingface` to your pom (or gradle) dependencies.
 
 Add an `application.properties` file, under the `src/main/resources` directory, to enable and configure the Hugging Face chat model:
 

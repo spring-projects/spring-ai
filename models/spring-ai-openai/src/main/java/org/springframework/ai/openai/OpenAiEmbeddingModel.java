@@ -23,6 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -167,8 +169,9 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 					return new EmbeddingResponse(List.of());
 				}
 
-				var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-						getDefaultUsage(apiEmbeddingResponse.usage()));
+				OpenAiApi.Usage usage = apiEmbeddingResponse.usage();
+				Usage embeddingResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
+				var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(), embeddingResponseUsage);
 
 				List<Embedding> embeddings = apiEmbeddingResponse.data()
 					.stream()

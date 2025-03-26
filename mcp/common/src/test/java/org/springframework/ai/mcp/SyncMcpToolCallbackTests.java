@@ -56,7 +56,7 @@ class SyncMcpToolCallbackTests {
 
 		var toolDefinition = callback.getToolDefinition();
 
-		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "-testTool");
+		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "_testTool");
 		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
 	}
 

@@ -37,7 +37,7 @@ Then add the Spring Boot Starter dependency to your project's Maven `pom.xml` bu
 [source,xml]
 ----
 <dependency>
- <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+ <artifactId>spring-ai-starter-model-bedrock</artifactId>
  <groupId>org.springframework.ai</groupId>
 </dependency>
 ----
@@ -47,7 +47,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-bedrock'
 }
 ----
 

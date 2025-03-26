@@ -51,7 +51,10 @@ public enum VectorStoreProvider {
 	 * Vector store provided by CosmosDB.
 	 */
 	COSMOSDB("cosmosdb"),
-
+	/**
+	 * Vector store provided by CosmosDB.
+	 */
+	COUCHBASE("couchbase"),
 	/**
 	 * Vector store provided by Elasticsearch.
 	 */

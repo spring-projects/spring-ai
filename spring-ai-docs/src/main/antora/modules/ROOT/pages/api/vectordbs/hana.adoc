@@ -8,6 +8,12 @@
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the SAP Hana Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
@@ -15,7 +21,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-hana</artifactId>
 </dependency>
 ----
 
@@ -24,7 +30,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-hanadb-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-hana'
 }
 ----
 
@@ -99,12 +105,12 @@ You may set the property `spring-ai-version` as `<spring-ai-version>1.0.0-SNAPSH
 
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
 </dependency>
 
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-hanadb-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-hana</artifactId>
 </dependency>
 
 <dependency>

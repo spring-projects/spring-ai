@@ -41,6 +41,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the OpenAI Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
@@ -52,7 +58,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
 </dependency>
 ----
 
@@ -61,7 +67,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 }
 ----
 ======
@@ -96,18 +102,31 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | Property | Description | Default
 
 | spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://api.deepseek.com` | -
-| spring.ai.openai.chat.api-key    | Your DeepSeek API Key | -
+| spring.ai.openai.api-key    | Your DeepSeek API Key | -
 |====
 
 
 ==== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=openai (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match openai)
+
+This change is done to allow configuration of multiple models.
+====
+
 
 The prefix `spring.ai.openai.chat` is the property prefix that lets you configure the chat model implementation for OpenAI.
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.openai.chat.enabled | Enable OpenAI chat model.  | true
+| spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
+| spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://api.deepseek.com` |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.options.model | The link:https://api-docs.deepseek.com/quick_start/pricing[DeepSeek LLM model] to use | -
@@ -163,7 +182,7 @@ NOTE: Currently, the DeepSeek API doesn't support media content.
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-openai-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-openai` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the OpenAi chat model:
 

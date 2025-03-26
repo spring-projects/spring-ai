@@ -20,7 +20,7 @@ import java.util.List;
 
 import org.opensearch.testcontainers.OpensearchContainer;
 
-import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchConnectionDetails;
+import org.springframework.ai.vectorstore.opensearch.autoconfigure.OpenSearchConnectionDetails;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
 
