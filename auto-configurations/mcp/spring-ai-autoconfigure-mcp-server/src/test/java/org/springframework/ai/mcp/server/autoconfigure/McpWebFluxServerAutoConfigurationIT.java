@@ -1,7 +1,8 @@
-package org.springframework.ai.autoconfigure.mcp.server;
+package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransport;
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -17,7 +18,7 @@ class McpWebFluxServerAutoConfigurationIT {
 	@Test
 	void defaultConfiguration() {
 		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(WebFluxSseServerTransport.class);
+			assertThat(context).hasSingleBean(WebFluxSseServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
 	}
@@ -25,7 +26,7 @@ class McpWebFluxServerAutoConfigurationIT {
 	@Test
 	void objectMapperConfiguration() {
 		this.contextRunner.withBean(ObjectMapper.class, ObjectMapper::new).run(context -> {
-			assertThat(context).hasSingleBean(WebFluxSseServerTransport.class);
+			assertThat(context).hasSingleBean(WebFluxSseServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
 	}
@@ -33,7 +34,7 @@ class McpWebFluxServerAutoConfigurationIT {
 	@Test
 	void stdioEnabledConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.stdio=true").run(context -> {
-			assertThat(context).doesNotHaveBean(WebFluxSseServerTransport.class);
+			assertThat(context).doesNotHaveBean(WebFluxSseServerTransportProvider.class);
 		});
 	}
 
