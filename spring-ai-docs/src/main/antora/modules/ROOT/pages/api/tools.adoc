@@ -126,7 +126,7 @@ Spring AI supports tool calling through a set of flexible abstractions that allo
 image::tools/tool-calling-01.jpg[The main sequence of actions for tool calling, width=700, align="center"]
 
 1. When we want to make a tool available to the model, we include its definition in the chat request. Each tool definition comprises of a name, a description, and the schema of the input parameters.
-2. When the model decides to call a tool, it sends a response with the tool name and the input parameters modeled after the defined schema.
+2. When the model decides to call a tool, it sends a request with the tool name and the input parameters modeled after the defined schema.
 3. The application is responsible for using the tool name to identify and execute the tool with the provided input parameters.
 4. The result of the tool call is processed by the application.
 5. The application sends the tool call result back to the model.
