@@ -59,7 +59,7 @@ The prefix `spring.ai.stabilityai` is used as the property prefix that lets you 
 
 [NOTE]
 ====
-Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+Enabling and disabling of the image auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.
 
 To enable, spring.ai.model.image=stabilityai (It is enabled by default)
 

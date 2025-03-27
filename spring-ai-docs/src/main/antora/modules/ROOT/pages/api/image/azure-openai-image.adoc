@@ -84,7 +84,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 [NOTE]
 ====
-Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+Enabling and disabling of the image auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.
 
 To enable, spring.ai.model.image=azure-openai (It is enabled by default)
 

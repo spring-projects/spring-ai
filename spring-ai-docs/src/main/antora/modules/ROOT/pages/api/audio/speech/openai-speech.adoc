@@ -65,7 +65,7 @@ Usage from these API requests will count as usage for the specified organization
 
 [NOTE]
 ====
-Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+Enabling and disabling of the audio speech auto-configurations are now configured via top level properties with the prefix `spring.ai.model.audio.speech`.
 
 To enable, spring.ai.model.audio.speech=openai (It is enabled by default)
 

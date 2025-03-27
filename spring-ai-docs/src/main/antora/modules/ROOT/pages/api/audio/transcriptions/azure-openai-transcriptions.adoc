@@ -43,7 +43,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 [NOTE]
 ====
-Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+Enabling and disabling of the audio transcription auto-configurations are now configured via top level properties with the prefix `spring.ai.model.audio.transcription`.
 
 To enable, spring.ai.model.audio.transcription=azure-openai (It is enabled by default)
 
