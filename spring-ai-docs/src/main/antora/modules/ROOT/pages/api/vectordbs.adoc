@@ -389,7 +389,7 @@ Consider the following example:
 
 [source,java]
 ----
-Expression exp = b.and(b.eq("genre", "drama"), b.gte("year", 2020)).build();
+Expression exp = b.and(b.in("genre", "drama", "documentary"), b.not(b.lt("year", 2020))).build();
 ----
 
 == Deleting Documents from Vector Store
