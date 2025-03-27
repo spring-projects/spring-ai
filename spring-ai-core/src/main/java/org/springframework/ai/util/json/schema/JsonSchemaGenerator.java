@@ -31,10 +31,12 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
@@ -125,6 +127,14 @@ public final class JsonSchemaGenerator {
 		for (int i = 0; i < method.getParameterCount(); i++) {
 			String parameterName = method.getParameters()[i].getName();
 			Type parameterType = method.getGenericParameterTypes()[i];
+			if (parameterType instanceof Class<?> parameterClass
+					&& ClassUtils.isAssignable(parameterClass, ToolContext.class)) {
+				// A ToolContext method parameter is not included in the JSON Schema
+				// generation.
+				// It's a special type used by Spring AI to pass contextual data to tools
+				// outside the model interaction flow.
+				continue;
+			}
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}

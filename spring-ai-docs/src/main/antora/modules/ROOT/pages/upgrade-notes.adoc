@@ -171,9 +171,11 @@ To use this automation:
 
 This approach can save time and reduce the chance of errors when upgrading multiple projects or complex codebases.
 
+== Upgrading to 1.0.0.M7
+
+* The `ToolContext` class has now been marked as final and cannot be extended anymore. It was never supposed to be subclassed. You can add all the contextual data you need when instantiating a `ToolContext`, in the form of a `Map<String, Object>`. For more information, check the [documentation](https://docs.spring.io/spring-ai/reference/api/tools.html#_tool_context).
 
 == Upgrading to 1.0.0.M6
-
 
 === Changes to Usage Interface and DefaultUsage Implementation
 
