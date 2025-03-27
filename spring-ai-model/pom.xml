@@ -15,19 +15,18 @@
   ~ limitations under the License.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xmlns="http://maven.apache.org/POM/4.0.0"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>spring-ai-core</artifactId>
+	<artifactId>spring-ai-model</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Core</name>
-	<description>Core domain for AI programming</description>
+	<name>Spring AI Model</name>
+	<description>Core model interfaces and classes for Spring AI</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -36,61 +35,17 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-	<dependencies>
+	<properties>
+		<maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+	</properties>
 
+	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-commons</artifactId>
-			<version>${project.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vector-store</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-model</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-jsonSchema</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.swagger.core.v3</groupId>
-			<artifactId>swagger-annotations</artifactId>
-			<version>${swagger-annotations.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.github.victools</groupId>
-			<artifactId>jsonschema-module-swagger-2</artifactId>
-			<version>${jsonschema.version}</version>
-		</dependency>
-
-		<!-- production dependencies -->
-		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>ST4</artifactId>
-			<version>${ST4.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>antlr4-runtime</artifactId>
-			<version>${antlr.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-core</artifactId>
-		</dependency>
-
 
 		<!-- Spring Framework -->
 		<dependency>
@@ -98,20 +53,14 @@
 			<artifactId>spring-context</artifactId>
 		</dependency>
 
-
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-messaging</artifactId>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<dependency>
 			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-core</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>context-propagation</artifactId>
+			<artifactId>micrometer-observation</artifactId>
 		</dependency>
 
 		<dependency>
@@ -121,9 +70,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.knuddels</groupId>
-			<artifactId>jtokkit</artifactId>
-			<version>${jtokkit.version}</version>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-core</artifactId>
 		</dependency>
 
 		<dependency>
@@ -139,15 +87,17 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
+			<groupId>com.github.victools</groupId>
+			<artifactId>jsonschema-module-swagger-2</artifactId>
+			<version>${jsonschema.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-jsr310</artifactId>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations</artifactId>
+			<version>${swagger-annotations.version}</version>
 		</dependency>
-
+		
 		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib</artifactId>
@@ -168,23 +118,11 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-kotlin</artifactId>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>io.mockk</groupId>
-			<artifactId>mockk-jvm</artifactId>
-			<version>1.13.13</version>
-			<scope>test</scope>
-		</dependency>
-
+		
 	</dependencies>
-
-	<profiles>
-		<!-- ANTLR profile moved to spring-ai-vector-store -->
-	</profiles>
-
-
+	
 </project>
