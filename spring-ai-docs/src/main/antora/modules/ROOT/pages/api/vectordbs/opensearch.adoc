@@ -103,7 +103,6 @@ spring:
         index-name: spring-ai-document-index
         initialize-schema: true
         similarity-function: cosinesimil
-        batching-strategy: TOKEN_COUNT
         aws:  # Only for Amazon OpenSearch Service
           host: <aws opensearch host>
           service-name: <aws service name>
@@ -124,7 +123,6 @@ Properties starting with `spring.ai.vectorstore.opensearch.*` are used to config
 |`spring.ai.vectorstore.opensearch.index-name`| Name of the index to store vectors | `spring-ai-document-index`
 |`spring.ai.vectorstore.opensearch.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use | `cosinesimil`
-|`spring.ai.vectorstore.opensearch.batching-strategy`| Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |`spring.ai.vectorstore.opensearch.aws.host`| Hostname of the OpenSearch instance | -
 |`spring.ai.vectorstore.opensearch.aws.service-name`| AWS service name | -
 |`spring.ai.vectorstore.opensearch.aws.access-key`| AWS access key | -
