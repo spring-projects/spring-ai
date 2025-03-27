@@ -55,11 +55,9 @@ import java.util.function.Supplier;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
+public class SpringBeanToolCallbackResolver extends CachableToolCallbackResolver {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringBeanToolCallbackResolver.class);
-
-	private static final Map<String, ToolCallback> toolCallbacksCache = new HashMap<>();
 
 	private static final SchemaType DEFAULT_SCHEMA_TYPE = SchemaType.JSON_SCHEMA;
 
@@ -70,35 +68,19 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 	public SpringBeanToolCallbackResolver(GenericApplicationContext applicationContext,
 			@Nullable SchemaType schemaType) {
 		Assert.notNull(applicationContext, "applicationContext cannot be null");
-
 		this.applicationContext = applicationContext;
 		this.schemaType = schemaType != null ? schemaType : DEFAULT_SCHEMA_TYPE;
 	}
 
 	@Override
-	public ToolCallback resolve(String toolName) {
-		Assert.hasText(toolName, "toolName cannot be null or empty");
-
-		logger.debug("ToolCallback resolution attempt from Spring application context");
-
-		ToolCallback resolvedToolCallback = toolCallbacksCache.get(toolName);
-
-		if (resolvedToolCallback != null) {
-			return resolvedToolCallback;
-		}
-
+	protected ToolCallback resolveInternal(String toolName) {
 		ResolvableType toolType = TypeResolverHelper.resolveBeanType(applicationContext, toolName);
 		ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
 				? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(toolType, 0);
 
 		String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
 		Object bean = applicationContext.getBean(toolName);
-
-		resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
-
-		toolCallbacksCache.put(toolName, resolvedToolCallback);
-
-		return resolvedToolCallback;
+		return buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
 	}
 
 	public SchemaType getSchemaType() {
