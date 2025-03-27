@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.lang.Nullable;
@@ -347,6 +348,36 @@ class JsonSchemaGeneratorTests {
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
 	}
 
+	@Test
+	void generateSchemaForMethodWithToolContext() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("contextMethod", String.class, LocalDateTime.class,
+				ToolContext.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "deliveryStatus": {
+				            "type": "string"
+				        },
+				        "expectedDelivery": {
+				            "type": "string",
+				            "format": "date-time"
+				        }
+				    },
+				    "required": [
+				        "deliveryStatus",
+				        "expectedDelivery"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
 	// TYPES
 
 	@Test
@@ -656,6 +687,9 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public void timeMethod(Duration duration, LocalDateTime localDateTime, Instant instant) {
+		}
+
+		public void contextMethod(String deliveryStatus, LocalDateTime expectedDelivery, ToolContext toolContext) {
 		}
 
 	}
