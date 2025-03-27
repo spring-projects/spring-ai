@@ -291,14 +291,14 @@ Async::
 @Component
 public class CustomMcpAsyncClientCustomizer implements McpAsyncClientCustomizer {
     @Override
-    public void customize(String serverConfiurationName, McpClient.AsyncSpec spec) {
+    public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration
         spec.requestTimeout(Duration.ofSeconds(30));
     }
 }
 ----
 ======
-The `serverConfiurationName` parameter is the name of the server configuration that the customizer is being applied to and the the MCP Client is created for.
+The `serverConfigurationName` parameter is the name of the server configuration that the customizer is being applied to and the the MCP Client is created for.
 
 The MCP client auto-configuration automatically detects and applies any customizers found in the application context.
 
