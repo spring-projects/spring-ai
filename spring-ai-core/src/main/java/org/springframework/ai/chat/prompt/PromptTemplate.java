@@ -29,6 +29,7 @@ import java.util.Set;
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
 import org.stringtemplate.v4.ST;
+import org.stringtemplate.v4.compiler.Compiler;
 import org.stringtemplate.v4.compiler.STLexer;
 
 import org.springframework.ai.chat.messages.Message;
@@ -46,6 +47,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	private ST st;
 
 	private Map<String, Object> dynamicModel = new HashMap<>();
+
+	private boolean skipRenderValidate = false;
 
 	public PromptTemplate(Resource resource) {
 		try (InputStream inputStream = resource.getInputStream()) {
@@ -109,6 +112,10 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	public void add(String name, Object value) {
 		this.st.add(name, value);
 		this.dynamicModel.put(name, value);
+	}
+
+	public void skipValidate() {
+		this.skipRenderValidate = true;
 	}
 
 	public String getTemplate() {
@@ -199,15 +206,21 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			if (token.getType() == STLexer.LDELIM && i + 1 < tokens.size()
 					&& tokens.get(i + 1).getType() == STLexer.ID) {
 				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
-					inputVariables.add(tokens.get(i + 1).getText());
-					isInsideList = true;
+					String text = tokens.get(i + 1).getText();
+					if (!Compiler.funcs.containsKey(text)) {
+						inputVariables.add(text);
+						isInsideList = true;
+					}
 				}
 			}
 			else if (token.getType() == STLexer.RDELIM) {
 				isInsideList = false;
 			}
 			else if (!isInsideList && token.getType() == STLexer.ID) {
-				inputVariables.add(token.getText());
+				if (!Compiler.funcs.containsKey(token.getText())) {
+					inputVariables.add(token.getText());
+				}
+
 			}
 		}
 
@@ -222,6 +235,9 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	protected void validate(Map<String, Object> model) {
+		if (skipRenderValidate) {
+			return;
+		}
 
 		Set<String> templateTokens = getInputVariables();
 		Set<String> modelKeys = getModelKeys(model);
