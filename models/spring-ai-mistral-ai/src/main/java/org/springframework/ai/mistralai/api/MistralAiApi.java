@@ -139,7 +139,7 @@ public class MistralAiApi {
 
 		// The input must not an empty string, and any array must be 1024 dimensions or
 		// less.
-		if (embeddingRequest.input() instanceof List list) {
+		if (embeddingRequest.input() instanceof List<?> list) {
 			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
 			Assert.isTrue(list.size() <= 1024, "The list must be 1024 dimensions or less");
 			Assert.isTrue(
@@ -255,12 +255,10 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral chat models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
 	 *
-	 * <p>
-	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
-	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
-	 * Medium, Mistral Large, and Mistral Embeddings).
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
@@ -269,6 +267,7 @@ public class MistralAiApi {
 		CODESTRAL("codestral-latest"),
 		LARGE("mistral-large-latest"),
 		PIXTRAL_LARGE("pixtral-large-latest"),
+		SABA("mistral-saba-latest"),
 		MINISTRAL_3B_LATEST("ministral-3b-latest"),
 		MINISTRAL_8B_LATEST("ministral-8b-latest"),
 		// Free Models
@@ -298,11 +297,15 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral embedding models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-embedding-model
+	 *
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum EmbeddingModel {
 
 		// @formatter:off
+		// Premier Models
 		EMBED("mistral-embed");
 		 // @formatter:on
 
@@ -799,8 +802,7 @@ public class MistralAiApi {
 		}
 
 		/**
-		 * The role of the author of this message.
-		 *
+		 * The role of the author of this message. <br/>
 		 * NOTE: Mistral expects the system message to be before the user message or will
 		 * fail with 400 error.
 		 */
