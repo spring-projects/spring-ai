@@ -18,7 +18,9 @@ package org.springframework.ai.vectorstore.cosmosdb;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -48,6 +50,7 @@ import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.azure.cosmos.models.ThroughputProperties;
 import com.azure.cosmos.util.CosmosPagedFlux;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -117,7 +120,16 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.vectorDimensions = builder.vectorDimensions;
 		this.metadataFieldsList = builder.metadataFieldsList;
 
-		this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		try {
+			this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		}
+		catch (Exception e) {
+			// likely failed due to RBAC, so database is assumed to be already created
+			// (and
+			// if not, it will fail later)
+			logger.error("Error creating database: {}", e.getMessage());
+		}
+
 		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
 				this.partitionKeyPath);
 	}
@@ -348,9 +360,26 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.flatMap(page -> Flux.fromIterable(page.getResults()))
 				.collectList()
 				.block();
+
+			// Collect metadata fields from the documents
+			Map<String, Object> docFields = new HashMap<>();
+			for (var doc : documents) {
+				JsonNode metadata = doc.get("metadata");
+				metadata.fieldNames().forEachRemaining(field -> {
+					JsonNode value = metadata.get(field);
+					Object parsedValue = value.isTextual() ? value.asText() : value.isNumber() ? value.numberValue()
+							: value.isBoolean() ? value.booleanValue() : value.toString();
+					docFields.put(field, parsedValue);
+				});
+			}
+
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-				.map(doc -> Document.builder().id(doc.get("id").asText()).text(doc.get("content").asText()).build())
+				.map(doc -> Document.builder()
+					.id(doc.get("id").asText())
+					.text(doc.get("content").asText())
+					.metadata(docFields)
+					.build())
 				.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();
@@ -475,7 +504,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 */
 		public Builder metadataFields(List<String> metadataFieldsList) {
-			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(this.metadataFieldsList)
+			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
 					: new ArrayList<>();
 			return this;
 		}

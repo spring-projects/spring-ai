@@ -44,22 +44,35 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Theo van Kraay
  * @since 1.0.0
  */
-
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
 public class CosmosDBVectorStoreAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(CosmosDBVectorStoreAutoConfiguration.class))
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.databaseName=test-database")
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.containerName=test-container")
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.partitionKeyPath=/id")
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.metadataFields=country,year,city")
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThroughput=1000")
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorDimensions=384")
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.endpoint=" + System.getenv("AZURE_COSMOSDB_ENDPOINT"))
-		.withPropertyValues("spring.ai.vectorstore.cosmosdb.key=" + System.getenv("AZURE_COSMOSDB_KEY"))
-		.withUserConfiguration(Config.class);
+	private final ApplicationContextRunner contextRunner;
+
+	public CosmosDBVectorStoreAutoConfigurationIT() {
+		String endpoint = System.getenv("AZURE_COSMOSDB_ENDPOINT");
+		String key = System.getenv("AZURE_COSMOSDB_KEY");
+
+		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(CosmosDBVectorStoreAutoConfiguration.class))
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.databaseName=test-database")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.containerName=test-container")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.partitionKeyPath=/id")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.metadataFields=country,year,city")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThroughput=1000")
+			.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorDimensions=384");
+
+		if (endpoint != null && !"null".equalsIgnoreCase(endpoint)) {
+			contextRunner = contextRunner.withPropertyValues("spring.ai.vectorstore.cosmosdb.endpoint=" + endpoint);
+		}
+
+		if (key != null && !"null".equalsIgnoreCase(key)) {
+			contextRunner = contextRunner.withPropertyValues("spring.ai.vectorstore.cosmosdb.key=" + key);
+		}
+
+		this.contextRunner = contextRunner.withUserConfiguration(Config.class);
+	}
 
 	private VectorStore vectorStore;
 
@@ -124,14 +137,15 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		metadata4.put("country", "US");
 		metadata4.put("year", 2020);
 		metadata4.put("city", "Sofia");
-
 		Document document1 = new Document("1", "A document about the UK", metadata1);
 		Document document2 = new Document("2", "A document about the Netherlands", metadata2);
 		Document document3 = new Document("3", "A document about the US", metadata3);
 		Document document4 = new Document("4", "A document about the US", metadata4);
 
 		this.vectorStore.add(List.of(document1, document2, document3, document4));
+
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
+
 		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder()
 			.query("The World")
 			.topK(10)
@@ -190,7 +204,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void autoConfigurationEnabledWhenTypeIsAzureCosmosDB() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=azure-cosmmos-db").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=azure-cosmos-db").run(context -> {
 			assertThat(context.getBeansOfType(CosmosDBVectorStoreProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(CosmosDBVectorStore.class);
