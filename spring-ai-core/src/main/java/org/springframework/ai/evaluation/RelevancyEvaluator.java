@@ -23,15 +23,13 @@ import org.springframework.ai.chat.client.ChatClient;
 public class RelevancyEvaluator implements Evaluator {
 
 	private static final String DEFAULT_EVALUATION_PROMPT_TEXT = """
-				Your task is to evaluate if the response for the query
-				is in line with the context information provided.\\n
-				You have two options to answer. Either YES/ NO.\\n
-				Answer - YES, if the response for the query
-				is in line with context information otherwise NO.\\n
-				Query: \\n {query}\\n
-				Response: \\n {response}\\n
-				Context: \\n {context}\\n
-				Answer: "
+			Your task is to evaluate if the response for the query is in line with the context information provided.
+			You have two options to answer. Either YES/ NO.
+			Answer - YES, if the response for the query is in line with context information otherwise NO.
+			Query: {query}
+			Response: {response}
+			Context: {context}
+			Answer:
 			""";
 
 	private final ChatClient.Builder chatClientBuilder;
