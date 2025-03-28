@@ -89,8 +89,8 @@ public record AdvisedRequest(
 				"userText cannot be null or empty unless messages are provided and contain Tool Response message.");
 		Assert.notNull(media, "media cannot be null");
 		Assert.noNullElements(media, "media cannot contain null elements");
-		Assert.notNull(toolNames, "functionNames cannot be null");
-		Assert.noNullElements(toolNames, "functionNames cannot contain null elements");
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		Assert.notNull(messages, "messages cannot be null");
