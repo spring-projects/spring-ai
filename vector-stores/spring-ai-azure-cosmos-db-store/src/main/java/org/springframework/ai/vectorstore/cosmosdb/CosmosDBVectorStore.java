@@ -353,7 +353,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		CosmosPagedFlux<JsonNode> pagedFlux = this.container.queryItems(sqlQuerySpec, options, JsonNode.class);
 
-
 		logger.info("Executing similarity search query: {}", query);
 		try {
 			// Collect documents from the paged flux
@@ -361,24 +360,26 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.flatMap(page -> Flux.fromIterable(page.getResults()))
 				.collectList()
 				.block();
-			
+
 			// Collect metadata fields from the documents
 			Map<String, Object> docFields = new HashMap<>();
 			for (var doc : documents) {
 				JsonNode metadata = doc.get("metadata");
 				metadata.fieldNames().forEachRemaining(field -> {
 					JsonNode value = metadata.get(field);
-					Object parsedValue = value.isTextual() ? value.asText() :
-							value.isNumber()  ? value.numberValue() :
-									value.isBoolean() ? value.booleanValue() :
-											value.toString();
+					Object parsedValue = value.isTextual() ? value.asText() : value.isNumber() ? value.numberValue()
+							: value.isBoolean() ? value.booleanValue() : value.toString();
 					docFields.put(field, parsedValue);
 				});
 			}
 
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-				.map(doc -> Document.builder().id(doc.get("id").asText()).text(doc.get("content").asText()).metadata(docFields).build())
+				.map(doc -> Document.builder()
+					.id(doc.get("id").asText())
+					.text(doc.get("content").asText())
+					.metadata(docFields)
+					.build())
 				.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();
