@@ -25,6 +25,7 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -59,8 +60,7 @@ import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfig
 		SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiChatProperties.class })
-@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OPENAI,
-		matchIfMissing = true)
+@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OPENAI, matchIfMissing = true)
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
 		WebClientAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 public class OpenAiChatAutoConfiguration {
@@ -72,23 +72,32 @@ public class OpenAiChatAutoConfiguration {
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+			ObjectProvider<ChatModelObservationConvention> observationConvention,
+			ObjectProvider<ToolExecutionEligibilityChecker> openAiToolExecutionEligibilityChecker) {
 
 		var openAiApi = openAiApi(chatProperties, commonProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "chat");
 
 		var chatModel = OpenAiChatModel.builder()
-			.openAiApi(openAiApi)
-			.defaultOptions(chatProperties.getOptions())
-			.toolCallingManager(toolCallingManager)
-			.retryTemplate(retryTemplate)
-			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.build();
+				.openAiApi(openAiApi)
+				.defaultOptions(chatProperties.getOptions())
+				.toolCallingManager(toolCallingManager)
+				.toolExecutionEligibilityChecker(openAiToolExecutionEligibilityChecker
+						.getIfUnique(() -> chatResponse -> chatResponse != null && chatResponse.hasToolCalls()))
+				.retryTemplate(retryTemplate)
+				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+				.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
+	}
+
+	@Bean("openAiToolExecutionEligibilityChecker")
+	@ConditionalOnMissingBean
+	public ToolExecutionEligibilityChecker openAiToolExecutionEligibilityChecker() {
+		return chatResponse -> chatResponse != null && chatResponse.hasToolCalls();
 	}
 
 	private OpenAiApi openAiApi(OpenAiChatProperties chatProperties, OpenAiConnectionProperties commonProperties,
@@ -99,15 +108,15 @@ public class OpenAiChatAutoConfiguration {
 				commonProperties, chatProperties, modelType);
 
 		return OpenAiApi.builder()
-			.baseUrl(resolved.baseUrl())
-			.apiKey(new SimpleApiKey(resolved.apiKey()))
-			.headers(resolved.headers())
-			.completionsPath(chatProperties.getCompletionsPath())
-			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
-			.restClientBuilder(restClientBuilder)
-			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
-			.build();
+				.baseUrl(resolved.baseUrl())
+				.apiKey(new SimpleApiKey(resolved.apiKey()))
+				.headers(resolved.headers())
+				.completionsPath(chatProperties.getCompletionsPath())
+				.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
+				.restClientBuilder(restClientBuilder)
+				.webClientBuilder(webClientBuilder)
+				.responseErrorHandler(responseErrorHandler)
+				.build();
 	}
 
 	@Bean
