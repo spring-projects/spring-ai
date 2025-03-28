@@ -103,7 +103,7 @@ One way to run integration tests on part of the code is to first do a quick comp
 ```
 Then run the integration test for a specific module using the `-pl` option
 ```shell
-./mvnw verify -Pintegration-tests     -pl spring-ai-spring-boot-testcontainers 
+./mvnw verify -Pintegration-tests -pl spring-ai-spring-boot-testcontainers
 ```
 
 ### Documentation

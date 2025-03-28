@@ -27,8 +27,8 @@
 	</parent>
 	<artifactId>spring-ai-autoconfigure-vector-store-milvus</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Auto Configuration for Weaviate vector store</name>
-	<description>Spring AI Auto Configuration for Weaviate vector store</description>
+	<name>Spring AI Auto Configuration for Milvus vector store</name>
+	<description>Spring AI Auto Configuration for Mulvis vector store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

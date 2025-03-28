@@ -150,11 +150,17 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-model-chat-memory-neo4j</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
-            <!-- Spring AI Models -->
+			<!-- Spring AI Models -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -973,6 +979,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Spring Boot starters for Chat Memory -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-chat-memory-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Utilities -->
 
 			<dependency>
@@ -994,7 +1008,7 @@
 			</dependency>
 
         </dependencies>
-		
+
     </dependencyManagement>
 
     <build>
