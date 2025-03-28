@@ -366,46 +366,11 @@ In this configuration, the `MessageChatMemoryAdvisor` will be executed first, ad
 
 xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
-=== Retrieval Augmented Generation
-
-Refer to the xref:_retrieval_augmented_generation[Retrieval Augmented Generation] guide.
-
-=== Chat Memory
-
-The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
-
-There are currently three implementations, `InMemoryChatMemory`, `CassandraChatMemory` and `Neo4jChatMemory`, that provide storage for chat conversation history, in-memory, persisted with `time-to-live` in Cassandra, and persisted without `time-to-live` in Neo4j correspondingly.
-
-To create a `CassandraChatMemory` with `time-to-live`:
-
-[source,java]
-----
-CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
-----
-
-The Neo4j chat memory supports the following configuration parameters:
-
-[cols="2,5,1",stripes=even]
-|===
-|Property | Description | Default Value
-
-| `spring.ai.chat.memory.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
-| `spring.ai.chat.memory.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
-| `spring.ai.chat.memory.neo4j.toolCallLabel` | The label for nodes that store tool calls, for example
-in Assistant Messages | `ToolCall`
-| `spring.ai.chat.memory.neo4j.metadataLabel` | The label for the node that store a message metadata | `Metadata`
-| `spring.ai.chat.memory.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
-| `spring.ai.chat.memory.neo4j.mediaLabel` | The label for the nodes that store the media associated to a message | `ToolResponse`
-
-
-|===
-
-
 The following advisor implementations use the `ChatMemory` interface to advice the prompt with conversation history which differ in the details of how the memory is added to the prompt
 
 * `MessageChatMemoryAdvisor` :  Memory is retrieved and added as a collection of messages to the prompt
 * `PromptChatMemoryAdvisor` :  Memory is retrieved and added into the prompt's system text.
-* `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize, int order)`  This constructor allows you to:
+* `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId, int chatHistoryWindowSize, int order)`  This constructor allows you to:
 
 . Specify the VectorStore instance used for managing and querying documents.
 . Set a default conversation ID to be used if none is provided in the context.
@@ -465,6 +430,10 @@ public class CustomerSupportAssistant {
 
 xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
+=== Retrieval Augmented Generation
+
+Refer to the xref:ROOT:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation] guide.
+
 === Logging
 
 The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the `ChatClient`.
@@ -515,3 +484,72 @@ SimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
 This allows you to tailor the logged information to your specific needs.
 
 TIP: Be cautious about logging sensitive information in production environments.
+
+== Chat Memory
+
+The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
+
+There are currently four implementations: `InMemoryChatMemory`, `CassandraChatMemory`, `Neo4jChatMemory`, and `JdbcChatMemory`, which provide storage for chat conversation history in-memory, persisted with `time-to-live` in Cassandra, and persisted without `time-to-live` in Neo4j and Jdbc, respectively.
+
+=== CassandraChatMemory
+
+To create a `CassandraChatMemory` with `time-to-live`:
+
+[source,java]
+----
+CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
+----
+
+=== Neo4jChatMemory
+
+The Neo4j chat memory supports the following configuration parameters:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+| `spring.ai.chat.memory.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
+| `spring.ai.chat.memory.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
+| `spring.ai.chat.memory.neo4j.toolCallLabel` | The label for nodes that store tool calls, for example
+in Assistant Messages | `ToolCall`
+| `spring.ai.chat.memory.neo4j.metadataLabel` | The label for the node that store a message metadata | `Metadata`
+| `spring.ai.chat.memory.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
+| `spring.ai.chat.memory.neo4j.mediaLabel` | The label for the nodes that store the media associated to a message | `ToolResponse`
+
+|===
+
+=== JdbcChatMemory
+
+To create a `JdbcChatMemory`:
+
+[source,java]
+----
+JdbcChatMemory.create(JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build());
+----
+
+The `JdbcChatMemory` can also be autoconfigured (given that you have the `JdbcTemplate` bean) by adding the following dependency to your project:
+
+to your Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-jdbc</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-jdbc'
+}
+----
+
+The autoconfiguration will automatically create the `ai_chat_memory` table by default based on the JDBC driver. Currently, only `postgresql` and `mariadb` are supported.
+
+To disable schema initialization, set the property `spring.ai.chat.memory.jdbc.initialize-schema` to `false`.
+
+There are instances where you are using a database migration tool like Liquibase or Flyway to manage your database schema. In that case, you may disable schema initialization and just refer to link:https://github.com/spring-projects/spring-ai/tree/main/memory/spring-ai-model-chat-memory-jdbc/src/main/resources/org/springframework/ai/chat/memory/jdbc[these sql files] and add them to your migration script.
