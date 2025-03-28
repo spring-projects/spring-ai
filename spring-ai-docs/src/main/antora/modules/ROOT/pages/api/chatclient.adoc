@@ -374,7 +374,7 @@ Refer to the xref:_retrieval_augmented_generation[Retrieval Augmented Generation
 
 The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 
-There are currently three implementations, `InMemoryChatMemory`, `CassandraChatMemory` and `Neo4jChatMemory`, that provide storage for chat conversation history, in-memory, persisted with `time-to-live` in Cassandra, and persisted without `time-to-live` in Neo4j correspondingly.
+There are currently four implementations: `InMemoryChatMemory`, `CassandraChatMemory`, `Neo4jChatMemory`, and `JdbcChatMemory`, which provide storage for chat conversation history in-memory, persisted with `time-to-live` in Cassandra, and persisted without `time-to-live` in Neo4j and Jdbc, respectively.
 
 To create a `CassandraChatMemory` with `time-to-live`:
 
@@ -397,15 +397,41 @@ in Assistant Messages | `ToolCall`
 | `spring.ai.chat.memory.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
 | `spring.ai.chat.memory.neo4j.mediaLabel` | The label for the nodes that store the media associated to a message | `ToolResponse`
 
-
 |===
 
+To create a `JdbcChatMemory`:
+
+[source,java]
+----
+JdbcChatMemory.create(JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build());
+----
+
+The `JdbcChatMemory` can also be autoconfigured by adding the following dependency to your project:
+
+to your Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-chat-memory-jdbc</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-chat-memory-jdbc'
+}
+----
 
 The following advisor implementations use the `ChatMemory` interface to advice the prompt with conversation history which differ in the details of how the memory is added to the prompt
 
 * `MessageChatMemoryAdvisor` :  Memory is retrieved and added as a collection of messages to the prompt
 * `PromptChatMemoryAdvisor` :  Memory is retrieved and added into the prompt's system text.
-* `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore,  String defaultConversationId, int chatHistoryWindowSize, int order)`  This constructor allows you to:
+* `VectorStoreChatMemoryAdvisor`  : The constructor `VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId, int chatHistoryWindowSize, int order)`  This constructor allows you to:
 
 . Specify the VectorStore instance used for managing and querying documents.
 . Set a default conversation ID to be used if none is provided in the context.

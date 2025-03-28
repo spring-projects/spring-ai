@@ -100,7 +100,15 @@
 				<version>${project.version}</version>
 			</dependency>
 
-            <!-- Spring AI Models -->
+			<!-- Spring AI Chat Memories -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-jdbc-chat-memory</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Models -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -919,6 +927,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Spring Boot starters for the chat memories -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-chat-memory-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Utilities -->
 
 			<dependency>
@@ -940,7 +956,7 @@
 			</dependency>
 
         </dependencies>
-		
+
     </dependencyManagement>
 
     <build>
