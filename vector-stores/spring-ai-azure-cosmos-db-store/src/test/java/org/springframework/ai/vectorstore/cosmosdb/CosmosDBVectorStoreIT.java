@@ -141,6 +141,12 @@ public class CosmosDBVectorStoreIT {
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
+		for (Document doc : results) {
+			assertThat(doc.getMetadata().get("country")).isIn("UK", "NL");
+			assertThat(doc.getMetadata().get("year")).isIn(2021, 2022);
+			assertThat(doc.getMetadata().get("city")).isIn("London", "Amsterdam")
+				.isNotEqualTo("Sofia");
+		}
 
 		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.builder()
 			.query("The World")
@@ -151,6 +157,8 @@ public class CosmosDBVectorStoreIT {
 
 		assertThat(results2).hasSize(1);
 		assertThat(results2).extracting(Document::getId).containsExactlyInAnyOrder("1");
+
+
 
 		List<Document> results3 = this.vectorStore.similaritySearch(SearchRequest.builder()
 			.query("The World")
