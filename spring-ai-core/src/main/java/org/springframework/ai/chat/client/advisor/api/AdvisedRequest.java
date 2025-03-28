@@ -32,8 +32,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -48,8 +48,8 @@ import org.springframework.util.StringUtils;
  * @param systemText the text provided by the system
  * @param chatOptions the options for the chat
  * @param media the list of media items
- * @param functionNames the list of function names
- * @param functionCallbacks the list of function callbacks
+ * @param toolNames the list of function names
+ * @param toolCallbacks the list of function callbacks
  * @param messages the list of messages
  * @param userParams the map of user parameters
  * @param systemParams the map of system parameters
@@ -71,8 +71,8 @@ public record AdvisedRequest(
 		@Nullable
 		ChatOptions chatOptions,
 		List<Media> media,
-		List<String> functionNames,
-		List<FunctionCallback> functionCallbacks,
+		List<String> toolNames,
+		List<ToolCallback> toolCallbacks,
 		List<Message> messages,
 		Map<String, Object> userParams,
 		Map<String, Object> systemParams,
@@ -89,10 +89,10 @@ public record AdvisedRequest(
 				"userText cannot be null or empty unless messages are provided and contain Tool Response message.");
 		Assert.notNull(media, "media cannot be null");
 		Assert.noNullElements(media, "media cannot contain null elements");
-		Assert.notNull(functionNames, "functionNames cannot be null");
-		Assert.noNullElements(functionNames, "functionNames cannot contain null elements");
-		Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
-		Assert.noNullElements(functionCallbacks, "functionCallbacks cannot contain null elements");
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 		Assert.notNull(userParams, "userParams cannot be null");
@@ -127,8 +127,8 @@ public record AdvisedRequest(
 		builder.systemText = from.systemText;
 		builder.chatOptions = from.chatOptions;
 		builder.media = from.media;
-		builder.functionNames = from.functionNames;
-		builder.functionCallbacks = from.functionCallbacks;
+		builder.toolNames = from.toolNames;
+		builder.toolCallbacks = from.toolCallbacks;
 		builder.messages = from.messages;
 		builder.userParams = from.userParams;
 		builder.systemParams = from.systemParams;
@@ -173,15 +173,15 @@ public record AdvisedRequest(
 			messages.add(new UserMessage(processedUserText, this.media()));
 		}
 
-		if (this.chatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-			if (!this.functionNames().isEmpty()) {
-				functionCallingOptions.setFunctions(new HashSet<>(this.functionNames()));
+		if (this.chatOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			if (!this.toolNames().isEmpty()) {
+				toolCallingChatOptions.setToolNames(new HashSet<>(this.toolNames()));
 			}
-			if (!this.functionCallbacks().isEmpty()) {
-				functionCallingOptions.setFunctionCallbacks(this.functionCallbacks());
+			if (!this.toolCallbacks().isEmpty()) {
+				toolCallingChatOptions.setToolCallbacks(this.toolCallbacks());
 			}
 			if (!CollectionUtils.isEmpty(this.toolContext())) {
-				functionCallingOptions.setToolContext(this.toolContext());
+				toolCallingChatOptions.setToolContext(this.toolContext());
 			}
 		}
 
@@ -203,9 +203,9 @@ public record AdvisedRequest(
 
 		private List<Media> media = List.of();
 
-		private List<String> functionNames = List.of();
+		private List<String> toolNames = List.of();
 
-		private List<FunctionCallback> functionCallbacks = List.of();
+		private List<ToolCallback> toolCallbacks = List.of();
 
 		private List<Message> messages = List.of();
 
@@ -275,22 +275,22 @@ public record AdvisedRequest(
 		}
 
 		/**
-		 * Set the function names.
-		 * @param functionNames the function names
+		 * Set the tool names.
+		 * @param toolNames the function names
 		 * @return this {@link Builder} instance
 		 */
-		public Builder functionNames(List<String> functionNames) {
-			this.functionNames = functionNames;
+		public Builder toolNames(List<String> toolNames) {
+			this.toolNames = toolNames;
 			return this;
 		}
 
 		/**
-		 * Set the function callbacks.
-		 * @param functionCallbacks the function callbacks
+		 * Set the tool callbacks.
+		 * @param toolCallbacks the tool callbacks
 		 * @return this {@link Builder} instance
 		 */
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.functionCallbacks = functionCallbacks;
+		public Builder functionCallbacks(List<ToolCallback> toolCallbacks) {
+			this.toolCallbacks = toolCallbacks;
 			return this;
 		}
 
@@ -370,7 +370,7 @@ public record AdvisedRequest(
 		 */
 		public AdvisedRequest build() {
 			return new AdvisedRequest(this.chatModel, this.userText, this.systemText, this.chatOptions, this.media,
-					this.functionNames, this.functionCallbacks, this.messages, this.userParams, this.systemParams,
+					this.toolNames, this.toolCallbacks, this.messages, this.userParams, this.systemParams,
 					this.advisors, this.advisorParams, this.adviseContext, this.toolContext);
 		}
 

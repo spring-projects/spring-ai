@@ -37,6 +37,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
@@ -145,7 +146,7 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 			logger.info("System params: " + request.systemParams());
 			logger.info("User text: \n" + request.userText());
 			logger.info("User params:" + request.userParams());
-			logger.info("Function names: " + request.functionNames());
+			logger.info("Function names: " + request.toolNames());
 
 			logger.info("Options: " + request.chatOptions().toString());
 
@@ -216,7 +217,7 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 
 		@Bean
 		ToolCallingManager toolCallingManager(GenericApplicationContext applicationContext,
-				List<FunctionCallback> toolCallbacks, ObjectProvider<ObservationRegistry> observationRegistry) {
+				List<ToolCallback> toolCallbacks, ObjectProvider<ObservationRegistry> observationRegistry) {
 
 			var staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
 			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
