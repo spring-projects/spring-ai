@@ -1090,7 +1090,22 @@ WARNING: Currently, the internal messages exchanged with the model regarding the
 
 === User-Controlled Tool Execution
 
-There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`. When you invoke a `ChatModel` with this option, the tool execution will be delegated to the caller, giving you full control over the tool execution lifecycle. It's your responsibility checking for tool calls in the `ChatResponse` and executing them using the `ToolCallingManager`.
+There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`. 
+Alternatevly you can implement your `ToolExecutionEligibilityPredicate` predicate to control the tool execution eligibility.
+The default predicate implementation looks like this:
+[source,java]
+----
+public class DefaultToolExecutionEligibilityPredicate implements ToolExecutionEligibilityPredicate {
+
+	@Override
+	public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
+		return ToolCallingChatOptions.isInternalToolExecutionEnabled(promptOptions) && chatResponse != null
+				&& chatResponse.hasToolCalls();
+	}
+}
+----
+
+When you invoke a `ChatModel` with this option, the tool execution will be delegated to the caller, giving you full control over the tool execution lifecycle. It's your responsibility checking for tool calls in the `ChatResponse` and executing them using the `ToolCallingManager`.
 
 The following example demonstrates a minimal implementation of the user-controlled tool execution approach:
 

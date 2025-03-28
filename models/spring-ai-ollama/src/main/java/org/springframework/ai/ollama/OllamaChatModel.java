@@ -49,8 +49,10 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
@@ -117,20 +119,35 @@ public class OllamaChatModel implements ChatModel {
 
 	private final ToolCallingManager toolCallingManager;
 
+	/**
+	 * The tool execution eligibility predicate used to determine if a tool can be
+	 * executed.
+	 */
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+		this(ollamaApi, defaultOptions, toolCallingManager, observationRegistry, modelManagementOptions,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
+		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
 		this.chatApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.toolCallingManager = toolCallingManager;
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(this.chatApi, modelManagementOptions);
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
 	}
 
@@ -245,8 +262,7 @@ public class OllamaChatModel implements ChatModel {
 
 			});
 
-		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response != null
-				&& response.hasToolCalls()) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -319,7 +335,7 @@ public class OllamaChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response.hasToolCalls()) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.defer(() -> {
@@ -514,6 +530,8 @@ public class OllamaChatModel implements ChatModel {
 
 		private ToolCallingManager toolCallingManager;
 
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 		private ModelManagementOptions modelManagementOptions = ModelManagementOptions.defaults();
@@ -536,6 +554,12 @@ public class OllamaChatModel implements ChatModel {
 			return this;
 		}
 
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			return this;
+		}
+
 		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
@@ -549,10 +573,10 @@ public class OllamaChatModel implements ChatModel {
 		public OllamaChatModel build() {
 			if (toolCallingManager != null) {
 				return new OllamaChatModel(this.ollamaApi, this.defaultOptions, this.toolCallingManager,
-						this.observationRegistry, this.modelManagementOptions);
+						this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate);
 			}
 			return new OllamaChatModel(this.ollamaApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
-					this.observationRegistry, this.modelManagementOptions);
+					this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate);
 		}
 
 	}

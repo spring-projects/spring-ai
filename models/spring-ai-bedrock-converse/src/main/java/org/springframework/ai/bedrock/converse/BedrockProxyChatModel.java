@@ -94,8 +94,10 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -152,6 +154,12 @@ public class BedrockProxyChatModel implements ChatModel {
 	private final ToolCallingManager toolCallingManager;
 
 	/**
+	 * The tool execution eligibility predicate used to determine if a tool can be
+	 * executed.
+	 */
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	/**
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention;
@@ -159,16 +167,26 @@ public class BedrockProxyChatModel implements ChatModel {
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
 			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ToolCallingChatOptions defaultOptions,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
+		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ToolCallingChatOptions defaultOptions,
+			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
 		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
 		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
+		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
 
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
 		this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
 		this.defaultOptions = defaultOptions;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 	}
 
 	private static ToolCallingChatOptions from(ChatOptions options) {
@@ -221,8 +239,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				return response;
 			});
 
-		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && chatResponse != null
-				&& chatResponse.hasToolCalls()
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
 				&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 			if (toolExecutionResult.returnDirect()) {
@@ -654,8 +671,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 
-				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions())
-						&& chatResponse.hasToolCalls()
+				if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
 						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 
 					// FIXME: bounded elastic needs to be used since tool calling
@@ -756,6 +772,8 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private ToolCallingManager toolCallingManager;
 
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+
 		private ToolCallingChatOptions defaultOptions = ToolCallingChatOptions.builder().build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
@@ -771,6 +789,12 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 			return this;
 		}
 
@@ -852,13 +876,13 @@ public class BedrockProxyChatModel implements ChatModel {
 			if (this.toolCallingManager != null) {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
 						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
-						this.toolCallingManager);
+						this.toolCallingManager, this.toolExecutionEligibilityPredicate);
 
 			}
 			else {
 				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
 						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
-						DEFAULT_TOOL_CALLING_MANAGER);
+						DEFAULT_TOOL_CALLING_MANAGER, this.toolExecutionEligibilityPredicate);
 			}
 
 			if (this.customObservationConvention != null) {
