@@ -80,7 +80,7 @@ class AdvisedRequestTests {
 		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), null,
 				List.of(), List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("functionNames cannot be null");
+			.hasMessage("toolNames cannot be null");
 	}
 
 	@Test
