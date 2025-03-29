@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.cosmosdb;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +33,7 @@ import com.azure.cosmos.implementation.guava25.collect.ImmutableList;
 import com.azure.cosmos.models.CosmosBulkOperations;
 import com.azure.cosmos.models.CosmosContainerProperties;
 import com.azure.cosmos.models.CosmosItemOperation;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.CosmosVectorDataType;
 import com.azure.cosmos.models.CosmosVectorDistanceFunction;
@@ -40,6 +42,7 @@ import com.azure.cosmos.models.CosmosVectorEmbeddingPolicy;
 import com.azure.cosmos.models.CosmosVectorIndexSpec;
 import com.azure.cosmos.models.CosmosVectorIndexType;
 import com.azure.cosmos.models.ExcludedPath;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.models.IncludedPath;
 import com.azure.cosmos.models.IndexingMode;
 import com.azure.cosmos.models.IndexingPolicy;
@@ -235,10 +238,30 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID
 		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
+			String partitionKeyValue;
+
+			if ("/id".equals(this.partitionKeyPath)) {
+				partitionKeyValue = doc.getId();
+			}
+			else if (this.partitionKeyPath.startsWith("/metadata/")) {
+				// Extract the key, e.g. "/metadata/country" -> "country"
+				String metadataKey = this.partitionKeyPath.substring("/metadata/".length());
+				Object value = doc.getMetadata() != null ? doc.getMetadata().get(metadataKey) : null;
+				if (value == null) {
+					throw new IllegalArgumentException(
+							"Partition key '" + metadataKey + "' not found in document metadata.");
+				}
+				partitionKeyValue = value.toString();
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported partition key path: " + this.partitionKeyPath);
+			}
+
 			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
-					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))), new PartitionKey(doc.getId()));
-			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
+					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))),
+					new PartitionKey(partitionKeyValue)); // Pair the document ID
 			// with the operation
+			return new ImmutablePair<>(doc.getId(), operation);
 		}).toList();
 
 		try {
@@ -285,9 +308,48 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public void doDelete(List<String> idList) {
 		try {
 			// Convert the list of IDs into bulk delete operations
-			List<CosmosItemOperation> itemOperations = idList.stream()
-				.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
-				.collect(Collectors.toList());
+			List<CosmosItemOperation> itemOperations = idList.stream().map(id -> {
+				String partitionKeyValue;
+
+				if ("/id".equals(this.partitionKeyPath)) {
+					partitionKeyValue = id;
+				}
+
+				else if (this.partitionKeyPath.startsWith("/metadata/")) {
+					// Will be inefficient for large numbers of documents but there is no
+					// other way to get the partition key value
+					// with current method signature. Ideally, we should be able to pass
+					// the partition key value directly.
+					String metadataKey = this.partitionKeyPath.substring("/metadata/".length());
+
+					// Run a reactive query to fetch the document by ID
+					String query = String.format("SELECT * FROM c WHERE c.id = '%s'", id);
+					CosmosPagedFlux<JsonNode> queryFlux = this.container.queryItems(query,
+							new CosmosQueryRequestOptions(), JsonNode.class);
+
+					// Block to retrieve the first page synchronously
+					List<JsonNode> documents = queryFlux.byPage(1).blockFirst().getResults();
+
+					if (documents == null || documents.isEmpty()) {
+						throw new IllegalArgumentException("No document found for id: " + id);
+					}
+
+					JsonNode document = documents.get(0);
+					JsonNode metadataNode = document.get("metadata");
+
+					if (metadataNode == null || metadataNode.get(metadataKey) == null) {
+						throw new IllegalArgumentException("Partition key '" + metadataKey
+								+ "' not found in metadata for document with id: " + id);
+					}
+
+					partitionKeyValue = metadataNode.get(metadataKey).asText();
+				}
+				else {
+					throw new IllegalArgumentException("Unsupported partition key path: " + this.partitionKeyPath);
+				}
+
+				return CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(partitionKeyValue));
+			}).collect(Collectors.toList());
 
 			// Execute bulk delete operations synchronously by using blockLast() on the
 			// Flux
@@ -295,10 +357,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.doOnNext(response -> logger.info("Document deleted with status: {}",
 						response.getResponse().getStatusCode()))
 				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
-				.blockLast(); // This will block until all operations have finished
+				.blockLast();
 		}
 		catch (Exception e) {
-			logger.error("Exception while deleting documents: {}", e.getMessage());
+			logger.error("Exception while deleting documents: {}", e.getMessage(), e);
+			throw e;
 		}
 	}
 
