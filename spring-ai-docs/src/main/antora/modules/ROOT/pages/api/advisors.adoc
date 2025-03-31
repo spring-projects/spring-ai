@@ -18,10 +18,14 @@ var chatClient = ChatClient.builder(chatModel)
     )
     .build();
 
+// Set advisor parameters at runtime
+ChatMemoryAdvisorOptions options = ChatMemoryAdvisorOptions.builder()
+    .conversationId("678")
+    .retrieveSize(100)
+    .build();
+
 String response = this.chatClient.prompt()
-    // Set advisor parameters at runtime
-    .advisors(advisor -> advisor.param("chat_memory_conversation_id", "678") 
-            .param("chat_memory_response_size", 100)) 
+    .advisors(options::applyTo)
     .user(userText)
     .call()
 	.content();

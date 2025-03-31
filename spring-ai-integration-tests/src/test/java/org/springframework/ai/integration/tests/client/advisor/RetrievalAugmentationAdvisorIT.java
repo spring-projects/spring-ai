@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.ChatMemoryAdvisorOptions;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
@@ -147,11 +147,11 @@ class RetrievalAugmentationAdvisorIT {
 			.build();
 
 		String conversationId = "007";
+		ChatMemoryAdvisorOptions options = ChatMemoryAdvisorOptions.builder().conversationId(conversationId).build();
 
 		ChatResponse chatResponse1 = chatClient.prompt()
 			.user("Where does the adventure of Anacletus and Birba take place?")
-			.advisors(advisors -> advisors.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY,
-					conversationId))
+			.advisors(options::applyTo)
 			.call()
 			.chatResponse();
 
@@ -161,8 +161,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		ChatResponse chatResponse2 = chatClient.prompt()
 			.user("Did they meet any cow?")
-			.advisors(advisors -> advisors.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY,
-					conversationId))
+			.advisors(options::applyTo)
 			.call()
 			.chatResponse();
 
