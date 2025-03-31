@@ -22,12 +22,11 @@
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
-		<relativePath>../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-pgvector-store</artifactId>
+	<artifactId>spring-ai-rag</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Vector Store - PGVector</name>
-	<description>Spring AI PGVector Vector Store</description>
+	<name>Spring AI RAG</name>
+	<description>Retrieval Augmented Generation (RAG) support for Spring AI</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -48,50 +47,42 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
-		<dependency>
+        
+        <dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-advisors</artifactId>
+			<artifactId>spring-ai-vector-store</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
-
-		<dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-		</dependency>
-
+		<!-- Spring Framework -->
 		<dependency>
 			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
+			<artifactId>spring-context</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<dependency>
-			<groupId>com.pgvector</groupId>
-			<artifactId>pgvector</artifactId>
-			<version>${pgvector.version}</version>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-core</artifactId>
 		</dependency>
-
-		<!-- TESTING -->
+        
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-openai</artifactId>
-			<version>${project.parent.version}</version>
-			<scope>test</scope>
+			<groupId>org.jetbrains.kotlin</groupId>
+			<artifactId>kotlin-stdlib</artifactId>
+			<optional>true</optional>
 		</dependency>
-
 
 		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-test</artifactId>
-			<version>${project.parent.version}</version>
-			<scope>test</scope>
+			<groupId>org.jetbrains.kotlin</groupId>
+			<artifactId>kotlin-reflect</artifactId>
+			<optional>true</optional>
 		</dependency>
 
+		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -99,40 +90,10 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>testcontainers</artifactId>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-kotlin</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-observation-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-advisors</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-advisors</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-			<scope>test</scope>
-		</dependency>
-
 	</dependencies>
 	
 </project>

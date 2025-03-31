@@ -20,6 +20,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -47,8 +48,8 @@ class RetrievalAugmentationAdvisorTests {
 	@Test
 	void whenQueryTransformersContainNullElementsThenThrow() {
 		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder()
-			.queryTransformers(mock(QueryTransformer.class), null)
-			.documentRetriever(mock(DocumentRetriever.class))
+			.queryTransformers(Mockito.mock(QueryTransformer.class), null)
+			.documentRetriever(Mockito.mock(DocumentRetriever.class))
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("queryTransformers cannot contain null elements");
 	}
@@ -72,7 +73,7 @@ class RetrievalAugmentationAdvisorTests {
 		// Document Retriever
 		var documentContext = List.of(Document.builder().id("1").text("doc1").build(),
 				Document.builder().id("2").text("doc2").build());
-		var documentRetriever = mock(DocumentRetriever.class);
+		var documentRetriever = Mockito.mock(DocumentRetriever.class);
 		var queryCaptor = ArgumentCaptor.forClass(Query.class);
 		given(documentRetriever.retrieve(queryCaptor.capture())).willReturn(documentContext);
 

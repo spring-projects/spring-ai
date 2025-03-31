@@ -37,6 +37,7 @@
 		<module>spring-ai-model</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-vector-store</module>
+		<module>spring-ai-rag</module>
 		<module>advisors/spring-ai-advisors</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
