@@ -85,7 +85,7 @@ The interface is defined as follows:
 ```java
 public interface Content {
 
-	String getContent();
+	String getText();
 
 	Map<String, Object> getMetadata();
 }
