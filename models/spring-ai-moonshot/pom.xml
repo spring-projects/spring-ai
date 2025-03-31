@@ -45,7 +45,7 @@
         <!-- production dependencies -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-core</artifactId>
+            <artifactId>spring-ai-client-chat</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

@@ -33,7 +33,7 @@
 		<module>spring-ai-docs</module>
 		<module>spring-ai-bom</module>
 		<module>spring-ai-commons</module>
-		<module>spring-ai-core</module>
+		<module>spring-ai-client-chat</module>
 		<module>spring-ai-model</module>
 		<module>spring-ai-test</module>
 		<module>spring-ai-vector-store</module>
