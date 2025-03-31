@@ -142,6 +142,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -188,11 +189,12 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
 				this.batchingStrategy);
 
-		for (Document document : documents) {
-			ElasticSearchDocument doc = new ElasticSearchDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
-			bulkRequestBuilder.operations(
-					op -> op.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(doc)));
+		for (int i = 0; i < embeddings.size(); i++) {
+			Document document = documents.get(i);
+			float[] embedding = embeddings.get(i);
+			bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(this.options.getIndexName())
+				.id(document.getId())
+				.document(getDocument(document, embedding, this.options.getEmbeddingFieldName()))));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
@@ -203,6 +205,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				}
 			}
 		}
+	}
+
+	private Object getDocument(Document document, float[] embedding, String embeddingFieldName) {
+		Assert.notNull(document.getText(), "document's text must not be null");
+
+		return Map.of("id", document.getId(), "content", document.getText(), "metadata", document.getMetadata(),
+				embeddingFieldName, embedding);
 	}
 
 	@Override
@@ -263,7 +272,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 					.similarity(finalThreshold)
 					.k(searchRequest.getTopK())
-					.field("embedding")
+					.field(this.options.getEmbeddingFieldName())
 					.numCandidates((int) (1.5 * searchRequest.getTopK()))
 					.filter(fl -> fl
 						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
@@ -321,7 +330,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		try {
 			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(this.options.getIndexName())
-					.mappings(map -> map.properties("embedding",
+					.mappings(map -> map.properties(this.options.getEmbeddingFieldName(),
 							p -> p.denseVector(dv -> dv.similarity(this.options.getSimilarity().toString())
 								.dims(this.options.getDimensions())))));
 		}
@@ -368,17 +377,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 */
 	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
 		return new Builder(restClient, embeddingModel);
-	}
-
-	/**
-	 * The representation of {@link Document} along with its embedding.
-	 *
-	 * @param id The id of the document
-	 * @param content The content of the document
-	 * @param metadata The metadata of the document
-	 * @param embedding The vectors representing the content of the document
-	 */
-	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
