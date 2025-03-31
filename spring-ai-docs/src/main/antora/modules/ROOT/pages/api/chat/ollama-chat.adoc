@@ -252,7 +252,7 @@ TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities a
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
 
-Some of the models available in Ollama with multimodality support are https://ollama.com/library/llava[LLaVa] and https://ollama.com/library/bakllava[bakllava] (see the link:https://ollama.com/search?c=vision[full list]).
+Some of the models available in Ollama with multimodality support are https://ollama.com/library/llava[LLaVA] and https://ollama.com/library/bakllava[BakLLaVA] (see the link:https://ollama.com/search?c=vision[full list]).
 For further details, refer to the link:https://llava-vl.github.io/[LLaVA: Large Language and Vision Assistant].
 
 The Ollama link:https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1[Message API] provides an "images" parameter to incorporate a list of base64-encoded images with the message.
