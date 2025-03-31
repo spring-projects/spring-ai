@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package org.springframework.ai.vectorstore.elasticsearch;
  * https://www.elastic.co/guide/en/elasticsearch/reference/current/dense-vector.html
  *
  * @author Wei Jiang
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class ElasticsearchVectorStoreOptions {
@@ -39,6 +40,11 @@ public class ElasticsearchVectorStoreOptions {
 	 * The similarity function to use.
 	 */
 	private SimilarityFunction similarity = SimilarityFunction.cosine;
+
+	/**
+	 * The name of the vector field to search against
+	 */
+	private String embeddingFieldName = "embedding";
 
 	public String getIndexName() {
 		return this.indexName;
@@ -62,6 +68,14 @@ public class ElasticsearchVectorStoreOptions {
 
 	public void setSimilarity(SimilarityFunction similarity) {
 		this.similarity = similarity;
+	}
+
+	public String getEmbeddingFieldName() {
+		return embeddingFieldName;
+	}
+
+	public void setEmbeddingFieldName(String embeddingFieldName) {
+		this.embeddingFieldName = embeddingFieldName;
 	}
 
 }
