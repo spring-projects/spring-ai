@@ -30,16 +30,16 @@ public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.redis";
 
-	private String index = "default-index";
+	private String indexName = "default-index";
 
 	private String prefix = "default:";
 
-	public String getIndex() {
-		return this.index;
+	public String getIndexName() {
+		return this.indexName;
 	}
 
-	public void setIndex(String name) {
-		this.index = name;
+	public void setIndexName(String indexName) {
+		this.indexName = indexName;
 	}
 
 	public String getPrefix() {

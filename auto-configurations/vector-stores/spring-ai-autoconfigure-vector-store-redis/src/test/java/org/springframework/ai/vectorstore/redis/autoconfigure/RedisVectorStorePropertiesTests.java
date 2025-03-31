@@ -29,17 +29,17 @@ class RedisVectorStorePropertiesTests {
 	@Test
 	void defaultValues() {
 		var props = new RedisVectorStoreProperties();
-		assertThat(props.getIndex()).isEqualTo("default-index");
+		assertThat(props.getIndexName()).isEqualTo("default-index");
 		assertThat(props.getPrefix()).isEqualTo("default:");
 	}
 
 	@Test
 	void customValues() {
 		var props = new RedisVectorStoreProperties();
-		props.setIndex("myIdx");
+		props.setIndexName("myIdx");
 		props.setPrefix("doc:");
 
-		assertThat(props.getIndex()).isEqualTo("myIdx");
+		assertThat(props.getIndexName()).isEqualTo("myIdx");
 		assertThat(props.getPrefix()).isEqualTo("doc:");
 	}
 
