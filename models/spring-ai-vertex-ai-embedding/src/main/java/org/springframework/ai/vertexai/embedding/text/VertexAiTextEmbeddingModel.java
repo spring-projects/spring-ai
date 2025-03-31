@@ -128,37 +128,38 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				PredictionServiceClient client = createPredictionServiceClient();
+				try (PredictionServiceClient client = createPredictionServiceClient()) {
 
-				EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
+					EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
 
-				PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
-						finalOptions);
+					PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
+							finalOptions);
 
-				PredictResponse embeddingResponse = this.retryTemplate
-					.execute(context -> getPredictResponse(client, predictRequestBuilder));
+					PredictResponse embeddingResponse = this.retryTemplate
+							.execute(context -> getPredictResponse(client, predictRequestBuilder));
 
-				int index = 0;
-				int totalTokenCount = 0;
-				List<Embedding> embeddingList = new ArrayList<>();
-				for (Value prediction : embeddingResponse.getPredictionsList()) {
-					Value embeddings = prediction.getStructValue().getFieldsOrThrow("embeddings");
-					Value statistics = embeddings.getStructValue().getFieldsOrThrow("statistics");
-					Value tokenCount = statistics.getStructValue().getFieldsOrThrow("token_count");
-					totalTokenCount = totalTokenCount + (int) tokenCount.getNumberValue();
+					int index = 0;
+					int totalTokenCount = 0;
+					List<Embedding> embeddingList = new ArrayList<>();
+					for (Value prediction : embeddingResponse.getPredictionsList()) {
+						Value embeddings = prediction.getStructValue().getFieldsOrThrow("embeddings");
+						Value statistics = embeddings.getStructValue().getFieldsOrThrow("statistics");
+						Value tokenCount = statistics.getStructValue().getFieldsOrThrow("token_count");
+						totalTokenCount = totalTokenCount + (int) tokenCount.getNumberValue();
 
-					Value values = embeddings.getStructValue().getFieldsOrThrow("values");
+						Value values = embeddings.getStructValue().getFieldsOrThrow("values");
 
-					float[] vectorValues = VertexAiEmbeddingUtils.toVector(values);
+						float[] vectorValues = VertexAiEmbeddingUtils.toVector(values);
 
-					embeddingList.add(new Embedding(vectorValues, index++));
+						embeddingList.add(new Embedding(vectorValues, index++));
+					}
+					EmbeddingResponse response = new EmbeddingResponse(embeddingList,
+							generateResponseMetadata(finalOptions.getModel(), totalTokenCount));
+
+					observationContext.setResponse(response);
+
+					return response;
 				}
-				EmbeddingResponse response = new EmbeddingResponse(embeddingList,
-						generateResponseMetadata(finalOptions.getModel(), totalTokenCount));
-
-				observationContext.setResponse(response);
-
-				return response;
 			});
 	}
 
