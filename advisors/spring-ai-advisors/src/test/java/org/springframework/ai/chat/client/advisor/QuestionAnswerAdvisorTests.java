@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -128,19 +129,19 @@ public class QuestionAnswerAdvisorTests {
 		//formatter:on
 
 		// Ensure the metadata is correctly copied over
-		assertThat(response.getMetadata().getModel()).isEqualTo("model1");
-		assertThat(response.getMetadata().getId()).isEqualTo("678");
-		assertThat(response.getMetadata().getRateLimit().getRequestsLimit()).isEqualTo(5L);
-		assertThat(response.getMetadata().getRateLimit().getRequestsRemaining()).isEqualTo(6L);
-		assertThat(response.getMetadata().getRateLimit().getRequestsReset()).isEqualTo(Duration.ofSeconds(7));
-		assertThat(response.getMetadata().getRateLimit().getTokensLimit()).isEqualTo(8L);
-		assertThat(response.getMetadata().getRateLimit().getTokensRemaining()).isEqualTo(8L);
-		assertThat(response.getMetadata().getRateLimit().getTokensReset()).isEqualTo(Duration.ofSeconds(9));
-		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(6L);
-		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(7L);
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(6L + 7L);
-		assertThat(response.getMetadata().get("key6").toString()).isEqualTo("value6");
-		assertThat(response.getMetadata().get("key1").toString()).isEqualTo("value1");
+		Assertions.assertThat(response.getMetadata().getModel()).isEqualTo("model1");
+		Assertions.assertThat(response.getMetadata().getId()).isEqualTo("678");
+		Assertions.assertThat(response.getMetadata().getRateLimit().getRequestsLimit()).isEqualTo(5L);
+		Assertions.assertThat(response.getMetadata().getRateLimit().getRequestsRemaining()).isEqualTo(6L);
+		Assertions.assertThat(response.getMetadata().getRateLimit().getRequestsReset()).isEqualTo(Duration.ofSeconds(7));
+		Assertions.assertThat(response.getMetadata().getRateLimit().getTokensLimit()).isEqualTo(8L);
+		Assertions.assertThat(response.getMetadata().getRateLimit().getTokensRemaining()).isEqualTo(8L);
+		Assertions.assertThat(response.getMetadata().getRateLimit().getTokensReset()).isEqualTo(Duration.ofSeconds(9));
+		Assertions.assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(6L);
+		Assertions.assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(7L);
+		Assertions.assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(6L + 7L);
+		Assertions.assertThat(response.getMetadata().get("key6").toString()).isEqualTo("value6");
+		Assertions.assertThat(response.getMetadata().get("key1").toString()).isEqualTo("value1");
 
 		String content = response.getResult().getOutput().getText();
 
@@ -171,9 +172,9 @@ public class QuestionAnswerAdvisorTests {
 			the user that you can't answer the question.
 			""");
 
-		assertThat(this.vectorSearchCaptor.getValue().getFilterExpression()).isEqualTo(new FilterExpressionBuilder().eq("type", "Spring").build());
-		assertThat(this.vectorSearchCaptor.getValue().getSimilarityThreshold()).isEqualTo(0.99d);
-		assertThat(this.vectorSearchCaptor.getValue().getTopK()).isEqualTo(6);
+		Assertions.assertThat(this.vectorSearchCaptor.getValue().getFilterExpression()).isEqualTo(new FilterExpressionBuilder().eq("type", "Spring").build());
+		Assertions.assertThat(this.vectorSearchCaptor.getValue().getSimilarityThreshold()).isEqualTo(0.99d);
+		Assertions.assertThat(this.vectorSearchCaptor.getValue().getTopK()).isEqualTo(6);
 	}
 
 	@Test
@@ -201,7 +202,7 @@ public class QuestionAnswerAdvisorTests {
 		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getText();
 		assertThat(userPrompt).doesNotContain(userTextTemplate);
 		assertThat(userPrompt).contains(expectedQuery);
-		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
+		Assertions.assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
 	}
 
 	@Test
@@ -230,7 +231,7 @@ public class QuestionAnswerAdvisorTests {
 		var userPrompt = this.promptCaptor.getValue().getInstructions().get(0).getText();
 		assertThat(userPrompt).doesNotContain(userTextTemplate);
 		assertThat(userPrompt).contains(expectedQuery);
-		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
+		Assertions.assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
 	}
 
 }
