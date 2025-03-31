@@ -42,6 +42,7 @@
 	<dependencies>
 		
 		<!-- production dependencies -->
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-core</artifactId>
@@ -131,7 +132,6 @@
             <artifactId>ollama</artifactId>
             <scope>test</scope>
         </dependency>
-
 
 	</dependencies>
 
