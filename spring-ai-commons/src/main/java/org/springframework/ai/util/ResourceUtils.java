@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai;
+package org.springframework.ai.util;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
