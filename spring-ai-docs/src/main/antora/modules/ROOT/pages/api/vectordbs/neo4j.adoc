@@ -102,7 +102,6 @@ spring:
         index-name: custom-index
         dimensions: 1536
         distance-type: cosine
-        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
 ----
 
 The Spring Boot properties starting with `spring.neo4j.*` are used to configure the Neo4j client:
@@ -129,7 +128,6 @@ Properties starting with `spring.ai.vectorstore.neo4j.*` are used to configure t
 |`spring.ai.vectorstore.neo4j.distance-type` | The distance function to use | `cosine`
 |`spring.ai.vectorstore.neo4j.label` | The label used for document nodes | `Document`
 |`spring.ai.vectorstore.neo4j.embedding-property` | The property name used to store embeddings | `embedding`
-|`spring.ai.vectorstore.neo4j.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |===
 
 The following distance functions are available:

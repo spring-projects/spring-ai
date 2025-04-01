@@ -127,7 +127,6 @@ spring:
         index-name: custom-index
         dimensions: 1536
         similarity: cosine
-        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
 ----
 
 The Spring Boot properties starting with `spring.elasticsearch.*` are used to configure the Elasticsearch client:
@@ -158,7 +157,6 @@ Properties starting with `spring.ai.vectorstore.elasticsearch.*` are used to con
 |`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the vectors | `spring-ai-document-index`
 |`spring.ai.vectorstore.elasticsearch.dimensions` | The number of dimensions in the vector | `1536`
 |`spring.ai.vectorstore.elasticsearch.similarity` | The similarity function to use | `cosine`
-|`spring.ai.vectorstore.elasticsearch.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |===
 
 The following similarity functions are available:
