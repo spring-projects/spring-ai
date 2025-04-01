@@ -32,7 +32,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-cassandra-store</artifactId>
+			<artifactId>spring-ai-model-chat-memory-cassandra</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 

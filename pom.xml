@@ -40,6 +40,9 @@
 		<module>spring-ai-rag</module>
 		<module>advisors/spring-ai-advisors-vector-store</module>
 
+		<module>memory/spring-ai-model-chat-memory-neo4j</module>
+		<module>memory/spring-ai-model-chat-memory-cassandra</module>
+
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
@@ -48,8 +51,6 @@
 
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-cassandra</module>
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-neo4j</module>
-
-		<module>memory/spring-ai-model-chat-memory-neo4j</module>
 
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 
