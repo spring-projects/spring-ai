@@ -20,13 +20,13 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai</artifactId>
+	<artifactId>spring-ai-parent</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<name>Spring AI</name>
+	<name>Spring AI Parent</name>
 	<description>Building AI applications with Spring Boot</description>
 
 	<modules>
