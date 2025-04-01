@@ -33,7 +33,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.ai.model.Content;
+import org.springframework.ai.content.Content;
 
 /**
  * Memory is retrieved added into the prompt's system text.

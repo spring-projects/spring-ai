@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.DocumentFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
 
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
 
 /**

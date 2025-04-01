@@ -115,7 +115,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-advisors</artifactId>
+			<artifactId>spring-ai-advisors-vector-store</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>

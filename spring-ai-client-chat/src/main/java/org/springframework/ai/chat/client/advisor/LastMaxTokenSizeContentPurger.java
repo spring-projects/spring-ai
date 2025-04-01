@@ -19,8 +19,8 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.model.Content;
-import org.springframework.ai.model.MediaContent;
+import org.springframework.ai.content.Content;
+import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.tokenizer.TokenCountEstimator;
 
 /**

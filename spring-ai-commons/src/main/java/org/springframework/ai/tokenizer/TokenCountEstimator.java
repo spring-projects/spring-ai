@@ -16,7 +16,7 @@
 
 package org.springframework.ai.tokenizer;
 
-import org.springframework.ai.model.MediaContent;
+import org.springframework.ai.content.MediaContent;
 
 /**
  * Estimates the number of tokens in a given text or message.

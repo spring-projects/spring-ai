@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.springframework.ai.model.Media;
-import org.springframework.ai.model.MediaContent;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.content.MediaContent;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 

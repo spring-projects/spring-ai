@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.ai.model.Media;
-import org.springframework.ai.model.MediaContent;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.content.MediaContent;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 

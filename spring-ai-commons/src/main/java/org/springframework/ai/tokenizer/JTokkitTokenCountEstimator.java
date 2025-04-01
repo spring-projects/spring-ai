@@ -20,8 +20,8 @@ import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingType;
 
-import org.springframework.ai.model.Media;
-import org.springframework.ai.model.MediaContent;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.content.MediaContent;
 import org.springframework.util.CollectionUtils;
 
 /**

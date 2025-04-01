@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 
 public interface PromptTemplateMessageActions {
 

@@ -29,7 +29,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.ai.model.Content;
+import org.springframework.ai.content.Content;
 import org.springframework.util.Assert;
 
 /**

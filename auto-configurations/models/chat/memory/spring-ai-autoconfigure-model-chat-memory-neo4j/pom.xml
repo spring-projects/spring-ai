@@ -26,15 +26,11 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-client-chat</artifactId>
+			<artifactId>spring-ai-model-chat-memory-neo4j</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-neo4j-store</artifactId>
-			<version>${project.parent.version}</version>
-		</dependency>
+
 
 		<!-- Boot dependencies -->
 		<dependency>

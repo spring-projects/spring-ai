@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;

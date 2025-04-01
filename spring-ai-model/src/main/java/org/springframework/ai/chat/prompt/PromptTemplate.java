@@ -33,7 +33,7 @@ import org.stringtemplate.v4.compiler.STLexer;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 

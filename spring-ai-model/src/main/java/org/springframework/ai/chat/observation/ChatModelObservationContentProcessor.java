@@ -18,7 +18,7 @@ package org.springframework.ai.chat.observation;
 
 import java.util.List;
 
-import org.springframework.ai.model.Content;
+import org.springframework.ai.content.Content;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
