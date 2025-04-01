@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.transformer;
+package org.springframework.ai.chat.transformer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
