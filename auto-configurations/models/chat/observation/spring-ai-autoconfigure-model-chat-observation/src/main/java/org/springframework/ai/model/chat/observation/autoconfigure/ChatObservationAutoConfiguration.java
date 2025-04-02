@@ -36,7 +36,6 @@ import org.springframework.ai.chat.observation.ChatModelPromptContentObservation
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -148,7 +147,7 @@ public class ChatObservationAutoConfiguration {
 			return new ErrorLoggingObservationHandler(tracer,
 					List.of(EmbeddingModelObservationContext.class, ImageModelObservationContext.class,
 							ChatModelObservationContext.class, ChatClientObservationContext.class,
-							AdvisorObservationContext.class, VectorStoreObservationContext.class));
+							AdvisorObservationContext.class));
 		}
 
 	}

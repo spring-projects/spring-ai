@@ -53,27 +53,7 @@
 			<optional>true</optional>
 		</dependency>
 
-
-		<!-- ANTLR for Filter Expression Parsing -->
-		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>antlr4-runtime</artifactId>
-			<version>${antlr.version}</version>
-		</dependency>
-
-		<!-- Spring Framework -->
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-		</dependency>
-
 		<!-- test dependencies -->
-<!--		<dependency>-->
-<!--			<groupId>org.springframework.ai</groupId>-->
-<!--			<artifactId>spring-ai-test</artifactId>-->
-<!--			<version>${project.parent.version}</version>-->
-<!--			<scope>test</scope>-->
-<!--		</dependency>-->
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

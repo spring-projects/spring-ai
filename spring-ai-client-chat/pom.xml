@@ -26,8 +26,8 @@
 	</parent>
 	<artifactId>spring-ai-client-chat</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Core</name>
-	<description>Core domain for AI programming</description>
+	<name>Spring AI Chat Client</name>
+	<description>Spring AI Chat Client AI programming</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -37,18 +37,6 @@
 	</scm>
 
 	<dependencies>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-commons</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-vector-store</artifactId>
-			<version>${project.version}</version>
-		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
@@ -89,22 +77,6 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-messaging</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-core</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>context-propagation</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing-bridge-otel</artifactId>
-			<optional>true</optional>
 		</dependency>
 
 		<dependency>

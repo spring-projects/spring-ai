@@ -42,6 +42,46 @@
     <dependencyManagement>
         <dependencies>
 
+			<!-- Spring AI commons -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-commons</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI model -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI vector store -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-vector-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI RAG -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-rag</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Vector Store based Advisors -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-advisors-vector-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI retry -->
 
 			<dependency>
@@ -97,6 +137,20 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-spring-cloud-bindings</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Chat memory implementations -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-cassandra</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-neo4j</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

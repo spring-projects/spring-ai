@@ -55,8 +55,7 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 		Method getName = ReflectionUtils.findMethod(FunctionCallback.class, "getName");
 		hints.reflection().registerMethod(getName, ExecutableMode.INVOKE);
 
-		for (var r : Set.of("antlr4/org/springframework/ai/vectorstore/filter/antlr4/Filters.g4",
-				"embedding/embedding-model-dimensions.properties")) {
+		for (var r : Set.of("embedding/embedding-model-dimensions.properties")) {
 			hints.resources().registerResource(new ClassPathResource(r));
 		}
 

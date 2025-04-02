@@ -29,7 +29,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-client-chat</artifactId>
+			<artifactId>spring-ai-vector-store</artifactId>
 			<version>${parent.version}</version>
 		</dependency>
 

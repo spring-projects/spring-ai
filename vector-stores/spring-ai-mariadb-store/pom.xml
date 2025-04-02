@@ -39,7 +39,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-client-chat</artifactId>
+			<artifactId>spring-ai-vector-store</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
