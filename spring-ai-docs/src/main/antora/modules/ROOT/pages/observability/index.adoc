@@ -315,3 +315,138 @@ whereas data is exported as span attributes if you use an OpenZipkin tracing bac
 |===
 
 WARNING: If you enable the inclusion of the vector search response data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+
+== Example: Sending traces to an OpenTelemetry Backend
+
+This guide shows how to send traces to https://langfuse.com/[Langfuse]'s OpenTelemetry endpoint.
+
+[NOTE]
+====
+Visit the https://github.com/langfuse/langfuse-examples/tree/main/applications/spring-ai-demo[Langfuse Example Repo] for a fully instrumented example application.
+====
+
+=== Step 1: Enable OpenTelemetry in Spring AI
+
+*Add OpenTelemetry and Spring Observability Dependencies* (Maven):
+
+Make sure your project includes Spring Boot Actuator and the Micrometer tracing libraries for OpenTelemetry. Spring Boot Actuator is required to enable Micrometer's observation and tracing features.
+
+You'll also need the Micrometer -> OpenTelemetry bridge and an OTLP exporter. For Maven, add the following to your `pom.xml` (Gradle users can include equivalent coordinates in Gradle):
+
+[source,xml]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-bom</artifactId>
+            <version>2.13.2</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+        <version>1.0.0-M6</version>
+    </dependency>
+    <!-- Spring AI needs a reactive web server to run for some reason-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>io.opentelemetry.instrumentation</groupId>
+        <artifactId>opentelemetry-spring-boot-starter</artifactId>
+    </dependency>
+    <!-- Spring Boot Actuator for observability support -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!-- Micrometer Observation -> OpenTelemetry bridge -->
+    <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-tracing-bridge-otel</artifactId>
+    </dependency>
+    <!-- OpenTelemetry OTLP exporter for traces -->
+    <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-exporter-otlp</artifactId>
+    </dependency>
+</dependencies>
+----
+
+*Enable Span Export and Configure Spring AI Observations* (`application.yml`):
+
+With the above dependencies, Spring Boot will auto-configure tracing using OpenTelemetry as long as we provide the proper settings. We need to specify where to send the spans (the OTLP endpoint) and ensure Spring AI is set up to include the desired data in those spans. Create or update your `application.yml` (or `application.properties`) with the following configurations:
+
+[source,yaml]
+----
+spring:
+  application:
+    name: spring-ai-llm-app # Service name for tracing (appears in Langfuse UI as the source service)
+  ai:
+    chat:
+      observations:
+        include-prompt: true # Include prompt content in tracing (disabled by default for privacy)
+        include-completion: true # Include completion content in tracing (disabled by default)
+management:
+  tracing:
+    sampling:
+      probability: 1.0 # Sample 100% of requests for full tracing (adjust in production as needed)
+  observations:
+    annotations:
+      enabled: true # Enable @Observed (if you use observation annotations in code)
+----
+
+With these configurations and dependencies in place, your Spring Boot application is ready to produce OpenTelemetry traces. Spring AI's internal calls (e.g. when you invoke a chat model or generate an embedding) will be recorded as spans.
+
+Each span will carry attributes like `gen_ai.operation.name`, `gen_ai.system` (the provider, e.g. "openai"), model names, token usage, etc., and – since we enabled them – events for the prompt and response content​
+
+=== Step 2: Configure Langfuse
+
+Now that your Spring AI application is emitting OpenTelemetry trace data, the next step is to direct that data to Langfuse.
+
+Langfuse will act as the "backend" for OpenTelemetry in this setup – essentially replacing a typical Jaeger/Zipkin/OTel-Collector with Langfuse's trace ingestion API.
+
+*Langfuse Setup*
+
+- Sign up for https://cloud.langfuse.com/[Langfuse Cloud] or https://langfuse.com/self-hosting[self-hosted Langfuse].
+- Set the OTLP endpoint (e.g. `https://cloud.langfuse.com/api/public/otel`) and API keys.
+
+Configure these via environment variables:
+
+[source,bash]
+----
+OTEL_EXPORTER_OTLP_ENDPOINT: set this to the Langfuse OTLP URL (e.g. https://cloud.langfuse.com/api/public/otel).
+OTEL_EXPORTER_OTLP_HEADERS: set this to Authorization=Basic <base64 public:secret>.
+----
+
+[NOTE]
+====
+You can find more on authentication via Basic Auth https://langfuse.com/docs/opentelemetry/get-started[here].
+====
+
+=== Step 3: Run a Test AI Operation
+
+Start your Spring Boot application. Trigger an AI operation that Spring AI handles – for example, call a service or controller that uses a `ChatModel` to generate a completion, or an `EmbeddingModel` to generate embeddings.
+
+[source,java]
+----
+@Autowired
+private ChatService chatService;
+
+@EventListener(ApplicationReadyEvent.class)
+public void testAiCall() {
+    String answer = chatService.chat("Hello, Spring AI!");
+    System.out.println("AI answered: " + answer);
+}
+----
