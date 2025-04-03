@@ -19,8 +19,6 @@ class JdbcChatMemoryRuntimeHints implements RuntimeHintsRegistrar {
 			.registerType(DataSource.class, (hint) -> hint.withMembers(MemberCategory.INVOKE_DECLARED_METHODS));
 
 		hints.resources()
-			.registerPattern("org/springframework/ai/chat/memory/jdbc/schema-drop-mariadb.sql")
-			.registerPattern("org/springframework/ai/chat/memory/jdbc/schema-drop-postgresql.sql")
 			.registerPattern("org/springframework/ai/chat/memory/jdbc/schema-mariadb.sql")
 			.registerPattern("org/springframework/ai/chat/memory/jdbc/schema-postgresql.sql");
 	}
