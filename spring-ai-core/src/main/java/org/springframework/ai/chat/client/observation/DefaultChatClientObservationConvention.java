@@ -22,7 +22,6 @@ import io.micrometer.common.KeyValues;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.tracing.TracingHelper;
 import org.springframework.lang.Nullable;
@@ -114,27 +113,27 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 	}
 
 	protected KeyValues toolFunctionNames(KeyValues keyValues, ChatClientObservationContext context) {
-		if (CollectionUtils.isEmpty(context.getRequest().getFunctionNames())) {
+		if (CollectionUtils.isEmpty(context.getRequest().getToolNames())) {
 			return keyValues;
 		}
-		var functionNames = context.getRequest().getFunctionNames();
+		var functionNames = context.getRequest().getToolNames();
 		return keyValues.and(
 				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(),
 				TracingHelper.concatenateStrings(functionNames));
 	}
 
 	protected KeyValues toolFunctionCallbacks(KeyValues keyValues, ChatClientObservationContext context) {
-		if (CollectionUtils.isEmpty(context.getRequest().getFunctionCallbacks())) {
+		if (CollectionUtils.isEmpty(context.getRequest().getToolCallbacks())) {
 			return keyValues;
 		}
-		var functionCallbacks = context.getRequest()
-			.getFunctionCallbacks()
+		var toolcallbacks = context.getRequest()
+			.getToolCallbacks()
 			.stream()
-			.map(FunctionCallback::getName)
+			.map(toolCallback -> toolCallback.getToolDefinition().name())
 			.toList();
 		return keyValues
 			.and(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS
-				.asString(), TracingHelper.concatenateStrings(functionCallbacks));
+				.asString(), TracingHelper.concatenateStrings(toolcallbacks));
 	}
 
 }

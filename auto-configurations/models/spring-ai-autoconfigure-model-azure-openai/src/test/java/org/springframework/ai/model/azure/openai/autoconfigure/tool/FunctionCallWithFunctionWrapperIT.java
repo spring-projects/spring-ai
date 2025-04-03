@@ -65,7 +65,7 @@ public class FunctionCallWithFunctionWrapperIT {
 						"What's the weather like in San Francisco, Paris and in Tokyo?");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						AzureOpenAiChatOptions.builder().function("WeatherInfo").build()));
+						AzureOpenAiChatOptions.builder().toolNames("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);
 
