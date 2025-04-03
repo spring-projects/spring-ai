@@ -57,6 +57,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("temperature") Double temperature;
 	private @JsonProperty("top_p") Double topP;
 	private @JsonProperty("top_k") Integer topK;
+	private @JsonProperty("thinking") ChatCompletionRequest.ThinkingConfig thinking;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
@@ -103,6 +104,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.topK(fromOptions.getTopK())
+			.thinking(fromOptions.getThinking())
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
@@ -172,6 +174,14 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	public void setTopK(Integer topK) {
 		this.topK = topK;
+	}
+
+	public ChatCompletionRequest.ThinkingConfig getThinking() {
+		return this.thinking;
+	}
+
+	public void setThinking(ChatCompletionRequest.ThinkingConfig thinking) {
+		this.thinking = thinking;
 	}
 
 	@Override
@@ -308,7 +318,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.metadata, that.metadata)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
-				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.thinking, that.thinking)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
@@ -317,7 +328,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(model, maxTokens, metadata, stopSequences, temperature, topP, topK, toolCallbacks,
+		return Objects.hash(model, maxTokens, metadata, stopSequences, temperature, topP, topK, thinking, toolCallbacks,
 				toolNames, internalToolExecutionEnabled, toolContext, httpHeaders);
 	}
 
@@ -362,6 +373,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder topK(Integer topK) {
 			this.options.topK = topK;
+			return this;
+		}
+
+		public Builder thinking(ChatCompletionRequest.ThinkingConfig thinking) {
+			this.options.thinking = thinking;
+			return this;
+		}
+
+		public Builder thinking(AnthropicApi.ThinkingType type, Integer budgetTokens) {
+			this.options.thinking = new ChatCompletionRequest.ThinkingConfig(type, budgetTokens);
 			return this;
 		}
 
