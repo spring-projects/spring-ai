@@ -12,7 +12,7 @@ The ETL pipelines creates, transforms and stores `Document` instances.
 
 image::spring-ai-document1-api.jpg[Spring AI Message API, width=400, align="center"]
 
-The `Document` class contains text, metadata and optionally additionall media types like images, audio and video.
+The `Document` class contains text, metadata and optionally additional media types like images, audio and video.
 
 There are three main components of the ETL pipeline,
 
