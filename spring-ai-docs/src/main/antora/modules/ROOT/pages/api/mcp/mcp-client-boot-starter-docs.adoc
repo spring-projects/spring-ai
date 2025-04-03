@@ -245,10 +245,10 @@ public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
     @Override
     public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
 
-        // Customize the request configuration
+        // Customize the request timeout configuration
         spec.requestTimeout(Duration.ofSeconds(30));
 
-        // Sets the root URIs that the server connecto this client can access. 
+        // Sets the root URIs that this client can access.
         spec.roots(roots);
 
         // Sets a custom sampling handler for processing message creation requests.
@@ -298,7 +298,7 @@ public class CustomMcpAsyncClientCustomizer implements McpAsyncClientCustomizer 
 }
 ----
 ======
-The `serverConfigurationName` parameter is the name of the server configuration that the customizer is being applied to and the the MCP Client is created for.
+The `serverConfigurationName` parameter is the name of the server configuration that the customizer is being applied to and the MCP Client is created for.
 
 The MCP client auto-configuration automatically detects and applies any customizers found in the application context.
 
@@ -384,9 +384,9 @@ spring:
 
 == Example Applications
 
-- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/web-search/brave-chatbot[Brave Wet Search Chatbot] - A chatbot that uses the Model Context Protocol to interact with a web search server.
-- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Default MCP Client Starter] - A simple example of using the the default `spring-ai-starter-mcp-client` MCP Client Boot Starter.
-- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-webflux-client[WebFlux MCP Client Starter] - A simple example of using the `spring-ai-starter-mcp-client-webflux` the MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/web-search/brave-chatbot[Brave Web Search Chatbot] - A chatbot that uses the Model Context Protocol to interact with a web search server.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Default MCP Client Starter] - A simple example of using the default `spring-ai-starter-mcp-client` MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-webflux-client[WebFlux MCP Client Starter] - A simple example of using the `spring-ai-starter-mcp-client-webflux` MCP Client Boot Starter.
 
 == Additional Resources
 
