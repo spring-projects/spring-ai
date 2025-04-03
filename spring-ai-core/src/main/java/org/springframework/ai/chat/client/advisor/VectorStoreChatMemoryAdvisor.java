@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
@@ -185,7 +186,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.systemParams(advisedSystemParams)
 			.build();
 
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		String userMessageText = new PromptTemplate(request.userText(), request.userParams()).render();
+		UserMessage userMessage = new UserMessage(userMessageText, request.media());
 		this.getChatMemoryStore()
 			.write(toDocuments(List.of(userMessage), this.doGetConversationId(request.adviseContext())));
 
