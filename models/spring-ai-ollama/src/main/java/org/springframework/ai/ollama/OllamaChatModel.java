@@ -59,6 +59,7 @@ import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -207,7 +208,7 @@ public class OllamaChatModel implements ChatModel {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider(OllamaApi.PROVIDER_NAME)
+			.provider(OllamaApiConstants.PROVIDER_NAME)
 			.requestOptions(prompt.getOptions())
 			.build();
 
@@ -279,7 +280,7 @@ public class OllamaChatModel implements ChatModel {
 
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.provider(OllamaApi.PROVIDER_NAME)
+				.provider(OllamaApiConstants.PROVIDER_NAME)
 				.requestOptions(prompt.getOptions())
 				.build();
 
