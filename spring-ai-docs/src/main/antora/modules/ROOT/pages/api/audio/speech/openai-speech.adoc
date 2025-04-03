@@ -85,8 +85,8 @@ The prefix `spring.ai.openai.audio.speech` is used as the property prefix that l
 | spring.ai.openai.audio.speech.api-key    | The API Key           |  -
 | spring.ai.openai.audio.speech.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.speech.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.speech.options.model  | ID of the model to use. Only tts-1 is currently available. |  tts-1
-| spring.ai.openai.audio.speech.options.voice | The voice to use for the TTS output. Available options are: alloy, echo, fable, onyx, nova, and shimmer. | alloy
+| spring.ai.openai.audio.speech.options.model  | ID of the model to use for generating the audio. For OpenAI's TTS API, use one of the available models: tts-1 or tts-1-hd. |  tts-1
+| spring.ai.openai.audio.speech.options.voice | The voice to use for synthesis. For OpenAI's TTS API, One of the available voices for the chosen model: alloy, echo, fable, onyx, nova, and shimmer. | alloy
 | spring.ai.openai.audio.speech.options.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
 | spring.ai.openai.audio.speech.options.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
 |====
@@ -113,8 +113,8 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .speed(1.0f)
     .build();
 
-SpeechPrompt speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", this.speechOptions);
-SpeechResponse response = openAiAudioSpeechModel.call(this.speechPrompt);
+SpeechPrompt speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
+SpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
 ----
 
 == Manual Configuration
@@ -144,9 +144,11 @@ Next, create an `OpenAiAudioSpeechModel`:
 
 [source,java]
 ----
-var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
+var openAiAudioApi = new OpenAiAudioApi()
+    .apiKey(System.getenv("OPENAI_API_KEY"))
+    .build();
 
-var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(this.openAiAudioApi);
+var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi);
 
 var speechOptions = OpenAiAudioSpeechOptions.builder()
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
@@ -154,13 +156,13 @@ var speechOptions = OpenAiAudioSpeechOptions.builder()
     .model(OpenAiAudioApi.TtsModel.TTS_1.value)
     .build();
 
-var speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", this.speechOptions);
-SpeechResponse response = this.openAiAudioSpeechModel.call(this.speechPrompt);
+var speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
+SpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
 
 // Accessing metadata (rate limit info)
-OpenAiAudioSpeechResponseMetadata metadata = this.response.getMetadata();
+OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
 
-byte[] responseAsBytes = this.response.getResult().getOutput();
+byte[] responseAsBytes = response.getResult().getOutput();
 ----
 
 == Streaming Real-time Audio
@@ -169,9 +171,11 @@ The Speech API provides support for real-time audio streaming using chunk transf
 
 [source,java]
 ----
-var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
+var openAiAudioApi = new OpenAiAudioApi()
+    .apiKey(System.getenv("OPENAI_API_KEY"))
+    .build();
 
-var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(this.openAiAudioApi);
+var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi);
 
 OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
@@ -180,9 +184,9 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .model(OpenAiAudioApi.TtsModel.TTS_1.value)
     .build();
 
-SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!", this.speechOptions);
+SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!", speechOptions);
 
-Flux<SpeechResponse> responseStream = this.openAiAudioSpeechModel.stream(this.speechPrompt);
+Flux<SpeechResponse> responseStream = openAiAudioSpeechModel.stream(speechPrompt);
 ----
 
 == Example Code
