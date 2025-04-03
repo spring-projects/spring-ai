@@ -548,6 +548,8 @@ dependencies {
 }
 ----
 
-The autoconfiguration will automatically create the `ai_chat_memory` table by default. To disable this, set the property `spring.ai.chat.memory.jdbc.initialize-schema` to false.
+The autoconfiguration will automatically create the `ai_chat_memory` table by default based on the JDBC driver. Currently, only `postgresql` and `mariadb` are supported.
+
+To disable schema initialization, set the property `spring.ai.chat.memory.jdbc.initialize-schema` to `false`.
 
 There are instances where you are using a database migration tool like Liquibase or Flyway to manage your database schema. In that case, you may disable schema initialization and just refer to link:https://github.com/spring-projects/spring-ai/tree/main/chat-memories/spring-ai-jdbc-chat-memory/src/main/resources/org/springframework/ai/chat/memory/jdbc[these sql files] and add them to your migration script.
