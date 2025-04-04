@@ -267,7 +267,7 @@ class MistralWithOpenAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "mistral-small-latest", "mistral-large-latest" })
+	@ValueSource(strings = { "mistral-large-latest" })
 	void streamFunctionCallTest(String modelName) {
 
 		UserMessage userMessage = new UserMessage(

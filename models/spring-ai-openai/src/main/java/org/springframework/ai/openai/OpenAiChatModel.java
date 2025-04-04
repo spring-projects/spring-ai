@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import io.micrometer.common.lang.NonNull;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -59,9 +58,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -138,7 +138,11 @@ public class OpenAiChatModel implements ChatModel {
 
 	private final ToolCallingManager toolCallingManager;
 
-	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
+	/**
+	 * The tool execution eligibility predicate used to determine if a tool can be
+	 * executed.
+	 */
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
 	/**
 	 * Conventions to use for generating observations.
@@ -148,24 +152,24 @@ public class OpenAiChatModel implements ChatModel {
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		this(openAiApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
-				chatResponse -> chatResponse != null && chatResponse.hasToolCalls());
+				new DefaultToolExecutionEligibilityPredicate());
 	}
 
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 		Assert.notNull(openAiApi, "openAiApi cannot be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(retryTemplate, "retryTemplate cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker cannot be null");
+		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate cannot be null");
 		this.openAiApi = openAiApi;
 		this.defaultOptions = defaultOptions;
 		this.toolCallingManager = toolCallingManager;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 	}
 
 	@Override
@@ -234,7 +238,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			});
 
-		if (toolExecutionEligibilityChecker.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -357,7 +361,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				if (toolExecutionEligibilityChecker.isToolExecutionRequired(prompt.getOptions(), response)) {
+				if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					return Flux.defer(() -> {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
@@ -696,8 +700,7 @@ public class OpenAiChatModel implements ChatModel {
 
 		private ToolCallingManager toolCallingManager;
 
-		private ToolExecutionEligibilityChecker toolExecutionEligibilityChecker = chatResponse -> chatResponse != null
-				&& chatResponse.hasToolCalls();
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
@@ -721,9 +724,9 @@ public class OpenAiChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder toolExecutionEligibilityChecker(
-				ToolExecutionEligibilityChecker toolExecutionEligibilityChecker) {
-			this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 			return this;
 		}
 
@@ -740,10 +743,10 @@ public class OpenAiChatModel implements ChatModel {
 		public OpenAiChatModel build() {
 			if (toolCallingManager != null) {
 				return new OpenAiChatModel(openAiApi, defaultOptions, toolCallingManager, retryTemplate,
-						observationRegistry, toolExecutionEligibilityChecker);
+						observationRegistry, toolExecutionEligibilityPredicate);
 			}
 			return new OpenAiChatModel(openAiApi, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
-					observationRegistry, toolExecutionEligibilityChecker);
+					observationRegistry, toolExecutionEligibilityPredicate);
 		}
 
 	}
