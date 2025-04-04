@@ -102,6 +102,26 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("stop") List<String> stop;
 
 	/**
+	 * Number between -2.0 and 2.0. frequency_penalty penalizes the repetition of words
+	 * based on their frequency in the generated text. A higher frequency penalty discourages
+	 * the model from repeating words that have already appeared frequently in the
+	 * output, promoting diversity and reducing repetition.
+	 */
+	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
+
+	/**
+	 * Number between -2.0 and 2.0. presence_penalty determines how much the model penalizes
+	 * the repetition of words or phrases. A higher presence penalty encourages the model to
+	 * use a wider variety of words and phrases, making the output more diverse and creative.
+	 */
+	private @JsonProperty("presence_penalty") Double presencePenalty;
+
+	/**
+	 * Number of completions to return for each request, input tokens are only billed once.
+	 */
+	private @JsonProperty("n") Integer n;
+
+	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a
 	 * tool. Use this to provide a list of functions the model may generate JSON inputs
 	 * for.
@@ -151,6 +171,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			.topP(fromOptions.getTopP())
 			.responseFormat(fromOptions.getResponseFormat())
 			.stop(fromOptions.getStop())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.N(fromOptions.getN())
 			.tools(fromOptions.getTools())
 			.toolChoice(fromOptions.getToolChoice())
 			.toolCallbacks(fromOptions.getToolCallbacks())
@@ -256,6 +279,32 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public Double getFrequencyPenalty() {
+		return this.frequencyPenalty;
+	}
+
+	public void setFrequencyPenalty(Double frequencyPenalty) {
+		this.frequencyPenalty = frequencyPenalty;
+	}
+
+	@Override
+	public Double getPresencePenalty() {
+		return this.presencePenalty;
+	}
+
+	public void setPresencePenalty(Double presencePenalty) {
+		this.presencePenalty = presencePenalty;
+	}
+
+	public Integer getN() {
+		return this.n;
+	}
+
+	public void setN(Integer n) {
+		this.n = n;
+	}
+
+	@Override
 	@JsonIgnore
 	public List<FunctionCallback> getToolCallbacks() {
 		return this.toolCallbacks;
@@ -327,18 +376,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Double getFrequencyPenalty() {
-		return null;
-	}
-
-	@Override
-	@JsonIgnore
-	public Double getPresencePenalty() {
-		return null;
-	}
-
-	@Override
-	@JsonIgnore
 	public Integer getTopK() {
 		return null;
 	}
@@ -376,8 +413,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
-				this.responseFormat, this.stop, this.tools, this.toolChoice, this.toolCallbacks, this.tools,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.responseFormat, this.stop, this.frequencyPenalty, this.presencePenalty, this.n, this.tools,
+				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
@@ -397,6 +434,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.safePrompt, other.safePrompt)
 				&& Objects.equals(this.randomSeed, other.randomSeed)
 				&& Objects.equals(this.responseFormat, other.responseFormat) && Objects.equals(this.stop, other.stop)
+				&& Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
+				&& Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.n, other.n)
 				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
@@ -435,6 +475,21 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder stop(List<String> stop) {
 			this.options.setStop(stop);
+			return this;
+		}
+
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder presencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder N(Integer n) {
+			this.options.n = n;
 			return this;
 		}
 
