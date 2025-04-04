@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OllamaEmbeddingRequestTests {
 
 	OllamaEmbeddingModel embeddingModel = OllamaEmbeddingModel.builder()
-		.ollamaApi(new OllamaApi())
+		.ollamaApi(OllamaApi.builder().build())
 		.defaultOptions(OllamaOptions.builder().model("DEFAULT_MODEL").mainGPU(11).useMMap(true).numGPU(1).build())
 		.build();
 

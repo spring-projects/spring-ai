@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OllamaChatRequestTests {
 
 	OllamaChatModel chatModel = OllamaChatModel.builder()
-		.ollamaApi(new OllamaApi())
+		.ollamaApi(OllamaApi.builder().build())
 		.defaultOptions(OllamaOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
 		.build();
 
@@ -52,7 +52,7 @@ class OllamaChatRequestTests {
 			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
 			.build();
 		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(new OllamaApi())
+			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(defaultOptions)
 			.build();
 
@@ -144,7 +144,7 @@ class OllamaChatRequestTests {
 	@Test
 	public void createRequestWithDefaultOptionsModelOverride() {
 		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(new OllamaApi())
+			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(OllamaOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
 			.build();
 
