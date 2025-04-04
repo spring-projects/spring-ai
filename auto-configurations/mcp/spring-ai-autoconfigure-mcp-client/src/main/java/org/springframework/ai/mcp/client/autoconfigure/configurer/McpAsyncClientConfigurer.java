@@ -24,7 +24,7 @@ import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
 
 public class McpAsyncClientConfigurer {
 
-	private List<McpAsyncClientCustomizer> customizers;
+	private final List<McpAsyncClientCustomizer> customizers;
 
 	public McpAsyncClientConfigurer(List<McpAsyncClientCustomizer> customizers) {
 		this.customizers = customizers;

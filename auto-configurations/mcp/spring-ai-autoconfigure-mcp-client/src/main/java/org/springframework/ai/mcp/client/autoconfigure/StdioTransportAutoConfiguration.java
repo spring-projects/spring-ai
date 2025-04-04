@@ -67,21 +67,21 @@ public class StdioTransportAutoConfiguration {
 	 * <li>Server-specific parameters from properties
 	 * <li>Unique connection name for identification
 	 * </ul>
-	 * @param sdioProperties the stdio client properties containing server configurations
+	 * @param stdioProperties the stdio client properties containing server configurations
 	 * @return list of named MCP transports
 	 */
 	@Bean
-	public List<NamedClientMcpTransport> stdioTransports(McpStdioClientProperties sdioProperties) {
+	public List<NamedClientMcpTransport> stdioTransports(McpStdioClientProperties stdioProperties) {
 
-		List<NamedClientMcpTransport> stdoiTransports = new ArrayList<>();
+		List<NamedClientMcpTransport> stdioTransports = new ArrayList<>();
 
-		for (Map.Entry<String, ServerParameters> serverParameters : sdioProperties.toServerParameters().entrySet()) {
+		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
 			var transport = new StdioClientTransport(serverParameters.getValue());
-			stdoiTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 
 		}
 
-		return stdoiTransports;
+		return stdioTransports;
 	}
 
 }
