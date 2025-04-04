@@ -85,8 +85,10 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -156,17 +158,32 @@ public class AzureOpenAiChatModel implements ChatModel {
 	 */
 	private final ToolCallingManager toolCallingManager;
 
+	/**
+	 * The tool execution eligibility predicate used to determine if a tool can be
+	 * executed.
+	 */
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
 	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, ObservationRegistry observationRegistry) {
+		this(openAIClientBuilder, defaultOptions, toolCallingManager, observationRegistry,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	public AzureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder, AzureOpenAiChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, ObservationRegistry observationRegistry,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 		Assert.notNull(openAIClientBuilder, "com.azure.ai.openai.OpenAIClient must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
+		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate cannot be null");
 		this.openAIClient = openAIClientBuilder.buildClient();
 		this.openAIAsyncClient = openAIClientBuilder.buildAsyncClient();
 		this.defaultOptions = defaultOptions;
 		this.toolCallingManager = toolCallingManager;
 		this.observationRegistry = observationRegistry;
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 	}
 
 	public static ChatResponseMetadata from(ChatCompletions chatCompletions, PromptMetadata promptFilterMetadata,
@@ -244,8 +261,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response != null
-				&& response.hasToolCalls()) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -352,8 +368,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 			});
 
 			return chatResponseFlux.flatMap(chatResponse -> {
-				if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions())
-						&& chatResponse.hasToolCalls()) {
+				if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
 					return Flux.defer(() -> {
@@ -919,6 +934,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 		private ToolCallingManager toolCallingManager;
 
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
 		private Builder() {
@@ -939,6 +956,12 @@ public class AzureOpenAiChatModel implements ChatModel {
 			return this;
 		}
 
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			return this;
+		}
+
 		public Builder observationRegistry(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			return this;
@@ -947,10 +970,10 @@ public class AzureOpenAiChatModel implements ChatModel {
 		public AzureOpenAiChatModel build() {
 			if (toolCallingManager != null) {
 				return new AzureOpenAiChatModel(openAIClientBuilder, defaultOptions, toolCallingManager,
-						observationRegistry);
+						observationRegistry, toolExecutionEligibilityPredicate);
 			}
 			return new AzureOpenAiChatModel(openAIClientBuilder, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
-					observationRegistry);
+					observationRegistry, toolExecutionEligibilityPredicate);
 		}
 
 	}
