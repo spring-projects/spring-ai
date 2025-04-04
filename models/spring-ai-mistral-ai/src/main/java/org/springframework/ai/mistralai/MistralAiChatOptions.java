@@ -103,21 +103,23 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 
 	/**
 	 * Number between -2.0 and 2.0. frequency_penalty penalizes the repetition of words
-	 * based on their frequency in the generated text. A higher frequency penalty discourages
-	 * the model from repeating words that have already appeared frequently in the
-	 * output, promoting diversity and reducing repetition.
+	 * based on their frequency in the generated text. A higher frequency penalty
+	 * discourages the model from repeating words that have already appeared frequently in
+	 * the output, promoting diversity and reducing repetition.
 	 */
 	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
 
 	/**
-	 * Number between -2.0 and 2.0. presence_penalty determines how much the model penalizes
-	 * the repetition of words or phrases. A higher presence penalty encourages the model to
-	 * use a wider variety of words and phrases, making the output more diverse and creative.
+	 * Number between -2.0 and 2.0. presence_penalty determines how much the model
+	 * penalizes the repetition of words or phrases. A higher presence penalty encourages
+	 * the model to use a wider variety of words and phrases, making the output more
+	 * diverse and creative.
 	 */
 	private @JsonProperty("presence_penalty") Double presencePenalty;
 
 	/**
-	 * Number of completions to return for each request, input tokens are only billed once.
+	 * Number of completions to return for each request, input tokens are only billed
+	 * once.
 	 */
 	private @JsonProperty("n") Integer n;
 
@@ -435,8 +437,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.randomSeed, other.randomSeed)
 				&& Objects.equals(this.responseFormat, other.responseFormat) && Objects.equals(this.stop, other.stop)
 				&& Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
-				&& Objects.equals(this.presencePenalty, other.presencePenalty)
-				&& Objects.equals(this.n, other.n)
+				&& Objects.equals(this.presencePenalty, other.presencePenalty) && Objects.equals(this.n, other.n)
 				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
