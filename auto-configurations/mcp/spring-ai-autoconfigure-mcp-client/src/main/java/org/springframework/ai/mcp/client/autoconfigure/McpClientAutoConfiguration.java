@@ -224,11 +224,11 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpSyncClientConfigurer,
+	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
 			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
-		List<McpAsyncClient> mcpSyncClients = new ArrayList<>();
+		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
 		List<NamedClientMcpTransport> namedTransports = transportsProvider.stream().flatMap(List::stream).toList();
 
@@ -239,23 +239,23 @@ public class McpClientAutoConfiguration {
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
 
-				McpClient.AsyncSpec syncSpec = McpClient.async(namedTransport.transport())
+				McpClient.AsyncSpec asyncSpec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
 
-				syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
+				asyncSpec = mcpAsyncClientConfigurer.configure(namedTransport.name(), asyncSpec);
 
-				var syncClient = syncSpec.build();
+				var asyncClient = asyncSpec.build();
 
 				if (commonProperties.isInitialized()) {
-					syncClient.initialize().block();
+					asyncClient.initialize().block();
 				}
 
-				mcpSyncClients.add(syncClient);
+				mcpAsyncClients.add(asyncClient);
 			}
 		}
 
-		return mcpSyncClients;
+		return mcpAsyncClients;
 	}
 
 	public record CloseableMcpAsyncClients(List<McpAsyncClient> clients) implements AutoCloseable {
@@ -267,7 +267,7 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public CloseableMcpAsyncClients makeAsynClientsClosable(List<McpAsyncClient> clients) {
+	public CloseableMcpAsyncClients makeAsyncClientsClosable(List<McpAsyncClient> clients) {
 		return new CloseableMcpAsyncClients(clients);
 	}
 
