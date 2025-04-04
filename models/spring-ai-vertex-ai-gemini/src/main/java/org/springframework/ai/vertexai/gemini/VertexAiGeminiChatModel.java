@@ -77,9 +77,11 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -169,6 +171,12 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	private final ToolCallingManager toolCallingManager;
 
 	/**
+	 * The tool execution eligibility predicate used to determine if a tool can be
+	 * executed.
+	 */
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	/**
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
@@ -250,6 +258,24 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
+		this(vertexAI, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	/**
+	 * Creates a new instance of VertexAiGeminiChatModel.
+	 * @param vertexAI the Vertex AI instance to use
+	 * @param defaultOptions the default options to use
+	 * @param toolCallingManager the tool calling manager to use. It is wrapped in a
+	 * {@link VertexToolCallingManager} to ensure compatibility with Vertex AI's OpenAPI
+	 * schema format.
+	 * @param retryTemplate the retry template to use
+	 * @param observationRegistry the observation registry to use
+	 * @param toolExecutionEligibilityPredicate the tool execution eligibility predicate
+	 */
+	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
 		super(null, VertexAiGeminiChatOptions.builder().build(), List.of());
 
@@ -258,12 +284,14 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		Assert.notNull(defaultOptions.getModel(), "VertexAiGeminiChatOptions.modelName must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		Assert.notNull(toolCallingManager, "ToolCallingManager must not be null");
+		Assert.notNull(toolExecutionEligibilityPredicate, "ToolExecutionEligibilityPredicate must not be null");
 
 		this.vertexAI = vertexAI;
 		this.defaultOptions = defaultOptions;
 		this.generationConfig = toGenerationConfig(defaultOptions);
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 
 		// Wrap the provided tool calling manager in a VertexToolCallingManager to ensure
 		// compatibility with Vertex AI's OpenAPI schema format.
@@ -430,8 +458,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 				return chatResponse;
 			}));
 
-		if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response != null
-				&& response.hasToolCalls()) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -547,7 +574,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 				// @formatter:off
 				Flux<ChatResponse> chatResponseFlux = chatResponse1.flatMap(response -> {
-					if (ToolCallingChatOptions.isInternalToolExecutionEnabled(prompt.getOptions()) && response.hasToolCalls()) {
+					if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						// is currently only synchronous
 						return Flux.defer(() -> {
@@ -839,7 +866,9 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		GEMINI_2_0_FLASH("gemini-2.0-flash"),
 
-		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite-preview-02-05");
+		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite"),
+
+		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-25");
 
 		public final String value;
 
@@ -879,6 +908,8 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		private ToolCallingManager toolCallingManager;
 
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+
 		private FunctionCallbackResolver functionCallbackResolver;
 
 		private List<FunctionCallback> toolFunctionCallbacks;
@@ -902,6 +933,12 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 			return this;
 		}
 
@@ -935,7 +972,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
 
 				return new VertexAiGeminiChatModel(vertexAI, defaultOptions, toolCallingManager, retryTemplate,
-						observationRegistry);
+						observationRegistry, toolExecutionEligibilityPredicate);
 			}
 
 			if (functionCallbackResolver != null) {
@@ -949,7 +986,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			}
 
 			return new VertexAiGeminiChatModel(vertexAI, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
-					observationRegistry);
+					observationRegistry, toolExecutionEligibilityPredicate);
 		}
 
 	}
