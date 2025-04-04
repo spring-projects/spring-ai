@@ -4,6 +4,7 @@
 [[upgrading-to-1-0-0-snapshot]]
 == Upgrading to 1.0.0-SNAPSHOT
 
+== Part 1
 You can upgrade to 1.0.0-SNAPSHOT either by following the manual steps outlined below or by using an automated approach with the Claude Code CLI tool and a provided prompt. 
 
 The automated approach can save time and reduce errors when upgrading multiple projects or complex codebases. 
@@ -171,7 +172,138 @@ To use this automation:
 
 This approach can save time and reduce the chance of errors when upgrading multiple projects or complex codebases.
 
-== Upgrading to 1.0.0.M7
+== Part 2
+
+As of April 4, the main branch now has changes to module/artifact structure of the project.
+Since the start of the Spring AI project, there has been one central artifact where the main interfaces are defined, the `spring-ai-core` module.
+Over time, this has grown to contain multiple specialized domains and we wanted to separate these domain out into their own modules.
+For example, to use the `ChatClient` functionality, there does not need to be any classes related to Vector Stores in your application.
+
+The `spring-ai-core` module had a clean Dependency Structure Matrix, so most of the work to break up this module was simply cut and pasting code.
+However, there were a few cases where the package names of classes have been changed.
+
+=== Changes to package names
+
+Your IDE should assist with refactoring to the new package locations.
+
+`ContentFormatTransformer` and `KeywordMetadataEnricher` have moved from `org.springframework.ai.transformer` to `org.springframework.ai.chat.transformer`.
+
+`Content`, `MediaContent`, and `Media` have moved from `org.springframework.ai.model` to `org.springframework.ai.content`.
+
+
+
+=== New Modules Overview
+
+==== `spring-ai-commons`
+
+This is a base module with no dependencies on other Spring AI modules.
+It defines core domain models (`Document`, `TextSplitter`, etc.), JSON utilities, resource handling, and structured logging.
+Supports document processing, tokenization, embedding optimization, and observability via operation metadata and metrics.
+
+==== `spring-ai-model`
+
+Provides abstractions for AI capabilities via interfaces like `ChatModel`, `EmbeddingModel`, and `ImageModel`.
+Includes message types, prompt templates, response structures, and a full function-calling framework (`ToolDefinition`, `ToolCallback`, annotations).
+Supports observation, content filtering, and consistent builder/strategy patterns across AI providers.
+
+==== `spring-ai-vector-store`
+
+Defines a unified abstraction (`VectorStore`) for vector databases and similarity search.
+Includes advanced filtering via SQL-like expressions, `SearchRequest`, and `Filter.Expression.`
+Offers `SimpleVectorStore` (in-memory) and observability integration.
+Emphasizes type safety, extensibility, and batching support for embeddings.
+
+==== `spring-ai-client-chat`
+
+This module provides high-level APIs for conversational AI via the `ChatClient` interface.
+Includes conversation persistence (`ChatMemory`), response conversion (`OutputConverter`), and advisor-based interception.
+Supports synchronous and streaming (Project Reactor) interactions with observability via Micrometer.
+
+This client layer abstracts away the complexities of different AI model implementations, providing application developers with a uniform way to incorporate conversational AI capabilities while handling common concerns like conversation state management, response transformation, and instrumentation in a consistent manner.
+
+==== `spring-ai-advisors-vector-store`
+
+Bridges chat with vector stores for RAG and persistent memory.
+
+`QuestionAnswerAdvisor`: injects context into prompts using similarity search.
+
+`VectorStoreChatMemoryAdvisor`: stores/retrieves conversation history in vector stores, with filtering and session continuity.
+
+This component is essential for implementing sophisticated conversational applications that require both context retrieval and memory persistence within the Spring AI ecosystem.
+
+==== `spring-ai-model-chat-memory-cassandra`
+
+This module adds Apache Cassandra persistence for `ChatMemory` (via `CassandraChatMemory`).
+Extracted from the Cassandra vector store module to provide a standalone, production-ready solution.
+Uses immutable config records and Cassandra's QueryBuilder for type-safe CQL.
+
+==== `spring-ai-model-chat-memory-neo4j`
+
+This module provides Neo4j graph database persistence for chat conversations.
+This functionality was previously located in the Neo4j vector store implementation module, but has been extracted to create a dedicated chat memory solution.
+
+==== `spring-ai-rag`
+
+This module provides a comprehensive framework for implementing Retrieval Augmented Generation (RAG)
+pipelines based on a modular architecture inspired by academic research. It offers a structured approach to the entire RAG workflow through well-defined interfaces for each stage of the process.
+
+The central `RetrievalAugmentationAdvisor` serves as the main entry point, orchestrating the entire RAG workflow.
+The design follows functional programming principles with composable components, enabling customization of each pipeline stage while maintaining a consistent programming model aligned with Spring's conventions.
+
+=== Dependency Structure
+
+The dependency hierarchy can be summarized as:
+
+* `spring-ai-commons` (foundation)
+* `spring-ai-model` (depends on commons)
+* `spring-ai-vector-store` and `spring-ai-client-chat` (both depend on model)
+* `spring-ai-advisors-vector-store` and `spring-ai-rag` (depend on both client-chat and vector-store)
+* `spring-ai-model-chat-memory-*` modules (depend on client-chat)
+
+The details are:
+
+=== Module Dependencies
+
+[cols="1,3,3", options="header"]
+|===
+| Module
+| Depends On
+| Description
+
+| `spring-ai-commons`
+| _None_
+| Base module with no dependencies on other Spring AI modules. Used by many other modules.
+
+| `spring-ai-model`
+| `spring-ai-commons`
+| Provides core model interfaces and abstractions.
+
+| `spring-ai-vector-store`
+| `spring-ai-model` → `spring-ai-commons`
+| Provides vector database abstractions.
+
+| `spring-ai-client-chat`
+| `spring-ai-model` → `spring-ai-commons`
+| High-level client API for chat interactions.
+
+| `spring-ai-advisors-vector-store`
+| `spring-ai-client-chat`, `spring-ai-vector-store`
+| Bridges chat capabilities with vector stores.
+
+| `spring-ai-model-chat-memory-cassandra`
+| `spring-ai-client-chat`
+| Provides Cassandra implementation for chat memory.
+
+| `spring-ai-model-chat-memory-neo4j`
+| `spring-ai-client-chat`
+| Provides Neo4j implementation for chat memory.
+
+| `spring-ai-rag`
+| `spring-ai-client-chat`, `spring-ai-vector-store`
+| Provides RAG framework implementation.
+|===
+
+=== ToolContext changes
 
 * The `ToolContext` class has now been marked as final and cannot be extended anymore. It was never supposed to be subclassed. You can add all the contextual data you need when instantiating a `ToolContext`, in the form of a `Map<String, Object>`. For more information, check the [documentation](https://docs.spring.io/spring-ai/reference/api/tools.html#_tool_context).
 

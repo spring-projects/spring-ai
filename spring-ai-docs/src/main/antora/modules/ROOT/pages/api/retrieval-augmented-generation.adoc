@@ -68,10 +68,8 @@ The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search re
 === RetrievalAugmentationAdvisor (Incubating)
 
 Spring AI includes a xref:api/retrieval-augmented-generation.adoc#modules[library of RAG modules] that you can use to build your own RAG flows.
-The `RetrievalAugmentationAdvisor` is an experimental `Advisor` providing an out-of-the-box implementation for the most common RAG flows,
+The `RetrievalAugmentationAdvisor` is an `Advisor` providing an out-of-the-box implementation for the most common RAG flows,
 based on a modular architecture.
-
-WARNING: The `RetrievalAugmentationAdvisor` is an experimental feature and is subject to change in future releases.
 
 ==== Sequential RAG Flows
 
@@ -164,8 +162,6 @@ String answer = chatClient.prompt()
 
 Spring AI implements a Modular RAG architecture inspired by the concept of modularity detailed in the paper
 "https://arxiv.org/abs/2407.21059[Modular RAG: Transforming RAG Systems into LEGO-like Reconfigurable Frameworks]".
-
-WARNING:: Modular RAG is an experimental feature and is subject to change in future releases.
 
 === Pre-Retrieval
 
