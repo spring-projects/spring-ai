@@ -191,8 +191,9 @@ Your IDE should assist with refactoring to the new package locations.
 `Content`, `MediaContent`, and `Media` have moved from `org.springframework.ai.model` to `org.springframework.ai.content`.
 
 
-
 === New Modules Overview
+
+image::spring-ai-dependencies.png[Spring AI Dependnecies, width=1000, align="center"]
 
 ==== `spring-ai-commons`
 
