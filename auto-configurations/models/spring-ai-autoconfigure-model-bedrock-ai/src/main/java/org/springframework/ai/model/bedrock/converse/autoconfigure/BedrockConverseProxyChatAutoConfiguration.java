@@ -31,7 +31,9 @@ import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -70,7 +72,8 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<BedrockRuntimeClient> bedrockRuntimeClient,
-			ObjectProvider<BedrockRuntimeAsyncClient> bedrockRuntimeAsyncClient) {
+			ObjectProvider<BedrockRuntimeAsyncClient> bedrockRuntimeAsyncClient,
+			ObjectProvider<ToolExecutionEligibilityPredicate> bedrockToolExecutionEligibilityPredicate) {
 
 		var chatModel = BedrockProxyChatModel.builder()
 			.credentialsProvider(credentialsProvider)
@@ -79,6 +82,8 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			.defaultOptions(chatProperties.getOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallingManager(toolCallingManager)
+			.toolExecutionEligibilityPredicate(bedrockToolExecutionEligibilityPredicate
+				.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
 			.bedrockRuntimeClient(bedrockRuntimeClient.getIfAvailable())
 			.bedrockRuntimeAsyncClient(bedrockRuntimeAsyncClient.getIfAvailable())
 			.build();
