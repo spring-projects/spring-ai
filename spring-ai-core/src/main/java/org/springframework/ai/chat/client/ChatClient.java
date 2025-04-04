@@ -16,8 +16,10 @@
 
 package org.springframework.ai.chat.client;
 
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -38,14 +40,15 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
 /**
- * Client to perform stateless requests to an AI Model, using a fluent API.
- *
+ * Client used to perform stateless requests to an AI Model, using a fluent API.
+ * <p/>
  * Use {@link ChatClient#builder(ChatModel)} to prepare an instance.
  *
  * @author Mark Pollack
@@ -53,6 +56,8 @@ import org.springframework.util.MimeType;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Thomas Vitale
+ * @author John Blum
+ * @see ChatModel
  * @since 1.0.0
  */
 public interface ChatClient {
@@ -98,15 +103,22 @@ public interface ChatClient {
 
 	interface PromptUserSpec {
 
-		PromptUserSpec text(String text);
+		default PromptUserSpec text(String text) {
+			Charset defaultCharset = Charset.defaultCharset();
+			return text(new ByteArrayResource(text.getBytes(defaultCharset)), defaultCharset);
+		}
+
+		default PromptUserSpec text(Resource text) {
+			return text(text, Charset.defaultCharset());
+		}
 
 		PromptUserSpec text(Resource text, Charset charset);
 
-		PromptUserSpec text(Resource text);
+		default PromptUserSpec param(String key, Object value) {
+			return params(Map.of(key, value));
+		}
 
-		PromptUserSpec params(Map<String, Object> p);
-
-		PromptUserSpec param(String k, Object v);
+		PromptUserSpec params(Map<String, Object> params);
 
 		PromptUserSpec media(Media... media);
 
@@ -121,25 +133,36 @@ public interface ChatClient {
 	 */
 	interface PromptSystemSpec {
 
-		PromptSystemSpec text(String text);
+		default PromptSystemSpec text(String text) {
+			Charset defaultCharset = Charset.defaultCharset();
+			return text(new ByteArrayResource(text.getBytes(defaultCharset)), defaultCharset);
+		}
+
+		default PromptSystemSpec text(Resource text) {
+			return text(text, Charset.defaultCharset());
+		}
 
 		PromptSystemSpec text(Resource text, Charset charset);
 
-		PromptSystemSpec text(Resource text);
+		default PromptSystemSpec param(String key, Object value) {
+			return params(Map.of(key, value));
+		}
 
-		PromptSystemSpec params(Map<String, Object> p);
-
-		PromptSystemSpec param(String k, Object v);
+		PromptSystemSpec params(Map<String, Object> params);
 
 	}
 
 	interface AdvisorSpec {
 
-		AdvisorSpec param(String k, Object v);
+		default AdvisorSpec param(String key, Object value) {
+			return params(Map.of(key, value));
+		}
 
-		AdvisorSpec params(Map<String, Object> p);
+		AdvisorSpec params(Map<String, Object> params);
 
-		AdvisorSpec advisors(Advisor... advisors);
+		default AdvisorSpec advisors(Advisor... advisors) {
+			return advisors(Arrays.asList(advisors));
+		}
 
 		AdvisorSpec advisors(List<Advisor> advisors);
 
@@ -148,13 +171,22 @@ public interface ChatClient {
 	interface CallResponseSpec {
 
 		@Nullable
+		default <T> T entity(Class<T> type) {
+
+			return entity(new ParameterizedTypeReference<>() {
+
+				@Override
+				public Type getType() {
+					return type;
+				}
+			});
+		}
+
+		@Nullable
 		<T> T entity(ParameterizedTypeReference<T> type);
 
 		@Nullable
 		<T> T entity(StructuredOutputConverter<T> structuredOutputConverter);
-
-		@Nullable
-		<T> T entity(Class<T> type);
 
 		@Nullable
 		ChatResponse chatResponse();
@@ -162,7 +194,16 @@ public interface ChatClient {
 		@Nullable
 		String content();
 
-		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
+		default <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type) {
+
+			return responseEntity(new ParameterizedTypeReference<T>() {
+
+				@Override
+				public Type getType() {
+					return type;
+				}
+			});
+		}
 
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type);
 
@@ -206,11 +247,15 @@ public interface ChatClient {
 
 		ChatClientRequestSpec advisors(Consumer<AdvisorSpec> consumer);
 
-		ChatClientRequestSpec advisors(Advisor... advisors);
+		default ChatClientRequestSpec advisors(Advisor... advisors) {
+			return advisors(Arrays.asList(advisors));
+		}
 
 		ChatClientRequestSpec advisors(List<Advisor> advisors);
 
-		ChatClientRequestSpec messages(Message... messages);
+		default ChatClientRequestSpec messages(Message... messages) {
+			return messages(Arrays.asList(messages));
+		}
 
 		ChatClientRequestSpec messages(List<Message> messages);
 
@@ -234,19 +279,29 @@ public interface ChatClient {
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
-		ChatClientRequestSpec system(String text);
+		default ChatClientRequestSpec system(String text) {
+			Charset defaultCharset = Charset.defaultCharset();
+			return system(new ByteArrayResource(text.getBytes(defaultCharset)), defaultCharset);
+		}
+
+		default ChatClientRequestSpec system(Resource text) {
+			return system(text, Charset.defaultCharset());
+		}
 
 		ChatClientRequestSpec system(Resource textResource, Charset charset);
 
-		ChatClientRequestSpec system(Resource text);
-
 		ChatClientRequestSpec system(Consumer<PromptSystemSpec> consumer);
 
-		ChatClientRequestSpec user(String text);
+		default ChatClientRequestSpec user(String text) {
+			Charset defaultCharset = Charset.defaultCharset();
+			return user(new ByteArrayResource(text.getBytes(defaultCharset)), defaultCharset);
+		}
+
+		default ChatClientRequestSpec user(Resource text) {
+			return user(text, Charset.defaultCharset());
+		}
 
 		ChatClientRequestSpec user(Resource text, Charset charset);
-
-		ChatClientRequestSpec user(Resource text);
 
 		ChatClientRequestSpec user(Consumer<PromptUserSpec> consumer);
 
@@ -261,27 +316,39 @@ public interface ChatClient {
 	 */
 	interface Builder {
 
-		Builder defaultAdvisors(Advisor... advisor);
-
-		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);
+		default Builder defaultAdvisors(Advisor... advisors) {
+			return defaultAdvisors(Arrays.asList(advisors));
+		}
 
 		Builder defaultAdvisors(List<Advisor> advisors);
 
+		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);
+
 		Builder defaultOptions(ChatOptions chatOptions);
 
-		Builder defaultUser(String text);
+		default Builder defaultUser(String text) {
+			Charset defaulCharset = Charset.defaultCharset();
+			return defaultUser(new ByteArrayResource(text.getBytes(defaulCharset)), defaulCharset);
+		}
+
+		default Builder defaultUser(Resource text) {
+			return defaultUser(text, Charset.defaultCharset());
+		}
 
 		Builder defaultUser(Resource text, Charset charset);
 
-		Builder defaultUser(Resource text);
-
 		Builder defaultUser(Consumer<PromptUserSpec> userSpecConsumer);
 
-		Builder defaultSystem(String text);
+		default Builder defaultSystem(String text) {
+			Charset defaultCharset = Charset.defaultCharset();
+			return defaultSystem(new ByteArrayResource(text.getBytes(defaultCharset)), defaultCharset);
+		}
+
+		default Builder defaultSystem(Resource text) {
+			return defaultSystem(text, Charset.defaultCharset());
+		}
 
 		Builder defaultSystem(Resource text, Charset charset);
-
-		Builder defaultSystem(Resource text);
 
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
