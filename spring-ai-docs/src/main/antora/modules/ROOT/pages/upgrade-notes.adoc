@@ -186,7 +186,7 @@ However, there were a few cases where the package names of classes have been cha
 
 Your IDE should assist with refactoring to the new package locations.
 
-`ContentFormatTransformer` and `KeywordMetadataEnricher` have moved from `org.springframework.ai.transformer` to `org.springframework.ai.chat.transformer`.
+`KeywordMetadataEnricher` and SummaryMetadataEnricher` have moved from `org.springframework.ai.transformer` to `org.springframework.ai.chat.transformer`.
 
 `Content`, `MediaContent`, and `Media` have moved from `org.springframework.ai.model` to `org.springframework.ai.content`.
 
@@ -246,7 +246,8 @@ This functionality was previously located in the Neo4j vector store implementati
 ==== `spring-ai-rag`
 
 This module provides a comprehensive framework for implementing Retrieval Augmented Generation (RAG)
-pipelines based on a modular architecture inspired by academic research. It offers a structured approach to the entire RAG workflow through well-defined interfaces for each stage of the process.
+pipelines based on a modular architecture inspired by academic research.
+It offers a structured approach to the entire RAG workflow through well-defined interfaces for each stage of the process.
 
 The central `RetrievalAugmentationAdvisor` serves as the main entry point, orchestrating the entire RAG workflow.
 The design follows functional programming principles with composable components, enabling customization of each pipeline stage while maintaining a consistent programming model aligned with Spring's conventions.
