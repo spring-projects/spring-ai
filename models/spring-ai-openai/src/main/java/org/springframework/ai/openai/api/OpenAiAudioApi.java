@@ -378,8 +378,8 @@ public class OpenAiAudioApi {
 		}
 
 		/**
-		 * The format to audio in. Supported formats are mp3, opus, aac, and flac.
-		 * Defaults to mp3.
+		 * The format to audio in. Supported formats are mp3, opus, aac, wav, pcm and
+		 * flac. Defaults to mp3.
 		 */
 		public enum AudioResponseFormat {
 
@@ -391,7 +391,11 @@ public class OpenAiAudioApi {
 			@JsonProperty("aac")
 			AAC("aac"),
 			@JsonProperty("flac")
-			FLAC("flac");
+			FLAC("flac"),
+			@JsonProperty("wav")
+			WAV("wav"),
+			@JsonProperty("pcm")
+			PCM("pcm");
 			// @formatter:on
 
 			public final String value;

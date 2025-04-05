@@ -45,7 +45,8 @@ public class MariaDBSchemaValidator {
 
 	private boolean isTableExists(String schemaName, String tableName) {
 		// schema and table are expected to be escaped
-		String sql = String.format("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = ",
+		String sql = String.format(
+				"SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
 				(schemaName == null) ? "SCHEMA()" : schemaName, tableName);
 		try {
 			// Query for a single integer value, if it exists, table exists

@@ -42,7 +42,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
-import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;

@@ -16,7 +16,7 @@ Currently, the Converse API link:https://docs.aws.amazon.com/bedrock/latest/user
 [NOTE]
 ====
 Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all chat conversation implementations in Spring AI. 
-While the existing xref:api/bedrock-chat.adoc[InvokeModel API] supports conversation applications, we strongly recommend adopting the Converse API for all Char conversation models.
+While the existing xref:api/bedrock-chat.adoc[InvokeModel API] supports conversation applications, we strongly recommend adopting the Converse API for all Chat conversation models.
 
 The Converse API does not support embedding operations, so these will remain in the current API and the embedding model functionality in the existing `InvokeModel API` will be maintained
 ====

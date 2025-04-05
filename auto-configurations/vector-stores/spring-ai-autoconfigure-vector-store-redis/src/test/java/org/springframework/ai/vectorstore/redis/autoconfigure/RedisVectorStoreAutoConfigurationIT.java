@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.ResourceUtils;
+import org.springframework.ai.util.ResourceUtils;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;

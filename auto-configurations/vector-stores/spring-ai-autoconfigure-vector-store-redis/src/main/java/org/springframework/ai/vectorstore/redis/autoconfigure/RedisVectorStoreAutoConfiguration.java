@@ -74,7 +74,7 @@ public class RedisVectorStoreAutoConfiguration {
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)
-			.indexName(properties.getIndex())
+			.indexName(properties.getIndexName())
 			.prefix(properties.getPrefix())
 			.build();
 	}

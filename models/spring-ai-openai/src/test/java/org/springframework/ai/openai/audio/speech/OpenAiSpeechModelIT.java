@@ -73,6 +73,24 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	}
 
 	@Test
+	void shouldGenerateNonEmptyWavAudioFromSpeechPrompt() {
+		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+			.speed(SPEED)
+			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.WAV)
+			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
+			.build();
+		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
+				speechOptions);
+		SpeechResponse response = this.speechModel.call(speechPrompt);
+		byte[] audioBytes = response.getResult().getOutput();
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
+		assertThat(audioBytes).hasSizeGreaterThan(0);
+
+	}
+
+	@Test
 	void speechRateLimitTest() {
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)

@@ -150,7 +150,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 == Function Calling
 
@@ -169,7 +169,7 @@ Mistral AI models that offer vision multimodal support include `pixtral-large-la
 Refer to the link:https://docs.mistral.ai/capabilities/vision/[Vision] guide for more information.
 
 The Mistral AI link:https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post[User Message API] can incorporate a list of base64-encoded images or image urls with the message.
-Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/Media.java[Media] type.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 
 Below is a code example excerpted from `MistralAiChatModelIT.java`, illustrating the fusion of user text with an image.

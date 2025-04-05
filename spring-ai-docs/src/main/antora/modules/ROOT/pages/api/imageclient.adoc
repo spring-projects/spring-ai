@@ -16,7 +16,7 @@ This section provides a guide to the Spring Image Model API interface and associ
 
 == Image Model
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageModel.java[ImageModel] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageModel.java[ImageModel] interface definition:
 
 [source,java]
 ----
@@ -30,7 +30,7 @@ public interface ImageModel extends Model<ImagePrompt, ImageResponse> {
 
 === ImagePrompt
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImagePrompt.java[ImagePrompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageMessage.java[ImageMessage] objects and optional model request options.
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImagePrompt.java[ImagePrompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageMessage.java[ImageMessage] objects and optional model request options.
 The following listing shows a truncated version of the `ImagePrompt` class, excluding constructors and other utility methods:
 
 [source,java]
@@ -128,13 +128,13 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 }
 ----
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageResponse.java[ImageResponse] class holds the AI Model's output, with each `ImageGeneration` instance containing one of potentially multiple outputs resulting from a single prompt.
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageResponse.java[ImageResponse] class holds the AI Model's output, with each `ImageGeneration` instance containing one of potentially multiple outputs resulting from a single prompt.
 
 The `ImageResponse` class also carries a `ImageResponseMetadata` object holding metadata about the AI Model's response.
 
 === ImageGeneration
 
-Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageGeneration.java[ImageGeneration] class extends from the `ModelResult` to represent the output response and related metadata about this result:
+Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageGeneration.java[ImageGeneration] class extends from the `ModelResult` to represent the output response and related metadata about this result:
 
 [source,java]
 ----

@@ -31,7 +31,7 @@ import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;

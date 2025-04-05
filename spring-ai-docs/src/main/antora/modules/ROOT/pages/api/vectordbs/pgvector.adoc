@@ -106,7 +106,6 @@ spring:
 		index-type: HNSW
 		distance-type: COSINE_DISTANCE
 		dimensions: 1536
-		batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
 		max-document-batch-size: 10000 # Optional: Maximum number of documents per batch
 ----
 
@@ -153,7 +152,6 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.pgvector.schema-name` | Vector store schema name | `public`
 |`spring.ai.vectorstore.pgvector.table-name` | Vector store table name | `vector_store`
 |`spring.ai.vectorstore.pgvector.schema-validation` | Enables schema and table name validation to ensure they are valid and existing objects. | false
-|`spring.ai.vectorstore.pgvector.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE`. | TOKEN_COUNT
 |`spring.ai.vectorstore.pgvector.max-document-batch-size` | Maximum number of documents to process in a single batch. | 10000
 
 |===

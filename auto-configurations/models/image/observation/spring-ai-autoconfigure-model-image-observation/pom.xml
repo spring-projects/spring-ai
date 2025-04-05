@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
-		<artifactId>spring-ai</artifactId>
+		<artifactId>spring-ai-parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../../../../pom.xml</relativePath>
 	</parent>
@@ -26,8 +26,8 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-core</artifactId>
-			<version>${parent.version}</version>
+			<artifactId>spring-ai-model</artifactId>
+			<version>${project.parent.version}</version>
 		</dependency>
 
 		<!-- Boot dependencies -->

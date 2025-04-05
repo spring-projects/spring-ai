@@ -25,7 +25,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import org.stringtemplate.v4.ST;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.ResourceUtils;
+import org.springframework.ai.util.ResourceUtils;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletion;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionChunk;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage;

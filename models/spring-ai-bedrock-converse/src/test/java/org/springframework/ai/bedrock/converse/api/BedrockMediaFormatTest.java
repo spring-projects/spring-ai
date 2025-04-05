@@ -17,7 +17,7 @@
 package org.springframework.ai.bedrock.converse.api;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
 import software.amazon.awssdk.services.bedrockruntime.model.DocumentFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageFormat;

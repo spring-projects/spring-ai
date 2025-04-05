@@ -90,7 +90,6 @@ spring:
         collection-name: <collection name>
         use-tls: false
         initialize-schema: true
-        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
 ----
 
 Properties starting with `spring.ai.vectorstore.qdrant.*` are used to configure the `QdrantVectorStore`:
@@ -105,7 +104,6 @@ Properties starting with `spring.ai.vectorstore.qdrant.*` are used to configure 
 |`spring.ai.vectorstore.qdrant.collection-name`| The name of the collection to use | `vector_store`
 |`spring.ai.vectorstore.qdrant.use-tls`| Whether to use TLS(HTTPS) | `false`
 |`spring.ai.vectorstore.qdrant.initialize-schema`| Whether to initialize the schema | `false`
-|`spring.ai.vectorstore.qdrant.batching-strategy`| Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |===
 
 == Manual Configuration

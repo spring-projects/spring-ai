@@ -52,7 +52,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
