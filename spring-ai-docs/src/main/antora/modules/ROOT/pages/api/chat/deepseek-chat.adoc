@@ -6,8 +6,6 @@ Spring AI integrates with DeepSeek AI by reusing the existing xref::api/chat/ope
 
 image::spring-ai-deepseek-integration.jpg[w=800,align="center"]
 
-NOTE: The current version of the deepseek-chat model's Function Calling capability is unstable, which may result in looped calls or empty responses.
-
 Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/DeepSeekWithOpenAiChatModelIT.java[DeepSeekWithOpenAiChatModelIT.java] tests for examples of using DeepSeek with Spring AI.
 
 
