@@ -30,6 +30,13 @@ ollama pull hf.co/<username>/<model-repository>
 
 Alternatively, you can enable the option to download automatically any needed model: xref:auto-pulling-models[Auto-pulling Models].
 
+To see which models are currently available on your system, run
+
+[source,shellscript]
+----
+ollama list
+----
+
 == Auto-configuration
 
 [NOTE]
