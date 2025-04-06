@@ -42,6 +42,9 @@ public abstract class BaseOllamaIT {
 	private static final boolean SKIP_CONTAINER_CREATION = Boolean
 		.parseBoolean(System.getenv().getOrDefault("OLLAMA_WITH_REUSE", "false"));
 
+	protected static final boolean KEEP_ADDITIONAL_MODELS = Boolean
+		.parseBoolean(System.getenv().getOrDefault("PERSIST_MODELS", "false"));
+
 	private static OllamaContainer ollamaContainer;
 
 	private static final ThreadLocal<OllamaApi> ollamaApi = new ThreadLocal<>();

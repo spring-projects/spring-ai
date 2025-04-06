@@ -87,8 +87,8 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(768);
-
-		modelManager.deleteModel(ADDITIONAL_MODEL);
+		if (!KEEP_ADDITIONAL_MODELS)
+			modelManager.deleteModel(ADDITIONAL_MODEL);
 	}
 
 	@SpringBootConfiguration
