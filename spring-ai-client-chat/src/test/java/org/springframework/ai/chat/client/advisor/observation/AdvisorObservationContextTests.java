@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,7 @@ class AdvisorObservationContextTests {
 	@Test
 	void whenMandatoryOptionsThenReturn() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
-			.advisorName("MyName")
-			.advisorType(AdvisorObservationContext.Type.BEFORE)
+			.advisorName("AdvisorName")
 			.build();
 
 		assertThat(observationContext).isNotNull();
@@ -41,17 +40,9 @@ class AdvisorObservationContextTests {
 
 	@Test
 	void missingAdvisorName() {
-		assertThatThrownBy(
-				() -> AdvisorObservationContext.builder().advisorType(AdvisorObservationContext.Type.BEFORE).build())
+		assertThatThrownBy(() -> AdvisorObservationContext.builder().build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("advisorName must not be null or empty");
-	}
-
-	@Test
-	void missingAdvisorType() {
-		assertThatThrownBy(() -> AdvisorObservationContext.builder().advisorName("MyName").build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("advisorType must not be null");
+			.hasMessageContaining("advisorName cannot be null or empty");
 	}
 
 }

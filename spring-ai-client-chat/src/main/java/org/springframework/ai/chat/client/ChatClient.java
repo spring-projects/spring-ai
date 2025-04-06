@@ -156,6 +156,8 @@ public interface ChatClient {
 		@Nullable
 		<T> T entity(Class<T> type);
 
+		ChatClientResponse chatClientResponse();
+
 		@Nullable
 		ChatResponse chatResponse();
 
@@ -171,6 +173,8 @@ public interface ChatClient {
 	}
 
 	interface StreamResponseSpec {
+
+		Flux<ChatClientResponse> chatClientResponse();
 
 		Flux<ChatResponse> chatResponse();
 

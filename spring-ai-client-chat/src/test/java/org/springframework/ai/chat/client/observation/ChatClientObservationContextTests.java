@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,14 @@
 
 package org.springframework.ai.chat.client.observation;
 
-import java.util.List;
-import java.util.Map;
-
-import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,11 +41,10 @@ class ChatClientObservationContextTests {
 
 	@Test
 	void whenMandatoryRequestOptionsThenReturn() {
-
-		var request = new DefaultChatClientRequestSpec(this.chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of());
-
-		var observationContext = ChatClientObservationContext.builder().withRequest(request).withStream(true).build();
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt()).build())
+			.stream(true)
+			.build();
 
 		assertThat(observationContext).isNotNull();
 	}

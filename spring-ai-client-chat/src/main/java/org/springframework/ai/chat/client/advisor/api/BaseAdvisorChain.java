@@ -16,28 +16,13 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
-import org.springframework.ai.chat.client.ChatClientRequest;
-
 /**
- * Around advisor that wraps the ChatModel#call(Prompt) method.
+ * A base interface for advisor chains that can be used to chain multiple advisors
+ * together, both for call and stream advisors.
  *
- * @author Christian Tzolov
- * @author Dariusz Jedrzejczyk
+ * @author Thomas Vitale
  * @since 1.0.0
- * @deprecated in favor of {@link CallAdvisor}
  */
-@Deprecated
-public interface CallAroundAdvisor extends Advisor {
-
-	/**
-	 * Around advice that wraps the ChatModel#call(Prompt) method.
-	 * @param advisedRequest the advised request
-	 * @param chain the advisor chain
-	 * @return the response
-	 * @deprecated in favor of
-	 * {@link CallAdvisor#adviseCall(ChatClientRequest, CallAroundAdvisorChain)}
-	 */
-	@Deprecated
-	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain);
+public interface BaseAdvisorChain extends CallAdvisorChain, StreamAdvisorChain {
 
 }
