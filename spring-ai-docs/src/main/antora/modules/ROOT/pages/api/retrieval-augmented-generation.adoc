@@ -37,7 +37,7 @@ To restrict the types of documents that are searched, the `SearchRequest` takes 
 
 This filter expression can be configured when creating the `QuestionAnswerAdvisor` and hence will always apply to all `ChatClient` requests or it can be provided at runtime per request.
 
-Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` reulsts.
+Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` results.
 
 [source,java]
 ----
