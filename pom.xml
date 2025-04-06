@@ -306,7 +306,7 @@
 		<okhttp3.version>4.12.0</okhttp3.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.8.1</mcp.sdk.version>
+		<mcp.sdk.version>0.9.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>

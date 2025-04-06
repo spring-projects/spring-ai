@@ -96,7 +96,9 @@ All properties are prefixed with `spring.ai.mcp.server`:
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
 |`tool-response-mime-type` |(optional) response MIME type per tool name. For example `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will associate the `image/png` mime type with the `generateImage()` tool name |`-`
-|`sse-message-endpoint` |SSE endpoint path for web transport |`/mcp/message`
+|`sse-message-endpoint` | Custom SSE Message endpoint path for web transport to be used by the client to send messages|`/mcp/message`
+|`sse-endpoint` |Custom SSE endpoint path for web transport |`/sse`
+|`base-url` | Optional URL prefix. For example `base-url=/api/v1` means that the client should access the sse endpont at `/api/v1` + `sse-endpoint` and the message endpoint is `/api/v1` + `sse-message-endpoint` | -
 |===
 
 == Sync/Async Server Types

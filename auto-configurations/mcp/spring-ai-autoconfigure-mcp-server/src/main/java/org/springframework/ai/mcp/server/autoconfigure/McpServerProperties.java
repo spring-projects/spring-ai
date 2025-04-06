@@ -99,6 +99,14 @@ public class McpServerProperties {
 	private boolean promptChangeNotification = true;
 
 	/**
+	 */
+	private String baseUrl = "";
+
+	/**
+	 */
+	private String sseEndpoint = "/sse";
+
+	/**
 	 * The endpoint path for Server-Sent Events (SSE) when using web transports.
 	 * <p>
 	 * This property is only used when transport is set to WEBMVC or WEBFLUX.
@@ -194,6 +202,24 @@ public class McpServerProperties {
 
 	public void setPromptChangeNotification(boolean promptChangeNotification) {
 		this.promptChangeNotification = promptChangeNotification;
+	}
+
+	public String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		Assert.notNull(baseUrl, "Base URL must not be null");
+		this.baseUrl = baseUrl;
+	}
+
+	public String getSseEndpoint() {
+		return this.sseEndpoint;
+	}
+
+	public void setSseEndpoint(String sseEndpoint) {
+		Assert.hasText(sseEndpoint, "SSE endpoint must not be empty");
+		this.sseEndpoint = sseEndpoint;
 	}
 
 	public String getSseMessageEndpoint() {

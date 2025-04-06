@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.autoconfigure;
 
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -33,7 +32,6 @@ import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpServerTransport;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
-import io.modelcontextprotocol.spec.ServerMcpTransport;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
@@ -122,7 +120,7 @@ public class McpServerAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false").run(context -> {
 			assertThat(context).doesNotHaveBean(McpSyncServer.class);
 			assertThat(context).doesNotHaveBean(McpAsyncServer.class);
-			assertThat(context).doesNotHaveBean(ServerMcpTransport.class);
+			assertThat(context).doesNotHaveBean(McpServerTransport.class);
 		});
 	}
 
@@ -276,12 +274,6 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	static class CustomServerTransport implements McpServerTransport {
-
-		@Override
-		public Mono<Void> connect(
-				Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> messageHandler) {
-			return Mono.empty(); // Test implementation
-		}
 
 		@Override
 		public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {

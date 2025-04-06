@@ -17,12 +17,15 @@ package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiPredicate;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -69,17 +72,47 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 	private final List<McpSyncClient> mcpClients;
 
+	private final BiPredicate<McpSyncClient, Tool> toolFilter;
+
+	/**
+	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
+	 * clients.
+	 * @param mcpClients the list of MCP clients to use for discovering tools
+	 * @param toolFilter a filter to apply to each discovered tool
+	 */
+	public SyncMcpToolCallbackProvider(BiPredicate<McpSyncClient, Tool> toolFilter, List<McpSyncClient> mcpClients) {
+		Assert.notNull(mcpClients, "MCP clients must not be null");
+		Assert.notNull(toolFilter, "Tool filter must not be null");
+		this.mcpClients = mcpClients;
+		this.toolFilter = toolFilter;
+	}
+
 	/**
 	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
 	 * clients.
 	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 */
 	public SyncMcpToolCallbackProvider(List<McpSyncClient> mcpClients) {
-		this.mcpClients = mcpClients;
+		this((mcpClient, tool) -> true, mcpClients);
 	}
 
+	/**
+	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with one or more MCP
+	 * clients.
+	 * @param mcpClients the MCP clients to use for discovering tools
+	 * @param toolFilter a filter to apply to each discovered tool
+	 */
+	public SyncMcpToolCallbackProvider(BiPredicate<McpSyncClient, Tool> toolFilter, McpSyncClient... mcpClients) {
+		this(toolFilter, List.of(mcpClients));
+	}
+
+	/**
+	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with one or more MCP
+	 * clients.
+	 * @param mcpClients the MCP clients to use for discovering tools
+	 */
 	public SyncMcpToolCallbackProvider(McpSyncClient... mcpClients) {
-		this.mcpClients = List.of(mcpClients);
+		this(List.of(mcpClients));
 	}
 
 	/**
@@ -99,10 +132,11 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 		var toolCallbacks = new ArrayList<>();
 
-		mcpClients.stream().forEach(mcpClient -> {
+		this.mcpClients.stream().forEach(mcpClient -> {
 			toolCallbacks.addAll(mcpClient.listTools()
 				.tools()
 				.stream()
+				.filter(tool -> toolFilter.test(mcpClient, tool))
 				.map(tool -> new SyncMcpToolCallback(mcpClient, tool))
 				.toList());
 		});
