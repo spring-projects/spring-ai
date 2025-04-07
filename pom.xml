@@ -20,20 +20,29 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.ai</groupId>
-	<artifactId>spring-ai</artifactId>
+	<artifactId>spring-ai-parent</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<name>Spring AI</name>
+	<name>Spring AI Parent</name>
 	<description>Building AI applications with Spring Boot</description>
 
 	<modules>
 		<module>spring-ai-docs</module>
 		<module>spring-ai-bom</module>
-		<module>spring-ai-core</module>
+		<module>spring-ai-commons</module>
+		<module>spring-ai-client-chat</module>
+		<module>spring-ai-model</module>
 		<module>spring-ai-test</module>
+		<module>spring-ai-vector-store</module>
+		<module>spring-ai-rag</module>
+		<module>advisors/spring-ai-advisors-vector-store</module>
+
+		<module>memory/spring-ai-model-chat-memory-cassandra</module>
+		<module>memory/spring-ai-model-chat-memory-jdbc</module>
+		<module>memory/spring-ai-model-chat-memory-neo4j</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
@@ -42,6 +51,7 @@
 		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
 
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-cassandra</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-jdbc</module>
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-neo4j</module>
 
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
@@ -171,6 +181,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-jdbc</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
@@ -190,7 +201,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>		
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
 
 		<module>spring-ai-integration-tests</module>
@@ -241,7 +252,7 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.4.2</spring-boot.version>
+		<spring-boot.version>3.4.4</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.14</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
@@ -285,6 +296,7 @@
 		<qdrant.version>1.13.0</qdrant.version>
 		<typesense.version>0.5.0</typesense.version>
 		<opensearch-client.version>2.10.1</opensearch-client.version>
+		<postgresql.version>42.7.5</postgresql.version>
 		<mariadb.version>3.5.1</mariadb.version>
 		<commonmark.version>0.22.0</commonmark.version>
 
@@ -682,6 +694,9 @@
 							</includes> -->
 
 							<excludes>
+								<!-- Chat Memory -->
+								<exclude>org.springframework.ai.chat.memory/**/*IT.java</exclude>
+
 								<!-- Models -->
 								<exclude>org.springframework.ai.anthropic/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.azure.openai/**/*IT.java</exclude>
@@ -705,7 +720,6 @@
 								<!-- Vector Stores -->
 								<exclude>org.springframework.ai.vectorstore**/CosmosDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.azure/**IT.java</exclude>
-								<exclude>org.springframework.ai.chat.memory/**/Cassandra**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Cassandra**IT.java</exclude>
 								<exclude>org.springframework.ai.chroma/**IT.java</exclude>
 								<!-- <exclude>org.springframework.ai.vectorstore/**/**Chroma**IT.java</exclude> -->

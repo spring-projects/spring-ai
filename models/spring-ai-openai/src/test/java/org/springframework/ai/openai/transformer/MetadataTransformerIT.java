@@ -29,9 +29,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.transformer.ContentFormatTransformer;
-import org.springframework.ai.transformer.KeywordMetadataEnricher;
-import org.springframework.ai.transformer.SummaryMetadataEnricher;
-import org.springframework.ai.transformer.SummaryMetadataEnricher.SummaryType;
+import org.springframework.ai.chat.transformer.KeywordMetadataEnricher;
+import org.springframework.ai.chat.transformer.SummaryMetadataEnricher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -178,8 +177,8 @@ public class MetadataTransformerIT {
 
 		@Bean
 		public SummaryMetadataEnricher summaryMetadata(OpenAiChatModel chatModel) {
-			return new SummaryMetadataEnricher(chatModel,
-					List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
+			return new SummaryMetadataEnricher(chatModel, List.of(SummaryMetadataEnricher.SummaryType.PREVIOUS,
+					SummaryMetadataEnricher.SummaryType.CURRENT, SummaryMetadataEnricher.SummaryType.NEXT));
 		}
 
 		@Bean

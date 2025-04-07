@@ -20,7 +20,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
-		<artifactId>spring-ai</artifactId>
+		<artifactId>spring-ai-parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
@@ -42,9 +42,10 @@
 	<dependencies>
 		
 		<!-- production dependencies -->
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-core</artifactId>
+			<artifactId>spring-ai-client-chat</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
@@ -137,7 +138,6 @@
 			<artifactId>rest-assured</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 
 	</dependencies>
 

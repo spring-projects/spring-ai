@@ -33,8 +33,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Elasticsearch Vector Store.
@@ -68,18 +68,10 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 			BatchingStrategy batchingStrategy) {
 		ElasticsearchVectorStoreOptions elasticsearchVectorStoreOptions = new ElasticsearchVectorStoreOptions();
 
-		if (StringUtils.hasText(properties.getIndexName())) {
-			elasticsearchVectorStoreOptions.setIndexName(properties.getIndexName());
-		}
-		if (properties.getDimensions() != null) {
-			elasticsearchVectorStoreOptions.setDimensions(properties.getDimensions());
-		}
-		if (properties.getSimilarity() != null) {
-			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
-		}
-		if (properties.getEmbeddingFieldName() != null) {
-			elasticsearchVectorStoreOptions.setEmbeddingFieldName(properties.getEmbeddingFieldName());
-		}
+		PropertyMapper mapper = PropertyMapper.get();
+		mapper.from(properties::getIndexName).whenHasText().to(elasticsearchVectorStoreOptions::setIndexName);
+		mapper.from(properties::getDimensions).whenNonNull().to(elasticsearchVectorStoreOptions::setDimensions);
+		mapper.from(properties::getSimilarity).whenNonNull().to(elasticsearchVectorStoreOptions::setSimilarity);
 
 		return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 			.options(elasticsearchVectorStoreOptions)

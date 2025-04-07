@@ -113,5 +113,4 @@
 
 * xref:contribution-guidelines.adoc[Contribution Guidelines]
 
-* Appendices
-** xref:upgrade-notes.adoc[]
+* xref:upgrade-notes.adoc[]

@@ -19,7 +19,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
-		<artifactId>spring-ai</artifactId>
+		<artifactId>spring-ai-parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>spring-ai-integration-tests</artifactId>
@@ -51,6 +51,13 @@
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>context-propagation</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-rag</artifactId>
+			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
 

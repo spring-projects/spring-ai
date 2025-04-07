@@ -62,7 +62,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.retry.RetryUtils;
