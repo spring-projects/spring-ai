@@ -26,20 +26,25 @@ import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.autoconfigure.sql.init.OnDatabaseInitializationCondition;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.jdbc.init.DataSourceScriptDatabaseInitializer;
+import org.springframework.boot.sql.init.dependency.DatabaseInitializationDependencyConfigurer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Eddú Meléndez
  * @since 1.0.0
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
 @ConditionalOnClass({ JdbcChatMemory.class, DataSource.class, JdbcTemplate.class })
 @EnableConfigurationProperties(JdbcChatMemoryProperties.class)
+@Import(DatabaseInitializationDependencyConfigurer.class)
 public class JdbcChatMemoryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryAutoConfiguration.class);
@@ -54,12 +59,20 @@ public class JdbcChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(value = "spring.ai.chat.memory.jdbc.initialize-schema", havingValue = "true",
-			matchIfMissing = true)
-	public DataSourceScriptDatabaseInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource) {
+	@Conditional(OnJdbcChatMemoryDatasourceInitializationCondition.class)
+	public DataSourceScriptDatabaseInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource,
+			JdbcChatMemoryProperties properties) {
 		logger.debug("Initializing JdbcChatMemory schema");
 
-		return new JdbcChatMemoryDataSourceScriptDatabaseInitializer(dataSource);
+		return new JdbcChatMemoryDataSourceScriptDatabaseInitializer(dataSource, properties);
+	}
+
+	static class OnJdbcChatMemoryDatasourceInitializationCondition extends OnDatabaseInitializationCondition {
+
+		OnJdbcChatMemoryDatasourceInitializationCondition() {
+			super("Jdbc Chat Memory", "spring.ai.chat.memory.jdbc.initialize-schema");
+		}
+
 	}
 
 }

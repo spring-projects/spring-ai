@@ -22,7 +22,6 @@ import java.util.UUID;
 
 import javax.sql.DataSource;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -47,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Eddú Meléndez
  */
 @Testcontainers
 class JdbcChatMemoryIT {
@@ -66,11 +66,6 @@ class JdbcChatMemoryIT {
 		.withPropertyValues(String.format("app.datasource.url=%s", postgresContainer.getJdbcUrl()),
 				String.format("app.datasource.username=%s", postgresContainer.getUsername()),
 				String.format("app.datasource.password=%s", postgresContainer.getPassword()));
-
-	@BeforeAll
-	static void beforeAll() {
-
-	}
 
 	@Test
 	void correctChatMemoryInstance() {

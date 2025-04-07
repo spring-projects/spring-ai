@@ -37,8 +37,7 @@ import org.springframework.jdbc.core.RowMapper;
  */
 public class JdbcChatMemory implements ChatMemory {
 
-	private static final String QUERY_ADD = """
-			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)""";
+	private static final String QUERY_ADD = "INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)";
 
 	private static final String QUERY_GET = """
 			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC LIMIT ?""";

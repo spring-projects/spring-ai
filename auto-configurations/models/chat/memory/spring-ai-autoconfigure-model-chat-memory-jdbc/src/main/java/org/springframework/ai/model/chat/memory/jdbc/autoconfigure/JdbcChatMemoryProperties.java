@@ -17,9 +17,11 @@
 package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.sql.init.DatabaseInitializationMode;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Eddú Meléndez
  * @since 1.0.0
  */
 @ConfigurationProperties(JdbcChatMemoryProperties.CONFIG_PREFIX)
@@ -27,13 +29,16 @@ public class JdbcChatMemoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.jdbc";
 
-	private boolean initializeSchema = true;
+	/**
+	 * Database schema initialization mode.
+	 */
+	private DatabaseInitializationMode initializeSchema = DatabaseInitializationMode.EMBEDDED;
 
-	public boolean isInitializeSchema() {
+	public DatabaseInitializationMode getInitializeSchema() {
 		return this.initializeSchema;
 	}
 
-	public void setInitializeSchema(boolean initializeSchema) {
+	public void setInitializeSchema(DatabaseInitializationMode initializeSchema) {
 		this.initializeSchema = initializeSchema;
 	}
 
