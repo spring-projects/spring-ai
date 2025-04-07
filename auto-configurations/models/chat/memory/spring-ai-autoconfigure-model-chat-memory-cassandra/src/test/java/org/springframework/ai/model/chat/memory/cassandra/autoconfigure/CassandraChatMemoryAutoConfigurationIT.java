@@ -21,7 +21,7 @@ import java.util.List;
 
 import com.datastax.driver.core.utils.UUIDs;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
