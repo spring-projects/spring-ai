@@ -11,7 +11,6 @@ import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.lang.NonNull;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -36,14 +35,8 @@ public class ToolCallbackAutoRegistrar implements ImportBeanDefinitionRegistrar 
 	@Override
 	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
 			BeanNameGenerator importBeanNameGenerator) {
-		Map<String, Object> attributes = importingClassMetadata
-			.getAnnotationAttributes(EnableToolCallbackAutoRegistration.class.getName());
 
-		if (attributes == null) {
-			return;
-		}
-
-		Set<String> basePackages = getBasePackages(attributes);
+		Set<String> basePackages = getBasePackages(importingClassMetadata);
 
 		GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
 		beanDefinition.setBeanClass(ToolAnnotatedBeanProcessor.class);
@@ -57,20 +50,17 @@ public class ToolCallbackAutoRegistrar implements ImportBeanDefinitionRegistrar 
 	}
 
 	/**
-	 * Extracts the base packages to scan from the
-	 * {@code @EnableToolCallbackAutoRegistration} annotation attributes.
-	 *
-	 * <p>
-	 * Supports the following attributes:
-	 * <ul>
-	 * <li>{@code value} - Shorthand for base packages</li>
-	 * <li>{@code basePackages} - Explicit list of packages</li>
-	 * <li>{@code basePackageClasses} - Infers packages from class types</li>
-	 * </ul>
-	 * @param attributes the annotation attributes
-	 * @return a set of base package names to scan
+	 * Extracts the base packages to scan from the attributes of
+	 * {@link EnableToolCallbackAutoRegistration}. If no base package is specified through
+	 * 'value', 'basePackages', or 'basePackageClasses', it falls back to the package of
+	 * the class where {@code @EnableToolCallbackAutoRegistration} is declared.
+	 * @param importingClassMetadata metadata of the importing configuration class
+	 * @return set of base packages to scan
 	 */
-	private Set<String> getBasePackages(@NonNull Map<String, Object> attributes) {
+	private Set<String> getBasePackages(AnnotationMetadata importingClassMetadata) {
+		Map<String, Object> attributes = importingClassMetadata
+			.getAnnotationAttributes(EnableToolCallbackAutoRegistration.class.getName());
+
 		Set<String> basePackages = new HashSet<>();
 
 		Object[] valuePackages = (Object[]) attributes.get("value");
@@ -104,6 +94,22 @@ public class ToolCallbackAutoRegistrar implements ImportBeanDefinitionRegistrar 
 				// for kotlin classes
 				Class<?> clazz = (Class<?>) obj;
 				basePackages.add(clazz.getPackage().getName());
+			}
+		}
+
+		// If no base packages are specified, use the package of the class annotated with
+		// @EnableToolCallbackAutoRegistration
+		if (basePackages.isEmpty()) {
+			String className = importingClassMetadata.getClassName();
+			try {
+				Class<?> importingClass = Class.forName(className);
+				Package pkg = importingClass.getPackage();
+				if (pkg != null) {
+					basePackages.add(pkg.getName());
+				}
+			}
+			catch (ClassNotFoundException e) {
+				throw new IllegalStateException("Could not resolve base package from importing class: " + className, e);
 			}
 		}
 

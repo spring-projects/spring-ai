@@ -44,7 +44,7 @@ public class EnableToolCallbackAutoRegistrationIT {
 	}
 
 	@Configuration
-	@EnableToolCallbackAutoRegistration(basePackageClasses = EchoTool.class)
+	@EnableToolCallbackAutoRegistration
 	static class Config {
 
 		@Bean
