@@ -55,7 +55,7 @@ import org.springframework.util.Assert;
  * @author Josh Long
  *
  */
-public class OpenAiEmbeddingModel extends AbstractEmbeddingModel implements RuntimeHintsRegistrar {
+public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingModel.class);
 
@@ -231,11 +231,6 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel implements Runt
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
-	}
-
-	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-
 	}
 
 }
