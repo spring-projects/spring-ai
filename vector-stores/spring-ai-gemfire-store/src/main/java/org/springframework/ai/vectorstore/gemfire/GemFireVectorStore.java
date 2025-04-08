@@ -16,10 +16,6 @@
 
 package org.springframework.ai.vectorstore.gemfire;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -36,7 +31,9 @@ import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.GemFireAiSearchFilterExpressionConverter;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -49,6 +46,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A VectorStore implementation backed by GemFire. This store supports creating, updating,
@@ -114,6 +115,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	private final String[] fields;
 
+	private final FilterExpressionConverter filterExpressionConverter;
+
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
 	 * create new GemFireVectorStore instances.
@@ -134,6 +137,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 			.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
 			.toString();
 		this.client = WebClient.create(base);
+		this.filterExpressionConverter = new GemFireAiSearchFilterExpressionConverter();
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
@@ -245,15 +249,16 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	@Nullable
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		String filterQuery = null;
 		if (request.hasFilterExpression()) {
-			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
+			filterQuery = filterExpressionConverter.convertExpression(request.getFilterExpression());
 		}
 		float[] floatVector = this.embeddingModel.embed(request.getQuery());
 		return this.client.post()
 			.uri("/" + this.indexName + QUERY)
 			.contentType(MediaType.APPLICATION_JSON)
 			.bodyValue(new QueryRequest(floatVector, request.getTopK(), request.getTopK(), // TopKPerBucket
-					true))
+					true, filterQuery))
 			.retrieve()
 			.bodyToFlux(QueryResponse.class)
 			.filter(r -> r.score >= request.getSimilarityThreshold())
@@ -474,11 +479,20 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		@JsonProperty("include-metadata")
 		private final boolean includeMetadata;
 
+		@JsonProperty("filter-query")
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		private final String filterQuery;
+
 		QueryRequest(float[] vector, int k, int kPerBucket, boolean includeMetadata) {
+			this(vector, k, kPerBucket, includeMetadata, null);
+		}
+
+		QueryRequest(float[] vector, int k, int kPerBucket, boolean includeMetadata, String filterQuery) {
 			this.vector = vector;
 			this.k = k;
 			this.kPerBucket = kPerBucket;
 			this.includeMetadata = includeMetadata;
+			this.filterQuery = filterQuery;
 		}
 
 		public float[] getVector() {
@@ -495,6 +509,10 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		public boolean isIncludeMetadata() {
 			return this.includeMetadata;
+		}
+
+		public String getFilterQuery() {
+			return filterQuery;
 		}
 
 	}
