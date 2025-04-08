@@ -7,18 +7,17 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * {@code ToolAnnotatedBeanProcessor} scans beans after initialization and collects those
  * that have methods annotated with {@link Tool} within the specified base packages.
- *
+ * <p>
  * The collected beans are then registered with a {@link ToolCallbackProvider}.
  */
 public class ToolAnnotatedBeanProcessor
@@ -28,7 +27,7 @@ public class ToolAnnotatedBeanProcessor
 
 	private ApplicationContext applicationContext;
 
-	private Set<Object> methodToolBeans = new HashSet<>();
+	private List<Object> methodToolBeans = new ArrayList<>();
 
 	public ToolAnnotatedBeanProcessor(Set<String> basePackages) {
 		this.basePackages = basePackages;
@@ -96,13 +95,19 @@ public class ToolAnnotatedBeanProcessor
 	public void afterSingletonsInstantiated() {
 
 		if (!methodToolBeans.isEmpty()) {
-			MethodToolCallbackProvider.Builder builder = MethodToolCallbackProvider.builder();
-			builder.toolObjects(methodToolBeans.toArray());
-			MethodToolCallbackProvider provider = builder.build();
+
 			ConfigurableListableBeanFactory factory = ((ConfigurableApplicationContext) applicationContext)
 				.getBeanFactory();
 
-			if (!factory.containsBean("methodToolCallbackProvider")) {
+			if (factory.containsBean("methodToolCallbackProvider")) {
+				BeanDefinitionRegistry registry = (BeanDefinitionRegistry) applicationContext;
+				MethodToolCallbackProvider bean = factory.getBean(MethodToolCallbackProvider.class);
+				bean.setToolObjects(methodToolBeans);
+			}
+			else {
+				MethodToolCallbackProvider.Builder builder = MethodToolCallbackProvider.builder();
+				builder.toolObjects(methodToolBeans.toArray());
+				MethodToolCallbackProvider provider = builder.build();
 				factory.registerSingleton("methodToolCallbackProvider", provider);
 			}
 		}
