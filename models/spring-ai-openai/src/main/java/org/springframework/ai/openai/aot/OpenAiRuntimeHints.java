@@ -16,6 +16,10 @@
 
 package org.springframework.ai.openai.aot;
 
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -37,10 +41,19 @@ public class OpenAiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-
-		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.openai")) {
+		for (var tr : (findJsonAnnotatedClassesInPackage(OpenAiChatOptions.class))) {
 			hints.reflection().registerType(tr, mcs);
 		}
+		for (var tr : (findJsonAnnotatedClassesInPackage(OpenAiApi.class))) {
+			hints.reflection().registerType(tr, mcs);
+		}
+		for (var tr : (findJsonAnnotatedClassesInPackage(OpenAiAudioApi.class))) {
+			hints.reflection().registerType(tr, mcs);
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(OpenAiImageApi.class)) {
+			hints.reflection().registerType(tr, mcs);
+		}
+
 	}
 
 }
