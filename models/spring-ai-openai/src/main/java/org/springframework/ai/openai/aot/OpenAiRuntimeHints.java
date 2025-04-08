@@ -16,15 +16,10 @@
 
 package org.springframework.ai.openai.aot;
 
-import java.util.Set;
-
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.openai.api.OpenAiAudioApi;
-import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.aot.hint.TypeReference;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -40,23 +35,13 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
  */
 public class OpenAiRuntimeHints implements RuntimeHintsRegistrar {
 
-	private static Set<TypeReference> eval(Set<TypeReference> referenceSet) {
-		referenceSet.forEach(tr -> System.out.println(tr.toString()));
-		return referenceSet;
-	}
-
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : eval(findJsonAnnotatedClassesInPackage(OpenAiApi.class))) {
+		for (var tr : (findJsonAnnotatedClassesInPackage(OpenAiChatOptions.class))) {
 			hints.reflection().registerType(tr, mcs);
 		}
-		for (var tr : eval(findJsonAnnotatedClassesInPackage(OpenAiAudioApi.class))) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : eval(findJsonAnnotatedClassesInPackage(OpenAiImageApi.class))) {
-			hints.reflection().registerType(tr, mcs);
-		}
+
 	}
 
 }

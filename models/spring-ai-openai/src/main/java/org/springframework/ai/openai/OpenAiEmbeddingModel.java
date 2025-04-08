@@ -42,6 +42,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
@@ -50,8 +52,10 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Josh Long
+ *
  */
-public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
+public class OpenAiEmbeddingModel extends AbstractEmbeddingModel implements RuntimeHintsRegistrar {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiEmbeddingModel.class);
 
@@ -227,6 +231,11 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	@Override
+	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+
 	}
 
 }
