@@ -35,6 +35,7 @@ import org.springframework.util.Assert;
  * All properties are prefixed with {@code spring.ai.mcp.server}.
  *
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  * @since 1.0.0
  * @see McpServerAutoConfiguration
  */
@@ -42,13 +43,6 @@ import org.springframework.util.Assert;
 public class McpServerProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.server";
-
-	/**
-	 * Enable/disable the MCP server.
-	 * <p>
-	 * When set to false, the MCP server and all its components will not be initialized.
-	 */
-	private boolean enabled = true;
 
 	/**
 	 * Enable/disable the standard input/output (stdio) transport.
@@ -144,14 +138,6 @@ public class McpServerProperties {
 
 	public void setStdio(boolean stdio) {
 		this.stdio = stdio;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 	public String getName() {

@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.mcp.client.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable\/disable the MCP client. When set to false, the MCP client and all its components will not be initialized.",
+      "defaultValue": true
+    }
+  ]
+}
