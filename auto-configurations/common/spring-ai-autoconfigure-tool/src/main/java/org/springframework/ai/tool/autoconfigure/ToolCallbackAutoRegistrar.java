@@ -3,11 +3,13 @@ package org.springframework.ai.tool.autoconfigure;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.autoconfigure.annotation.EnableToolCallbackAutoRegistration;
+import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConstructorArgumentValues;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.GenericBeanDefinition;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
@@ -36,6 +38,21 @@ public class ToolCallbackAutoRegistrar implements ImportBeanDefinitionRegistrar 
 	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
 			BeanNameGenerator importBeanNameGenerator) {
 
+		registerToolAnnotatedBeanProcessor(importingClassMetadata, registry);
+
+		registerMethodToolCallbackProvider(registry);
+
+	}
+
+	private void registerMethodToolCallbackProvider(BeanDefinitionRegistry registry) {
+		RootBeanDefinition callbackProviderDef = new RootBeanDefinition(MethodToolCallbackProvider.class);
+		callbackProviderDef
+			.setInstanceSupplier(() -> MethodToolCallbackProvider.builder().toolObjects(new Object[0]).build());
+		registry.registerBeanDefinition("methodToolCallbackProvider", callbackProviderDef);
+	}
+
+	private void registerToolAnnotatedBeanProcessor(AnnotationMetadata importingClassMetadata,
+			BeanDefinitionRegistry registry) {
 		Set<String> basePackages = getBasePackages(importingClassMetadata);
 
 		GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
