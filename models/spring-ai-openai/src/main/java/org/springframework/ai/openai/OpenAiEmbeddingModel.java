@@ -50,6 +50,8 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Josh Long
+ *
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
