@@ -68,7 +68,7 @@ class ToolCallingAutoConfigurationTests {
 	}
 
 	@Test
-	void resolveMultipleFuncitonAndToolCallbacks() {
+	void resolveMultipleFunctionAndToolCallbacks() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
 			.withUserConfiguration(Config.class)
 			.run(context -> {
