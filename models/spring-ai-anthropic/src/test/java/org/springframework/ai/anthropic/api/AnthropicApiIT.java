@@ -16,10 +16,12 @@
 
 package org.springframework.ai.anthropic.api;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.model.ModelOptionsUtils;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
@@ -40,6 +42,24 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class AnthropicApiIT {
 
 	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
+
+	List<AnthropicApi.Tool> tools = List.of(new AnthropicApi.Tool("getCurrentWeather",
+			"Get the weather in location. Return temperature in 30°F or 30°C format.", ModelOptionsUtils.jsonToMap("""
+					{
+						"type": "object",
+						"properties": {
+							"location": {
+								"type": "string",
+								"description": "The city and state e.g. San Francisco, CA"
+							},
+							"unit": {
+								"type": "string",
+								"enum": ["C", "F"]
+							}
+						},
+						"required": ["location", "unit"]
+					}
+					""")));
 
 	@Test
 	void chatCompletionEntity() {
@@ -70,6 +90,47 @@ public class AnthropicApiIT {
 		assertThat(bla).isNotNull();
 
 		bla.stream().forEach(r -> System.out.println(r));
+	}
+
+	@Test
+	void chatCompletionStreamWithToolCall() {
+		List<AnthropicMessage> messageConversation = new ArrayList<>();
+
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+				List.of(new ContentBlock("What's the weather like in San Francisco? Show the temperature in Celsius.")),
+				Role.USER);
+
+		messageConversation.add(chatCompletionMessage);
+
+		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
+			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+			.withMessages(messageConversation)
+			.withMaxTokens(1500)
+			.withStream(true)
+			.withTemperature(0.8)
+			.withTools(tools)
+			.build();
+
+		List<ChatCompletionResponse> responses = this.anthropicApi.chatCompletionStream(chatCompletionRequest)
+			.collectList()
+			.block();
+
+		// Check that tool uses response returned only once
+		List<ChatCompletionResponse> toolCompletionResponses = responses.stream()
+			.filter(r -> r.stopReason() != null && r.stopReason().equals(ContentBlock.Type.TOOL_USE.value))
+			.toList();
+		assertThat(toolCompletionResponses).size().isEqualTo(1);
+		List<ContentBlock> toolContentBlocks = toolCompletionResponses.get(0).content();
+		assertThat(toolContentBlocks).size().isEqualTo(1);
+		ContentBlock toolContentBlock = toolContentBlocks.get(0);
+		assertThat(toolContentBlock.type()).isEqualTo(ContentBlock.Type.TOOL_USE);
+		assertThat(toolContentBlock.name()).isEqualTo("getCurrentWeather");
+
+		// Check that message stop response also returned
+		List<ChatCompletionResponse> messageStopEvents = responses.stream()
+			.filter(r -> r.type().equals(AnthropicApi.EventType.MESSAGE_STOP.name()))
+			.toList();
+		assertThat(messageStopEvents).size().isEqualTo(1);
 	}
 
 	@Test

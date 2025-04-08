@@ -179,7 +179,14 @@ public class StreamHelper {
 			}
 		}
 		else if (event.type().equals(EventType.MESSAGE_STOP)) {
-			// pass through
+			// Don't return the latest Content block as it was before. Instead, return it
+			// with an updated event type and general information like: model, message
+			// type, id and usage
+			contentBlockReference.get()
+				.withType(event.type().name())
+				.withContent(List.of())
+				.withStopReason(null)
+				.withStopSequence(null);
 		}
 		else {
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of());
