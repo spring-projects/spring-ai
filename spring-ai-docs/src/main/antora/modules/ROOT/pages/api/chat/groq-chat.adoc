@@ -22,7 +22,7 @@ for examples of using Groq with Spring AI.
 Please visit https://console.groq.com/keys[here] to create an API Key.
 The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from groq.com.
 * Set the Groq URL. 
-You have to set the `spring.ai.openai.base-url` property to `https://api.groq.com/openai`.
+You have to set the `spring.ai.openai.base-url` property to `+https://api.groq.com/openai+`.
 * Select a https://console.groq.com/docs/models[Groq Model].
 Use the `spring.ai.openai.chat.options.model=<model name>` property to set the Model.
 
@@ -105,7 +105,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://api.groq.com/openai` | -
+| spring.ai.openai.base-url   | The URL to connect to. Must be set to `+https://api.groq.com/openai+` | -
 | spring.ai.openai.api-key    | The Groq API Key           |  -
 |====
 
@@ -131,7 +131,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 
 | spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
 | spring.ai.openai.chat | Enable OpenAI chat model.  | openai
-| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://api.groq.com/openai` |  -
+| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `+https://api.groq.com/openai+` |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.options.model | The https://console.groq.com/docs/models[available model] names are `llama3-8b-8192`, `llama3-70b-8192`, `mixtral-8x7b-32768`, `gemma2-9b-it`. | -
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8

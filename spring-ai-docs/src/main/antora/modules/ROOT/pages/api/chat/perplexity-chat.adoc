@@ -20,7 +20,7 @@ Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-a
 Visit https://docs.perplexity.ai/guides/getting-started[here] to create an API Key. Configure it using the `spring.ai.openai.api-key` property in your Spring AI project.
 
 * **Set the Perplexity Base URL**:
-Set the `spring.ai.openai.base-url` property to `https://api.perplexity.ai`.
+Set the `spring.ai.openai.base-url` property to `+https://api.perplexity.ai+`.
 
 * **Select a Perplexity Model**:
 Use the `spring.ai.openai.chat.model=<model name>` property to specify the model. Refer to https://docs.perplexity.ai/guides/model-cards[Supported Models] for available options.
@@ -107,7 +107,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://api.perplexity.ai` | -
+| spring.ai.openai.base-url   | The URL to connect to. Must be set to `+https://api.perplexity.ai+` | -
 | spring.ai.openai.chat.api-key    | Your Perplexity API Key | -
 |====
 
@@ -132,7 +132,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 
 | spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.model      | One of the supported https://docs.perplexity.ai/guides/model-cards[Perplexity models]. Example: `llama-3.1-sonar-small-128k-online`. | -
-| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://api.perplexity.ai` |  -
+| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `+https://api.perplexity.ai+` |  -
 | spring.ai.openai.chat.completions-path | Must be set to `/chat/completions` | `/v1/chat/completions`
 | spring.ai.openai.chat.options.temperature | The amount of randomness in the response, valued between 0 inclusive and 2 exclusive. Higher values are more random, and lower values are more deterministic. Required range: `0 < x < 2`. | 0.2
 | spring.ai.openai.chat.options.frequencyPenalty | A multiplicative penalty greater than 0. Values greater than 1.0 penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. A value of 1.0 means no penalty. Incompatible with presence_penalty. Required range: `x > 0`. | 1
