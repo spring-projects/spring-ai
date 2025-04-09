@@ -41,21 +41,8 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(AbstractBedrockApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
 
-		for (var tr : findJsonAnnotatedClassesInPackage(CohereEmbeddingBedrockApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereEmbeddingOptions.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanEmbeddingOptions.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(TitanEmbeddingBedrockApi.class)) {
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.bedrock")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

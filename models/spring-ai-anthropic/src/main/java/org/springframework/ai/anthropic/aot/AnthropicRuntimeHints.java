@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic.aot;
 
+import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
@@ -37,7 +38,8 @@ public class AnthropicRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicApi.class)) {
+
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.anthropic")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

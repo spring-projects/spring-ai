@@ -92,7 +92,7 @@ public abstract class AiRuntimeHints {
 			.map(bd -> TypeReference.of(Objects.requireNonNull(bd.getBeanClassName())))//
 			.peek(tr -> {
 				if (log.isDebugEnabled()) {
-					log.debug("registering [" + tr.getName() + ']');
+					log.debug("registering [{}]", tr.getName());
 				}
 			})
 			.collect(Collectors.toUnmodifiableSet());

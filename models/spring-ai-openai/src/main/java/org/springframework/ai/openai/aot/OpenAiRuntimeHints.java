@@ -41,19 +41,10 @@ public class OpenAiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : (findJsonAnnotatedClassesInPackage(OpenAiChatOptions.class))) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : (findJsonAnnotatedClassesInPackage(OpenAiApi.class))) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : (findJsonAnnotatedClassesInPackage(OpenAiAudioApi.class))) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(OpenAiImageApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
 
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.openai")) {
+			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

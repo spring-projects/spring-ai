@@ -16,7 +16,6 @@
 
 package org.springframework.ai.vertexai.gemini.aot;
 
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -35,7 +34,7 @@ public class VertexAiGeminiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(VertexAiGeminiChatModel.class)) {
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.vertexai.gemini")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

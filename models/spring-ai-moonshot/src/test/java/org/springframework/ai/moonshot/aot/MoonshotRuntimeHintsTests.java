@@ -16,10 +16,12 @@
 
 package org.springframework.ai.moonshot.aot;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.moonshot.MoonshotChatOptions;
 import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
@@ -39,10 +41,21 @@ class MoonshotRuntimeHintsTests {
 		MoonshotRuntimeHints moonshotRuntimeHints = new MoonshotRuntimeHints();
 		moonshotRuntimeHints.registerHints(runtimeHints, null);
 
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(MoonshotApi.class);
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.moonshot");
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
-			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
+			assertThat(registeredTypes.contains(jsonAnnotatedClass)).isTrue();
 		}
+
+		// Check a few more specific ones
+		assertThat(registeredTypes.contains(TypeReference.of(MoonshotApi.ChatCompletion.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(MoonshotApi.ChatCompletionRequest.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(MoonshotApi.ChatCompletionChunk.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(MoonshotApi.Usage.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(MoonshotChatOptions.class))).isTrue();
 	}
 
 }
