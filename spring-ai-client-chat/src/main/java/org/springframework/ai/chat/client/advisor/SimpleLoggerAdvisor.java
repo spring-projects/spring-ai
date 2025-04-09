@@ -36,13 +36,13 @@ import org.springframework.ai.model.ModelOptionsUtils;
  * A simple logger advisor that logs the request and response messages.
  *
  * @author Christian Tzolov
+ * @author Jonghoon Park
  */
 public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
 
-	public static final Function<AdvisedRequest, String> DEFAULT_REQUEST_TO_STRING = request -> request.toString();
+	public static final Function<AdvisedRequest, String> DEFAULT_REQUEST_TO_STRING = Record::toString;
 
-	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = response -> ModelOptionsUtils
-		.toJsonStringPrettyPrinter(response);
+	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = ModelOptionsUtils::toJsonStringPrettyPrinter;
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
@@ -50,7 +50,7 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 
 	private final Function<ChatResponse, String> responseToString;
 
-	private int order;
+	private final int order;
 
 	public SimpleLoggerAdvisor() {
 		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING, 0);
@@ -58,6 +58,11 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 
 	public SimpleLoggerAdvisor(int order) {
 		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING, order);
+	}
+
+	public SimpleLoggerAdvisor(Function<AdvisedRequest, String> requestToString,
+			Function<ChatResponse, String> responseToString) {
+		this(requestToString, responseToString, 0);
 	}
 
 	public SimpleLoggerAdvisor(Function<AdvisedRequest, String> requestToString,
