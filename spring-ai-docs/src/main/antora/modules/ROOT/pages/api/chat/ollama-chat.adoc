@@ -72,7 +72,7 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 [cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
+| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `+http://localhost:11434+`
 |====
 
 Here are the properties for initializing the Ollama integration and xref:auto-pulling-models[auto-pulling models].
