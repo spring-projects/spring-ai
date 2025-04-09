@@ -408,6 +408,74 @@ The auto-configuration will automatically create the specified database and cont
 
 You can customize the database and container names using the configuration properties mentioned above.
 
+=== MongoChatMemoryRepository
+
+`MongoChatMemoryRepository` is a built-in implementation that uses MongoDB to store messages. It is suitable for applications that require a flexible, document-oriented database for chat memory persistence.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-mongodb</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-mongodb'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `MongoChatMemoryRepository`, which you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+MongoChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `MongoChatMemoryRepository` manually, you can do so by providing a `MongoTemplate` instance:
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = MongoChatMemoryRepository.builder()
+    .mongoTemplate(mongoTemplate)
+    .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.ai.chat.memory.repository.mongo.create-indices` | Should indices be created or recreated automatically on startup. Note: Changing the
+* TTL value will drop the TTL index and recreate it | `false`
+| `spring.ai.chat.memory.repository.mongo.ttl` | Time to live (TTL) for messages written in MongoDB, in seconds. If not set, messages will be stored indefinitely. | `0`
+|===
+
+==== Collection Initialization
+The auto-configuration will automatically create the `ai_chat_memory` collection on startup if it does not already exist.
+
 == Memory in Chat Client
 
 When using the ChatClient API, you can provide a `ChatMemory` implementation to maintain conversation context across multiple interactions.
