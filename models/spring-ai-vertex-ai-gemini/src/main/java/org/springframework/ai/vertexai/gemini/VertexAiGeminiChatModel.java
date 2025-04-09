@@ -869,7 +869,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite"),
 
-		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-25");
+		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-28");
 
 		public final String value;
 

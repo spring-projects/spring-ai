@@ -304,7 +304,7 @@ class VertexAiGeminiChatModelIT {
 			return VertexAiGeminiChatModel.builder()
 				.vertexAI(vertexAi)
 				.defaultOptions(VertexAiGeminiChatOptions.builder()
-					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_5_PRO)
+					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
 					.build())
 				.build();
 		}
