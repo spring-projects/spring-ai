@@ -37,10 +37,7 @@ public class QianFanRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(QianFanApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(QianFanImageApi.class)) {
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.qianfan")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}
