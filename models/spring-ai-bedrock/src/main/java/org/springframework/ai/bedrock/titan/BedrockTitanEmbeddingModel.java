@@ -27,6 +27,7 @@ import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -57,6 +58,13 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	private InputType inputType = InputType.TEXT;
 
 	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi) {
+		this(titanEmbeddingBedrockApi, MetadataMode.EMBED);
+	}
+
+	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi, MetadataMode metadataMode) {
+
+		super(metadataMode);
+
 		this.embeddingApi = titanEmbeddingBedrockApi;
 	}
 
@@ -67,11 +75,6 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	public BedrockTitanEmbeddingModel withInputType(InputType inputType) {
 		this.inputType = inputType;
 		return this;
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		return embed(document.getText());
 	}
 
 	@Override

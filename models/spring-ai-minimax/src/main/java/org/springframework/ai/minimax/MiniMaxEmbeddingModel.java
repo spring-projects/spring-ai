@@ -63,8 +63,6 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final MiniMaxApi miniMaxApi;
 
-	private final MetadataMode metadataMode;
-
 	/**
 	 * Observation registry used for instrumentation.
 	 */
@@ -128,23 +126,18 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public MiniMaxEmbeddingModel(MiniMaxApi miniMaxApi, MetadataMode metadataMode, MiniMaxEmbeddingOptions options,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+
+		super(metadataMode);
+
 		Assert.notNull(miniMaxApi, "MiniMaxApi must not be null");
-		Assert.notNull(metadataMode, "metadataMode must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 
 		this.miniMaxApi = miniMaxApi;
-		this.metadataMode = metadataMode;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		Assert.notNull(document, "Document must not be null");
-		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
 	@Override

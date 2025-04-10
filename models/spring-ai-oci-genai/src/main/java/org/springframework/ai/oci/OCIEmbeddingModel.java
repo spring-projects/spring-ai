@@ -30,6 +30,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -72,6 +73,14 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 
 	public OCIEmbeddingModel(GenerativeAiInference genAi, OCIEmbeddingOptions options,
 			ObservationRegistry observationRegistry) {
+		this(genAi, MetadataMode.EMBED, options, observationRegistry);
+	}
+
+	public OCIEmbeddingModel(GenerativeAiInference genAi, MetadataMode metadataMode, OCIEmbeddingOptions options,
+			ObservationRegistry observationRegistry) {
+
+		super(metadataMode);
+
 		Assert.notNull(genAi, "com.oracle.bmc.generativeaiinference.GenerativeAiInferenceClient must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
@@ -96,11 +105,6 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> context,
 					this.observationRegistry)
 			.observe(() -> embedAllWithContext(embedTextRequests, context));
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		return embed(document.getText());
 	}
 
 	private EmbeddingResponse embedAllWithContext(List<EmbedTextRequest> embedTextRequests,

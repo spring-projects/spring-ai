@@ -29,6 +29,11 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.util.Assert;
+
 /**
  * Abstract implementation of the {@link EmbeddingModel} interface that provides
  * dimensions calculation caching.
@@ -44,6 +49,8 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 
 	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = loadKnownModelDimensions();
 
+	private final MetadataMode metadataMode;
+
 	static class Hints implements RuntimeHintsRegistrar {
 
 		@Override
@@ -51,6 +58,16 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 			hints.resources().registerResource(EMBEDDING_MODEL_DIMENSIONS_PROPERTIES);
 		}
 
+	}
+
+	public AbstractEmbeddingModel() {
+		this(MetadataMode.EMBED);
+	}
+
+	public AbstractEmbeddingModel(MetadataMode metadataMode) {
+		Assert.notNull(metadataMode, "metadataMode must not be null");
+
+		this.metadataMode = metadataMode;
 	}
 
 	/**
@@ -104,6 +121,12 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 			this.embeddingDimensions.set(dimensions(this, "Test", "Hello World"));
 		}
 		return this.embeddingDimensions.get();
+	}
+
+	@Override
+	public float[] embed(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
 }

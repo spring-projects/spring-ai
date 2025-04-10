@@ -63,8 +63,6 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final AzureOpenAiEmbeddingOptions defaultOptions;
 
-	private final MetadataMode metadataMode;
-
 	/**
 	 * Observation registry used for instrumentation.
 	 */
@@ -92,28 +90,14 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	public AzureOpenAiEmbeddingModel(OpenAIClient azureOpenAiClient, MetadataMode metadataMode,
 			AzureOpenAiEmbeddingOptions options, ObservationRegistry observationRegistry) {
 
+		super(metadataMode);
+
 		Assert.notNull(azureOpenAiClient, "com.azure.ai.openai.OpenAIClient must not be null");
-		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		Assert.notNull(options, "Options must not be null");
 		Assert.notNull(observationRegistry, "Observation registry must not be null");
 		this.azureOpenAiClient = azureOpenAiClient;
-		this.metadataMode = metadataMode;
 		this.defaultOptions = options;
 		this.observationRegistry = observationRegistry;
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		logger.debug("Retrieving embeddings");
-
-		EmbeddingResponse response = this
-			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
-		logger.debug("Embeddings retrieved");
-
-		if (CollectionUtils.isEmpty(response.getResults())) {
-			return new float[0];
-		}
-		return response.getResults().get(0).getOutput();
 	}
 
 	@Override

@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -75,6 +76,21 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	 */
 	public PostgresMlEmbeddingModel(JdbcTemplate jdbcTemplate, PostgresMlEmbeddingOptions options,
 			boolean createExtension) {
+		this(jdbcTemplate, MetadataMode.EMBED, options, createExtension);
+	}
+
+	/**
+	 * a PostgresMlEmbeddingModel constructor
+	 * @param jdbcTemplate JdbcTemplate to use to interact with the database.
+	 * @param metadataMode MetadataMode describing what metadata values are included in
+	 * the embedding.
+	 * @param options PostgresMlEmbeddingOptions to configure the client.
+	 */
+	public PostgresMlEmbeddingModel(JdbcTemplate jdbcTemplate, MetadataMode metadataMode,
+			PostgresMlEmbeddingOptions options, boolean createExtension) {
+
+		super(metadataMode);
+
 		Assert.notNull(jdbcTemplate, "jdbc template must not be null.");
 		Assert.notNull(options, "options must not be null.");
 		Assert.notNull(options.getTransformer(), "transformer must not be null.");
@@ -94,11 +110,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 				"SELECT pgml.embed(?, ?, ?::JSONB)" + this.defaultOptions.getVectorType().cast + " AS embedding",
 				this.defaultOptions.getVectorType().rowMapper, this.defaultOptions.getTransformer(), text,
 				ModelOptionsUtils.toJsonString(this.defaultOptions.getKwargs()));
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		return this.embed(document.getFormattedContent(this.defaultOptions.getMetadataMode()));
 	}
 
 	@SuppressWarnings("null")
