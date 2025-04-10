@@ -38,17 +38,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Azure OpenAI.
+ * Azure OpenAI Client Builder configuration.
  *
  * @author Piotr Olaszewski
  * @author Soby Chacko
  * @author Manuel Andreo Garcia
  * @author Ilayaperumal Gopinathan
  */
-@AutoConfiguration
 @ConditionalOnClass({ OpenAIClientBuilder.class })
 @EnableConfigurationProperties(AzureOpenAiConnectionProperties.class)
-public class AzureOpenAiClientBuilderAutoConfiguration {
+public class AzureOpenAiClientBuilderConfiguration {
 
 	private static final String APPLICATION_ID = "spring-ai";
 
