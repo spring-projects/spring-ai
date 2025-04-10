@@ -113,6 +113,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		return this.internalToolExecutionEnabled;
 	}
 
+	// This getter is used by the BeanWrapper when merging options.
+	@Nullable
+	public Boolean getInternalToolExecutionEnabled() {
+		return isInternalToolExecutionEnabled();
+	}
+
 	@Override
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;

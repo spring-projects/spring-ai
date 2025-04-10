@@ -18,6 +18,7 @@ package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,6 +62,7 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
 public abstract class ModelOptionsUtils {
@@ -325,7 +327,7 @@ public abstract class ModelOptionsUtils {
 		for (PropertyDescriptor descriptor : sourceBeanWrap.getPropertyDescriptors()) {
 
 			if (!BEAN_MERGE_FIELD_EXCISIONS.contains(descriptor.getName())
-					&& interfaceNames.contains(toGetName(descriptor.getName()))) {
+					&& interfaceNames.contains(toGetName(descriptor))) {
 
 				String propertyName = descriptor.getName();
 				Object value = sourceBeanWrap.getPropertyValue(propertyName);
@@ -342,6 +344,17 @@ public abstract class ModelOptionsUtils {
 		}
 
 		return target;
+	}
+
+	private static String toGetName(PropertyDescriptor descriptor) {
+		String name = descriptor.getName();
+		Class propertyType = descriptor.getPropertyType();
+		if (propertyType == Boolean.class) {
+			return "is" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
+		}
+		else {
+			return "get" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
+		}
 	}
 
 	private static String toGetName(String name) {

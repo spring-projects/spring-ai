@@ -721,6 +721,12 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
     	return internalToolExecutionEnabled;
     }
 
+	// This getter is used by the BeanWrapper when merging options.
+	@Nullable
+	public Boolean getInternalToolExecutionEnabled() {
+		return isInternalToolExecutionEnabled();
+	}
+
 	@Override
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {

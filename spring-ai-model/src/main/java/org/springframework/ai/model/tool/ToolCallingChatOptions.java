@@ -38,6 +38,7 @@ import org.springframework.util.CollectionUtils;
  * including tool calling.
  *
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public interface ToolCallingChatOptions extends ChatOptions {
@@ -77,9 +78,17 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 */
 	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
+	/**
+	 * Get the configured tool context.
+	 * @return the tool context map.
+	 */
 	Map<String, Object> getToolContext();
 
-	void setToolContext(Map<String, Object> tooContext);
+	/**
+	 * Set the tool context values as map.
+	 * @param toolContext
+	 */
+	void setToolContext(Map<String, Object> toolContext);
 
 	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.
@@ -171,10 +180,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
 				&& toolCallingChatOptions.isInternalToolExecutionEnabled() != null) {
 			internalToolExecutionEnabled = Boolean.TRUE.equals(toolCallingChatOptions.isInternalToolExecutionEnabled());
-		}
-		else if (chatOptions instanceof FunctionCallingOptions functionCallingOptions
-				&& functionCallingOptions.getProxyToolCalls() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE.equals(!functionCallingOptions.getProxyToolCalls());
 		}
 		else {
 			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;

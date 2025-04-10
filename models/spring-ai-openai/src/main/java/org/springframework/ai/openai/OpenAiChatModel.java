@@ -212,16 +212,16 @@ public class OpenAiChatModel implements ChatModel {
 				}
 
 			// @formatter:off
-				List<Generation> generations = choices.stream().map(choice -> {
-					Map<String, Object> metadata = Map.of(
-							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
-							"role", choice.message().role() != null ? choice.message().role().name() : "",
-							"index", choice.index(),
-							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
-					return buildGeneration(choice, metadata, request);
-				}).toList();
-				// @formatter:on
+					List<Generation> generations = choices.stream().map(choice -> {
+						Map<String, Object> metadata = Map.of(
+								"id", chatCompletion.id() != null ? chatCompletion.id() : "",
+								"role", choice.message().role() != null ? choice.message().role().name() : "",
+								"index", choice.index(),
+								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+								"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
+						return buildGeneration(choice, metadata, request);
+					}).toList();
+					// @formatter:on
 
 				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
@@ -308,19 +308,19 @@ public class OpenAiChatModel implements ChatModel {
 						String id = chatCompletion2.id();
 
 						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
-							if (choice.message().role() != null) {
-								roleMap.putIfAbsent(id, choice.message().role().name());
-							}
-							Map<String, Object> metadata = Map.of(
-									"id", chatCompletion2.id(),
-									"role", roleMap.getOrDefault(id, ""),
-									"index", choice.index(),
-									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
+								if (choice.message().role() != null) {
+									roleMap.putIfAbsent(id, choice.message().role().name());
+								}
+								Map<String, Object> metadata = Map.of(
+										"id", chatCompletion2.id(),
+										"role", roleMap.getOrDefault(id, ""),
+										"index", choice.index(),
+										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+										"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
 
-							return buildGeneration(choice, metadata, request);
-						}).toList();
-						// @formatter:on
+								return buildGeneration(choice, metadata, request);
+							}).toList();
+							// @formatter:on
 						OpenAiApi.Usage usage = chatCompletion2.usage();
 						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage,
@@ -361,30 +361,30 @@ public class OpenAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-					return Flux.defer(() -> {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
-									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-									.build());
-						} else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
+						if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+							return Flux.defer(() -> {
+								// FIXME: bounded elastic needs to be used since tool calling
+								//  is currently only synchronous
+								var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+								if (toolExecutionResult.returnDirect()) {
+									// Return tool execution result directly to the client.
+									return Flux.just(ChatResponse.builder().from(response)
+											.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+											.build());
+								} else {
+									// Send the tool execution result back to the model.
+									return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+											response);
+								}
+							}).subscribeOn(Schedulers.boundedElastic());
 						}
-					}).subscribeOn(Schedulers.boundedElastic());
-				}
-				else {
-					return Flux.just(response);
-				}
-			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+						else {
+							return Flux.just(response);
+						}
+					})
+					.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);

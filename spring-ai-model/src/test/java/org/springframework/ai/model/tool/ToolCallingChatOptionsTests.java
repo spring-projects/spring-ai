@@ -57,26 +57,6 @@ class ToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void whenFunctionCallingOptionsAndExecutionEnabledTrue() {
-		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
-		options.setProxyToolCalls(false);
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
-	void whenFunctionCallingOptionsAndExecutionEnabledFalse() {
-		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
-		options.setProxyToolCalls(true);
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isFalse();
-	}
-
-	@Test
-	void whenFunctionCallingOptionsAndExecutionEnabledDefault() {
-		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
 	void whenMergeRuntimeAndDefaultToolNames() {
 		Set<String> runtimeToolNames = Set.of("toolA");
 		Set<String> defaultToolNames = Set.of("toolB");
