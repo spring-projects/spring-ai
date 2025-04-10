@@ -19,8 +19,6 @@ package org.springframework.ai.vectorstore.hanadb.autoconfigure;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 
-import org.springframework.ai.vectorstore.hanadb.autoconfigure.HanaCloudVectorStoreProperties;
-
 /**
  * @author Rahul Mittal
  */

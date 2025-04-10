@@ -56,8 +56,6 @@ public class AnthropicPropertiesTests {
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
-				// enabled is true by default
-				assertThat(chatProperties.isEnabled()).isTrue();
 			});
 	}
 
@@ -111,7 +109,7 @@ public class AnthropicPropertiesTests {
 			});
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.chat.enabled=true")
+		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=anthropic")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {

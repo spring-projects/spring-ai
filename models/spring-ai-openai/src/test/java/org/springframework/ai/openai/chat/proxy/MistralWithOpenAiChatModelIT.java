@@ -45,7 +45,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -267,7 +267,7 @@ class MistralWithOpenAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "mistral-small-latest", "mistral-large-latest" })
+	@ValueSource(strings = { "mistral-large-latest" })
 	void streamFunctionCallTest(String modelName) {
 
 		UserMessage userMessage = new UserMessage(

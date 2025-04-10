@@ -52,6 +52,12 @@ b. For a managed offering https://astra.datastax.com/[Astra DB] offers a healthy
 
 == Dependencies
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 TIP: For dependency management, we recommend using the Spring AI BOM as explained in the xref:getting-started.adoc#dependency-management[Dependency Management] section.
 
 Add these dependencies to your project:

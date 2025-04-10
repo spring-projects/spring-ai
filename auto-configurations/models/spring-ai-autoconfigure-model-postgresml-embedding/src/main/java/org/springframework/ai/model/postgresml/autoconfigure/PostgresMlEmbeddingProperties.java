@@ -37,11 +37,6 @@ public class PostgresMlEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.postgresml.embedding";
 
 	/**
-	 * Enable Postgres ML embedding model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Create the extensions required for embedding
 	 */
 	private boolean createExtension;
@@ -66,14 +61,6 @@ public class PostgresMlEmbeddingProperties {
 		Assert.notNull(options.getMetadataMode(), "metadataMode must not be null.");
 
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 	public boolean isCreateExtension() {

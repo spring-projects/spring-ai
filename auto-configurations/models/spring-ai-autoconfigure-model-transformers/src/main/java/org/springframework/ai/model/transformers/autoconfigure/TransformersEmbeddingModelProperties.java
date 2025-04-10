@@ -56,11 +56,6 @@ public class TransformersEmbeddingModelProperties {
 	private final Onnx onnx = new Onnx();
 
 	/**
-	 * Enable the Transformer Embedding model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Specifies what parts of the {@link Document}'s content and metadata will be used
 	 * for computing the embeddings. Applicable for the
 	 * {@link TransformersEmbeddingModel#embed(Document)} method only. Has no effect on
@@ -69,14 +64,6 @@ public class TransformersEmbeddingModelProperties {
 	 * {@link MetadataMode#NONE}.
 	 */
 	private MetadataMode metadataMode = MetadataMode.NONE;
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public Cache getCache() {
 		return this.cache;

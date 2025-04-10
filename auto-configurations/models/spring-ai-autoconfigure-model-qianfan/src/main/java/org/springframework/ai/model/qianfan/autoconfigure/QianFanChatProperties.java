@@ -35,11 +35,6 @@ public class QianFanChatProperties extends QianFanParentProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	/**
-	 * Enable QianFan chat client.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private QianFanChatOptions options = QianFanChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
@@ -52,14 +47,6 @@ public class QianFanChatProperties extends QianFanParentProperties {
 
 	public void setOptions(QianFanChatOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

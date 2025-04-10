@@ -30,21 +30,8 @@ public class AzureOpenAiAudioTranscriptionProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.audio.transcription";
 
-	/**
-	 * Enable AzureOpenAI audio transcription model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private AzureOpenAiAudioTranscriptionOptions options = AzureOpenAiAudioTranscriptionOptions.builder().build();
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public AzureOpenAiAudioTranscriptionOptions getOptions() {
 		return this.options;

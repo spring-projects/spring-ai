@@ -34,11 +34,6 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = MiniMaxApi.EmbeddingModel.Embo_01.value;
 
-	/**
-	 * Enable MiniMax embedding model.
-	 */
-	private boolean enabled = true;
-
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
@@ -58,14 +53,6 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

@@ -29,6 +29,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the VertexAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -65,13 +71,25 @@ The prefix `spring.ai.vertex.ai.embedding` is used as the property prefix that l
 
 |====
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding.text=vertexai (It is enabled by default)
+
+To disable, spring.ai.model.embedding.text=none (or any value which doesn't match vertexai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.vertex.ai.embedding.text` is the property prefix that lets you configure the embedding model implementation for VertexAI Text Embedding.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.vertex.ai.embedding.text.enabled | Enable Vertex AI Embedding API model. | true
+| spring.ai.vertex.ai.embedding.text.enabled (Removed and no longer valid) | Enable Vertex AI Embedding API model. | true
+| spring.ai.model.embedding.text | Enable Vertex AI Embedding API model. | vertexai
 | spring.ai.vertex.ai.embedding.text.options.model | This is the link:https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#supported-models[Vertex Text Embedding model] to use | text-embedding-004
 | spring.ai.vertex.ai.embedding.text.options.task-type | The intended downstream application to help the model produce better quality embeddings. Available link:https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/text-embeddings-api#request_body[task-types]  | `RETRIEVAL_DOCUMENT`
 | spring.ai.vertex.ai.embedding.text.options.title | Optional title, only valid with task_type=RETRIEVAL_DOCUMENT.  | -

@@ -36,11 +36,6 @@ public class MoonshotChatProperties extends MoonshotParentProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	/**
-	 * Enable Moonshot chat client.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private MoonshotChatOptions options = MoonshotChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
@@ -53,14 +48,6 @@ public class MoonshotChatProperties extends MoonshotParentProperties {
 
 	public void setOptions(MoonshotChatOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

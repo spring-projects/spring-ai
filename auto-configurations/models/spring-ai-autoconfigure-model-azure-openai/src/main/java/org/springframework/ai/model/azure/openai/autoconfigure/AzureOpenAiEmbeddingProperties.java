@@ -27,11 +27,6 @@ public class AzureOpenAiEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.embedding";
 
-	/**
-	 * Enable Azure OpenAI embedding model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
 		.deploymentName("text-embedding-ada-002")
@@ -55,14 +50,6 @@ public class AzureOpenAiEmbeddingProperties {
 	public void setMetadataMode(MetadataMode metadataMode) {
 		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		this.metadataMode = metadataMode;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

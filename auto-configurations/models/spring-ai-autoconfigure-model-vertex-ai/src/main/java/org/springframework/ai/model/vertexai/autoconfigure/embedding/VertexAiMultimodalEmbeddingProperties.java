@@ -30,8 +30,6 @@ public class VertexAiMultimodalEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.embedding.multimodal";
 
-	private boolean enabled = true;
-
 	/**
 	 * Vertex AI Text Embedding API options.
 	 */
@@ -45,14 +43,6 @@ public class VertexAiMultimodalEmbeddingProperties {
 
 	public void setOptions(VertexAiMultimodalEmbeddingOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

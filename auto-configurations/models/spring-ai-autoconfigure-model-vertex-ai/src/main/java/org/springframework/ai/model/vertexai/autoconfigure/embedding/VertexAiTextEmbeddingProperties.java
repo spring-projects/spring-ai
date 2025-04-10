@@ -30,8 +30,6 @@ public class VertexAiTextEmbeddingProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vertex.ai.embedding.text";
 
-	private boolean enabled = true;
-
 	/**
 	 * Vertex AI Text Embedding API options.
 	 */
@@ -46,14 +44,6 @@ public class VertexAiTextEmbeddingProperties {
 
 	public void setOptions(VertexAiTextEmbeddingOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

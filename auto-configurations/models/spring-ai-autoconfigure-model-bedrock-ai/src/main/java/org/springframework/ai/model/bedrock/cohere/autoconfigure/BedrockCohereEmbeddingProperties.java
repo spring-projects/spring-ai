@@ -35,11 +35,6 @@ public class BedrockCohereEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.cohere.embedding";
 
 	/**
-	 * Enable Bedrock Cohere Embedding Model. False by default.
-	 */
-	private boolean enabled = false;
-
-	/**
 	 * Bedrock Cohere Embedding generative name. Defaults to
 	 * 'cohere.embed-multilingual-v3'.
 	 */
@@ -50,14 +45,6 @@ public class BedrockCohereEmbeddingProperties {
 		.inputType(InputType.SEARCH_DOCUMENT)
 		.truncate(CohereEmbeddingRequest.Truncate.NONE)
 		.build();
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public String getModel() {
 		return this.model;

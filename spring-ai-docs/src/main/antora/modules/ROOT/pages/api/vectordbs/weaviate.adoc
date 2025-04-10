@@ -14,6 +14,12 @@ It provides tools to store document embeddings, content, and metadata and to sea
 
 == Dependencies
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Add the Weaviate Vector Store dependency to your project:
 
 [source,xml]

@@ -21,7 +21,7 @@
 
     <parent>
         <groupId>org.springframework.ai</groupId>
-        <artifactId>spring-ai</artifactId>
+        <artifactId>spring-ai-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
@@ -42,6 +42,46 @@
     <dependencyManagement>
         <dependencies>
 
+			<!-- Spring AI commons -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-commons</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI model -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI vector store -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-vector-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI RAG -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-rag</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Vector Store based Advisors -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-advisors-vector-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI retry -->
 
 			<dependency>
@@ -50,11 +90,11 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI core -->
+			<!-- Spring AI client chat -->
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-core</artifactId>
+                <artifactId>spring-ai-client-chat</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -100,7 +140,27 @@
 				<version>${project.version}</version>
 			</dependency>
 
-            <!-- Spring AI Models -->
+			<!-- Spring AI Chat memory implementations -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-cassandra</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory-neo4j</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Models -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -919,6 +979,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Spring Boot starters for Chat Memory -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-chat-memory-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Utilities -->
 
 			<dependency>
@@ -940,7 +1008,7 @@
 			</dependency>
 
         </dependencies>
-		
+
     </dependencyManagement>
 
     <build>

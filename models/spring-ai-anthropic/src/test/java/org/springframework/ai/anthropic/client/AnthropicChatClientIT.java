@@ -284,8 +284,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20241022" })
+	@ValueSource(strings = { "claude-3-opus-latest", "claude-3-5-sonnet-latest", "claude-3-7-sonnet-latest" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -303,8 +302,8 @@ class AnthropicChatClientIT {
 
 	@Disabled("Currently Anthropic API does not support external image URLs")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20241022" })
+	@ValueSource(strings = { "claude-3-opus-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest",
+			"claude-3-7-sonnet-latest" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.

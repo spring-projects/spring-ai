@@ -42,6 +42,12 @@ You can replace Azure Open AI implementation with any valid OpenAI implementatio
 
 == Dependencies
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Add these dependencies to your project:
 
 === 1. Select an Embeddings interface implementation. You can choose between:

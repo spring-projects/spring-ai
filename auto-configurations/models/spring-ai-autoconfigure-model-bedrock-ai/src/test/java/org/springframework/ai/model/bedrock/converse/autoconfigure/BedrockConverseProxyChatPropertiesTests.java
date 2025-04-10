@@ -51,8 +51,6 @@ public class BedrockConverseProxyChatPropertiesTests {
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
 
-				assertThat(chatProperties.isEnabled()).isTrue();
-
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getMaxTokens()).isEqualTo(123);
 				assertThat(chatProperties.getOptions().getStopSequences()).contains("boza", "koza");

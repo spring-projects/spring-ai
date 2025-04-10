@@ -16,6 +16,12 @@ Couchbase
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Couchbase Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 

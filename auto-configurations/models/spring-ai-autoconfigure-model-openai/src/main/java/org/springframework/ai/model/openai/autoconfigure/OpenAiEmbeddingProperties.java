@@ -30,11 +30,6 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
 
-	/**
-	 * Enable OpenAI embedding model.
-	 */
-	private boolean enabled = true;
-
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
 	private String embeddingsPath = DEFAULT_EMBEDDINGS_PATH;
@@ -56,14 +51,6 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 	public String getEmbeddingsPath() {

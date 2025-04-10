@@ -26,6 +26,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the MistralAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -81,13 +87,25 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=mistral (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match mistral)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.mistralai.embedding` is property prefix that configures the `EmbeddingModel` implementation for MistralAI.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.mistralai.embedding.enabled | Enable OpenAI embedding model.  | true
+| spring.ai.mistralai.embedding.enabled (Removed and no longer valid) | Enable OpenAI embedding model.  | true
+| spring.ai.model.embedding | Enable OpenAI embedding model.  | true
 | spring.ai.mistralai.embedding.base-url   | Optional overrides the spring.ai.mistralai.base-url to provide embedding specific url | -
 | spring.ai.mistralai.embedding.api-key    | Optional overrides the spring.ai.mistralai.api-key to provide embedding specific api-key  | -
 | spring.ai.mistralai.embedding.metadata-mode      | Document content extraction mode.      | EMBED

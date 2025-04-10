@@ -31,11 +31,6 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
-	/**
-	 * Enable OpenAI chat model.
-	 */
-	private boolean enabled = true;
-
 	private String completionsPath = DEFAULT_COMPLETIONS_PATH;
 
 	@NestedConfigurationProperty
@@ -50,14 +45,6 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiChatOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 	public String getCompletionsPath() {

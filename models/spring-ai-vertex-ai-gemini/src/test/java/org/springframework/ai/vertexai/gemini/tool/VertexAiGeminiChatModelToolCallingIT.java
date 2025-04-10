@@ -118,11 +118,15 @@ public class VertexAiGeminiChatModelToolCallingIT {
 						.build()))
 			.build();
 
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+		ChatResponse chatResponse = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		assertThat(chatResponse).isNotNull();
+		logger.info("Response: {}", chatResponse);
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
 
-		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+		assertThat(chatResponse.getMetadata()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(310);
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
@@ -163,6 +167,41 @@ public class VertexAiGeminiChatModelToolCallingIT {
 		logger.info("Response: {}", responseString);
 
 		assertThat(responseString).contains("30", "10", "15");
+
+	}
+
+	@Test
+	public void functionCallUsageTestInferredOpenApiSchemaStream() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = VertexAiGeminiChatOptions.builder()
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.toolCallbacks(List.of(
+					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
+						.description("Get the current weather in a given location.")
+						.inputType(MockWeatherService.Request.class)
+						.build(),
+					FunctionToolCallback.builder("get_payment_status", new PaymentStatus())
+						.description(
+								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.inputType(PaymentInfoRequest.class)
+						.build()))
+			.build();
+
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+
+		ChatResponse chatResponse = response.blockLast();
+
+		logger.info("Response: {}", chatResponse);
+
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getMetadata()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(310);
 
 	}
 

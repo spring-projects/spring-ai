@@ -16,30 +16,32 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import java.util.List;
+import java.util.function.BiConsumer;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpAsyncServer;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceRegistration;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptRegistration;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.transport.StdioServerTransport;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.ServerMcpTransport;
-import org.mockito.Mockito;
+import io.modelcontextprotocol.spec.McpServerTransport;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.mcp.SyncMcpToolCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -53,8 +55,9 @@ public class McpServerAutoConfigurationIT {
 	void defaultConfiguration() {
 		this.contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(McpSyncServer.class);
-			assertThat(context).hasSingleBean(ServerMcpTransport.class);
-			assertThat(context.getBean(ServerMcpTransport.class)).isInstanceOf(StdioServerTransport.class);
+			assertThat(context).hasSingleBean(McpServerTransportProvider.class);
+			assertThat(context.getBean(McpServerTransportProvider.class))
+				.isInstanceOf(StdioServerTransportProvider.class);
 
 			McpServerProperties properties = context.getBean(McpServerProperties.class);
 			assertThat(properties.getName()).isEqualTo("mcp-server");
@@ -85,8 +88,8 @@ public class McpServerAutoConfigurationIT {
 	@Test
 	void transportConfiguration() {
 		this.contextRunner.withUserConfiguration(CustomTransportConfiguration.class).run(context -> {
-			assertThat(context).hasSingleBean(ServerMcpTransport.class);
-			assertThat(context.getBean(ServerMcpTransport.class)).isInstanceOf(CustomServerTransport.class);
+			assertThat(context).hasSingleBean(McpServerTransport.class);
+			assertThat(context.getBean(McpServerTransport.class)).isInstanceOf(CustomServerTransport.class);
 		});
 	}
 
@@ -117,7 +120,7 @@ public class McpServerAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false").run(context -> {
 			assertThat(context).doesNotHaveBean(McpSyncServer.class);
 			assertThat(context).doesNotHaveBean(McpAsyncServer.class);
-			assertThat(context).doesNotHaveBean(ServerMcpTransport.class);
+			assertThat(context).doesNotHaveBean(McpServerTransport.class);
 		});
 	}
 
@@ -155,7 +158,7 @@ public class McpServerAutoConfigurationIT {
 	@Test
 	void toolRegistrationConfiguration() {
 		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
-			List<SyncToolRegistration> tools = context.getBean("syncTools", List.class);
+			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
 			assertThat(tools).hasSize(1);
 		});
 	}
@@ -181,7 +184,7 @@ public class McpServerAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
-				List<AsyncToolRegistration> tools = context.getBean("asyncTools", List.class);
+				List<AsyncToolSpecification> tools = context.getBean("asyncTools", List.class);
 				assertThat(tools).hasSize(1);
 			});
 	}
@@ -196,8 +199,8 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
-	void rootsChangeConsumerConfiguration() {
-		this.contextRunner.withUserConfiguration(TestRootsChangeConfiguration.class).run(context -> {
+	void rootsChangeHandlerConfiguration() {
+		this.contextRunner.withUserConfiguration(TestRootsHandlerConfiguration.class).run(context -> {
 			McpSyncServer server = context.getBean(McpSyncServer.class);
 			assertThat(server).isNotNull();
 		});
@@ -207,7 +210,7 @@ public class McpServerAutoConfigurationIT {
 	static class TestResourceConfiguration {
 
 		@Bean
-		List<SyncResourceRegistration> testResources() {
+		List<SyncResourceSpecification> testResources() {
 			return List.of();
 		}
 
@@ -217,7 +220,7 @@ public class McpServerAutoConfigurationIT {
 	static class TestPromptConfiguration {
 
 		@Bean
-		List<SyncPromptRegistration> testPrompts() {
+		List<SyncPromptSpecification> testPrompts() {
 			return List.of();
 		}
 
@@ -259,24 +262,18 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Configuration
-	static class TestRootsChangeConfiguration {
+	static class TestRootsHandlerConfiguration {
 
 		@Bean
-		Consumer<List<McpSchema.Root>> rootsChangeConsumer() {
-			return roots -> {
+		BiConsumer<McpSyncServerExchange, List<McpSchema.Root>> rootsChangeHandler() {
+			return (exchange, roots) -> {
 				// Test implementation
 			};
 		}
 
 	}
 
-	static class CustomServerTransport implements ServerMcpTransport {
-
-		@Override
-		public Mono<Void> connect(
-				Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> messageHandler) {
-			return Mono.empty(); // Test implementation
-		}
+	static class CustomServerTransport implements McpServerTransport {
 
 		@Override
 		public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {
@@ -304,7 +301,7 @@ public class McpServerAutoConfigurationIT {
 	static class CustomTransportConfiguration {
 
 		@Bean
-		ServerMcpTransport customTransport() {
+		McpServerTransport customTransport() {
 			return new CustomServerTransport();
 		}
 

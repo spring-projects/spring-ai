@@ -33,11 +33,6 @@ public class OllamaChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.ollama.chat";
 
 	/**
-	 * Enable Ollama chat model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Client lever Ollama options. Use this property to configure generative temperature,
 	 * topK and topP and alike parameters. The null values are ignored defaulting to the
 	 * generative's defaults.
@@ -55,14 +50,6 @@ public class OllamaChatProperties {
 
 	public OllamaOptions getOptions() {
 		return this.options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

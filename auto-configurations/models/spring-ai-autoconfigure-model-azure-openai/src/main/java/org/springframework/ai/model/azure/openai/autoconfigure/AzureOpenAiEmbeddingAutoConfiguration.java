@@ -31,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Azure OpenAI.
@@ -45,7 +46,7 @@ import org.springframework.context.annotation.Bean;
 @EnableConfigurationProperties({ AzureOpenAiEmbeddingProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.AZURE_OPENAI,
 		matchIfMissing = true)
-@ImportAutoConfiguration(classes = AzureOpenAiClientBuilderAutoConfiguration.class)
+@Import(AzureOpenAiClientBuilderConfiguration.class)
 public class AzureOpenAiEmbeddingAutoConfiguration {
 
 	@Bean

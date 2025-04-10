@@ -28,6 +28,12 @@ To help with dependency management, Spring AI provides a BOM (bill of materials)
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Azure QianFan Embedding Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
@@ -84,13 +90,25 @@ The prefix `spring.ai.qianfan` is used as the property prefix that lets you conn
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=qianfan (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match qianfan)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.qianfan.embedding` is property prefix that configures the `EmbeddingClient` implementation for QianFan.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.qianfan.embedding.enabled       | Enable QianFan embedding client.  | true
+| spring.ai.qianfan.embedding.enabled (Removed and no longer valid)      | Enable QianFan embedding client.  | true
+| spring.ai.model.embedding       | Enable QianFan embedding client.  | qianfan
 | spring.ai.qianfan.embedding.base-url      | Optional overrides the spring.ai.qianfan.base-url to provide embedding specific url | -
 | spring.ai.qianfan.embedding.api-key       | Optional overrides the spring.ai.qianfan.api-key to provide embedding specific api-key  | -
 | spring.ai.qianfan.embedding.secret-key    | Optional overrides the spring.ai.qianfan.secret-key to provide embedding specific secret-key  | -

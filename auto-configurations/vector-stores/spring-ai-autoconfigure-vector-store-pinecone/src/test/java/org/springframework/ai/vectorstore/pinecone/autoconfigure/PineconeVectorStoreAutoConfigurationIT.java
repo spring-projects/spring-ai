@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 

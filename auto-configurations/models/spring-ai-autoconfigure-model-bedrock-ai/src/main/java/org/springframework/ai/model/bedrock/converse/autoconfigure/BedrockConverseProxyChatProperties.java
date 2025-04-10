@@ -32,25 +32,12 @@ public class BedrockConverseProxyChatProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.converse.chat";
 
-	/**
-	 * Enable Bedrock Converse chat model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private ToolCallingChatOptions options = ToolCallingChatOptions.builder()
 		.temperature(0.7)
 		.maxTokens(300)
 		.topK(10)
 		.build();
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public ToolCallingChatOptions getOptions() {
 		return this.options;

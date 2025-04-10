@@ -31,11 +31,6 @@ public class ZhiPuAiImageProperties extends ZhiPuAiParentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.zhipuai.image";
 
 	/**
-	 * Enable ZhiPuAI image model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Options for ZhiPuAI Image API.
 	 */
 	@NestedConfigurationProperty
@@ -47,14 +42,6 @@ public class ZhiPuAiImageProperties extends ZhiPuAiParentProperties {
 
 	public void setOptions(ZhiPuAiImageOptions options) {
 		this.options = options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

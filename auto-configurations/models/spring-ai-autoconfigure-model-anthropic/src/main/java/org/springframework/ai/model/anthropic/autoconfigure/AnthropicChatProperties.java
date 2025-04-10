@@ -34,11 +34,6 @@ public class AnthropicChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.anthropic.chat";
 
 	/**
-	 * Enable Anthropic chat model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Client lever Ollama options. Use this property to configure generative temperature,
 	 * topK and topP and alike parameters. The null values are ignored defaulting to the
 	 * generative's defaults.
@@ -52,14 +47,6 @@ public class AnthropicChatProperties {
 
 	public AnthropicChatOptions getOptions() {
 		return this.options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

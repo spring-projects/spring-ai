@@ -23,7 +23,9 @@ import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -64,7 +66,8 @@ public class OllamaChatAutoConfiguration {
 	public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi, OllamaChatProperties properties,
 			OllamaInitializationProperties initProperties, ToolCallingManager toolCallingManager,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+			ObjectProvider<ChatModelObservationConvention> observationConvention,
+			ObjectProvider<ToolExecutionEligibilityPredicate> ollamaToolExecutionEligibilityPredicate) {
 		var chatModelPullStrategy = initProperties.getChat().isInclude() ? initProperties.getPullModelStrategy()
 				: PullModelStrategy.NEVER;
 
@@ -72,6 +75,8 @@ public class OllamaChatAutoConfiguration {
 			.ollamaApi(ollamaApi)
 			.defaultOptions(properties.getOptions())
 			.toolCallingManager(toolCallingManager)
+			.toolExecutionEligibilityPredicate(ollamaToolExecutionEligibilityPredicate
+				.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.modelManagementOptions(
 					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),

@@ -32,11 +32,6 @@ public class WatsonxAiEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.watsonx.ai.embedding";
 
 	/**
-	 * Enable Watsonx.ai embedding model.
-	 */
-	private boolean enabled = true;
-
-	/**
 	 * Client lever Watsonx.ai embedding options. Use this property to configure the
 	 * model. The null values are ignored defaulting to the defaults.
 	 */
@@ -54,14 +49,6 @@ public class WatsonxAiEmbeddingProperties {
 
 	public WatsonxAiEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

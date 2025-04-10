@@ -31,7 +31,6 @@ import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -105,13 +104,16 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 
-		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(request.getInstructions(),
-				request.getOptions());
+		// Before moving any further, build the final request EmbeddingRequest,
+		// merging runtime and default options.
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+
+		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(OllamaApi.PROVIDER_NAME)
-			.requestOptions(buildRequestOptions(ollamaEmbeddingRequest))
+			.requestOptions(embeddingRequest.getOptions())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -142,31 +144,34 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		return new DefaultUsage(Optional.ofNullable(response.promptEvalCount()).orElse(0), 0);
 	}
 
+	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		OllamaOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OllamaOptions.class);
+		}
+
+		// Define request options by merging runtime options and default options
+		OllamaOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				OllamaOptions.class);
+
+		// Validate request options
+		if (!StringUtils.hasText(requestOptions.getModel())) {
+			throw new IllegalArgumentException("model cannot be null or empty");
+		}
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+	}
+
 	/**
 	 * Package access for testing.
 	 */
-	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(List<String> inputContent, EmbeddingOptions options) {
-
-		// runtime options
-		OllamaOptions runtimeOptions = null;
-		if (options != null && options instanceof OllamaOptions ollamaOptions) {
-			runtimeOptions = ollamaOptions;
-		}
-
-		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
-
-		// Override the model.
-		if (!StringUtils.hasText(mergedOptions.getModel())) {
-			throw new IllegalArgumentException("Model is not set!");
-		}
-		String model = mergedOptions.getModel();
-
-		return new OllamaApi.EmbeddingsRequest(model, inputContent, DurationParser.parse(mergedOptions.getKeepAlive()),
-				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());
-	}
-
-	private EmbeddingOptions buildRequestOptions(OllamaApi.EmbeddingsRequest request) {
-		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
+	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		OllamaOptions requestOptions = (OllamaOptions) embeddingRequest.getOptions();
+		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
+				DurationParser.parse(requestOptions.getKeepAlive()),
+				OllamaOptions.filterNonSupportedFields(requestOptions.toMap()), requestOptions.getTruncate());
 	}
 
 	/**

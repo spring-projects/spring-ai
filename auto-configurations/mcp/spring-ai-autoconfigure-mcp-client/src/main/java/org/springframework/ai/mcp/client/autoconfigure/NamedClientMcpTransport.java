@@ -15,7 +15,7 @@
 */
 package org.springframework.ai.mcp.client.autoconfigure;
 
-import io.modelcontextprotocol.spec.ClientMcpTransport;
+import io.modelcontextprotocol.spec.McpClientTransport;
 
 /**
  * A named MCP client transport. Usually created by the transport auto-configurations, but
@@ -26,6 +26,6 @@ import io.modelcontextprotocol.spec.ClientMcpTransport;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public record NamedClientMcpTransport(String name, ClientMcpTransport transport) {
+public record NamedClientMcpTransport(String name, McpClientTransport transport) {
 
 }

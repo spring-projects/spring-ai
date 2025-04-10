@@ -13,7 +13,7 @@ Contrary to those principles, the Machine Learning was often focused on speciali
 For instance, we developed audio models for tasks like text-to-speech or speech-to-text, and computer vision models for tasks such as object detection and classification.
 
 However, a new wave of multimodal large language models starts to emerge.
-Examples include OpenAI's GPT-4o , Google's Vertex AI Gemini 1.5, Anthropic's Claude3, and open source offerings Llama3.2, LLaVA and Balklava are able to accept multiple inputs, including text images, audio and video and generate text responses by integrating these inputs.
+Examples include OpenAI's GPT-4o , Google's Vertex AI Gemini 1.5, Anthropic's Claude3, and open source offerings Llama3.2, LLaVA and BakLLaVA are able to accept multiple inputs, including text images, audio and video and generate text responses by integrating these inputs.
 
 NOTE: The multimodal large language model (LLM) features enable the models to process and generate text in conjunction with other modalities such as images, audio, or video.
 
@@ -69,6 +69,6 @@ Spring AI provides multimodal support for the following chat models:
 * xref:api/chat/bedrock-converse.adoc#_multimodal[AWS Bedrock Converse]
 * xref:api/chat/azure-openai-chat.adoc#_multimodal[Azure Open AI (e.g. GPT-4o models)]
 * xref:api/chat/mistralai-chat.adoc#_multimodal[Mistral AI (e.g. Mistral Pixtral models)]
-* xref:api/chat/ollama-chat.adoc#_multimodal[Ollama (e.g. LlaVa, Baklava, Llama3.2 models)]
+* xref:api/chat/ollama-chat.adoc#_multimodal[Ollama (e.g. LLaVA, BakLLaVA, Llama3.2 models)]
 * xref:api/chat/openai-chat.adoc#_multimodal[OpenAI (e.g. GPT-4 and GPT-4o models)]
 * xref:api/chat/vertexai-gemini-chat.adoc#_multimodal[Vertex AI Gemini (e.g. gemini-1.5-pro-001, gemini-1.5-flash-001 models)]

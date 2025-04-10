@@ -136,7 +136,7 @@ String template = """
 Generation generation = chatModel.call(
     new PromptTemplate(this.template, Map.of("actor", this.actor, "format", this.format)).create()).getResult();
 
-ActorsFilms actorsFilms = this.beanOutputConverter.convert(this.generation.getOutput().getContent());
+ActorsFilms actorsFilms = this.beanOutputConverter.convert(this.generation.getOutput().getText());
 ----
 
 === Property Ordering in Generated Schema
@@ -184,7 +184,7 @@ Prompt prompt = new PromptTemplate(this.template, Map.of("format", this.format))
 
 Generation generation = chatModel.call(this.prompt).getResult();
 
-List<ActorsFilms> actorsFilms = this.outputConverter.convert(this.generation.getOutput().getContent());
+List<ActorsFilms> actorsFilms = this.outputConverter.convert(this.generation.getOutput().getText());
 ----
 
 === Map Output Converter
@@ -217,7 +217,7 @@ Prompt prompt = new PromptTemplate(this.template,
 
 Generation generation = chatModel.call(this.prompt).getResult();
 
-Map<String, Object> result = this.mapOutputConverter.convert(this.generation.getOutput().getContent());
+Map<String, Object> result = this.mapOutputConverter.convert(this.generation.getOutput().getText());
 ----
 
 === List Output Converter
@@ -250,7 +250,7 @@ Prompt prompt = new PromptTemplate(this.template,
 
 Generation generation = this.chatModel.call(this.prompt).getResult();
 
-List<String> list = this.listOutputConverter.convert(this.generation.getOutput().getContent());
+List<String> list = this.listOutputConverter.convert(this.generation.getOutput().getText());
 ----
 
 == Supported AI Models

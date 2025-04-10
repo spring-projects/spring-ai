@@ -39,11 +39,6 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public MetadataMode metadataMode = MetadataMode.EMBED;
 
-	/**
-	 * Enable MistralAI embedding model.
-	 */
-	private boolean enabled = true;
-
 	@NestedConfigurationProperty
 	private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
 		.withModel(DEFAULT_EMBEDDING_MODEL)
@@ -68,14 +63,6 @@ public class MistralAiEmbeddingProperties extends MistralAiParentProperties {
 
 	public void setMetadataMode(MetadataMode metadataMode) {
 		this.metadataMode = metadataMode;
-	}
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
 	}
 
 }

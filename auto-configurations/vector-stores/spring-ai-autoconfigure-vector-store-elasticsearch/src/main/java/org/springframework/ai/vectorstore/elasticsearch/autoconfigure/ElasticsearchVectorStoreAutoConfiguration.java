@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Elasticsearch Vector Store.
@@ -44,6 +44,7 @@ import org.springframework.util.StringUtils;
  * @author Josh Long
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
@@ -67,15 +68,10 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 			BatchingStrategy batchingStrategy) {
 		ElasticsearchVectorStoreOptions elasticsearchVectorStoreOptions = new ElasticsearchVectorStoreOptions();
 
-		if (StringUtils.hasText(properties.getIndexName())) {
-			elasticsearchVectorStoreOptions.setIndexName(properties.getIndexName());
-		}
-		if (properties.getDimensions() != null) {
-			elasticsearchVectorStoreOptions.setDimensions(properties.getDimensions());
-		}
-		if (properties.getSimilarity() != null) {
-			elasticsearchVectorStoreOptions.setSimilarity(properties.getSimilarity());
-		}
+		PropertyMapper mapper = PropertyMapper.get();
+		mapper.from(properties::getIndexName).whenHasText().to(elasticsearchVectorStoreOptions::setIndexName);
+		mapper.from(properties::getDimensions).whenNonNull().to(elasticsearchVectorStoreOptions::setDimensions);
+		mapper.from(properties::getSimilarity).whenNonNull().to(elasticsearchVectorStoreOptions::setSimilarity);
 
 		return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 			.options(elasticsearchVectorStoreOptions)
