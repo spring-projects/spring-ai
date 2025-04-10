@@ -22,7 +22,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai-parent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.0.0-M7</version>
 	</parent>
 	<artifactId>spring-ai-spring-boot-testcontainers</artifactId>
 	<packaging>jar</packaging>
