@@ -107,7 +107,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		Assert.notNull(builder.cosmosClient, "CosmosClient must not be null");
 		Assert.hasText(builder.containerName, "Container name must not be empty");
 		Assert.hasText(builder.databaseName, "Database name must not be empty");
-		Assert.hasText(builder.partitionKeyPath, "Partition key path must not be empty");
 
 		this.cosmosClient = builder.cosmosClient;
 		this.containerName = builder.containerName;
