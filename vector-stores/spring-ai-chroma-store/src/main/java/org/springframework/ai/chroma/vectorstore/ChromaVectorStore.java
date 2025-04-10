@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.Embedding;
+import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -61,12 +62,15 @@ import org.springframework.util.CollectionUtils;
  * @author Sebastien Deleuze
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Jonghoon Park
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	public static final String DEFAULT_COLLECTION_NAME = "SpringAiCollection";
-
 	private final ChromaApi chromaApi;
+
+	private final String tenantName;
+
+	private final String databaseName;
 
 	private final String collectionName;
 
@@ -90,6 +94,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		super(builder);
 
 		this.chromaApi = builder.chromaApi;
+		this.tenantName = builder.tenantName;
+		this.databaseName = builder.databaseName;
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
@@ -112,11 +118,21 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		if (!this.initialized) {
-			var collection = this.chromaApi.getCollection(this.collectionName);
+			var collection = this.chromaApi.getCollection(this.tenantName, this.databaseName, this.collectionName);
 			if (collection == null) {
 				if (this.initializeSchema) {
-					collection = this.chromaApi
-						.createCollection(new ChromaApi.CreateCollectionRequest(this.collectionName));
+					var tenant = this.chromaApi.getTenant(this.tenantName);
+					if (tenant == null) {
+						this.chromaApi.createTenant(this.tenantName);
+					}
+
+					var database = this.chromaApi.getDatabase(this.tenantName, this.databaseName);
+					if (database == null) {
+						this.chromaApi.createDatabase(this.tenantName, this.databaseName);
+					}
+
+					collection = this.chromaApi.createCollection(this.tenantName, this.databaseName,
+							new ChromaApi.CreateCollectionRequest(this.collectionName));
 				}
 				else {
 					throw new RuntimeException("Collection " + this.collectionName
@@ -152,14 +168,15 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			embeddings.add(documentEmbeddings.get(documents.indexOf(document)));
 		}
 
-		this.chromaApi.upsertEmbeddings(this.collectionId,
+		this.chromaApi.upsertEmbeddings(this.tenantName, this.databaseName, this.collectionId,
 				new AddEmbeddingsRequest(ids, embeddings, metadatas, contents));
 	}
 
 	@Override
 	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
-		this.chromaApi.deleteEmbeddings(this.collectionId, new DeleteEmbeddingsRequest(idList));
+		this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.collectionId,
+				new DeleteEmbeddingsRequest(idList));
 	}
 
 	@Override
@@ -175,7 +192,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			logger.debug("Deleting with where clause: " + whereClause);
 
 			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
-			this.chromaApi.deleteEmbeddings(this.collectionId, deleteRequest);
+			this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.collectionId, deleteRequest);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
@@ -196,7 +213,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 				? jsonToMap(this.filterExpressionConverter.convertExpression(request.getFilterExpression())) : null;
 
 		var queryRequest = new ChromaApi.QueryRequest(embedding, request.getTopK(), where);
-		var queryResponse = this.chromaApi.queryCollection(this.collectionId, queryRequest);
+		var queryResponse = this.chromaApi.queryCollection(this.tenantName, this.databaseName, this.collectionId,
+				queryRequest);
 		var embeddings = this.chromaApi.toEmbeddingResponseList(queryResponse);
 
 		List<Document> responseDocuments = new ArrayList<>();
@@ -242,11 +260,29 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			.collectionName(this.collectionName + ":" + this.collectionId);
 	}
 
+	// used by the test
+	void createCollection() {
+		var collection = this.chromaApi.createCollection(this.tenantName, this.databaseName,
+				new ChromaApi.CreateCollectionRequest(this.collectionName));
+		if (collection != null) {
+			this.collectionId = collection.id();
+		}
+	}
+
+	// used by the test
+	void deleteCollection() {
+		this.chromaApi.deleteCollection(this.tenantName, this.databaseName, this.collectionName);
+	}
+
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final ChromaApi chromaApi;
 
-		private String collectionName = DEFAULT_COLLECTION_NAME;
+		private String tenantName = ChromaApiConstants.DEFAULT_TENANT_NAME;
+
+		private String databaseName = ChromaApiConstants.DEFAULT_DATABASE_NAME;
+
+		private String collectionName = ChromaApiConstants.DEFAULT_COLLECTION_NAME;
 
 		private boolean initializeSchema = false;
 
@@ -258,6 +294,30 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			super(embeddingModel);
 			Assert.notNull(chromaApi, "ChromaApi must not be null");
 			this.chromaApi = chromaApi;
+		}
+
+		/**
+		 * Sets the tenant name.
+		 * @param tenantName the name of the tenant
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if collectionName is null or empty
+		 */
+		public Builder tenantName(String tenantName) {
+			Assert.hasText(tenantName, "tenantName must not be null or empty");
+			this.tenantName = tenantName;
+			return this;
+		}
+
+		/**
+		 * Sets the database name.
+		 * @param databaseName the name of the database
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if collectionName is null or empty
+		 */
+		public Builder databaseName(String databaseName) {
+			Assert.hasText(databaseName, "databaseName must not be null or empty");
+			this.databaseName = databaseName;
+			return this;
 		}
 
 		/**
