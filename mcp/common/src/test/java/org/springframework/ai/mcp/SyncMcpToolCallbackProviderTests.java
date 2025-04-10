@@ -98,7 +98,7 @@ class SyncMcpToolCallbackProviderTests {
 	}
 
 	@Test
-	void getSameNameToolsButDifferntClientInfoNamesShouldProduceDifferentToolCallbackNames() {
+	void getSameNameToolsButDifferentClientInfoNamesShouldProduceDifferentToolCallbackNames() {
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("sameName");

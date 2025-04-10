@@ -79,7 +79,7 @@ class SyncMcpToolCallbackTests {
 	}
 
 	@Test
-	void callShoulIngroeToolContext() {
+	void callShouldIgnoreToolContext() {
 		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
 		// "1.0.0"));
 
