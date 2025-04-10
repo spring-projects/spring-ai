@@ -39,7 +39,7 @@ import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
  */
 public class McpSyncClientConfigurer {
 
-	private List<McpSyncClientCustomizer> customizers;
+	private final List<McpSyncClientCustomizer> customizers;
 
 	public McpSyncClientConfigurer(List<McpSyncClientCustomizer> customizers) {
 		this.customizers = customizers;
