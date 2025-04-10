@@ -30,6 +30,8 @@
     <name>Spring AI Cassandra Chat Memory</name>
     <description>Spring AI Cassandra Chat Memory implementation</description>
 
+	<url>https://github.com/spring-projects/spring-ai</url>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.ai</groupId>
