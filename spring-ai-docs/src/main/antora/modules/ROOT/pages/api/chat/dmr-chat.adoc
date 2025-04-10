@@ -10,7 +10,7 @@ for examples of using Docker Model Runner with Spring AI.
 
 == Prerequisite
 
-* Download Docker Desktop for Mac 4.40.0.
+* Download Docker Desktop for Mac 4.40.0 with Apple Silicon.
 
 Choose one of the following options to enable the Model Runner:
 
