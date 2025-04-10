@@ -243,9 +243,6 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 spring.ai.openai.api-key=test
 spring.ai.openai.base-url=http://localhost:12434/engines
 spring.ai.openai.chat.options.model=ai/gemma3:4B-F16
-
-# The Docker Model Runner doesn't support embeddings, so we need to disable it.
-spring.ai.openai.embedding.enabled=false
 ----
 
 
