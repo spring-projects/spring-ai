@@ -50,7 +50,7 @@ public class FunctionCallWithPromptFunctionIT {
 	void functionCallTest() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.vertex.ai.gemini.chat.options.model="
-					+ VertexAiGeminiChatModel.ChatModel.GEMINI_2_5_PRO.getValue())
+					+ VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.run(context -> {
 
 				VertexAiGeminiChatModel chatModel = context.getBean(VertexAiGeminiChatModel.class);
