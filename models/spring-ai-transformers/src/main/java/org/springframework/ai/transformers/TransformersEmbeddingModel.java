@@ -96,14 +96,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	private static final int EMBEDDING_AXIS = 1;
 
 	/**
-	 * Specifies what parts of the {@link Document}'s content and metadata will be used
-	 * for computing the embeddings. Applicable for the {@link #embed(Document)} method
-	 * only. Has no effect on the {@link #embed(String)} or {@link #embed(List)}. Defaults
-	 * to {@link MetadataMode#NONE}.
-	 */
-	private final MetadataMode metadataMode;
-
-	/**
 	 * Observation registry used for instrumentation.
 	 */
 	private final ObservationRegistry observationRegistry;
@@ -169,9 +161,11 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	public TransformersEmbeddingModel(MetadataMode metadataMode, ObservationRegistry observationRegistry) {
+
+		super(metadataMode);
+
 		Assert.notNull(metadataMode, "Metadata mode should not be null");
 		Assert.notNull(observationRegistry, "Observation registry should not be null");
-		this.metadataMode = metadataMode;
 		this.observationRegistry = observationRegistry;
 	}
 
@@ -257,11 +251,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	@Override
 	public float[] embed(String text) {
 		return embed(List.of(text)).get(0);
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
 	@Override

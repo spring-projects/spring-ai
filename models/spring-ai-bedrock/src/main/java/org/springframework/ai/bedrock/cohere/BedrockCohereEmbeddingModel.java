@@ -24,6 +24,7 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingResponse;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -65,15 +66,19 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 
 	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi,
 			BedrockCohereEmbeddingOptions options) {
+
+		this(cohereEmbeddingBedrockApi, MetadataMode.EMBED, options);
+	}
+
+	public BedrockCohereEmbeddingModel(CohereEmbeddingBedrockApi cohereEmbeddingBedrockApi, MetadataMode metadataMode,
+			BedrockCohereEmbeddingOptions options) {
+
+		super(metadataMode);
+
 		Assert.notNull(cohereEmbeddingBedrockApi, "CohereEmbeddingBedrockApi must not be null");
 		Assert.notNull(options, "BedrockCohereEmbeddingOptions must not be null");
 		this.embeddingApi = cohereEmbeddingBedrockApi;
 		this.defaultOptions = options;
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		return embed(document.getText());
 	}
 
 	@Override

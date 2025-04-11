@@ -27,6 +27,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -78,6 +79,14 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+		this(ollamaApi, MetadataMode.EMBED, defaultOptions, observationRegistry, modelManagementOptions);
+	}
+
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, MetadataMode metadataMode, OllamaOptions defaultOptions,
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+
+		super(metadataMode);
+
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "options must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
@@ -93,11 +102,6 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		return embed(document.getText());
 	}
 
 	@Override

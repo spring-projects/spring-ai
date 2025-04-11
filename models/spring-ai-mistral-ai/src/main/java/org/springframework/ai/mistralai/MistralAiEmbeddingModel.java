@@ -57,8 +57,6 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final MistralAiEmbeddingOptions defaultOptions;
 
-	private final MetadataMode metadataMode;
-
 	private final MistralAiApi mistralAiApi;
 
 	private final RetryTemplate retryTemplate;
@@ -94,6 +92,9 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MetadataMode metadataMode,
 			MistralAiEmbeddingOptions options, RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+
+		super(metadataMode);
+
 		Assert.notNull(mistralAiApi, "mistralAiApi must not be null");
 		Assert.notNull(metadataMode, "metadataMode must not be null");
 		Assert.notNull(options, "options must not be null");
@@ -101,7 +102,6 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 
 		this.mistralAiApi = mistralAiApi;
-		this.metadataMode = metadataMode;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
@@ -172,12 +172,6 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 		MistralAiEmbeddingOptions requestOptions = (MistralAiEmbeddingOptions) request.getOptions();
 		return new MistralAiApi.EmbeddingRequest<>(request.getInstructions(), requestOptions.getModel(),
 				requestOptions.getEncodingFormat());
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		Assert.notNull(document, "Document must not be null");
-		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
 	/**

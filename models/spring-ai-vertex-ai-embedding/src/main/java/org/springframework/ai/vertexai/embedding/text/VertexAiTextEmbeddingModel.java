@@ -33,6 +33,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingRequest;
@@ -99,6 +100,15 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	public VertexAiTextEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiTextEmbeddingOptions defaultEmbeddingOptions, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
+		this(connectionDetails, MetadataMode.EMBED, defaultEmbeddingOptions, retryTemplate, observationRegistry);
+	}
+
+	public VertexAiTextEmbeddingModel(VertexAiEmbeddingConnectionDetails connectionDetails, MetadataMode metadataMode,
+			VertexAiTextEmbeddingOptions defaultEmbeddingOptions, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
+
+		super(metadataMode);
+
 		Assert.notNull(defaultEmbeddingOptions, "VertexAiTextEmbeddingOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
@@ -106,12 +116,6 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		this.connectionDetails = connectionDetails;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		Assert.notNull(document, "Document must not be null");
-		return this.embed(document.getFormattedContent());
 	}
 
 	@Override
