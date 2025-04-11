@@ -306,7 +306,6 @@ You can have multiple beans producing ToolCallbacks. The auto-configuration will
 == Example Applications
 * link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-webflux-server[Weather Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport.
 * link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-stdio-server[Weather Server (STDIO)] - Spring AI MCP Server Boot Starter with STDIO transport.
-* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/book-library/starter-webflux-server[Book Library Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport.
 * link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/manual-webflux-server[Weather Server Manual Configuration] - Spring AI MCP Server Boot Starter that doesn't use auto-configuration but the Java SDK to configure the server manually.
 
 == Additional Resources
