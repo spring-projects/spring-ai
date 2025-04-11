@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Eddú Meléndez
  */
 @Testcontainers
 class JdbcChatMemoryAutoConfigurationIT {
@@ -60,21 +61,21 @@ class JdbcChatMemoryAutoConfigurationIT {
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldBeLoaded() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=always").run(context -> {
 			assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue();
 		});
 	}
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldNotBeLoaded() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=false").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=never").run(context -> {
 			assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isFalse();
 		});
 	}
 
 	@Test
 	void addGetAndClear_shouldAllExecute() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=always").run(context -> {
 			var chatMemory = context.getBean(JdbcChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
 			var userMessage = new UserMessage("Message from the user");
