@@ -55,12 +55,12 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 === Enable Titan Embedding Support
 
 By default the Titan embedding model is disabled.
-To enable it set the `spring.ai.bedrock.titan.embedding.enabled` property to `true`.
+To enable it set the `spring.ai.model.embedding` property to `bedrock-titan`.
 Exporting environment variable is one way to set this configuration property:
 
 [source,shell]
 ----
-export SPRING_AI_BEDROCK_TITAN_EMBEDDING_ENABLED=true
+export SPRING_AI_MODEL_EMBEDDING=bedrock-titan
 ----
 
 === Embedding Properties
@@ -129,7 +129,7 @@ spring.ai.bedrock.aws.region=eu-central-1
 spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
 spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 
-spring.ai.bedrock.titan.embedding.enabled=true
+spring.ai.model.embedding=bedrock-titan
 ----
 
 TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.
