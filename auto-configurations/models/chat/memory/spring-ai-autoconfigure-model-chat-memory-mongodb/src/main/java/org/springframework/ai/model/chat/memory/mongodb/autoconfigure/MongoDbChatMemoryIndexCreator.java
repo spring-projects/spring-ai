@@ -32,12 +32,12 @@ import org.springframework.stereotype.Component;
  * main index on the conversationId and timestamp fields, and a TTL index on the timestamp
  * field if the TTL is set in properties.
  *
- * @see MongoDbChatMemoryProperties
  * @author Łukasz Jernaś
+ * @see MongoDbChatMemoryProperties
  * @since 1.0.0
  */
 @Component
-@ConditionalOnProperty(value = "spring.ai.chat.memory.mongodb.create-indexes", havingValue = "true")
+@ConditionalOnProperty(value = "spring.ai.chat.memory.mongodb.create-indices", havingValue = "true")
 public class MongoDbChatMemoryIndexCreator {
 
 	private static final Logger logger = LoggerFactory.getLogger(MongoDbChatMemoryIndexCreator.class);
@@ -60,14 +60,12 @@ public class MongoDbChatMemoryIndexCreator {
 			.ensureIndex(new Index().on("conversationId", Sort.Direction.ASC).on("timestamp", Sort.Direction.DESC));
 
 		createOrUpdateTtlIndex();
-
 	}
 
 	private void createOrUpdateTtlIndex() {
 		if (!this.mongoDbChatMemoryProperties.getTtl().isZero()) {
 			// Check for existing TTL index
 			mongoTemplate.indexOps(Conversation.class).getIndexInfo().forEach(idx -> {
-				logger.error("Index info: {}", idx);
 				if (idx.getExpireAfter().isPresent()
 						&& !idx.getExpireAfter().get().equals(this.mongoDbChatMemoryProperties.getTtl())) {
 					logger.warn("Dropping existing TTL index, because TTL is different");

@@ -33,7 +33,7 @@ public class MongoDbChatMemoryProperties {
 	 * If the indexes should be automatically created on app startup. Note: Changing the
 	 * TTL value will drop the TTL index and recreate it.
 	 */
-	private boolean createIndexes = false;
+	private boolean createIndices = false;
 
 	/**
 	 * The time to live (TTL) for the conversation documents in the database. The default
@@ -49,12 +49,12 @@ public class MongoDbChatMemoryProperties {
 		this.ttl = ttl;
 	}
 
-	public boolean isCreateIndexes() {
-		return createIndexes;
+	public boolean isCreateIndices() {
+		return createIndices;
 	}
 
-	public void setCreateIndexes(boolean createIndexes) {
-		this.createIndexes = createIndexes;
+	public void setCreateIndices(boolean createIndices) {
+		this.createIndices = createIndices;
 	}
 
 }
