@@ -65,8 +65,6 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OpenAiApi openAiApi;
 
-	private final MetadataMode metadataMode;
-
 	/**
 	 * Observation registry used for instrumentation.
 	 */
@@ -128,23 +126,18 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	public OpenAiEmbeddingModel(OpenAiApi openAiApi, MetadataMode metadataMode, OpenAiEmbeddingOptions options,
 			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+
+		super(metadataMode);
+
 		Assert.notNull(openAiApi, "openAiApi must not be null");
-		Assert.notNull(metadataMode, "metadataMode must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 
 		this.openAiApi = openAiApi;
-		this.metadataMode = metadataMode;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
-	}
-
-	@Override
-	public float[] embed(Document document) {
-		Assert.notNull(document, "Document must not be null");
-		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
 	@Override

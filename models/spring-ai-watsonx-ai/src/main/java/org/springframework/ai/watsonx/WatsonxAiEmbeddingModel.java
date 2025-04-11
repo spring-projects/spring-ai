@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -62,17 +63,21 @@ public class WatsonxAiEmbeddingModel extends AbstractEmbeddingModel {
 		.withModel(WatsonxAiEmbeddingOptions.DEFAULT_MODEL);
 
 	public WatsonxAiEmbeddingModel(WatsonxAiApi watsonxAiApi) {
+		super(MetadataMode.EMBED);
 		this.watsonxAiApi = watsonxAiApi;
 	}
 
 	public WatsonxAiEmbeddingModel(WatsonxAiApi watsonxAiApi, WatsonxAiEmbeddingOptions defaultOptions) {
-		this.watsonxAiApi = watsonxAiApi;
-		this.defaultOptions = defaultOptions;
+		this(watsonxAiApi, MetadataMode.EMBED, defaultOptions);
 	}
 
-	@Override
-	public float[] embed(Document document) {
-		return embed(document.getText());
+	public WatsonxAiEmbeddingModel(WatsonxAiApi watsonxAiApi, MetadataMode metadataMode,
+			WatsonxAiEmbeddingOptions defaultOptions) {
+
+		super(metadataMode);
+
+		this.watsonxAiApi = watsonxAiApi;
+		this.defaultOptions = defaultOptions;
 	}
 
 	@Override

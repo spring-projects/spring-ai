@@ -18,6 +18,7 @@ package org.springframework.ai.embedding;
 
 import java.util.List;
 
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,14 +26,15 @@ import org.junit.jupiter.params.provider.CsvFileSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Christian Tzolov
@@ -75,6 +77,57 @@ public class AbstractEmbeddingModelTests {
 		};
 
 		assertThat(dummy.dimensions()).isEqualTo(3);
+	}
+
+	@Test
+	public void testMetadataEmbedding() {
+
+		String[] stringToEmbed = new String[] { null };
+
+		// spy writing the content of the embedding request into stringToEmbedd
+		class LoggingEmbeddingModel extends AbstractEmbeddingModel {
+
+			public LoggingEmbeddingModel() {
+			}
+
+			public LoggingEmbeddingModel(MetadataMode metadataMode) {
+				super(metadataMode);
+			}
+
+			@Override
+			public EmbeddingResponse call(EmbeddingRequest request) {
+
+				stringToEmbed[0] = request.getInstructions().get(0);
+
+				return new EmbeddingResponse(List.of(new Embedding(new float[] { 1.0f }, 0)));
+			}
+
+		}
+
+		Document document = Document.builder()
+			.text("Hello world!")
+			.metadata("toEmbed", "should be included by default")
+			.metadata("notToEmbedd", "should not be included by default")
+			.build();
+
+		document.setContentFormatter(
+				DefaultContentFormatter.builder().withExcludedEmbedMetadataKeys("notToEmbedd").build());
+
+		SoftAssertions.assertSoftly(softly -> {
+			new LoggingEmbeddingModel().embed(document);
+
+			softly.assertThat(stringToEmbed[0])
+				.contains("Hello world!")
+				.contains("should be included by default")
+				.doesNotContain("should not be included by default");
+
+			new LoggingEmbeddingModel(MetadataMode.ALL).embed(document);
+
+			softly.assertThat(stringToEmbed[0])
+				.contains("Hello world!")
+				.contains("should be included by default")
+				.contains("should not be included by default");
+		});
 	}
 
 	@ParameterizedTest
