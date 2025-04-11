@@ -13,6 +13,16 @@ NOTE: Learn more about Retrieval Augmented Generation in the xref:concepts.adoc#
 
 Spring AI provides out-of-the-box support for common RAG flows using the `Advisor` API.
 
+To use the `QuestionAnswerAdvisor` or `RetrievalAugmentationAdvisor`, you need to add the `spring-ai-advisors-vector-store` dependency to your project:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-advisors-vector-store</artifactId>
+</dependency>
+----
+
 === QuestionAnswerAdvisor
 
 A vector database stores data that the AI model is unaware of.
