@@ -42,9 +42,9 @@ class ChatModelPromptContentObservationHandlerTests {
 	@Test
 	void whenPromptWithTextThenSpanEvent() {
 		var observationContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt("supercalifragilisticexpialidocious"))
+			.prompt(new Prompt("supercalifragilisticexpialidocious",
+					ChatOptions.builder().model("spoonful-of-sugar").build()))
 			.provider("mary-poppins")
-			.requestOptions(ChatOptions.builder().model("spoonful-of-sugar").build())
 			.build();
 		var sdkTracer = SdkTracerProvider.builder().build().get("test");
 		var otelTracer = new OtelTracer(sdkTracer, new OtelCurrentTraceContext(), null);

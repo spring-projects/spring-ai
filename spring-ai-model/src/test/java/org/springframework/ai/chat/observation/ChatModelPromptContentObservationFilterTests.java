@@ -50,9 +50,8 @@ class ChatModelPromptContentObservationFilterTests {
 	@Test
 	void whenEmptyPromptThenReturnOriginalContext() {
 		var expectedContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt(List.of()))
+			.prompt(new Prompt(List.of(), ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var actualContext = this.observationFilter.map(expectedContext);
 
@@ -62,9 +61,8 @@ class ChatModelPromptContentObservationFilterTests {
 	@Test
 	void whenPromptWithTextThenAugmentContext() {
 		var originalContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt("supercalifragilisticexpialidocious"))
+			.prompt(new Prompt("supercalifragilisticexpialidocious", ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 
@@ -75,10 +73,11 @@ class ChatModelPromptContentObservationFilterTests {
 	@Test
 	void whenPromptWithMessagesThenAugmentContext() {
 		var originalContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt(List.of(new SystemMessage("you're a chimney sweep"),
-					new UserMessage("supercalifragilisticexpialidocious"))))
+			.prompt(new Prompt(
+					List.of(new SystemMessage("you're a chimney sweep"),
+							new UserMessage("supercalifragilisticexpialidocious")),
+					ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 

@@ -34,9 +34,8 @@ class ChatModelObservationContextTests {
 	@Test
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = ChatModelObservationContext.builder()
-			.prompt(generatePrompt())
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("supermodel").build())
 			.build();
 
 		assertThat(observationContext).isNotNull();
@@ -45,15 +44,14 @@ class ChatModelObservationContextTests {
 	@Test
 	void whenRequestOptionsIsNullThenThrow() {
 		assertThatThrownBy(() -> ChatModelObservationContext.builder()
-			.prompt(generatePrompt())
+			.prompt(generatePrompt(ChatOptions.builder().build()))
 			.provider("superprovider")
-			.requestOptions(null)
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("requestOptions cannot be null");
 	}
 
-	private Prompt generatePrompt() {
-		return new Prompt("hello");
+	private Prompt generatePrompt(ChatOptions chatOptions) {
+		return new Prompt("hello", chatOptions);
 	}
 
 }

@@ -47,9 +47,9 @@ class ChatModelCompletionObservationHandlerTests {
 	@Test
 	void whenCompletionWithTextThenSpanEvent() {
 		var observationContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt("supercalifragilisticexpialidocious"))
+			.prompt(new Prompt("supercalifragilisticexpialidocious",
+					ChatOptions.builder().model("spoonful-of-sugar").build()))
 			.provider("mary-poppins")
-			.requestOptions(ChatOptions.builder().model("spoonful-of-sugar").build())
 			.build();
 		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));

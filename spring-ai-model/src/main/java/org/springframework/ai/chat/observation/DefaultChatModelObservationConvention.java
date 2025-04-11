@@ -16,14 +16,13 @@
 
 package org.springframework.ai.chat.observation;
 
-import java.util.Objects;
-import java.util.StringJoiner;
-
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
-
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.Objects;
+import java.util.StringJoiner;
 
 /**
  * Default conventions to populate observations for chat model operations.
@@ -48,9 +47,10 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 
 	@Override
 	public String getContextualName(ChatModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+		if (context.getRequest().getOptions() != null
+				&& StringUtils.hasText(context.getRequest().getOptions().getModel())) {
 			return "%s %s".formatted(context.getOperationMetadata().operationType(),
-					context.getRequestOptions().getModel());
+					context.getRequest().getOptions().getModel());
 		}
 		return context.getOperationMetadata().operationType();
 	}
@@ -72,10 +72,12 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValue requestModel(ChatModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+		if (context.getRequest().getOptions() != null
+				&& StringUtils.hasText(context.getRequest().getOptions().getModel())) {
 			return KeyValue.of(ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-					context.getRequestOptions().getModel());
+					context.getRequest().getOptions().getModel());
 		}
+
 		return REQUEST_MODEL_NONE;
 	}
 
@@ -111,40 +113,44 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	// Request
 
 	protected KeyValues requestFrequencyPenalty(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getRequestOptions().getFrequencyPenalty() != null) {
+		if (context.getRequest().getOptions() != null
+				&& context.getRequest().getOptions().getFrequencyPenalty() != null) {
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
-					String.valueOf(context.getRequestOptions().getFrequencyPenalty()));
+					String.valueOf(context.getRequest().getOptions().getFrequencyPenalty()));
 		}
 		return keyValues;
 	}
 
 	protected KeyValues requestMaxTokens(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getRequestOptions().getMaxTokens() != null) {
+		if (context.getRequest().getOptions() != null && context.getRequest().getOptions().getMaxTokens() != null) {
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(),
-					String.valueOf(context.getRequestOptions().getMaxTokens()));
+					String.valueOf(context.getRequest().getOptions().getMaxTokens()));
 		}
 		return keyValues;
 	}
 
 	protected KeyValues requestPresencePenalty(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getRequestOptions().getPresencePenalty() != null) {
+		if (context.getRequest().getOptions() != null
+				&& context.getRequest().getOptions().getPresencePenalty() != null) {
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
-					String.valueOf(context.getRequestOptions().getPresencePenalty()));
+					String.valueOf(context.getRequest().getOptions().getPresencePenalty()));
 		}
 		return keyValues;
 	}
 
 	protected KeyValues requestStopSequences(KeyValues keyValues, ChatModelObservationContext context) {
-		if (!CollectionUtils.isEmpty(context.getRequestOptions().getStopSequences())) {
+		if (context.getRequest().getOptions() != null
+				&& !CollectionUtils.isEmpty(context.getRequest().getOptions().getStopSequences())) {
 			StringJoiner stopSequencesJoiner = new StringJoiner(", ", "[", "]");
-			context.getRequestOptions()
+			context.getRequest()
+				.getOptions()
 				.getStopSequences()
 				.forEach(value -> stopSequencesJoiner.add("\"" + value + "\""));
 			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES,
-					context.getRequestOptions().getStopSequences(), Objects::nonNull);
+					context.getRequest().getOptions().getStopSequences(), Objects::nonNull);
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					stopSequencesJoiner.toString());
@@ -153,26 +159,26 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	}
 
 	protected KeyValues requestTemperature(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getRequestOptions().getTemperature() != null) {
+		if (context.getRequest().getOptions() != null && context.getRequest().getOptions().getTemperature() != null) {
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(),
-					String.valueOf(context.getRequestOptions().getTemperature()));
+					String.valueOf(context.getRequest().getOptions().getTemperature()));
 		}
 		return keyValues;
 	}
 
 	protected KeyValues requestTopK(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getRequestOptions().getTopK() != null) {
+		if (context.getRequest().getOptions() != null && context.getRequest().getOptions().getTopK() != null) {
 			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_K.asString(),
-					String.valueOf(context.getRequestOptions().getTopK()));
+					String.valueOf(context.getRequest().getOptions().getTopK()));
 		}
 		return keyValues;
 	}
 
 	protected KeyValues requestTopP(KeyValues keyValues, ChatModelObservationContext context) {
-		if (context.getRequestOptions().getTopP() != null) {
+		if (context.getRequest().getOptions() != null && context.getRequest().getOptions().getTopP() != null) {
 			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P.asString(),
-					String.valueOf(context.getRequestOptions().getTopP()));
+					String.valueOf(context.getRequest().getOptions().getTopP()));
 		}
 		return keyValues;
 	}

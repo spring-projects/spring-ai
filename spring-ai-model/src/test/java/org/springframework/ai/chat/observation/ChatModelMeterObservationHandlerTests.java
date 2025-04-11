@@ -95,14 +95,13 @@ class ChatModelMeterObservationHandlerTests {
 
 	private ChatModelObservationContext generateObservationContext() {
 		return ChatModelObservationContext.builder()
-			.prompt(generatePrompt())
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 	}
 
-	private Prompt generatePrompt() {
-		return new Prompt("hello");
+	private Prompt generatePrompt(ChatOptions chatOptions) {
+		return new Prompt("hello", chatOptions);
 	}
 
 	static class TestUsage implements Usage {
