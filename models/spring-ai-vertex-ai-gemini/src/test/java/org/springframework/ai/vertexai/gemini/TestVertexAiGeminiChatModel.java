@@ -25,6 +25,7 @@ import com.google.cloud.vertexai.generativeai.GenerativeModel;
 
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.retry.support.RetryTemplate;
 
 /**
@@ -35,9 +36,8 @@ public class TestVertexAiGeminiChatModel extends VertexAiGeminiChatModel {
 	private GenerativeModel mockGenerativeModel;
 
 	public TestVertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
 			RetryTemplate retryTemplate) {
-		super(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate);
+		super(vertexAI, options, ToolCallingManager.builder().build(), retryTemplate, null);
 	}
 
 	@Override

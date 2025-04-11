@@ -78,13 +78,14 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
@@ -181,70 +182,6 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI) {
-		this(vertexAI, VertexAiGeminiChatOptions.builder().model(ChatModel.GEMINI_1_5_PRO).temperature(0.8).build());
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {
-		this(vertexAI, options, null);
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver) {
-		this(vertexAI, options, functionCallbackResolver, List.of());
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks) {
-		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate) {
-		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
-				ObservationRegistry.NOOP);
-	}
-
-	/**
-	 * @deprecated Use {@link VertexAiGeminiChatModel.Builder}.
-	 */
-	@Deprecated
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-
-		this(vertexAI, options,
-				LegacyToolCallingManager.builder()
-					.functionCallbackResolver(functionCallbackResolver)
-					.functionCallbacks(toolFunctionCallbacks)
-					.build(),
-				retryTemplate, observationRegistry);
-		logger.warn("This constructor is deprecated and will be removed in the next milestone. "
-				+ "Please use the new constructor accepting ToolCallingManager instead.");
-
-	}
 
 	/**
 	 * Creates a new instance of VertexAiGeminiChatModel.
@@ -909,11 +846,13 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 		private ToolCallingManager toolCallingManager;
 
+		private ToolCallbackResolver toolCallbackResolver;
+
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
 		private FunctionCallbackResolver functionCallbackResolver;
 
-		private List<FunctionCallback> toolFunctionCallbacks;
+		private List<ToolCallback> toolCallbacks;
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
@@ -943,18 +882,6 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			return this;
 		}
 
-		@Deprecated
-		public Builder functionCallbackResolver(FunctionCallbackResolver functionCallbackResolver) {
-			this.functionCallbackResolver = functionCallbackResolver;
-			return this;
-		}
-
-		@Deprecated
-		public Builder toolFunctionCallbacks(List<FunctionCallback> toolFunctionCallbacks) {
-			this.toolFunctionCallbacks = toolFunctionCallbacks;
-			return this;
-		}
-
 		public Builder retryTemplate(RetryTemplate retryTemplate) {
 			this.retryTemplate = retryTemplate;
 			return this;
@@ -967,25 +894,9 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 		public VertexAiGeminiChatModel build() {
 			if (toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
-						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolFunctionCallbacks,
-						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
-
 				return new VertexAiGeminiChatModel(vertexAI, defaultOptions, toolCallingManager, retryTemplate,
 						observationRegistry, toolExecutionEligibilityPredicate);
 			}
-
-			if (functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
-						"toolCallingManager cannot be set when functionCallbackResolver is set");
-				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
-						: List.of();
-
-				return new VertexAiGeminiChatModel(vertexAI, defaultOptions, functionCallbackResolver, toolCallbacks,
-						retryTemplate, observationRegistry);
-			}
-
 			return new VertexAiGeminiChatModel(vertexAI, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
 					observationRegistry, toolExecutionEligibilityPredicate);
 		}
