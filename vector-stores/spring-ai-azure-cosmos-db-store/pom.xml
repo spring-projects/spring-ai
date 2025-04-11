@@ -48,6 +48,11 @@
 			<version>${azure-cosmos.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>1.15.4</version> <!-- or the latest version -->
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vector-store</artifactId>
 			<version>${project.parent.version}</version>
