@@ -35,6 +35,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * Memory is retrieved added as a collection of messages to the prompt
  *
  * @author Christian Tzolov
+ * @author NingNing0111
  * @since 1.0.0
  */
 public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
@@ -94,7 +95,7 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request).messages(advisedMessages).build();
 
 		// 4. Add the new user input to the conversation memory.
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		UserMessage userMessage = new UserMessage(request.userText(), request.media(), request.userParams());
 		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
 
 		return advisedRequest;
