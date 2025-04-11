@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,8 +42,9 @@ public class InMemoryChatMemory implements ChatMemory {
 
 	@Override
 	public void add(String conversationId, List<Message> messages) {
-		this.conversationHistory.putIfAbsent(conversationId, new ArrayList<>());
-		this.conversationHistory.get(conversationId).addAll(messages);
+		this.conversationHistory
+				.computeIfAbsent(conversationId, v -> new ArrayList<>())
+				.addAll(messages);
 	}
 
 	@Override
