@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,7 +68,8 @@ class AdvisedResponseTests {
 
 	@Test
 	void whenBuildFromNullAdvisedResponseThenThrows() {
-		assertThatThrownBy(() -> AdvisedResponse.from(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> AdvisedResponse.from((AdvisedResponse) null))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("advisedResponse cannot be null");
 	}
 
@@ -83,6 +85,18 @@ class AdvisedResponseTests {
 		AdvisedResponse advisedResponse = new AdvisedResponse(mock(ChatResponse.class), Map.of());
 		assertThatThrownBy(() -> advisedResponse.updateContext(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("contextTransform cannot be null");
+	}
+
+	@Test
+	void whenConvertToAndFromChatClientResponse() {
+		ChatResponse chatResponse = mock(ChatResponse.class);
+		Map<String, Object> context = Map.of("key", "value");
+		AdvisedResponse advisedResponse = new AdvisedResponse(chatResponse, context);
+
+		ChatClientResponse chatClientResponse = advisedResponse.toChatClientResponse();
+
+		AdvisedResponse newAdvisedResponse = AdvisedResponse.from(chatClientResponse);
+		assertThat(newAdvisedResponse).isEqualTo(advisedResponse);
 	}
 
 }

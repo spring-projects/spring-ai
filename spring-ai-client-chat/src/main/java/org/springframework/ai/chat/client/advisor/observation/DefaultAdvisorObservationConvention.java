@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Default implementation of the {@link AdvisorObservationConvention}.
@@ -55,6 +56,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	@Override
 	@Nullable
 	public String getContextualName(AdvisorObservationContext context) {
+		Assert.notNull(context, "context cannot be null");
 		return ParsingUtils.reConcatenateCamelCase(context.getAdvisorName(), "_")
 			.replace("_around_advisor", "")
 			.replace("_advisor", "");
@@ -66,6 +68,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(AdvisorObservationContext context) {
+		Assert.notNull(context, "context cannot be null");
 		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(), advisorType(context),
 				advisorName(context));
 	}
@@ -78,6 +81,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 		return KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER, AiProvider.SPRING_AI.value());
 	}
 
+	@Deprecated
 	protected KeyValue advisorType(AdvisorObservationContext context) {
 		return KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, context.getAdvisorType().name());
 	}
@@ -96,6 +100,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(AdvisorObservationContext context) {
+		Assert.notNull(context, "context cannot be null");
 		return KeyValues.of(advisorOrder(context));
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,22 @@
 
 package org.springframework.ai.chat.client.observation;
 
-import java.util.List;
 import java.util.Map;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.ChatClientAttributes;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,14 +59,9 @@ class ChatClientInputContentObservationFilterTests {
 
 	@Test
 	void whenEmptyInputContentThenReturnOriginalContext() {
-		ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
-		ChatClientObservationConvention customObservationConvention = null;
+		var request = ChatClientRequest.builder().prompt(new Prompt()).build();
 
-		var request = new DefaultChatClientRequestSpec(this.chatModel, "", Map.of(), "", Map.of(), List.of(), List.of(),
-				List.of(), List.of(), null, List.of(), Map.of(), observationRegistry, customObservationConvention,
-				Map.of());
-
-		var expectedContext = ChatClientObservationContext.builder().withRequest(request).build();
+		var expectedContext = ChatClientObservationContext.builder().request(request).build();
 
 		var actualContext = this.observationFilter.map(expectedContext);
 
@@ -73,14 +70,13 @@ class ChatClientInputContentObservationFilterTests {
 
 	@Test
 	void whenWithTextThenAugmentContext() {
-		ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
-		ChatClientObservationConvention customObservationConvention = null;
+		var request = ChatClientRequest.builder()
+			.prompt(new Prompt(new SystemMessage("sample system text"), new UserMessage("sample user text")))
+			.context(ChatClientAttributes.USER_PARAMS.getKey(), Map.of("up1", "upv1"))
+			.context(ChatClientAttributes.SYSTEM_PARAMS.getKey(), Map.of("sp1", "sp1v"))
+			.build();
 
-		var request = new DefaultChatClientRequestSpec(this.chatModel, "sample user text", Map.of("up1", "upv1"),
-				"sample system text", Map.of("sp1", "sp1v"), List.of(), List.of(), List.of(), List.of(), null,
-				List.of(), Map.of(), observationRegistry, customObservationConvention, Map.of());
-
-		var originalContext = ChatClientObservationContext.builder().withRequest(request).build();
+		var originalContext = ChatClientObservationContext.builder().request(request).build();
 
 		var augmentedContext = this.observationFilter.map(originalContext);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,6 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	private final String advisorName;
 
-	private final Type advisorType;
-
 	/**
 	 * The order of the advisor in the advisor chain.
 	 */
@@ -73,18 +71,25 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * @param advisorRequestContext the shared data between the advisors in the chain
 	 * @param advisorResponseContext the shared data between the advisors in the chain
 	 * @param order the order of the advisor in the advisor chain
+	 * @deprecated use the builder instead
 	 */
+	@Deprecated
 	public AdvisorObservationContext(String advisorName, Type advisorType, @Nullable AdvisedRequest advisorRequest,
 			@Nullable Map<String, Object> advisorRequestContext, @Nullable Map<String, Object> advisorResponseContext,
 			int order) {
-		Assert.hasText(advisorName, "advisorName must not be null or empty");
-		Assert.notNull(advisorType, "advisorType must not be null");
+		Assert.hasText(advisorName, "advisorName cannot be null or empty");
 
 		this.advisorName = advisorName;
-		this.advisorType = advisorType;
 		this.advisorRequest = advisorRequest;
 		this.advisorRequestContext = advisorRequestContext;
 		this.advisorResponseContext = advisorResponseContext;
+		this.order = order;
+	}
+
+	AdvisorObservationContext(String advisorName, int order) {
+		Assert.hasText(advisorName, "advisorName cannot be null or empty");
+
+		this.advisorName = advisorName;
 		this.order = order;
 	}
 
@@ -107,16 +112,20 @@ public class AdvisorObservationContext extends Observation.Context {
 	/**
 	 * The type of the advisor.
 	 * @return the type of the advisor
+	 * @deprecated advisors don't have types anymore, they're all "around"
 	 */
+	@Deprecated
 	public Type getAdvisorType() {
-		return this.advisorType;
+		return Type.AROUND;
 	}
 
 	/**
 	 * The order of the advisor in the advisor chain.
 	 * @return the order of the advisor in the advisor chain
+	 * @deprecated not used anymore
 	 */
 	@Nullable
+	@Deprecated
 	public AdvisedRequest getAdvisedRequest() {
 		return this.advisorRequest;
 	}
@@ -125,7 +134,9 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * Set the {@link AdvisedRequest} data to be advised. Represents the row
 	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
 	 * @param advisedRequest the advised request
+	 * @deprecated not used anymore
 	 */
+	@Deprecated
 	public void setAdvisedRequest(@Nullable AdvisedRequest advisedRequest) {
 		this.advisorRequest = advisedRequest;
 	}
@@ -134,8 +145,10 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * Get the shared data between the advisors in the chain. It is shared between all
 	 * request and response advising points of all advisors in the chain.
 	 * @return the shared data between the advisors in the chain
+	 * @deprecated not used anymore
 	 */
 	@Nullable
+	@Deprecated
 	public Map<String, Object> getAdvisorRequestContext() {
 		return this.advisorRequestContext;
 	}
@@ -144,7 +157,9 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * Set the shared data between the advisors in the chain. It is shared between all
 	 * request and response advising points of all advisors in the chain.
 	 * @param advisorRequestContext the shared data between the advisors in the chain
+	 * @deprecated not used anymore
 	 */
+	@Deprecated
 	public void setAdvisorRequestContext(@Nullable Map<String, Object> advisorRequestContext) {
 		this.advisorRequestContext = advisorRequestContext;
 	}
@@ -153,8 +168,10 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * Get the shared data between the advisors in the chain. It is shared between all
 	 * request and response advising points of all advisors in the chain.
 	 * @return the shared data between the advisors in the chain
+	 * @deprecated not used anymore
 	 */
 	@Nullable
+	@Deprecated
 	public Map<String, Object> getAdvisorResponseContext() {
 		return this.advisorResponseContext;
 	}
@@ -163,7 +180,9 @@ public class AdvisorObservationContext extends Observation.Context {
 	 * Set the shared data between the advisors in the chain. It is shared between all
 	 * request and response advising points of all advisors in the chain.
 	 * @param advisorResponseContext the shared data between the advisors in the chain
+	 * @deprecated not used anymore
 	 */
+	@Deprecated
 	public void setAdvisorResponseContext(@Nullable Map<String, Object> advisorResponseContext) {
 		this.advisorResponseContext = advisorResponseContext;
 	}
@@ -178,7 +197,10 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	/**
 	 * The type of the advisor.
+	 *
+	 * @deprecated advisors don't have types anymore, they're all "around"
 	 */
+	@Deprecated
 	public enum Type {
 
 		/**
@@ -202,8 +224,6 @@ public class AdvisorObservationContext extends Observation.Context {
 	public static final class Builder {
 
 		private String advisorName;
-
-		private Type advisorType;
 
 		private AdvisedRequest advisorRequest;
 
@@ -230,9 +250,10 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * Set the advisor type.
 		 * @param advisorType the advisor type
 		 * @return the builder
+		 * @deprecated advisors don't have types anymore, they're all "around"
 		 */
+		@Deprecated
 		public Builder advisorType(Type advisorType) {
-			this.advisorType = advisorType;
 			return this;
 		}
 
@@ -240,7 +261,9 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * Set the advised request.
 		 * @param advisedRequest the advised request
 		 * @return the builder
+		 * @deprecated not used anymore
 		 */
+		@Deprecated
 		public Builder advisedRequest(AdvisedRequest advisedRequest) {
 			this.advisorRequest = advisedRequest;
 			return this;
@@ -250,7 +273,9 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * Set the advisor request context.
 		 * @param advisorRequestContext the advisor request context
 		 * @return the builder
+		 * @deprecated not used anymore
 		 */
+		@Deprecated
 		public Builder advisorRequestContext(Map<String, Object> advisorRequestContext) {
 			this.advisorRequestContext = advisorRequestContext;
 			return this;
@@ -260,7 +285,9 @@ public class AdvisorObservationContext extends Observation.Context {
 		 * Set the advisor response context.
 		 * @param advisorResponseContext the advisor response context
 		 * @return the builder
+		 * @deprecated not used anymore
 		 */
+		@Deprecated
 		public Builder advisorResponseContext(Map<String, Object> advisorResponseContext) {
 			this.advisorResponseContext = advisorResponseContext;
 			return this;
@@ -276,12 +303,8 @@ public class AdvisorObservationContext extends Observation.Context {
 			return this;
 		}
 
-		/**
-		 * Build the {@link AdvisorObservationContext}.
-		 * @return the {@link AdvisorObservationContext}
-		 */
 		public AdvisorObservationContext build() {
-			return new AdvisorObservationContext(this.advisorName, this.advisorType, this.advisorRequest,
+			return new AdvisorObservationContext(this.advisorName, Type.AROUND, this.advisorRequest,
 					this.advisorRequestContext, this.advisorResponseContext, this.order);
 		}
 
