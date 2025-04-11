@@ -103,9 +103,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 
 	/**
 	 * Number between -2.0 and 2.0. frequency_penalty penalizes the repetition of words
-	 * based on their frequency in the generated text. A higher frequency penalty discourages
-	 * the model from repeating words that have already appeared frequently in the
-	 * output, promoting diversity and reducing repetition.
+	 * based on their frequency in the generated text. A higher frequency penalty
+	 * discourages the model from repeating words that have already appeared frequently in
+	 * the output, promoting diversity and reducing repetition.
 	 */
 	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
 
