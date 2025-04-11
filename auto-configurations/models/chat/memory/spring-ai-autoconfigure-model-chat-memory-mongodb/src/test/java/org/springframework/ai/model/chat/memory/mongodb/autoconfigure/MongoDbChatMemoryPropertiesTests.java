@@ -28,16 +28,17 @@ public class MongoDbChatMemoryPropertiesTests {
 	void defaultValues_set() {
 		var properties = new MongoDbChatMemoryProperties();
 		assertThat(properties.getTtl()).isEqualTo(Duration.ZERO);
-		assertThat(properties.isCreateIndexes()).isFalse();
+		assertThat(properties.isCreateIndices()).isFalse();
 	}
 
 	@Test
 	void overrideValues() {
 		var properties = new MongoDbChatMemoryProperties();
 		properties.setTtl(Duration.ofMinutes(1));
-		properties.setCreateIndexes(true);
+		properties.setCreateIndices(true);
 
 		assertThat(properties.getTtl()).isEqualTo(Duration.ofMinutes(1));
-		assertThat(properties.isCreateIndexes()).isTrue();
+		assertThat(properties.isCreateIndices()).isTrue();
 	}
+
 }
