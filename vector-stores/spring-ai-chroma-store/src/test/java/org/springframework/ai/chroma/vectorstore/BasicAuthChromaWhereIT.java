@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.chromadb.ChromaDBContainer;
+import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
@@ -51,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Thomas Vitale
+ * @author Jonghoon Park
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -65,6 +68,15 @@ public class BasicAuthChromaWhereIT {
 		.withEnv("CHROMA_SERVER_AUTHN_CREDENTIALS_FILE", "/chroma/server.htpasswd")
 		.withEnv("CHROMA_SERVER_AUTHN_PROVIDER", "chromadb.auth.basic_authn.BasicAuthenticationServerProvider")
 		.withCopyToContainer(MountableFile.forClasspathResource("server.htpasswd"), "/chroma/server.htpasswd");
+
+	static {
+		chromaContainer.waitingFor(new AbstractWaitStrategy() {
+			@Override
+			protected void waitUntilReady() {
+				Wait.forHttp("/api/v2/heartbeat");
+			}
+		});
+	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -108,7 +120,11 @@ public class BasicAuthChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestClient.Builder builder) {
-			return new ChromaApi(chromaContainer.getEndpoint(), builder).withBasicAuthCredentials("admin", "password");
+			return ChromaApi.builder()
+				.baseUrl(chromaContainer.getEndpoint())
+				.restClientBuilder(builder)
+				.build()
+				.withBasicAuthCredentials("admin", "password");
 		}
 
 		@Bean

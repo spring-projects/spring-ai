@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chroma;
-
-import org.testcontainers.utility.DockerImageName;
+package org.springframework.ai.chroma.vectorstore.common;
 
 /**
- * @author Thomas Vitale
+ * Common value constants for Chroma api.
+ *
+ * @author Jonghoon Park
  */
-public final class ChromaImage {
+public class ChromaApiConstants {
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("ghcr.io/chroma-core/chroma:1.0.0");
+	public static final String DEFAULT_BASE_URL = "http://localhost:8000";
 
-	private ChromaImage() {
+	public static final String DEFAULT_TENANT_NAME = "SpringAiTenant";
 
-	}
+	public static final String DEFAULT_DATABASE_NAME = "SpringAiDatabase";
+
+	public static final String DEFAULT_COLLECTION_NAME = "SpringAiCollection";
 
 }
