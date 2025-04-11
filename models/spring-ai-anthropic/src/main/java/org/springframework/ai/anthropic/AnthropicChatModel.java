@@ -253,7 +253,7 @@ public class AnthropicChatModel implements ChatModel {
 					this.getAdditionalHttpHeaders(prompt));
 
 			// @formatter:off
-			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
+			Flux<ChatResponse> chatResponseFlux = response.flatMap(chatCompletionResponse -> {
 				AnthropicApi.Usage usage = chatCompletionResponse.usage();
 				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
 				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
