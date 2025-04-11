@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,65 +14,46 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore.cosmosdb.autoconfigure;
+package org.springframework.ai.vectorstore.cosmosdb;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import io.micrometer.observation.tck.TestObservationRegistry;
+import com.azure.cosmos.CosmosAsyncClient;
+import com.azure.cosmos.CosmosAsyncContainer;
+import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.cosmosdb.CosmosDBVectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Theo van Kraay
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
-public class CosmosDBVectorStoreAutoConfigurationIT {
+public class CosmosDBVectorStoreWithMetadataPartitionKeyIT {
 
-	private final ApplicationContextRunner contextRunner;
-
-	public CosmosDBVectorStoreAutoConfigurationIT() {
-		String endpoint = System.getenv("AZURE_COSMOSDB_ENDPOINT");
-		String key = System.getenv("AZURE_COSMOSDB_KEY");
-
-		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(CosmosDBVectorStoreAutoConfiguration.class))
-			.withPropertyValues("spring.ai.vectorstore.cosmosdb.databaseName=test-database")
-			.withPropertyValues("spring.ai.vectorstore.cosmosdb.containerName=test-container")
-			.withPropertyValues("spring.ai.vectorstore.cosmosdb.partitionKeyPath=/id")
-			.withPropertyValues("spring.ai.vectorstore.cosmosdb.metadataFields=country,year,city")
-			.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorStoreThroughput=1000")
-			.withPropertyValues("spring.ai.vectorstore.cosmosdb.vectorDimensions=384");
-
-		if (endpoint != null && !"null".equalsIgnoreCase(endpoint)) {
-			contextRunner = contextRunner.withPropertyValues("spring.ai.vectorstore.cosmosdb.endpoint=" + endpoint);
-		}
-
-		if (key != null && !"null".equalsIgnoreCase(key)) {
-			contextRunner = contextRunner.withPropertyValues("spring.ai.vectorstore.cosmosdb.key=" + key);
-		}
-
-		this.contextRunner = contextRunner.withUserConfiguration(Config.class);
-	}
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withUserConfiguration(TestApplication.class);
 
 	private VectorStore vectorStore;
 
@@ -86,21 +67,22 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 
 		// Create a sample document
 		Document document1 = new Document(UUID.randomUUID().toString(), "Sample content1", Map.of("key1", "value1"));
-		Document document2 = new Document(UUID.randomUUID().toString(), "Sample content2", Map.of("key2", "value2"));
+		assertThatThrownBy(() -> this.vectorStore.add(List.of(document1))).isInstanceOf(Exception.class)
+			.hasMessageContaining("Partition key 'country' not found in document metadata.");
 
-		// Add the document to the vector store
-		this.vectorStore.add(List.of(document1, document2));
+		Document document2 = new Document(UUID.randomUUID().toString(), "Sample content1", Map.of("country", "UK"));
+		this.vectorStore.add(List.of(document2));
 
 		// Perform a similarity search
 		List<Document> results = this.vectorStore
-			.similaritySearch(SearchRequest.builder().query("Sample content").topK(1).build());
+			.similaritySearch(SearchRequest.builder().query("Sample content1").topK(1).build());
 
 		// Verify the search results
 		assertThat(results).isNotEmpty();
-		assertThat(results.get(0).getId()).isEqualTo(document1.getId());
+		assertThat(results.get(0).getId()).isEqualTo(document2.getId());
 
 		// Remove the documents from the vector store
-		this.vectorStore.delete(List.of(document1.getId(), document2.getId()));
+		this.vectorStore.delete(List.of(document2.getId()));
 
 		// Perform a similarity search again
 		List<Document> results2 = this.vectorStore
@@ -108,6 +90,7 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 
 		// Verify the search results
 		assertThat(results2).isEmpty();
+
 	}
 
 	@Test
@@ -137,23 +120,27 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		metadata4.put("country", "US");
 		metadata4.put("year", 2020);
 		metadata4.put("city", "Sofia");
+
 		Document document1 = new Document("1", "A document about the UK", metadata1);
 		Document document2 = new Document("2", "A document about the Netherlands", metadata2);
 		Document document3 = new Document("3", "A document about the US", metadata3);
 		Document document4 = new Document("4", "A document about the US", metadata4);
 
 		this.vectorStore.add(List.of(document1, document2, document3, document4));
-
 		FilterExpressionBuilder b = new FilterExpressionBuilder();
-
 		List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder()
 			.query("The World")
 			.topK(10)
-			.filterExpression((b.in("country", "UK", "NL").build()))
+			.filterExpression((b.in("country", "UK", "NL")).build())
 			.build());
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
+		for (Document doc : results) {
+			assertThat(doc.getMetadata().get("country")).isIn("UK", "NL");
+			assertThat(doc.getMetadata().get("year")).isIn(2021, 2022);
+			assertThat(doc.getMetadata().get("city")).isIn("London", "Amsterdam").isNotEqualTo("Sofia");
+		}
 
 		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.builder()
 			.query("The World")
@@ -185,34 +172,39 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 	}
 
 	@Test
-	public void autoConfigurationDisabledWhenTypeIsNone() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
-			assertThat(context.getBeansOfType(CosmosDBVectorStoreProperties.class)).isEmpty();
-			assertThat(context.getBeansOfType(CosmosDBVectorStore.class)).isEmpty();
-			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
-		});
-	}
-
-	@Test
-	public void autoConfigurationEnabledByDefault() {
+	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(CosmosDBVectorStoreProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
-			assertThat(context.getBean(VectorStore.class)).isInstanceOf(CosmosDBVectorStore.class);
+			CosmosDBVectorStore vectorStore = context.getBean(CosmosDBVectorStore.class);
+			Optional<CosmosAsyncContainer> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 		});
 	}
 
-	@Test
-	public void autoConfigurationEnabledWhenTypeIsAzureCosmosDB() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=azure-cosmos-db").run(context -> {
-			assertThat(context.getBeansOfType(CosmosDBVectorStoreProperties.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
-			assertThat(context.getBean(VectorStore.class)).isInstanceOf(CosmosDBVectorStore.class);
-		});
-	}
+	@SpringBootConfiguration
+	@EnableAutoConfiguration
+	public static class TestApplication {
 
-	@Configuration(proxyBeanMethods = false)
-	static class Config {
+		@Bean
+		public VectorStore vectorStore(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel,
+				VectorStoreObservationConvention convention) {
+			return CosmosDBVectorStore.builder(cosmosClient, embeddingModel)
+				.databaseName("test-database")
+				.containerName("test-container-metadata-partition-key")
+				.metadataFields(List.of("country", "year", "city"))
+				.partitionKeyPath("/metadata/country")
+				.vectorStoreThroughput(1000)
+				.customObservationConvention(convention)
+				.build();
+		}
+
+		@Bean
+		public CosmosAsyncClient cosmosClient() {
+			return new CosmosClientBuilder().endpoint(System.getenv("AZURE_COSMOSDB_ENDPOINT"))
+				.credential(new DefaultAzureCredentialBuilder().build())
+				.userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
+				.gatewayMode()
+				.buildAsyncClient();
+		}
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
@@ -220,8 +212,11 @@ public class CosmosDBVectorStoreAutoConfigurationIT {
 		}
 
 		@Bean
-		public TestObservationRegistry observationRegistry() {
-			return TestObservationRegistry.create();
+		public VectorStoreObservationConvention observationConvention() {
+			// Replace with an actual observation convention or a mock if needed
+			return new VectorStoreObservationConvention() {
+
+			};
 		}
 
 	}
