@@ -52,11 +52,11 @@ import org.springframework.util.Assert;
  * Reads the given Markdown resource and groups headers, paragraphs, or text divided by
  * horizontal lines (depending on the
  * {@link MarkdownDocumentReaderConfig#horizontalRuleCreateDocument} configuration) into
- * {@link Document}s.
- * Currently, only Markdown resource files in the ClassPath path are supported,
- * and Markdown files can be read in the way of directory path configuration.
- * Use {@See org.springframework.ai.reader.markdown.MarkdownDocumentReaderTest#testDirPathSingle()}
- *     {@See org.springframework.ai.reader.markdown.MarkdownDocumentReaderTest#testMultipleMarkdownFiles()}
+ * {@link Document}s. Currently, only Markdown resource files in the ClassPath path are
+ * supported, and Markdown files can be read in the way of directory path configuration.
+ * Use
+ * {@See org.springframework.ai.reader.markdown.MarkdownDocumentReaderTest#testDirPathSingle()}
+ * {@See org.springframework.ai.reader.markdown.MarkdownDocumentReaderTest#testMultipleMarkdownFiles()}
  *
  * @author Piotr Olaszewski
  * @auther shown.Ji
@@ -144,8 +144,8 @@ public class MarkdownDocumentReader implements DocumentReader {
 	public List<Document> get() {
 
 		return this.markdownResources.stream()
-				.flatMap(markdownResource -> getDocuments(markdownResource).stream())
-				.collect(Collectors.toList());
+			.flatMap(markdownResource -> getDocuments(markdownResource).stream())
+			.collect(Collectors.toList());
 	}
 
 	private List<Document> getDocuments(Resource markdownResource) {
@@ -165,7 +165,8 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 				documents = documentVisitor.getDocuments();
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			logger.error("Error reading markdown resource: " + e.getMessage(), e);
 			throw new RuntimeException("Error reading markdown resource", e);
 		}
@@ -268,7 +269,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 		public void visit(Text text) {
 			if (text.getParent() instanceof Heading heading) {
 				this.currentDocumentBuilder.metadata("category", "header_%d".formatted(heading.getLevel()))
-						.metadata("title", text.getLiteral());
+					.metadata("title", text.getLiteral());
 			}
 			else {
 				this.currentParagraphs.add(text.getLiteral());
@@ -317,9 +318,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		DefaultResourceLoader resourceLoader = new DefaultResourceLoader();
 
-		return markdownResourcePaths.stream()
-				.map(resourceLoader::getResource)
-				.collect(Collectors.toList());
+		return markdownResourcePaths.stream().map(resourceLoader::getResource).collect(Collectors.toList());
 	}
 
 	/**
@@ -343,11 +342,13 @@ public class MarkdownDocumentReader implements DocumentReader {
 							resources.add("classpath:" + mdFile.getName());
 						}
 					}
-				} else if (file.exists() && file.getName().endsWith(".md")) {
+				}
+				else if (file.exists() && file.getName().endsWith(".md")) {
 					resources.add(resourcePath);
 				}
 			}
-		} else {
+		}
+		else {
 			File file = new File(resourcePath);
 			if (file.exists() && file.isDirectory()) {
 				File[] files = file.listFiles((dir, name) -> name.endsWith(".md"));
@@ -356,7 +357,8 @@ public class MarkdownDocumentReader implements DocumentReader {
 						resources.add(mdFile.getAbsolutePath());
 					}
 				}
-			} else if (file.exists() && file.getName().endsWith(".md")) {
+			}
+			else if (file.exists() && file.getName().endsWith(".md")) {
 				resources.add(file.getAbsolutePath());
 			}
 		}
