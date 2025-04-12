@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Eddú Meléndez
  */
 @Testcontainers
 class JdbcChatMemoryDataSourceScriptDatabaseInitializerTests {
@@ -41,7 +42,8 @@ class JdbcChatMemoryDataSourceScriptDatabaseInitializerTests {
 	void getSettings_shouldHaveSchemaLocations() {
 		this.contextRunner.run(context -> {
 			var dataSource = context.getBean(DataSource.class);
-			var settings = JdbcChatMemoryDataSourceScriptDatabaseInitializer.getSettings(dataSource);
+			var properties = context.getBean(JdbcChatMemoryProperties.class);
+			var settings = JdbcChatMemoryDataSourceScriptDatabaseInitializer.getSettings(dataSource, properties);
 
 			assertThat(settings.getSchemaLocations())
 				.containsOnly("classpath:org/springframework/ai/chat/memory/jdbc/schema-postgresql.sql");
