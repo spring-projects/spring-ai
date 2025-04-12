@@ -225,6 +225,8 @@ public class McpServerAutoConfiguration {
 
 		serverBuilder.capabilities(capabilitiesBuilder.build());
 
+		serverBuilder.instructions(serverProperties.getInstructions());
+
 		return serverBuilder.build();
 	}
 
@@ -323,6 +325,8 @@ public class McpServerAutoConfiguration {
 		});
 
 		serverBuilder.capabilities(capabilitiesBuilder.build());
+
+		serverBuilder.instructions(serverProperties.getInstructions());
 
 		return serverBuilder.build();
 	}
