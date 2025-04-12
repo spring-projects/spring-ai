@@ -16,10 +16,15 @@
 
 package org.springframework.ai.reader.markdown;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.commonmark.node.AbstractVisitor;
 import org.commonmark.node.BlockQuote;
@@ -33,27 +38,37 @@ import org.commonmark.node.SoftLineBreak;
 import org.commonmark.node.Text;
 import org.commonmark.node.ThematicBreak;
 import org.commonmark.parser.Parser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 
 /**
  * Reads the given Markdown resource and groups headers, paragraphs, or text divided by
  * horizontal lines (depending on the
  * {@link MarkdownDocumentReaderConfig#horizontalRuleCreateDocument} configuration) into
  * {@link Document}s.
+ * Currently, only Markdown resource files in the ClassPath path are supported,
+ * and Markdown files can be read in the way of directory path configuration.
+ * Use {@See org.springframework.ai.reader.markdown.MarkdownDocumentReaderTest#testDirPathSingle()}
+ *     {@See org.springframework.ai.reader.markdown.MarkdownDocumentReaderTest#testMultipleMarkdownFiles()}
  *
  * @author Piotr Olaszewski
+ * @auther shown.Ji
  */
 public class MarkdownDocumentReader implements DocumentReader {
+
+	private final static Logger logger = LoggerFactory.getLogger(MarkdownDocumentReader.class);
 
 	/**
 	 * The resource points to the Markdown document.
 	 */
-	private final Resource markdownResource;
+	private final List<Resource> markdownResources;
 
 	/**
 	 * Configuration to a parsing process.
@@ -67,10 +82,44 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 	/**
 	 * Create a new {@link MarkdownDocumentReader} instance.
-	 * @param markdownResource the resource to read
+	 * @param markdownResourcePath the markdown file resource path to read
 	 */
-	public MarkdownDocumentReader(String markdownResource) {
-		this(new DefaultResourceLoader().getResource(markdownResource), MarkdownDocumentReaderConfig.defaultConfig());
+	public MarkdownDocumentReader(String markdownResourcePath) {
+		this(loadResources(loadResourcePaths(markdownResourcePath)), MarkdownDocumentReaderConfig.defaultConfig());
+	}
+
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResourcePath the resource path
+	 * @param config the configuration to use
+	 */
+	public MarkdownDocumentReader(String markdownResourcePath, MarkdownDocumentReaderConfig config) {
+		this(loadResources(loadResourcePaths(markdownResourcePath)), config);
+	}
+
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResourcePaths the resources paths to read
+	 */
+	public MarkdownDocumentReader(List<String> markdownResourcePaths) {
+		this(loadResources(markdownResourcePaths), MarkdownDocumentReaderConfig.defaultConfig());
+	}
+
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the markdown file resources to read
+	 */
+	public MarkdownDocumentReader(Resource markdownResource) {
+		this(markdownResource, MarkdownDocumentReaderConfig.defaultConfig());
+	}
+
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * @param markdownResource the markdown file resource to read
+	 * @param config the configuration to use
+	 */
+	public MarkdownDocumentReader(Resource markdownResource, MarkdownDocumentReaderConfig config) {
+		this(List.of(markdownResource), config);
 	}
 
 	/**
@@ -78,16 +127,11 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 * @param markdownResource the resource to read
 	 * @param config the configuration to use
 	 */
-	public MarkdownDocumentReader(String markdownResource, MarkdownDocumentReaderConfig config) {
-		this(new DefaultResourceLoader().getResource(markdownResource), config);
-	}
+	public MarkdownDocumentReader(List<Resource> markdownResource, MarkdownDocumentReaderConfig config) {
 
-	/**
-	 * Create a new {@link MarkdownDocumentReader} instance.
-	 * @param markdownResource the resource to read
-	 */
-	public MarkdownDocumentReader(Resource markdownResource, MarkdownDocumentReaderConfig config) {
-		this.markdownResource = markdownResource;
+		Assert.notEmpty(markdownResource, "Markdown resource must not be empty");
+
+		this.markdownResources = markdownResource;
 		this.config = config;
 		this.parser = Parser.builder().build();
 	}
@@ -98,17 +142,34 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 */
 	@Override
 	public List<Document> get() {
-		try (var input = this.markdownResource.getInputStream()) {
-			Node node = this.parser.parseReader(new InputStreamReader(input));
 
-			DocumentVisitor documentVisitor = new DocumentVisitor(this.config);
-			node.accept(documentVisitor);
+		return this.markdownResources.stream()
+				.flatMap(markdownResource -> getDocuments(markdownResource).stream())
+				.collect(Collectors.toList());
+	}
 
-			return documentVisitor.getDocuments();
+	private List<Document> getDocuments(Resource markdownResource) {
+
+		List<Document> documents;
+		try {
+			if (markdownResource.isFile() && !markdownResource.exists()) {
+				throw new FileNotFoundException("Resource does not exist: " + markdownResource.getFilename());
+			}
+
+			logger.debug("Attempting to read resource: " + markdownResource.getDescription());
+			try (InputStream input = markdownResource.getInputStream()) {
+				Node node = this.parser.parseReader(new InputStreamReader(input));
+
+				DocumentVisitor documentVisitor = new DocumentVisitor(this.config);
+				node.accept(documentVisitor);
+
+				documents = documentVisitor.getDocuments();
+			}
+		} catch (IOException e) {
+			logger.error("Error reading markdown resource: " + e.getMessage(), e);
+			throw new RuntimeException("Error reading markdown resource", e);
 		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		return documents;
 	}
 
 	/**
@@ -207,7 +268,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 		public void visit(Text text) {
 			if (text.getParent() instanceof Heading heading) {
 				this.currentDocumentBuilder.metadata("category", "header_%d".formatted(heading.getLevel()))
-					.metadata("title", text.getLiteral());
+						.metadata("title", text.getLiteral());
 			}
 			else {
 				this.currentParagraphs.add(text.getLiteral());
@@ -245,6 +306,62 @@ public class MarkdownDocumentReader implements DocumentReader {
 			}
 		}
 
+	}
+
+	/**
+	 * Load resources from the given paths.
+	 * @param markdownResourcePaths the resource paths to load
+	 * @return a list of Resources
+	 */
+	private static List<Resource> loadResources(List<String> markdownResourcePaths) {
+
+		DefaultResourceLoader resourceLoader = new DefaultResourceLoader();
+
+		return markdownResourcePaths.stream()
+				.map(resourceLoader::getResource)
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Load resource paths from the given path.
+	 * @param resourcePath markdown resource path
+	 * @return a list of resource paths
+	 */
+	private static List<String> loadResourcePaths(String resourcePath) {
+		List<String> resources = new ArrayList<>();
+
+		if (resourcePath.startsWith("classpath:")) {
+			String path = resourcePath.replace("classpath:", "");
+			URL resourceURL = MarkdownDocumentReader.class.getResource(path);
+
+			if (resourceURL != null) {
+				File file = new File(resourceURL.getFile());
+				if (file.isDirectory()) {
+					File[] files = file.listFiles((dir, name) -> name.endsWith(".md"));
+					if (files != null) {
+						for (File mdFile : files) {
+							resources.add("classpath:" + mdFile.getName());
+						}
+					}
+				} else if (file.exists() && file.getName().endsWith(".md")) {
+					resources.add(resourcePath);
+				}
+			}
+		} else {
+			File file = new File(resourcePath);
+			if (file.exists() && file.isDirectory()) {
+				File[] files = file.listFiles((dir, name) -> name.endsWith(".md"));
+				if (files != null) {
+					for (File mdFile : files) {
+						resources.add(mdFile.getAbsolutePath());
+					}
+				}
+			} else if (file.exists() && file.getName().endsWith(".md")) {
+				resources.add(file.getAbsolutePath());
+			}
+		}
+
+		return resources;
 	}
 
 }
