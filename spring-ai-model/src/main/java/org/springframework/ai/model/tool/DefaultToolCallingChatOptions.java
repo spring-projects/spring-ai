@@ -109,7 +109,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@Nullable
-	public Boolean isInternalToolExecutionEnabled() {
+	public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
@@ -141,7 +141,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	public Boolean getProxyToolCalls() {
-		return isInternalToolExecutionEnabled() != null ? !isInternalToolExecutionEnabled() : null;
+		return getInternalToolExecutionEnabled() != null ? !getInternalToolExecutionEnabled() : null;
 	}
 
 	@Override
@@ -236,7 +236,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		options.setToolCallbacks(getToolCallbacks());
 		options.setToolNames(getToolNames());
 		options.setToolContext(getToolContext());
-		options.setInternalToolExecutionEnabled(isInternalToolExecutionEnabled());
+		options.setInternalToolExecutionEnabled(getInternalToolExecutionEnabled());
 		options.setModel(getModel());
 		options.setFrequencyPenalty(getFrequencyPenalty());
 		options.setMaxTokens(getMaxTokens());

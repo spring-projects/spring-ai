@@ -396,7 +396,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.penalizeNewline(fromOptions.getPenalizeNewline())
 				.stop(fromOptions.getStop())
 				.toolNames(fromOptions.getToolNames())
-				.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 				.toolCallbacks(fromOptions.getToolCallbacks())
 				.toolContext(fromOptions.getToolContext()).build();
 	}
@@ -736,9 +736,9 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
+	public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
-	}
+    }
 
 	@Override
 	@JsonIgnore

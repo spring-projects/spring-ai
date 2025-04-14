@@ -150,7 +150,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(c.getToolCallbacks()).isEqualTo(original.getToolCallbacks());
 			assertThat(c.getToolNames()).isEqualTo(original.getToolNames());
 			assertThat(c.getToolContext()).isEqualTo(original.getToolContext());
-			assertThat(c.isInternalToolExecutionEnabled()).isEqualTo(original.isInternalToolExecutionEnabled());
+			assertThat(c.getInternalToolExecutionEnabled()).isEqualTo(original.getInternalToolExecutionEnabled());
 			assertThat(c.getModel()).isEqualTo(original.getModel());
 			assertThat(c.getTemperature()).isEqualTo(original.getTemperature());
 		});
@@ -195,7 +195,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(o.getToolCallbacks()).containsExactly(callback);
 			assertThat(o.getToolNames()).containsExactly("tool1");
 			assertThat(o.getToolContext()).isEqualTo(context);
-			assertThat(o.isInternalToolExecutionEnabled()).isTrue();
+			assertThat(o.getInternalToolExecutionEnabled()).isTrue();
 			assertThat(o.getModel()).isEqualTo("gpt-4");
 			assertThat(o.getTemperature()).isEqualTo(0.7);
 			assertThat(o.getMaxTokens()).isEqualTo(100);
@@ -236,7 +236,7 @@ class DefaultToolCallingChatOptionsTests {
 		assertThat(options.getProxyToolCalls()).isFalse();
 
 		options.setProxyToolCalls(true);
-		assertThat(options.isInternalToolExecutionEnabled()).isFalse();
+		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
 	}
 
 }

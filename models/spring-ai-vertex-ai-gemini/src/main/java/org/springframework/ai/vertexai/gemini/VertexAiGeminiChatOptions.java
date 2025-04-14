@@ -148,7 +148,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
-		options.setInternalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled());
+		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
 	}
@@ -287,7 +287,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@Nullable
-	public Boolean isInternalToolExecutionEnabled() {
+	public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
