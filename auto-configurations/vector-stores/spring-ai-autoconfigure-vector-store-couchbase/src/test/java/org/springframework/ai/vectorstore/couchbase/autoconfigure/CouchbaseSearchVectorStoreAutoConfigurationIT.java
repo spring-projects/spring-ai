@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,10 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.couchbase.autoconfigure;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.couchbase.CouchbaseContainer;
+import org.testcontainers.couchbase.CouchbaseService;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
@@ -28,21 +39,8 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.couchbase.CouchbaseContainer;
-import org.testcontainers.couchbase.CouchbaseService;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.vectorstore.couchbase.autoconfigure.CouchbaseContainerMetadata.COUCHBASE_IMAGE_ENTERPRISE;
-import static org.springframework.ai.vectorstore.couchbase.autoconfigure.CouchbaseContainerMetadata.PASSWORD;
-import static org.springframework.ai.vectorstore.couchbase.autoconfigure.CouchbaseContainerMetadata.USERNAME;
-import static org.springframework.ai.vectorstore.couchbase.autoconfigure.CouchbaseContainerMetadata.bucketDefinition;
 
 /**
  * @author Laurent Doguin
@@ -54,11 +52,12 @@ class CouchbaseSearchVectorStoreAutoConfigurationIT {
 
 	// Define the couchbase container.
 	@Container
-	final static CouchbaseContainer couchbaseContainer = new CouchbaseContainer(COUCHBASE_IMAGE_ENTERPRISE)
-		.withCredentials(USERNAME, PASSWORD)
+	final static CouchbaseContainer couchbaseContainer = new CouchbaseContainer(
+			CouchbaseContainerMetadata.COUCHBASE_IMAGE_ENTERPRISE)
+		.withCredentials(CouchbaseContainerMetadata.USERNAME, CouchbaseContainerMetadata.PASSWORD)
 		.withEnabledServices(CouchbaseService.KV, CouchbaseService.QUERY, CouchbaseService.INDEX,
 				CouchbaseService.SEARCH)
-		.withBucket(bucketDefinition)
+		.withBucket(CouchbaseContainerMetadata.bucketDefinition)
 		.withStartupAttempts(4)
 		.withStartupTimeout(Duration.ofSeconds(90))
 		.waitingFor(Wait.forHealthcheck());
