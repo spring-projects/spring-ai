@@ -44,10 +44,10 @@ class MongoDbChatMemoryAutoConfigurationIT {
 	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo:8.0.6");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(MongoDbChatMemoryAutoConfiguration.class, MongoAutoConfiguration.class,
-				MongoDataAutoConfiguration.class, MongoDbChatMemoryIndexCreator.class))
-		.withPropertyValues(String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()),
-				"spring.ai.chat.memory.mongodb.create-indexes=true", "spring.ai.chat.memory.mongodb.ttl=PT1M");
+			.withConfiguration(AutoConfigurations.of(MongoDbChatMemoryAutoConfiguration.class, MongoAutoConfiguration.class,
+					MongoDataAutoConfiguration.class, MongoDbChatMemoryIndexCreator.class))
+			.withPropertyValues(String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()),
+					"spring.ai.chat.memory.mongodb.create-indexes=true", "spring.ai.chat.memory.mongodb.ttl=PT1M");
 
 	@Test
 	void mongodbChatMemoryBean_exists() {

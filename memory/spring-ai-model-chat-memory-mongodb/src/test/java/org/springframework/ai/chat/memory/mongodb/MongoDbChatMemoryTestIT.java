@@ -47,9 +47,9 @@ class MongoDbChatMemoryTestIT {
 	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo:8.0.6");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(MongoDbChatMemoryTestIT.TestApplication.class)
-		.withPropertyValues(
-				String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()));
+			.withUserConfiguration(MongoDbChatMemoryTestIT.TestApplication.class)
+			.withPropertyValues(
+					String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()));
 
 	@Test
 	void ensureBeanGetsCreated() {
@@ -60,7 +60,7 @@ class MongoDbChatMemoryTestIT {
 	}
 
 	@ParameterizedTest
-	@CsvSource({ "Message from assistant,ASSISTANT", "Message from user,USER", "Message from system,SYSTEM" })
+	@CsvSource({"Message from assistant,ASSISTANT", "Message from user,USER", "Message from system,SYSTEM"})
 	void add_shouldInsertSingleMessage(String content, MessageType messageType) {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);

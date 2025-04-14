@@ -47,7 +47,7 @@ public class MongoDbChatMemoryIndexCreator {
 	private final MongoDbChatMemoryProperties mongoDbChatMemoryProperties;
 
 	public MongoDbChatMemoryIndexCreator(MongoTemplate mongoTemplate,
-			MongoDbChatMemoryProperties mongoDbChatMemoryProperties) {
+										 MongoDbChatMemoryProperties mongoDbChatMemoryProperties) {
 		this.mongoTemplate = mongoTemplate;
 		this.mongoDbChatMemoryProperties = mongoDbChatMemoryProperties;
 	}
@@ -57,7 +57,7 @@ public class MongoDbChatMemoryIndexCreator {
 		logger.info("Creating MongoDB indices for ChatMemory");
 		// Create a main index
 		mongoTemplate.indexOps(Conversation.class)
-			.ensureIndex(new Index().on("conversationId", Sort.Direction.ASC).on("timestamp", Sort.Direction.DESC));
+				.ensureIndex(new Index().on("conversationId", Sort.Direction.ASC).on("timestamp", Sort.Direction.DESC));
 
 		createOrUpdateTtlIndex();
 	}
@@ -73,8 +73,8 @@ public class MongoDbChatMemoryIndexCreator {
 				}
 			});
 			mongoTemplate.indexOps(Conversation.class)
-				.ensureIndex(new Index().on("timestamp", Sort.Direction.ASC)
-					.expire(this.mongoDbChatMemoryProperties.getTtl()));
+					.ensureIndex(new Index().on("timestamp", Sort.Direction.ASC)
+							.expire(this.mongoDbChatMemoryProperties.getTtl()));
 		}
 	}
 

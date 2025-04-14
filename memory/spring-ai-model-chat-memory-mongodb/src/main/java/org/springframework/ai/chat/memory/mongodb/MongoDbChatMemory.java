@@ -60,8 +60,8 @@ public class MongoDbChatMemory implements ChatMemory {
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
 		var messages = mongoTemplate.query(Conversation.class)
-			.matching(query(where("conversationId").is(conversationId)).with(Sort.by("timestamp").descending())
-				.limit(lastN));
+				.matching(query(where("conversationId").is(conversationId)).with(Sort.by("timestamp").descending())
+						.limit(lastN));
 		return messages.stream().map(MongoDbChatMemory::mapMessage).collect(Collectors.toList());
 	}
 
@@ -73,9 +73,9 @@ public class MongoDbChatMemory implements ChatMemory {
 	@Override
 	public void add(@NonNull String conversationId, @NonNull List<Message> messages) {
 		var conversations = messages.stream()
-			.map(message -> new Conversation(conversationId,
-					new Conversation.Message(message.getText(), message.getMessageType().name()), Instant.now()))
-			.toList();
+				.map(message -> new Conversation(conversationId,
+						new Conversation.Message(message.getText(), message.getMessageType().name()), Instant.now()))
+				.toList();
 		mongoTemplate.insert(conversations, Conversation.class);
 	}
 
