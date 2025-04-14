@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -32,9 +33,13 @@ public class MongoDbChatMemoryConfigTest {
 		var mongoClient = mock(MongoTemplate.class);
 		var config = MongoDbChatMemoryConfig.builder().withTemplate(mongoClient).build();
 
-		// assertThat(config.collection).isEqualTo("test");
 		assertThat(config.mongoTemplate).isEqualTo(mongoClient);
 
+	}
+
+	@Test
+	void buildWithNullMongoTemplate_shouldThrow() {
+		assertThatThrownBy(() -> MongoDbChatMemoryConfig.builder().build());
 	}
 
 }
