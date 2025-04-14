@@ -75,9 +75,11 @@ The execution order of advisors in the chain is determined by the `getOrder()` m
 [NOTE]
 ====
 The seeming contradiction between order and execution sequence is due to the stack-like nature of the advisor chain:
-* An advisor with the highest precedence (lowest order value) is added to the top of the stack.
-* It will be the first to process the request as the stack unwinds.
-* It will be the last to process the response as the stack rewinds.
+
+- An advisor with the highest precedence (lowest order value) is added to the top of the stack.
+- It will be the first to process the request as the stack unwinds.
+- It will be the last to process the response as the stack rewinds.
+
 ====
 
 As a reminder, here are the semantics of the Spring `Ordered` interface:
