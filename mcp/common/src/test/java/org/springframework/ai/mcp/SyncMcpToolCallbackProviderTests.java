@@ -16,23 +16,22 @@
 
 package org.springframework.ai.mcp;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.util.List;
 import java.util.function.BiPredicate;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SyncMcpToolCallbackProviderTests {
@@ -45,9 +44,9 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of());
-		when(mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(this.mcpClient);
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -58,7 +57,7 @@ class SyncMcpToolCallbackProviderTests {
 	void getToolCallbacksShouldReturnCallbacksForEachTool() {
 
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("tool1");
@@ -68,9 +67,9 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(this.mcpClient);
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -80,7 +79,7 @@ class SyncMcpToolCallbackProviderTests {
 	@Test
 	void getToolCallbacksShouldThrowExceptionForDuplicateToolNames() {
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("sameName");
@@ -90,9 +89,9 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(this.mcpClient);
 
 		assertThatThrownBy(() -> provider.getToolCallbacks()).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Multiple tools with the same name");
@@ -133,7 +132,7 @@ class SyncMcpToolCallbackProviderTests {
 	@Test
 	void toolFilterShouldAcceptAllToolsByDefault() {
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("tool1");
@@ -143,11 +142,11 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
 		// Using the constructor without explicit filter (should use default filter that
 		// accepts all)
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(this.mcpClient);
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -162,12 +161,12 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
 		// Create a filter that rejects all tools
 		BiPredicate<McpSyncClient, Tool> rejectAllFilter = (client, tool) -> false;
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(rejectAllFilter, mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(rejectAllFilter, this.mcpClient);
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -177,7 +176,7 @@ class SyncMcpToolCallbackProviderTests {
 	@Test
 	void toolFilterShouldFilterToolsByNameWhenConfigured() {
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("tool1");
@@ -190,13 +189,13 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2, tool3));
-		when(mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
 		// Create a filter that only accepts tools with names containing "2" or "3"
 		BiPredicate<McpSyncClient, Tool> nameFilter = (client, tool) -> tool.name().contains("2")
 				|| tool.name().contains("3");
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(nameFilter, mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(nameFilter, this.mcpClient);
 
 		var callbacks = provider.getToolCallbacks();
 

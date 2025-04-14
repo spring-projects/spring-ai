@@ -102,7 +102,7 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public PgVectorStore.PgIdType getIdType() {
-		return idType;
+		return this.idType;
 	}
 
 	public void setIdType(PgVectorStore.PgIdType idType) {

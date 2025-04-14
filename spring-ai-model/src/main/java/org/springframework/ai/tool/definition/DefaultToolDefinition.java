@@ -38,7 +38,7 @@ public record DefaultToolDefinition(String name, String description, String inpu
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String name;
 
@@ -65,10 +65,10 @@ public record DefaultToolDefinition(String name, String description, String inpu
 		}
 
 		public ToolDefinition build() {
-			if (!StringUtils.hasText(description)) {
-				description = ToolUtils.getToolDescriptionFromName(name);
+			if (!StringUtils.hasText(this.description)) {
+				this.description = ToolUtils.getToolDescriptionFromName(this.name);
 			}
-			return new DefaultToolDefinition(name, description, inputSchema);
+			return new DefaultToolDefinition(this.name, this.description, this.inputSchema);
 		}
 
 	}

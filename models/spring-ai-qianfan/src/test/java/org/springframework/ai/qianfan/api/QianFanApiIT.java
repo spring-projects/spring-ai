@@ -25,13 +25,13 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import org.stringtemplate.v4.ST;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.util.ResourceUtils;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletion;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionChunk;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionMessage.Role;
 import org.springframework.ai.qianfan.api.QianFanApi.ChatCompletionRequest;
 import org.springframework.ai.qianfan.api.QianFanApi.EmbeddingList;
+import org.springframework.ai.util.ResourceUtils;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;

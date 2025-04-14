@@ -28,7 +28,7 @@ public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata 
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean returnDirect = false;
 
@@ -41,7 +41,7 @@ public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata 
 		}
 
 		public ToolMetadata build() {
-			return new DefaultToolMetadata(returnDirect);
+			return new DefaultToolMetadata(this.returnDirect);
 		}
 
 	}

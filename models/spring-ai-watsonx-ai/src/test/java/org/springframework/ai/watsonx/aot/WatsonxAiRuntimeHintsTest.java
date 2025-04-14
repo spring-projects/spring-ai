@@ -21,8 +21,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.watsonx.WatsonxAiChatOptions;
-import org.springframework.ai.watsonx.api.WatsonxAiApi;
 import org.springframework.ai.watsonx.api.WatsonxAiChatRequest;
 import org.springframework.ai.watsonx.api.WatsonxAiChatResponse;
 import org.springframework.ai.watsonx.api.WatsonxAiChatResults;
@@ -34,7 +32,6 @@ import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
-import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 /**
  * @author Pablo Sanchidrian Herrera

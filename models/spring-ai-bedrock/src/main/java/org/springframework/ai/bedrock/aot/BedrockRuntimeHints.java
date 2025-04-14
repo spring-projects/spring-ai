@@ -16,11 +16,6 @@
 
 package org.springframework.ai.bedrock.aot;
 
-import org.springframework.ai.bedrock.api.AbstractBedrockApi;
-import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingOptions;
-import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
-import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingOptions;
-import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

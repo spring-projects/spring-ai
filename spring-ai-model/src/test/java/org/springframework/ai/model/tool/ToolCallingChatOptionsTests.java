@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.tool;
 
 import java.util.List;
@@ -200,13 +201,13 @@ class ToolCallingChatOptionsTests {
 
 		private final ToolDefinition toolDefinition;
 
-		public TestToolCallback(String name) {
+		TestToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override

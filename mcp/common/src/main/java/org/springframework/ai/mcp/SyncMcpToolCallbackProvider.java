@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
@@ -132,14 +133,13 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 		var toolCallbacks = new ArrayList<>();
 
-		this.mcpClients.stream().forEach(mcpClient -> {
-			toolCallbacks.addAll(mcpClient.listTools()
+		this.mcpClients.stream()
+			.forEach(mcpClient -> toolCallbacks.addAll(mcpClient.listTools()
 				.tools()
 				.stream()
-				.filter(tool -> toolFilter.test(mcpClient, tool))
+				.filter(tool -> this.toolFilter.test(mcpClient, tool))
 				.map(tool -> new SyncMcpToolCallback(mcpClient, tool))
-				.toList());
-		});
+				.toList()));
 		var array = toolCallbacks.toArray(new ToolCallback[0]);
 		validateToolCallbacks(array);
 		return array;

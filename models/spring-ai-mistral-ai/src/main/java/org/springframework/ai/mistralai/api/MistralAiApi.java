@@ -720,9 +720,12 @@ public class MistralAiApi {
 		public enum ToolChoice {
 
 			// @formatter:off
-			@JsonProperty("auto") AUTO,
-			@JsonProperty("any")  ANY,
-			@JsonProperty("none") NONE
+			@JsonProperty("auto")
+			AUTO,
+			@JsonProperty("any")
+			ANY,
+			@JsonProperty("none")
+			NONE
 			 // @formatter:on
 
 		}

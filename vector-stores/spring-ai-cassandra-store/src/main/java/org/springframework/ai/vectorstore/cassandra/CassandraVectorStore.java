@@ -235,7 +235,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		this.executor = Executors.newFixedThreadPool(builder.fixedThreadPoolExecutorSize);
 		this.closeSessionOnClose = builder.closeSessionOnClose;
 
-		ensureSchemaExists(embeddingModel.dimensions());
+		ensureSchemaExists(this.embeddingModel.dimensions());
 		prepareAddStatement(Set.of());
 		this.deleteStmt = prepareDeleteStatement();
 

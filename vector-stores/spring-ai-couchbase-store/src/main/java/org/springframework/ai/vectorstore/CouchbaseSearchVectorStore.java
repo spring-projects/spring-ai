@@ -98,9 +98,9 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		this.embeddingModel = builder.embeddingModel;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.cluster = builder.cluster;
-		this.bucket = cluster.bucket(builder.bucketName);
-		this.scope = bucket.scope(builder.scopeName);
-		this.collection = scope.collection(builder.collectionName);
+		this.bucket = this.cluster.bucket(builder.bucketName);
+		this.scope = this.bucket.scope(builder.scopeName);
+		this.collection = this.scope.collection(builder.collectionName);
 		this.vectorIndexName = builder.vectorIndexName;
 		this.collectionName = builder.collectionName;
 		this.bucketName = builder.bucketName;
@@ -136,14 +136,14 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		for (Document document : documents) {
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(), document.getText(),
 					document.getMetadata(), embeddings.get(documents.indexOf(document)));
-			collection.upsert(document.getId(), cbDoc);
+			this.collection.upsert(document.getId(), cbDoc);
 		}
 	}
 
 	@Override
 	public void doDelete(List<String> idList) {
 		for (String id : idList) {
-			collection.remove(id);
+			this.collection.remove(id);
 		}
 	}
 
@@ -152,8 +152,8 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		Assert.notNull(filterExpression, "Filter expression must not be null");
 		try {
 			String nativeFilter = this.filterExpressionConverter.convertExpression(filterExpression);
-			String sql = String.format("DELETE FROM %s WHERE %s", collection.name(), nativeFilter);
-			scope.query(sql, QueryOptions.queryOptions().metrics(true));
+			String sql = String.format("DELETE FROM %s WHERE %s", this.collection.name(), nativeFilter);
+			this.scope.query(sql, QueryOptions.queryOptions().metrics(true));
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
@@ -180,7 +180,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 				this.collectionName, similarityThreshold, topK, Arrays.toString(embeddings), this.bucketName,
 				this.scopeName, this.vectorIndexName, nativeFilterExpression);
 
-		QueryResult result = scope.query(statement, QueryOptions.queryOptions());
+		QueryResult result = this.scope.query(statement, QueryOptions.queryOptions());
 
 		return result.rowsAs(Document.class);
 	}
@@ -340,21 +340,21 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	public void initCluster() throws InterruptedException {
 		// init scope, collection, indexes
-		BucketSettings bs = cluster.buckets().getAllBuckets().get(this.bucketName);
+		BucketSettings bs = this.cluster.buckets().getAllBuckets().get(this.bucketName);
 		if (bs == null) {
-			cluster.buckets().createBucket(BucketSettings.create(this.bucketName));
+			this.cluster.buckets().createBucket(BucketSettings.create(this.bucketName));
 		}
 		logger.info("Created bucket");
-		Bucket b = cluster.bucket(this.bucketName);
+		Bucket b = this.cluster.bucket(this.bucketName);
 		b.waitUntilReady(Duration.ofSeconds(20));
 		logger.info("Opened Bucket");
 		boolean scopeExist = b.collections().getAllScopes().stream().anyMatch(sc -> sc.name().equals(this.scopeName));
 		if (!scopeExist) {
 			b.collections().createScope(this.scopeName);
 		}
-		ConsistencyUtil.waitUntilScopePresent(cluster.core(), this.bucketName, this.scopeName);
+		ConsistencyUtil.waitUntilScopePresent(this.cluster.core(), this.bucketName, this.scopeName);
 		Scope s = b.scope(this.scopeName);
-		boolean collectionExist = bucket.collections()
+		boolean collectionExist = this.bucket.collections()
 			.getAllScopes()
 			.stream()
 			.map(ScopeSpec::collections)
@@ -364,7 +364,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 			.anyMatch(this.collectionName::equals);
 		if (!collectionExist) {
 			b.collections().createCollection(this.scopeName, this.collectionName);
-			ConsistencyUtil.waitUntilCollectionPresent(cluster.core(), this.bucketName, this.scopeName,
+			ConsistencyUtil.waitUntilCollectionPresent(this.cluster.core(), this.bucketName, this.scopeName,
 					this.collectionName);
 			Collection c = s.collection(this.collectionName);
 			Mono.empty()

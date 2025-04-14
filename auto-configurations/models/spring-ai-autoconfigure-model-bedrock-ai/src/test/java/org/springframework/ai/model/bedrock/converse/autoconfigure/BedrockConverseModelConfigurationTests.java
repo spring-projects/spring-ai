@@ -37,9 +37,7 @@ public class BedrockConverseModelConfigurationTests {
 
 	@Test
 	void chatModelActivation() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(BedrockProxyChatModel.class)).isNotEmpty();
-		});
+		this.contextRunner.run(context -> assertThat(context.getBeansOfType(BedrockProxyChatModel.class)).isNotEmpty());
 
 		this.contextRunner.withPropertyValues("spring.ai.model.chat=none").run(context -> {
 			assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty();

@@ -42,7 +42,7 @@ public class Neo4jChatMemoryProperties {
 	private String mediaLabel = Neo4jChatMemoryConfig.DEFAULT_MEDIA_LABEL;
 
 	public String getSessionLabel() {
-		return sessionLabel;
+		return this.sessionLabel;
 	}
 
 	public void setSessionLabel(String sessionLabel) {
@@ -50,23 +50,23 @@ public class Neo4jChatMemoryProperties {
 	}
 
 	public String getToolCallLabel() {
-		return toolCallLabel;
+		return this.toolCallLabel;
 	}
 
 	public String getMetadataLabel() {
-		return metadataLabel;
+		return this.metadataLabel;
 	}
 
 	public String getMessageLabel() {
-		return messageLabel;
+		return this.messageLabel;
 	}
 
 	public String getToolResponseLabel() {
-		return toolResponseLabel;
+		return this.toolResponseLabel;
 	}
 
 	public String getMediaLabel() {
-		return mediaLabel;
+		return this.mediaLabel;
 	}
 
 	public void setToolCallLabel(String toolCallLabel) {

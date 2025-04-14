@@ -36,6 +36,10 @@
 	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="MistralAiApi.java" checks="RegexpSinglelineJava"/>
 	<suppress files="MariaDBSchemaValidator.java" checks="RegexpSinglelineJava"/>
+	<suppress files="JsonSchemaGeneratorTests.java" checks="RegexpSinglelineJava"/>
+	<suppress files="JsonParserTests.java" checks="RegexpSinglelineJava"/>
+	<suppress files="DockerModelRunnerWithOpenAiChatModelIT.java" checks="RegexpSinglelineJava"/>
+	<suppress files="AzureOpenAiChatModelMetadataTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiApi.java" checks="AnnotationLocation"/>
 
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>

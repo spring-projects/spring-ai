@@ -16,8 +16,6 @@
 
 package org.springframework.ai.qianfan.aot;
 
-import org.springframework.ai.qianfan.api.QianFanApi;
-import org.springframework.ai.qianfan.api.QianFanImageApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

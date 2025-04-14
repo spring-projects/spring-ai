@@ -322,24 +322,24 @@ class DefaultToolCallingManagerTests {
 
 		private final ToolMetadata toolMetadata;
 
-		public TestToolCallback(String name) {
+		TestToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 			this.toolMetadata = ToolMetadata.builder().build();
 		}
 
-		public TestToolCallback(String name, boolean returnDirect) {
+		TestToolCallback(String name, boolean returnDirect) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override
 		public ToolMetadata getToolMetadata() {
-			return toolMetadata;
+			return this.toolMetadata;
 		}
 
 		@Override
@@ -353,18 +353,18 @@ class DefaultToolCallingManagerTests {
 
 		private final ToolDefinition toolDefinition;
 
-		public FailingToolCallback(String name) {
+		FailingToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override
 		public String call(String toolInput) {
-			throw new ToolExecutionException(toolDefinition, new IllegalStateException("You failed this city!"));
+			throw new ToolExecutionException(this.toolDefinition, new IllegalStateException("You failed this city!"));
 		}
 
 	}

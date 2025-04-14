@@ -77,7 +77,7 @@ public class ElasticsearchVectorStoreProperties extends CommonVectorStorePropert
 	}
 
 	public String getEmbeddingFieldName() {
-		return embeddingFieldName;
+		return this.embeddingFieldName;
 	}
 
 	public void setEmbeddingFieldName(String embeddingFieldName) {

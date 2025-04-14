@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openai.api;
 
 import org.junit.jupiter.api.Test;
@@ -79,70 +80,66 @@ public class OpenAiApiBuilderTests {
 
 	@Test
 	void testMissingApiKey() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("apiKey must be set");
+		assertThatThrownBy(() -> OpenAiApi.builder().build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("apiKey must be set");
 	}
 
 	@Test
 	void testInvalidBaseUrl() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().baseUrl("").build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("baseUrl cannot be null or empty");
+		assertThatThrownBy(() -> OpenAiApi.builder().baseUrl("").build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("baseUrl cannot be null or empty");
 
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().baseUrl(null).build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("baseUrl cannot be null or empty");
+		assertThatThrownBy(() -> OpenAiApi.builder().baseUrl(null).build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("baseUrl cannot be null or empty");
 	}
 
 	@Test
 	void testInvalidHeaders() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().headers(null).build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("headers cannot be null");
+		assertThatThrownBy(() -> OpenAiApi.builder().headers(null).build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("headers cannot be null");
 	}
 
 	@Test
 	void testInvalidCompletionsPath() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().completionsPath("").build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("completionsPath cannot be null or empty");
+		assertThatThrownBy(() -> OpenAiApi.builder().completionsPath("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("completionsPath cannot be null or empty");
 
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().completionsPath(null).build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("completionsPath cannot be null or empty");
+		assertThatThrownBy(() -> OpenAiApi.builder().completionsPath(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("completionsPath cannot be null or empty");
 	}
 
 	@Test
 	void testInvalidEmbeddingsPath() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().embeddingsPath("").build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("embeddingsPath cannot be null or empty");
+		assertThatThrownBy(() -> OpenAiApi.builder().embeddingsPath("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("embeddingsPath cannot be null or empty");
 
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().embeddingsPath(null).build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("embeddingsPath cannot be null or empty");
+		assertThatThrownBy(() -> OpenAiApi.builder().embeddingsPath(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("embeddingsPath cannot be null or empty");
 	}
 
 	@Test
 	void testInvalidRestClientBuilder() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().restClientBuilder(null).build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("restClientBuilder cannot be null");
+		assertThatThrownBy(() -> OpenAiApi.builder().restClientBuilder(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("restClientBuilder cannot be null");
 	}
 
 	@Test
 	void testInvalidWebClientBuilder() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().webClientBuilder(null).build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("webClientBuilder cannot be null");
+		assertThatThrownBy(() -> OpenAiApi.builder().webClientBuilder(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("webClientBuilder cannot be null");
 	}
 
 	@Test
 	void testInvalidResponseErrorHandler() {
-		assertThatThrownBy(() -> {
-			OpenAiApi.builder().responseErrorHandler(null).build();
-		}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("responseErrorHandler cannot be null");
+		assertThatThrownBy(() -> OpenAiApi.builder().responseErrorHandler(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("responseErrorHandler cannot be null");
 	}
 
 }

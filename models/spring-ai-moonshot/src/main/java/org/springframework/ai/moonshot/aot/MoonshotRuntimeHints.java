@@ -16,7 +16,6 @@
 
 package org.springframework.ai.moonshot.aot;
 
-import org.springframework.ai.moonshot.api.MoonshotApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

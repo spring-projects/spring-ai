@@ -49,10 +49,10 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.content.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
@@ -535,7 +535,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	void multiModalityOutputAudio(String modelName) throws IOException {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
-		ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage),
 				OpenAiChatOptions.builder()
 					.model(modelName)
 					.outputModalities(List.of("text", "audio"))
@@ -556,7 +556,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		// var audioResource = new ClassPathResource("speech1.mp3");
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
-		assertThatThrownBy(() -> chatModel
+		assertThatThrownBy(() -> this.chatModel
 			.stream(new Prompt(List.of(userMessage),
 					OpenAiChatOptions.builder()
 						.model(modelName)
@@ -575,7 +575,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		var userMessage = new UserMessage("What is this recording about?",
 				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
-		ChatResponse response = chatModel
+		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
@@ -590,7 +590,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		var userMessage = new UserMessage("What is this recording about?",
 				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
 
-		Flux<ChatResponse> response = chatModel
+		Flux<ChatResponse> response = this.chatModel
 			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
 
 		String content = response.collectList()

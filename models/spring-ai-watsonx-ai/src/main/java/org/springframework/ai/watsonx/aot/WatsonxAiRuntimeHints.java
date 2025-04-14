@@ -16,8 +16,6 @@
 
 package org.springframework.ai.watsonx.aot;
 
-import org.springframework.ai.watsonx.WatsonxAiChatOptions;
-import org.springframework.ai.watsonx.api.WatsonxAiApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

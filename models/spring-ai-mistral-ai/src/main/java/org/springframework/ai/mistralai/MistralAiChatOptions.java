@@ -288,7 +288,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	@Nullable
 	@JsonIgnore
 	public Boolean isInternalToolExecutionEnabled() {
-		return internalToolExecutionEnabled;
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override

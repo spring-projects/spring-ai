@@ -88,12 +88,12 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 			return resolvedToolCallback;
 		}
 
-		ResolvableType toolType = TypeResolverHelper.resolveBeanType(applicationContext, toolName);
+		ResolvableType toolType = TypeResolverHelper.resolveBeanType(this.applicationContext, toolName);
 		ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
 				? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(toolType, 0);
 
 		String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
-		Object bean = applicationContext.getBean(toolName);
+		Object bean = this.applicationContext.getBean(toolName);
 
 		resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
 
@@ -103,11 +103,11 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 	}
 
 	public SchemaType getSchemaType() {
-		return schemaType;
+		return this.schemaType;
 	}
 
 	private String resolveToolDescription(String toolName, Class<?> toolInputType) {
-		Description descriptionAnnotation = applicationContext.findAnnotationOnBean(toolName, Description.class);
+		Description descriptionAnnotation = this.applicationContext.findAnnotationOnBean(toolName, Description.class);
 		if (descriptionAnnotation != null && StringUtils.hasText(descriptionAnnotation.value())) {
 			return descriptionAnnotation.value();
 		}
@@ -180,11 +180,37 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 	}
 
 	private String generateSchema(ResolvableType toolInputType) {
-		if (schemaType == SchemaType.OPEN_API_SCHEMA) {
+		if (this.schemaType == SchemaType.OPEN_API_SCHEMA) {
 			return JsonSchemaGenerator.generateForType(toolInputType.getType(),
 					JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES);
 		}
 		return JsonSchemaGenerator.generateForType(toolInputType.getType());
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private GenericApplicationContext applicationContext;
+
+		private SchemaType schemaType;
+
+		public Builder applicationContext(GenericApplicationContext applicationContext) {
+			this.applicationContext = applicationContext;
+			return this;
+		}
+
+		public Builder schemaType(SchemaType schemaType) {
+			this.schemaType = schemaType;
+			return this;
+		}
+
+		public SpringBeanToolCallbackResolver build() {
+			return new SpringBeanToolCallbackResolver(this.applicationContext, this.schemaType);
+		}
+
 	}
 
 	private static final class KotlinDelegate {
@@ -214,32 +240,6 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 		@SuppressWarnings("unchecked")
 		public static BiFunction<?, ToolContext, ?> wrapKotlinBiFunction(Object bean) {
 			return (t, u) -> ((Function2<Object, ToolContext, Object>) bean).invoke(t, u);
-		}
-
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-
-		private GenericApplicationContext applicationContext;
-
-		private SchemaType schemaType;
-
-		public Builder applicationContext(GenericApplicationContext applicationContext) {
-			this.applicationContext = applicationContext;
-			return this;
-		}
-
-		public Builder schemaType(SchemaType schemaType) {
-			this.schemaType = schemaType;
-			return this;
-		}
-
-		public SpringBeanToolCallbackResolver build() {
-			return new SpringBeanToolCallbackResolver(applicationContext, schemaType);
 		}
 
 	}

@@ -67,9 +67,7 @@ public class MistralModelConfigurationTests {
 	@Test
 	void embeddingModelActivation() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isNotEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isNotEmpty());
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.embedding=none")

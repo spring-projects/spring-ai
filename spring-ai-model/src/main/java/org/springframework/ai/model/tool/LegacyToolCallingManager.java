@@ -108,10 +108,10 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 	@Nullable
 	private FunctionCallback resolveFunctionCallback(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
-		if (functionCallbacks.get(toolName) != null) {
-			return functionCallbacks.get(toolName);
+		if (this.functionCallbacks.get(toolName) != null) {
+			return this.functionCallbacks.get(toolName);
 		}
-		return functionCallbackResolver != null ? functionCallbackResolver.resolve(toolName) : null;
+		return this.functionCallbackResolver != null ? this.functionCallbackResolver.resolve(toolName) : null;
 	}
 
 	@Override
@@ -202,7 +202,7 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 				toolResult = toolCallback.call(toolInputArguments, toolContext);
 			}
 			catch (ToolExecutionException ex) {
-				toolResult = toolExecutionExceptionProcessor.process(ex);
+				toolResult = this.toolExecutionExceptionProcessor.process(ex);
 			}
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
@@ -223,7 +223,7 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public final static class Builder {
 
 		private FunctionCallbackResolver functionCallbackResolver;
 
@@ -243,7 +243,7 @@ public class LegacyToolCallingManager implements ToolCallingManager {
 		}
 
 		public LegacyToolCallingManager build() {
-			return new LegacyToolCallingManager(functionCallbackResolver, functionCallbacks);
+			return new LegacyToolCallingManager(this.functionCallbackResolver, this.functionCallbacks);
 		}
 
 	}

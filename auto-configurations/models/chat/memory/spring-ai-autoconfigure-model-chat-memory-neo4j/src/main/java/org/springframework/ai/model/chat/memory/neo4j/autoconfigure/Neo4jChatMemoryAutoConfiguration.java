@@ -17,6 +17,7 @@
 package org.springframework.ai.model.chat.memory.neo4j.autoconfigure;
 
 import org.neo4j.driver.Driver;
+
 import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemory;
 import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

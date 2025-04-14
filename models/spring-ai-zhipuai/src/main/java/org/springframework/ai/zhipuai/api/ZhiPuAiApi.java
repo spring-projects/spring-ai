@@ -971,7 +971,7 @@ public class ZhiPuAiApi {
          * @param input Input text to embed.
          */
 		public EmbeddingRequest(T input) {
-			this(input, DEFAULT_EMBEDDING_MODEL,null);
+			this(input, DEFAULT_EMBEDDING_MODEL, null);
 		}
 
 		/**
@@ -981,7 +981,7 @@ public class ZhiPuAiApi {
 		 * @param model
 		 */
 		public EmbeddingRequest(T input, String model) {
-			this(input, model,null);
+			this(input, model, null);
 		}
 	}
 
