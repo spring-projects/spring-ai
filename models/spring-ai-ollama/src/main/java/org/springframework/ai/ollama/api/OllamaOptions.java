@@ -738,7 +738,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	@JsonIgnore
 	public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
-    }
+	}
 
 	@Override
 	@JsonIgnore

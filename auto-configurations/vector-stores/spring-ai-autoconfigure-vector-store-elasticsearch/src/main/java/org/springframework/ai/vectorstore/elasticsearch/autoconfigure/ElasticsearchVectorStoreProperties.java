@@ -16,8 +16,8 @@
 
 package org.springframework.ai.vectorstore.elasticsearch.autoconfigure;
 
-import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
+import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

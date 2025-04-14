@@ -176,22 +176,6 @@ public class McpClientAutoConfiguration {
 	}
 
 	/**
-	 * Record class that implements {@link AutoCloseable} to ensure proper cleanup of MCP
-	 * clients.
-	 *
-	 * <p>
-	 * This class is responsible for closing all MCP sync clients when the application
-	 * context is closed, preventing resource leaks.
-	 */
-	public record CloseableMcpSyncClients(List<McpSyncClient> clients) implements AutoCloseable {
-
-		@Override
-		public void close() {
-			this.clients.forEach(McpSyncClient::close);
-		}
-	}
-
-	/**
 	 * Creates a closeable wrapper for MCP sync clients to ensure proper resource cleanup.
 	 * @param clients the list of MCP sync clients to manage
 	 * @return a closeable wrapper for the clients
@@ -258,13 +242,6 @@ public class McpClientAutoConfiguration {
 		return mcpSyncClients;
 	}
 
-	public record CloseableMcpAsyncClients(List<McpAsyncClient> clients) implements AutoCloseable {
-		@Override
-		public void close() {
-			this.clients.forEach(McpAsyncClient::close);
-		}
-	}
-
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public CloseableMcpAsyncClients makeAsynClientsClosable(List<McpAsyncClient> clients) {
@@ -276,6 +253,29 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	McpAsyncClientConfigurer mcpAsyncClientConfigurer(ObjectProvider<McpAsyncClientCustomizer> customizerProvider) {
 		return new McpAsyncClientConfigurer(customizerProvider.orderedStream().toList());
+	}
+
+	/**
+	 * Record class that implements {@link AutoCloseable} to ensure proper cleanup of MCP
+	 * clients.
+	 *
+	 * <p>
+	 * This class is responsible for closing all MCP sync clients when the application
+	 * context is closed, preventing resource leaks.
+	 */
+	public record CloseableMcpSyncClients(List<McpSyncClient> clients) implements AutoCloseable {
+
+		@Override
+		public void close() {
+			this.clients.forEach(McpSyncClient::close);
+		}
+	}
+
+	public record CloseableMcpAsyncClients(List<McpAsyncClient> clients) implements AutoCloseable {
+		@Override
+		public void close() {
+			this.clients.forEach(McpAsyncClient::close);
+		}
 	}
 
 }

@@ -121,9 +121,9 @@ public class McpClientAutoConfigurationIT {
 
 	@Test
 	void closeableWrappersCreation() {
-		this.contextRunner.withUserConfiguration(TestTransportConfiguration.class).run(context -> {
-			assertThat(context).hasSingleBean(McpClientAutoConfiguration.CloseableMcpSyncClients.class);
-		});
+		this.contextRunner.withUserConfiguration(TestTransportConfiguration.class)
+			.run(context -> assertThat(context)
+				.hasSingleBean(McpClientAutoConfiguration.CloseableMcpSyncClients.class));
 	}
 
 	@Configuration

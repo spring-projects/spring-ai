@@ -32,9 +32,7 @@ public class SseHttpClientTransportAutoConfigurationTests {
 	@Test
 	void mcpHttpClientTransportsNotPresentIfMissingWebFluxSseClientTransportPresent() {
 
-		this.applicationContext.run((context) -> {
-			assertThat(context.containsBean("mcpHttpClientTransports")).isFalse();
-		});
+		this.applicationContext.run(context -> assertThat(context.containsBean("mcpHttpClientTransports")).isFalse());
 	}
 
 	@Test
@@ -43,9 +41,7 @@ public class SseHttpClientTransportAutoConfigurationTests {
 		this.applicationContext
 			.withClassLoader(
 					new FilteredClassLoader("io.modelcontextprotocol.client.transport.WebFluxSseClientTransport"))
-			.run((context) -> {
-				assertThat(context.containsBean("mcpHttpClientTransports")).isTrue();
-			});
+			.run(context -> assertThat(context.containsBean("mcpHttpClientTransports")).isTrue());
 	}
 
 	@Test
@@ -55,9 +51,7 @@ public class SseHttpClientTransportAutoConfigurationTests {
 			.withClassLoader(
 					new FilteredClassLoader("io.modelcontextprotocol.client.transport.WebFluxSseClientTransport"))
 			.withPropertyValues("spring.ai.mcp.client.enabled", "false")
-			.run((context) -> {
-				assertThat(context.containsBean("mcpHttpClientTransports")).isFalse();
-			});
+			.run(context -> assertThat(context.containsBean("mcpHttpClientTransports")).isFalse());
 	}
 
 }

@@ -76,9 +76,8 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome the users to the library")
-			.tools(FunctionToolCallback.builder("sayWelcome", (input) -> {
-						logger.info("CALLBACK - Welcoming users to the library");
-					})
+			.tools(FunctionToolCallback.builder("sayWelcome",
+							(Consumer<Object>) input -> logger.info("CALLBACK - Welcoming users to the library"))
 					.description("Welcome users to the library")
 					.inputType(Void.class)
 					.build())
@@ -105,9 +104,8 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.tools(FunctionToolCallback.builder("welcomeUser", (user) -> {
-						logger.info("CALLBACK - Welcoming {} to the library", ((User) user).name());
-					})
+			.tools(FunctionToolCallback.builder("welcomeUser",
+							(Consumer<Object>) user -> logger.info("CALLBACK - Welcoming {} to the library", ((User) user).name()))
 					.description("Welcome a specific user to the library")
 					.inputType(User.class)
 					.build())
@@ -202,7 +200,7 @@ public class FunctionToolCallbackTests {
 		@Bean(WELCOME)
 		@Description("Welcome users to the library")
 		Consumer<Void> welcome() {
-			return (input) -> logger.info("Welcoming users to the library");
+			return input -> logger.info("Welcoming users to the library");
 		}
 
 		@Bean(WELCOME_USER)
@@ -215,7 +213,7 @@ public class FunctionToolCallbackTests {
 		@Description("Get the list of books written by the given author available in the library")
 		Function<Author, List<Book>> booksByAuthor() {
 			return author -> {
-				logger.info("Getting books by author: "+ author.name());
+				logger.info("Getting books by author: " + author.name());
 				return this.bookService.getBooksByAuthor(author);
 			};
 		}

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.cosmosdb.autoconfigure;
 
+import java.util.List;
+
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import io.micrometer.observation.ObservationRegistry;
@@ -33,7 +35,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import java.util.List;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for CosmosDB Vector Store.
