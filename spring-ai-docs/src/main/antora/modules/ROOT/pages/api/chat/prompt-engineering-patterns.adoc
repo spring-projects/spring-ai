@@ -2,7 +2,7 @@
 = Prompt Engineering Patterns
 
 Practical implementations of Prompt Engineering techniques based on the comprehensive link:https://www.kaggle.com/whitepaper-prompt-engineering[Prompt Engineering Guide].
-The guide covers the theory, principles, and patterns of effective prompt engineering, while here we demosntrate how to translate those concepts into working Java code using Spring AI's fluent xref::api/chatclient.adoc[ChatClient API].
+The guide covers the theory, principles, and patterns of effective prompt engineering, while here we demonstrate how to translate those concepts into working Java code using Spring AI's fluent xref::api/chatclient.adoc[ChatClient API].
 The demo source code used in this article is available at: link:https://github.com/spring-projects/spring-ai-examples/tree/main/prompt-engineering/prompt-engineering-patterns[Prompt Engineering Patterns Examples].
 
 == 1. Configuration
@@ -25,8 +25,6 @@ For example, here is how to enable Anthropic Claude API:
 </dependency>
 ----
 
-You can find detailed information for enabling each model in the xref::api/chatmodel.adoc[reference docs].
-
 You can specify the LLM model name like this:
 
 [source,java]
@@ -36,11 +34,13 @@ You can specify the LLM model name like this:
         .build())
 ----
 
+Find detailed information for enabling each model in the xref::api/chatmodel.adoc[reference docs].
+
 === LLM Output Configuration
 
 image::https://docs.spring.io/spring-ai/reference/_images/chat-options-flow.jpg[width=500,float=right]
 
-Before we dive into prompt engineering techniques, it's essential to understand how to configure the LLM's output behavior. Spring AI provides several configuration options that let you control various aspects of generation through the xref:/api/chatmodel.adoc#_chat_options[ChatOptions] builder.
+Before we dive into prompt engineering techniques, it's essential to understand how to configure the LLM's output behavior. Spring AI provides several configuration options that let you control various aspects of generation through the xref::api/chatmodel.adoc#_chat_options[ChatOptions] builder.
 
 All configurations can be applied programmatically as demonstrated in the examples below or through Spring application properties at start time.
 
@@ -202,7 +202,7 @@ One-shot provides a single example, which is useful when examples are costly or 
 [source,java]
 ----
 // Implementation of Section 2.2: One-shot & few-shot (page 16)
-public void pt_ones_shot_few_shots(ChatClient chatClient) {
+public void pt_one_shot_few_shots(ChatClient chatClient) {
     String pizzaOrder = chatClient.prompt("""
             Parse a customer's pizza order into valid JSON
 
@@ -213,7 +213,7 @@ public void pt_ones_shot_few_shots(ChatClient chatClient) {
             {
                 "size": "small",
                 "type": "normal",
-                "ingredients": ["cheese", "tomato sauce", "peperoni"]
+                "ingredients": ["cheese", "tomato sauce", "pepperoni"]
             }
             ```
 
