@@ -97,7 +97,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			if (chatOptions.getToolCallbacks().stream().anyMatch(tool -> tool.getName().equals(toolName))) {
 				continue;
 			}
-			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
+			FunctionCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
@@ -203,7 +203,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			FunctionCallback toolCallback = toolCallbacks.stream()
 				.filter(tool -> toolName.equals(tool.getName()))
 				.findFirst()
-				.orElseGet(() -> toolCallbackResolver.resolve(toolName));
+				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
 
 			if (toolCallback == null) {
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
@@ -227,7 +227,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 				toolResult = toolCallback.call(toolInputArguments, toolContext);
 			}
 			catch (ToolExecutionException ex) {
-				toolResult = toolExecutionExceptionProcessor.process(ex);
+				toolResult = this.toolExecutionExceptionProcessor.process(ex);
 			}
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
@@ -244,14 +244,14 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 		return messages;
 	}
 
-	private record InternalToolExecutionResult(ToolResponseMessage toolResponseMessage, boolean returnDirect) {
-	}
-
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	private record InternalToolExecutionResult(ToolResponseMessage toolResponseMessage, boolean returnDirect) {
+	}
+
+	public final static class Builder {
 
 		private ObservationRegistry observationRegistry = DEFAULT_OBSERVATION_REGISTRY;
 
@@ -279,8 +279,8 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 		}
 
 		public DefaultToolCallingManager build() {
-			return new DefaultToolCallingManager(observationRegistry, toolCallbackResolver,
-					toolExecutionExceptionProcessor);
+			return new DefaultToolCallingManager(this.observationRegistry, this.toolCallbackResolver,
+					this.toolExecutionExceptionProcessor);
 		}
 
 	}

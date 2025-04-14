@@ -21,14 +21,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
-import static org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice.ALLOY;
 
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice.ALLOY;
 
 /**
  * Tests for {@link OpenAiChatOptions}.

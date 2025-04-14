@@ -16,8 +16,6 @@
 
 package org.springframework.ai.zhipuai.aot;
 
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
-import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

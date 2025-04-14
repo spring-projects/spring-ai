@@ -216,7 +216,7 @@ public class FunctionToolCallbackTests {
 		Function<Author, List<Book>> booksByAuthor() {
 			return author -> {
 				logger.info("Getting books by author: "+ author.name());
-				return bookService.getBooksByAuthor(author);
+				return this.bookService.getBooksByAuthor(author);
 			};
 		}
 
@@ -224,7 +224,7 @@ public class FunctionToolCallbackTests {
 		@Description("Get the list of authors who wrote the given books available in the library")
 		Function<Books, List<Author>> authorsByBooks() {
 			return books -> {
-				List<Author> authors = bookService.getAuthorsByBook(books.books());
+				List<Author> authors = this.bookService.getAuthorsByBook(books.books());
 				logger.info("Getting authors: {} by books: {}", authors, books.books().stream().map(Book::title).toList());
 				return authors;
 			};

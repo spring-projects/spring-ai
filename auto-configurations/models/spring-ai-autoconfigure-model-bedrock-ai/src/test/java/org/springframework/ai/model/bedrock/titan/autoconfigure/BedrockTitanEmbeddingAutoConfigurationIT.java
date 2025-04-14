@@ -22,13 +22,13 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
-import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
-import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
+import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.core.io.DefaultResourceLoader;

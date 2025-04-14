@@ -25,8 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.image.observation.ImageModelObservationContext;
-import org.springframework.ai.image.observation.ImageModelPromptContentObservationFilter;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 
 import static org.assertj.core.api.Assertions.assertThat;

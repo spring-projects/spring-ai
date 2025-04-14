@@ -175,13 +175,13 @@ class LegacyToolCallingManagerTests {
 
 		private final ToolDefinition toolDefinition;
 
-		public TestToolCallback(String name) {
+		TestToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override
@@ -195,18 +195,18 @@ class LegacyToolCallingManagerTests {
 
 		private final ToolDefinition toolDefinition;
 
-		public FailingToolCallback(String name) {
+		FailingToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override
 		public String call(String toolInput) {
-			throw new ToolExecutionException(toolDefinition, new IllegalStateException("You failed this city!"));
+			throw new ToolExecutionException(this.toolDefinition, new IllegalStateException("You failed this city!"));
 		}
 
 	}

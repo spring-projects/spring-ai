@@ -34,7 +34,6 @@ import com.azure.core.http.HttpRequest;
 import com.azure.core.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.AzureOpenAiAudioTranscriptionModel;

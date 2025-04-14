@@ -221,7 +221,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		// @formatter:off		
+		// @formatter:off
 		var toolMethod = ReflectionUtils.findMethod(
 			TestFunctionClass.class, "turnLivingRoomLightOn");
 
@@ -231,7 +231,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 					.toolMethod(toolMethod)
 					.toolDefinition(ToolDefinition.builder(toolMethod)
 						.description("Can turn lights on in the Living Room")
-						.build())					
+						.build())
 					.toolObject(targetObject)
 					.build())
 				.call()
@@ -248,7 +248,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		// @formatter:off		
+		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light red in the living room.")
 				.tools(targetObject)

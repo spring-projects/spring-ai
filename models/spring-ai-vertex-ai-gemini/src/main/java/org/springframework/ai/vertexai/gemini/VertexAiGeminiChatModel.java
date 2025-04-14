@@ -575,7 +575,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 				// @formatter:off
 				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
-					if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						// is currently only synchronous
 						return Flux.defer(() -> {
@@ -585,7 +585,8 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 								return Flux.just(ChatResponse.builder().from(response)
 										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 										.build());
-							} else {
+							}
+							else {
 								// Send the tool execution result back to the model.
 								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()), response);
 							}
@@ -832,72 +833,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		this.observationConvention = observationConvention;
 	}
 
-	public enum GeminiMessageType {
-
-		USER("user"),
-
-		MODEL("model");
-
-		public final String value;
-
-		GeminiMessageType(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return this.value;
-		}
-
-	}
-
-	public enum ChatModel implements ChatModelDescription {
-
-		/**
-		 * Deprecated by Goolgle in favor of 1.5 pro and flash models.
-		 */
-		GEMINI_PRO_VISION("gemini-pro-vision"),
-
-		GEMINI_PRO("gemini-pro"),
-
-		GEMINI_1_5_PRO("gemini-1.5-pro-002"),
-
-		GEMINI_1_5_FLASH("gemini-1.5-flash-002"),
-
-		GEMINI_1_5_FLASH_8B("gemini-1.5-flash-8b-001"),
-
-		GEMINI_2_0_FLASH("gemini-2.0-flash"),
-
-		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite"),
-
-		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-28");
-
-		public final String value;
-
-		ChatModel(String value) {
-			this.value = value;
-		}
-
-		public String getValue() {
-			return this.value;
-		}
-
-		@Override
-		public String getName() {
-			return this.value;
-		}
-
-	}
-
-	@JsonInclude(Include.NON_NULL)
-	public record GeminiRequest(List<Content> contents, GenerativeModel model) {
-
-	}
-
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private VertexAI vertexAI;
 
@@ -966,29 +906,90 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 
 		public VertexAiGeminiChatModel build() {
-			if (toolCallingManager != null) {
-				Assert.isNull(functionCallbackResolver,
+			if (this.toolCallingManager != null) {
+				Assert.isNull(this.functionCallbackResolver,
 						"functionCallbackResolver cannot be set when toolCallingManager is set");
-				Assert.isNull(toolFunctionCallbacks,
+				Assert.isNull(this.toolFunctionCallbacks,
 						"toolFunctionCallbacks cannot be set when toolCallingManager is set");
 
-				return new VertexAiGeminiChatModel(vertexAI, defaultOptions, toolCallingManager, retryTemplate,
-						observationRegistry, toolExecutionEligibilityPredicate);
+				return new VertexAiGeminiChatModel(this.vertexAI, this.defaultOptions, this.toolCallingManager,
+						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 			}
 
-			if (functionCallbackResolver != null) {
-				Assert.isNull(toolCallingManager,
+			if (this.functionCallbackResolver != null) {
+				Assert.isNull(this.toolCallingManager,
 						"toolCallingManager cannot be set when functionCallbackResolver is set");
 				List<FunctionCallback> toolCallbacks = this.toolFunctionCallbacks != null ? this.toolFunctionCallbacks
 						: List.of();
 
-				return new VertexAiGeminiChatModel(vertexAI, defaultOptions, functionCallbackResolver, toolCallbacks,
-						retryTemplate, observationRegistry);
+				return new VertexAiGeminiChatModel(this.vertexAI, this.defaultOptions, this.functionCallbackResolver,
+						toolCallbacks, this.retryTemplate, this.observationRegistry);
 			}
 
-			return new VertexAiGeminiChatModel(vertexAI, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
-					observationRegistry, toolExecutionEligibilityPredicate);
+			return new VertexAiGeminiChatModel(this.vertexAI, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
+
+	}
+
+	public enum GeminiMessageType {
+
+		USER("user"),
+
+		MODEL("model");
+
+		public final String value;
+
+		GeminiMessageType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	public enum ChatModel implements ChatModelDescription {
+
+		/**
+		 * Deprecated by Goolgle in favor of 1.5 pro and flash models.
+		 */
+		GEMINI_PRO_VISION("gemini-pro-vision"),
+
+		GEMINI_PRO("gemini-pro"),
+
+		GEMINI_1_5_PRO("gemini-1.5-pro-002"),
+
+		GEMINI_1_5_FLASH("gemini-1.5-flash-002"),
+
+		GEMINI_1_5_FLASH_8B("gemini-1.5-flash-8b-001"),
+
+		GEMINI_2_0_FLASH("gemini-2.0-flash"),
+
+		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite"),
+
+		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-28");
+
+		public final String value;
+
+		ChatModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		@Override
+		public String getName() {
+			return this.value;
+		}
+
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record GeminiRequest(List<Content> contents, GenerativeModel model) {
 
 	}
 

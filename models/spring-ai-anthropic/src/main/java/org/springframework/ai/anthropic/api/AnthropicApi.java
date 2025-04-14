@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;

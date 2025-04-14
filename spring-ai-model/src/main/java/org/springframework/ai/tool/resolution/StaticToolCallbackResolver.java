@@ -55,7 +55,7 @@ public class StaticToolCallbackResolver implements ToolCallbackResolver {
 	public FunctionCallback resolve(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 		logger.debug("ToolCallback resolution attempt from static registry");
-		return toolCallbacks.get(toolName);
+		return this.toolCallbacks.get(toolName);
 	}
 
 }

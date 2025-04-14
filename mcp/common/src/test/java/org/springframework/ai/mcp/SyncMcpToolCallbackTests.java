@@ -48,11 +48,11 @@ class SyncMcpToolCallbackTests {
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
-		when(tool.name()).thenReturn("testTool");
-		when(tool.description()).thenReturn("Test tool description");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.tool.name()).thenReturn("testTool");
+		when(this.tool.description()).thenReturn("Test tool description");
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
 
 		var toolDefinition = callback.getToolDefinition();
 
@@ -66,11 +66,11 @@ class SyncMcpToolCallbackTests {
 		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
 		// "1.0.0"));
 
-		when(tool.name()).thenReturn("testTool");
+		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
-		when(mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
 
 		String response = callback.call("{\"param\":\"value\"}");
 
@@ -83,11 +83,11 @@ class SyncMcpToolCallbackTests {
 		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
 		// "1.0.0"));
 
-		when(tool.name()).thenReturn("testTool");
+		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
-		when(mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
 
 		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 

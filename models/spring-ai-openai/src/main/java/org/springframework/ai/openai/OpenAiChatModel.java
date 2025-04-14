@@ -238,7 +238,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			});
 
-		if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -361,7 +361,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					return Flux.defer(() -> {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
@@ -371,7 +371,8 @@ public class OpenAiChatModel implements ChatModel {
 							return Flux.just(ChatResponse.builder().from(response)
 									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 									.build());
-						} else {
+						}
+						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									response);
@@ -741,12 +742,12 @@ public class OpenAiChatModel implements ChatModel {
 		}
 
 		public OpenAiChatModel build() {
-			if (toolCallingManager != null) {
-				return new OpenAiChatModel(openAiApi, defaultOptions, toolCallingManager, retryTemplate,
-						observationRegistry, toolExecutionEligibilityPredicate);
+			if (this.toolCallingManager != null) {
+				return new OpenAiChatModel(this.openAiApi, this.defaultOptions, this.toolCallingManager,
+						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 			}
-			return new OpenAiChatModel(openAiApi, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER, retryTemplate,
-					observationRegistry, toolExecutionEligibilityPredicate);
+			return new OpenAiChatModel(this.openAiApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 
 	}

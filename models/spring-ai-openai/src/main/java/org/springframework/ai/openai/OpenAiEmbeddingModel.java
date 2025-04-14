@@ -212,10 +212,11 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.builder()
 			// Handle portable embedding options
 			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.defaultOptions.getModel()))
-			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), defaultOptions.getDimensions()))
+			.dimensions(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), this.defaultOptions.getDimensions()))
 			// Handle OpenAI specific embedding options
 			.encodingFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getEncodingFormat(),
-					defaultOptions.getEncodingFormat()))
+					this.defaultOptions.getEncodingFormat()))
 			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), this.defaultOptions.getUser()))
 			.build();
 

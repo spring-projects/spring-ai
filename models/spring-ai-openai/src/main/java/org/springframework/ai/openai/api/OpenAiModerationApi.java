@@ -83,6 +83,10 @@ public class OpenAiModerationApi {
 			.toEntity(OpenAiModerationResponse.class);
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record OpenAiModerationRequest(
@@ -147,10 +151,6 @@ public class OpenAiModerationApi {
 	public record Data(@JsonProperty("url") String url, @JsonProperty("b64_json") String b64Json,
 			@JsonProperty("revised_prompt") String revisedPrompt) {
 
-	}
-
-	public static Builder builder() {
-		return new Builder();
 	}
 
 	/**

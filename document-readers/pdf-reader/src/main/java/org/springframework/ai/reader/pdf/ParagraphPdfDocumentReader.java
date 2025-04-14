@@ -133,7 +133,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		List<Document> documents = new ArrayList<>(paragraphs.size());
 
 		if (!CollectionUtils.isEmpty(paragraphs)) {
-			logger.info("Start processing paragraphs from PDF");
+			this.logger.info("Start processing paragraphs from PDF");
 			Iterator<Paragraph> itr = paragraphs.iterator();
 
 			var current = itr.next();
@@ -152,7 +152,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 				}
 			}
 		}
-		logger.info("End processing paragraphs from PDF");
+		this.logger.info("End processing paragraphs from PDF");
 		return documents;
 	}
 

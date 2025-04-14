@@ -17,6 +17,7 @@
 package org.springframework.ai.aot;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.aot.generate.GenerationContext;
 import org.springframework.aot.hint.RuntimeHints;
@@ -55,7 +56,7 @@ class ToolBeanRegistrationAotProcessorTests {
 	}
 
 	private void process(Class<?> beanClass) {
-		when(generationContext.getRuntimeHints()).thenReturn(runtimeHints);
+		when(this.generationContext.getRuntimeHints()).thenReturn(this.runtimeHints);
 		BeanRegistrationAotContribution contribution = createContribution(beanClass);
 		if (contribution != null) {
 			contribution.applyTo(this.generationContext, mock());

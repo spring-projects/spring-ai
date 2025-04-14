@@ -39,7 +39,7 @@ public record DefaultToolExecutionResult(List<Message> conversationHistory,
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private List<Message> conversationHistory = List.of();
 
@@ -59,7 +59,7 @@ public record DefaultToolExecutionResult(List<Message> conversationHistory,
 		}
 
 		public DefaultToolExecutionResult build() {
-			return new DefaultToolExecutionResult(conversationHistory, returnDirect);
+			return new DefaultToolExecutionResult(this.conversationHistory, this.returnDirect);
 		}
 
 	}

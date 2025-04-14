@@ -502,7 +502,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	@Nullable
 	@JsonIgnore
 	public Boolean isInternalToolExecutionEnabled() {
-		return internalToolExecutionEnabled;
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override

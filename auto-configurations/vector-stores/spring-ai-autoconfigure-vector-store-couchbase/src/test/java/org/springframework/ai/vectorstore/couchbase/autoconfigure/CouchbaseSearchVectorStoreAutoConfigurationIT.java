@@ -79,7 +79,7 @@ class CouchbaseSearchVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void addAndSearchWithFilters() {
-		contextRunner.run(context -> {
+		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 

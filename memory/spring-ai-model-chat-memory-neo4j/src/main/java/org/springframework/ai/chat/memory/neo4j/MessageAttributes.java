@@ -26,7 +26,7 @@ public enum MessageAttributes {
 	private final String value;
 
 	public String getValue() {
-		return value;
+		return this.value;
 	}
 
 	MessageAttributes(String value) {

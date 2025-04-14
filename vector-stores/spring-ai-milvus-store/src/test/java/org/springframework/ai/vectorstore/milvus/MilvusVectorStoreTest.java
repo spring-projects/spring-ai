@@ -47,7 +47,7 @@ class MilvusVectorStoreTest {
 
 	@BeforeEach
 	void setUp() {
-		vectorStore = MilvusVectorStore.builder(milvusClient, embeddingModel).build();
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel).build();
 	}
 
 	@Test
@@ -130,14 +130,14 @@ class MilvusVectorStoreTest {
 		when(mockResults.getResults()).thenReturn(SearchResultData.getDefaultInstance());
 
 		R<SearchResults> mockResponse = R.success(mockResults);
-		when(milvusClient.search(any(SearchParam.class))).thenReturn(mockResponse);
+		when(this.milvusClient.search(any(SearchParam.class))).thenReturn(mockResponse);
 
 		ArgumentCaptor<SearchParam> searchParamCaptor = ArgumentCaptor.forClass(SearchParam.class);
 
-		List<Document> results = vectorStore.doSimilaritySearch(request);
+		List<Document> results = this.vectorStore.doSimilaritySearch(request);
 
 		assertThat(results).isNotNull();
-		verify(milvusClient).search(searchParamCaptor.capture());
+		verify(this.milvusClient).search(searchParamCaptor.capture());
 		return searchParamCaptor.getValue();
 	}
 

@@ -46,7 +46,7 @@ import org.springframework.util.ReflectionUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class MethodToolCallbackProvider implements ToolCallbackProvider {
+public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallbackProvider.class);
 
@@ -60,7 +60,7 @@ public class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-		var toolCallbacks = toolObjects.stream()
+		var toolCallbacks = this.toolObjects.stream()
 			.map(toolObject -> Stream
 				.of(ReflectionUtils.getDeclaredMethods(
 						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
@@ -100,7 +100,7 @@ public class MethodToolCallbackProvider implements ToolCallbackProvider {
 		if (!duplicateToolNames.isEmpty()) {
 			throw new IllegalStateException("Multiple tools with the same name (%s) found in sources: %s".formatted(
 					String.join(", ", duplicateToolNames),
-					toolObjects.stream().map(o -> o.getClass().getName()).collect(Collectors.joining(", "))));
+					this.toolObjects.stream().map(o -> o.getClass().getName()).collect(Collectors.joining(", "))));
 		}
 	}
 
@@ -108,7 +108,7 @@ public class MethodToolCallbackProvider implements ToolCallbackProvider {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private List<Object> toolObjects;
 
@@ -122,7 +122,7 @@ public class MethodToolCallbackProvider implements ToolCallbackProvider {
 		}
 
 		public MethodToolCallbackProvider build() {
-			return new MethodToolCallbackProvider(toolObjects);
+			return new MethodToolCallbackProvider(this.toolObjects);
 		}
 
 	}

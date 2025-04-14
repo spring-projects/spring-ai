@@ -108,7 +108,7 @@ public class MariaDbStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getEmbeddingFieldName() {
-		return embeddingFieldName;
+		return this.embeddingFieldName;
 	}
 
 	public void setEmbeddingFieldName(String embeddingFieldName) {
@@ -116,7 +116,7 @@ public class MariaDbStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getIdFieldName() {
-		return idFieldName;
+		return this.idFieldName;
 	}
 
 	public void setIdFieldName(String idFieldName) {
@@ -124,7 +124,7 @@ public class MariaDbStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getMetadataFieldName() {
-		return metadataFieldName;
+		return this.metadataFieldName;
 	}
 
 	public void setMetadataFieldName(String metadataFieldName) {
@@ -132,7 +132,7 @@ public class MariaDbStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getContentFieldName() {
-		return contentFieldName;
+		return this.contentFieldName;
 	}
 
 	public void setContentFieldName(String contentFieldName) {

@@ -19,11 +19,11 @@ package org.springframework.ai.anthropic;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link AnthropicChatOptions}.

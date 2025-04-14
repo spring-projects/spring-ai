@@ -63,7 +63,7 @@ public class ToolCallingManagerTests {
 	@Test
 	void explicitToolCallingExecutionWithNewOptions() {
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(ToolCallbacks.from(tools))
+			.toolCallbacks(ToolCallbacks.from(this.tools))
 			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(
@@ -75,7 +75,7 @@ public class ToolCallingManagerTests {
 	@Test
 	void explicitToolCallingExecutionWithNewOptionsStream() {
 		ChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(ToolCallbacks.from(tools))
+			.toolCallbacks(ToolCallbacks.from(this.tools))
 			.internalToolExecutionEnabled(false)
 			.build();
 		Prompt prompt = new Prompt(new UserMessage("What books written by %s, %s, and %s are available in the library?"
@@ -84,12 +84,12 @@ public class ToolCallingManagerTests {
 	}
 
 	private void runExplicitToolCallingExecutionWithOptions(ChatOptions chatOptions, Prompt prompt) {
-		ChatResponse chatResponse = openAiChatModel.call(prompt);
+		ChatResponse chatResponse = this.openAiChatModel.call(prompt);
 
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.hasToolCalls()).isTrue();
 
-		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+		ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 
 		assertThat(toolExecutionResult.conversationHistory()).isNotEmpty();
 		assertThat(toolExecutionResult.conversationHistory().stream().anyMatch(m -> m instanceof ToolResponseMessage))
@@ -97,7 +97,7 @@ public class ToolCallingManagerTests {
 
 		Prompt secondPrompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
 
-		ChatResponse secondChatResponse = openAiChatModel.call(secondPrompt);
+		ChatResponse secondChatResponse = this.openAiChatModel.call(secondPrompt);
 
 		assertThat(secondChatResponse).isNotNull();
 		assertThat(secondChatResponse.getResult().getOutput().getText()).isNotEmpty()
@@ -107,9 +107,9 @@ public class ToolCallingManagerTests {
 	}
 
 	private void runExplicitToolCallingExecutionWithOptionsStream(ChatOptions chatOptions, Prompt prompt) {
-		ChatResponse chatResponse = openAiChatModel.stream(prompt).flatMap(response -> {
+		ChatResponse chatResponse = this.openAiChatModel.stream(prompt).flatMap(response -> {
 			if (response.hasToolCalls()) {
-				ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+				ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 
 				assertThat(toolExecutionResult.conversationHistory()).isNotEmpty();
 				assertThat(toolExecutionResult.conversationHistory()
@@ -118,7 +118,7 @@ public class ToolCallingManagerTests {
 
 				Prompt secondPrompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
 				// return openAiChatModel.stream(secondPrompt);
-				return Flux.just(openAiChatModel.call(secondPrompt));
+				return Flux.just(this.openAiChatModel.call(secondPrompt));
 			}
 			return Flux.just(response);
 		}).blockLast();
@@ -141,7 +141,7 @@ public class ToolCallingManagerTests {
 		@Tool(description = "Get the list of books written by the given author available in the library")
 		List<Book> booksByAuthor(String author) {
 			logger.info("Getting books by author: {}", author);
-			return bookService.getBooksByAuthor(new Author(author));
+			return this.bookService.getBooksByAuthor(new Author(author));
 		}
 
 	}

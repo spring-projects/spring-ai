@@ -77,7 +77,7 @@ public class CouchbaseSearchVectorStoreProperties extends CommonVectorStorePrope
 	}
 
 	public String getCollectionName() {
-		return collectionName;
+		return this.collectionName;
 	}
 
 	public void setCollectionName(String collectionName) {
@@ -85,7 +85,7 @@ public class CouchbaseSearchVectorStoreProperties extends CommonVectorStorePrope
 	}
 
 	public String getScopeName() {
-		return scopeName;
+		return this.scopeName;
 	}
 
 	public void setScopeName(String scopeName) {
@@ -93,7 +93,7 @@ public class CouchbaseSearchVectorStoreProperties extends CommonVectorStorePrope
 	}
 
 	public String getBucketName() {
-		return bucketName;
+		return this.bucketName;
 	}
 
 	public void setBucketName(String bucketName) {
@@ -101,7 +101,7 @@ public class CouchbaseSearchVectorStoreProperties extends CommonVectorStorePrope
 	}
 
 	public Integer getDimensions() {
-		return dimensions;
+		return this.dimensions;
 	}
 
 	public void setDimensions(Integer dimensions) {
@@ -109,7 +109,7 @@ public class CouchbaseSearchVectorStoreProperties extends CommonVectorStorePrope
 	}
 
 	public CouchbaseSimilarityFunction getSimilarity() {
-		return similarity;
+		return this.similarity;
 	}
 
 	public void setSimilarity(CouchbaseSimilarityFunction similarity) {
@@ -117,7 +117,7 @@ public class CouchbaseSearchVectorStoreProperties extends CommonVectorStorePrope
 	}
 
 	public CouchbaseIndexOptimization getOptimization() {
-		return optimization;
+		return this.optimization;
 	}
 
 	public void setOptimization(CouchbaseIndexOptimization optimization) {

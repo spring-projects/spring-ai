@@ -142,7 +142,7 @@ public class DefaultFunctionCallbackBuilder implements FunctionCallback.Builder 
 			Assert.notNull(this.inputType, "InputType must not be null");
 
 			if (this.getInputTypeSchema() == null) {
-				boolean upperCaseTypeValues = schemaType == SchemaType.OPEN_API_SCHEMA;
+				boolean upperCaseTypeValues = this.schemaType == SchemaType.OPEN_API_SCHEMA;
 				this.inputTypeSchema = ModelOptionsUtils.getJsonSchema(this.inputType, upperCaseTypeValues);
 			}
 

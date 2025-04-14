@@ -217,7 +217,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@Nullable
 	@JsonIgnore
 	public Boolean isInternalToolExecutionEnabled() {
-		return internalToolExecutionEnabled;
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -293,7 +293,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	public Map<String, String> getHttpHeaders() {
-		return httpHeaders;
+		return this.httpHeaders;
 	}
 
 	public void setHttpHeaders(Map<String, String> httpHeaders) {
@@ -328,8 +328,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(model, maxTokens, metadata, stopSequences, temperature, topP, topK, thinking, toolCallbacks,
-				toolNames, internalToolExecutionEnabled, toolContext, httpHeaders);
+		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
+				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
+				this.toolContext, this.httpHeaders);
 	}
 
 	public static class Builder {

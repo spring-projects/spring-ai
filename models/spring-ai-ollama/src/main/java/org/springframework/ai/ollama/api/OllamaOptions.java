@@ -707,8 +707,8 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	@Override
 	@JsonIgnore
 	public List<FunctionCallback> getToolCallbacks() {
-    	return this.toolCallbacks;
-    }
+		return this.toolCallbacks;
+	}
 
 	@Override
 	@JsonIgnore
@@ -716,13 +716,13 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks;
-    }
+	}
 
 	@Override
 	@JsonIgnore
 	public Set<String> getToolNames() {
-    	return this.toolNames;
-    }
+		return this.toolNames;
+	}
 
 	@Override
 	@JsonIgnore
@@ -730,21 +730,21 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
 		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-    	this.toolNames = toolNames;
-    }
+		this.toolNames = toolNames;
+	}
 
 	@Override
 	@Nullable
 	@JsonIgnore
 	public Boolean isInternalToolExecutionEnabled() {
-    	return internalToolExecutionEnabled;
-    }
+		return this.internalToolExecutionEnabled;
+	}
 
 	@Override
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-    	this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-    }
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
 
 	@Override
 	@Deprecated

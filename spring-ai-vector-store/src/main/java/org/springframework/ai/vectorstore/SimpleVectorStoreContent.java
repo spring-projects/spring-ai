@@ -25,11 +25,11 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.content.Content;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.ai.content.Content;
 import org.springframework.util.Assert;
 
 /**

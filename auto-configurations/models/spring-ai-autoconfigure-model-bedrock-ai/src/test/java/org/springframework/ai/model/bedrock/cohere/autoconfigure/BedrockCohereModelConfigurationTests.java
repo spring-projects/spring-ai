@@ -39,9 +39,8 @@ public class BedrockCohereModelConfigurationTests {
 
 	@Test
 	void embeddingModelActivation() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner
+			.run(context -> assertThat(context.getBeansOfType(BedrockCohereEmbeddingModel.class)).isNotEmpty());
 
 		this.contextRunner.withPropertyValues("spring.ai.model.embedding=none").run(context -> {
 			assertThat(context.getBeansOfType(BedrockCohereEmbeddingProperties.class)).isEmpty();

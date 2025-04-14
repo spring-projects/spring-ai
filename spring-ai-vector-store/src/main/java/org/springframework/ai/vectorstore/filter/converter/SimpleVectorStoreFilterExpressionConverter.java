@@ -16,15 +16,15 @@
 
 package org.springframework.ai.vectorstore.filter.converter;
 
-import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.Filter.Expression;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
+
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
 
 /**
  * Converts {@link Expression} into SpEL metadata filter expression format.
@@ -99,9 +99,9 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 
 	private void appendSpELContains(StringBuilder formattedList, StringBuilder context) {
 		int metadataStart = context.lastIndexOf("#metadata");
-		if (metadataStart == -1)
+		if (metadataStart == -1) {
 			throw new RuntimeException("Wrong SpEL expression: " + context);
-
+		}
 		int metadataEnd = context.indexOf(" ", metadataStart);
 		String metadata = context.substring(metadataStart, metadataEnd);
 		context.setLength(context.lastIndexOf("in "));

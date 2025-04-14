@@ -47,6 +47,10 @@ import org.springframework.util.ReflectionUtils;
  */
 public final class TypeResolverHelper {
 
+	private TypeResolverHelper() {
+		// Avoids instantiation
+	}
+
 	/**
 	 * Returns the input class of a given Consumer class.
 	 * @param consumerClass The consumer class.

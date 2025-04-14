@@ -73,7 +73,7 @@ class OllamaChatModelTests {
 
 	@Test
 	void buildOllamaChatModelWithBuilder() {
-		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(ollamaApi).build();
+		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).build();
 		assertThat(chatModel).isNotNull();
 	}
 
