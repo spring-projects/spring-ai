@@ -301,9 +301,9 @@ public class BedrockProxyChatModel implements ChatModel {
 						: this.defaultOptions.getToolNames())
 				.toolContext(runtimeOptions.getToolContext() != null ? runtimeOptions.getToolContext()
 						: this.defaultOptions.getToolContext())
-				.internalToolExecutionEnabled(runtimeOptions.isInternalToolExecutionEnabled() != null
-						? runtimeOptions.isInternalToolExecutionEnabled()
-						: this.defaultOptions.isInternalToolExecutionEnabled())
+				.internalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
+						? runtimeOptions.getInternalToolExecutionEnabled()
+						: this.defaultOptions.getInternalToolExecutionEnabled())
 				.build();
 		}
 

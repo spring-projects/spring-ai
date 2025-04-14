@@ -155,7 +155,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			.toolChoice(fromOptions.getToolChoice())
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
-			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -287,8 +287,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
+	public Boolean getInternalToolExecutionEnabled() {
+		return internalToolExecutionEnabled;
 	}
 
 	@Override

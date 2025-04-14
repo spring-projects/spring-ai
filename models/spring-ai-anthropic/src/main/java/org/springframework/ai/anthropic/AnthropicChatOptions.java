@@ -108,7 +108,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
-			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.build();
@@ -216,7 +216,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
+	public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 

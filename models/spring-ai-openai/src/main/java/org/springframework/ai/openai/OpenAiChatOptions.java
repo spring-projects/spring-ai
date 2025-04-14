@@ -255,7 +255,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
-			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.store(fromOptions.getStore())
 			.metadata(fromOptions.getMetadata())
@@ -444,7 +444,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	@Deprecated
 	@JsonIgnore
 	public Boolean getProxyToolCalls() {
-		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
+		return this.getToolExecutionEnabled() != null ? !this.internalToolExecutionEnabled : null;
+	}
+
+	private Boolean getToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Deprecated
@@ -501,8 +505,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
+	public Boolean getInternalToolExecutionEnabled() {
+		return internalToolExecutionEnabled;
 	}
 
 	@Override

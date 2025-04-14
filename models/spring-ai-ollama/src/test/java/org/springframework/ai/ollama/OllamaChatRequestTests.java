@@ -65,7 +65,7 @@ class OllamaChatRequestTests {
 		Prompt prompt = chatModel.buildRequestPrompt(new Prompt("Test message content", runtimeOptions));
 
 		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).isInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()
