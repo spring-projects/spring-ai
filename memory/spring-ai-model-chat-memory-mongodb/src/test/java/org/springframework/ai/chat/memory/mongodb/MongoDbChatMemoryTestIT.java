@@ -44,7 +44,7 @@ class MongoDbChatMemoryTestIT {
 
 	@Container
 	@ServiceConnection
-	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo");
+	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo:8.0.6");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(MongoDbChatMemoryTestIT.TestApplication.class)
