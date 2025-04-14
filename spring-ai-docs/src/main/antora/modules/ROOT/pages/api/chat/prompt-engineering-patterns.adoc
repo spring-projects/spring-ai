@@ -2,8 +2,8 @@
 = Prompt Engineering Patterns
 
 Practical implementations of Prompt Engineering techniques based on the comprehensive link:https://www.kaggle.com/whitepaper-prompt-engineering[Prompt Engineering Guide].
-The guide covers the theory, principles, and patterns of effective prompt engineering, while here we demosntrate how to translate those concepts into working Java code using Spring AI's fluent link:https://docs.spring.io/spring-ai/reference/api/chatclient.html[ChatClient API].
-The demo source code used in this article is available at: https://github.com/spring-projects/spring-ai-examples/tree/main/prompt-engineering/prompt-engineering-patterns
+The guide covers the theory, principles, and patterns of effective prompt engineering, while here we demosntrate how to translate those concepts into working Java code using Spring AI's fluent xref::api/chatclient.adoc[ChatClient API].
+The demo source code used in this article is available at: link:https://github.com/spring-projects/spring-ai-examples/tree/main/prompt-engineering/prompt-engineering-patterns[Prompt Engineering Patterns Examples].
 
 == 1. Configuration
 
@@ -13,7 +13,7 @@ It covers selecting the right LLM provider for your use case and configuring imp
 === LLM Provider Selection
 
 For prompt engineering, you will start by choosing a model.
-Spring AI supports link:https://docs.spring.io/spring-ai/reference/api/chat/comparison.html[multiple LLM providers] (such as OpenAI, Anthropic, Google Vertex AI, AWS Bedrock, Ollama and more), letting you switch providers without changing application code - just update your configuration.
+Spring AI supports xref::api/chat/comparison.adoc[multiple LLM providers] (such as OpenAI, Anthropic, Google Vertex AI, AWS Bedrock, Ollama and more), letting you switch providers without changing application code - just update your configuration.
 Just add the selected starter dependency `spring-ai-starter-model-<MODEL-PROVIDER-NAME>`.
 For example, here is how to enable Anthropic Claude API:
 
@@ -25,10 +25,7 @@ For example, here is how to enable Anthropic Claude API:
 </dependency>
 ----
 
-along with some connection properties:
-`spring.ai.anthropic.api-key=${ANTHROPIC_API_KEY}`
-
-You can find detailed information for enabling each model in the link:https://docs.spring.io/spring-ai/reference/api/chatmodel.html[reference docs].
+You can find detailed information for enabling each model in the xref::api/chatmodel.adoc[reference docs].
 
 You can specify the LLM model name like this:
 
@@ -41,9 +38,9 @@ You can specify the LLM model name like this:
 
 === LLM Output Configuration
 
-image::https://docs.spring.io/spring-ai/reference/_images/chat-options-flow.jpg[width=400,float=right]
+image::https://docs.spring.io/spring-ai/reference/_images/chat-options-flow.jpg[width=500,float=right]
 
-Before we dive into prompt engineering techniques, it's essential to understand how to configure the LLM's output behavior. Spring AI provides several configuration options that let you control various aspects of generation through the link:https://docs.spring.io/spring-ai/reference/api/chatmodel.html#_chat_options[ChatOptions] builder.
+Before we dive into prompt engineering techniques, it's essential to understand how to configure the LLM's output behavior. Spring AI provides several configuration options that let you control various aspects of generation through the xref:/api/chatmodel.adoc#_chat_options[ChatOptions] builder.
 
 All configurations can be applied programmatically as demonstrated in the examples below or through Spring application properties at start time.
 
