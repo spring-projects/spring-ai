@@ -102,7 +102,9 @@
 ** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
 * xref:api/multimodality.adoc[Multimodality]
 * xref:observability/index.adoc[]
-* xref:api/prompt.adoc[]
+* Prompt Egineering
+** xref:api/prompt.adoc[]
+** xref:api/chat/prompt-engineering-patterns.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
 * xref:api/functions.adoc[Function Calling (Deprecated)]
 ** xref:api/function-callback.adoc[FunctionCallback API (Deprecated)]
