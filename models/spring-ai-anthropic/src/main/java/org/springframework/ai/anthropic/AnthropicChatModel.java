@@ -599,7 +599,7 @@ public class AnthropicChatModel implements ChatModel {
 		public AnthropicChatModel build() {
 			if (this.toolCallingManager != null) {
 				return new AnthropicChatModel(this.anthropicApi, this.defaultOptions, this.toolCallingManager,
-						this.retryTemplate, this.observationRegistry);
+						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 			}
 			return new AnthropicChatModel(this.anthropicApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
