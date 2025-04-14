@@ -94,8 +94,11 @@ public class SseHttpClientTransportAutoConfiguration {
 
 		for (Map.Entry<String, SseParameters> serverParameters : sseProperties.getConnections().entrySet()) {
 
-			var transport = new HttpClientSseClientTransport(HttpClient.newBuilder(), serverParameters.getValue().url(),
-					objectMapper);
+			var transport = HttpClientSseClientTransport.builder(serverParameters.getValue().url())
+				.sseEndpoint(serverParameters.getValue().sseEndpoint())
+				.clientBuilder(HttpClient.newBuilder())
+				.objectMapper(objectMapper)
+				.build();
 			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}
 

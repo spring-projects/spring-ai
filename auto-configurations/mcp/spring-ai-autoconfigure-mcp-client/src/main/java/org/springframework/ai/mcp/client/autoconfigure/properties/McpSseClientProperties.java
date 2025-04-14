@@ -18,7 +18,10 @@ package org.springframework.ai.mcp.client.autoconfigure.properties;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
 /**
  * Configuration properties for Server-Sent Events (SSE) based MCP client connections.
@@ -50,8 +53,11 @@ public class McpSseClientProperties {
 	 * Parameters for configuring an SSE connection to an MCP server.
 	 *
 	 * @param url the URL endpoint for SSE communication with the MCP server
+	 * @param sseEndpoint the SSE endpoint for SSE communication with the MCP server
 	 */
-	public record SseParameters(String url) {
+	@JsonInclude(JsonInclude.Include.NON_ABSENT)
+	public record SseParameters(@JsonProperty("url") String url,
+			@JsonProperty("sse-endpoint") @DefaultValue("/sse") String sseEndpoint) {
 	}
 
 	/**
