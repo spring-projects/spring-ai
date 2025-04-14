@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package org.springframework.ai.moonshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -141,7 +143,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 	private Boolean proxyToolCalls;
 
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
 		return new Builder();
@@ -281,6 +283,7 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public MoonshotChatOptions copy() {
 		return builder().model(this.model)
 			.maxTokens(this.maxTokens)
@@ -289,130 +292,41 @@ public class MoonshotChatOptions implements FunctionCallingOptions {
 			.N(this.n)
 			.presencePenalty(this.presencePenalty)
 			.frequencyPenalty(this.frequencyPenalty)
-			.stop(this.stop)
+			.stop(this.stop != null ? new ArrayList<>(this.stop) : null)
 			.user(this.user)
-			.tools(this.tools)
+			.tools(this.tools != null ? new ArrayList<>(this.tools) : null)
 			.toolChoice(this.toolChoice)
-			.functionCallbacks(this.functionCallbacks)
-			.functions(this.functions)
+			.functionCallbacks(this.functionCallbacks != null ? new ArrayList<>(this.functionCallbacks) : null)
+			.functions(this.functions != null ? new HashSet<>(this.functions) : null)
 			.proxyToolCalls(this.proxyToolCalls)
-			.toolContext(this.toolContext)
+			.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null)
 			.build();
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.n == null) ? 0 : this.n.hashCode());
-		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
-		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
-		return result;
+		return Objects.hash(model, maxTokens, temperature, topP, n, presencePenalty, frequencyPenalty, stop, tools,
+				toolChoice, functionCallbacks, functions, user, proxyToolCalls, toolContext);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
 		}
-		if (obj == null) {
+		if (!(o instanceof MoonshotChatOptions other)) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		MoonshotChatOptions other = (MoonshotChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.n == null) {
-			if (other.n != null) {
-				return false;
-			}
-		}
-		else if (!this.n.equals(other.n)) {
-			return false;
-		}
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.user == null) {
-			return other.user == null;
-		}
-		else if (!this.user.equals(other.user)) {
-			return false;
-		}
-		if (this.proxyToolCalls == null) {
-			return other.proxyToolCalls == null;
-		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
-			return false;
-		}
-		if (this.toolContext == null) {
-			return other.toolContext == null;
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-		return true;
+		return Objects.equals(this.model, other.model) && Objects.equals(this.maxTokens, other.maxTokens)
+				&& Objects.equals(this.temperature, other.temperature) && Objects.equals(this.topP, other.topP)
+				&& Objects.equals(this.n, other.n) && Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
+				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.tools, other.tools)
+				&& Objects.equals(this.toolChoice, other.toolChoice)
+				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
+				&& Objects.equals(this.functions, other.functions) && Objects.equals(this.user, other.user)
+				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
+				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
 	public static class Builder {
