@@ -57,8 +57,7 @@ import org.springframework.web.client.RestClient;
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
-@EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiChatProperties.class,
-		MistralAiModerationProperties.class })
+@EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MISTRAL,
 		matchIfMissing = true)
 @ConditionalOnClass(MistralAiApi.class)
