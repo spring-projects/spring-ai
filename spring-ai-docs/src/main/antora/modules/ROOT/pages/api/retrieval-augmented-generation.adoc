@@ -260,7 +260,7 @@ MultiQueryExpander queryExpander = MultiQueryExpander.builder()
     .chatClientBuilder(chatClientBuilder)
     .numberOfQueries(3)
     .build();
-List<Query> queries = expander.expand(new Query("How to run a Spring Boot app?"));
+List<Query> queries = queryExpander.expand(new Query("How to run a Spring Boot app?"));
 ----
 
 By default, the `MultiQueryExpander` includes the original query in the list of expanded queries. You can disable this behavior
