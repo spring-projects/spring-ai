@@ -112,7 +112,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'spring-ai-starter-model-azure-openai'
+    implementation 'org.springframework.ai:spring-ai-starter-model-azure-openai'
 }
 ----
 ======
