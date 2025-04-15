@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -33,8 +34,10 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @deprecated Use {@link ChatClientResponse} instead.
  * @since 1.0.0
  */
+@Deprecated
 public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Object> adviseContext) {
 
 	/**
@@ -64,6 +67,15 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 	public static Builder from(AdvisedResponse advisedResponse) {
 		Assert.notNull(advisedResponse, "advisedResponse cannot be null");
 		return new Builder().response(advisedResponse.response).adviseContext(advisedResponse.adviseContext);
+	}
+
+	public static AdvisedResponse from(ChatClientResponse chatClientResponse) {
+		Assert.notNull(chatClientResponse, "chatClientResponse cannot be null");
+		return new AdvisedResponse(chatClientResponse.chatResponse(), chatClientResponse.context());
+	}
+
+	public ChatClientResponse toChatClientResponse() {
+		return new ChatClientResponse(this.response, this.adviseContext);
 	}
 
 	/**

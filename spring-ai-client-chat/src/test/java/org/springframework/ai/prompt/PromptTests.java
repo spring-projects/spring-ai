@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,23 @@ class PromptTests {
 		Prompt prompt = promptTemplate.create(model, chatOptions);
 
 		Prompt copiedPrompt = prompt.copy();
+		assertThat(prompt).isNotSameAs(copiedPrompt);
+		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
+	}
+
+	@Test
+	public void mutatePrompt() {
+		String template = "Hello, {name}! Your age is {age}.";
+		Map<String, Object> model = new HashMap<>();
+		model.put("name", "Alice");
+		model.put("age", 30);
+		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
+
+		Prompt prompt = promptTemplate.create(model, chatOptions);
+
+		Prompt copiedPrompt = prompt.mutate().build();
 		assertThat(prompt).isNotSameAs(copiedPrompt);
 		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
 		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());

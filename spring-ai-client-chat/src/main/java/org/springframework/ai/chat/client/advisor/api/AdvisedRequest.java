@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.Objects;
 
+import org.springframework.ai.chat.client.ChatClientAttributes;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -34,6 +38,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -60,8 +65,10 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @deprecated Use {@link ChatClientRequest} instead.
  * @since 1.0.0
  */
+@Deprecated
 public record AdvisedRequest(
 // @formatter:off
 		ChatModel chatModel,
@@ -77,6 +84,7 @@ public record AdvisedRequest(
 		Map<String, Object> userParams,
 		Map<String, Object> systemParams,
 		List<Advisor> advisors,
+		@Deprecated // Not really used. Use "adviseContext" instead.
 		Map<String, Object> advisorParams,
 		Map<String, Object> adviseContext,
 		Map<String, Object> toolContext
@@ -139,10 +147,67 @@ public record AdvisedRequest(
 		return builder;
 	}
 
+	@SuppressWarnings("unchecked")
+	public static AdvisedRequest from(ChatClientRequest from) {
+		Assert.notNull(from, "ChatClientRequest cannot be null");
+
+		List<Message> messages = new LinkedList<>(from.prompt().getInstructions());
+
+		Builder builder = new Builder();
+		if (from.context().get(ChatClientAttributes.CHAT_MODEL.getKey()) instanceof ChatModel chatModel) {
+			builder.chatModel = chatModel;
+		}
+
+		if (!messages.isEmpty() && messages.get(messages.size() - 1) instanceof UserMessage userMessage) {
+			builder.userText = userMessage.getText();
+			builder.media = userMessage.getMedia();
+			messages.remove(messages.size() - 1);
+		}
+		if (from.context().get(ChatClientAttributes.USER_PARAMS.getKey()) instanceof Map<?, ?> contextUserParams) {
+			builder.userParams = (Map<String, Object>) contextUserParams;
+		}
+
+		if (!messages.isEmpty() && messages.get(messages.size() - 1) instanceof SystemMessage systemMessage) {
+			builder.systemText = systemMessage.getText();
+			messages.remove(messages.size() - 1);
+		}
+		if (from.context().get(ChatClientAttributes.SYSTEM_PARAMS.getKey()) instanceof Map<?, ?> contextSystemParams) {
+			builder.systemParams = (Map<String, Object>) contextSystemParams;
+		}
+
+		builder.messages = messages;
+
+		builder.chatOptions = Objects.requireNonNullElse(from.prompt().getOptions(), ChatOptions.builder().build());
+		if (from.prompt().getOptions() instanceof ToolCallingChatOptions options) {
+			builder.functionNames = options.getToolNames().stream().toList();
+			builder.functionCallbacks = options.getToolCallbacks();
+			builder.toolContext = options.getToolContext();
+		}
+
+		if (from.context().get(ChatClientAttributes.ADVISORS.getKey()) instanceof List<?> advisors) {
+			builder.advisors = (List<Advisor>) advisors;
+		}
+		builder.advisorParams = Map.of();
+		builder.adviseContext = from.context();
+
+		return builder.build();
+	}
+
 	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
 		Assert.notNull(contextTransform, "contextTransform cannot be null");
 		return from(this)
 			.adviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
+			.build();
+	}
+
+	public ChatClientRequest toChatClientRequest() {
+		return ChatClientRequest.builder()
+			.prompt(toPrompt())
+			.context(this.adviseContext)
+			.context(ChatClientAttributes.ADVISORS.getKey(), this.advisors)
+			.context(ChatClientAttributes.CHAT_MODEL.getKey(), this.chatModel)
+			.context(ChatClientAttributes.USER_PARAMS.getKey(), this.userParams)
+			.context(ChatClientAttributes.SYSTEM_PARAMS.getKey(), this.systemParams)
 			.build();
 	}
 
@@ -157,16 +222,9 @@ public record AdvisedRequest(
 			messages.add(new SystemMessage(processedSystemText));
 		}
 
-		String formatParam = (String) this.adviseContext().get("formatParam");
-
-		var processedUserText = StringUtils.hasText(formatParam)
-				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
-
-		if (StringUtils.hasText(processedUserText)) {
+		if (StringUtils.hasText(this.userText())) {
 			Map<String, Object> userParams = new HashMap<>(this.userParams());
-			if (StringUtils.hasText(formatParam)) {
-				userParams.put("spring_ai_soc_format", formatParam);
-			}
+			String processedUserText = this.userText();
 			if (!CollectionUtils.isEmpty(userParams)) {
 				processedUserText = new PromptTemplate(processedUserText, userParams).render();
 			}
@@ -338,7 +396,9 @@ public record AdvisedRequest(
 		 * Set the advisor params.
 		 * @param advisorParams the advisor params
 		 * @return this {@link Builder} instance
+		 * @deprecated in favor of {@link #adviseContext(Map)}
 		 */
+		@Deprecated
 		public Builder advisorParams(Map<String, Object> advisorParams) {
 			this.advisorParams = advisorParams;
 			return this;
