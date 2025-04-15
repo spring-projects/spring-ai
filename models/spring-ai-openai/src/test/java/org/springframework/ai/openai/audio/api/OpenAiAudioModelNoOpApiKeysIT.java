@@ -42,15 +42,13 @@ public class OpenAiAudioModelNoOpApiKeysIT {
 
 	@Test
 	void checkNoOpKey() {
-		assertThatThrownBy(() -> {
-			this.audioApi
-				.createSpeech(OpenAiAudioApi.SpeechRequest.builder()
-					.model(OpenAiAudioApi.TtsModel.TTS_1_HD.getValue())
-					.input("Hello, my name is Chris and I love Spring A.I.")
-					.voice(OpenAiAudioApi.SpeechRequest.Voice.ONYX.getValue())
-					.build())
-				.getBody();
-		}).isInstanceOf(NonTransientAiException.class);
+		assertThatThrownBy(() -> this.audioApi
+			.createSpeech(OpenAiAudioApi.SpeechRequest.builder()
+				.model(OpenAiAudioApi.TtsModel.TTS_1_HD.getValue())
+				.input("Hello, my name is Chris and I love Spring A.I.")
+				.voice(OpenAiAudioApi.SpeechRequest.Voice.ONYX.getValue())
+				.build())
+			.getBody()).isInstanceOf(NonTransientAiException.class);
 	}
 
 	@SpringBootConfiguration

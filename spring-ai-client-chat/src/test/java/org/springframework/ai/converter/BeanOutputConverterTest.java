@@ -16,6 +16,10 @@
 
 package org.springframework.ai.converter;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -33,11 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.ParameterizedTypeReference;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,9 +64,9 @@ class BeanOutputConverterTest {
 
 		var logger = (Logger) LoggerFactory.getLogger(BeanOutputConverter.class);
 
-		logAppender = new ListAppender<>();
-		logAppender.start();
-		logger.addAppender(logAppender);
+		this.logAppender = new ListAppender<>();
+		this.logAppender.start();
+		logger.addAppender(this.logAppender);
 	}
 
 	@Test
@@ -159,8 +160,8 @@ class BeanOutputConverterTest {
 		void failToConvertInvalidJson() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			assertThatThrownBy(() -> converter.convert("{invalid json")).hasCauseInstanceOf(JsonParseException.class);
-			assertThat(logAppender.list).hasSize(1);
-			final var loggingEvent = logAppender.list.get(0);
+			assertThat(BeanOutputConverterTest.this.logAppender.list).hasSize(1);
+			final var loggingEvent = BeanOutputConverterTest.this.logAppender.list.get(0);
 			assertThat(loggingEvent.getFormattedMessage())
 				.isEqualTo("Could not parse the given text to the desired target type: \"{invalid json\" into "
 						+ TestClass.class);

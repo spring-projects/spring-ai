@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.tool;
 
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.function.FunctionCallingOptions;
-
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +49,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isTrue();
 	}
 
@@ -61,7 +63,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isFalse();
 	}
 
@@ -76,7 +78,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isFalse();
 	}
 
@@ -90,7 +92,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isFalse();
 	}
 
@@ -106,7 +108,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isTrue();
 	}
 
@@ -122,7 +124,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isFalse();
 	}
 
@@ -139,7 +141,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 
 		// Test the predicate - should use default value (true) for internal tool
 		// execution
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isTrue();
 	}
 
@@ -149,7 +151,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
 
 		// Test the predicate with null ChatResponse
-		boolean result = predicate.test(options, null);
+		boolean result = this.predicate.test(options, null);
 		assertThat(result).isFalse();
 	}
 
@@ -162,7 +164,7 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		ChatResponse chatResponse = new ChatResponse(List.of());
 
 		// Test the predicate
-		boolean result = predicate.test(options, chatResponse);
+		boolean result = this.predicate.test(options, chatResponse);
 		assertThat(result).isFalse();
 	}
 

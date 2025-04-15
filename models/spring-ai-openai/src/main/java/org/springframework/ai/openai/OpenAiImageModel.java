@@ -191,16 +191,16 @@ public class OpenAiImageModel implements ImageModel {
 
 		OpenAiImageOptions requestOptions = runtimeOptions == null ? this.defaultOptions : OpenAiImageOptions.builder()
 			// Handle portable image options
-			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
-			.N(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
+			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.defaultOptions.getModel()))
+			.N(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), this.defaultOptions.getN()))
 			.responseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
-					defaultOptions.getResponseFormat()))
-			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
-			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
-			.style(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
+					this.defaultOptions.getResponseFormat()))
+			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), this.defaultOptions.getWidth()))
+			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), this.defaultOptions.getHeight()))
+			.style(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), this.defaultOptions.getStyle()))
 			// Handle OpenAI specific image options
-			.quality(ModelOptionsUtils.mergeOption(runtimeOptions.getQuality(), defaultOptions.getQuality()))
-			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), defaultOptions.getUser()))
+			.quality(ModelOptionsUtils.mergeOption(runtimeOptions.getQuality(), this.defaultOptions.getQuality()))
+			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), this.defaultOptions.getUser()))
 			.build();
 
 		return new ImagePrompt(imagePrompt.getInstructions(), requestOptions);

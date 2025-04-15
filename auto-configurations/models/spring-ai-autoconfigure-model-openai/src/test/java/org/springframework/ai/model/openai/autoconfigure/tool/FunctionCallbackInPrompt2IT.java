@@ -59,7 +59,7 @@ public class FunctionCallbackInPrompt2IT {
 					.call().content();
 
 			String content = ChatClient.builder(chatModel).build().prompt()
-					.user("What's the weather like in San Francisco, Tokyo, and Paris?")					
+					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
 					.functions(FunctionToolCallback
 						.builder("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location")

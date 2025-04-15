@@ -128,12 +128,6 @@ class ToolCallingAutoConfigurationTests {
 			return MethodToolCallbackProvider.builder().toolObjects(new WeatherService()).build();
 		}
 
-		public record Request(String location) {
-		}
-
-		public record Response(String temperature) {
-		}
-
 		@Bean
 		@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 		public Function<Request, Response> weatherFunction1() {
@@ -186,6 +180,12 @@ class ToolCallingAutoConfigurationTests {
 				.toolMethod(toolMethod)
 				.toolObject(new WeatherService())
 				.build();
+		}
+
+		public record Request(String location) {
+		}
+
+		public record Response(String temperature) {
 		}
 
 	}

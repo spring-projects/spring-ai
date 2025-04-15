@@ -368,7 +368,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 			});
 
 			return chatResponseFlux.flatMap(chatResponse -> {
-				if (toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
 					return Flux.defer(() -> {
@@ -642,8 +642,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
 			requestOptions.setInternalToolExecutionEnabled(
-					ModelOptionsUtils.mergeOption(runtimeOptions.isInternalToolExecutionEnabled(),
-							this.defaultOptions.isInternalToolExecutionEnabled()));
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
+							this.defaultOptions.getInternalToolExecutionEnabled()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -652,7 +652,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 					this.defaultOptions.getToolContext()));
 		}
 		else {
-			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.isInternalToolExecutionEnabled());
+			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
@@ -923,7 +923,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 	/**
 	 * Builder to construct {@link AzureOpenAiChatModel}.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private OpenAIClientBuilder openAIClientBuilder;
 
@@ -968,12 +968,12 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 
 		public AzureOpenAiChatModel build() {
-			if (toolCallingManager != null) {
-				return new AzureOpenAiChatModel(openAIClientBuilder, defaultOptions, toolCallingManager,
-						observationRegistry, toolExecutionEligibilityPredicate);
+			if (this.toolCallingManager != null) {
+				return new AzureOpenAiChatModel(this.openAIClientBuilder, this.defaultOptions, this.toolCallingManager,
+						this.observationRegistry, this.toolExecutionEligibilityPredicate);
 			}
-			return new AzureOpenAiChatModel(openAIClientBuilder, defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
-					observationRegistry, toolExecutionEligibilityPredicate);
+			return new AzureOpenAiChatModel(this.openAIClientBuilder, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+					this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 
 	}

@@ -16,18 +16,20 @@
 
 package org.springframework.ai.tool.execution;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
-
-import javax.imageio.ImageIO;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Base64;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.util.json.JsonParser;
+import org.springframework.lang.Nullable;
 
 /**
  * A default implementation of {@link ToolCallResultConverter}.

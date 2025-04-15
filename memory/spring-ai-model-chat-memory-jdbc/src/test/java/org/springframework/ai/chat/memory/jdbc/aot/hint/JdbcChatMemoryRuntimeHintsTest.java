@@ -49,7 +49,7 @@ class JdbcChatMemoryRuntimeHintsTest {
 		var match = SpringFactoriesLoader.forResourceLocation("META-INF/spring/aot.factories")
 			.load(RuntimeHintsRegistrar.class)
 			.stream()
-			.anyMatch((registrar) -> registrar instanceof JdbcChatMemoryRuntimeHints);
+			.anyMatch(registrar -> registrar instanceof JdbcChatMemoryRuntimeHints);
 
 		assertThat(match).isTrue();
 	}

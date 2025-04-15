@@ -231,8 +231,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
-		return internalToolExecutionEnabled;
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -265,7 +265,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.topLogprobs(fromOptions.getTopLogProbs())
 			.enhancements(fromOptions.getEnhancements())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
-			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.streamOptions(fromOptions.getStreamOptions())
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)

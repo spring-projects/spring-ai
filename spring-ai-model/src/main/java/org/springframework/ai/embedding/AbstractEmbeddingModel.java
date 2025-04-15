@@ -16,18 +16,18 @@
 
 package org.springframework.ai.embedding;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * Abstract implementation of the {@link EmbeddingModel} interface that provides
@@ -43,15 +43,6 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 			"/embedding/embedding-model-dimensions.properties");
 
 	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = loadKnownModelDimensions();
-
-	static class Hints implements RuntimeHintsRegistrar {
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-			hints.resources().registerResource(EMBEDDING_MODEL_DIMENSIONS_PROPERTIES);
-		}
-
-	}
 
 	/**
 	 * Cached embedding dimensions.
@@ -104,6 +95,15 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 			this.embeddingDimensions.set(dimensions(this, "Test", "Hello World"));
 		}
 		return this.embeddingDimensions.get();
+	}
+
+	static class Hints implements RuntimeHintsRegistrar {
+
+		@Override
+		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+			hints.resources().registerResource(EMBEDDING_MODEL_DIMENSIONS_PROPERTIES);
+		}
+
 	}
 
 }

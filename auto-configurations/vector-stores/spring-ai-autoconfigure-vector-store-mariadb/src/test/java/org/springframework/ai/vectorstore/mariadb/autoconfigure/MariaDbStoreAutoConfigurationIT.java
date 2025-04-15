@@ -16,10 +16,20 @@
 
 package org.springframework.ai.vectorstore.mariadb.autoconfigure;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -37,15 +47,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.test.vectorstore.ObservationTestUtil.assertObservationRegistry;
@@ -160,9 +161,7 @@ public class MariaDbStoreAutoConfigurationIT {
 					"spring.ai.vectorstore.mariadb.metadata-field-name=" + metaName,
 					"spring.ai.vectorstore.mariadb.embedding-field-name=" + embeddingName,
 					"spring.ai.vectorstore.mariadb.content-field-name=" + contentName)
-			.run(context -> {
-				assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isTrue();
-			});
+			.run(context -> assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isTrue());
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -175,9 +174,7 @@ public class MariaDbStoreAutoConfigurationIT {
 			.withPropertyValues("spring.ai.vectorstore.mariadb.schema-name=" + schemaName,
 					"spring.ai.vectorstore.mariadb.table-name=" + tableName,
 					"spring.ai.vectorstore.mariadb.initialize-schema=false")
-			.run(context -> {
-				assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isFalse();
-			});
+			.run(context -> assertThat(isFullyQualifiedTableExists(context, schemaName, tableName)).isFalse());
 	}
 
 	@Test

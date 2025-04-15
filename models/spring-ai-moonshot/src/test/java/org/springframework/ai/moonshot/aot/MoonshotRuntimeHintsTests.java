@@ -28,7 +28,6 @@ import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
-import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 /**
  * @author Geng Rong

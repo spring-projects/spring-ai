@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mcp;
 
 import java.util.List;
@@ -35,7 +36,6 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.util.json.JsonParser;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -360,8 +360,9 @@ public final class McpToolUtils {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	private record Base64Wrapper(@JsonAlias("mimetype") @Nullable MimeType mimeType, @JsonAlias( {
-			"base64", "b64", "imageData" }) @Nullable String data){
+	// @formatter:off
+	private record Base64Wrapper(@JsonAlias("mimetype") @Nullable MimeType mimeType, @JsonAlias({
+			"base64", "b64", "imageData" }) @Nullable String data) {
 	}
 
 }

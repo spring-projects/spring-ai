@@ -108,7 +108,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
-			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.build();
@@ -216,8 +216,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
-		return internalToolExecutionEnabled;
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -293,7 +293,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	public Map<String, String> getHttpHeaders() {
-		return httpHeaders;
+		return this.httpHeaders;
 	}
 
 	public void setHttpHeaders(Map<String, String> httpHeaders) {
@@ -328,8 +328,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(model, maxTokens, metadata, stopSequences, temperature, topP, topK, thinking, toolCallbacks,
-				toolNames, internalToolExecutionEnabled, toolContext, httpHeaders);
+		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
+				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
+				this.toolContext, this.httpHeaders);
 	}
 
 	public static class Builder {

@@ -62,7 +62,7 @@ class ChatCompletionRequestTests {
 		Prompt prompt = chatModel.buildRequestPrompt(new Prompt("Test message content", runtimeOptions));
 
 		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).isInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()
@@ -167,13 +167,13 @@ class ChatCompletionRequestTests {
 
 		private final ToolDefinition toolDefinition;
 
-		public TestToolCallback(String name) {
+		TestToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override

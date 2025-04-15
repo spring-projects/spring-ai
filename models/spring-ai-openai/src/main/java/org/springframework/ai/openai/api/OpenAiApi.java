@@ -108,7 +108,7 @@ public class OpenAiApi {
 		this.embeddingsPath = embeddingsPath;
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			if(!(apiKey instanceof NoopApiKey)) {
+			if (!(apiKey instanceof NoopApiKey)) {
 				h.setBearerAuth(apiKey.getValue());
 			}
 

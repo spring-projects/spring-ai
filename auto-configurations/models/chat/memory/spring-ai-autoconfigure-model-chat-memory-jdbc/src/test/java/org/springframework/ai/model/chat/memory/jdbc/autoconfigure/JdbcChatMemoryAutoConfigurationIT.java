@@ -60,16 +60,14 @@ class JdbcChatMemoryAutoConfigurationIT {
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldBeLoaded() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=true").run(context -> {
-			assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=true")
+			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue());
 	}
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldNotBeLoaded() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=false").run(context -> {
-			assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isFalse();
-		});
+		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=false")
+			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isFalse());
 	}
 
 	@Test

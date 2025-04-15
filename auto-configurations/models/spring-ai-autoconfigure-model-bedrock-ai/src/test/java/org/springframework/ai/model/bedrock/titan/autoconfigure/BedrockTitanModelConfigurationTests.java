@@ -39,9 +39,8 @@ public class BedrockTitanModelConfigurationTests {
 
 	@Test
 	void embeddingModelActivation() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(BedrockTitanEmbeddingModel.class)).isNotEmpty();
-		});
+		this.contextRunner
+			.run(context -> assertThat(context.getBeansOfType(BedrockTitanEmbeddingModel.class)).isNotEmpty());
 
 		this.contextRunner.withPropertyValues("spring.ai.model.embedding=none").run(context -> {
 			assertThat(context.getBeansOfType(BedrockTitanEmbeddingProperties.class)).isEmpty();

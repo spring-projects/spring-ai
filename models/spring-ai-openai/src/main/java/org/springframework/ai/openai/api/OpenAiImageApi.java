@@ -59,7 +59,7 @@ public class OpenAiImageApi {
 		// @formatter:off
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(h -> {
-				if(!(apiKey instanceof NoopApiKey)) {
+				if (!(apiKey instanceof NoopApiKey)) {
 					h.setBearerAuth(apiKey.getValue());
 				}
 				h.setContentType(MediaType.APPLICATION_JSON);
@@ -79,6 +79,10 @@ public class OpenAiImageApi {
 			.body(openAiImageRequest)
 			.retrieve()
 			.toEntity(OpenAiImageResponse.class);
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -139,10 +143,6 @@ public class OpenAiImageApi {
 	public record Data(@JsonProperty("url") String url, @JsonProperty("b64_json") String b64Json,
 			@JsonProperty("revised_prompt") String revisedPrompt) {
 
-	}
-
-	public static Builder builder() {
-		return new Builder();
 	}
 
 	/**

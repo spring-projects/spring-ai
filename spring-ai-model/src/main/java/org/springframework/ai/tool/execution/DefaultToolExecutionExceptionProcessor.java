@@ -42,7 +42,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 	@Override
 	public String process(ToolExecutionException exception) {
 		Assert.notNull(exception, "exception cannot be null");
-		if (alwaysThrow) {
+		if (this.alwaysThrow) {
 			throw exception;
 		}
 		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(),
@@ -64,7 +64,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		}
 
 		public DefaultToolExecutionExceptionProcessor build() {
-			return new DefaultToolExecutionExceptionProcessor(alwaysThrow);
+			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow);
 		}
 
 	}

@@ -57,7 +57,7 @@ public class MethodToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome the user to the library")
-			.tools(tools)
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -69,7 +69,7 @@ public class MethodToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.tools(tools)
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -81,7 +81,7 @@ public class MethodToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
-			.tools(tools)
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty()
@@ -97,7 +97,7 @@ public class MethodToolCallbackTests {
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
 					"The Lion, the Witch and the Wardrobe"))
-			.tools(tools)
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
@@ -110,7 +110,7 @@ public class MethodToolCallbackTests {
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
 					"The Lion, the Witch and the Wardrobe"))
-			.tools(ToolCallbacks.from(tools))
+			.tools(ToolCallbacks.from(this.tools))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
@@ -119,7 +119,7 @@ public class MethodToolCallbackTests {
 	@Test
 	void chatMethodCallbackDefault() {
 		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultTools(tools)
+			.defaultTools(this.tools)
 			.build()
 			.prompt()
 			.user("How many books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
@@ -151,13 +151,13 @@ public class MethodToolCallbackTests {
 		@Tool(description = "Get the list of books written by the given author available in the library")
 		List<Book> booksByAuthor(String author) {
 			logger.info("Getting books by author: {}", author);
-			return bookService.getBooksByAuthor(new Author(author));
+			return this.bookService.getBooksByAuthor(new Author(author));
 		}
 
 		@Tool(description = "Get the list of authors who wrote the given books available in the library")
 		List<Author> authorsByBooks(List<String> books) {
 			logger.info("Getting authors by books: {}", String.join(", ", books));
-			return bookService.getAuthorsByBook(books.stream().map(b -> new Book(b, "")).toList());
+			return this.bookService.getAuthorsByBook(books.stream().map(b -> new Book(b, "")).toList());
 		}
 
 	}

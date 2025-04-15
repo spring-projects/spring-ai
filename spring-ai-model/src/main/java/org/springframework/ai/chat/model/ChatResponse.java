@@ -106,10 +106,10 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 * Whether the model has requested the execution of a tool.
 	 */
 	public boolean hasToolCalls() {
-		if (CollectionUtils.isEmpty(generations)) {
+		if (CollectionUtils.isEmpty(this.generations)) {
 			return false;
 		}
-		return generations.stream().anyMatch(generation -> generation.getOutput().hasToolCalls());
+		return this.generations.stream().anyMatch(generation -> generation.getOutput().hasToolCalls());
 	}
 
 	/**
@@ -117,10 +117,10 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 */
 	public boolean hasFinishReasons(Set<String> finishReasons) {
 		Assert.notNull(finishReasons, "finishReasons cannot be null");
-		if (CollectionUtils.isEmpty(generations)) {
+		if (CollectionUtils.isEmpty(this.generations)) {
 			return false;
 		}
-		return generations.stream().anyMatch(generation -> {
+		return this.generations.stream().anyMatch(generation -> {
 			var finishReason = (generation.getMetadata().getFinishReason() != null)
 					? generation.getMetadata().getFinishReason() : "";
 			return finishReasons.stream().map(String::toLowerCase).toList().contains(finishReason.toLowerCase());

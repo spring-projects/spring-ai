@@ -37,6 +37,7 @@ import org.springframework.util.CollectionUtils;
  * including tool calling.
  *
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public interface ToolCallingChatOptions extends FunctionCallingOptions {
@@ -68,7 +69,17 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 	 * the model or if the tools should be executed directly by the caller.
 	 */
 	@Nullable
-	Boolean isInternalToolExecutionEnabled();
+	Boolean getInternalToolExecutionEnabled();
+
+	/**
+	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
+	 * the model or if the tools should be executed directly by the caller.
+	 */
+	@Nullable
+	@Deprecated
+	default Boolean isInternalToolExecutionEnabled() {
+		return getInternalToolExecutionEnabled();
+	}
 
 	/**
 	 * Set whether the {@link ChatModel} is responsible for executing the tools requested
@@ -81,6 +92,61 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 	 */
 	static Builder builder() {
 		return new DefaultToolCallingChatOptions.Builder();
+	}
+
+	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions) {
+		Assert.notNull(chatOptions, "chatOptions cannot be null");
+		boolean internalToolExecutionEnabled;
+		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
+				&& toolCallingChatOptions.isInternalToolExecutionEnabled() != null) {
+			internalToolExecutionEnabled = Boolean.TRUE.equals(toolCallingChatOptions.isInternalToolExecutionEnabled());
+		}
+		else if (chatOptions instanceof FunctionCallingOptions functionCallingOptions
+				&& functionCallingOptions.getProxyToolCalls() != null) {
+			internalToolExecutionEnabled = Boolean.TRUE.equals(!functionCallingOptions.getProxyToolCalls());
+		}
+		else {
+			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
+		}
+		return internalToolExecutionEnabled;
+	}
+
+	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
+		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
+		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
+		if (CollectionUtils.isEmpty(runtimeToolNames)) {
+			return new HashSet<>(defaultToolNames);
+		}
+		return new HashSet<>(runtimeToolNames);
+	}
+
+	static List<FunctionCallback> mergeToolCallbacks(List<FunctionCallback> runtimeToolCallbacks,
+			List<FunctionCallback> defaultToolCallbacks) {
+		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
+		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
+		if (CollectionUtils.isEmpty(runtimeToolCallbacks)) {
+			return new ArrayList<>(defaultToolCallbacks);
+		}
+		return new ArrayList<>(runtimeToolCallbacks);
+	}
+
+	static Map<String, Object> mergeToolContext(Map<String, Object> runtimeToolContext,
+			Map<String, Object> defaultToolContext) {
+		Assert.notNull(runtimeToolContext, "runtimeToolContext cannot be null");
+		Assert.noNullElements(runtimeToolContext.keySet(), "runtimeToolContext keys cannot be null");
+		Assert.notNull(defaultToolContext, "defaultToolContext cannot be null");
+		Assert.noNullElements(defaultToolContext.keySet(), "defaultToolContext keys cannot be null");
+		var mergedToolContext = new HashMap<>(defaultToolContext);
+		mergedToolContext.putAll(runtimeToolContext);
+		return mergedToolContext;
+	}
+
+	static void validateToolCallbacks(List<FunctionCallback> toolCallbacks) {
+		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
+		if (!duplicateToolNames.isEmpty()) {
+			throw new IllegalStateException("Multiple tools with the same name (%s) found in ToolCallingChatOptions"
+				.formatted(String.join(", ", duplicateToolNames)));
+		}
 	}
 
 	/**
@@ -171,61 +237,6 @@ public interface ToolCallingChatOptions extends FunctionCallingOptions {
 		@Override
 		ToolCallingChatOptions build();
 
-	}
-
-	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions) {
-		Assert.notNull(chatOptions, "chatOptions cannot be null");
-		boolean internalToolExecutionEnabled;
-		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
-				&& toolCallingChatOptions.isInternalToolExecutionEnabled() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE.equals(toolCallingChatOptions.isInternalToolExecutionEnabled());
-		}
-		else if (chatOptions instanceof FunctionCallingOptions functionCallingOptions
-				&& functionCallingOptions.getProxyToolCalls() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE.equals(!functionCallingOptions.getProxyToolCalls());
-		}
-		else {
-			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
-		}
-		return internalToolExecutionEnabled;
-	}
-
-	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
-		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
-		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
-		if (CollectionUtils.isEmpty(runtimeToolNames)) {
-			return new HashSet<>(defaultToolNames);
-		}
-		return new HashSet<>(runtimeToolNames);
-	}
-
-	static List<FunctionCallback> mergeToolCallbacks(List<FunctionCallback> runtimeToolCallbacks,
-			List<FunctionCallback> defaultToolCallbacks) {
-		Assert.notNull(runtimeToolCallbacks, "runtimeToolCallbacks cannot be null");
-		Assert.notNull(defaultToolCallbacks, "defaultToolCallbacks cannot be null");
-		if (CollectionUtils.isEmpty(runtimeToolCallbacks)) {
-			return new ArrayList<>(defaultToolCallbacks);
-		}
-		return new ArrayList<>(runtimeToolCallbacks);
-	}
-
-	static Map<String, Object> mergeToolContext(Map<String, Object> runtimeToolContext,
-			Map<String, Object> defaultToolContext) {
-		Assert.notNull(runtimeToolContext, "runtimeToolContext cannot be null");
-		Assert.noNullElements(runtimeToolContext.keySet(), "runtimeToolContext keys cannot be null");
-		Assert.notNull(defaultToolContext, "defaultToolContext cannot be null");
-		Assert.noNullElements(defaultToolContext.keySet(), "defaultToolContext keys cannot be null");
-		var mergedToolContext = new HashMap<>(defaultToolContext);
-		mergedToolContext.putAll(runtimeToolContext);
-		return mergedToolContext;
-	}
-
-	static void validateToolCallbacks(List<FunctionCallback> toolCallbacks) {
-		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
-		if (!duplicateToolNames.isEmpty()) {
-			throw new IllegalStateException("Multiple tools with the same name (%s) found in ToolCallingChatOptions"
-				.formatted(String.join(", ", duplicateToolNames)));
-		}
 	}
 
 }

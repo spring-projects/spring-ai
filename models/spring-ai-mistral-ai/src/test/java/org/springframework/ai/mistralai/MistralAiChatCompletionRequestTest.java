@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -26,8 +28,6 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -92,7 +92,7 @@ public class MistralAiChatCompletionRequestTest {
 		Prompt prompt = chatModel.buildRequestPrompt(new Prompt("Test message content", runtimeOptions));
 
 		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).isInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()
@@ -106,13 +106,13 @@ public class MistralAiChatCompletionRequestTest {
 
 		private final ToolDefinition toolDefinition;
 
-		public TestToolCallback(String name) {
+		TestToolCallback(String name) {
 			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override

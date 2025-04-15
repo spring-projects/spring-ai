@@ -121,7 +121,7 @@ public final class SpringAiSchemaModule implements Module {
 		 * Properties are only required if marked as such via one of the supported
 		 * annotations.
 		 */
-		PROPERTY_REQUIRED_FALSE_BY_DEFAULT;
+		PROPERTY_REQUIRED_FALSE_BY_DEFAULT
 
 	}
 

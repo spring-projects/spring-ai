@@ -16,8 +16,8 @@
 
 package org.springframework.ai.vertexai.gemini;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -148,7 +148,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
-		options.setInternalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled());
+		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
 	}
@@ -287,8 +287,8 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@Nullable
-	public Boolean isInternalToolExecutionEnabled() {
-		return internalToolExecutionEnabled;
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override

@@ -34,7 +34,7 @@ public class ToolExecutionException extends RuntimeException {
 	}
 
 	public ToolDefinition getToolDefinition() {
-		return toolDefinition;
+		return this.toolDefinition;
 	}
 
 }

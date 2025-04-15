@@ -181,7 +181,7 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 						.build())
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
-					.build())				
+					.build())
 				.call()
 				.content())
 				.isInstanceOf(IllegalArgumentException.class)

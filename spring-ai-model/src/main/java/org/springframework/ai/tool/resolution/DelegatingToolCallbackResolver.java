@@ -44,7 +44,7 @@ public class DelegatingToolCallbackResolver implements ToolCallbackResolver {
 	public FunctionCallback resolve(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 
-		for (ToolCallbackResolver toolCallbackResolver : toolCallbackResolvers) {
+		for (ToolCallbackResolver toolCallbackResolver : this.toolCallbackResolvers) {
 			FunctionCallback toolCallback = toolCallbackResolver.resolve(toolName);
 			if (toolCallback != null) {
 				return toolCallback;

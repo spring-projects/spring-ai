@@ -38,6 +38,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.JsonParser;
@@ -296,7 +297,7 @@ public final class JsonSchemaGenerator {
 		/**
 		 * Convert all "type" values to upper case.
 		 */
-		UPPER_CASE_TYPE_VALUES;
+		UPPER_CASE_TYPE_VALUES
 
 	}
 
