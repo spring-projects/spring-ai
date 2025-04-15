@@ -32,6 +32,8 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.elasticsearch.client.RestClient;
@@ -189,12 +191,12 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
 				this.batchingStrategy);
 
-		for (int i = 0; i < embeddings.size(); i++) {
-			Document document = documents.get(i);
-			float[] embedding = embeddings.get(i);
-			bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(this.options.getIndexName())
-				.id(document.getId())
-				.document(getDocument(document, embedding, this.options.getEmbeddingFieldName()))));
+		for (Document document : documents) {
+			ElasticSearchDocument doc = new ElasticSearchDocument(document.getId(), document.getText(),
+					document.getMetadata(), embeddings.get(documents.indexOf(document)),
+					this.options.getEmbeddingFieldName());
+			bulkRequestBuilder.operations(
+					op -> op.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(doc)));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
@@ -205,13 +207,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				}
 			}
 		}
-	}
-
-	private Object getDocument(Document document, float[] embedding, String embeddingFieldName) {
-		Assert.notNull(document.getText(), "document's text must not be null");
-
-		return Map.of("id", document.getId(), "content", document.getText(), "metadata", document.getMetadata(),
-				embeddingFieldName, embedding);
 	}
 
 	@Override
@@ -377,6 +372,25 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 */
 	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
 		return new Builder(restClient, embeddingModel);
+	}
+
+	/**
+	 * The representation of {@link Document} along with its embedding.
+	 *
+	 * @param id The id of the document
+	 * @param content The content of the document
+	 * @param metadata The metadata of the document
+	 * @param embedding The vectors representing the content of the document
+	 * @param embeddingFieldName The field name used in the serialized JSON for the
+	 * embedding vector
+	 */
+	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata,
+			@JsonIgnore float[] embedding, @JsonIgnore String embeddingFieldName) {
+
+		@JsonAnyGetter
+		public Map<String, Object> dynamicEmbeddingField() {
+			return Map.of(embeddingFieldName, embedding);
+		}
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.elasticsearch;
 
+import org.springframework.ai.vectorstore.elasticsearch.common.ElasticsearchVectorStoreConstants;
+
 /**
  * Provided Elasticsearch vector option configuration.
  * https://www.elastic.co/guide/en/elasticsearch/reference/current/dense-vector.html
@@ -29,7 +31,7 @@ public class ElasticsearchVectorStoreOptions {
 	/**
 	 * The name of the index to store the vectors.
 	 */
-	private String indexName = "spring-ai-document-index";
+	private String indexName = ElasticsearchVectorStoreConstants.DEFAULT_INDEX_NAME;
 
 	/**
 	 * The number of dimensions in the vector.
@@ -44,7 +46,7 @@ public class ElasticsearchVectorStoreOptions {
 	/**
 	 * The name of the vector field to search against
 	 */
-	private String embeddingFieldName = "embedding";
+	private String embeddingFieldName = ElasticsearchVectorStoreConstants.DEFAULT_EMBEDDING_FIELD_NAME;
 
 	public String getIndexName() {
 		return this.indexName;
