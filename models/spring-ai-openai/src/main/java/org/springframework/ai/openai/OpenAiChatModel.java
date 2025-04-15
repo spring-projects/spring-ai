@@ -432,6 +432,10 @@ public class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
 		}
 
+		if (Boolean.TRUE.equals(request.logprobs())) {
+			generationMetadataBuilder.metadata("logprobs", choice.logprobs());
+		}
+
 		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
