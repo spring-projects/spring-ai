@@ -212,7 +212,9 @@ Next, create an `OpenAiEmbeddingModel` instance and use it to compute the simila
 
 [source,java]
 ----
-var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+var openAiApi = OpenAiApi.builder()
+                .apiKey(System.getenv("OPENAI_API_KEY"))
+                .build();
 
 var embeddingModel = new OpenAiEmbeddingModel(
 		this.openAiApi,
@@ -228,6 +230,6 @@ EmbeddingResponse embeddingResponse = this.embeddingModel
 ----
 
 The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
-The options class offers a `builder()` for easy options creation.
+The api and options class offers a `builder()` for easy options creation.
 
 
