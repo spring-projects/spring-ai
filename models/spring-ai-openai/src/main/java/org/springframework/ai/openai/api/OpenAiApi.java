@@ -348,6 +348,34 @@ public class OpenAiApi {
 		O3_MINI("o3-mini"),
 
 		/**
+		 * <b>GPT-4.1</b> is our flagship model for complex tasks. It is well suited for
+		 * problem solving across domains.
+		 * <p>
+		 * Context window: 1,047,576 tokens. Max output tokens: 32,768 tokens. The
+		 * knowledge cutoff for GPT-4.1 models is June, 2024.
+		 * <p>
+		 */
+		GPT_4_1("gpt-4.1"),
+
+		/**
+		 * <b>GPT-4.1-mini</b> is balanced for intelligence, speed, and cost.
+		 * <p>
+		 * Context window: 1,047,576 tokens. Max output tokens: 32,768 tokens. The
+		 * knowledge cutoff for GPT-4.1 models is June, 2024.
+		 * <p>
+		 */
+		GPT_4_1_MINI("gpt-4.1-mini"),
+
+		/**
+		 * <b>GPT-4.1-nano</b> is our fastest, most cost-effective GPT-4.1 model.
+		 * <p>
+		 * Context window: 1,047,576 tokens. Max output tokens: 32,768 tokens. The
+		 * knowledge cutoff for GPT-4.1 models is June, 2024.
+		 * <p>
+		 */
+		GPT_4_1_NANO("gpt-4.1-nano"),
+
+		/**
 		 * <b>GPT-4o ("omni")</b> is our versatile, high-intelligence flagship model. It
 		 * accepts both text and image inputs and produces text outputs (including
 		 * Structured Outputs).
