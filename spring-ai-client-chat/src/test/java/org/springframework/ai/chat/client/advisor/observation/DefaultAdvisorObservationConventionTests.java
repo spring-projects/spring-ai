@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ class DefaultAdvisorObservationConventionTests {
 	void contextualName() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.advisorName("MyName")
-			.advisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("my_name");
 	}
@@ -56,7 +55,6 @@ class DefaultAdvisorObservationConventionTests {
 	void supportsAdvisorObservationContext() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.advisorName("MyName")
-			.advisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
@@ -66,11 +64,8 @@ class DefaultAdvisorObservationConventionTests {
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.advisorName("MyName")
-			.advisorType(AdvisorObservationContext.Type.AROUND)
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE.asString(),
-						AdvisorObservationContext.Type.AROUND.name()),
 				KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), AiOperationType.FRAMEWORK.value()),
 				KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.SPRING_AI.value()),
 				KeyValue.of(LowCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"),
@@ -81,7 +76,6 @@ class DefaultAdvisorObservationConventionTests {
 	void shouldHaveKeyValuesWhenDefinedAndResponse() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.advisorName("MyName")
-			.advisorType(AdvisorObservationContext.Type.AROUND)
 			.order(678)
 			.build();
 

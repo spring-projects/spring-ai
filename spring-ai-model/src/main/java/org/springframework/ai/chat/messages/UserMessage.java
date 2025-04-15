@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,17 @@ package org.springframework.ai.chat.messages;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * A message of the type 'user' passed as input Messages with the user role are from the
@@ -37,26 +41,45 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	protected final List<Media> media;
 
 	public UserMessage(String textContent) {
-		this(MessageType.USER, textContent, new ArrayList<>(), Map.of());
+		this(textContent, new ArrayList<>(), Map.of());
 	}
 
 	public UserMessage(Resource resource) {
-		super(MessageType.USER, resource, Map.of());
-		this.media = new ArrayList<>();
+		this(MessageUtils.readResource(resource));
 	}
 
+	/**
+	 * @deprecated use {@link #builder()} instead.
+	 */
+	@Deprecated
 	public UserMessage(String textContent, List<Media> media) {
 		this(MessageType.USER, textContent, media, Map.of());
 	}
 
+	/**
+	 * @deprecated use {@link #builder()} instead.
+	 */
+	@Deprecated
 	public UserMessage(String textContent, Media... media) {
 		this(textContent, Arrays.asList(media));
 	}
 
-	public UserMessage(String textContent, Collection<Media> mediaList, Map<String, Object> metadata) {
-		this(MessageType.USER, textContent, mediaList, metadata);
+	/**
+	 * @deprecated use {@link #builder()} instead. Will be made private in the next
+	 * release.
+	 */
+	@Deprecated
+	public UserMessage(String textContent, Collection<Media> media, Map<String, Object> metadata) {
+		super(MessageType.USER, textContent, metadata);
+		Assert.notNull(media, "media cannot be null");
+		Assert.noNullElements(media, "media cannot have null elements");
+		this.media = new ArrayList<>(media);
 	}
 
+	/**
+	 * @deprecated use {@link #builder()} instead.
+	 */
+	@Deprecated
 	public UserMessage(MessageType messageType, String textContent, Collection<Media> media,
 			Map<String, Object> metadata) {
 		super(messageType, textContent, metadata);
@@ -71,13 +94,77 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	}
 
 	@Override
+	@NonNull
+	public String getText() {
+		return this.textContent;
+	}
+
+	@Override
 	public List<Media> getMedia() {
 		return this.media;
 	}
 
-	@Override
-	public String getText() {
-		return this.textContent;
+	public UserMessage copy() {
+		return new UserMessage(getText(), List.copyOf(getMedia()), Map.copyOf(getMetadata()));
+	}
+
+	public Builder mutate() {
+		return new Builder().text(getText()).media(List.copyOf(getMedia())).metadata(Map.copyOf(getMetadata()));
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		@Nullable
+		private String textContent;
+
+		@Nullable
+		private Resource resource;
+
+		private List<Media> media = new ArrayList<>();
+
+		private Map<String, Object> metadata = new HashMap<>();
+
+		public Builder text(String textContent) {
+			this.textContent = textContent;
+			return this;
+		}
+
+		public Builder text(Resource resource) {
+			this.resource = resource;
+			return this;
+		}
+
+		public Builder media(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		public Builder media(@Nullable Media... media) {
+			if (media != null) {
+				this.media = Arrays.asList(media);
+			}
+			return this;
+		}
+
+		public Builder metadata(Map<String, Object> metadata) {
+			this.metadata = metadata;
+			return this;
+		}
+
+		public UserMessage build() {
+			if (StringUtils.hasText(textContent) && resource != null) {
+				throw new IllegalArgumentException("textContent and resource cannot be set at the same time");
+			}
+			else if (resource != null) {
+				this.textContent = MessageUtils.readResource(resource);
+			}
+			return new UserMessage(this.textContent, this.media, this.metadata);
+		}
+
 	}
 
 }

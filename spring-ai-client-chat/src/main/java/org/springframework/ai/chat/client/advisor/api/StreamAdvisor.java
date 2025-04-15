@@ -17,27 +17,26 @@
 package org.springframework.ai.chat.client.advisor.api;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import reactor.core.publisher.Flux;
 
 /**
- * Around advisor that wraps the ChatModel#call(Prompt) method.
+ * Advisor for execution flows ultimately resulting in a streaming call to an AI model.
  *
- * @author Christian Tzolov
- * @author Dariusz Jedrzejczyk
+ * @author Thomas Vitale
  * @since 1.0.0
- * @deprecated in favor of {@link CallAdvisor}
  */
-@Deprecated
-public interface CallAroundAdvisor extends Advisor {
+public interface StreamAdvisor extends StreamAroundAdvisor {
 
 	/**
-	 * Around advice that wraps the ChatModel#call(Prompt) method.
-	 * @param advisedRequest the advised request
-	 * @param chain the advisor chain
-	 * @return the response
-	 * @deprecated in favor of
-	 * {@link CallAdvisor#adviseCall(ChatClientRequest, CallAroundAdvisorChain)}
+	 * @deprecated use {@link #adviseStream(ChatClientRequest, StreamAroundAdvisorChain)}
 	 */
 	@Deprecated
-	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain);
+	default Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+		Flux<ChatClientResponse> chatClientResponse = adviseStream(advisedRequest.toChatClientRequest(), chain);
+		return chatClientResponse.map(AdvisedResponse::from);
+	}
+
+	Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest, StreamAroundAdvisorChain chain);
 
 }
