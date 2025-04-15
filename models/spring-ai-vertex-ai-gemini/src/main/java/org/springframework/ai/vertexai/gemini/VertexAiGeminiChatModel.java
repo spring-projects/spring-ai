@@ -714,11 +714,8 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 
 		if (prompt.getOptions() instanceof VertexAiGeminiChatOptions options && options.getGoogleSearchRetrieval()) {
-			// final var googleSearchRetrieval = GoogleSearchRetrieval.newBuilder().getDefaultInstanceForType();
 			var googleSearch = GoogleSearch.newBuilder().getDefaultInstanceForType();
-			final var googleSearchRetrievalTool = Tool.newBuilder()
-				.setGoogleSearch(googleSearch)
-				.build();
+			final var googleSearchRetrievalTool = Tool.newBuilder().setGoogleSearch(googleSearch).build();
 			tools.add(googleSearchRetrievalTool);
 		}
 
