@@ -103,9 +103,9 @@ class VertexAiGeminiChatModelIT {
 	@Test
 	void googleSearchToolFlash() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
-				.model(ChatModel.GEMINI_2_0_FLASH)
-				.googleSearchRetrieval(true)
-				.build());
+			.model(ChatModel.GEMINI_2_0_FLASH)
+			.googleSearchRetrieval(true)
+			.build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
 	}
