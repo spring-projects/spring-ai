@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vertexai.gemini;
 
+import com.google.cloud.vertexai.api.Tool.GoogleSearch;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -713,9 +714,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 
 		if (prompt.getOptions() instanceof VertexAiGeminiChatOptions options && options.getGoogleSearchRetrieval()) {
-			final var googleSearchRetrieval = GoogleSearchRetrieval.newBuilder().getDefaultInstanceForType();
+			// final var googleSearchRetrieval = GoogleSearchRetrieval.newBuilder().getDefaultInstanceForType();
+			var googleSearch = GoogleSearch.newBuilder().getDefaultInstanceForType();
 			final var googleSearchRetrievalTool = Tool.newBuilder()
-				.setGoogleSearchRetrieval(googleSearchRetrieval)
+				.setGoogleSearch(googleSearch)
 				.build();
 			tools.add(googleSearchRetrievalTool);
 		}
@@ -969,7 +971,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite"),
 
-		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-28");
+		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-25");
 
 		public final String value;
 
