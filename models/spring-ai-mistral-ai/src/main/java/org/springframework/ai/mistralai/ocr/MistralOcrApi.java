@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistralai.api;
+package org.springframework.ai.mistralai.ocr;
 
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +40,7 @@ import org.springframework.web.client.RestClient;
  * along with information about extracted images.
  *
  * @author Alexandros Pappas
+ * @since 1.0.0
  */
 public class MistralOcrApi {
 

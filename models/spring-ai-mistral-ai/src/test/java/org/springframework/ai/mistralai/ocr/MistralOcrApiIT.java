@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mistralai.api;
+package org.springframework.ai.mistralai.ocr;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
  * Tests for the Mistral OCR API.
  *
  * @author Alexandros Pappas
+ * @since 1.0.0
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralOcrApiIT {
@@ -53,7 +55,6 @@ class MistralOcrApiIT {
 			assertThat(response.getBody().pages().get(1).images()).isNotNull();
 			assertThat(response.getBody().pages().get(1).images().get(0).imageBase64()).isNotNull();
 		}
-		System.out.println(response);
 	}
 
 }
