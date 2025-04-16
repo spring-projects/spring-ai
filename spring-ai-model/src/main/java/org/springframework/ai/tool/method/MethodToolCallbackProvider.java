@@ -50,11 +50,15 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallbackProvider.class);
 
-	private final List<Object> toolObjects;
+	private List<Object> toolObjects;
 
 	private MethodToolCallbackProvider(List<Object> toolObjects) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
 		Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+		this.toolObjects = toolObjects;
+	}
+
+	public void setToolObjects(List<Object> toolObjects) {
 		this.toolObjects = toolObjects;
 	}
 
