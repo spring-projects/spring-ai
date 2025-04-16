@@ -185,6 +185,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-jdbc</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-mongodb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-neo4j</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
