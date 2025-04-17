@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.memory.mongodb;
+package org.springframework.ai.chat.memory.mongo;
 
 import org.jspecify.annotations.NullMarked;
 import org.springframework.data.mongodb.core.mapping.Document;

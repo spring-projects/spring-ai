@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.memory.mongodb;
+package org.springframework.ai.chat.memory.mongo;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -26,12 +26,12 @@ import static org.mockito.Mockito.mock;
 /**
  * @author Łukasz Jernaś
  */
-public class MongoDbChatMemoryConfigTest {
+public class MongoChatMemoryConfigTest {
 
 	@Test
 	void setValues() {
 		var mongoClient = mock(MongoTemplate.class);
-		var config = MongoDbChatMemoryConfig.builder().withTemplate(mongoClient).build();
+		var config = MongoChatMemoryConfig.builder().withTemplate(mongoClient).build();
 
 		assertThat(config.mongoTemplate).isEqualTo(mongoClient);
 
@@ -39,7 +39,7 @@ public class MongoDbChatMemoryConfigTest {
 
 	@Test
 	void buildWithNullMongoTemplate_shouldThrow() {
-		assertThatThrownBy(() -> MongoDbChatMemoryConfig.builder().build());
+		assertThatThrownBy(() -> MongoChatMemoryConfig.builder().build());
 	}
 
 }

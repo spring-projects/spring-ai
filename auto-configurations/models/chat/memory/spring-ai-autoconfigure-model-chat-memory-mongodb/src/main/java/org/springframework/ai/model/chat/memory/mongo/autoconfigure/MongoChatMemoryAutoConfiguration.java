@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.mongodb.autoconfigure;
+package org.springframework.ai.model.chat.memory.mongo.autoconfigure;
 
-import org.springframework.ai.chat.memory.mongodb.MongoDbChatMemory;
-import org.springframework.ai.chat.memory.mongodb.MongoDbChatMemoryConfig;
+import org.springframework.ai.chat.memory.mongo.MongoChatMemory;
+import org.springframework.ai.chat.memory.mongo.MongoChatMemoryConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
@@ -26,20 +26,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 /**
- * Spring Boot auto-configuration for {@link MongoDbChatMemory}.
+ * Spring Boot auto-configuration for {@link MongoChatMemory}.
  *
  * @author Łukasz Jernaś
  * @since 1.0.0
  */
 @AutoConfiguration(after = MongoAutoConfiguration.class)
-@EnableConfigurationProperties(MongoDbChatMemoryProperties.class)
-public class MongoDbChatMemoryAutoConfiguration {
+@EnableConfigurationProperties(MongoChatMemoryProperties.class)
+public class MongoChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MongoDbChatMemory chatMemory(MongoTemplate mongoTemplate) {
-		var config = MongoDbChatMemoryConfig.builder().withTemplate(mongoTemplate).build();
-		return new MongoDbChatMemory(config);
+	public MongoChatMemory chatMemory(MongoTemplate mongoTemplate) {
+		var config = MongoChatMemoryConfig.builder().withTemplate(mongoTemplate).build();
+		return new MongoChatMemory(config);
 	}
 
 }

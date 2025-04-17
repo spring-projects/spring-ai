@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.memory.mongodb;
+package org.springframework.ai.chat.memory.mongo;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -40,27 +40,27 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Testcontainers
-class MongoDbChatMemoryTestIT {
+class MongoChatMemoryTestIT {
 
 	@Container
 	@ServiceConnection
 	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo:8.0.6");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withUserConfiguration(MongoDbChatMemoryTestIT.TestApplication.class)
-			.withPropertyValues(
-					String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()));
+		.withUserConfiguration(MongoChatMemoryTestIT.TestApplication.class)
+		.withPropertyValues(
+				String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()));
 
 	@Test
 	void ensureBeanGetsCreated() {
 		this.contextRunner.run(context -> {
-			MongoDbChatMemory memory = context.getBean(MongoDbChatMemory.class);
+			MongoChatMemory memory = context.getBean(MongoChatMemory.class);
 			Assertions.assertNotNull(memory);
 		});
 	}
 
 	@ParameterizedTest
-	@CsvSource({"Message from assistant,ASSISTANT", "Message from user,USER", "Message from system,SYSTEM"})
+	@CsvSource({ "Message from assistant,ASSISTANT", "Message from user,USER", "Message from system,SYSTEM" })
 	void add_shouldInsertSingleMessage(String content, MessageType messageType) {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
@@ -84,8 +84,8 @@ class MongoDbChatMemoryTestIT {
 
 		@Bean
 		public ChatMemory chatMemory(MongoTemplate mongoTemplate) {
-			var config = MongoDbChatMemoryConfig.builder().withTemplate(mongoTemplate).build();
-			return MongoDbChatMemory.create(config);
+			var config = MongoChatMemoryConfig.builder().withTemplate(mongoTemplate).build();
+			return MongoChatMemory.create(config);
 		}
 
 	}

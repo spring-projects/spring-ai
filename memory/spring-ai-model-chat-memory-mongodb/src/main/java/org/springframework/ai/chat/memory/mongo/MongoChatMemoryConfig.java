@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.memory.mongodb;
+package org.springframework.ai.chat.memory.mongo;
 
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.util.Assert;
 
 /**
- * Configuration for {@link MongoDbChatMemory}.
+ * Configuration for {@link MongoChatMemory}.
  *
  * @author Łukasz Jernaś
  * @since 1.0.0
  */
-public class MongoDbChatMemoryConfig {
+public class MongoChatMemoryConfig {
 
 	final MongoTemplate mongoTemplate;
 
-	private MongoDbChatMemoryConfig(Builder builder) {
+	private MongoChatMemoryConfig(Builder builder) {
 		this.mongoTemplate = builder.mongoTemplate;
 	}
 
@@ -52,10 +52,10 @@ public class MongoDbChatMemoryConfig {
 			return this;
 		}
 
-		public MongoDbChatMemoryConfig build() {
+		public MongoChatMemoryConfig build() {
 			Assert.notNull(this.mongoTemplate, "MongoTemplate must not be null");
 
-			return new MongoDbChatMemoryConfig(this);
+			return new MongoChatMemoryConfig(this);
 		}
 
 	}

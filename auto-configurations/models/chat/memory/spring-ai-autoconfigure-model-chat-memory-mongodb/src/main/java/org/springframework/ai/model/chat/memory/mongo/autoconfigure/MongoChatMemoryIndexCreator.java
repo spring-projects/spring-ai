@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.mongodb.autoconfigure;
+package org.springframework.ai.model.chat.memory.mongo.autoconfigure;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.memory.mongodb.Conversation;
+import org.springframework.ai.chat.memory.mongo.Conversation;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -33,23 +33,23 @@ import org.springframework.stereotype.Component;
  * field if the TTL is set in properties.
  *
  * @author Łukasz Jernaś
- * @see MongoDbChatMemoryProperties
+ * @see MongoChatMemoryProperties
  * @since 1.0.0
  */
 @Component
 @ConditionalOnProperty(value = "spring.ai.chat.memory.mongodb.create-indices", havingValue = "true")
-public class MongoDbChatMemoryIndexCreator {
+public class MongoChatMemoryIndexCreator {
 
-	private static final Logger logger = LoggerFactory.getLogger(MongoDbChatMemoryIndexCreator.class);
+	private static final Logger logger = LoggerFactory.getLogger(MongoChatMemoryIndexCreator.class);
 
 	private final MongoTemplate mongoTemplate;
 
-	private final MongoDbChatMemoryProperties mongoDbChatMemoryProperties;
+	private final MongoChatMemoryProperties mongoChatMemoryProperties;
 
-	public MongoDbChatMemoryIndexCreator(MongoTemplate mongoTemplate,
-										 MongoDbChatMemoryProperties mongoDbChatMemoryProperties) {
+	public MongoChatMemoryIndexCreator(MongoTemplate mongoTemplate,
+			MongoChatMemoryProperties mongoChatMemoryProperties) {
 		this.mongoTemplate = mongoTemplate;
-		this.mongoDbChatMemoryProperties = mongoDbChatMemoryProperties;
+		this.mongoChatMemoryProperties = mongoChatMemoryProperties;
 	}
 
 	@EventListener(ContextRefreshedEvent.class)
@@ -57,24 +57,24 @@ public class MongoDbChatMemoryIndexCreator {
 		logger.info("Creating MongoDB indices for ChatMemory");
 		// Create a main index
 		mongoTemplate.indexOps(Conversation.class)
-				.ensureIndex(new Index().on("conversationId", Sort.Direction.ASC).on("timestamp", Sort.Direction.DESC));
+			.ensureIndex(new Index().on("conversationId", Sort.Direction.ASC).on("timestamp", Sort.Direction.DESC));
 
 		createOrUpdateTtlIndex();
 	}
 
 	private void createOrUpdateTtlIndex() {
-		if (!this.mongoDbChatMemoryProperties.getTtl().isZero()) {
+		if (!this.mongoChatMemoryProperties.getTtl().isZero()) {
 			// Check for existing TTL index
 			mongoTemplate.indexOps(Conversation.class).getIndexInfo().forEach(idx -> {
 				if (idx.getExpireAfter().isPresent()
-						&& !idx.getExpireAfter().get().equals(this.mongoDbChatMemoryProperties.getTtl())) {
+						&& !idx.getExpireAfter().get().equals(this.mongoChatMemoryProperties.getTtl())) {
 					logger.warn("Dropping existing TTL index, because TTL is different");
 					mongoTemplate.indexOps(Conversation.class).dropIndex(idx.getName());
 				}
 			});
 			mongoTemplate.indexOps(Conversation.class)
-					.ensureIndex(new Index().on("timestamp", Sort.Direction.ASC)
-							.expire(this.mongoDbChatMemoryProperties.getTtl()));
+				.ensureIndex(new Index().on("timestamp", Sort.Direction.ASC)
+					.expire(this.mongoChatMemoryProperties.getTtl()));
 		}
 	}
 

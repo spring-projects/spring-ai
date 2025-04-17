@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.mongodb.autoconfigure;
+package org.springframework.ai.model.chat.memory.mongo.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -24,8 +24,8 @@ import java.time.Duration;
  * @author Łukasz Jernaś
  * @since 1.0.0
  */
-@ConfigurationProperties(MongoDbChatMemoryProperties.CONFIG_PREFIX)
-public class MongoDbChatMemoryProperties {
+@ConfigurationProperties(MongoChatMemoryProperties.CONFIG_PREFIX)
+public class MongoChatMemoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.mongodb";
 

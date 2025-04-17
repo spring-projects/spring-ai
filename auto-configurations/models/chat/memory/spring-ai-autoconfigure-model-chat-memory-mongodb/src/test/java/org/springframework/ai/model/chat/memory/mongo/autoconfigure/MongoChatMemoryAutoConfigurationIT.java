@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.mongodb.autoconfigure;
+package org.springframework.ai.model.chat.memory.mongo.autoconfigure;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.memory.mongodb.MongoDbChatMemory;
+import org.springframework.ai.chat.memory.mongo.MongoChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -37,17 +37,17 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
-class MongoDbChatMemoryAutoConfigurationIT {
+class MongoChatMemoryAutoConfigurationIT {
 
 	@Container
 	@ServiceConnection
 	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo:8.0.6");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(MongoDbChatMemoryAutoConfiguration.class, MongoAutoConfiguration.class,
-					MongoDataAutoConfiguration.class, MongoDbChatMemoryIndexCreator.class))
-			.withPropertyValues(String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()),
-					"spring.ai.chat.memory.mongodb.create-indexes=true", "spring.ai.chat.memory.mongodb.ttl=PT1M");
+		.withConfiguration(AutoConfigurations.of(MongoDbChatMemoryAutoConfiguration.class, MongoAutoConfiguration.class,
+				MongoDataAutoConfiguration.class, MongoChatMemoryIndexCreator.class))
+		.withPropertyValues(String.format("spring.data.mongodb.uri=%s/ai_test", mongoDbContainer.getConnectionString()),
+				"spring.ai.chat.memory.mongodb.create-indexes=true", "spring.ai.chat.memory.mongodb.ttl=PT1M");
 
 	@Test
 	void mongodbChatMemoryBean_exists() {
@@ -57,7 +57,7 @@ class MongoDbChatMemoryAutoConfigurationIT {
 	@Test
 	void allMethods_shouldExecute() {
 		this.contextRunner.run(context -> {
-			var chatMemory = context.getBean(MongoDbChatMemory.class);
+			var chatMemory = context.getBean(MongoChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
 			var systemMessage = new SystemMessage("Some system message");
 

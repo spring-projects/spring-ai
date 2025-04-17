@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.mongodb.autoconfigure;
+package org.springframework.ai.model.chat.memory.mongo.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,18 +22,18 @@ import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MongoDbChatMemoryPropertiesTests {
+public class MongoChatMemoryPropertiesTests {
 
 	@Test
 	void defaultValues_set() {
-		var properties = new MongoDbChatMemoryProperties();
+		var properties = new MongoChatMemoryProperties();
 		assertThat(properties.getTtl()).isEqualTo(Duration.ZERO);
 		assertThat(properties.isCreateIndices()).isFalse();
 	}
 
 	@Test
 	void overrideValues() {
-		var properties = new MongoDbChatMemoryProperties();
+		var properties = new MongoChatMemoryProperties();
 		properties.setTtl(Duration.ofMinutes(1));
 		properties.setCreateIndices(true);
 

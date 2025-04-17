@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.memory.mongodb;
+package org.springframework.ai.chat.memory.mongo;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -43,26 +43,26 @@ import static org.springframework.data.mongodb.core.query.Query.query;
  * @author Łukasz Jernaś
  * @since 1.0.0
  */
-public class MongoDbChatMemory implements ChatMemory {
+public class MongoChatMemory implements ChatMemory {
 
 	private final MongoTemplate mongoTemplate;
 
-	private static final Logger logger = LoggerFactory.getLogger(MongoDbChatMemory.class);
+	private static final Logger logger = LoggerFactory.getLogger(MongoChatMemory.class);
 
-	public MongoDbChatMemory(MongoDbChatMemoryConfig config) {
+	public MongoChatMemory(MongoChatMemoryConfig config) {
 		this.mongoTemplate = config.mongoTemplate;
 	}
 
-	public static MongoDbChatMemory create(MongoDbChatMemoryConfig config) {
-		return new MongoDbChatMemory(config);
+	public static MongoChatMemory create(MongoChatMemoryConfig config) {
+		return new MongoChatMemory(config);
 	}
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
 		var messages = mongoTemplate.query(Conversation.class)
-				.matching(query(where("conversationId").is(conversationId)).with(Sort.by("timestamp").descending())
-						.limit(lastN));
-		return messages.stream().map(MongoDbChatMemory::mapMessage).collect(Collectors.toList());
+			.matching(query(where("conversationId").is(conversationId)).with(Sort.by("timestamp").descending())
+				.limit(lastN));
+		return messages.stream().map(MongoChatMemory::mapMessage).collect(Collectors.toList());
 	}
 
 	@Override
@@ -73,9 +73,9 @@ public class MongoDbChatMemory implements ChatMemory {
 	@Override
 	public void add(@NonNull String conversationId, @NonNull List<Message> messages) {
 		var conversations = messages.stream()
-				.map(message -> new Conversation(conversationId,
-						new Conversation.Message(message.getText(), message.getMessageType().name()), Instant.now()))
-				.toList();
+			.map(message -> new Conversation(conversationId,
+					new Conversation.Message(message.getText(), message.getMessageType().name()), Instant.now()))
+			.toList();
 		mongoTemplate.insert(conversations, Conversation.class);
 	}
 
