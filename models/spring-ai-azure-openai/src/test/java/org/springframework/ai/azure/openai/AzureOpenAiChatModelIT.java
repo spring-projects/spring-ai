@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClientBuilder;
@@ -104,6 +105,26 @@ class AzureOpenAiChatModelIT {
 
 		System.out.println(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
+	}
+
+	@Test
+	void testStreaming() {
+		String prompt = """
+				Provide a list of planets in our solar system
+				""";
+
+		final var counter = new AtomicInteger();
+		String content = this.chatModel.stream(prompt)
+			.doOnEach(listSignal -> counter.getAndIncrement())
+			.collectList()
+			.block()
+			.stream()
+			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+
+		assertThat(counter.get()).isGreaterThan(8).as("More than 8 chuncks because there are 8 planets");
+
+		assertThat(content).contains("Earth", "Mars", "Jupiter");
 	}
 
 	@Test
