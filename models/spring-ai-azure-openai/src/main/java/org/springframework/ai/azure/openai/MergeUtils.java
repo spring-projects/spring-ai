@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,12 +46,13 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Grogdunn
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public final class MergeUtils {
 
 	private static final Class<?>[] CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES = new Class<?>[] { String.class,
-			OffsetDateTime.class, List.class, CompletionsUsage.class };
+			OffsetDateTime.class, List.class };
 
 	private static final Class<?>[] chatChoiceConstructorArgumentTypes = new Class<?>[] {
 			ChatChoiceLogProbabilityInfo.class, int.class, CompletionsFinishReason.class };
@@ -75,8 +76,7 @@ public final class MergeUtils {
 	 */
 	private static <T> T newInstance(Class<?>[] argumentTypes, Class<T> clazz, Object... args) {
 		try {
-			@SuppressWarnings("unchecked")
-			Constructor<T> constructor = (Constructor<T>) clazz.getDeclaredConstructor(argumentTypes);
+			Constructor<T> constructor = clazz.getDeclaredConstructor(argumentTypes);
 			constructor.setAccessible(true);
 			return constructor.newInstance(args);
 		}
@@ -108,10 +108,9 @@ public final class MergeUtils {
 	public static ChatCompletions emptyChatCompletions() {
 		String id = null;
 		List<ChatChoice> choices = new ArrayList<>();
-		CompletionsUsage usage = null;
 		OffsetDateTime createdAt = OffsetDateTime.now();
 		ChatCompletions chatCompletionsInstance = newInstance(CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES,
-				ChatCompletions.class, id, createdAt, choices, usage);
+				ChatCompletions.class, id, createdAt, choices);
 		List<ContentFilterResultsForPrompt> promptFilterResults = new ArrayList<>();
 		setField(chatCompletionsInstance, "promptFilterResults", promptFilterResults);
 		String systemFingerprint = null;
@@ -157,7 +156,7 @@ public final class MergeUtils {
 				: right.getCreatedAt();
 
 		ChatCompletions instance = newInstance(CHAT_COMPLETIONS_CONSTRUCTOR_ARG_TYPES, ChatCompletions.class, id,
-				createdAt, choices, usage);
+				createdAt, choices);
 
 		List<ContentFilterResultsForPrompt> promptFilterResults = right.getPromptFilterResults() == null
 				? left.getPromptFilterResults() : right.getPromptFilterResults();
@@ -166,6 +165,9 @@ public final class MergeUtils {
 		String systemFingerprint = right.getSystemFingerprint() == null ? left.getSystemFingerprint()
 				: right.getSystemFingerprint();
 		setField(instance, "systemFingerprint", systemFingerprint);
+
+		setField(instance, "usage", usage);
+
 		return instance;
 	}
 
