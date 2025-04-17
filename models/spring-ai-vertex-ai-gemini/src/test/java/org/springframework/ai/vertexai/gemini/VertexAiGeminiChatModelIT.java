@@ -88,7 +88,7 @@ class VertexAiGeminiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
-	// Disabled until Gemini 2.5 PRO has an official release
+	// Test disabled until Gemini 2.5 PRO has an official release
 	@Disabled
 	@Test
 	void googleSearchToolPro() {
