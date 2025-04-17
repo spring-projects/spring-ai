@@ -329,7 +329,7 @@ public class OpenAiApi {
 		/**
 		 * o3 model snapshot.
 		 */
-		o3_2025_04_16("o3-2025-04-16"),
+		O3_2025_04_16("o3-2025-04-16"),
 
 		/**
 		 * <b>o1-preview</b> is trained with reinforcement learning to perform complex
