@@ -14,35 +14,26 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.prompt;
+package org.springframework.ai.template;
 
-import org.springframework.ai.template.TemplateRenderer;
+import java.util.Map;
+
+import org.springframework.util.Assert;
 
 /**
- * @deprecated in favor of {@link TemplateRenderer}.
+ * No-op implementation of {@link TemplateRenderer} that returns the template unchanged.
+ *
+ * @author Thomas Vitale
+ * @since 1.0.0
  */
-@Deprecated
-public enum TemplateFormat {
+public class NoOpTemplateRenderer implements TemplateRenderer {
 
-	ST("ST");
-
-	private final String value;
-
-	TemplateFormat(String value) {
-		this.value = value;
-	}
-
-	public static TemplateFormat fromValue(String value) {
-		for (TemplateFormat templateFormat : TemplateFormat.values()) {
-			if (templateFormat.getValue().equals(value)) {
-				return templateFormat;
-			}
-		}
-		throw new IllegalArgumentException("Invalid TemplateFormat value: " + value);
-	}
-
-	public String getValue() {
-		return this.value;
+	@Override
+	public String apply(String template, Map<String, Object> variables) {
+		Assert.hasText(template, "template cannot be null or empty");
+		Assert.notNull(variables, "variables cannot be null");
+		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
+		return template;
 	}
 
 }
