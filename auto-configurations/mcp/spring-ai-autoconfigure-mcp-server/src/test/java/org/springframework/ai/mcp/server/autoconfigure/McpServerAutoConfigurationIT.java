@@ -73,7 +73,7 @@ public class McpServerAutoConfigurationIT {
 	void asyncConfiguration() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.name=test-server",
-					"spring.ai.mcp.server.version=2.0.0")
+					"spring.ai.mcp.server.version=2.0.0", "spring.ai.mcp.server.instructions=My MCP Server")
 			.run(context -> {
 				assertThat(context).hasSingleBean(McpAsyncServer.class);
 				assertThat(context).doesNotHaveBean(McpSyncServer.class);
@@ -81,6 +81,7 @@ public class McpServerAutoConfigurationIT {
 				McpServerProperties properties = context.getBean(McpServerProperties.class);
 				assertThat(properties.getName()).isEqualTo("test-server");
 				assertThat(properties.getVersion()).isEqualTo("2.0.0");
+				assertThat(properties.getInstructions()).isEqualTo("My MCP Server");
 				assertThat(properties.getType()).isEqualTo(McpServerProperties.ServerType.ASYNC);
 			});
 	}
