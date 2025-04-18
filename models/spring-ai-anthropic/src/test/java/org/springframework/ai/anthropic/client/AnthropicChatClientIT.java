@@ -212,7 +212,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.user("What's the weather like in San Francisco (California, USA), Tokyo (Japan), and Paris (France)? Use Celsius.")
 				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
