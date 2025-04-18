@@ -307,7 +307,25 @@ public class OpenAiApi {
 		 * <p>
 		 * See: <a href="https://platform.openai.com/docs/models/o4-mini">o4-mini</a>
 		 */
-		O4_MINI("o4-mini"),
+
+		O1("o1"),
+
+		/**
+		 * <b>o3</b> is a well-rounded and powerful model across domains. It sets a new
+		 * standard for math, science, coding, and visual reasoning tasks. It also excels
+		 * at technical writing and instruction-following. Use it to think through multi-step
+		 * problems that involve analysis across text, code, and images.
+		 * <p>
+		 * The knowledge cutoff for o3 models is Jun , 2024
+		 * <p>
+		 */
+		O3("o3"),
+
+		/**
+		 * o3 model snapshot.
+		 */
+		O3_2025_04_16("o3-2025-04-16"),
+
 
 		/**
 		 * <b>o3</b> is a well-rounded and powerful model across domains. It sets a new
@@ -387,6 +405,24 @@ public class OpenAiApi {
 		// --- Flagship Models ---
 
 		/**
+		 * <b>o4-mini</b> is our latest small o-series model. It's optimized for fast,
+		 * effective reasoning with exceptionally efficient performance in coding and
+		 * visual tasks.
+		 * <p>
+		 * The knowledge cutoff for o4-mini models is Jun , 2024
+		 * <p>
+		 */
+		O4_MINI("o4-mini"),
+
+		/**
+		 * o4-mini model snapshot.
+		 */
+		O4_MINI_2025_04_16("o4-mini-2025-04-16"),
+
+		/**
+		 * <b>GPT-4o ("omni")</b> is our versatile, high-intelligence flagship model. It
+		 * accepts both text and image inputs and produces text outputs (including
+		 * Structured Outputs).
 		 * <b>GPT-4.1</b> is the flagship model for complex tasks. It is well suited for
 		 * problem solving across domains.
 		 * <p>
