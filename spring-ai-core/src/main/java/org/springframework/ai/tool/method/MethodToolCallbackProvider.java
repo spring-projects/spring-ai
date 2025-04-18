@@ -30,6 +30,7 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -61,10 +62,11 @@ public class MethodToolCallbackProvider implements ToolCallbackProvider {
 	public ToolCallback[] getToolCallbacks() {
 		var toolCallbacks = toolObjects.stream()
 			.map(toolObject -> Stream
-				.of(ReflectionUtils.getDeclaredMethods(
-						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
+				.of(ReflectionUtils.getDeclaredMethods(AopUtils.isAopProxy(toolObject)
+							? AopUtils.getTargetClass(toolObject) : classOfToolObject(toolObject)))
 				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
+				.filter(toolMethod -> !(toolObject instanceof Class<?>) || Modifier.isStatic(toolMethod.getModifiers()))
 				.map(toolMethod -> MethodToolCallback.builder()
 					.toolDefinition(ToolDefinition.from(toolMethod))
 					.toolMetadata(ToolMetadata.from(toolMethod))
@@ -79,6 +81,10 @@ public class MethodToolCallbackProvider implements ToolCallbackProvider {
 		validateToolCallbacks(toolCallbacks);
 
 		return toolCallbacks;
+	}
+
+	private Class<?> classOfToolObject(Object toolObject) {
+		return toolObject instanceof Class<?> c ? c : toolObject.getClass();
 	}
 
 	private boolean isFunctionalType(Method toolMethod) {
