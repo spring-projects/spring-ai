@@ -211,7 +211,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
+				.user("What's the weather like in San Francisco (California, USA), Tokyo (Japan), and Paris (France)? Use Celsius.")
 				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -284,7 +284,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-latest", "claude-3-5-sonnet-latest", "claude-3-7-sonnet-latest" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -301,7 +301,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-latest", "claude-3-5-sonnet-latest", "claude-3-7-sonnet-latest" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
