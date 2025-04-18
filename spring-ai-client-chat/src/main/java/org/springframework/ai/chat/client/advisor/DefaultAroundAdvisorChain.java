@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,15 +23,18 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import reactor.core.publisher.Flux;
-
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
@@ -41,16 +44,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Implementation of the {@link CallAroundAdvisorChain} and
- * {@link StreamAroundAdvisorChain}. Used by the
+ * Default implementation for the {@link BaseAdvisorChain}. Used by the
  * {@link org.springframework.ai.chat.client.ChatClient} to delegate the call to the next
- * {@link CallAroundAdvisor} or {@link StreamAroundAdvisor} in the chain.
+ * {@link CallAdvisor} or {@link StreamAdvisor} in the chain.
  *
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, StreamAroundAdvisorChain {
+public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
@@ -77,7 +80,42 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 	}
 
 	@Override
+	public ChatClientResponse nextCall(ChatClientRequest chatClientRequest) {
+		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
+
+		if (this.callAroundAdvisors.isEmpty()) {
+			throw new IllegalStateException("No CallAdvisors available to execute");
+		}
+
+		var advisor = this.callAroundAdvisors.pop();
+
+		var observationContext = AdvisorObservationContext.builder()
+			.advisorName(advisor.getName())
+			.chatClientRequest(chatClientRequest)
+			.order(advisor.getOrder())
+			.build();
+
+		return AdvisorObservationDocumentation.AI_ADVISOR
+			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry)
+			.observe(() -> {
+				// Supports both deprecated and new API.
+				if (advisor instanceof CallAdvisor callAdvisor) {
+					return callAdvisor.adviseCall(chatClientRequest, this);
+				}
+				AdvisedResponse advisedResponse = advisor.aroundCall(AdvisedRequest.from(chatClientRequest), this);
+				ChatClientResponse chatClientResponse = advisedResponse.toChatClientResponse();
+				observationContext.setChatClientResponse(chatClientResponse);
+				return chatClientResponse;
+			});
+	}
+
+	/**
+	 * @deprecated Use {@link #nextCall(ChatClientRequest)} instead
+	 */
+	@Override
+	@Deprecated
 	public AdvisedResponse nextAroundCall(AdvisedRequest advisedRequest) {
+		Assert.notNull(advisedRequest, "the advisedRequest cannot be null");
 
 		if (this.callAroundAdvisors.isEmpty()) {
 			throw new IllegalStateException("No AroundAdvisor available to execute");
@@ -87,31 +125,40 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 
 		var observationContext = AdvisorObservationContext.builder()
 			.advisorName(advisor.getName())
-			.advisorType(AdvisorObservationContext.Type.AROUND)
-			.advisedRequest(advisedRequest)
-			.advisorRequestContext(advisedRequest.adviseContext())
+			.chatClientRequest(advisedRequest.toChatClientRequest())
 			.order(advisor.getOrder())
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
 			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry)
-			.observe(() -> advisor.aroundCall(advisedRequest, this));
+			.observe(() -> {
+				// Supports both deprecated and new API.
+				if (advisor instanceof CallAdvisor callAdvisor) {
+					ChatClientResponse chatClientResponse = callAdvisor.adviseCall(advisedRequest.toChatClientRequest(),
+							this);
+					return AdvisedResponse.from(chatClientResponse);
+				}
+				AdvisedResponse advisedResponse = advisor.aroundCall(advisedRequest, this);
+				ChatClientResponse chatClientResponse = advisedResponse.toChatClientResponse();
+				observationContext.setChatClientResponse(chatClientResponse);
+				return advisedResponse;
+			});
 	}
 
 	@Override
-	public Flux<AdvisedResponse> nextAroundStream(AdvisedRequest advisedRequest) {
+	public Flux<ChatClientResponse> nextStream(ChatClientRequest chatClientRequest) {
+		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
+
 		return Flux.deferContextual(contextView -> {
 			if (this.streamAroundAdvisors.isEmpty()) {
-				return Flux.error(new IllegalStateException("No AroundAdvisor available to execute"));
+				return Flux.error(new IllegalStateException("No StreamAdvisors available to execute"));
 			}
 
 			var advisor = this.streamAroundAdvisors.pop();
 
 			AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 				.advisorName(advisor.getName())
-				.advisorType(AdvisorObservationContext.Type.AROUND)
-				.advisedRequest(advisedRequest)
-				.advisorRequestContext(advisedRequest.adviseContext())
+				.chatClientRequest(chatClientRequest)
 				.order(advisor.getOrder())
 				.build();
 
@@ -121,10 +168,66 @@ public class DefaultAroundAdvisorChain implements CallAroundAdvisorChain, Stream
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
 			// @formatter:off
-			return Flux.defer(() -> advisor.aroundStream(advisedRequest, this))
-					.doOnError(observation::error)
-					.doFinally(s -> observation.stop())
-					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			return Flux.defer(() -> {
+				// Supports both deprecated and new API.
+				if (advisor instanceof StreamAdvisor streamAdvisor) {
+					return streamAdvisor.adviseStream(chatClientRequest, this)
+							.doOnError(observation::error)
+							.doFinally(s -> observation.stop())
+							.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				}
+				return advisor.aroundStream(AdvisedRequest.from(chatClientRequest), this)
+						.doOnError(observation::error)
+						.doFinally(s -> observation.stop())
+						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation))
+						.map(AdvisedResponse::toChatClientResponse);
+			});
+			// @formatter:on
+		});
+	}
+
+	/**
+	 * @deprecated Use {@link #nextStream(ChatClientRequest)} instead.
+	 */
+	@Override
+	@Deprecated
+	public Flux<AdvisedResponse> nextAroundStream(AdvisedRequest advisedRequest) {
+		Assert.notNull(advisedRequest, "the advisedRequest cannot be null");
+
+		return Flux.deferContextual(contextView -> {
+			if (this.streamAroundAdvisors.isEmpty()) {
+				return Flux.error(new IllegalStateException("No AroundAdvisor available to execute"));
+			}
+
+			var advisor = this.streamAroundAdvisors.pop();
+
+			AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+				.advisorName(advisor.getName())
+				.chatClientRequest(advisedRequest.toChatClientRequest())
+				.order(advisor.getOrder())
+				.build();
+
+			var observation = AdvisorObservationDocumentation.AI_ADVISOR.observation(null,
+					DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry);
+
+			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
+			// @formatter:off
+			return Flux.defer(() -> {
+				// Supports both deprecated and new API.
+				if (advisor instanceof StreamAdvisor streamAdvisor) {
+					return streamAdvisor.adviseStream(advisedRequest.toChatClientRequest(), this)
+							.doOnError(observation::error)
+							.doFinally(s -> observation.stop())
+							.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation))
+							.map(AdvisedResponse::from);
+				}
+
+				return advisor.aroundStream(advisedRequest, this)
+						.doOnError(observation::error)
+						.doFinally(s -> observation.stop())
+						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			});
 			// @formatter:on
 		});
 	}

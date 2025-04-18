@@ -288,31 +288,26 @@ public class OpenAiApi {
 	 * information about the model's context window, maximum output tokens, and knowledge
 	 * cutoff date.
 	 * <p>
-	 * <b>References:</b>
-	 * <ul>
-	 * <li><a href="https://platform.openai.com/docs/models#gpt-4o">GPT-4o</a></li>
-	 * <li><a href="https://platform.openai.com/docs/models#gpt-4-and-gpt-4-turbo">GPT-4
-	 * and GPT-4 Turbo</a></li>
-	 * <li><a href="https://platform.openai.com/docs/models#gpt-3-5-turbo">GPT-3.5
-	 * Turbo</a></li>
-	 * <li><a href="https://platform.openai.com/docs/models#o1-and-o1-mini">o1 and
-	 * o1-mini</a></li>
-	 * <li><a href="https://platform.openai.com/docs/models#o3-mini">o3-mini</a></li>
-	 * </ul>
+	 * <b>References:</b> <a href="https://platform.openai.com/docs/models">OpenAI Models
+	 * Documentation</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
+		// --- Reasoning Models ---
+
 		/**
-		 * <b>o1</b> is trained with reinforcement learning to perform complex reasoning.
-		 * It thinks before it answers, producing a long internal chain of thought before
-		 * responding to the user.
+		 * <b>o4-mini</b> is the latest small o-series model. It's optimized for fast,
+		 * effective reasoning with exceptionally efficient performance in coding and
+		 * visual tasks.
 		 * <p>
-		 * The latest o1 model supports both text and image inputs, and produces text
-		 * outputs (including Structured Outputs).
+		 * Context window: 200,000 tokens. Max output tokens: 100,000 tokens. Knowledge
+		 * cutoff: June 1, 2024.
 		 * <p>
-		 * The knowledge cutoff for o1 is October, 2023.
+		 * Model ID: o4-mini
 		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/o4-mini">o4-mini</a>
 		 */
+
 		O1("o1"),
 
 		/**
@@ -331,38 +326,83 @@ public class OpenAiApi {
 		 */
 		O3_2025_04_16("o3-2025-04-16"),
 
+
 		/**
-		 * <b>o1-preview</b> is trained with reinforcement learning to perform complex
-		 * reasoning. It thinks before it answers, producing a long internal chain of
-		 * thought before responding to the user.
+		 * <b>o3</b> is a well-rounded and powerful model across domains. It sets a new
+		 * standard for math, science, coding, and visual reasoning tasks. It also excels
+		 * at technical writing and instruction-following. Use it to think through
+		 * multi-step problems that involve analysis across text, code, and images.
 		 * <p>
-		 * The latest o1-preview model supports both text and image inputs, and produces
-		 * text outputs (including Structured Outputs).
+		 * Context window: 200,000 tokens. Max output tokens: 100,000 tokens. Knowledge
+		 * cutoff: June 1, 2024.
 		 * <p>
-		 * The knowledge cutoff for o1-preview is October, 2023.
+		 * Model ID: o3
 		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/o3">o3</a>
 		 */
-		O1_PREVIEW("o1-preview"),
+		O3("o3"),
+
+		/**
+		 * <b>o3-mini</b> is a small reasoning model, providing high intelligence at cost
+		 * and latency targets similar to o1-mini. o3-mini supports key developer
+		 * features, like Structured Outputs, function calling, Batch API.
+		 * <p>
+		 * The knowledge cutoff for o3-mini models is October, 2023.
+		 * <p>
+		 * Context window: 200,000 tokens. Max output tokens: 100,000 tokens. Knowledge
+		 * cutoff: October 1, 2023.
+		 * <p>
+		 * Model ID: o3-mini
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/o3-mini">o3-mini</a>
+		 */
+		O3_MINI("o3-mini"),
+
+		/**
+		 * The <b>o1</b> series of models are trained with reinforcement learning to
+		 * perform complex reasoning. o1 models think before they answer, producing a long
+		 * internal chain of thought before responding to the user.
+		 * <p>
+		 * Context window: 200,000 tokens. Max output tokens: 100,000 tokens. Knowledge
+		 * cutoff: October 1, 2023.
+		 * <p>
+		 * Model ID: o1
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/o1">o1</a>
+		 */
+		O1("o1"),
 
 		/**
 		 * <b>o1-mini</b> is a faster and more affordable reasoning model compared to o1.
 		 * o1-mini currently only supports text inputs and outputs.
 		 * <p>
-		 * The knowledge cutoff for o1-mini is October, 2023.
+		 * Context window: 128,000 tokens. Max output tokens: 65,536 tokens. Knowledge
+		 * cutoff: October 1, 2023.
 		 * <p>
+		 * Model ID: o1-mini
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/o1-mini">o1-mini</a>
 		 */
 		O1_MINI("o1-mini"),
+
 		/**
-		 * <b>o3-mini</b> is our most recent small reasoning model, providing high
-		 * intelligence at the same cost and latency targets of o1-mini. o3-mini also
-		 * supports key developer features, like Structured Outputs, function calling,
-		 * Batch API, and more. Like other models in the o-series, it is designed to excel
-		 * at science, math, and coding tasks.
+		 * The <b>o1-pro</b> model, part of the o1 series trained with reinforcement
+		 * learning for complex reasoning, uses more compute to think harder and provide
+		 * consistently better answers.
 		 * <p>
-		 * The knowledge cutoff for o3-mini models is October, 2023.
+		 * Note: o1-pro is available in the Responses API only to enable support for
+		 * multi-turn model interactions and other advanced API features.
 		 * <p>
+		 * Context window: 200,000 tokens. Max output tokens: 100,000 tokens. Knowledge
+		 * cutoff: October 1, 2023.
+		 * <p>
+		 * Model ID: o1-pro
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/o1-pro">o1-pro</a>
 		 */
-		O3_MINI("o3-mini"),
+		O1_PRO("o1-pro"),
+
+		// --- Flagship Models ---
 
 		/**
 		 * <b>o4-mini</b> is our latest small o-series model. It's optimized for fast,
@@ -383,38 +423,90 @@ public class OpenAiApi {
 		 * <b>GPT-4o ("omni")</b> is our versatile, high-intelligence flagship model. It
 		 * accepts both text and image inputs and produces text outputs (including
 		 * Structured Outputs).
+		 * <b>GPT-4.1</b> is the flagship model for complex tasks. It is well suited for
+		 * problem solving across domains.
 		 * <p>
-		 * The knowledge cutoff for GPT-4o models is October, 2023.
+		 * Context window: 1,047,576 tokens. Max output tokens: 32,768 tokens. Knowledge
+		 * cutoff: June 1, 2024.
 		 * <p>
+		 * Model ID: gpt-4.1
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-4.1">gpt-4.1</a>
+		 */
+		GPT_4_1("gpt-4.1"),
+
+		/**
+		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
+		 * model. It accepts both text and image inputs, and produces text outputs
+		 * (including Structured Outputs). It is considered the best model for most tasks,
+		 * and the most capable model outside of the o-series models.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October 1, 2023.
+		 * <p>
+		 * Model ID: gpt-4o
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-4o">gpt-4o</a>
 		 */
 		GPT_4_O("gpt-4o"),
+
 		/**
 		 * The <b>chatgpt-4o-latest</b> model ID continuously points to the version of
 		 * GPT-4o used in ChatGPT. It is updated frequently when there are significant
 		 * changes to ChatGPT's GPT-4o model.
 		 * <p>
 		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
-		 * cutoff: October, 2023.
+		 * cutoff: October 1, 2023.
+		 * <p>
+		 * Model ID: chatgpt-4o-latest
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/chatgpt-4o-latest">chatgpt-4o-latest</a>
 		 */
 		CHATGPT_4_O_LATEST("chatgpt-4o-latest"),
 
 		/**
-		 * <b>GPT-4o Audio</b> is a preview release model that accepts audio inputs and
-		 * outputs and can be used in the Chat Completions REST API.
+		 * <b>GPT-4o Audio Preview</b> represents a preview release of models that accept
+		 * audio inputs and outputs via the Chat Completions REST API.
 		 * <p>
-		 * The knowledge cutoff for GPT-4o Audio models is October, 2023.
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October 1, 2023.
 		 * <p>
+		 * Model ID: gpt-4o-audio-preview
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-4o-audio-preview">gpt-4o-audio-preview</a>
 		 */
 		GPT_4_O_AUDIO_PREVIEW("gpt-4o-audio-preview"),
 
+		// --- Cost-Optimized Models ---
+
 		/**
-		 * <b>GPT-4o-mini Audio</b> is a preview release model that accepts audio inputs
-		 * and outputs and can be used in the Chat Completions REST API.
+		 * <b>GPT-4.1-mini</b> provides a balance between intelligence, speed, and cost
+		 * that makes it an attractive model for many use cases.
 		 * <p>
-		 * The knowledge cutoff for GPT-4o-mini Audio models is October, 2023.
+		 * Context window: 1,047,576 tokens. Max output tokens: 32,768 tokens. Knowledge
+		 * cutoff: June 1, 2024.
 		 * <p>
+		 * Model ID: gpt-4.1-mini
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-4.1-mini">gpt-4.1-mini</a>
 		 */
-		GPT_4_O_MINI_AUDIO_PREVIEW("gpt-4o-mini-audio-preview"),
+		GPT_4_1_MINI("gpt-4.1-mini"),
+
+		/**
+		 * <b>GPT-4.1-nano</b> is the fastest, most cost-effective GPT-4.1 model.
+		 * <p>
+		 * Context window: 1,047,576 tokens. Max output tokens: 32,768 tokens. Knowledge
+		 * cutoff: June 1, 2024.
+		 * <p>
+		 * Model ID: gpt-4.1-nano
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-4.1-nano">gpt-4.1-nano</a>
+		 */
+		GPT_4_1_NANO("gpt-4.1-nano"),
 
 		/**
 		 * <b>GPT-4o-mini</b> is a fast, affordable small model for focused tasks. It
@@ -423,80 +515,106 @@ public class OpenAiApi {
 		 * larger model like GPT-4o can be distilled to GPT-4o-mini to produce similar
 		 * results at lower cost and latency.
 		 * <p>
-		 * The knowledge cutoff for GPT-4o-mini models is October, 2023.
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October 1, 2023.
 		 * <p>
+		 * Model ID: gpt-4o-mini
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-4o-mini">gpt-4o-mini</a>
 		 */
 		GPT_4_O_MINI("gpt-4o-mini"),
 
 		/**
-		 * <b>GPT-4 Turbo</b> is a high-intelligence GPT model with vision capabilities,
-		 * usable in Chat Completions. Vision requests can now use JSON mode and function
-		 * calling.
+		 * <b>GPT-4o-mini Audio Preview</b> is a preview release model that accepts audio
+		 * inputs and outputs and can be used in the Chat Completions REST API.
 		 * <p>
-		 * The knowledge cutoff for the latest GPT-4 Turbo version is December, 2023.
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: October 1, 2023.
 		 * <p>
+		 * Model ID: gpt-4o-mini-audio-preview
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-4o-mini-audio-preview">gpt-4o-mini-audio-preview</a>
+		 */
+		GPT_4_O_MINI_AUDIO_PREVIEW("gpt-4o-mini-audio-preview"),
+
+		// --- Realtime Models ---
+
+		/**
+		 * <b>GPT-4o Realtime</b> model, is capable of responding to audio and text inputs
+		 * in realtime over WebRTC or a WebSocket interface.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: October 1, 2023.
+		 * <p>
+		 * Model ID: gpt-4o-realtime-preview
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-4o-realtime-preview">gpt-4o-realtime-preview</a>
+		 */
+		GPT_4O_REALTIME_PREVIEW("gpt-4o-realtime-preview"),
+
+		/**
+		 * <b>GPT-4o-mini Realtime</b> model, is capable of responding to audio and text
+		 * inputs in realtime over WebRTC or a WebSocket interface.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: October 1, 2023.
+		 * <p>
+		 * Model ID: gpt-4o-mini-realtime-preview
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-4o-mini-realtime-preview">gpt-4o-mini-realtime-preview</a>
+		 */
+		GPT_4O_MINI_REALTIME_PREVIEW("gpt-4o-mini-realtime-preview\n"),
+
+		// --- Older GPT Models ---
+
+		/**
+		 * <b>GPT-4 Turbo</b> is the next generation of GPT-4, an older high-intelligence
+		 * GPT model. It was designed to be a cheaper, better version of GPT-4. Today, we
+		 * recommend using a newer model like GPT-4o.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: Dec 01, 2023.
+		 * <p>
+		 * Model ID: gpt-4-turbo
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-4-turbo">gpt-4-turbo</a>
 		 */
 		GPT_4_TURBO("gpt-4-turbo"),
 
 		/**
-		 * <b>GPT-4-0125-preview</b> is the latest GPT-4 model intended to reduce cases of
-		 * “laziness” where the model doesn’t complete a task.
-		 * <p>
-		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens.
-		 */
-		GPT_4_0125_PREVIEW("gpt-4-0125-preview"),
-
-		/**
-		 * Currently points to {@link #GPT_4_0125_PREVIEW}.
-		 * <p>
-		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens.
-		 */
-		GPT_4_1106_PREVIEW("gpt-4-1106-preview"),
-
-		/**
-		 * <b>GPT-4 Turbo Preview</b> is a high-intelligence GPT model usable in Chat
-		 * Completions.
-		 * <p>
-		 * Currently points to {@link #GPT_4_0125_PREVIEW}.
-		 * <p>
-		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens.
-		 */
-		GPT_4_TURBO_PREVIEW("gpt-4-turbo-preview"),
-
-		/**
 		 * <b>GPT-4</b> is an older version of a high-intelligence GPT model, usable in
-		 * Chat Completions.
+		 * Chat Completions. Vision capabilities may not be available.
 		 * <p>
-		 * Currently points to {@link #GPT_4_0613}.
+		 * Context window: 128,000 tokens. Max output tokens: 4,096 tokens. Knowledge
+		 * cutoff: Dec 01, 2023.
 		 * <p>
-		 * Context window: 8,192 tokens. Max output tokens: 8,192 tokens.
+		 * Model ID: gpt-4
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-4">gpt-4</a>
 		 */
 		GPT_4("gpt-4"),
-		/**
-		 * GPT-4 model snapshot.
-		 * <p>
-		 * Context window: 8,192 tokens. Max output tokens: 8,192 tokens.
-		 */
-		GPT_4_0613("gpt-4-0613"),
-		/**
-		 * GPT-4 model snapshot.
-		 * <p>
-		 * Context window: 8,192 tokens. Max output tokens: 8,192 tokens.
-		 */
-		GPT_4_0314("gpt-4-0314"),
 
 		/**
 		 * <b>GPT-3.5 Turbo</b> models can understand and generate natural language or
 		 * code and have been optimized for chat using the Chat Completions API but work
-		 * well for non-chat tasks as well.
+		 * well for non-chat tasks as well. Generally lower cost but less capable than
+		 * GPT-4 models.
 		 * <p>
-		 * As of July 2024, {@link #GPT_4_O_MINI} should be used in place of
-		 * gpt-3.5-turbo, as it is cheaper, more capable, multimodal, and just as fast.
-		 * gpt-3.5-turbo is still available for use in the API.
-		 * <p>
+		 * As of July 2024, GPT-4o mini is recommended over gpt-3.5-turbo for most use
+		 * cases.
 		 * <p>
 		 * Context window: 16,385 tokens. Max output tokens: 4,096 tokens. Knowledge
 		 * cutoff: September, 2021.
+		 * <p>
+		 * Model ID: gpt-3.5-turbo
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-3.5-turbo">gpt-3.5-turbo</a>
 		 */
 		GPT_3_5_TURBO("gpt-3.5-turbo"),
 

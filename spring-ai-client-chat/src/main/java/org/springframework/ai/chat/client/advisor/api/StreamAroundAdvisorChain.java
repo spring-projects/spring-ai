@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
 import reactor.core.publisher.Flux;
 
 /**
@@ -25,7 +26,9 @@ import reactor.core.publisher.Flux;
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @since 1.0.0
+ * @deprecated in favor of {@link StreamAdvisorChain}
  */
+@Deprecated
 public interface StreamAroundAdvisorChain {
 
 	/**
@@ -34,7 +37,9 @@ public interface StreamAroundAdvisorChain {
 	 * @param advisedRequest the request containing data of the chat client that can be
 	 * modified before execution
 	 * @return a Flux stream of AdvisedResponse objects
+	 * @deprecated in favor of {@link StreamAdvisorChain#nextStream(ChatClientRequest)}
 	 */
+	@Deprecated
 	Flux<AdvisedResponse> nextAroundStream(AdvisedRequest advisedRequest);
 
 }
