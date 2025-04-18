@@ -36,7 +36,9 @@ class AzureOpenAiChatOptionsTests {
 
 	@Test
 	void testBuilderWithAllFields() {
-		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.TEXT;
+		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.TEXT)
+			.build();
 		ChatCompletionStreamOptions streamOptions = new ChatCompletionStreamOptions();
 		streamOptions.setIncludeUsage(true);
 
@@ -74,7 +76,9 @@ class AzureOpenAiChatOptionsTests {
 
 	@Test
 	void testCopy() {
-		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.TEXT;
+		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.TEXT)
+			.build();
 		ChatCompletionStreamOptions streamOptions = new ChatCompletionStreamOptions();
 		streamOptions.setIncludeUsage(true);
 
@@ -111,7 +115,9 @@ class AzureOpenAiChatOptionsTests {
 
 	@Test
 	void testSetters() {
-		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.TEXT;
+		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.TEXT)
+			.build();
 		ChatCompletionStreamOptions streamOptions = new ChatCompletionStreamOptions();
 		streamOptions.setIncludeUsage(true);
 		AzureChatEnhancementConfiguration enhancements = new AzureChatEnhancementConfiguration();

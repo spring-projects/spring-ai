@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class AzureChatCompletionsOptionsTests {
 			.logprobs(true)
 			.topLogprobs(5)
 			.enhancements(mockAzureChatEnhancementConfiguration)
-			.responseFormat(AzureOpenAiResponseFormat.TEXT)
+			.responseFormat(AzureOpenAiResponseFormat.builder().type(AzureOpenAiResponseFormat.Type.TEXT).build())
 			.build();
 
 		var client = AzureOpenAiChatModel.builder()
@@ -114,7 +114,8 @@ public class AzureChatCompletionsOptionsTests {
 			.logprobs(true)
 			.topLogprobs(4)
 			.enhancements(anotherMockAzureChatEnhancementConfiguration)
-			.responseFormat(AzureOpenAiResponseFormat.JSON)
+			.responseFormat(
+					AzureOpenAiResponseFormat.builder().type(AzureOpenAiResponseFormat.Type.JSON_OBJECT).build())
 			.build();
 
 		requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content", runtimeOptions));
