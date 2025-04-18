@@ -514,7 +514,9 @@ Next, create an `OpenAiChatModel` and use it for text generations:
 
 [source,java]
 ----
-var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+var openAiApi = OpenAiApi.builder()
+            .apiKey(System.getenv("OPENAI_API_KEY"))
+            .build();
 var openAiChatOptions = OpenAiChatOptions.builder()
             .model("gpt-3.5-turbo")
             .temperature(0.4)
@@ -531,7 +533,7 @@ Flux<ChatResponse> response = this.chatModel.stream(
 ----
 
 The `OpenAiChatOptions` provides the configuration information for the chat requests.
-The `OpenAiChatOptions.Builder` is a fluent options-builder.
+The `OpenAiApi.Builder` and `OpenAiChatOptions.Builder` are fluent options-builders for API client and chat config respectively.
 
 == Low-level OpenAiApi Client [[low-level-api]]
 
@@ -545,8 +547,9 @@ Here is a simple snippet showing how to use the API programmatically:
 
 [source,java]
 ----
-OpenAiApi openAiApi =
-    new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+OpenAiApi openAiApi = OpenAiApi.builder()
+            .apiKey(System.getenv("OPENAI_API_KEY"))
+            .build();
 
 ChatCompletionMessage chatCompletionMessage =
     new ChatCompletionMessage("Hello world", Role.USER);

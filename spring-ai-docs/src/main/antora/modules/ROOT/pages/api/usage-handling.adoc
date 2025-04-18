@@ -13,9 +13,9 @@ Object getNativeUsage();
 ```
 This method allows access to the model-specific native usage data, enabling more detailed usage tracking when needed.
 
-=== Using with ChatClient
+=== Using with ChatModel
 
-Here's a complete example showing how to track usage with OpenAI's ChatClient:
+Here's a complete example showing how to track usage with OpenAI's ChatModel:
 
 ```java
 @SpringBootConfiguration
@@ -23,12 +23,16 @@ public class Configuration {
 
         @Bean
         public OpenAiApi chatCompletionApi() {
-            return new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+            return OpenAiApi.builder()
+                .apiKey(System.getenv("OPENAI_API_KEY"))
+                .build();
         }
 
         @Bean
         public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
-            return new OpenAiChatModel(openAiApi);
+            return OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .build();
         }
 
     }
@@ -46,10 +50,8 @@ public class ChatService {
         // Create a chat prompt
         Prompt prompt = new Prompt("What is the weather like today?");
 
-        ChatClient chatClient = ChatClient.builder(this.chatModel).build();
-
         // Get the chat response
-        ChatResponse response = chatClient.call(prompt);
+        ChatResponse response = this.chatModel.call(prompt);
 
         // Access the usage information
         Usage usage = response.getMetadata().getUsage();
@@ -78,6 +80,26 @@ public class ChatService {
         }
     }
 }
+```
+
+=== Using with ChatClient
+
+If you are using the `ChatClient`, you can access the usage information using the `ChatResponse` object:
+
+```java
+// Create a chat prompt
+Prompt prompt = new Prompt("What is the weather like today?");
+
+// Create a chat client
+ChatClient chatClient = ChatClient.create(chatModel);
+
+// Get the chat response
+ChatResponse response = chatClient.prompt(prompt)
+        .call()
+        .chatResponse();
+
+// Access the usage information
+Usage usage = response.getMetadata().getUsage();
 ```
 
 == Benefits
