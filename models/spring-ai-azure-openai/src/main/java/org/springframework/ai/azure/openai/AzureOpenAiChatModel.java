@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,7 @@ import org.springframework.util.CollectionUtils;
  * @author Jihoon Kim
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author Berjan Jonker
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
  * @since 1.0.0
@@ -464,16 +465,19 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 		var responseMessage = Optional.ofNullable(choice.getMessage()).orElse(choice.getDelta());
 
-		List<AssistantMessage.ToolCall> toolCalls = responseMessage.getToolCalls() == null ? List.of()
-				: responseMessage.getToolCalls().stream().map(toolCall -> {
-					final var tc1 = (ChatCompletionsFunctionToolCall) toolCall;
-					String id = tc1.getId();
-					String name = tc1.getFunction().getName();
-					String arguments = tc1.getFunction().getArguments();
-					return new AssistantMessage.ToolCall(id, "function", name, arguments);
-				}).toList();
+		List<AssistantMessage.ToolCall> toolCalls = List.of();
+		if (responseMessage != null && responseMessage.getToolCalls() != null) {
+			toolCalls = responseMessage.getToolCalls().stream().map(toolCall -> {
+				final var tc1 = (ChatCompletionsFunctionToolCall) toolCall;
+				String id = tc1.getId();
+				String name = tc1.getFunction().getName();
+				String arguments = tc1.getFunction().getArguments();
+				return new AssistantMessage.ToolCall(id, "function", name, arguments);
+			}).toList();
+		}
 
-		var assistantMessage = new AssistantMessage(responseMessage.getContent(), metadata, toolCalls);
+		var content = responseMessage == null ? "" : responseMessage.getContent();
+		var assistantMessage = new AssistantMessage(content, metadata, toolCalls);
 		var generationMetadata = generateChoiceMetadata(choice);
 
 		return new Generation(assistantMessage, generationMetadata);
