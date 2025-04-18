@@ -40,6 +40,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 public class OpenAiStreamFunctionCallingHelper {
@@ -98,6 +99,8 @@ public class OpenAiStreamFunctionCallingHelper {
 		String refusal = (current.refusal() != null ? current.refusal() : previous.refusal());
 		ChatCompletionMessage.AudioOutput audioOutput = (current.audioOutput() != null ? current.audioOutput()
 				: previous.audioOutput());
+		List<ChatCompletionMessage.Annotation> annotations = (current.annotations() != null ? current.annotations()
+				: previous.annotations());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -127,7 +130,7 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput, annotations);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
