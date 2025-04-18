@@ -61,18 +61,18 @@ import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
-	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+	protected final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
 
 	/**
 	 * The target class type reference to which the output will be converted.
 	 */
-	private final Type type;
+	protected final Type type;
 
 	/** The object mapper used for deserialization and other JSON operations. */
 	private final ObjectMapper objectMapper;
 
 	/** Holds the generated JSON schema for the target type. */
-	private String jsonSchema;
+	protected String jsonSchema;
 
 	/**
 	 * Constructor to initialize with the target type's class.
@@ -128,7 +128,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/**
 	 * Generates the JSON schema for the target type.
 	 */
-	private void generateSchema() {
+	protected void generateSchema() {
 		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
 				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
 		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
@@ -206,7 +206,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	@Override
 	public String getFormat() {
-		String template = """
+		return String.format(getFormatTemplate(), this.jsonSchema);
+	}
+
+	/**
+	 * Provides the template for the format instruction. Subclasses can override this
+	 * method to customize the instruction format.
+	 * @return The format template string.
+	 */
+	protected String getFormatTemplate() {
+		return """
 				Your response should be in JSON format.
 				Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
 				Do not include markdown code blocks in your response.
@@ -214,7 +223,6 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 				Here is the JSON Schema instance your output must adhere to:
 				```%s```
 				""";
-		return String.format(template, this.jsonSchema);
 	}
 
 	/**
