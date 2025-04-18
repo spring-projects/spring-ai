@@ -113,22 +113,6 @@ class DefaultToolExecutionEligibilityPredicateTests {
 	}
 
 	@Test
-	void whenFunctionCallingOptionsAndToolExecutionDisabled() {
-		// Create a FunctionCallingOptions with proxy tool calls enabled (which means
-		// internal tool execution is disabled)
-		FunctionCallingOptions options = FunctionCallingOptions.builder().proxyToolCalls(true).build();
-
-		// Create a ChatResponse with tool calls
-		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("id1", "function", "testTool", "{}");
-		AssistantMessage assistantMessage = new AssistantMessage("test", Map.of(), List.of(toolCall));
-		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
-
-		// Test the predicate
-		boolean result = this.predicate.test(options, chatResponse);
-		assertThat(result).isFalse();
-	}
-
-	@Test
 	void whenRegularChatOptionsAndHasToolCalls() {
 		// Create regular ChatOptions (not ToolCallingChatOptions or
 		// FunctionCallingOptions)

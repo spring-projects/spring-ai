@@ -88,15 +88,26 @@ class VertexAiGeminiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
+	// Disabled until Gemini 2.5 PRO has an official release
+	@Disabled
 	@Test
-	void googleSearchTool() {
+	void googleSearchToolPro() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
-			.model(ChatModel.GEMINI_1_5_PRO) // Only the pro model supports the google
-												// search tool
+			.model(ChatModel.GEMINI_2_5_PRO)
 			.googleSearchRetrieval(true)
 			.build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
+	void googleSearchToolFlash() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
+			.model(ChatModel.GEMINI_2_0_FLASH)
+			.googleSearchRetrieval(true)
+			.build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
 	}
 
 	@Test

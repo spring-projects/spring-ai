@@ -65,8 +65,9 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 		boolean internalToolExecutionEnabled;
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
-				&& toolCallingChatOptions.isInternalToolExecutionEnabled() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE.equals(toolCallingChatOptions.isInternalToolExecutionEnabled());
+				&& toolCallingChatOptions.getInternalToolExecutionEnabled() != null) {
+			internalToolExecutionEnabled = Boolean.TRUE
+				.equals(toolCallingChatOptions.getInternalToolExecutionEnabled());
 		}
 		else if (chatOptions instanceof FunctionCallingOptions functionCallingOptions
 				&& functionCallingOptions.getProxyToolCalls() != null) {

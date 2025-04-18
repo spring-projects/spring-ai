@@ -38,54 +38,43 @@ public class McpToolCallbackAutoconfigurationConditionTests {
 	void matchesWhenBothPropertiesAreEnabled() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.client.enabled=true", "spring.ai.mcp.client.toolcallback.enabled=true")
-			.run(context -> {
-				assertThat(context).hasBean("testBean");
-			});
+			.run(context -> assertThat(context).hasBean("testBean"));
 	}
 
 	@Test
 	void doesNotMatchWhenMcpClientIsDisabled() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.client.enabled=false", "spring.ai.mcp.client.toolcallback.enabled=true")
-			.run(context -> {
-				assertThat(context).doesNotHaveBean("testBean");
-			});
+			.run(context -> assertThat(context).doesNotHaveBean("testBean"));
 	}
 
 	@Test
 	void doesNotMatchWhenToolCallbackIsDisabled() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.client.enabled=true", "spring.ai.mcp.client.toolcallback.enabled=false")
-			.run(context -> {
-				assertThat(context).doesNotHaveBean("testBean");
-			});
+			.run(context -> assertThat(context).doesNotHaveBean("testBean"));
 	}
 
 	@Test
 	void doesNotMatchWhenBothPropertiesAreDisabled() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.client.enabled=false", "spring.ai.mcp.client.toolcallback.enabled=false")
-			.run(context -> {
-				assertThat(context).doesNotHaveBean("testBean");
-			});
+			.run(context -> assertThat(context).doesNotHaveBean("testBean"));
 	}
 
 	@Test
 	void doesNotMatchWhenToolCallbackPropertyIsMissing() {
 		// McpClientEnabled is true by default if missing, but ToolCallbackEnabled is
 		// false by default if missing
-		this.contextRunner.withPropertyValues("spring.ai.mcp.client.enabled=true").run(context -> {
-			assertThat(context).doesNotHaveBean("testBean");
-		});
+		this.contextRunner.withPropertyValues("spring.ai.mcp.client.enabled=true")
+			.run(context -> assertThat(context).doesNotHaveBean("testBean"));
 	}
 
 	@Test
 	void doesNotMatchWhenBothPropertiesAreMissing() {
 		// McpClientEnabled is true by default if missing, but ToolCallbackEnabled is
 		// false by default if missing
-		this.contextRunner.run(context -> {
-			assertThat(context).doesNotHaveBean("testBean");
-		});
+		this.contextRunner.run(context -> assertThat(context).doesNotHaveBean("testBean"));
 	}
 
 	@Configuration

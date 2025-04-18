@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore;
+
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import com.couchbase.client.core.util.ConsistencyUtil;
 import com.couchbase.client.java.Bucket;
@@ -29,6 +37,9 @@ import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.RetrySpec;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
@@ -38,11 +49,6 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.RetrySpec;
-
-import java.time.Duration;
-import java.util.*;
 
 /**
  * @author Laurent Doguin
@@ -203,141 +209,6 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		return new Builder(cluster, embeddingModel);
 	}
 
-	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
-
-		private String collectionName = DEFAULT_COLLECTION_NAME;
-
-		private String scopeName = DEFAULT_SCOPE_NAME;
-
-		private String bucketName = DEFAULT_BUCKET_NAME;
-
-		private String vectorIndexName = DEFAULT_INDEX_NAME;
-
-		private Integer dimensions = 1536;
-
-		private CouchbaseSimilarityFunction similarityFunction = CouchbaseSimilarityFunction.dot_product;
-
-		private CouchbaseIndexOptimization indexOptimization = CouchbaseIndexOptimization.recall;
-
-		private final Cluster cluster;
-
-		private final CouchbaseAiSearchFilterExpressionConverter filterExpressionConverter = new CouchbaseAiSearchFilterExpressionConverter();
-
-		private boolean initializeSchema = false;
-
-		/**
-		 * @throws IllegalArgumentException if couchbaseSearchVectorConfig or cluster is
-		 * null
-		 */
-		private Builder(Cluster cluster, EmbeddingModel embeddingModel) {
-			super(embeddingModel);
-			Assert.notNull(cluster, "Cluster must not be null");
-			this.cluster = cluster;
-		}
-
-		/**
-		 * Sets whether to initialize the schema.
-		 * @param initializeSchema true to initialize schema, false otherwise
-		 * @return the builder instance
-		 */
-		public Builder initializeSchema(boolean initializeSchema) {
-			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Configures the Couchbase collection storing {@link Document}.
-		 * @param collectionName
-		 * @return this builder
-		 */
-		public CouchbaseSearchVectorStore.Builder collectionName(String collectionName) {
-			Assert.notNull(collectionName, "Collection Name must not be null");
-			Assert.notNull(collectionName, "Collection Name must not be empty");
-			this.collectionName = collectionName;
-			return this;
-		}
-
-		/**
-		 * Configures the Couchbase scope, parent of the selected collection. Search will
-		 * be executed in this scope context.
-		 * @param scopeName
-		 * @return this builder
-		 */
-		public CouchbaseSearchVectorStore.Builder scopeName(String scopeName) {
-			Assert.notNull(scopeName, "Scope Name must not be null");
-			Assert.notNull(scopeName, "Scope Name must not be empty");
-			this.scopeName = scopeName;
-			return this;
-		}
-
-		/**
-		 * Configures the Couchbase bucket, parent of the selected Scope.
-		 * @param bucketName
-		 * @return this builder
-		 */
-		public CouchbaseSearchVectorStore.Builder bucketName(String bucketName) {
-			Assert.notNull(bucketName, "Bucket Name must not be null");
-			Assert.notNull(bucketName, "Bucket Name must not be empty");
-			this.bucketName = bucketName;
-			return this;
-		}
-
-		/**
-		 * Configures the vector index name. This must match the name of the Vector Search
-		 * Index Name in Atlas
-		 * @param vectorIndexName
-		 * @return this builder
-		 */
-		public CouchbaseSearchVectorStore.Builder vectorIndexName(String vectorIndexName) {
-			Assert.notNull(vectorIndexName, "Vector Index Name must not be null");
-			Assert.notNull(vectorIndexName, "Vector Index Name must not be empty");
-			this.vectorIndexName = vectorIndexName;
-			return this;
-		}
-
-		/**
-		 * The number of dimensions in the vector.
-		 * @param dimensions
-		 * @return this builder
-		 */
-		public CouchbaseSearchVectorStore.Builder dimensions(Integer dimensions) {
-			Assert.notNull(dimensions, "Dimensions must not be null");
-			Assert.notNull(dimensions, "Dimensions must not be empty");
-			this.dimensions = dimensions;
-			return this;
-		}
-
-		/**
-		 * Choose the method to calculate the similarity between the vector embedding in a
-		 * Vector Search index and the vector embedding in a Vector Search query.
-		 * @param similarityFunction
-		 * @return this builder
-		 */
-		public CouchbaseSearchVectorStore.Builder similarityFunction(CouchbaseSimilarityFunction similarityFunction) {
-			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be null");
-			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be empty");
-			this.similarityFunction = similarityFunction;
-			return this;
-		}
-
-		/**
-		 * Choose to prioritize accuracy or latency.
-		 * @param indexOptimization
-		 * @return this builder
-		 */
-		public CouchbaseSearchVectorStore.Builder indexOptimization(CouchbaseIndexOptimization indexOptimization) {
-			Assert.notNull(indexOptimization, "Index Optimization must not be null");
-			Assert.notNull(indexOptimization, "Index Optimization must not be empty");
-			this.indexOptimization = indexOptimization;
-			return this;
-		}
-
-		public CouchbaseSearchVectorStore build() {
-			return new CouchbaseSearchVectorStore(this);
-		}
-
-	}
-
 	public void initCluster() throws InterruptedException {
 		// init scope, collection, indexes
 		BucketSettings bs = this.cluster.buckets().getAllBuckets().get(this.bucketName);
@@ -476,6 +347,141 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 	}
 
 	public record CouchbaseDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
+	}
+
+	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+
+		private String collectionName = DEFAULT_COLLECTION_NAME;
+
+		private String scopeName = DEFAULT_SCOPE_NAME;
+
+		private String bucketName = DEFAULT_BUCKET_NAME;
+
+		private String vectorIndexName = DEFAULT_INDEX_NAME;
+
+		private Integer dimensions = 1536;
+
+		private CouchbaseSimilarityFunction similarityFunction = CouchbaseSimilarityFunction.dot_product;
+
+		private CouchbaseIndexOptimization indexOptimization = CouchbaseIndexOptimization.recall;
+
+		private final Cluster cluster;
+
+		private final CouchbaseAiSearchFilterExpressionConverter filterExpressionConverter = new CouchbaseAiSearchFilterExpressionConverter();
+
+		private boolean initializeSchema = false;
+
+		/**
+		 * @throws IllegalArgumentException if couchbaseSearchVectorConfig or cluster is
+		 * null
+		 */
+		private Builder(Cluster cluster, EmbeddingModel embeddingModel) {
+			super(embeddingModel);
+			Assert.notNull(cluster, "Cluster must not be null");
+			this.cluster = cluster;
+		}
+
+		/**
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
+		 * @return the builder instance
+		 */
+		public Builder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Configures the Couchbase collection storing {@link Document}.
+		 * @param collectionName
+		 * @return this builder
+		 */
+		public CouchbaseSearchVectorStore.Builder collectionName(String collectionName) {
+			Assert.notNull(collectionName, "Collection Name must not be null");
+			Assert.notNull(collectionName, "Collection Name must not be empty");
+			this.collectionName = collectionName;
+			return this;
+		}
+
+		/**
+		 * Configures the Couchbase scope, parent of the selected collection. Search will
+		 * be executed in this scope context.
+		 * @param scopeName
+		 * @return this builder
+		 */
+		public CouchbaseSearchVectorStore.Builder scopeName(String scopeName) {
+			Assert.notNull(scopeName, "Scope Name must not be null");
+			Assert.notNull(scopeName, "Scope Name must not be empty");
+			this.scopeName = scopeName;
+			return this;
+		}
+
+		/**
+		 * Configures the Couchbase bucket, parent of the selected Scope.
+		 * @param bucketName
+		 * @return this builder
+		 */
+		public CouchbaseSearchVectorStore.Builder bucketName(String bucketName) {
+			Assert.notNull(bucketName, "Bucket Name must not be null");
+			Assert.notNull(bucketName, "Bucket Name must not be empty");
+			this.bucketName = bucketName;
+			return this;
+		}
+
+		/**
+		 * Configures the vector index name. This must match the name of the Vector Search
+		 * Index Name in Atlas
+		 * @param vectorIndexName
+		 * @return this builder
+		 */
+		public CouchbaseSearchVectorStore.Builder vectorIndexName(String vectorIndexName) {
+			Assert.notNull(vectorIndexName, "Vector Index Name must not be null");
+			Assert.notNull(vectorIndexName, "Vector Index Name must not be empty");
+			this.vectorIndexName = vectorIndexName;
+			return this;
+		}
+
+		/**
+		 * The number of dimensions in the vector.
+		 * @param dimensions
+		 * @return this builder
+		 */
+		public CouchbaseSearchVectorStore.Builder dimensions(Integer dimensions) {
+			Assert.notNull(dimensions, "Dimensions must not be null");
+			Assert.notNull(dimensions, "Dimensions must not be empty");
+			this.dimensions = dimensions;
+			return this;
+		}
+
+		/**
+		 * Choose the method to calculate the similarity between the vector embedding in a
+		 * Vector Search index and the vector embedding in a Vector Search query.
+		 * @param similarityFunction
+		 * @return this builder
+		 */
+		public CouchbaseSearchVectorStore.Builder similarityFunction(CouchbaseSimilarityFunction similarityFunction) {
+			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be null");
+			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be empty");
+			this.similarityFunction = similarityFunction;
+			return this;
+		}
+
+		/**
+		 * Choose to prioritize accuracy or latency.
+		 * @param indexOptimization
+		 * @return this builder
+		 */
+		public CouchbaseSearchVectorStore.Builder indexOptimization(CouchbaseIndexOptimization indexOptimization) {
+			Assert.notNull(indexOptimization, "Index Optimization must not be null");
+			Assert.notNull(indexOptimization, "Index Optimization must not be empty");
+			this.indexOptimization = indexOptimization;
+			return this;
+		}
+
+		public CouchbaseSearchVectorStore build() {
+			return new CouchbaseSearchVectorStore(this);
+		}
+
 	}
 
 }

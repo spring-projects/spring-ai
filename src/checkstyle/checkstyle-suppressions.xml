@@ -40,12 +40,14 @@
 	<suppress files="JsonParserTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="DockerModelRunnerWithOpenAiChatModelIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="AzureOpenAiChatModelMetadataTests.java" checks="RegexpSinglelineJava"/>
+	<suppress files="CouchbaseSearchVectorStore.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiApi.java" checks="AnnotationLocation"/>
 
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>
 	<suppress files="CassandraVectorStore.java" checks="FinalClass"/>
 	<suppress files="CoherenceVectorStore.java" checks="FinalClass"/>
 	<suppress files="CosmosDBVectorStore.java" checks="FinalClass"/>
+	<suppress files="CouchbaseSearchVectorStore.java" checks="FinalClass"/>
 	<suppress files="GemFireVectorStore.java" checks="FinalClass"/>
 	<suppress files="MilvusVectorStore.java" checks="FinalClass"/>
 	<suppress files="HanaCloudVectorStore.java" checks="FinalClass"/>

@@ -30,6 +30,8 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.ModelRequest;
 import org.springframework.lang.Nullable;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * The Prompt class represents a prompt used in AI model requests. A prompt consists of
@@ -62,15 +64,15 @@ public class Prompt implements ModelRequest<List<Message>> {
 		this(Arrays.asList(messages), null);
 	}
 
-	public Prompt(String contents, ChatOptions chatOptions) {
+	public Prompt(String contents, @Nullable ChatOptions chatOptions) {
 		this(new UserMessage(contents), chatOptions);
 	}
 
-	public Prompt(Message message, ChatOptions chatOptions) {
+	public Prompt(Message message, @Nullable ChatOptions chatOptions) {
 		this(Collections.singletonList(message), chatOptions);
 	}
 
-	public Prompt(List<Message> messages, ChatOptions chatOptions) {
+	public Prompt(List<Message> messages, @Nullable ChatOptions chatOptions) {
 		this.messages = messages;
 		this.chatOptions = chatOptions;
 	}
@@ -123,10 +125,17 @@ public class Prompt implements ModelRequest<List<Message>> {
 		List<Message> messagesCopy = new ArrayList<>();
 		this.messages.forEach(message -> {
 			if (message instanceof UserMessage userMessage) {
-				messagesCopy.add(new UserMessage(userMessage.getText(), userMessage.getMedia(), message.getMetadata()));
+				messagesCopy.add(UserMessage.builder()
+					.text(userMessage.getText())
+					.media(userMessage.getMedia())
+					.metadata(message.getMetadata())
+					.build());
 			}
 			else if (message instanceof SystemMessage systemMessage) {
-				messagesCopy.add(new SystemMessage(systemMessage.getText()));
+				messagesCopy.add(SystemMessage.builder()
+					.text(systemMessage.getText())
+					.metadata(systemMessage.getMetadata())
+					.build());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
 				messagesCopy.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
@@ -142,6 +151,71 @@ public class Prompt implements ModelRequest<List<Message>> {
 		});
 
 		return messagesCopy;
+	}
+
+	public Builder mutate() {
+		Builder builder = new Builder().messages(instructionsCopy());
+		if (this.chatOptions != null) {
+			builder.chatOptions(this.chatOptions.copy());
+		}
+		return builder;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		@Nullable
+		private String content;
+
+		@Nullable
+		private List<Message> messages = new ArrayList<>();
+
+		@Nullable
+		private ChatOptions chatOptions;
+
+		public Builder content(@Nullable String content) {
+			this.content = content;
+			return this;
+		}
+
+		public Builder messages(Message... messages) {
+			if (messages != null) {
+				this.messages = Arrays.asList(messages);
+			}
+			return this;
+		}
+
+		public Builder messages(List<Message> messages) {
+			this.messages = messages;
+			return this;
+		}
+
+		public Builder addMessage(Message message) {
+			if (this.messages == null) {
+				this.messages = new ArrayList<>();
+			}
+			this.messages.add(message);
+			return this;
+		}
+
+		public Builder chatOptions(ChatOptions chatOptions) {
+			this.chatOptions = chatOptions;
+			return this;
+		}
+
+		public Prompt build() {
+			if (StringUtils.hasText(this.content) && !CollectionUtils.isEmpty(this.messages)) {
+				throw new IllegalArgumentException("content and messages cannot be set at the same time");
+			}
+			else if (StringUtils.hasText(this.content)) {
+				this.messages = List.of(new UserMessage(this.content));
+			}
+			return new Prompt(this.messages, this.chatOptions);
+		}
+
 	}
 
 }

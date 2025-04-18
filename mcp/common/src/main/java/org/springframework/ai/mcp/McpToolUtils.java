@@ -360,8 +360,9 @@ public final class McpToolUtils {
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	private record Base64Wrapper(@JsonAlias("mimetype") @Nullable MimeType mimeType, @JsonAlias( {
-			"base64", "b64", "imageData" }) @Nullable String data){
+	// @formatter:off
+	private record Base64Wrapper(@JsonAlias("mimetype") @Nullable MimeType mimeType, @JsonAlias({
+			"base64", "b64", "imageData" }) @Nullable String data) {
 	}
 
 }

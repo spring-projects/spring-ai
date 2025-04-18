@@ -217,13 +217,13 @@ public class McpServerAutoConfiguration {
 		}
 
 		rootsChangeConsumers.ifAvailable(consumer -> {
-			serverBuilder.rootsChangeHandler((exchange, roots) -> {
-				consumer.accept(exchange, roots);
-			});
+			serverBuilder.rootsChangeHandler((exchange, roots) -> consumer.accept(exchange, roots));
 			logger.info("Registered roots change consumer");
 		});
 
 		serverBuilder.capabilities(capabilitiesBuilder.build());
+
+		serverBuilder.instructions(serverProperties.getInstructions());
 
 		return serverBuilder.build();
 	}
@@ -323,6 +323,8 @@ public class McpServerAutoConfiguration {
 		});
 
 		serverBuilder.capabilities(capabilitiesBuilder.build());
+
+		serverBuilder.instructions(serverProperties.getInstructions());
 
 		return serverBuilder.build();
 	}

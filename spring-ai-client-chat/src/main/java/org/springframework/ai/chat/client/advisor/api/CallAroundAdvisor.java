@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,17 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
+
 /**
  * Around advisor that wraps the ChatModel#call(Prompt) method.
  *
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @since 1.0.0
+ * @deprecated in favor of {@link CallAdvisor}
  */
-
+@Deprecated
 public interface CallAroundAdvisor extends Advisor {
 
 	/**
@@ -31,7 +34,10 @@ public interface CallAroundAdvisor extends Advisor {
 	 * @param advisedRequest the advised request
 	 * @param chain the advisor chain
 	 * @return the response
+	 * @deprecated in favor of
+	 * {@link CallAdvisor#adviseCall(ChatClientRequest, CallAroundAdvisorChain)}
 	 */
+	@Deprecated
 	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain);
 
 }

@@ -33,7 +33,7 @@ import org.springframework.util.Assert;
  *
  * @author Alexandros Pappas
  */
-public class JsoupDocumentReaderConfig {
+public final class JsoupDocumentReaderConfig {
 
 	public final String charset;
 
@@ -70,7 +70,7 @@ public class JsoupDocumentReaderConfig {
 		return builder().build();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String charset = "UTF-8";
 

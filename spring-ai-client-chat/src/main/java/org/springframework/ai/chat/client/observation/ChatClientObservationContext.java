@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@ package org.springframework.ai.chat.client.observation;
 
 import io.micrometer.observation.Observation;
 
-import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
+import org.springframework.ai.chat.client.ChatClientAttributes;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Context used to store metadata for chat client workflows.
@@ -34,20 +36,16 @@ import org.springframework.util.Assert;
  */
 public class ChatClientObservationContext extends Observation.Context {
 
-	private final DefaultChatClientRequestSpec request;
+	private final ChatClientRequest request;
 
 	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(AiOperationType.FRAMEWORK.value(),
 			AiProvider.SPRING_AI.value());
 
 	private final boolean stream;
 
-	@Nullable
-	private String format;
-
-	ChatClientObservationContext(DefaultChatClientRequestSpec requestSpec, String format, boolean isStream) {
-		Assert.notNull(requestSpec, "requestSpec cannot be null");
-		this.request = requestSpec;
-		this.format = format;
+	ChatClientObservationContext(ChatClientRequest chatClientRequest, boolean isStream) {
+		Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
+		this.request = chatClientRequest;
 		this.stream = isStream;
 	}
 
@@ -55,7 +53,7 @@ public class ChatClientObservationContext extends Observation.Context {
 		return new Builder();
 	}
 
-	public DefaultChatClientRequestSpec getRequest() {
+	public ChatClientRequest getRequest() {
 		return this.request;
 	}
 
@@ -67,18 +65,31 @@ public class ChatClientObservationContext extends Observation.Context {
 		return this.stream;
 	}
 
+	/**
+	 * @deprecated not used anymore. The format instructions are already included in the
+	 * ChatModelObservationContext.
+	 */
 	@Nullable
+	@Deprecated
 	public String getFormat() {
-		return this.format;
+		if (this.request.context().get(ChatClientAttributes.OUTPUT_FORMAT.getKey()) instanceof String format) {
+			return format;
+		}
+		return null;
 	}
 
+	/**
+	 * @deprecated not used anymore. The format instructions are already included in the
+	 * ChatModelObservationContext.
+	 */
+	@Deprecated
 	public void setFormat(@Nullable String format) {
-		this.format = format;
+		this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), format);
 	}
 
 	public static final class Builder {
 
-		private DefaultChatClientRequestSpec request;
+		private ChatClientRequest chatClientRequest;
 
 		private String format;
 
@@ -87,23 +98,41 @@ public class ChatClientObservationContext extends Observation.Context {
 		private Builder() {
 		}
 
-		public Builder withRequest(DefaultChatClientRequestSpec request) {
-			this.request = request;
+		public Builder request(ChatClientRequest chatClientRequest) {
+			this.chatClientRequest = chatClientRequest;
 			return this;
 		}
 
+		@Deprecated // use request(ChatClientRequest chatClientRequest)
+		public Builder withRequest(ChatClientRequest chatClientRequest) {
+			return request(chatClientRequest);
+		}
+
+		/**
+		 * @deprecated not used anymore. The format instructions are already included in
+		 * the ChatModelObservationContext.
+		 */
+		@Deprecated
 		public Builder withFormat(String format) {
 			this.format = format;
 			return this;
 		}
 
-		public Builder withStream(boolean isStream) {
+		public Builder stream(boolean isStream) {
 			this.isStream = isStream;
 			return this;
 		}
 
+		@Deprecated // use stream(boolean isStream)
+		public Builder withStream(boolean isStream) {
+			return stream(isStream);
+		}
+
 		public ChatClientObservationContext build() {
-			return new ChatClientObservationContext(this.request, this.format, this.isStream);
+			if (StringUtils.hasText(format)) {
+				this.chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), format);
+			}
+			return new ChatClientObservationContext(this.chatClientRequest, this.isStream);
 		}
 
 	}
