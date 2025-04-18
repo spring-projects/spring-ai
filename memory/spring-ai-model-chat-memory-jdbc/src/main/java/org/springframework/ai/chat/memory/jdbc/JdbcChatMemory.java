@@ -19,6 +19,9 @@ package org.springframework.ai.chat.memory.jdbc;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -42,7 +45,7 @@ import org.springframework.jdbc.core.RowMapper;
 public class JdbcChatMemory implements ChatMemory {
 
 	private static final String QUERY_ADD = """
-			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)""";
+			INSERT INTO ai_chat_memory (conversation_id, content, type, "timestamp") VALUES (?, ?, ?, ?)""";
 
 	private static final String QUERY_GET = """
 			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC LIMIT ?""";
@@ -66,7 +69,9 @@ public class JdbcChatMemory implements ChatMemory {
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
-		return this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId, lastN);
+		List<Message> messages = this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId, lastN);
+		Collections.reverse(messages);
+		return messages;
 	}
 
 	@Override
@@ -83,6 +88,7 @@ public class JdbcChatMemory implements ChatMemory {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
+			ps.setTimestamp(4, Timestamp.from(Instant.now()));
 		}
 
 		@Override

@@ -16,27 +16,12 @@
 
 package org.springframework.ai.chat.memory.jdbc;
 
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.UUID;
-
-import javax.sql.DataSource;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.MountableFile;
-
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.*;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -46,6 +31,15 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.MountableFile;
+
+import javax.sql.DataSource;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -147,10 +141,11 @@ class JdbcChatMemoryIT {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
-			var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + conversationId),
-					new AssistantMessage("Message from assistant 2 - " + conversationId),
-					new UserMessage("Message from user - " + conversationId),
-					new SystemMessage("Message from system - " + conversationId));
+			var messages = List.<Message>of(new SystemMessage("Message from system - " + conversationId),
+					new UserMessage("Message from user 1 - " + conversationId),
+					new AssistantMessage("Message from assistant 1 - " + conversationId),
+					new UserMessage("Message from user 2 - " + conversationId),
+					new AssistantMessage("Message from assistant 2 - " + conversationId));
 
 			chatMemory.add(conversationId, messages);
 
@@ -158,6 +153,24 @@ class JdbcChatMemoryIT {
 
 			assertThat(results.size()).isEqualTo(messages.size());
 			assertThat(results).isEqualTo(messages);
+		});
+	}
+
+	@Test
+	void get_afterMultipleAdds_shouldReturnMessagesInSameOrder() {
+		this.contextRunner.run(context -> {
+			var chatMemory = context.getBean(ChatMemory.class);
+			var conversationId = UUID.randomUUID().toString();
+			var userMessage = new UserMessage("Message from user - " + conversationId);
+			var assistantMessage = new AssistantMessage("Message from assistant - " + conversationId);
+
+			chatMemory.add(conversationId, userMessage);
+			chatMemory.add(conversationId, assistantMessage);
+
+			var results = chatMemory.get(conversationId, Integer.MAX_VALUE);
+
+			assertThat(results.size()).isEqualTo(2);
+			assertThat(results).isEqualTo(List.of(userMessage, assistantMessage));
 		});
 	}
 
