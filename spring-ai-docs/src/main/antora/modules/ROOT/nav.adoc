@@ -102,7 +102,7 @@
 ** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
 * xref:api/multimodality.adoc[Multimodality]
 * xref:observability/index.adoc[]
-* Prompt Egineering
+* Prompt Engineering
 ** xref:api/prompt.adoc[]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
