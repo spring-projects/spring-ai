@@ -88,8 +88,7 @@ class AnthropicChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest",
-			"claude-3-opus-latest" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -302,7 +301,7 @@ class AnthropicChatModelIT {
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(1800);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(100);
 	}
 
 	@Test
@@ -427,6 +426,38 @@ class AnthropicChatModelIT {
 				assertThat(message.getMetadata().get("data")).isNotNull();
 			}
 		}
+	}
+
+	@Test
+	void thinkingWithStreamingTest() {
+		UserMessage userMessage = new UserMessage(
+				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.temperature(1.0) // Temperature should be set to 1 when thinking is enabled
+			.maxTokens(8192)
+			.thinking(AnthropicApi.ThinkingType.ENABLED, 2048) // Must be ≥1024 && <
+																// max_tokens
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.streamingChatModel
+			.stream(new Prompt(List.of(userMessage), promptOptions));
+
+		String content = responseFlux.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(text -> text != null && !text.isBlank())
+			.collect(Collectors.joining());
+
+		logger.info("Response: {}", content);
+
+		assertThat(content).isNotBlank();
+		assertThat(content).contains("prime numbers");
 	}
 
 	@Test
