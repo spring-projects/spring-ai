@@ -97,7 +97,7 @@ class ToolUtilsTests {
 	}
 
 	@Test
-	void toSyncToolSpecificaitonShouldConvertSingleCallback() {
+	void toSyncToolSpecificationShouldConvertSingleCallback() {
 
 		ToolCallback callback = createMockToolCallback("test", "success");
 
@@ -138,7 +138,7 @@ class ToolUtilsTests {
 	}
 
 	@Test
-	void toAsyncToolSpecificaitonShouldConvertSingleCallback() {
+	void toAsyncToolSpecificationShouldConvertSingleCallback() {
 		ToolCallback callback = createMockToolCallback("test", "success");
 
 		AsyncToolSpecification toolSpecification = McpToolUtils.toAsyncToolSpecification(callback);
@@ -160,10 +160,10 @@ class ToolUtilsTests {
 	void toAsyncToolSpecificationShouldHandleError() {
 		ToolCallback callback = createMockToolCallback("test", new RuntimeException("error"));
 
-		AsyncToolSpecification toolSpecificaiton = McpToolUtils.toAsyncToolSpecification(callback);
+		AsyncToolSpecification toolSpecification = McpToolUtils.toAsyncToolSpecification(callback);
 
-		assertThat(toolSpecificaiton).isNotNull();
-		StepVerifier.create(toolSpecificaiton.call().apply(mock(McpAsyncServerExchange.class), Map.of()))
+		assertThat(toolSpecification).isNotNull();
+		StepVerifier.create(toolSpecification.call().apply(mock(McpAsyncServerExchange.class), Map.of()))
 			.assertNext(result -> {
 				TextContent content = (TextContent) result.content().get(0);
 				assertThat(content.text()).isEqualTo("error");
