@@ -19,6 +19,8 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
@@ -94,7 +96,12 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request).messages(advisedMessages).build();
 
 		// 4. Add the new user input to the conversation memory.
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		String processedUserText = request.userText();
+		if (!CollectionUtils.isEmpty(request.userParams())) {
+			processedUserText = new PromptTemplate(processedUserText, request.userParams()).render();
+		}
+		UserMessage userMessage = new UserMessage(processedUserText, request.media());
+
 		this.getChatMemoryStore().add(this.doGetConversationId(request.adviseContext()), userMessage);
 
 		return advisedRequest;
