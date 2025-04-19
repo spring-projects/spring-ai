@@ -16,9 +16,19 @@
 
 package org.springframework.ai.chat.memory.neo4j;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
+
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -29,15 +39,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.util.MimeType;
-
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Chat memory implementation using Neo4j.
@@ -66,7 +67,7 @@ public class Neo4jChatMemory implements ChatMemory {
 
 	@Override
 	public void add(String conversationId, List<Message> messages) {
-		try (Transaction t = driver.session().beginTransaction()) {
+		try (Transaction t = this.driver.session().beginTransaction()) {
 			for (Message m : messages) {
 				addMessageToTransaction(t, conversationId, m);
 			}
@@ -85,8 +86,9 @@ public class Neo4jChatMemory implements ChatMemory {
 				OPTIONAL MATCH (m)-[:HAS_TOOL_CALL]->(tc:%s)
 				WITH m, metadata, media, tr, tc ORDER BY tc.idx ASC
 				RETURN m, metadata, collect(tr) as toolResponses, collect(tc) as toolCalls, collect(media) as medias
-				""".formatted(config.getSessionLabel(), config.getMessageLabel(), config.getMetadataLabel(),
-				config.getMediaLabel(), config.getToolResponseLabel(), config.getToolCallLabel());
+				""".formatted(this.config.getSessionLabel(), this.config.getMessageLabel(),
+				this.config.getMetadataLabel(), this.config.getMediaLabel(), this.config.getToolResponseLabel(),
+				this.config.getToolCallLabel());
 		Result res = this.driver.session()
 			.run(statementBuilder, Map.of("conversationId", conversationId, "lastN", lastN));
 		return res.list(record -> {
@@ -120,7 +122,7 @@ public class Neo4jChatMemory implements ChatMemory {
 	}
 
 	public Neo4jChatMemoryConfig getConfig() {
-		return config;
+		return this.config;
 	}
 
 	@Override
@@ -132,9 +134,10 @@ public class Neo4jChatMemory implements ChatMemory {
 				OPTIONAL MATCH (m)-[:HAS_TOOL_RESPONSE]-(tr:%s)
 				OPTIONAL MATCH (m)-[:HAS_TOOL_CALL]->(tc:%s)
 				DETACH DELETE m, metadata, media, tr, tc
-				""".formatted(config.getSessionLabel(), config.getMessageLabel(), config.getMetadataLabel(),
-				config.getMediaLabel(), config.getToolResponseLabel(), config.getToolCallLabel());
-		try (Transaction t = driver.session().beginTransaction()) {
+				""".formatted(this.config.getSessionLabel(), this.config.getMessageLabel(),
+				this.config.getMetadataLabel(), this.config.getMediaLabel(), this.config.getToolResponseLabel(),
+				this.config.getToolCallLabel());
+		try (Transaction t = this.driver.session().beginTransaction()) {
 			t.run(statementBuilder, Map.of("conversationId", conversationId));
 			t.commit();
 		}
@@ -149,7 +152,8 @@ public class Neo4jChatMemory implements ChatMemory {
 				OPTIONAL MATCH (s)-[:HAS_MESSAGE]->(countMsg:%s) WITH coalesce(count(countMsg), 0) as totalMsg, s
 				CREATE (s)-[:HAS_MESSAGE]->(msg:%s) SET msg = $messageProperties
 				SET msg.idx = totalMsg + 1
-				""".formatted(config.getSessionLabel(), config.getMessageLabel(), config.getMessageLabel()));
+				""".formatted(this.config.getSessionLabel(), this.config.getMessageLabel(),
+				this.config.getMessageLabel()));
 		Map<String, Object> attributes = new HashMap<>();
 
 		attributes.put(MessageAttributes.MESSAGE_TYPE.getValue(), message.getMessageType().getValue());
@@ -163,7 +167,7 @@ public class Neo4jChatMemory implements ChatMemory {
 					CREATE (metadataNode:%s)
 					CREATE (msg)-[:HAS_METADATA]->(metadataNode)
 					SET metadataNode = $metadata
-					""".formatted(config.getMetadataLabel()));
+					""".formatted(this.config.getMetadataLabel()));
 			Map<String, Object> metadataCopy = new HashMap<>(message.getMetadata());
 			metadataCopy.remove("messageType");
 			queryParameters.put("metadata", metadataCopy);
@@ -174,7 +178,7 @@ public class Neo4jChatMemory implements ChatMemory {
 						WITH msg
 						FOREACH(tc in $toolCalls | CREATE (toolCall:%s) SET toolCall = tc
 						CREATE (msg)-[:HAS_TOOL_CALL]->(toolCall))
-						""".formatted(config.getToolCallLabel()));
+						""".formatted(this.config.getToolCallLabel()));
 				List<Map<String, Object>> toolCallMaps = new ArrayList<>();
 				for (int i = 0; i < assistantMessage.getToolCalls().size(); i++) {
 					AssistantMessage.ToolCall tc = assistantMessage.getToolCalls().get(i);
@@ -202,7 +206,7 @@ public class Neo4jChatMemory implements ChatMemory {
 					FOREACH(tr IN $toolResponses | CREATE (tm:%s)
 					SET tm = tr
 					MERGE (msg)-[:HAS_TOOL_RESPONSE]->(tm))
-					""".formatted(config.getToolResponseLabel()));
+					""".formatted(this.config.getToolResponseLabel()));
 			queryParameters.put("toolResponses", toolResponseMaps);
 		}
 		if (message instanceof MediaContent messageWithMedia && !messageWithMedia.getMedia().isEmpty()) {
@@ -212,7 +216,7 @@ public class Neo4jChatMemory implements ChatMemory {
 					UNWIND $media AS m
 					CREATE (media:%s) SET media = m
 					WITH msg, media CREATE (msg)-[:HAS_MEDIA]->(media)
-					""".formatted(config.getMediaLabel()));
+					""".formatted(this.config.getMediaLabel()));
 			queryParameters.put("media", mediaNodes);
 		}
 		t.run(statementBuilder.toString(), queryParameters);

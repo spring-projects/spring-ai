@@ -27,12 +27,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.api.AnthropicApi;
-import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
-import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Request;
-import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Response;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
+import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Request;
+import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Response;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -66,14 +66,14 @@ class FunctionCallWithFunctionBeanIT {
 						"What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan? Return the temperature in Celsius.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						AnthropicChatOptions.builder().function("weatherFunction").build()));
+						AnthropicChatOptions.builder().toolNames("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						AnthropicChatOptions.builder().function("weatherFunction3").build()));
+						AnthropicChatOptions.builder().toolNames("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 

@@ -59,8 +59,8 @@ public class FunctionCallbackInPrompt2IT {
 					.call().content();
 
 			String content = ChatClient.builder(chatModel).build().prompt()
-					.user("What's the weather like in San Francisco, Tokyo, and Paris?")					
-					.functions(FunctionToolCallback
+					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+					.tools(FunctionToolCallback
 						.builder("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
@@ -88,7 +88,7 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("Turn the light on in the kitchen and in the living room!")
-					.functions(FunctionToolCallback
+					.tools(FunctionToolCallback
 						.builder("turnLight", (LightInfo lightInfo) -> {
 							logger.info("Turning light to [" + lightInfo.isOn + "] in " + lightInfo.roomName());
 							state.put(lightInfo.roomName(), lightInfo.isOn());
@@ -114,7 +114,7 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in Amsterdam?")
-					.functions(FunctionToolCallback
+					.tools(FunctionToolCallback
 						.builder("CurrentWeatherService", input -> "18 degrees Celsius")
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
@@ -138,7 +138,7 @@ public class FunctionCallbackInPrompt2IT {
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
 					.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-					.functions(FunctionToolCallback
+					.tools(FunctionToolCallback
 						.builder("CurrentWeatherService", new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)

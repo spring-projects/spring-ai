@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
@@ -146,7 +147,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			ToolCallback[] toolCallbacks = mcpClient.listTools()
 				.map(response -> response.tools()
 					.stream()
-					.filter(tool -> toolFilter.test(mcpClient, tool))
+					.filter(tool -> this.toolFilter.test(mcpClient, tool))
 					.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
 					.toArray(ToolCallback[]::new))
 				.block();

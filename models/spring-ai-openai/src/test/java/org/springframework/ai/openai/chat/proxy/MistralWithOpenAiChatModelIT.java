@@ -42,12 +42,12 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.content.Media;
 import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -398,7 +398,7 @@ class MistralWithOpenAiChatModelIT {
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
 			return OpenAiChatModel.builder()
 				.openAiApi(openAiApi)
-				.toolCallingManager(LegacyToolCallingManager.builder().build())
+				.toolCallingManager(ToolCallingManager.builder().build())
 				.defaultOptions(OpenAiChatOptions.builder().model(MISTRAL_DEFAULT_MODEL).build())
 				.build();
 		}

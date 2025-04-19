@@ -37,9 +37,7 @@ public class HuggingfaceModelConfigurationTests {
 
 	@Test
 	void chatModelActivation() {
-		this.contextRunner.run(context -> {
-			assertThat(context.getBeansOfType(HuggingfaceChatModel.class)).isNotEmpty();
-		});
+		this.contextRunner.run(context -> assertThat(context.getBeansOfType(HuggingfaceChatModel.class)).isNotEmpty());
 
 		this.contextRunner.withPropertyValues("spring.ai.model.chat=none").run(context -> {
 			assertThat(context.getBeansOfType(HuggingfaceChatProperties.class)).isEmpty();

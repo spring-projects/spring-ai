@@ -16,7 +16,6 @@
 
 package org.springframework.ai.minimax.aot;
 
-import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

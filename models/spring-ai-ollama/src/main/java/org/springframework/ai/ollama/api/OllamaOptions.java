@@ -33,8 +33,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -323,17 +323,17 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
-	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
-	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
+	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
+	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
 	 * the chat completion requests.
-	 * Functions with those names must exist in the functionCallbacks registry.
+	 * Functions with those names must exist in the toolCallbacks registry.
 	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
@@ -396,7 +396,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.penalizeNewline(fromOptions.getPenalizeNewline())
 				.stop(fromOptions.getStop())
 				.toolNames(fromOptions.getToolNames())
-				.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
+				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 				.toolCallbacks(fromOptions.getToolCallbacks())
 				.toolContext(fromOptions.getToolContext()).build();
 	}
@@ -706,23 +706,23 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@Override
 	@JsonIgnore
-	public List<FunctionCallback> getToolCallbacks() {
-    	return this.toolCallbacks;
-    }
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
 
 	@Override
 	@JsonIgnore
-	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks;
-    }
+	}
 
 	@Override
 	@JsonIgnore
 	public Set<String> getToolNames() {
-    	return this.toolNames;
-    }
+		return this.toolNames;
+	}
 
 	@Override
 	@JsonIgnore
@@ -730,67 +730,26 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
 		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-    	this.toolNames = toolNames;
-    }
+		this.toolNames = toolNames;
+	}
 
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
-    	return internalToolExecutionEnabled;
-    }
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
 
 	@Override
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-    	this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-    }
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.getToolCallbacks();
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.setToolCallbacks(functionCallbacks);
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public Set<String> getFunctions() {
-		return this.getToolNames();
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public void setFunctions(Set<String> functions) {
-		this.setToolNames(functions);
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public Boolean getProxyToolCalls() {
-		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
-	}
-
-	@Deprecated
-	@JsonIgnore
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
@@ -1043,12 +1002,12 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
-		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
@@ -1067,29 +1026,6 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		@Deprecated
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return toolCallbacks(functionCallbacks);
-		}
-
-		@Deprecated
-		public Builder functions(Set<String> functions) {
-			return toolNames(functions);
-		}
-
-		@Deprecated
-		public Builder function(String functionName) {
-			return toolNames(functionName);
-		}
-
-		@Deprecated
-		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			if (proxyToolCalls != null) {
-				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
-			}
 			return this;
 		}
 

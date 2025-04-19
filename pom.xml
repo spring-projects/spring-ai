@@ -181,7 +181,9 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-jdbc</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-neo4j</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
@@ -254,7 +256,7 @@
 		<!-- production dependencies -->
 		<spring-boot.version>3.4.4</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
-		<azure-open-ai-client.version>1.0.0-beta.14</azure-open-ai-client.version>
+		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<victools.version>4.37.0</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
@@ -266,7 +268,7 @@
 		<djl.version>0.30.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.51.0</oci-sdk-version>
-		<com.google.cloud.version>26.48.0</com.google.cloud.version>
+		<com.google.cloud.version>26.59.0</com.google.cloud.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.37.0</jsonschema.version>
 		<swagger-annotations.version>2.2.25</swagger-annotations.version>

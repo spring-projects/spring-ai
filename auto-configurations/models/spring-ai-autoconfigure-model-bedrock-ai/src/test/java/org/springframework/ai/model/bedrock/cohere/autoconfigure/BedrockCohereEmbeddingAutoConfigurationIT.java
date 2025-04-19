@@ -21,14 +21,14 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
-import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
-import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
+import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 

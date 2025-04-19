@@ -40,26 +40,6 @@ import org.springframework.context.annotation.Conditional;
 @Conditional(McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfigurationCondition.class)
 public class McpToolCallbackAutoConfiguration {
 
-	public static class McpToolCallbackAutoconfigurationCondition extends AllNestedConditions {
-
-		public McpToolCallbackAutoconfigurationCondition() {
-			super(ConfigurationPhase.PARSE_CONFIGURATION);
-		}
-
-		@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-				matchIfMissing = true)
-		static class McpAutoConfigEnabled {
-
-		}
-
-		@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX + ".toolcallback", name = "enabled",
-				havingValue = "true", matchIfMissing = false)
-		static class ToolCallbackProviderEnabled {
-
-		}
-
-	}
-
 	/**
 	 * Creates tool callbacks for all configured MCP clients.
 	 *
@@ -82,6 +62,26 @@ public class McpToolCallbackAutoConfiguration {
 	public ToolCallbackProvider mcpAsyncToolCallbacks(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider) {
 		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
 		return new AsyncMcpToolCallbackProvider(mcpClients);
+	}
+
+	public static class McpToolCallbackAutoconfigurationCondition extends AllNestedConditions {
+
+		public McpToolCallbackAutoconfigurationCondition() {
+			super(ConfigurationPhase.PARSE_CONFIGURATION);
+		}
+
+		@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+				matchIfMissing = true)
+		static class McpAutoConfigEnabled {
+
+		}
+
+		@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX + ".toolcallback", name = "enabled",
+				havingValue = "true", matchIfMissing = false)
+		static class ToolCallbackProviderEnabled {
+
+		}
+
 	}
 
 }

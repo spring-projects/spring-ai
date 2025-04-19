@@ -1,18 +1,18 @@
 /*
-* Copyright 2024 - 2024 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2025-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.springframework.ai.bedrock.converse.client;
 
@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Set;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,7 @@ public class BedrockNovaChatClientIT {
 	@Test
 	void pdfMultiModalityTest() throws IOException {
 
-		String response = ChatClient.create(chatModel)
+		String response = ChatClient.create(this.chatModel)
 			.prompt()
 			.user(u -> u.text(
 					"You are a very professional document summarization specialist. Please summarize the given document.")
@@ -75,7 +74,7 @@ public class BedrockNovaChatClientIT {
 	@Test
 	void imageMultiModalityTest() throws IOException {
 
-		String response = ChatClient.create(chatModel)
+		String response = ChatClient.create(this.chatModel)
 			.prompt()
 			.user(u -> u.text("Explain what do you see on this picture?")
 				.media(Media.Format.IMAGE_PNG, new ClassPathResource("/test.png")))
@@ -95,7 +94,7 @@ public class BedrockNovaChatClientIT {
 		Set<String> birdDescriptors = Set.of("chick", "chicks", "chicken", "chickens", "bird", "birds", "poultry",
 				"hatchling", "hatchlings");
 
-		String response = ChatClient.create(chatModel)
+		String response = ChatClient.create(this.chatModel)
 			.prompt()
 			.user(u -> u.text("Explain what do you see in this video?")
 				.media(Media.Format.VIDEO_MP4, new ClassPathResource("/test.video.mp4")))
@@ -136,12 +135,6 @@ public class BedrockNovaChatClientIT {
 				() -> assertTrue(response.length() > 50, "Response should be sufficiently detailed (>50 characters)"));
 	}
 
-	public static record WeatherRequest(String location, String unit) {
-	}
-
-	public static record WeatherResponse(int temp, String unit) {
-	}
-
 	@Test
 	void functionCallTest() {
 
@@ -158,7 +151,6 @@ public class BedrockNovaChatClientIT {
 						else if (request.location().contains("San Francisco")) {
 							return new WeatherResponse(30, request.unit());
 						}
-			
 						throw new IllegalArgumentException("Unknown location: " + request.location());
 					})
 					.description("Get the weather for a city in Celsius")
@@ -171,6 +163,12 @@ public class BedrockNovaChatClientIT {
 		logger.info("Response: {}", response);
 
 		assertThat(response).contains("30", "10", "15");
+	}
+
+	public record WeatherRequest(String location, String unit) {
+	}
+
+	public record WeatherResponse(int temp, String unit) {
 	}
 
 	@SpringBootConfiguration

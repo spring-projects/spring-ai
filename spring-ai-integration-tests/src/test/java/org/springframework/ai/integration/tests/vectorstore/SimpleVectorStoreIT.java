@@ -16,9 +16,16 @@
 
 package org.springframework.ai.integration.tests.vectorstore;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.integration.tests.TestApplication;
@@ -27,12 +34,6 @@ import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.DefaultResourceLoader;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -77,7 +78,7 @@ public class SimpleVectorStoreIT {
 
 	@AfterEach
 	void setUp() {
-		vectorStore.delete(this.documents.stream().map(Document::getId).toList());
+		this.vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 	}
 
 	@Test
@@ -88,9 +89,10 @@ public class SimpleVectorStoreIT {
 			.metadata("meta1", "meta1")
 			.build();
 
-		vectorStore.add(List.of(document));
+		this.vectorStore.add(List.of(document));
 
-		List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
+		List<Document> results = this.vectorStore
+			.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
@@ -105,9 +107,9 @@ public class SimpleVectorStoreIT {
 			.metadata("meta2", "meta2")
 			.build();
 
-		vectorStore.add(List.of(sameIdDocument));
+		this.vectorStore.add(List.of(sameIdDocument));
 
-		results = vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
+		results = this.vectorStore.similaritySearch(SearchRequest.builder().query("FooBar").topK(5).build());
 
 		assertThat(results).hasSize(1);
 		resultDoc = results.get(0);
@@ -116,7 +118,7 @@ public class SimpleVectorStoreIT {
 		assertThat(resultDoc.getMetadata()).containsKey("meta2");
 		assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
-		vectorStore.delete(List.of(document.getId()));
+		this.vectorStore.delete(List.of(document.getId()));
 	}
 
 }

@@ -16,7 +16,10 @@
 
 package org.springframework.ai.vectorstore.mariadb.autoconfigure;
 
+import javax.sql.DataSource;
+
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -32,8 +35,6 @@ import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import javax.sql.DataSource;
 
 /**
  * @author Diego Dupin

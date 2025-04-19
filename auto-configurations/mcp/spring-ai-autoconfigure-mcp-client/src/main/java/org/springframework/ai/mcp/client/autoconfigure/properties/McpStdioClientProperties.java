@@ -73,32 +73,6 @@ public class McpStdioClientProperties {
 		return this.connections;
 	}
 
-	/**
-	 * Record representing the parameters for an MCP server connection.
-	 * <p>
-	 * Includes the command to execute, command arguments, and environment variables.
-	 */
-	@JsonInclude(JsonInclude.Include.NON_ABSENT)
-	public record Parameters(
-			/**
-			 * The command to execute for the MCP server.
-			 */
-			@JsonProperty("command") String command,
-			/**
-			 * List of command arguments.
-			 */
-			@JsonProperty("args") List<String> args,
-			/**
-			 * Map of environment variables for the server process.
-			 */
-			@JsonProperty("env") Map<String, String> env) {
-
-		public ServerParameters toServerParameters() {
-			return ServerParameters.builder(this.command()).args(this.args()).env(this.env()).build();
-		}
-
-	}
-
 	private Map<String, ServerParameters> resourceToServerParameters() {
 		try {
 			Map<String, Map<String, Parameters>> stdioConnection = new ObjectMapper().readValue(
@@ -131,6 +105,32 @@ public class McpStdioClientProperties {
 			serverParameters.put(entry.getKey(), entry.getValue().toServerParameters());
 		}
 		return serverParameters;
+	}
+
+	/**
+	 * Record representing the parameters for an MCP server connection.
+	 * <p>
+	 * Includes the command to execute, command arguments, and environment variables.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_ABSENT)
+	public record Parameters(
+			/**
+			 * The command to execute for the MCP server.
+			 */
+			@JsonProperty("command") String command,
+			/**
+			 * List of command arguments.
+			 */
+			@JsonProperty("args") List<String> args,
+			/**
+			 * Map of environment variables for the server process.
+			 */
+			@JsonProperty("env") Map<String, String> env) {
+
+		public ServerParameters toServerParameters() {
+			return ServerParameters.builder(this.command()).args(this.args()).env(this.env()).build();
+		}
+
 	}
 
 }

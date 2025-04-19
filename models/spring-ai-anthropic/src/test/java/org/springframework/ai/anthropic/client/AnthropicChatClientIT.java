@@ -42,6 +42,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.test.CurlyBracketEscaper;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -189,7 +190,7 @@ class AnthropicChatClientIT {
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
-						.param("format", outputConverter.getFormat()))
+						.param("format", CurlyBracketEscaper.escapeCurlyBrackets(outputConverter.getFormat())))
 				.stream()
 				.content();
 

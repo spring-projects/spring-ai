@@ -16,8 +16,8 @@
 
 package org.springframework.ai.vectorstore.chroma.autoconfigure;
 
-import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
+import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

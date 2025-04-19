@@ -30,7 +30,7 @@ public enum MediaAttributes {
 	}
 
 	public String getValue() {
-		return value;
+		return this.value;
 	}
 
 }

@@ -78,12 +78,12 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return toolDefinition;
+		return this.toolDefinition;
 	}
 
 	@Override
 	public ToolMetadata getToolMetadata() {
-		return toolMetadata;
+		return this.toolMetadata;
 	}
 
 	@Override
@@ -95,19 +95,20 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", toolDefinition.name());
+		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
 
-		I request = JsonParser.fromJson(toolInput, toolInputType);
-		O response = toolFunction.apply(request, toolContext);
+		I request = JsonParser.fromJson(toolInput, this.toolInputType);
+		O response = this.toolFunction.apply(request, toolContext);
 
-		logger.debug("Successful execution of tool: {}", toolDefinition.name());
+		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
 
-		return toolCallResultConverter.convert(response, null);
+		return this.toolCallResultConverter.convert(response, null);
 	}
 
 	@Override
 	public String toString() {
-		return "FunctionToolCallback{" + "toolDefinition=" + toolDefinition + ", toolMetadata=" + toolMetadata + '}';
+		return "FunctionToolCallback{" + "toolDefinition=" + this.toolDefinition + ", toolMetadata=" + this.toolMetadata
+				+ '}';
 	}
 
 	/**
@@ -146,7 +147,7 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		return builder(name, function);
 	}
 
-	public static class Builder<I, O> {
+	public static final class Builder<I, O> {
 
 		private String name;
 
@@ -201,16 +202,16 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		}
 
 		public FunctionToolCallback<I, O> build() {
-			Assert.notNull(inputType, "inputType cannot be null");
+			Assert.notNull(this.inputType, "inputType cannot be null");
 			var toolDefinition = ToolDefinition.builder()
-				.name(name)
-				.description(
-						StringUtils.hasText(description) ? description : ToolUtils.getToolDescriptionFromName(name))
-				.inputSchema(
-						StringUtils.hasText(inputSchema) ? inputSchema : JsonSchemaGenerator.generateForType(inputType))
+				.name(this.name)
+				.description(StringUtils.hasText(this.description) ? this.description
+						: ToolUtils.getToolDescriptionFromName(this.name))
+				.inputSchema(StringUtils.hasText(this.inputSchema) ? this.inputSchema
+						: JsonSchemaGenerator.generateForType(this.inputType))
 				.build();
-			return new FunctionToolCallback<>(toolDefinition, toolMetadata, inputType, toolFunction,
-					toolCallResultConverter);
+			return new FunctionToolCallback<>(toolDefinition, this.toolMetadata, this.inputType, this.toolFunction,
+					this.toolCallResultConverter);
 		}
 
 	}

@@ -27,9 +27,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
-public class OpenAIAutoConfigurationUtil {
+public final class OpenAIAutoConfigurationUtil {
 
-	protected static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
+	private OpenAIAutoConfigurationUtil() {
+		// Avoids instantiation
+	}
+
+	public static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
 			OpenAiParentProperties commonProperties, OpenAiParentProperties modelProperties, String modelType) {
 
 		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()

@@ -121,9 +121,7 @@ public class AnthropicPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty());
 	}
 
 }

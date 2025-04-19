@@ -25,7 +25,7 @@ package org.springframework.ai.document.id;
 public interface IdGenerator {
 
 	/**
-	 * Generate a unique ID for the given content. Note: some generator, such as the the
+	 * Generate a unique ID for the given content. Note: some generator, such as the
 	 * random generator might not dependant on or use the content parameters.
 	 * @param contents the content to generate an ID for.
 	 * @return the generated ID.

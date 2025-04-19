@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
+import org.springframework.ai.chat.client.ChatClientAttributes;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -32,8 +36,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -48,8 +52,8 @@ import org.springframework.util.StringUtils;
  * @param systemText the text provided by the system
  * @param chatOptions the options for the chat
  * @param media the list of media items
- * @param functionNames the list of function names
- * @param functionCallbacks the list of function callbacks
+ * @param toolNames the list of function names
+ * @param toolCallbacks the list of function callbacks
  * @param messages the list of messages
  * @param userParams the map of user parameters
  * @param systemParams the map of system parameters
@@ -60,6 +64,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @deprecated Use {@link ChatClientRequest} instead.
  * @since 1.0.0
  */
 public record AdvisedRequest(
@@ -71,12 +76,13 @@ public record AdvisedRequest(
 		@Nullable
 		ChatOptions chatOptions,
 		List<Media> media,
-		List<String> functionNames,
-		List<FunctionCallback> functionCallbacks,
+		List<String> toolNames,
+		List<ToolCallback> toolCallbacks,
 		List<Message> messages,
 		Map<String, Object> userParams,
 		Map<String, Object> systemParams,
 		List<Advisor> advisors,
+		@Deprecated // Not really used. Use "adviseContext" instead.
 		Map<String, Object> advisorParams,
 		Map<String, Object> adviseContext,
 		Map<String, Object> toolContext
@@ -89,10 +95,10 @@ public record AdvisedRequest(
 				"userText cannot be null or empty unless messages are provided and contain Tool Response message.");
 		Assert.notNull(media, "media cannot be null");
 		Assert.noNullElements(media, "media cannot contain null elements");
-		Assert.notNull(functionNames, "functionNames cannot be null");
-		Assert.noNullElements(functionNames, "functionNames cannot contain null elements");
-		Assert.notNull(functionCallbacks, "functionCallbacks cannot be null");
-		Assert.noNullElements(functionCallbacks, "functionCallbacks cannot contain null elements");
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 		Assert.notNull(userParams, "userParams cannot be null");
@@ -127,8 +133,8 @@ public record AdvisedRequest(
 		builder.systemText = from.systemText;
 		builder.chatOptions = from.chatOptions;
 		builder.media = from.media;
-		builder.functionNames = from.functionNames;
-		builder.functionCallbacks = from.functionCallbacks;
+		builder.toolNames = from.toolNames;
+		builder.toolCallbacks = from.toolCallbacks;
 		builder.messages = from.messages;
 		builder.userParams = from.userParams;
 		builder.systemParams = from.systemParams;
@@ -139,10 +145,67 @@ public record AdvisedRequest(
 		return builder;
 	}
 
+	@SuppressWarnings("unchecked")
+	public static AdvisedRequest from(ChatClientRequest from) {
+		Assert.notNull(from, "ChatClientRequest cannot be null");
+
+		List<Message> messages = new LinkedList<>(from.prompt().getInstructions());
+
+		Builder builder = new Builder();
+		if (from.context().get(ChatClientAttributes.CHAT_MODEL.getKey()) instanceof ChatModel chatModel) {
+			builder.chatModel = chatModel;
+		}
+
+		if (!messages.isEmpty() && messages.get(messages.size() - 1) instanceof UserMessage userMessage) {
+			builder.userText = userMessage.getText();
+			builder.media = userMessage.getMedia();
+			messages.remove(messages.size() - 1);
+		}
+		if (from.context().get(ChatClientAttributes.USER_PARAMS.getKey()) instanceof Map<?, ?> contextUserParams) {
+			builder.userParams = (Map<String, Object>) contextUserParams;
+		}
+
+		if (!messages.isEmpty() && messages.get(messages.size() - 1) instanceof SystemMessage systemMessage) {
+			builder.systemText = systemMessage.getText();
+			messages.remove(messages.size() - 1);
+		}
+		if (from.context().get(ChatClientAttributes.SYSTEM_PARAMS.getKey()) instanceof Map<?, ?> contextSystemParams) {
+			builder.systemParams = (Map<String, Object>) contextSystemParams;
+		}
+
+		builder.messages = messages;
+
+		builder.chatOptions = Objects.requireNonNullElse(from.prompt().getOptions(), ChatOptions.builder().build());
+		if (from.prompt().getOptions() instanceof ToolCallingChatOptions options) {
+			builder.toolNames = options.getToolNames().stream().toList();
+			builder.toolCallbacks = options.getToolCallbacks();
+			builder.toolContext = options.getToolContext();
+		}
+
+		if (from.context().get(ChatClientAttributes.ADVISORS.getKey()) instanceof List<?> advisors) {
+			builder.advisors = (List<Advisor>) advisors;
+		}
+		builder.advisorParams = Map.of();
+		builder.adviseContext = from.context();
+
+		return builder.build();
+	}
+
 	public AdvisedRequest updateContext(Function<Map<String, Object>, Map<String, Object>> contextTransform) {
 		Assert.notNull(contextTransform, "contextTransform cannot be null");
 		return from(this)
 			.adviseContext(Collections.unmodifiableMap(contextTransform.apply(new HashMap<>(this.adviseContext))))
+			.build();
+	}
+
+	public ChatClientRequest toChatClientRequest() {
+		return ChatClientRequest.builder()
+			.prompt(toPrompt())
+			.context(this.adviseContext)
+			.context(ChatClientAttributes.ADVISORS.getKey(), this.advisors)
+			.context(ChatClientAttributes.CHAT_MODEL.getKey(), this.chatModel)
+			.context(ChatClientAttributes.USER_PARAMS.getKey(), this.userParams)
+			.context(ChatClientAttributes.SYSTEM_PARAMS.getKey(), this.systemParams)
 			.build();
 	}
 
@@ -157,31 +220,24 @@ public record AdvisedRequest(
 			messages.add(new SystemMessage(processedSystemText));
 		}
 
-		String formatParam = (String) this.adviseContext().get("formatParam");
-
-		var processedUserText = StringUtils.hasText(formatParam)
-				? this.userText() + System.lineSeparator() + "{spring_ai_soc_format}" : this.userText();
-
-		if (StringUtils.hasText(processedUserText)) {
+		if (StringUtils.hasText(this.userText())) {
 			Map<String, Object> userParams = new HashMap<>(this.userParams());
-			if (StringUtils.hasText(formatParam)) {
-				userParams.put("spring_ai_soc_format", formatParam);
-			}
+			String processedUserText = this.userText();
 			if (!CollectionUtils.isEmpty(userParams)) {
 				processedUserText = new PromptTemplate(processedUserText, userParams).render();
 			}
 			messages.add(new UserMessage(processedUserText, this.media()));
 		}
 
-		if (this.chatOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-			if (!this.functionNames().isEmpty()) {
-				functionCallingOptions.setFunctions(new HashSet<>(this.functionNames()));
+		if (this.chatOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			if (!this.toolNames().isEmpty()) {
+				toolCallingChatOptions.setToolNames(new HashSet<>(this.toolNames()));
 			}
-			if (!this.functionCallbacks().isEmpty()) {
-				functionCallingOptions.setFunctionCallbacks(this.functionCallbacks());
+			if (!this.toolCallbacks().isEmpty()) {
+				toolCallingChatOptions.setToolCallbacks(this.toolCallbacks());
 			}
 			if (!CollectionUtils.isEmpty(this.toolContext())) {
-				functionCallingOptions.setToolContext(this.toolContext());
+				toolCallingChatOptions.setToolContext(this.toolContext());
 			}
 		}
 
@@ -203,9 +259,9 @@ public record AdvisedRequest(
 
 		private List<Media> media = List.of();
 
-		private List<String> functionNames = List.of();
+		private List<String> toolNames = List.of();
 
-		private List<FunctionCallback> functionCallbacks = List.of();
+		private List<ToolCallback> toolCallbacks = List.of();
 
 		private List<Message> messages = List.of();
 
@@ -275,22 +331,22 @@ public record AdvisedRequest(
 		}
 
 		/**
-		 * Set the function names.
-		 * @param functionNames the function names
+		 * Set the tool names.
+		 * @param toolNames the function names
 		 * @return this {@link Builder} instance
 		 */
-		public Builder functionNames(List<String> functionNames) {
-			this.functionNames = functionNames;
+		public Builder toolNames(List<String> toolNames) {
+			this.toolNames = toolNames;
 			return this;
 		}
 
 		/**
-		 * Set the function callbacks.
-		 * @param functionCallbacks the function callbacks
+		 * Set the tool callbacks.
+		 * @param toolCallbacks the tool callbacks
 		 * @return this {@link Builder} instance
 		 */
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.functionCallbacks = functionCallbacks;
+		public Builder functionCallbacks(List<ToolCallback> toolCallbacks) {
+			this.toolCallbacks = toolCallbacks;
 			return this;
 		}
 
@@ -338,7 +394,9 @@ public record AdvisedRequest(
 		 * Set the advisor params.
 		 * @param advisorParams the advisor params
 		 * @return this {@link Builder} instance
+		 * @deprecated in favor of {@link #adviseContext(Map)}
 		 */
+		@Deprecated
 		public Builder advisorParams(Map<String, Object> advisorParams) {
 			this.advisorParams = advisorParams;
 			return this;
@@ -370,7 +428,7 @@ public record AdvisedRequest(
 		 */
 		public AdvisedRequest build() {
 			return new AdvisedRequest(this.chatModel, this.userText, this.systemText, this.chatOptions, this.media,
-					this.functionNames, this.functionCallbacks, this.messages, this.userParams, this.systemParams,
+					this.toolNames, this.toolCallbacks, this.messages, this.userParams, this.systemParams,
 					this.advisors, this.advisorParams, this.adviseContext, this.toolContext);
 		}
 

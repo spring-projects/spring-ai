@@ -38,10 +38,10 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.content.Media;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,15 +88,26 @@ class VertexAiGeminiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
+	// Disabled until Gemini 2.5 PRO has an official release
+	@Disabled
 	@Test
-	void googleSearchTool() {
+	void googleSearchToolPro() {
 		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
-			.model(ChatModel.GEMINI_1_5_PRO) // Only the pro model supports the google
-												// search tool
+			.model(ChatModel.GEMINI_2_5_PRO)
 			.googleSearchRetrieval(true)
 			.build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
+	}
+
+	@Test
+	void googleSearchToolFlash() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
+			.model(ChatModel.GEMINI_2_0_FLASH)
+			.googleSearchRetrieval(true)
+			.build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
 	}
 
 	@Test

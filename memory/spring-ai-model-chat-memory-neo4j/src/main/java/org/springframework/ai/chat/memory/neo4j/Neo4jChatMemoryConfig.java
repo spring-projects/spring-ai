@@ -58,31 +58,31 @@ public final class Neo4jChatMemoryConfig {
 	private final String mediaLabel;
 
 	public String getSessionLabel() {
-		return sessionLabel;
+		return this.sessionLabel;
 	}
 
 	public String getToolCallLabel() {
-		return toolCallLabel;
+		return this.toolCallLabel;
 	}
 
 	public String getMetadataLabel() {
-		return metadataLabel;
+		return this.metadataLabel;
 	}
 
 	public String getMessageLabel() {
-		return messageLabel;
+		return this.messageLabel;
 	}
 
 	public String getToolResponseLabel() {
-		return toolResponseLabel;
+		return this.toolResponseLabel;
 	}
 
 	public String getMediaLabel() {
-		return mediaLabel;
+		return this.mediaLabel;
 	}
 
 	public Driver getDriver() {
-		return driver;
+		return this.driver;
 	}
 
 	private Neo4jChatMemoryConfig(Builder builder) {
@@ -119,27 +119,27 @@ public final class Neo4jChatMemoryConfig {
 		}
 
 		public String getSessionLabel() {
-			return sessionLabel;
+			return this.sessionLabel;
 		}
 
 		public String getToolCallLabel() {
-			return toolCallLabel;
+			return this.toolCallLabel;
 		}
 
 		public String getMetadataLabel() {
-			return metadataLabel;
+			return this.metadataLabel;
 		}
 
 		public String getMessageLabel() {
-			return messageLabel;
+			return this.messageLabel;
 		}
 
 		public String getToolResponseLabel() {
-			return toolResponseLabel;
+			return this.toolResponseLabel;
 		}
 
 		public String getMediaLabel() {
-			return mediaLabel;
+			return this.mediaLabel;
 		}
 
 		public Builder withSessionLabel(String sessionLabel) {
@@ -173,7 +173,7 @@ public final class Neo4jChatMemoryConfig {
 		}
 
 		public Driver getDriver() {
-			return driver;
+			return this.driver;
 		}
 
 		public Builder withDriver(Driver driver) {

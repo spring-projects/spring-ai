@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,10 +45,10 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -384,10 +383,6 @@ class AnthropicChatModelIT {
 		validateChatResponseMetadata(response, "claude-3-5-sonnet-latest");
 	}
 
-	record ActorsFilmsRecord(String actor, List<String> movies) {
-
-	}
-
 	@Test
 	void thinkingTest() {
 		UserMessage userMessage = new UserMessage(
@@ -429,7 +424,7 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
@@ -449,6 +444,10 @@ class AnthropicChatModelIT {
 				assertThat(toolCall.arguments()).isNotBlank();
 			}
 		}
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 	@SpringBootConfiguration

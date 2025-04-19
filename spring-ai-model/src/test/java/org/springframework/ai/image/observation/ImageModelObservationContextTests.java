@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
-import org.springframework.ai.image.observation.ImageModelObservationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

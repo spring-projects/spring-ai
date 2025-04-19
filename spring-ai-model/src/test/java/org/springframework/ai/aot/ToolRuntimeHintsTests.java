@@ -17,6 +17,7 @@
 package org.springframework.ai.aot;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.aot.hint.RuntimeHints;
 

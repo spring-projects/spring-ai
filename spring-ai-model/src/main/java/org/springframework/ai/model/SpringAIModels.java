@@ -16,7 +16,11 @@
 
 package org.springframework.ai.model;
 
-public class SpringAIModels {
+public final class SpringAIModels {
+
+	private SpringAIModels() {
+		// Avoids instantiation
+	}
 
 	public static final String ANTHROPIC = "anthropic";
 
