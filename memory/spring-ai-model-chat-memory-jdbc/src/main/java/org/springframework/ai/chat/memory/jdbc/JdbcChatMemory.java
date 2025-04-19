@@ -16,20 +16,19 @@
 
 package org.springframework.ai.chat.memory.jdbc;
 
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.*;
+import org.springframework.boot.jdbc.DatabaseDriver;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.util.Assert;
+
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 
 /**
  * An implementation of {@link ChatMemory} for JDBC. Creating an instance of
@@ -37,6 +36,7 @@ import org.springframework.jdbc.core.RowMapper;
  * <code>JdbcChatMemory.create(JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build());</code>
  *
  * @author Jonathan Leijendekker
+ * @author Xavier Chopin
  * @since 1.0.0
  */
 public class JdbcChatMemory implements ChatMemory {
@@ -45,14 +45,33 @@ public class JdbcChatMemory implements ChatMemory {
 			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)""";
 
 	private static final String QUERY_GET = """
-			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC LIMIT ?""";
+		SELECT content, type \
+		FROM ai_chat_memory \
+		WHERE conversation_id = ? \
+		ORDER BY "timestamp" DESC  \
+		LIMIT ?
+	""";
+
+	private static final String MSSQL_QUERY_GET = """
+    	SELECT content, type \
+    	  FROM ( \
+    	    SELECT TOP (?) content, type, [timestamp] \
+    	    FROM ai_chat_memory \
+    	    WHERE conversation_id = ? \
+    	    ORDER BY [timestamp] DESC \
+    	  ) AS recent \
+    	 ORDER BY [timestamp] ASC
+	""";
 
 	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";
 
 	private final JdbcTemplate jdbcTemplate;
 
+	private final DatabaseDriver driver;
+
 	public JdbcChatMemory(JdbcChatMemoryConfig config) {
 		this.jdbcTemplate = config.getJdbcTemplate();
+		this.driver = this.detectDatabaseDriver(this.jdbcTemplate);
 	}
 
 	public static JdbcChatMemory create(JdbcChatMemoryConfig config) {
@@ -66,7 +85,10 @@ public class JdbcChatMemory implements ChatMemory {
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
-		return this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId, lastN);
+		return switch (driver) {
+			case SQLSERVER -> this.jdbcTemplate.query(MSSQL_QUERY_GET, new MessageRowMapper(), lastN, conversationId);
+			default -> this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId, lastN);
+		};
 	}
 
 	@Override
@@ -74,8 +96,8 @@ public class JdbcChatMemory implements ChatMemory {
 		this.jdbcTemplate.update(QUERY_CLEAR, conversationId);
 	}
 
-	private record AddBatchPreparedStatement(String conversationId,
-			List<Message> messages) implements BatchPreparedStatementSetter {
+	private record AddBatchPreparedStatement(String conversationId, List<Message> messages)
+			implements BatchPreparedStatementSetter {
 		@Override
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
 			var message = this.messages.get(i);
@@ -108,4 +130,14 @@ public class JdbcChatMemory implements ChatMemory {
 
 	}
 
+	private DatabaseDriver detectDatabaseDriver(JdbcTemplate jdbcTemplate) {
+		Assert.notNull(jdbcTemplate.getDataSource(), "jdbcTemplate.dataSource must not be null");
+		try {
+			Connection conn = jdbcTemplate.getDataSource().getConnection();
+			String url = conn.getMetaData().getURL();
+			return DatabaseDriver.fromJdbcUrl(url);
+		} catch (SQLException ex) {
+			throw new IllegalStateException("Impossible to detect the database driver", ex);
+		}
+	}
 }

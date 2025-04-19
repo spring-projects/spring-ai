@@ -46,8 +46,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jdbc</artifactId>
 		</dependency>
 
 		<dependency>
@@ -69,6 +69,12 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -79,6 +85,12 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mssqlserver</artifactId>
 			<scope>test</scope>
 		</dependency>
 
