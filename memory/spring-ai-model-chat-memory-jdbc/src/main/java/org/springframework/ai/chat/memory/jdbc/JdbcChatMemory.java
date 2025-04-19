@@ -53,14 +53,10 @@ public class JdbcChatMemory implements ChatMemory {
 	""";
 
 	private static final String MSSQL_QUERY_GET = """
-    	SELECT content, type \
-    	  FROM ( \
-    	    SELECT TOP (?) content, type, [timestamp] \
-    	    FROM ai_chat_memory \
-    	    WHERE conversation_id = ? \
-    	    ORDER BY [timestamp] DESC \
-    	  ) AS recent \
-    	 ORDER BY [timestamp] ASC
+    	SELECT TOP (?) content, type \
+    	FROM ai_chat_memory \
+    	WHERE conversation_id = ? \
+    	ORDER BY [timestamp] ASC
 	""";
 
 	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";

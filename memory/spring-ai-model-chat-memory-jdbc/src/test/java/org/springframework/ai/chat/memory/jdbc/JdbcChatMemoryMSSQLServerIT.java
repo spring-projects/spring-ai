@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  * @author Xavier Chopin
@@ -143,6 +144,51 @@ class JdbcChatMemoryMSSQLServerIT {
 
 			assertThat(results.size()).isEqualTo(messages.size());
 			assertThat(results).isEqualTo(messages);
+		});
+	}
+
+	@Test
+	void givenLimitN_shouldReturnNMessages() {
+		this.contextRunner.run(context -> {
+			var chatMemory = context.getBean(ChatMemory.class);
+			var conversationId = UUID.randomUUID().toString();
+			Message expected = new AssistantMessage("Message from assistant 1 - " + conversationId);
+
+			var messages = List.<Message>of(expected,
+					new AssistantMessage("Message from assistant 2 - " + conversationId),
+					new UserMessage("Message from user - " + conversationId),
+					new SystemMessage("Message from system - " + conversationId));
+
+			chatMemory.add(conversationId, messages);
+
+			var results = chatMemory.get(conversationId, 1);
+
+			assertThat(results.size()).isEqualTo(1);
+			assertThat(results).isEqualTo(List.of(expected));
+		});
+	}
+
+	@Test
+	void givenNonExistingId_shouldReturnEmptyList() {
+		this.contextRunner.run(context -> {
+			var chatMemory = context.getBean(ChatMemory.class);
+			var conversationId = UUID.randomUUID().toString();
+
+			List<Message> messages = List.of(
+				new AssistantMessage("Message from assistant 1 - " + conversationId),
+				new AssistantMessage("Message from assistant 2 - " + conversationId),
+				new UserMessage("Message from user - " + conversationId),
+				new SystemMessage("Message from system - " + conversationId)
+			);
+
+			chatMemory.add(conversationId, messages);
+
+			var nonExistingUUID = UUID.randomUUID().toString();
+
+			 assertDoesNotThrow(() -> {
+				 List<Message> actual = chatMemory.get(nonExistingUUID, Integer.MAX_VALUE);
+				 assertThat(actual).isEmpty();
+			});
 		});
 	}
 
