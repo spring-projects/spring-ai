@@ -16,27 +16,11 @@
 
 package org.springframework.ai.chat.memory.jdbc;
 
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.UUID;
-
-import javax.sql.DataSource;
-
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.MountableFile;
-
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.*;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -46,35 +30,36 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import javax.sql.DataSource;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * @author Jonathan Leijendekker
+ * @author Xavier Chopin
  */
 @Testcontainers
-class JdbcChatMemoryIT {
+class JdbcChatMemoryMSSQLServerIT {
 
 	@Container
 	@SuppressWarnings("resource")
-	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:17")
-		.withDatabaseName("chat_memory_test")
-		.withUsername("postgres")
-		.withPassword("postgres")
-		.withCopyFileToContainer(
-				MountableFile.forClasspathResource("org/springframework/ai/chat/memory/jdbc/schema-postgresql.sql"),
-				"/docker-entrypoint-initdb.d/schema.sql");
+	static MSSQLServerContainer<?> mssqlContainer = new MSSQLServerContainer<>("mcr.microsoft.com/mssql/server:2022-latest")
+			.acceptLicense()
+			.withEnv("MSSQL_DATABASE", "chat_memory_test")
+			.withPassword("Strong!NotR34LLyPassword")
+			.withInitScript("org/springframework/ai/chat/memory/jdbc/schema-sqlserver.sql");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues(String.format("app.datasource.url=%s", postgresContainer.getJdbcUrl()),
-				String.format("app.datasource.username=%s", postgresContainer.getUsername()),
-				String.format("app.datasource.password=%s", postgresContainer.getPassword()));
-
-	@BeforeAll
-	static void beforeAll() {
-
-	}
+		.withPropertyValues(String.format("app.datasource.url=%s", mssqlContainer.getJdbcUrl()),
+				String.format("app.datasource.username=%s", mssqlContainer.getUsername()),
+				String.format("app.datasource.password=%s", mssqlContainer.getPassword()));
 
 	@Test
 	void correctChatMemoryInstance() {
@@ -101,7 +86,7 @@ class JdbcChatMemoryIT {
 			chatMemory.add(conversationId, message);
 
 			var jdbcTemplate = context.getBean(JdbcTemplate.class);
-			var query = "SELECT conversation_id, content, type, \"timestamp\" FROM ai_chat_memory WHERE conversation_id = ?";
+			var query = "SELECT conversation_id, content, type, \"timestamp\" FROM ai_chat_memory  WHERE conversation_id = ?";
 			var result = jdbcTemplate.queryForMap(query, conversationId);
 
 			assertThat(result.size()).isEqualTo(4);

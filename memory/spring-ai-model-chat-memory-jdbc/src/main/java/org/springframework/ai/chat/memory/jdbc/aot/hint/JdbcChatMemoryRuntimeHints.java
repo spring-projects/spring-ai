@@ -16,16 +16,17 @@
 
 package org.springframework.ai.chat.memory.jdbc.aot.hint;
 
-import javax.sql.DataSource;
-
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
+
+import javax.sql.DataSource;
 
 /**
  * A {@link RuntimeHintsRegistrar} for JDBC Chat Memory hints
  *
  * @author Jonathan Leijendekker
+ * @author Xavier Chopin
  */
 class JdbcChatMemoryRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -36,6 +37,7 @@ class JdbcChatMemoryRuntimeHints implements RuntimeHintsRegistrar {
 
 		hints.resources()
 			.registerPattern("org/springframework/ai/chat/memory/jdbc/schema-mariadb.sql")
+			.registerPattern("org/springframework/ai/chat/memory/jdbc/schema-sqlserver.sql")
 			.registerPattern("org/springframework/ai/chat/memory/jdbc/schema-postgresql.sql");
 	}
 

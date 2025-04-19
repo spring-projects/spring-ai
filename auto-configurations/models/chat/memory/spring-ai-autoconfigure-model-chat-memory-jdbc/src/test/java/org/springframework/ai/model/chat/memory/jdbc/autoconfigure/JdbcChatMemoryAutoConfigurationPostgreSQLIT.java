@@ -16,15 +16,7 @@
 
 package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
 
-import java.util.List;
-import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -33,6 +25,13 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jonathan Leijendekker
  */
 @Testcontainers
-class JdbcChatMemoryAutoConfigurationIT {
+class JdbcChatMemoryAutoConfigurationPostgreSQLIT {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("postgres:17");
 
