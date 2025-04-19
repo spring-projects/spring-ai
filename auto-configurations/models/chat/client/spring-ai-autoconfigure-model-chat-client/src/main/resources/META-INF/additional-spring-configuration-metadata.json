@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.chat.client.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable chat client builder.",
+      "defaultValue": true
+    }
+  ]
+}
