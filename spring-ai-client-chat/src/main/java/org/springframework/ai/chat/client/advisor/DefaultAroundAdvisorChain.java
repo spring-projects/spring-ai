@@ -33,6 +33,8 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
@@ -61,15 +63,23 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	private final Deque<StreamAroundAdvisor> streamAroundAdvisors;
 
+	private final String conversationId;
+
+	@Nullable
+	private final ChatMemory chatMemory;
+
 	private final ObservationRegistry observationRegistry;
 
-	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, Deque<CallAroundAdvisor> callAroundAdvisors,
+	private DefaultAroundAdvisorChain(String conversationId, @Nullable ChatMemory chatMemory,
+			ObservationRegistry observationRegistry, Deque<CallAroundAdvisor> callAroundAdvisors,
 			Deque<StreamAroundAdvisor> streamAroundAdvisors) {
-
+		Assert.hasText(conversationId, "the conversationId must not be null or empty");
 		Assert.notNull(observationRegistry, "the observationRegistry must be non-null");
 		Assert.notNull(callAroundAdvisors, "the callAroundAdvisors must be non-null");
 		Assert.notNull(streamAroundAdvisors, "the streamAroundAdvisors must be non-null");
 
+		this.conversationId = conversationId;
+		this.chatMemory = chatMemory;
 		this.observationRegistry = observationRegistry;
 		this.callAroundAdvisors = callAroundAdvisors;
 		this.streamAroundAdvisors = streamAroundAdvisors;
@@ -77,6 +87,17 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	public static Builder builder(ObservationRegistry observationRegistry) {
 		return new Builder(observationRegistry);
+	}
+
+	@Override
+	public String getConversationId() {
+		return this.conversationId;
+	}
+
+	@Override
+	@Nullable
+	public ChatMemory getChatMemory() {
+		return this.chatMemory;
 	}
 
 	@Override
@@ -240,10 +261,25 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 		private final Deque<StreamAroundAdvisor> streamAroundAdvisors;
 
+		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+		@Nullable
+		private ChatMemory chatMemory;
+
 		public Builder(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			this.callAroundAdvisors = new ConcurrentLinkedDeque<>();
 			this.streamAroundAdvisors = new ConcurrentLinkedDeque<>();
+		}
+
+		public Builder conversationId(String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
+		public Builder chatMemory(@Nullable ChatMemory chatMemory) {
+			this.chatMemory = chatMemory;
+			return this;
 		}
 
 		public Builder push(Advisor aroundAdvisor) {
@@ -293,8 +329,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		}
 
 		public DefaultAroundAdvisorChain build() {
-			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAroundAdvisors,
-					this.streamAroundAdvisors);
+			return new DefaultAroundAdvisorChain(this.conversationId, this.chatMemory, this.observationRegistry,
+					this.callAroundAdvisors, this.streamAroundAdvisors);
 		}
 
 	}

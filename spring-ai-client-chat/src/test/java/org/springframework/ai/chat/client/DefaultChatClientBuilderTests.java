@@ -95,4 +95,11 @@ class DefaultChatClientBuilderTests {
 			.hasMessage("charset cannot be null");
 	}
 
+	@Test
+	void whenChatMemoryIsNullThenThrows() {
+		DefaultChatClientBuilder builder = new DefaultChatClientBuilder(mock(ChatModel.class));
+		assertThatThrownBy(() -> builder.defaultMemory(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("chatMemory cannot be null");
+	}
+
 }

@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.ai.chat.memory.ChatMemory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -38,7 +39,10 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
+ * @deprecated in favour of providing the ChatClient directly with a {@link ChatMemory}
+ * instance.
  */
+@Deprecated
 public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor, StreamAroundAdvisor {
 
 	/**

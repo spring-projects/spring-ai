@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -64,8 +65,8 @@ public class DefaultChatClientBuilder implements Builder {
 			@Nullable ChatClientObservationConvention customObservationConvention) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
-		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), null, Map.of(), List.of(),
-				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
+		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, null, null, Map.of(), null, Map.of(),
+				List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
 				customObservationConvention, Map.of());
 	}
 
@@ -187,6 +188,13 @@ public class DefaultChatClientBuilder implements Builder {
 
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
 		this.defaultRequest.toolContext(toolContext);
+		return this;
+	}
+
+	@Override
+	public Builder defaultMemory(ChatMemory chatMemory) {
+		Assert.notNull(chatMemory, "chatMemory cannot be null");
+		this.defaultRequest.memory(chatMemory);
 		return this;
 	}
 

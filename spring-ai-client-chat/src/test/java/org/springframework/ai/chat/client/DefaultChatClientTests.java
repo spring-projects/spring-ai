@@ -20,16 +20,15 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -1300,15 +1299,15 @@ class DefaultChatClientTests {
 	void buildChatClientRequestSpec() {
 		ChatModel chatModel = mock(ChatModel.class);
 		DefaultChatClient.DefaultChatClientRequestSpec spec = new DefaultChatClient.DefaultChatClientRequestSpec(
-				chatModel, null, Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
-				Map.of(), ObservationRegistry.NOOP, null, Map.of());
+				chatModel, null, null, null, Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null,
+				List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of());
 		assertThat(spec).isNotNull();
 	}
 
 	@Test
 	void whenChatModelIsNullThenThrow() {
-		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), null,
-				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
+		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, null, null, Map.of(),
+				null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
 				ObservationRegistry.NOOP, null, Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
@@ -1316,9 +1315,9 @@ class DefaultChatClientTests {
 
 	@Test
 	void whenObservationRegistryIsNullThenThrow() {
-		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mock(ChatModel.class), null,
-				Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), null,
-				null, Map.of()))
+		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mock(ChatModel.class), null, null,
+				null, Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
+				null, null, Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}
@@ -1908,6 +1907,50 @@ class DefaultChatClientTests {
 		assertThat(defaultSpec.getUserText()).isEqualTo("my question about {topic}");
 		assertThat(defaultSpec.getUserParams()).containsEntry("topic", "AI");
 		assertThat(defaultSpec.getMedia()).hasSize(1);
+	}
+
+	@Test
+	void whenConversationIdThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		String conversationId = UUID.randomUUID().toString();
+		spec = spec.conversationId(conversationId);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getConversationId()).isEqualTo(conversationId);
+	}
+
+	@Test
+	void whenConversationIdIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.conversationId(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("conversationId cannot be null or empty");
+	}
+
+	@Test
+	void whenConversationIdIsEmptyThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.conversationId("")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("conversationId cannot be null or empty");
+	}
+
+	@Test
+	void whenChatMemoryThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+		spec = spec.memory(chatMemory);
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getChatMemory()).isEqualTo(chatMemory);
+	}
+
+	@Test
+	void whenChatMemoryIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.memory(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("chatMemory cannot be null");
 	}
 
 	record Person(String name) {

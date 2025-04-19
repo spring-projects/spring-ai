@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,25 @@
 
 package org.springframework.ai.chat.memory;
 
-import java.util.List;
-
 import org.springframework.ai.chat.messages.Message;
 
+import java.util.List;
+
 /**
- * The ChatMemory interface represents a storage for chat conversation history. It
- * provides methods to add messages to a conversation, retrieve messages from a
- * conversation, and clear the conversation history.
+ * A policy for processing a message window in a chat memory system. It defines a strategy
+ * for handling the addition of new messages to the existing message history, ensuring
+ * that the total number of messages does not exceed a specified limit.
  *
- * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface ChatMemory {
+public interface MessageWindowProcessingPolicy {
 
-	// TODO: consider a non-blocking interface for streaming usages
-
-	default void add(String conversationId, Message message) {
-		this.add(conversationId, List.of(message));
-	}
-
-	void add(String conversationId, List<Message> messages);
-
-	List<Message> get(String conversationId, int lastN);
-
-	void clear(String conversationId);
+	/**
+	 * Processes the message window by adding new messages to the existing history
+	 * messages and ensuring that the total number of messages does not exceed the
+	 * specified limit.
+	 */
+	List<Message> process(List<Message> historyMessages, List<Message> newMessages, int limit);
 
 }

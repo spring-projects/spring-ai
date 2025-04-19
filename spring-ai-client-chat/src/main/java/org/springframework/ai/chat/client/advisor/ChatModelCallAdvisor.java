@@ -20,11 +20,16 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,7 +50,29 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAroundAdvisorChain chain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
 
-		ChatResponse chatResponse = chatModel.call(chatClientRequest.prompt());
+		ChatMemory chatMemory = chain.getChatMemory();
+
+		ChatResponse chatResponse;
+		if (chatMemory == null) {
+			chatResponse = chatModel.call(chatClientRequest.prompt());
+		}
+		else {
+			String conversationId = chain.getConversationId();
+			chatMemory.add(conversationId, chatClientRequest.prompt().getInstructions());
+			Prompt prompt = chatClientRequest.prompt().mutate().messages(chatMemory.get(conversationId)).build();
+			chatResponse = chatModel.call(prompt);
+			if (chatResponse != null) {
+				List<Generation> generations = chatResponse.getResults();
+				if (generations != null) {
+					List<Message> assistantMessages = generations.stream()
+						.map(generation -> (Message) generation.getOutput())
+						.toList();
+					chatMemory.add(conversationId, assistantMessages);
+				}
+			}
+
+		}
+
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponse)
 			.context(Map.copyOf(chatClientRequest.context()))

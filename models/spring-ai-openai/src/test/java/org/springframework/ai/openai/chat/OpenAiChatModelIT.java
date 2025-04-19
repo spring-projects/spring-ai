@@ -34,6 +34,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -626,6 +628,29 @@ public class OpenAiChatModelIT extends AbstractIT {
 		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke", options));
 
 		assertThat(response).isNotNull();
+	}
+
+	@Test
+	void chatMemory() {
+		ChatMemory memory = MessageWindowChatMemory.builder().build();
+		String conversationId = "007";
+
+		UserMessage userMessage1 = new UserMessage("My name is James Bond");
+		memory.add(conversationId, userMessage1);
+		ChatResponse response1 = chatModel.call(new Prompt(memory.get(conversationId)));
+
+		assertThat(response1).isNotNull();
+		memory.add(conversationId, response1.getResult().getOutput());
+
+		UserMessage userMessage2 = new UserMessage("What is my name?");
+		memory.add(conversationId, userMessage2);
+		ChatResponse response2 = chatModel.call(new Prompt(memory.get(conversationId)));
+
+		assertThat(response2).isNotNull();
+		memory.add(conversationId, response2.getResult().getOutput());
+
+		assertThat(response2.getResults()).hasSize(1);
+		assertThat(response2.getResult().getOutput().getText()).contains("James Bond");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

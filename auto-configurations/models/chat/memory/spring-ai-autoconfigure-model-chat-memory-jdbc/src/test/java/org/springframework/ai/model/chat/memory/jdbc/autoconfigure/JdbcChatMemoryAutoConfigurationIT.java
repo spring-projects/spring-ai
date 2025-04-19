@@ -26,6 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemory;
+import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Thomas Vitale
  */
 @Testcontainers
 class JdbcChatMemoryAutoConfigurationIT {
@@ -93,6 +95,32 @@ class JdbcChatMemoryAutoConfigurationIT {
 
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).hasSize(multipleMessages.size());
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).isEqualTo(multipleMessages);
+		});
+	}
+
+	@Test
+	void useAutoConfiguredJdbcChatMemoryRepository() {
+		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=true").run(context -> {
+			var chatMemoryRepository = context.getBean(JdbcChatMemoryRepository.class);
+			var conversationId = UUID.randomUUID().toString();
+			var userMessage = new UserMessage("Message from the user");
+
+			chatMemoryRepository.save(conversationId, List.of(userMessage));
+
+			assertThat(chatMemoryRepository.findById(conversationId)).hasSize(1);
+			assertThat(chatMemoryRepository.findById(conversationId)).isEqualTo(List.of(userMessage));
+
+			chatMemoryRepository.deleteById(conversationId);
+
+			assertThat(chatMemoryRepository.findById(conversationId)).isEmpty();
+
+			var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
+					new AssistantMessage("Message from the assistant 1"));
+
+			chatMemoryRepository.save(conversationId, multipleMessages);
+
+			assertThat(chatMemoryRepository.findById(conversationId)).hasSize(multipleMessages.size());
+			assertThat(chatMemoryRepository.findById(conversationId)).isEqualTo(multipleMessages);
 		});
 	}
 

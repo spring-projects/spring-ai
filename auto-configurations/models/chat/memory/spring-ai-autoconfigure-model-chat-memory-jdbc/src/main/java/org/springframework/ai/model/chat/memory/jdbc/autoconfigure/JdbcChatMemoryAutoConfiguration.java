@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemory;
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryConfig;
+import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,6 +36,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
@@ -46,9 +48,21 @@ public class JdbcChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public JdbcChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
+	JdbcChatMemoryRepository jdbcChatMemoryRepository(JdbcTemplate jdbcTemplate) {
 		var config = JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build();
+		return JdbcChatMemoryRepository.create(config);
+	}
 
+	/**
+	 * @deprecated in favor of providing ChatClient directly a
+	 * {@link org.springframework.ai.chat.memory.MessageWindowChatMemory} with a
+	 * {@link JdbcChatMemoryRepository} instance.
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@Deprecated
+	JdbcChatMemory chatMemory(JdbcTemplate jdbcTemplate) {
+		var config = JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build();
 		return JdbcChatMemory.create(config);
 	}
 
@@ -56,9 +70,8 @@ public class JdbcChatMemoryAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(value = "spring.ai.chat.memory.jdbc.initialize-schema", havingValue = "true",
 			matchIfMissing = true)
-	public DataSourceScriptDatabaseInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource) {
+	DataSourceScriptDatabaseInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource) {
 		logger.debug("Initializing JdbcChatMemory schema");
-
 		return new JdbcChatMemoryDataSourceScriptDatabaseInitializer(dataSource);
 	}
 

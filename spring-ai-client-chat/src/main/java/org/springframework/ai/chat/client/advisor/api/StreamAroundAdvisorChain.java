@@ -29,7 +29,7 @@ import reactor.core.publisher.Flux;
  * @deprecated in favor of {@link StreamAdvisorChain}
  */
 @Deprecated
-public interface StreamAroundAdvisorChain {
+public interface StreamAroundAdvisorChain extends AdvisorChain {
 
 	/**
 	 * This method delegates the call to the next StreamAroundAdvisor in the chain and is

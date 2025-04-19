@@ -38,18 +38,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Jonathan Leijendekker
  */
-class JdbcChatMemoryRuntimeHintsTest {
+class JdbcChatMemoryRepositoryRuntimeHintsTest {
 
 	private final RuntimeHints hints = new RuntimeHints();
 
-	private final JdbcChatMemoryRuntimeHints jdbcChatMemoryRuntimeHints = new JdbcChatMemoryRuntimeHints();
+	private final JdbcChatMemoryRepositoryRuntimeHints jdbcChatMemoryRepositoryRuntimeHints = new JdbcChatMemoryRepositoryRuntimeHints();
 
 	@Test
 	void aotFactoriesContainsRegistrar() {
 		var match = SpringFactoriesLoader.forResourceLocation("META-INF/spring/aot.factories")
 			.load(RuntimeHintsRegistrar.class)
 			.stream()
-			.anyMatch(registrar -> registrar instanceof JdbcChatMemoryRuntimeHints);
+			.anyMatch(registrar -> registrar instanceof JdbcChatMemoryRepositoryRuntimeHints);
 
 		assertThat(match).isTrue();
 	}
@@ -57,7 +57,7 @@ class JdbcChatMemoryRuntimeHintsTest {
 	@ParameterizedTest
 	@MethodSource("getSchemaFileNames")
 	void jdbcSchemasHasHints(String schemaFileName) {
-		this.jdbcChatMemoryRuntimeHints.registerHints(this.hints, getClass().getClassLoader());
+		this.jdbcChatMemoryRepositoryRuntimeHints.registerHints(this.hints, getClass().getClassLoader());
 
 		var predicate = RuntimeHintsPredicates.resource()
 			.forResource("org/springframework/ai/chat/memory/jdbc/" + schemaFileName);
@@ -67,7 +67,7 @@ class JdbcChatMemoryRuntimeHintsTest {
 
 	@Test
 	void dataSourceHasHints() {
-		this.jdbcChatMemoryRuntimeHints.registerHints(this.hints, getClass().getClassLoader());
+		this.jdbcChatMemoryRepositoryRuntimeHints.registerHints(this.hints, getClass().getClassLoader());
 
 		assertThat(RuntimeHintsPredicates.reflection().onType(DataSource.class)).accepts(this.hints);
 	}

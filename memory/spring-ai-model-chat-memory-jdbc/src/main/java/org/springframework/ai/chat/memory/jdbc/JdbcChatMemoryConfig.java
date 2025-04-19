@@ -20,7 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.Assert;
 
 /**
- * Configuration for {@link JdbcChatMemory}.
+ * Configuration for {@link JdbcChatMemoryRepository}.
  *
  * @author Jonathan Leijendekker
  * @since 1.0.0

@@ -27,7 +27,7 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
  *
  * @author Jonathan Leijendekker
  */
-class JdbcChatMemoryRuntimeHints implements RuntimeHintsRegistrar {
+class JdbcChatMemoryRepositoryRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
