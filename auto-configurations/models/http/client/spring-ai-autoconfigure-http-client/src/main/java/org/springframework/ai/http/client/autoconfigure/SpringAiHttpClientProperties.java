@@ -28,7 +28,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(SpringAiHttpClientProperties.CONFIG_PREFIX)
 public class SpringAiHttpClientProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.rest-client";
+	public static final String CONFIG_PREFIX = "spring.ai.http.client";
 
 	private Duration connectionTimeout = Duration.ofSeconds(10);
 
