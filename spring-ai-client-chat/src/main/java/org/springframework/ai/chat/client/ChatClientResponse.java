@@ -51,7 +51,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 		private Builder() {
 		}
 
-		public Builder chatResponse(ChatResponse chatResponse) {
+		public Builder chatResponse(@Nullable ChatResponse chatResponse) {
 			this.chatResponse = chatResponse;
 			return this;
 		}

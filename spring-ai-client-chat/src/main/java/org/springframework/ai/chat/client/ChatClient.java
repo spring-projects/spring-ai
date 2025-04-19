@@ -27,6 +27,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -247,6 +248,10 @@ public interface ChatClient {
 
 		ChatClientRequestSpec user(Consumer<PromptUserSpec> consumer);
 
+		ChatClientRequestSpec memory(ChatMemory chatMemory);
+
+		ChatClientRequestSpec conversationId(String conversationId);
+
 		CallResponseSpec call();
 
 		StreamResponseSpec stream();
@@ -293,6 +298,8 @@ public interface ChatClient {
 		Builder defaultTools(ToolCallbackProvider... toolCallbackProviders);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
+
+		Builder defaultMemory(ChatMemory chatMemory);
 
 		Builder clone();
 

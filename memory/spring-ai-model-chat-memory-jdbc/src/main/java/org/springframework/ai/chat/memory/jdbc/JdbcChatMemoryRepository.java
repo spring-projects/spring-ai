@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,65 +16,64 @@
 
 package org.springframework.ai.chat.memory.jdbc;
 
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.messages.*;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-
 /**
- * An implementation of {@link ChatMemory} for JDBC. Creating an instance of
- * JdbcChatMemory example:
- * <code>JdbcChatMemory.create(JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build());</code>
+ * An implementation of {@link ChatMemoryRepository} for JDBC.
  *
  * @author Jonathan Leijendekker
+ * @author Thomas Vitale
  * @since 1.0.0
- * @deprecated in favor of providing ChatClient directly a
- * {@link org.springframework.ai.chat.memory.MessageWindowChatMemory} with a
- * {@link JdbcChatMemoryRepository} instance.
  */
-@Deprecated
-public class JdbcChatMemory implements ChatMemory {
+public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private static final String QUERY_ADD = """
 			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)""";
 
 	private static final String QUERY_GET = """
-			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC LIMIT ?""";
+			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC""";
 
 	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public JdbcChatMemory(JdbcChatMemoryConfig config) {
+	private JdbcChatMemoryRepository(JdbcChatMemoryConfig config) {
+		Assert.notNull(config, "config cannot be null");
 		this.jdbcTemplate = config.getJdbcTemplate();
 	}
 
-	public static JdbcChatMemory create(JdbcChatMemoryConfig config) {
-		return new JdbcChatMemory(config);
+	public static JdbcChatMemoryRepository create(JdbcChatMemoryConfig config) {
+		return new JdbcChatMemoryRepository(config);
 	}
 
 	@Override
-	public void add(String conversationId, List<Message> messages) {
+	public List<Message> findById(String conversationId) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		return this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId);
+	}
+
+	@Override
+	public void save(String conversationId, List<Message> messages) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		Assert.notNull(messages, "messages cannot be null");
+		Assert.noNullElements(messages, "messages cannot contain null elements");
 		this.jdbcTemplate.batchUpdate(QUERY_ADD, new AddBatchPreparedStatement(conversationId, messages));
 	}
 
 	@Override
-	public List<Message> get(String conversationId, int lastN) {
-		return this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId, lastN);
-	}
-
-	@Override
-	public void clear(String conversationId) {
+	public void deleteById(String conversationId) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		this.jdbcTemplate.update(QUERY_CLEAR, conversationId);
 	}
 
@@ -98,6 +97,7 @@ public class JdbcChatMemory implements ChatMemory {
 	private static class MessageRowMapper implements RowMapper<Message> {
 
 		@Override
+		@Nullable
 		public Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
 			var type = MessageType.valueOf(rs.getString(2));
@@ -106,7 +106,7 @@ public class JdbcChatMemory implements ChatMemory {
 				case USER -> new UserMessage(content);
 				case ASSISTANT -> new AssistantMessage(content);
 				case SYSTEM -> new SystemMessage(content);
-				default -> null;
+				case TOOL -> null;
 			};
 		}
 

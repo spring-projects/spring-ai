@@ -44,6 +44,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConte
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
 import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -131,7 +132,7 @@ public class DefaultChatClient implements ChatClient {
 	public static DefaultChatClientRequestSpec toDefaultChatClientRequestSpec(AdvisedRequest advisedRequest,
 			ObservationRegistry observationRegistry, ChatClientObservationConvention customObservationConvention) {
 
-		return new DefaultChatClientRequestSpec(advisedRequest.chatModel(), advisedRequest.userText(),
+		return new DefaultChatClientRequestSpec(advisedRequest.chatModel(), null, null, advisedRequest.userText(),
 				advisedRequest.userParams(), advisedRequest.systemText(), advisedRequest.systemParams(),
 				advisedRequest.toolCallbacks(), advisedRequest.messages(), advisedRequest.toolNames(),
 				advisedRequest.media(), advisedRequest.chatOptions(), advisedRequest.advisors(),
@@ -660,9 +661,12 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> advisorParams = new HashMap<>();
 
-		private final DefaultAroundAdvisorChain.Builder aroundAdvisorChainBuilder;
-
 		private final Map<String, Object> toolContext = new HashMap<>();
+
+		private String conversationId;
+
+		@Nullable
+		private ChatMemory chatMemory;
 
 		@Nullable
 		private String userText;
@@ -675,16 +679,17 @@ public class DefaultChatClient implements ChatClient {
 
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
-			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.toolCallbacks,
-					ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
-					ccr.observationRegistry, ccr.observationConvention, ccr.toolContext);
+			this(ccr.chatModel, ccr.chatMemory, ccr.conversationId, ccr.userText, ccr.userParams, ccr.systemText,
+					ccr.systemParams, ccr.toolCallbacks, ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions,
+					ccr.advisors, ccr.advisorParams, ccr.observationRegistry, ccr.observationConvention,
+					ccr.toolContext);
 		}
 
-		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
-				Map<String, Object> userParams, @Nullable String systemText, Map<String, Object> systemParams,
-				List<ToolCallback> toolCallbacks, List<Message> messages, List<String> toolNames, List<Media> media,
-				@Nullable ChatOptions chatOptions, List<Advisor> advisors, Map<String, Object> advisorParams,
-				ObservationRegistry observationRegistry,
+		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable ChatMemory chatMemory,
+				@Nullable String conversationId, @Nullable String userText, Map<String, Object> userParams,
+				@Nullable String systemText, Map<String, Object> systemParams, List<ToolCallback> toolCallbacks,
+				List<Message> messages, List<String> toolNames, List<Media> media, @Nullable ChatOptions chatOptions,
+				List<Advisor> advisors, Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext) {
 
 			Assert.notNull(chatModel, "chatModel cannot be null");
@@ -702,6 +707,10 @@ public class DefaultChatClient implements ChatClient {
 			this.chatModel = chatModel;
 			this.chatOptions = chatOptions != null ? chatOptions.copy()
 					: (chatModel.getDefaultOptions() != null) ? chatModel.getDefaultOptions().copy() : null;
+
+			this.chatMemory = chatMemory;
+			this.conversationId = StringUtils.hasText(conversationId) ? conversationId
+					: ChatMemory.DEFAULT_CONVERSATION_ID;
 
 			this.userText = userText;
 			this.userParams.putAll(userParams);
@@ -723,9 +732,6 @@ public class DefaultChatClient implements ChatClient {
 			// They play the role of the last advisors in the advisor chain.
 			this.advisors.add(new ChatModelCallAdvisor(chatModel));
 			this.advisors.add(new ChatModelStreamAdvisor(chatModel));
-
-			this.aroundAdvisorChainBuilder = DefaultAroundAdvisorChain.builder(observationRegistry)
-				.pushAll(this.advisors);
 		}
 
 		private ObservationRegistry getObservationRegistry() {
@@ -787,6 +793,15 @@ public class DefaultChatClient implements ChatClient {
 			return this.toolContext;
 		}
 
+		public String getConversationId() {
+			return this.conversationId;
+		}
+
+		@Nullable
+		public ChatMemory getChatMemory() {
+			return this.chatMemory;
+		}
+
 		/**
 		 * Return a {@code ChatClient2Builder} to create a new {@code ChatClient2} whose
 		 * settings are replicated from this {@code ChatClientRequest}.
@@ -822,7 +837,6 @@ public class DefaultChatClient implements ChatClient {
 			consumer.accept(advisorSpec);
 			this.advisorParams.putAll(advisorSpec.getParams());
 			this.advisors.addAll(advisorSpec.getAdvisors());
-			this.aroundAdvisorChainBuilder.pushAll(advisorSpec.getAdvisors());
 			return this;
 		}
 
@@ -830,7 +844,6 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.noNullElements(advisors, "advisors cannot contain null elements");
 			this.advisors.addAll(Arrays.asList(advisors));
-			this.aroundAdvisorChainBuilder.pushAll(Arrays.asList(advisors));
 			return this;
 		}
 
@@ -838,7 +851,6 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.noNullElements(advisors, "advisors cannot contain null elements");
 			this.advisors.addAll(advisors);
-			this.aroundAdvisorChainBuilder.pushAll(advisors);
 			return this;
 		}
 
@@ -982,16 +994,38 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
+		public ChatClientRequestSpec memory(ChatMemory chatMemory) {
+			Assert.notNull(chatMemory, "chatMemory cannot be null");
+			this.chatMemory = chatMemory;
+			return this;
+		}
+
+		@Override
+		public ChatClientRequestSpec conversationId(String conversationId) {
+			Assert.hasText(conversationId, "conversationId cannot be null or empty");
+			this.conversationId = conversationId;
+			return this;
+		}
+
 		public CallResponseSpec call() {
-			BaseAdvisorChain advisorChain = aroundAdvisorChainBuilder.build();
+			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultCallResponseSpec(toAdvisedRequest(this).toChatClientRequest(), advisorChain,
 					observationRegistry, observationConvention);
 		}
 
 		public StreamResponseSpec stream() {
-			BaseAdvisorChain advisorChain = aroundAdvisorChainBuilder.build();
+			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultStreamResponseSpec(toAdvisedRequest(this).toChatClientRequest(), advisorChain,
 					observationRegistry, observationConvention);
+		}
+
+		private BaseAdvisorChain buildAdvisorChain() {
+			return DefaultAroundAdvisorChain.builder(this.observationRegistry)
+				.conversationId(this.conversationId)
+				.chatMemory(this.chatMemory)
+				.pushAll(this.advisors)
+				.build();
 		}
 
 	}

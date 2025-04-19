@@ -34,7 +34,10 @@ import org.springframework.ai.chat.messages.Message;
  * @see ChatMemory
  * @author Christian Tzolov
  * @since 1.0.0 M1
+ * @deprecated in favor of {@link MessageWindowChatMemory}, which internally uses
+ * {@link InMemoryChatMemoryRepository}.
  */
+@Deprecated
 public class InMemoryChatMemory implements ChatMemory {
 
 	Map<String, List<Message>> conversationHistory = new ConcurrentHashMap<>();

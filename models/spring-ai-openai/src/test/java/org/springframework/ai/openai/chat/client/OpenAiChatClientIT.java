@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -376,6 +377,69 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray()).isNotEmpty();
 		logger.info("Response: " + response);
+	}
+
+	@Test
+	void chatMemoryWithDefaults() {
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
+			.defaultMemory(MessageWindowChatMemory.builder().build())
+			.build();
+
+		String conversationId = "007";
+
+		ChatResponse response1 = chatClient.prompt("My name is Bond. James Bond.")
+			.conversationId(conversationId)
+			.call()
+			.chatResponse();
+
+		assertThat(response1).isNotNull();
+
+		ChatResponse response2 = chatClient.prompt("What is my name?")
+			.conversationId(conversationId)
+			.call()
+			.chatResponse();
+
+		assertThat(response2).isNotNull();
+		assertThat(response2.getResults()).hasSize(1);
+		assertThat(response2.getResults().get(0).getOutput().getText()).contains("James Bond");
+	}
+
+	@Test
+	void chatMemoryWithMessageWindowSize() {
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
+			.defaultMemory(MessageWindowChatMemory.builder().maxMessages(3).build())
+			.build();
+
+		String conversationId = "007";
+
+		ChatResponse response1 = chatClient.prompt("The cat is on the table")
+			.conversationId(conversationId)
+			.call()
+			.chatResponse();
+
+		assertThat(response1).isNotNull();
+
+		ChatResponse response2 = chatClient.prompt("My name is Bond. James Bond.")
+			.conversationId(conversationId)
+			.call()
+			.chatResponse();
+
+		assertThat(response2).isNotNull();
+
+		ChatResponse response3 = chatClient.prompt("What is my name?")
+			.conversationId(conversationId)
+			.call()
+			.chatResponse();
+
+		assertThat(response3).isNotNull();
+
+		ChatResponse response4 = chatClient.prompt("Where is the cat?")
+			.conversationId(conversationId)
+			.call()
+			.chatResponse();
+
+		assertThat(response4).isNotNull();
+		assertThat(response2.getResults().get(0).getOutput().getText()).doesNotContainIgnoringCase("table");
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {
