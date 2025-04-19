@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
+import org.springframework.util.Assert;
 
 import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
@@ -63,9 +64,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
 
-	/**
-	 * The target class type reference to which the output will be converted.
-	 */
+	/** The target class type reference to which the output will be converted. */
 	private final Type type;
 
 	/** The object mapper used for deserialization and other JSON operations. */
@@ -119,7 +118,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
 	private BeanOutputConverter(Type type, ObjectMapper objectMapper) {
-		Objects.requireNonNull(type, "Type cannot be null;");
+		Assert.notNull(type, "Type cannot be null");
 		this.type = type;
 		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
 		generateSchema();

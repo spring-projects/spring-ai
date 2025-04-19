@@ -264,7 +264,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 				}
 
 				List<StreamAroundAdvisor> streamAroundAdvisorList = advisors.stream()
-					.filter(a -> a instanceof StreamAroundAdvisor)
+					.filter(StreamAroundAdvisor.class::isInstance)
 					.map(a -> (StreamAroundAdvisor) a)
 					.toList();
 
