@@ -45,19 +45,10 @@ public class JdbcChatMemory implements ChatMemory {
 			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)""";
 
 	private static final String QUERY_GET = """
-		SELECT content, type \
-		FROM ai_chat_memory \
-		WHERE conversation_id = ? \
-		ORDER BY "timestamp" DESC  \
-		LIMIT ?
-	""";
+			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC LIMIT ?""";
 
 	private static final String MSSQL_QUERY_GET = """
-    	SELECT TOP (?) content, type \
-    	FROM ai_chat_memory \
-    	WHERE conversation_id = ? \
-    	ORDER BY [timestamp] ASC
-	""";
+			SELECT TOP (?) content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC""";
 
 	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";
 

@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * @author Xavier Chopin
  */
 @Testcontainers
-class JdbcChatMemoryPostgreSQLIT {
+class JdbcChatMemoryPostgresIT {
 
 	@Container
 	@SuppressWarnings("resource")
