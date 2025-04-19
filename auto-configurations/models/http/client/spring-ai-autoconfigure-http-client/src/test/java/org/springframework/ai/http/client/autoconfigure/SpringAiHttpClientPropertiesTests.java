@@ -48,8 +48,8 @@ public class SpringAiHttpClientPropertiesTests {
 	public void httpClientCustomProperties() {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
-				"spring.ai.rest-client.connection-timeout=10s",
-				"spring.ai.rest-client-read-timeout=30s")
+				"spring.ai.http.client.connection-timeout=10s",
+				"spring.ai.http.client.read-timeout=30s")
 				// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiHttpClientAutoConfiguration.class))
 			.run(context -> {
