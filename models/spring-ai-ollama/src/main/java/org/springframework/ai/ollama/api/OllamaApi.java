@@ -653,6 +653,7 @@ public class OllamaApi {
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("model_info") Map<String, Object> modelInfo,
 			@JsonProperty("projector_info") Map<String, Object> projectorInfo,
+			@JsonProperty("capabilities") List<String> capabilities,
 			@JsonProperty("modified_at") Instant modifiedAt
 	) { }
 
