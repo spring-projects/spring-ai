@@ -16,18 +16,8 @@
 
 package org.springframework.ai.tool.method;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
@@ -39,6 +29,16 @@ import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
  * A {@link ToolCallbackProvider} that builds {@link ToolCallback} instances from
  * {@link Tool}-annotated methods.
@@ -46,7 +46,7 @@ import org.springframework.util.ReflectionUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public final class MethodToolCallbackProvider implements ToolCallbackProvider {
+public class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallbackProvider.class);
 
@@ -60,26 +60,31 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-		var toolCallbacks = this.toolObjects.stream()
-			.map(toolObject -> Stream
-				.of(ReflectionUtils.getDeclaredMethods(
-						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
-				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
-				.filter(toolMethod -> !isFunctionalType(toolMethod))
-				.map(toolMethod -> MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.from(toolMethod))
-					.toolMetadata(ToolMetadata.from(toolMethod))
-					.toolMethod(toolMethod)
-					.toolObject(toolObject)
-					.toolCallResultConverter(ToolUtils.getToolCallResultConverter(toolMethod))
-					.build())
-				.toArray(ToolCallback[]::new))
-			.flatMap(Stream::of)
-			.toArray(ToolCallback[]::new);
+		var toolCallbacks = toolObjects.stream()
+				.map(toolObject -> Stream
+						.of(ReflectionUtils.getDeclaredMethods(AopUtils.isAopProxy(toolObject)
+								? AopUtils.getTargetClass(toolObject) : classOfToolObject(toolObject)))
+						.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
+						.filter(toolMethod -> !isFunctionalType(toolMethod))
+						.filter(toolMethod -> !(toolObject instanceof Class<?>) || Modifier.isStatic(toolMethod.getModifiers()))
+						.map(toolMethod -> MethodToolCallback.builder()
+								.toolDefinition(ToolDefinition.from(toolMethod))
+								.toolMetadata(ToolMetadata.from(toolMethod))
+								.toolMethod(toolMethod)
+								.toolObject(toolObject)
+								.toolCallResultConverter(ToolUtils.getToolCallResultConverter(toolMethod))
+								.build())
+						.toArray(ToolCallback[]::new))
+				.flatMap(Stream::of)
+				.toArray(ToolCallback[]::new);
 
 		validateToolCallbacks(toolCallbacks);
 
 		return toolCallbacks;
+	}
+
+	private Class<?> classOfToolObject(Object toolObject) {
+		return toolObject instanceof Class<?> c ? c : toolObject.getClass();
 	}
 
 	private boolean isFunctionalType(Method toolMethod) {
@@ -100,7 +105,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 		if (!duplicateToolNames.isEmpty()) {
 			throw new IllegalStateException("Multiple tools with the same name (%s) found in sources: %s".formatted(
 					String.join(", ", duplicateToolNames),
-					this.toolObjects.stream().map(o -> o.getClass().getName()).collect(Collectors.joining(", "))));
+					toolObjects.stream().map(o -> o.getClass().getName()).collect(Collectors.joining(", "))));
 		}
 	}
 
@@ -108,7 +113,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 		return new Builder();
 	}
 
-	public static final class Builder {
+	public static class Builder {
 
 		private List<Object> toolObjects;
 
@@ -122,7 +127,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 		}
 
 		public MethodToolCallbackProvider build() {
-			return new MethodToolCallbackProvider(this.toolObjects);
+			return new MethodToolCallbackProvider(toolObjects);
 		}
 
 	}
