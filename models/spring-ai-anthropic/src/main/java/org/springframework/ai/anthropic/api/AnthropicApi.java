@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,9 +57,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author Jihoon Kim
  * @author Alexandros Pappas
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class AnthropicApi {
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static final String PROVIDER_NAME = AiProvider.ANTHROPIC.value();
 
@@ -89,6 +94,7 @@ public class AnthropicApi {
 	 * Create a new client api with DEFAULT_BASE_URL
 	 * @param anthropicApiKey Anthropic api Key.
 	 */
+	@Deprecated(since = "1.0.0.M7")
 	public AnthropicApi(String anthropicApiKey) {
 		this(DEFAULT_BASE_URL, anthropicApiKey);
 	}
@@ -98,6 +104,7 @@ public class AnthropicApi {
 	 * @param baseUrl api base URL.
 	 * @param anthropicApiKey Anthropic api Key.
 	 */
+	@Deprecated(since = "1.0.0.M7")
 	public AnthropicApi(String baseUrl, String anthropicApiKey) {
 		this(baseUrl, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(), WebClient.builder(),
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
@@ -111,6 +118,7 @@ public class AnthropicApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
+	@Deprecated(since = "1.0.0.M7")
 	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
@@ -1449,5 +1457,71 @@ public class AnthropicApi {
 		@JsonProperty("type") EventType type) implements StreamEvent {
 	}
 	// @formatter:on
+
+	public static class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String apiKey;
+
+		private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		private String anthropicBetaFeatures = DEFAULT_ANTHROPIC_BETA_VERSION;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder anthropicVersion(String anthropicVersion) {
+			Assert.notNull(anthropicVersion, "anthropicVersion cannot be null");
+			this.anthropicVersion = anthropicVersion;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public Builder anthropicBetaFeatures(String anthropicBetaFeatures) {
+			Assert.notNull(anthropicBetaFeatures, "anthropicBetaFeatures cannot be null");
+			this.anthropicBetaFeatures = anthropicBetaFeatures;
+			return this;
+		}
+
+		public AnthropicApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new AnthropicApi(this.baseUrl, this.apiKey, this.anthropicVersion, this.restClientBuilder,
+					this.webClientBuilder, this.responseErrorHandler, this.anthropicBetaFeatures);
+		}
+
+	}
 
 }
