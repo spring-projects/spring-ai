@@ -933,7 +933,8 @@ public class AnthropicApi {
 		// @formatter:off
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
-			@JsonProperty("data") String data) {
+			@JsonProperty("data") String data,
+			@JsonProperty("url") String url) {
 			// @formatter:on
 
 			/**
@@ -942,7 +943,11 @@ public class AnthropicApi {
 			 * @param data The content data.
 			 */
 			public Source(String mediaType, String data) {
-				this("base64", mediaType, data);
+				this("base64", mediaType, data, null);
+			}
+
+			public Source(String url) {
+				this("url", null, null, url);
 			}
 
 		}

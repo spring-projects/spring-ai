@@ -88,6 +88,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Claudio Silva Junior
  * @author Alexandros Pappas
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class AnthropicChatModel implements ChatModel {
@@ -355,6 +356,18 @@ public class AnthropicChatModel implements ChatModel {
 			.build();
 	}
 
+	private Source getSourceByMedia(Media media) {
+		String data = this.fromMediaData(media.getData());
+
+		// http is not allowed and redirect not allowed
+		if (data.startsWith("https://")) {
+			return new Source(data);
+		}
+		else {
+			return new Source(media.getMimeType().toString(), data);
+		}
+	}
+
 	private String fromMediaData(Object mediaData) {
 		if (mediaData instanceof byte[] bytes) {
 			return Base64.getEncoder().encodeToString(bytes);
@@ -455,8 +468,7 @@ public class AnthropicChatModel implements ChatModel {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
 								Type contentBlockType = getContentBlockTypeByMedia(media);
-								var source = new Source(media.getMimeType().toString(),
-										this.fromMediaData(media.getData()));
+								var source = getSourceByMedia(media);
 								return new ContentBlock(contentBlockType, source);
 							}).toList();
 							contents.addAll(mediaContent);
