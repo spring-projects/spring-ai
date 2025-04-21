@@ -84,7 +84,7 @@ class MistralAiChatModelIT {
 	protected Resource qaEvaluatorNotRelatedResource;
 
 	@Value("classpath:/prompts/eval/qa-evaluator-fact-based-answer.st")
-	protected Resource qaEvalutaorFactBasedAnswerResource;
+	protected Resource qaEvaluatorFactBasedAnswerResource;
 
 	@Value("classpath:/prompts/eval/user-evaluator-message.st")
 	protected Resource userEvaluatorResource;
