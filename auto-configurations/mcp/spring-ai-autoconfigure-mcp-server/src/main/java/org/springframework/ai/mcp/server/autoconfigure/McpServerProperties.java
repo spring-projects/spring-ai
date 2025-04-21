@@ -73,6 +73,14 @@ public class McpServerProperties {
 	private String version = "1.0.0";
 
 	/**
+	 * The instructions of the MCP server instance.
+	 * <p>
+	 * These instructions are used to provide guidance to the client on how to interact
+	 * with this server.
+	 */
+	private String instructions = null;
+
+	/**
 	 * Enable/disable notifications for resource changes. Only relevant for MCP servers
 	 * with resource capabilities.
 	 * <p>
@@ -178,6 +186,14 @@ public class McpServerProperties {
 	public void setVersion(String version) {
 		Assert.hasText(version, "Version must not be empty");
 		this.version = version;
+	}
+
+	public String getInstructions() {
+		return this.instructions;
+	}
+
+	public void setInstructions(String instructions) {
+		this.instructions = instructions;
 	}
 
 	public boolean isResourceChangeNotification() {
