@@ -418,13 +418,13 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		}
 
 		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "Function names must not be null");
+			Assert.notNull(toolNames, "Tool names must not be null");
 			this.options.toolNames = toolNames;
 			return this;
 		}
 
 		public Builder toolName(String toolName) {
-			Assert.hasText(toolName, "Function name must not be empty");
+			Assert.hasText(toolName, "Tool name must not be empty");
 			this.options.toolNames.add(toolName);
 			return this;
 		}
