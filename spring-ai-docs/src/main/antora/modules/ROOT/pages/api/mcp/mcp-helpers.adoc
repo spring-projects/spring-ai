@@ -115,7 +115,7 @@ Async::
 [source,java]
 ----
 List<ToolCallback> toolCallbacks = // obtain tool callbacks
-List<AsyncToolSpecification> asyncToolSpecificaitons = McpToolUtils.toAsyncToolSpecifications(toolCallbacks);
+List<AsyncToolSpecification> asyncToolSpecifications = McpToolUtils.toAsyncToolSpecifications(toolCallbacks);
 ----
 +
 then you can use the `McpServer.AsyncSpecification` to register the tool specifications:
@@ -123,7 +123,7 @@ then you can use the `McpServer.AsyncSpecification` to register the tool specifi
 [source,java]
 ----
 McpServer.AsyncSpecification asyncSpec = ...
-asyncSpec.tools(asyncToolSpecificaitons);
+asyncSpec.tools(asyncToolSpecifications);
 ----
 ======
 
