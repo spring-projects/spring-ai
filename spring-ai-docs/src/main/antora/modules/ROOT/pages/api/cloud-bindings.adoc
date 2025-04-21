@@ -38,7 +38,7 @@ The following are the components for which the cloud binding support is currentl
 [cols="|,|"]
 |====
 | Service Type	 | Binding Type | Source Properties | Target Properties
-| `Chroma Vecor Store`
+| `Chroma Vector Store`
 | `chroma` | `uri`, `username`, `passwor` | `spring.ai.vectorstore.chroma.client.host`, `spring.ai.vectorstore.chroma.client.port`, `spring.ai.vectorstore.chroma.client.username`, `spring.ai.vectorstore.chroma.client.host.password`
 
 | `Mistral AI`
