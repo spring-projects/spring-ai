@@ -142,7 +142,7 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private List<Integer> getEncodedTokens(String text) {
 		Assert.notNull(text, "Text must not be null");
-		return this.encoding.encode(text).boxed();
+		return this.encoding.encode(text);
 	}
 
 	private String decodeTokens(List<Integer> tokens) {
