@@ -4,13 +4,14 @@ The https://cloud.google.com/vertex-ai/docs/generative-ai/multimodal/overview[Ve
 The Vertex AI Gemini API supports multimodal prompts as input and output text or code.
 A multimodal model is a model that is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
 
-Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to the Gemini 1.0 Pro Vision and Gemini 1.0 Pro models. For specifications of the Vertex AI Gemini API models, see link:https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models#gemini-models[Model information].
+Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to the link:https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-0-flash[Gemini 2.0 Flash] and link:https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-0-flash-lite[Gemini 2.0 Flash-Lite].
+For specifications of the Vertex AI Gemini API models, see link:https://cloud.google.com/vertex-ai/generative-ai/docs/models#gemini-models[Model information].
 
-link:https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini[Gemini API Reference]
+link:https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference[Gemini API Reference]
 
 == Prerequisites
 
-- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, apropriate for you OS.
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for you OS.
 - Authenticate by running the following command.
 Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
 
@@ -75,10 +76,10 @@ The prefix `spring.ai.vertex.ai.gemini` is used as the property prefix that lets
 | Property | Description | Default
 
 | spring.ai.model.chat   | Enable Chat Model client |  vertexai
-| spring.ai.vertex.ai.gemini.projectId   | Google Cloud Platform project ID |  -
+| spring.ai.vertex.ai.gemini.project-id   | Google Cloud Platform project ID |  -
 | spring.ai.vertex.ai.gemini.location    | Region           |  -
-| spring.ai.vertex.ai.gemini.credentialsUri    | URI to Vertex AI Gemini credentials. When provided it is used to create an a `GoogleCredentials` instance to authenticate the `VertexAI`. |  -
-| spring.ai.vertex.ai.gemini.apiEndpoint | Vertex AI Gemini API endpoint. |  -
+| spring.ai.vertex.ai.gemini.credentials-uri    | URI to Vertex AI Gemini credentials. When provided it is used to create an a `GoogleCredentials` instance to authenticate the `VertexAI`. |  -
+| spring.ai.vertex.ai.gemini.api-endpoint | Vertex AI Gemini API endpoint. |  -
 | spring.ai.vertex.ai.gemini.scopes |  |  -
 | spring.ai.vertex.ai.gemini.transport | API transport. GRPC or REST. |  GRPC
 |====
@@ -89,21 +90,19 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 |====
 | Property | Description | Default
 
-| spring.ai.vertex.ai.gemini.chat.options.model | Supported https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini[Vertex AI Gemini Chat model] to use include the (1.0 ) `gemini-pro`, `gemini-pro-vision` (deprecated) and the new `gemini-1.5-pro-001`, `gemini-1.5-flash-001` models. | gemini-1.5-pro-001
-| spring.ai.vertex.ai.gemini.chat.options.responseMimeType | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
-| spring.ai.vertex.ai.gemini.chat.options.googleSearchRetrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
-| spring.ai.vertex.ai.gemini.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.8
-| spring.ai.vertex.ai.gemini.chat.options.topK | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
-| spring.ai.vertex.ai.gemini.chat.options.topP | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
-| spring.ai.vertex.ai.gemini.chat.options.candidateCount | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | -
-| spring.ai.vertex.ai.gemini.chat.options.candidateCount | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | -
-| spring.ai.vertex.ai.gemini.chat.options.maxOutputTokens | The maximum number of tokens to generate. | -
-| spring.ai.vertex.ai.gemini.chat.options.frequencyPenalty |  | -
-| spring.ai.vertex.ai.gemini.chat.options.presencePenalty |  | -
-| spring.ai.vertex.ai.gemini.chat.options.toolNames | List of tools, identified by their names, to enable for function calling in a single prompt requests. Tools with those names must exist in the ToolCallback registry. | -
-| (**deprecated** by `toolNames`) spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
-| spring.ai.vertex.ai.gemini.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
-| spring.ai.vertex.ai.gemini.chat.options.safetySettings | List of safety settings to control safety filters, as defined by https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters[Vertex AI Safety Filters]. Each safety setting can have a method, threshold, and category. | -
+| spring.ai.vertex.ai.gemini.chat.options.model | Supported https://cloud.google.com/vertex-ai/generative-ai/docs/models#gemini-models[Vertex AI Gemini Chat model] to use include the `gemini-2.0-flash`, `gemini-2.0-flash-lite` and the new `gemini-2.5-pro-preview-03-25`, `gemini-2.5-flash-preview-04-17` models. | gemini-2.0-flash
+| spring.ai.vertex.ai.gemini.chat.options.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
+| spring.ai.vertex.ai.gemini.chat.options.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
+| spring.ai.vertex.ai.gemini.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.7
+| spring.ai.vertex.ai.gemini.chat.options.top-k | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
+| spring.ai.vertex.ai.gemini.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
+| spring.ai.vertex.ai.gemini.chat.options.candidate-count | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | 1
+| spring.ai.vertex.ai.gemini.chat.options.max-output-tokens | The maximum number of tokens to generate. | -
+| spring.ai.vertex.ai.gemini.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| (**deprecated** by `tool-names`) spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt request. Functions with those names must exist in the functionCallbacks registry. | -
+| spring.ai.vertex.ai.gemini.chat.options.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
+| (**deprecated** by `internal-tool-execution-enabled`) spring.ai.vertex.ai.gemini.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
+| spring.ai.vertex.ai.gemini.chat.options.safety-settings | List of safety settings to control safety filters, as defined by https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters[Vertex AI Safety Filters]. Each safety setting can have a method, threshold, and category. | -
 
 |====
 
@@ -115,8 +114,8 @@ The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vert
 
 On start-up, the default options can be configured with the `VertexAiGeminiChatModel(api, options)` constructor or the `spring.ai.vertex.ai.chat.options.*` properties.
 
-At runtime you can override the default options by adding new, request specific, options to the `Prompt` call.
-For example to override the default temperature for a specific request:
+At runtime, you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example, to override the default temperature for a specific request:
 
 [source,java]
 ----
@@ -129,12 +128,12 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
-https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
+https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
 == Tool Calling
 
-The Vertex AI Gemini model supports tool calling capabilities, allowing models to use tools during conversations. 
+The Vertex AI Gemini model supports tool calling (in Google Gemini context, it's called `function calling`) capabilities, allowing models to use tools during conversations.
 Here's an example of how to define and use `@Tool`-based tools:
 
 [source,java]
@@ -149,7 +148,7 @@ public class WeatherService {
 }
 
 String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")				
+        .prompt("What's the weather like in Boston?")
         .tools(new WeatherService())
         .call()
         .content();
@@ -166,7 +165,7 @@ public Function<Request, Response> weatherFunction() {
 }
 
 String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")				
+        .prompt("What's the weather like in Boston?")
         .tools("weatherFunction")
         .inputType(Request.class)
         .call()
@@ -178,16 +177,16 @@ Find more in xref:api/tools.adoc[Tools] documentation.
 
 == Multimodal
 
-Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including `text`, `pdf`, `images`, `audio`, and other data formats. 
+Multimodality refers to a model's ability to simultaneously understand and process information from various (input) sources, including `text`, `pdf`, `images`, `audio`, and other data formats.
 
 === Image, Audio, Video
-Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video. 
+Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video.
 For more details, refer to the blog post https://blog.google/technology/ai/google-gemini-ai/#introducing-gemini[Introducing Gemini].
 
 Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
 This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatModelIT.java[VertexAiGeminiChatModelIT.java], demonstrating the combination of user text with an image.
+Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-vertex-ai-gemini/src/test/java/org/springframework/ai/vertexai/gemini/VertexAiGeminiChatModelIT.java[VertexAiGeminiChatModelIT#multiModalityTest()], demonstrating the combination of user text with an image.
 
 
 [source,java]
@@ -227,11 +226,21 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 ----
 spring.ai.vertex.ai.gemini.project-id=PROJECT_ID
 spring.ai.vertex.ai.gemini.location=LOCATION
-spring.ai.vertex.ai.gemini.chat.options.model=vertex-pro-vision
+spring.ai.vertex.ai.gemini.chat.options.model=gemini-2.0-flash
 spring.ai.vertex.ai.gemini.chat.options.temperature=0.5
 ----
 
-TIP: replace the `project-id` with your Google Cloud Project ID and `location` with a https://cloud.google.com/gemini/docs/locations[Gemini location].
+TIP: Replace the `project-id` with your Google Cloud Project ID and `location` is Google Cloud Region
+like `us-central1`, `europe-west1`, etc...
+
+[NOTE]
+====
+Each model has its own set of supported regions, you can find the list of supported regions in the model page.
+
+For example, model=`gemini-2.5-flash` is currently available in `us-central1` region only, you must set location=`us-central1`,
+following the model page link:https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash[Gemini 2.5 Flash - Supported Regions].
+====
+
 
 This will create a `VertexAiGeminiChatModel` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the chat model for text generations.
@@ -294,7 +303,7 @@ VertexAI vertexApi =  new VertexAI(projectId, location);
 
 var chatModel = new VertexAiGeminiChatModel(this.vertexApi,
     VertexAiGeminiChatOptions.builder()
-        .model(ChatModel.GEMINI_PRO_1_5_PRO)
+        .model(ChatModel.GEMINI_2_0_FLASH)
         .temperature(0.4)
     .build());
 

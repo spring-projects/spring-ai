@@ -547,7 +547,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 	protected List<Generation> responseCandidateToGeneration(Candidate candidate) {
 
-		// TODO - The candidateIndex (e.g. choice must be asigned to the generation).
+		// TODO - The candidateIndex (e.g. choice must be assigned to the generation).
 		int candidateIndex = candidate.getIndex();
 		FinishReason candidateFinishReason = candidate.getFinishReason();
 
@@ -706,9 +706,9 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		return generationConfigBuilder.build();
 	}
 
-	private List<Content> toGeminiContent(List<Message> instrucitons) {
+	private List<Content> toGeminiContent(List<Message> instructions) {
 
-		List<Content> contents = instrucitons.stream()
+		List<Content> contents = instructions.stream()
 			.map(message -> Content.newBuilder()
 				.setRole(toGeminiMessageType(message.getMessageType()).getValue())
 				.addAllParts(messageToGeminiParts(message))
@@ -853,23 +853,91 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	public enum ChatModel implements ChatModelDescription {
 
 		/**
-		 * Deprecated by Goolgle in favor of 1.5 pro and flash models.
+		 * <b>gemini-1.5-pro</b> is recommended to upgrade to <b>gemini-2.0-flash</b>
+		 * <p>
+		 * Discontinuation date: September 24, 2025
+		 * <p>
+		 * See: <a href=
+		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions#stable-version">stable-version</a>
 		 */
-		GEMINI_PRO_VISION("gemini-pro-vision"),
-
-		GEMINI_PRO("gemini-pro"),
-
 		GEMINI_1_5_PRO("gemini-1.5-pro-002"),
 
+		/**
+		 * <b>gemini-1.5-flash</b> is recommended to upgrade to
+		 * <b>gemini-2.0-flash-lite</b>
+		 * <p>
+		 * Discontinuation date: September 24, 2025
+		 * <p>
+		 * See: <a href=
+		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions#stable-version">stable-version</a>
+		 */
 		GEMINI_1_5_FLASH("gemini-1.5-flash-002"),
 
-		GEMINI_1_5_FLASH_8B("gemini-1.5-flash-8b-001"),
-
+		/**
+		 * <b>gemini-2.0-flash</b> delivers next-gen features and improved capabilities,
+		 * including superior speed, built-in tool use, multimodal generation, and a 1M
+		 * token context window.
+		 * <p>
+		 * Inputs: Text, Code, Images, Audio, Video - 1,048,576 tokens | Outputs: Text,
+		 * Audio(Experimental), Images(Experimental) - 8,192 tokens
+		 * <p>
+		 * Knowledge cutoff: June 2024
+		 * <p>
+		 * Model ID: gemini-2.0-flash
+		 * <p>
+		 * See: <a href=
+		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-0-flash">gemini-2.0-flash</a>
+		 */
 		GEMINI_2_0_FLASH("gemini-2.0-flash"),
 
+		/**
+		 * <b>gemini-2.0-flash-lite</b> is the fastest and most cost efficient Flash
+		 * model. It's an upgrade path for 1.5 Flash users who want better quality for the
+		 * same price and speed.
+		 * <p>
+		 * Inputs: Text, Code, Images, Audio, Video - 1,048,576 tokens | Outputs: Text -
+		 * 8,192 tokens
+		 * <p>
+		 * Knowledge cutoff: June 2024
+		 * <p>
+		 * Model ID: gemini-2.0-flash-lite
+		 * <p>
+		 * See: <a href=
+		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-0-flash-lite">gemini-2.0-flash-lite</a>
+		 */
 		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite"),
 
-		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-25");
+		/**
+		 * <b>gemini-2.5-pro</b> is the most advanced reasoning Gemini model, capable of
+		 * solving complex problems.
+		 * <p>
+		 * Inputs: Text, Code, Images, Audio, Video - 1,048,576 tokens | Outputs: Text -
+		 * 65,536 tokens
+		 * <p>
+		 * Knowledge cutoff: January 2025
+		 * <p>
+		 * Model ID: gemini-2.5-pro-preview-03-25
+		 * <p>
+		 * See: <a href=
+		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-pro">gemini-2.5-pro</a>
+		 */
+		GEMINI_2_5_PRO("gemini-2.5-pro-preview-03-25"),
+
+		/**
+		 * <b>gemini-2.5-flash</b> is a thinking model that offers great, well-rounded
+		 * capabilities. It is designed to offer a balance between price and performance.
+		 * <p>
+		 * Inputs: Text, Code, Images, Audio, Video - 1,048,576 tokens | Outputs: Text -
+		 * 65,536 tokens
+		 * <p>
+		 * Knowledge cutoff: January 2025
+		 * <p>
+		 * Model ID: gemini-2.5-flash-preview-04-17
+		 * <p>
+		 * See: <a href=
+		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash">gemini-2.5-flash</a>
+		 */
+		GEMINI_2_5_FLASH("gemini-2.5-flash-preview-04-17");
 
 		public final String value;
 
