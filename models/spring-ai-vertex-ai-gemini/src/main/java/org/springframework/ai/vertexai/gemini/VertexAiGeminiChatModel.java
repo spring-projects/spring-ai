@@ -547,7 +547,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 	protected List<Generation> responseCandidateToGeneration(Candidate candidate) {
 
-		// TODO - The candidateIndex (e.g. choice must be asigned to the generation).
+		// TODO - The candidateIndex (e.g. choice must be assigned to the generation).
 		int candidateIndex = candidate.getIndex();
 		FinishReason candidateFinishReason = candidate.getFinishReason();
 
