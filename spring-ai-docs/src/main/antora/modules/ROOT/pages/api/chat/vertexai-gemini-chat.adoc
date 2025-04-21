@@ -10,7 +10,7 @@ link:https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemin
 
 == Prerequisites
 
-- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, apropriate for you OS.
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for you OS.
 - Authenticate by running the following command.
 Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
 
