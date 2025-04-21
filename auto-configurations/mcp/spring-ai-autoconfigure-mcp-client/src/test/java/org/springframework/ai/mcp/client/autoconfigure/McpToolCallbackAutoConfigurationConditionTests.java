@@ -18,7 +18,7 @@ package org.springframework.ai.mcp.client.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.mcp.client.autoconfigure.McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfigurationCondition;
+import org.springframework.ai.mcp.client.autoconfigure.McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -27,9 +27,9 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests for {@link McpToolCallbackAutoconfigurationCondition}.
+ * Tests for {@link McpToolCallbackAutoConfigurationCondition}.
  */
-public class McpToolCallbackAutoconfigurationConditionTests {
+public class McpToolCallbackAutoConfigurationConditionTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestConfiguration.class);
@@ -78,7 +78,7 @@ public class McpToolCallbackAutoconfigurationConditionTests {
 	}
 
 	@Configuration
-	@Conditional(McpToolCallbackAutoconfigurationCondition.class)
+	@Conditional(McpToolCallbackAutoConfigurationCondition.class)
 	static class TestConfiguration {
 
 		@Bean

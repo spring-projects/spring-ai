@@ -244,7 +244,7 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public CloseableMcpAsyncClients makeAsynClientsClosable(List<McpAsyncClient> clients) {
+	public CloseableMcpAsyncClients makeAsyncClientsClosable(List<McpAsyncClient> clients) {
 		return new CloseableMcpAsyncClients(clients);
 	}
 

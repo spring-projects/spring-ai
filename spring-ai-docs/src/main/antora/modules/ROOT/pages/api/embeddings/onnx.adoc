@@ -129,7 +129,7 @@ that means that you model is larger than 2GB and is serialized in two files: `mo
 
 The `model.onnx_data` is called link:https://onnx.ai/onnx/repo-docs/ExternalData.html#external-data[External Data] and is expected to be under the same directory of the `model.onnx`.
 
-Currently the only workaround is to copy the large `model.onnx_data` in the folder you run your Boot applicaiton.
+Currently the only workaround is to copy the large `model.onnx_data` in the folder you run your Boot application.
 ====
 
 [NOTE]

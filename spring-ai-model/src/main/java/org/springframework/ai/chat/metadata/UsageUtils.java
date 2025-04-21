@@ -43,7 +43,7 @@ public final class UsageUtils {
 			usageFromPreviousChatResponse = previousChatResponse.getMetadata().getUsage();
 		}
 		else {
-			// Return the curent usage when the previous chat response usage is empty or
+			// Return the current usage when the previous chat response usage is empty or
 			// null.
 			return currentUsage;
 		}

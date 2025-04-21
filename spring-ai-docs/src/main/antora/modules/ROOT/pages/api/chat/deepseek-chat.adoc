@@ -174,7 +174,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 == Function Calling
 
-NOTE: The current version of the deepseek-chat model's Function Calling capabilitity is unstable, which may result in looped calls or empty responses.
+NOTE: The current version of the deepseek-chat model's Function Calling capability is unstable, which may result in looped calls or empty responses.
 
 == Multimodal
 
