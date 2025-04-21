@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Conditional;
  */
 @AutoConfiguration(after = { McpClientAutoConfiguration.class })
 @EnableConfigurationProperties(McpClientCommonProperties.class)
-@Conditional(McpToolCallbackAutoConfiguration.McpToolCallbackAutoconfigurationCondition.class)
+@Conditional(McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition.class)
 public class McpToolCallbackAutoConfiguration {
 
 	/**
@@ -64,9 +64,9 @@ public class McpToolCallbackAutoConfiguration {
 		return new AsyncMcpToolCallbackProvider(mcpClients);
 	}
 
-	public static class McpToolCallbackAutoconfigurationCondition extends AllNestedConditions {
+	public static class McpToolCallbackAutoConfigurationCondition extends AllNestedConditions {
 
-		public McpToolCallbackAutoconfigurationCondition() {
+		public McpToolCallbackAutoConfigurationCondition() {
 			super(ConfigurationPhase.PARSE_CONFIGURATION);
 		}
 

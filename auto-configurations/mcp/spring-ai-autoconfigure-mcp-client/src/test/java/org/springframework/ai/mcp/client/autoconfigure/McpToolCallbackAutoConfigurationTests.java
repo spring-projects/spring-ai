@@ -29,7 +29,7 @@ public class McpToolCallbackAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class));
 
 	@Test
-	void disabledByDeafault() {
+	void disabledByDefault() {
 
 		this.applicationContext.run(context -> {
 			assertThat(context).doesNotHaveBean("mcpToolCallbacks");
@@ -52,7 +52,7 @@ public class McpToolCallbackAutoConfigurationTests {
 	}
 
 	@Test
-	void enabledMcpToolCallbackAutoconfiguration() {
+	void enabledMcpToolCallbackAutoConfiguration() {
 
 		// sync
 		this.applicationContext.withPropertyValues("spring.ai.mcp.client.toolcallback.enabled=true").run(context -> {
