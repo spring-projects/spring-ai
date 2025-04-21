@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author Jihoon Kim
  * @author Alexandros Pappas
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class AnthropicApi {
@@ -1038,13 +1039,15 @@ public class AnthropicApi {
 		 * @param mediaType The media type of the content. For example, "image/png" or
 		 * "image/jpeg".
 		 * @param data The base64-encoded data of the content.
+		 * @param url The url of the content. (image only)
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record Source(
 		// @formatter:off
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
-			@JsonProperty("data") String data) {
+			@JsonProperty("data") String data,
+			@JsonProperty("url") String url) {
 			// @formatter:on
 
 			/**
@@ -1053,7 +1056,11 @@ public class AnthropicApi {
 			 * @param data The content data.
 			 */
 			public Source(String mediaType, String data) {
-				this("base64", mediaType, data);
+				this("base64", mediaType, data, null);
+			}
+
+			public Source(String url) {
+				this("url", null, null, url);
 			}
 
 		}
