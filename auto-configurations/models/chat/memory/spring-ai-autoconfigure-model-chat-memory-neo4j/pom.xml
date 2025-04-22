@@ -21,7 +21,6 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-
 	<dependencies>
 
 		<dependency>
@@ -29,8 +28,6 @@
 			<artifactId>spring-ai-model-chat-memory-neo4j</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-
-
 
 		<!-- Boot dependencies -->
 		<dependency>

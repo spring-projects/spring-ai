@@ -50,7 +50,7 @@
 		<dependency>
 			<groupId>com.azure</groupId>
 			<artifactId>azure-identity</artifactId>
-			<version>1.15.4</version> <!-- or the latest version -->
+			<version>${azure-identity.version}</version> <!-- or the latest version -->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
