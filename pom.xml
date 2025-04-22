@@ -176,6 +176,7 @@
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-moonshot</module>
+		<module>models/spring-ai-qwen</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
