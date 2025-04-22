@@ -34,12 +34,10 @@ public class MockImageContentFilter {
 				}
 				filteredContents.add(filteredContent);
 			}
-			// @formatter:off
-            MultiModalMessage filteredMessage = MultiModalMessage.builder()
-                    .role(multiModalMessage.getRole())
-                    .content(filteredContents)
-                    .build();
-            // @formatter:on
+			MultiModalMessage filteredMessage = MultiModalMessage.builder()
+				.role(multiModalMessage.getRole())
+				.content(filteredContents)
+				.build();
 			filteredMessages.add(filteredMessage);
 		}
 

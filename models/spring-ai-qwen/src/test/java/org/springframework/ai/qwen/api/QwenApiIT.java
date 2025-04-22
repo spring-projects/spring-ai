@@ -65,18 +65,16 @@ public class QwenApiIT {
 
 		QwenApi api = qwenApi();
 
-		// @formatter:off
-        String generationTextFromStream = api.streamCall(prompt, null)
-                .collectList()
-                .block()
-                .stream()
-                .map(ChatResponse::getResults)
-                .flatMap(List::stream)
-                .map(Generation::getOutput)
-                .map(AssistantMessage::getText)
-                .filter(Objects::nonNull)
-                .collect(Collectors.joining());
-        // @formatter:on
+		String generationTextFromStream = api.streamCall(prompt, null)
+			.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(Objects::nonNull)
+			.collect(Collectors.joining());
 
 		logger.info(generationTextFromStream);
 		assertThat(generationTextFromStream).containsIgnoringCase("rain");
@@ -119,18 +117,16 @@ public class QwenApiIT {
 		QwenApi api = qwenApi();
 		api.setGenerationParamCustomizer(builder -> builder.stopString("rain"));
 
-		// @formatter:off
-        String generationTextFromStream = api.streamCall(prompt, null)
-                .collectList()
-                .block()
-                .stream()
-                .map(ChatResponse::getResults)
-                .flatMap(List::stream)
-                .map(Generation::getOutput)
-                .map(AssistantMessage::getText)
-                .filter(Objects::nonNull)
-                .collect(Collectors.joining());
-        // @formatter:on
+		String generationTextFromStream = api.streamCall(prompt, null)
+			.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(Objects::nonNull)
+			.collect(Collectors.joining());
 
 		logger.info(generationTextFromStream);
 		assertThat(generationTextFromStream).doesNotContainIgnoringCase("rain");

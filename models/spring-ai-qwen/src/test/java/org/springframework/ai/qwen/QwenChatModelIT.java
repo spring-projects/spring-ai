@@ -181,18 +181,16 @@ class QwenChatModelIT {
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		// @formatter:off
-        String generationTextFromStream = this.chatModel.stream(prompt)
-                .collectList()
-                .block()
-                .stream()
-                .map(ChatResponse::getResults)
-                .flatMap(List::stream)
-                .map(Generation::getOutput)
-                .map(AssistantMessage::getText)
-                .filter(Objects::nonNull)
-                .collect(Collectors.joining());
-        // @formatter:on
+		String generationTextFromStream = this.chatModel.stream(prompt)
+			.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(Objects::nonNull)
+			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = converter.convert(generationTextFromStream);
 		logger.info(actorsFilms.toString());
@@ -204,13 +202,12 @@ class QwenChatModelIT {
 	void multiModalityImageUrl() throws IOException {
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
-		// @formatter:off
-        String response = ChatClient.create(this.chatModel).prompt()
-                .options(QwenChatOptions.builder().model(QwenModel.QWEN_VL_MAX.getName()).build())
-                .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
-                .call()
-                .content();
-        // @formatter:on
+		String response = ChatClient.create(this.chatModel)
+			.prompt()
+			.options(QwenChatOptions.builder().model(QwenModel.QWEN_VL_MAX.getName()).build())
+			.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
+			.call()
+			.content();
 
 		logger.info(response);
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
@@ -220,31 +217,28 @@ class QwenChatModelIT {
 	void multiModalityImageResource() {
 		Resource resource = new ClassPathResource("multimodal.test.png");
 
-		// @formatter:off
-        String response = ChatClient.create(this.chatModel).prompt()
-                .options(QwenChatOptions.builder().model(QwenModel.QWEN_VL_MAX.getName()).build())
-                .user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, resource))
-                .call()
-                .content();
-        // @formatter:on
+		String response = ChatClient.create(this.chatModel)
+			.prompt()
+			.options(QwenChatOptions.builder().model(QwenModel.QWEN_VL_MAX.getName()).build())
+			.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, resource))
+			.call()
+			.content();
 
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	@Test
 	void answerAfterSearch() {
-		// @formatter:off
-        QwenChatOptions options = QwenChatOptions.builder()
-                .enableSearch(true)
-                .searchOptions(QwenChatOptions.SearchOptions.builder()
-                        .citationFormat("[<number>]")
-                        .enableCitation(true)
-                        .enableSource(true)
-                        .forcedSearch(true)
-                        .searchStrategy("standard")
-                        .build())
-                .build();
-        // @formatter:on
+		QwenChatOptions options = QwenChatOptions.builder()
+			.enableSearch(true)
+			.searchOptions(QwenChatOptions.SearchOptions.builder()
+				.citationFormat("[<number>]")
+				.enableCitation(true)
+				.enableSource(true)
+				.forcedSearch(true)
+				.searchStrategy("standard")
+				.build())
+			.build();
 
 		Prompt prompt = new Prompt("What is the weather of Beijing?", options);
 
@@ -258,20 +252,16 @@ class QwenChatModelIT {
 
 	@Test
 	void translateMessage() {
-		// @formatter:off
-        QwenChatOptions options = QwenChatOptions.builder()
-                .model(QwenModel.QWEN_MT_PLUS.getName())
-                .translationOptions(QwenChatOptions.TranslationOptions.builder()
-                        .sourceLang("English")
-                        .targetLang("Chinese")
-                        .terms(singletonList(QwenChatOptions.TranslationOptionTerm.builder()
-                                .source("memory")
-                                .target("内存")
-                                .build()))
-                        .domains("Translate into this IT domain style.")
-                        .build())
-                .build();
-        // @formatter:on
+		QwenChatOptions options = QwenChatOptions.builder()
+			.model(QwenModel.QWEN_MT_PLUS.getName())
+			.translationOptions(QwenChatOptions.TranslationOptions.builder()
+				.sourceLang("English")
+				.targetLang("Chinese")
+				.terms(singletonList(
+						QwenChatOptions.TranslationOptionTerm.builder().source("memory").target("内存").build()))
+				.domains("Translate into this IT domain style.")
+				.build())
+			.build();
 
 		Prompt prompt = new Prompt("my memory", options);
 

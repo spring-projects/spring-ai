@@ -145,33 +145,33 @@ public class QwenChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			// @formatter:off
-            Flux<ChatResponse> chatResponse = this.qwenApi.streamCall(prompt, previousChatResponse)
-                    .flatMap(response -> {
-                        if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-                            return Flux.defer(() -> {
-                                var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-                                if (toolExecutionResult.returnDirect()) {
-                                    // return tool execution result directly to the client
-                                    return Flux.just(ChatResponse.builder().from(response)
-                                            .generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-                                            .build());
-                                } else {
-                                    // send the tool execution result back to the model.
-                                    return this.internalStream(
-                                            new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-                                            response);
-                                }
-                            }).subscribeOn(Schedulers.boundedElastic());
-                        }
-                        else {
-                            return Flux.just(response);
-                        }
-                    })
-                    .doOnError(observation::error)
-                    .doFinally(s -> observation.stop())
-                    .contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-            // @formatter:on
+			Flux<ChatResponse> chatResponse = this.qwenApi.streamCall(prompt, previousChatResponse)
+				.flatMap(response -> {
+					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+						return Flux.defer(() -> {
+							var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+							if (toolExecutionResult.returnDirect()) {
+								// return tool execution result directly to the client
+								return Flux.just(ChatResponse.builder()
+									.from(response)
+									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+									.build());
+							}
+							else {
+								// send the tool execution result back to the model.
+								return this.internalStream(
+										new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+										response);
+							}
+						}).subscribeOn(Schedulers.boundedElastic());
+					}
+					else {
+						return Flux.just(response);
+					}
+				})
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			return new MessageAggregator().aggregate(chatResponse, observationContext::setResponse);
 		});
