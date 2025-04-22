@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,11 +80,11 @@ class CassandraChatMemoryAutoConfigurationIT {
 
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).hasSize(2);
 				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getMessageType())
-					.isEqualTo(MessageType.USER);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getText()).isEqualTo("test question");
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getMessageType())
 					.isEqualTo(MessageType.ASSISTANT);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getText()).isEqualTo("test answer");
+				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getText()).isEqualTo("test answer");
+				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getMessageType())
+					.isEqualTo(MessageType.USER);
+				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getText()).isEqualTo("test question");
 
 				CassandraChatMemoryProperties properties = context.getBean(CassandraChatMemoryProperties.class);
 				assertThat(properties.getTimeToLive()).isEqualTo(getTimeToLive());
