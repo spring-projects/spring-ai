@@ -592,14 +592,14 @@ public class QwenApiHelper {
 																	// there is only one.
 		GenerationOutput.Choice lastPreviousChoice = null;
 
-		if (previous != null) {
+		if (!CollectionUtils.isEmpty(previous)) {
 			lastPreviousChoice = previous.get(previous.size() - 1);
 			if (previous.size() > 1) {
 				choices.addAll(previous.subList(0, previous.size() - 1));
 			}
 		}
 
-		if (current != null) {
+		if (!CollectionUtils.isEmpty(current)) {
 			if (current.size() > 1) {
 				throw new IllegalStateException("Currently only one choice is supported per message!");
 			}
@@ -671,14 +671,14 @@ public class QwenApiHelper {
 															// one.
 		ToolCallBase lastPreviousTooCall = null;
 
-		if (previous != null) {
+		if (!CollectionUtils.isEmpty(previous)) {
 			lastPreviousTooCall = previous.get(previous.size() - 1);
 			if (previous.size() > 1) {
 				toolCalls.addAll(previous.subList(0, previous.size() - 1));
 			}
 		}
 
-		if (current != null) {
+		if (!CollectionUtils.isEmpty(current)) {
 			if (current.size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
