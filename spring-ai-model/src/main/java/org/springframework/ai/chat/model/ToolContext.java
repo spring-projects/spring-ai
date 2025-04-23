@@ -43,7 +43,7 @@ import org.springframework.ai.chat.messages.Message;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public final class ToolContext {
+public class ToolContext {
 
 	/**
 	 * The key for the running, tool call history stored in the context map.

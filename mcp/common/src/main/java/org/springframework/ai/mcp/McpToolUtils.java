@@ -30,6 +30,8 @@ import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
+import org.springframework.ai.chat.model.ToolContextCreator;
+import org.springframework.ai.model.tool.DefaultToolContextCreator;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -166,6 +168,32 @@ public final class McpToolUtils {
 	 */
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
+		return toSyncToolSpecification(toolCallback, new DefaultToolContextCreator(), mimeType);
+	}
+
+	/**
+	 * Converts a Spring AI ToolCallback to an MCP SyncToolSpecification. This enables
+	 * Spring AI functions to be exposed as MCP tools that can be discovered and invoked
+	 * by language models.
+	 *
+	 * <p>
+	 * The conversion process:
+	 * <ul>
+	 * <li>Creates an MCP Tool with the function's name and input schema</li>
+	 * <li>Wraps the function's execution in a SyncToolSpecification that handles the MCP
+	 * protocol</li>
+	 * <li>Provides error handling and result formatting according to MCP
+	 * specifications</li>
+	 * </ul>
+	 * @param toolCallback the Spring AI function callback to convert
+	 * @param toolContextCreator the tool context creator to use for creating the tool
+	 * context
+	 * @param mimeType the MIME type of the output content
+	 * @return an MCP SyncToolRegistration that wraps the function callback
+	 * @throws RuntimeException if there's an error during the function execution
+	 */
+	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
+			ToolContextCreator<? extends ToolContext> toolContextCreator, MimeType mimeType) {
 
 		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
 				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
@@ -173,7 +201,7 @@ public final class McpToolUtils {
 		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
 			try {
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
-						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
+						toolContextCreator.create(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					return new McpSchema.CallToolResult(List
 						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
