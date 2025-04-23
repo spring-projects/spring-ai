@@ -588,8 +588,8 @@ public class QwenApiHelper {
 
 	private static List<GenerationOutput.Choice> mergeChoices(GenerationOutput output,
 			List<GenerationOutput.Choice> previous, List<GenerationOutput.Choice> current) {
-		List<GenerationOutput.Choice> choices = new ArrayList<>(1); // in most cases,
-																	// there is only one.
+		// in most cases, there is only one
+		List<GenerationOutput.Choice> choices = new ArrayList<>(1);
 		GenerationOutput.Choice lastPreviousChoice = null;
 
 		if (!CollectionUtils.isEmpty(previous)) {
@@ -667,8 +667,8 @@ public class QwenApiHelper {
 	}
 
 	private static List<ToolCallBase> mergeToolCalls(List<ToolCallBase> previous, List<ToolCallBase> current) {
-		List<ToolCallBase> toolCalls = new ArrayList<>(1); // in most cases, there is only
-															// one.
+		// in most cases, there is only one
+		List<ToolCallBase> toolCalls = new ArrayList<>(1);
 		ToolCallBase lastPreviousTooCall = null;
 
 		if (!CollectionUtils.isEmpty(previous)) {
