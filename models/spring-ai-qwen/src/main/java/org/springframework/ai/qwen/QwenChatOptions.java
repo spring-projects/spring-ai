@@ -1,7 +1,6 @@
 package org.springframework.ai.qwen;
 
 import com.alibaba.dashscope.common.ResponseFormat;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -101,7 +100,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
-	private List<FunctionCallback> toolCallbacks;
+	private List<ToolCallback> toolCallbacks;
 
 	/**
 	 * Collection of tool names to be resolved at runtime and used for tool calling in the
@@ -155,7 +154,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 	 * not specified, it will be judged based on the model name when called, but these
 	 * judgments may not keep up with the latest situation.
 	 */
-	private Boolean multimodalModel;
+	private Boolean isMultimodalModel;
 
 	/**
 	 * Whether the model supports incremental output in the streaming output mode. This
@@ -190,7 +189,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 		this.searchOptions = builder.searchOptions;
 		this.translationOptions = builder.translationOptions;
 		this.vlHighResolutionImages = builder.vlHighResolutionImages;
-		this.multimodalModel = builder.multimodalModel;
+		this.isMultimodalModel = builder.multimodalModel;
 		this.custom = builder.custom;
 	}
 
@@ -269,27 +268,15 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public List<FunctionCallback> getToolCallbacks() {
+	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
-	@Deprecated
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.getToolCallbacks();
-	}
-
-	@Override
-	@Deprecated
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.setToolCallbacks(functionCallbacks);
 	}
 
 	@Override
@@ -306,20 +293,8 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Deprecated
-	public Set<String> getFunctions() {
-		return this.getToolNames();
-	}
-
-	@Override
-	@Deprecated
-	public void setFunctions(Set<String> functionNames) {
-		this.setToolNames(functionNames);
-	}
-
-	@Override
 	@Nullable
-	public Boolean isInternalToolExecutionEnabled() {
+	public Boolean getInternalToolExecutionEnabled() {
 		return internalToolExecutionEnabled;
 	}
 
@@ -391,12 +366,12 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 		this.vlHighResolutionImages = vlHighResolutionImages;
 	}
 
-	public Boolean isMultimodalModel() {
-		return multimodalModel;
+	public Boolean getIsMultimodalModel() {
+		return isMultimodalModel;
 	}
 
-	public void setMultimodalModel(Boolean multimodalModel) {
-		this.multimodalModel = multimodalModel;
+	public void setIsMultimodalModel(Boolean isMultimodalModel) {
+		this.isMultimodalModel = isMultimodalModel;
 	}
 
 	public Boolean getSupportIncrementalOutput() {
@@ -454,7 +429,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 
 		private Integer topK;
 
-		private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+		private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 		private Set<String> toolNames = new HashSet<>();
 
@@ -528,7 +503,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.toolCallbacks = toolCallbacks;
 			return this;
 		}
@@ -614,7 +589,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 			this.translationOptions(getOrDefault(fromOptions.getTranslationOptions(), this.translationOptions));
 			this.vlHighResolutionImages(
 					getOrDefault(fromOptions.getVlHighResolutionImages(), this.vlHighResolutionImages));
-			this.isMultimodalModel(getOrDefault(fromOptions.isMultimodalModel(), this.multimodalModel));
+			this.isMultimodalModel(getOrDefault(fromOptions.getIsMultimodalModel(), this.multimodalModel));
 			this.supportIncrementalOutput(
 					getOrDefault(fromOptions.getSupportIncrementalOutput(), this.supportIncrementalOutput));
 			this.custom(copyIfNotNull(getOrDefault(fromOptions.getCustom(), this.custom)));

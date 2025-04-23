@@ -266,7 +266,7 @@ public class QwenApi {
 		}
 
 		String modelName = options.getModel();
-		Boolean isMultimodalModel = ((QwenChatOptions) options).isMultimodalModel();
+		Boolean isMultimodalModel = ((QwenChatOptions) options).getIsMultimodalModel();
 		isMultimodalModel = getOrDefault(isMultimodalModel, isMultimodalModelName(modelName));
 
 		return Boolean.TRUE.equals(isMultimodalModel);
