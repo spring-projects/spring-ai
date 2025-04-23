@@ -32,6 +32,7 @@ import org.typesense.model.CollectionSchema;
 import org.typesense.model.DeleteDocumentsParameters;
 import org.typesense.model.Field;
 import org.typesense.model.ImportDocumentsParameters;
+import org.typesense.model.IndexAction;
 import org.typesense.model.MultiSearchCollectionParameters;
 import org.typesense.model.MultiSearchResult;
 import org.typesense.model.MultiSearchSearchesParameter;
@@ -154,7 +155,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		}).toList();
 
 		ImportDocumentsParameters importDocumentsParameters = new ImportDocumentsParameters();
-		importDocumentsParameters.action("upsert");
+		importDocumentsParameters.action(IndexAction.UPSERT);
 
 		try {
 			this.client.collections(this.collectionName).documents().import_(documentList, importDocumentsParameters);
