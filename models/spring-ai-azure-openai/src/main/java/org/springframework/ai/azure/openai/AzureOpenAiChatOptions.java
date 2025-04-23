@@ -259,6 +259,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.responseFormat(fromOptions.getResponseFormat())
+			.streamUsage(fromOptions.getStreamUsage())
 			.seed(fromOptions.getSeed())
 			.logprobs(fromOptions.isLogprobs())
 			.topLogprobs(fromOptions.getTopLogProbs())
@@ -389,6 +390,14 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setResponseFormat(AzureOpenAiResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
+	}
+
+	public Boolean getStreamUsage() {
+		return this.streamOptions != null;
+	}
+
+	public void setStreamUsage(Boolean enableStreamUsage) {
+		this.streamOptions = (enableStreamUsage) ? new ChatCompletionStreamOptions().setIncludeUsage(true) : null;
 	}
 
 	@Override
@@ -550,6 +559,12 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder responseFormat(AzureOpenAiResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder streamUsage(boolean enableStreamUsage) {
+			this.options.streamOptions = (enableStreamUsage) ? new ChatCompletionStreamOptions().setIncludeUsage(true)
+					: null;
 			return this;
 		}
 
