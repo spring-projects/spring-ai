@@ -39,8 +39,8 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.qwen.QwenChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
@@ -148,7 +148,7 @@ public class QwenApiHelper {
 		return toolCallFunction;
 	}
 
-	private static List<ToolBase> toToolFunctions(Collection<FunctionCallback> toolSpecifications) {
+	private static List<ToolBase> toToolFunctions(Collection<ToolCallback> toolSpecifications) {
 		if (CollectionUtils.isEmpty(toolSpecifications)) {
 			return Collections.emptyList();
 		}
@@ -156,18 +156,18 @@ public class QwenApiHelper {
 		return toolSpecifications.stream().map(QwenApiHelper::toToolFunction).toList();
 	}
 
-	private static ToolBase toToolFunction(FunctionCallback toolCallback) {
+	private static ToolBase toToolFunction(ToolCallback toolCallback) {
 		FunctionDefinition functionDefinition = FunctionDefinition.builder()
-			.name(toolCallback.getName())
-			.description(getOrDefault(toolCallback.getDescription(), ""))
+			.name(toolCallback.getToolDefinition().name())
+			.description(getOrDefault(toolCallback.getToolDefinition().description(), ""))
 			.parameters(toParameters(toolCallback))
 			.build();
 		return ToolFunction.builder().function(functionDefinition).build();
 	}
 
-	private static JsonObject toParameters(FunctionCallback toolCallback) {
-		if (toolCallback.getInputTypeSchema() != null) {
-			return JsonUtils.parse(toolCallback.getInputTypeSchema());
+	private static JsonObject toParameters(ToolCallback toolCallback) {
+		if (StringUtils.hasText(toolCallback.getToolDefinition().inputSchema())) {
+			return JsonUtils.parse(toolCallback.getToolDefinition().inputSchema());
 		}
 		else {
 			return JsonUtils.toJsonObject(Collections.emptyMap());
@@ -196,9 +196,8 @@ public class QwenApiHelper {
 
 		media.stream().map(QwenApiHelper::toMultiModalContent).forEach(contents::add);
 
-		if (message.getMessageType() == MessageType.TOOL) {
-			ToolResponseMessage toolMessage = (ToolResponseMessage) message;
-			List<ToolResponseMessage.ToolResponse> toolResponses = toolMessage.getResponses();
+		if (message instanceof ToolResponseMessage toolMessage) {
+            List<ToolResponseMessage.ToolResponse> toolResponses = toolMessage.getResponses();
 			if (!CollectionUtils.isEmpty(toolResponses)) {
 				for (ToolResponseMessage.ToolResponse toolResponse : toolResponses) {
 					contents.add(Map.of("content", toolResponse.responseData(), "tool_call_id", toolResponse.id()));
@@ -363,7 +362,7 @@ public class QwenApiHelper {
 			builder.tools(toToolFunctions(options.getToolCallbacks()));
 			if (options.getToolChoice() != null) {
 				Object toolChoiceObject = options.getToolChoice();
-				if (toolChoiceObject instanceof FunctionCallback toolCallback) {
+				if (toolChoiceObject instanceof ToolCallback toolCallback) {
 					builder.toolChoice(toToolFunction(toolCallback));
 				}
 				else {
@@ -820,36 +819,8 @@ public class QwenApiHelper {
 		return (float) (logit(x) / denominator);
 	}
 
-	static Double repetitionPenaltyToFrequencyPenalty(Float repetitionPenalty) {
-		// repetitionPenalty:
-		// https://www.alibabacloud.com/help/en/model-studio/use-qwen-by-calling-api#2ed5ee7377fum
-		// frequencyPenalty:
-		// https://platform.openai.com/docs/api-reference/chat/create#chat-create-frequency_penalty
-		// map: (0, ∞) -> [-2, 2], and 1 -> 0
-		// use sigmoid function (https://en.wikipedia.org/wiki/Sigmoid_function)
-
-		if (repetitionPenalty == null) {
-			return null;
-		}
-		else if (repetitionPenalty <= 0) {
-			throw new IllegalArgumentException("Value of repetitionPenalty must be positive number");
-		}
-
-		// make sure frequency penalty is 0 when repetition penalty is 1
-		// see frequencyPenaltyToRepetitionPenalty()
-		double factor = logit(0.75d);
-		double y = sigmoid(repetitionPenalty.doubleValue() * factor);
-
-		// make sure frequency penalty is between -2 and 2
-		return y * 8 - 6;
-	}
-
 	private static double logit(double x) {
 		return Math.log(x / (1 - x));
-	}
-
-	private static double sigmoid(double x) {
-		return 1.0 / (1.0 + Math.exp(-x));
 	}
 
 	static List<Generation> generationsFrom(GenerationResult result) {
