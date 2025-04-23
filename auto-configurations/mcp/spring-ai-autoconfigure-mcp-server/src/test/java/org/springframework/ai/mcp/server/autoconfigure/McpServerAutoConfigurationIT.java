@@ -157,7 +157,7 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
-	void toolRegistrationConfiguration() {
+	void toolSpecificationConfiguration() {
 		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
 			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
 			assertThat(tools).hasSize(1);
@@ -165,7 +165,7 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
-	void resourceRegistrationConfiguration() {
+	void resourceSpecificationConfiguration() {
 		this.contextRunner.withUserConfiguration(TestResourceConfiguration.class).run(context -> {
 			McpSyncServer server = context.getBean(McpSyncServer.class);
 			assertThat(server).isNotNull();
@@ -173,7 +173,7 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
-	void promptRegistrationConfiguration() {
+	void promptSpecificationConfiguration() {
 		this.contextRunner.withUserConfiguration(TestPromptConfiguration.class).run(context -> {
 			McpSyncServer server = context.getBean(McpSyncServer.class);
 			assertThat(server).isNotNull();
@@ -181,7 +181,7 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
-	void asyncToolRegistrationConfiguration() {
+	void asyncToolSpecificationConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
