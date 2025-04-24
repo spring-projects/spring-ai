@@ -673,12 +673,12 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 	 *
 	 * @param sourceLang The full English name of the source language.For more
 	 * information, see <a href=
-	 * "https://help.aliyun.com/zh/model-studio/user-guide/machine-translation">Supported
+	 * "https://www.alibabacloud.com/help/en/model-studio/machine-translation">Supported
 	 * Languages</a>. You can set source_lang to "auto" and the model will automatically
 	 * determine the language of the input text.
 	 * @param targetLang The full English name of the target language.For more
 	 * information, see <a href=
-	 * "https://help.aliyun.com/zh/model-studio/user-guide/machine-translation">Supported
+	 * "https://www.alibabacloud.com/help/en/model-studio/machine-translation">Supported
 	 * Languages</a>.
 	 * @param terms An array of terms that needs to be set when using the
 	 * term-intervention-translation feature.
