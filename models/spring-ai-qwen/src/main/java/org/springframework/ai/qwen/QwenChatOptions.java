@@ -189,6 +189,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 		this.translationOptions = builder.translationOptions;
 		this.vlHighResolutionImages = builder.vlHighResolutionImages;
 		this.isMultimodalModel = builder.isMultimodalModel;
+		this.supportIncrementalOutput = builder.supportIncrementalOutput;
 		this.custom = builder.custom;
 	}
 
