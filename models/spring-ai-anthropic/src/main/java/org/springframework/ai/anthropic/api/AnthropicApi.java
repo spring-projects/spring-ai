@@ -58,6 +58,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Jihoon Kim
  * @author Alexandros Pappas
  * @author Jonghoon Park
+ * @author Claudio Silva Junior
  * @since 1.0.0
  */
 public class AnthropicApi {
@@ -69,6 +70,8 @@ public class AnthropicApi {
 	public static final String PROVIDER_NAME = AiProvider.ANTHROPIC.value();
 
 	public static final String DEFAULT_BASE_URL = "https://api.anthropic.com";
+
+	public static final String DEFAULT_MESSAGE_COMPLETIONS_PATH = "/v1/messages";
 
 	public static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
 
@@ -83,6 +86,8 @@ public class AnthropicApi {
 	private static final String HEADER_ANTHROPIC_BETA = "anthropic-beta";
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
+
+	private final String completionsPath;
 
 	private final RestClient restClient;
 
@@ -122,13 +127,14 @@ public class AnthropicApi {
 	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, anthropicApiKey, anthropicVersion, restClientBuilder, webClientBuilder, responseErrorHandler,
-				DEFAULT_ANTHROPIC_BETA_VERSION);
+		this(baseUrl, DEFAULT_MESSAGE_COMPLETIONS_PATH, anthropicApiKey, anthropicVersion, restClientBuilder,
+				webClientBuilder, responseErrorHandler, DEFAULT_ANTHROPIC_BETA_VERSION);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
+	 * @param completionsPath path to append to the base URL.
 	 * @param anthropicApiKey Anthropic api Key.
 	 * @param anthropicVersion Anthropic version.
 	 * @param restClientBuilder RestClient builder.
@@ -136,7 +142,7 @@ public class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
+	public AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
@@ -146,6 +152,8 @@ public class AnthropicApi {
 			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
+
+		this.completionsPath = completionsPath;
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
@@ -186,7 +194,7 @@ public class AnthropicApi {
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
 		return this.restClient.post()
-			.uri("/v1/messages")
+			.uri(this.completionsPath)
 			.headers(headers -> headers.addAll(additionalHttpHeader))
 			.body(chatRequest)
 			.retrieve()
@@ -222,7 +230,7 @@ public class AnthropicApi {
 		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
 
 		return this.webClient.post()
-			.uri("/v1/messages")
+			.uri(this.completionsPath)
 			.headers(headers -> headers.addAll(additionalHttpHeader))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
@@ -1335,6 +1343,8 @@ public class AnthropicApi {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
+		private String completionsPath = DEFAULT_MESSAGE_COMPLETIONS_PATH;
+
 		private String apiKey;
 
 		private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
@@ -1350,6 +1360,12 @@ public class AnthropicApi {
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder completionsPath(String completionsPath) {
+			Assert.hasText(completionsPath, "completionsPath cannot be null or empty");
+			this.completionsPath = completionsPath;
 			return this;
 		}
 
@@ -1391,8 +1407,9 @@ public class AnthropicApi {
 
 		public AnthropicApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new AnthropicApi(this.baseUrl, this.apiKey, this.anthropicVersion, this.restClientBuilder,
-					this.webClientBuilder, this.responseErrorHandler, this.anthropicBetaFeatures);
+			return new AnthropicApi(this.baseUrl, this.completionsPath, this.apiKey, this.anthropicVersion,
+					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler,
+					this.anthropicBetaFeatures);
 		}
 
 	}

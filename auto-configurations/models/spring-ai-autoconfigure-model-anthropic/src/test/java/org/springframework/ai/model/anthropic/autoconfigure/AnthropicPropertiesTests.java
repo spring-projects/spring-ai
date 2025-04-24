@@ -37,6 +37,7 @@ public class AnthropicPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 					"spring.ai.anthropic.base-url=TEST_BASE_URL",
+					"spring.ai.anthropic.completions-path=message-path",
 					"spring.ai.anthropic.api-key=abc123",
 					"spring.ai.anthropic.version=6666",
 					"spring.ai.anthropic.beta-version=7777",
@@ -53,6 +54,7 @@ public class AnthropicPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getVersion()).isEqualTo("6666");
 				assertThat(connectionProperties.getBetaVersion()).isEqualTo("7777");
+				assertThat(connectionProperties.getCompletionsPath()).isEqualTo("message-path");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
