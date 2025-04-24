@@ -244,31 +244,6 @@ class BedrockProxyChatModelIT {
 				"fruit stand");
 	}
 
-	@Deprecated
-	@Test
-	void functionCallTestDeprecated() {
-
-		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description(
-						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.build();
-
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
-
-		Generation generation = response.getResult();
-		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
-	}
-
 	@Test
 	void functionCallTest() {
 

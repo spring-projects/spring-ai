@@ -26,7 +26,6 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -66,51 +65,6 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			""";
 
 	private final String systemTextAdvise;
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	/**
-	 * @deprecated use {@link Builder} instead.
-	 */
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore) {
-		this(vectorStore, DEFAULT_SYSTEM_TEXT_ADVISE);
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	/**
-	 * @deprecated use {@link Builder} instead.
-	 */
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String systemTextAdvise) {
-		super(vectorStore);
-		this.systemTextAdvise = systemTextAdvise;
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	/**
-	 * @deprecated use {@link Builder} instead.
-	 */
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
-			int chatHistoryWindowSize) {
-		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE);
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	/**
-	 * @deprecated use {@link Builder} instead.
-	 */
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
-			int chatHistoryWindowSize, int order) {
-		this(vectorStore, defaultConversationId, chatHistoryWindowSize, DEFAULT_SYSTEM_TEXT_ADVISE, order);
-	}
-
-	@Deprecated(forRemoval = true, since = "1.0.0-M6")
-	/**
-	 * @deprecated use {@link Builder} instead.
-	 */
-	public VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
-			int chatHistoryWindowSize, String systemTextAdvise) {
-		this(vectorStore, defaultConversationId, chatHistoryWindowSize, systemTextAdvise,
-				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
-	}
 
 	/**
 	 * Constructor for VectorStoreChatMemoryAdvisor.
