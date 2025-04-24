@@ -593,26 +593,8 @@ public class AnthropicApi {
 			this.thinking = request.thinking;
 		}
 
-		/**
-		 * @deprecated use {@link #model(ChatModel)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withModel(ChatModel model) {
-			this.model = model.getValue();
-			return this;
-		}
-
 		public ChatCompletionRequestBuilder model(ChatModel model) {
 			this.model = model.getValue();
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withModel(String model) {
-			this.model = model;
 			return this;
 		}
 
@@ -621,26 +603,8 @@ public class AnthropicApi {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #messages(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withMessages(List<AnthropicMessage> messages) {
-			this.messages = messages;
-			return this;
-		}
-
 		public ChatCompletionRequestBuilder messages(List<AnthropicMessage> messages) {
 			this.messages = messages;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #system(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withSystem(String system) {
-			this.system = system;
 			return this;
 		}
 
@@ -649,26 +613,8 @@ public class AnthropicApi {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #maxTokens(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withMaxTokens(Integer maxTokens) {
-			this.maxTokens = maxTokens;
-			return this;
-		}
-
 		public ChatCompletionRequestBuilder maxTokens(Integer maxTokens) {
 			this.maxTokens = maxTokens;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #metadata(ChatCompletionRequest.Metadata)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withMetadata(ChatCompletionRequest.Metadata metadata) {
-			this.metadata = metadata;
 			return this;
 		}
 
@@ -677,26 +623,8 @@ public class AnthropicApi {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #stopSequences(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withStopSequences(List<String> stopSequences) {
-			this.stopSequences = stopSequences;
-			return this;
-		}
-
 		public ChatCompletionRequestBuilder stopSequences(List<String> stopSequences) {
 			this.stopSequences = stopSequences;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #stream(Boolean)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withStream(Boolean stream) {
-			this.stream = stream;
 			return this;
 		}
 
@@ -705,26 +633,8 @@ public class AnthropicApi {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #temperature(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withTemperature(Double temperature) {
-			this.temperature = temperature;
-			return this;
-		}
-
 		public ChatCompletionRequestBuilder temperature(Double temperature) {
 			this.temperature = temperature;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #topP(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withTopP(Double topP) {
-			this.topP = topP;
 			return this;
 		}
 
@@ -733,26 +643,8 @@ public class AnthropicApi {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #topK(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withTopK(Integer topK) {
-			this.topK = topK;
-			return this;
-		}
-
 		public ChatCompletionRequestBuilder topK(Integer topK) {
 			this.topK = topK;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #tools(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withTools(List<Tool> tools) {
-			this.tools = tools;
 			return this;
 		}
 
@@ -761,27 +653,8 @@ public class AnthropicApi {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #thinking(ChatCompletionRequest.ThinkingConfig)}
-		 * instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withThinking(ChatCompletionRequest.ThinkingConfig thinking) {
-			this.thinking = thinking;
-			return this;
-		}
-
 		public ChatCompletionRequestBuilder thinking(ChatCompletionRequest.ThinkingConfig thinking) {
 			this.thinking = thinking;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #thinking(ThinkingType, Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M6")
-		public ChatCompletionRequestBuilder withThinking(ThinkingType type, Integer budgetTokens) {
-			this.thinking = new ChatCompletionRequest.ThinkingConfig(type, budgetTokens);
 			return this;
 		}
 

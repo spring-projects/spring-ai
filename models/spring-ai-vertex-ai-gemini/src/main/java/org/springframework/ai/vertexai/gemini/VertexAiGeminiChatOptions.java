@@ -417,20 +417,10 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		@Deprecated
-		public Builder functions(Set<String> functionNames) {
-			return this.toolNames(functionNames);
-		}
-
 		public Builder toolNames(Set<String> toolNames) {
 			Assert.notNull(toolNames, "Function names must not be null");
 			this.options.toolNames = toolNames;
 			return this;
-		}
-
-		@Deprecated
-		public Builder function(String functionName) {
-			return this.toolName(functionName);
 		}
 
 		public Builder toolName(String toolName) {

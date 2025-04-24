@@ -332,31 +332,6 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
-	@Deprecated
-	void functionCallTestDeprecated() {
-
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
-
-		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		var promptOptions = OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
-			.build();
-
-		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
-
-		logger.info("Response: {}", response);
-
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
-	}
-
-	@Test
 	void functionCallTest() {
 
 		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
