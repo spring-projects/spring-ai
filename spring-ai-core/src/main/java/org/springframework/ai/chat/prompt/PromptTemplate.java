@@ -48,7 +48,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	private Map<String, Object> dynamicModel = new HashMap<>();
 
-	private boolean skipRenderValidate = false;
+	private boolean skipRenderValidate = true;
 
 	public PromptTemplate(Resource resource) {
 		try (InputStream inputStream = resource.getInputStream()) {
