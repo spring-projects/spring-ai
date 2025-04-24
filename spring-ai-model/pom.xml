@@ -48,6 +48,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-template-st</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-observation</artifactId>
 		</dependency>
@@ -61,12 +67,6 @@
 		<dependency>
 			<groupId>io.projectreactor</groupId>
 			<artifactId>reactor-core</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>ST4</artifactId>
-			<version>${ST4.version}</version>
 		</dependency>
 
 		<!-- ANTLR for Filter Expression Parsing -->
