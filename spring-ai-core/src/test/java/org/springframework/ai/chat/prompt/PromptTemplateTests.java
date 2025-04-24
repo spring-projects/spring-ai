@@ -55,9 +55,8 @@ public class PromptTemplateTests {
                 {endif}
                 """;
 
-		PromptTemplate promptTemplate = new PromptTemplate(chatMemoryPrompt);
+		PromptTemplate promptTemplate = new PromptTemplate(chatMemoryPrompt, true);
 		promptTemplate.add("memory", "you are a helpful assistant");
-		promptTemplate.skipValidate();
 		System.out.println(promptTemplate.render());
 	}
 }

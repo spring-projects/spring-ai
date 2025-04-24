@@ -109,13 +109,29 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		}
 	}
 
+	public PromptTemplate(Resource resource, boolean skipRenderValidate) {
+		this(resource);
+		this.skipRenderValidate = skipRenderValidate;
+	}
+
+	public PromptTemplate(String template, boolean skipRenderValidate) {
+		this(template);
+		this.skipRenderValidate = skipRenderValidate;
+	}
+
+	public PromptTemplate(String template, Map<String, Object> model, boolean skipRenderValidate) {
+		this(template, model);
+		this.skipRenderValidate = skipRenderValidate;
+	}
+
+	public PromptTemplate(Resource resource, Map<String, Object> model, boolean skipRenderValidate) {
+		this(resource, model);
+		this.skipRenderValidate = skipRenderValidate;
+	}
+
 	public void add(String name, Object value) {
 		this.st.add(name, value);
 		this.dynamicModel.put(name, value);
-	}
-
-	public void skipValidate() {
-		this.skipRenderValidate = true;
 	}
 
 	public String getTemplate() {
