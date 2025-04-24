@@ -104,8 +104,8 @@ public class AnthropicApi {
 	 * @param anthropicApiKey Anthropic api Key.
 	 */
 	public AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey) {
-		this(baseUrl, completionsPath, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(baseUrl, completionsPath, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(),
+				WebClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -120,8 +120,8 @@ public class AnthropicApi {
 	public AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, completionsPath, anthropicApiKey, anthropicVersion, restClientBuilder, webClientBuilder, responseErrorHandler,
-				DEFAULT_ANTHROPIC_BETA_VERSION);
+		this(baseUrl, completionsPath, anthropicApiKey, anthropicVersion, restClientBuilder, webClientBuilder,
+				responseErrorHandler, DEFAULT_ANTHROPIC_BETA_VERSION);
 	}
 
 	/**
