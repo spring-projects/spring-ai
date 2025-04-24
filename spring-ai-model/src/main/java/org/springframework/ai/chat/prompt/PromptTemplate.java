@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.antlr.runtime.Token;
-import org.antlr.runtime.TokenStream;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.compiler.STLexer;
+import org.springframework.ai.template.TemplateRenderer;
+import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.util.Assert;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -37,111 +35,123 @@ import org.springframework.ai.content.Media;
 import org.springframework.core.io.Resource;
 import org.springframework.util.StreamUtils;
 
+/**
+ * A template for creating prompts. It allows you to define a template string with
+ * placeholders for variables, and then render the template with specific values for those
+ * variables.
+ */
 public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
+	private static final TemplateRenderer DEFAULT_TEMPLATE_RENDERER = StTemplateRenderer.builder().build();
+
+	/**
+	 * @deprecated will become private in the next release. If you're subclassing this
+	 * class, re-consider using the built-in implementation together with the new
+	 * PromptTemplateRenderer interface, designed to give you more flexibility and control
+	 * over the rendering process.
+	 */
+	@Deprecated
 	protected String template;
 
+	/**
+	 * @deprecated in favor of {@link TemplateRenderer}
+	 */
+	@Deprecated
 	protected TemplateFormat templateFormat = TemplateFormat.ST;
 
-	private ST st;
+	private final Map<String, Object> variables = new HashMap<>();
 
-	private Map<String, Object> dynamicModel = new HashMap<>();
+	private final TemplateRenderer renderer;
 
 	public PromptTemplate(Resource resource) {
-		try (InputStream inputStream = resource.getInputStream()) {
-			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to read resource", ex);
-		}
-		try {
-			this.st = new ST(this.template, '{', '}');
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		this(resource, new HashMap<>(), DEFAULT_TEMPLATE_RENDERER);
 	}
 
 	public PromptTemplate(String template) {
-		this.template = template;
-		// If the template string is not valid, an exception will be thrown
-		try {
-			this.st = new ST(this.template, '{', '}');
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		this(template, new HashMap<>(), DEFAULT_TEMPLATE_RENDERER);
 	}
 
-	public PromptTemplate(String template, Map<String, Object> model) {
-		this.template = template;
-		// If the template string is not valid, an exception will be thrown
-		try {
-			this.st = new ST(this.template, '{', '}');
-			for (Entry<String, Object> entry : model.entrySet()) {
-				add(entry.getKey(), entry.getValue());
-			}
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+	/**
+	 * @deprecated in favor of {@link PromptTemplate#builder()}.
+	 */
+	@Deprecated
+	public PromptTemplate(String template, Map<String, Object> variables) {
+		this(template, variables, DEFAULT_TEMPLATE_RENDERER);
 	}
 
-	public PromptTemplate(Resource resource, Map<String, Object> model) {
+	/**
+	 * @deprecated in favor of {@link PromptTemplate#builder()}.
+	 */
+	@Deprecated
+	public PromptTemplate(Resource resource, Map<String, Object> variables) {
+		this(resource, variables, DEFAULT_TEMPLATE_RENDERER);
+	}
+
+	PromptTemplate(String template, Map<String, Object> variables, TemplateRenderer renderer) {
+		Assert.hasText(template, "template cannot be null or empty");
+		Assert.notNull(variables, "variables cannot be null");
+		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
+		Assert.notNull(renderer, "renderer cannot be null");
+
+		this.template = template;
+		this.variables.putAll(variables);
+		this.renderer = renderer;
+	}
+
+	PromptTemplate(Resource resource, Map<String, Object> variables, TemplateRenderer renderer) {
+		Assert.notNull(resource, "resource cannot be null");
+		Assert.notNull(variables, "variables cannot be null");
+		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
+		Assert.notNull(renderer, "renderer cannot be null");
+
 		try (InputStream inputStream = resource.getInputStream()) {
 			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
+			Assert.hasText(template, "template cannot be null or empty");
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
 		}
-		// If the template string is not valid, an exception will be thrown
-		try {
-			this.st = new ST(this.template, '{', '}');
-			for (Entry<String, Object> entry : model.entrySet()) {
-				this.add(entry.getKey(), entry.getValue());
-			}
-		}
-		catch (Exception ex) {
-			throw new IllegalArgumentException("The template string is not valid.", ex);
-		}
+		this.variables.putAll(variables);
+		this.renderer = renderer;
 	}
 
 	public void add(String name, Object value) {
-		this.st.add(name, value);
-		this.dynamicModel.put(name, value);
+		this.variables.put(name, value);
 	}
 
 	public String getTemplate() {
 		return this.template;
 	}
 
+	/**
+	 * @deprecated in favor of {@link TemplateRenderer}
+	 */
+	@Deprecated
 	public TemplateFormat getTemplateFormat() {
 		return this.templateFormat;
 	}
 
-	// Render Methods
+	// From PromptTemplateStringActions.
+
 	@Override
 	public String render() {
-		validate(this.dynamicModel);
-		return this.st.render();
+		return this.renderer.apply(template, this.variables);
 	}
 
 	@Override
-	public String render(Map<String, Object> model) {
-		validate(model);
-		for (Entry<String, Object> entry : model.entrySet()) {
-			if (this.st.getAttribute(entry.getKey()) != null) {
-				this.st.remove(entry.getKey());
-			}
+	public String render(Map<String, Object> additionalVariables) {
+		Map<String, Object> combinedVariables = new HashMap<>(this.variables);
+
+		for (Entry<String, Object> entry : additionalVariables.entrySet()) {
 			if (entry.getValue() instanceof Resource) {
-				this.st.add(entry.getKey(), renderResource((Resource) entry.getValue()));
+				combinedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
 			}
 			else {
-				this.st.add(entry.getKey(), entry.getValue());
+				combinedVariables.put(entry.getKey(), entry.getValue());
 			}
-
 		}
-		return this.st.render();
+
+		return this.renderer.apply(template, combinedVariables);
 	}
 
 	private String renderResource(Resource resource) {
@@ -153,6 +163,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		}
 	}
 
+	// From PromptTemplateMessageActions.
+
 	@Override
 	public Message createMessage() {
 		return new UserMessage(render());
@@ -160,13 +172,15 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	@Override
 	public Message createMessage(List<Media> mediaList) {
-		return new UserMessage(render(), mediaList);
+		return UserMessage.builder().text(render()).media(mediaList).build();
 	}
 
 	@Override
-	public Message createMessage(Map<String, Object> model) {
-		return new UserMessage(render(model));
+	public Message createMessage(Map<String, Object> additionalVariables) {
+		return new UserMessage(render(additionalVariables));
 	}
+
+	// From PromptTemplateActions.
 
 	@Override
 	public Prompt create() {
@@ -175,63 +189,93 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	@Override
 	public Prompt create(ChatOptions modelOptions) {
-		return new Prompt(render(new HashMap<>()), modelOptions);
+		return Prompt.builder().content(render(new HashMap<>())).chatOptions(modelOptions).build();
 	}
 
 	@Override
-	public Prompt create(Map<String, Object> model) {
-		return new Prompt(render(model));
+	public Prompt create(Map<String, Object> additionalVariables) {
+		return new Prompt(render(additionalVariables));
 	}
 
 	@Override
-	public Prompt create(Map<String, Object> model, ChatOptions modelOptions) {
-		return new Prompt(render(model), modelOptions);
+	public Prompt create(Map<String, Object> additionalVariables, ChatOptions modelOptions) {
+		return Prompt.builder().content(render(additionalVariables)).chatOptions(modelOptions).build();
 	}
 
+	// Compatibility
+
+	/**
+	 * @deprecated in favor of {@link TemplateRenderer}.
+	 */
+	@Deprecated
 	public Set<String> getInputVariables() {
-		TokenStream tokens = this.st.impl.tokens;
-		Set<String> inputVariables = new HashSet<>();
-		boolean isInsideList = false;
-
-		for (int i = 0; i < tokens.size(); i++) {
-			Token token = tokens.get(i);
-
-			if (token.getType() == STLexer.LDELIM && i + 1 < tokens.size()
-					&& tokens.get(i + 1).getType() == STLexer.ID) {
-				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
-					inputVariables.add(tokens.get(i + 1).getText());
-					isInsideList = true;
-				}
-			}
-			else if (token.getType() == STLexer.RDELIM) {
-				isInsideList = false;
-			}
-			else if (!isInsideList && token.getType() == STLexer.ID) {
-				inputVariables.add(token.getText());
-			}
-		}
-
-		return inputVariables;
+		throw new UnsupportedOperationException(
+				"The template rendering logic is now provided by PromptTemplateRenderer");
 	}
 
-	private Set<String> getModelKeys(Map<String, Object> model) {
-		Set<String> dynamicVariableNames = new HashSet<>(this.dynamicModel.keySet());
-		Set<String> modelVariables = new HashSet<>(model.keySet());
-		modelVariables.addAll(dynamicVariableNames);
-		return modelVariables;
-	}
-
+	/**
+	 * @deprecated in favor of {@link TemplateRenderer}.
+	 */
+	@Deprecated
 	protected void validate(Map<String, Object> model) {
+		throw new UnsupportedOperationException("Validation is now provided by the PromptTemplateRenderer");
+	}
 
-		Set<String> templateTokens = getInputVariables();
-		Set<String> modelKeys = getModelKeys(model);
+	public Builder mutate() {
+		return new Builder().template(this.template).variables(this.variables).renderer(this.renderer);
+	}
 
-		// Check if model provides all keys required by the template
-		if (!modelKeys.containsAll(templateTokens)) {
-			templateTokens.removeAll(modelKeys);
-			throw new IllegalStateException(
-					"Not all template variables were replaced. Missing variable names are " + templateTokens);
+	// Builder
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String template;
+
+		private Resource resource;
+
+		private Map<String, Object> variables = new HashMap<>();
+
+		private TemplateRenderer renderer = DEFAULT_TEMPLATE_RENDERER;
+
+		private Builder() {
 		}
+
+		public Builder template(String template) {
+			this.template = template;
+			return this;
+		}
+
+		public Builder resource(Resource resource) {
+			this.resource = resource;
+			return this;
+		}
+
+		public Builder variables(Map<String, Object> variables) {
+			this.variables = variables;
+			return this;
+		}
+
+		public Builder renderer(TemplateRenderer renderer) {
+			this.renderer = renderer;
+			return this;
+		}
+
+		public PromptTemplate build() {
+			if (this.template != null && this.resource != null) {
+				throw new IllegalArgumentException("Only one of template or resource can be set");
+			}
+			else if (this.resource != null) {
+				return new PromptTemplate(this.resource, this.variables, this.renderer);
+			}
+			else {
+				return new PromptTemplate(this.template, this.variables, this.renderer);
+			}
+		}
+
 	}
 
 }
