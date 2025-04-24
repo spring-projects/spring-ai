@@ -197,7 +197,7 @@ public class QwenApiHelper {
 		media.stream().map(QwenApiHelper::toMultiModalContent).forEach(contents::add);
 
 		if (message instanceof ToolResponseMessage toolMessage) {
-            List<ToolResponseMessage.ToolResponse> toolResponses = toolMessage.getResponses();
+			List<ToolResponseMessage.ToolResponse> toolResponses = toolMessage.getResponses();
 			if (!CollectionUtils.isEmpty(toolResponses)) {
 				for (ToolResponseMessage.ToolResponse toolResponse : toolResponses) {
 					contents.add(Map.of("content", toolResponse.responseData(), "tool_call_id", toolResponse.id()));
@@ -600,11 +600,13 @@ public class QwenApiHelper {
 		}
 
 		if (!CollectionUtils.isEmpty(current)) {
-			if (current.size() > 1) {
-				throw new IllegalStateException("Currently only one choice is supported per message!");
+			var iterator = current.iterator();
+			var firstChoice = iterator.next();
+			// the first one should be merged with previous last one
+			choices.add(mergeChoice(output, lastPreviousChoice, firstChoice));
+			while (iterator.hasNext()) {
+				choices.add(iterator.next());
 			}
-			var currentChoice = current.iterator().next();
-			choices.add(mergeChoice(output, lastPreviousChoice, currentChoice));
 		}
 		else {
 			if (lastPreviousChoice != null) {
@@ -679,18 +681,20 @@ public class QwenApiHelper {
 		}
 
 		if (!CollectionUtils.isEmpty(current)) {
-			if (current.size() > 1) {
-				throw new IllegalStateException("Currently only one tool call is supported per message!");
-			}
-			var currentToolCall = current.iterator().next();
-			if (StringUtils.hasText(currentToolCall.getId())) {
+			var iterator = current.iterator();
+			var firstToolCall = iterator.next();
+			// the first one should be merged with previous last one
+			if (StringUtils.hasText(firstToolCall.getId())) {
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
-				toolCalls.add(currentToolCall);
+				toolCalls.add(firstToolCall);
 			}
 			else {
-				toolCalls.add(mergeToolCall(lastPreviousTooCall, currentToolCall));
+				toolCalls.add(mergeToolCall(lastPreviousTooCall, firstToolCall));
+			}
+			while (iterator.hasNext()) {
+				toolCalls.add(iterator.next());
 			}
 		}
 		else {
