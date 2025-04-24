@@ -70,7 +70,7 @@ public class AnthropicChatAutoConfiguration {
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
-		return new AnthropicApi(connectionProperties.getBaseUrl(), connectionProperties.getApiKey(),
+		return new AnthropicApi(connectionProperties.getBaseUrl(), connectionProperties.getCompletionsPath(), connectionProperties.getApiKey(),
 				connectionProperties.getVersion(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler,
 				connectionProperties.getBetaVersion());

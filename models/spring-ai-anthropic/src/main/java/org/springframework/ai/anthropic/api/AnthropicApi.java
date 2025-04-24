@@ -65,6 +65,8 @@ public class AnthropicApi {
 
 	public static final String DEFAULT_BASE_URL = "https://api.anthropic.com";
 
+	public static final String DEFAULT_MESSAGE_COMPLETIONS_PATH = "/v1/messages";
+
 	public static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
 
 	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04,pdfs-2024-09-25";
@@ -79,6 +81,8 @@ public class AnthropicApi {
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
+	private final String completionsPath;
+
 	private final RestClient restClient;
 
 	private final StreamHelper streamHelper = new StreamHelper();
@@ -90,37 +94,40 @@ public class AnthropicApi {
 	 * @param anthropicApiKey Anthropic api Key.
 	 */
 	public AnthropicApi(String anthropicApiKey) {
-		this(DEFAULT_BASE_URL, anthropicApiKey);
+		this(DEFAULT_BASE_URL, DEFAULT_MESSAGE_COMPLETIONS_PATH, anthropicApiKey);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
+	 * @param completionsPath path to append to the base URL.
 	 * @param anthropicApiKey Anthropic api Key.
 	 */
-	public AnthropicApi(String baseUrl, String anthropicApiKey) {
-		this(baseUrl, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(), WebClient.builder(),
+	public AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey) {
+		this(baseUrl, completionsPath, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(), WebClient.builder(),
 				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
+	 * @param completionsPath path to append to the base URL.
 	 * @param anthropicApiKey Anthropic api Key.
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
+	public AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, anthropicApiKey, anthropicVersion, restClientBuilder, webClientBuilder, responseErrorHandler,
+		this(baseUrl, completionsPath, anthropicApiKey, anthropicVersion, restClientBuilder, webClientBuilder, responseErrorHandler,
 				DEFAULT_ANTHROPIC_BETA_VERSION);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
+	 * @param completionsPath path to append to the base URL.
 	 * @param anthropicApiKey Anthropic api Key.
 	 * @param anthropicVersion Anthropic version.
 	 * @param restClientBuilder RestClient builder.
@@ -128,7 +135,7 @@ public class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
+	public AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
@@ -138,6 +145,8 @@ public class AnthropicApi {
 			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
+
+		this.completionsPath = completionsPath;
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
@@ -178,7 +187,7 @@ public class AnthropicApi {
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
 		return this.restClient.post()
-			.uri("/v1/messages")
+			.uri(this.completionsPath)
 			.headers(headers -> headers.addAll(additionalHttpHeader))
 			.body(chatRequest)
 			.retrieve()
@@ -214,7 +223,7 @@ public class AnthropicApi {
 		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
 
 		return this.webClient.post()
-			.uri("/v1/messages")
+			.uri(this.completionsPath)
 			.headers(headers -> headers.addAll(additionalHttpHeader))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
