@@ -188,7 +188,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 		this.searchOptions = builder.searchOptions;
 		this.translationOptions = builder.translationOptions;
 		this.vlHighResolutionImages = builder.vlHighResolutionImages;
-		this.isMultimodalModel = builder.multimodalModel;
+		this.isMultimodalModel = builder.isMultimodalModel;
 		this.custom = builder.custom;
 	}
 
@@ -446,7 +446,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 
 		private Boolean vlHighResolutionImages;
 
-		private Boolean multimodalModel;
+		private Boolean isMultimodalModel;
 
 		private Boolean supportIncrementalOutput;
 
@@ -548,7 +548,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 		}
 
 		public Builder isMultimodalModel(Boolean isMultimodalModel) {
-			this.multimodalModel = isMultimodalModel;
+			this.isMultimodalModel = isMultimodalModel;
 			return this;
 		}
 
@@ -588,7 +588,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 			this.translationOptions(getOrDefault(fromOptions.getTranslationOptions(), this.translationOptions));
 			this.vlHighResolutionImages(
 					getOrDefault(fromOptions.getVlHighResolutionImages(), this.vlHighResolutionImages));
-			this.isMultimodalModel(getOrDefault(fromOptions.getIsMultimodalModel(), this.multimodalModel));
+			this.isMultimodalModel(getOrDefault(fromOptions.getIsMultimodalModel(), this.isMultimodalModel));
 			this.supportIncrementalOutput(
 					getOrDefault(fromOptions.getSupportIncrementalOutput(), this.supportIncrementalOutput));
 			this.custom(copyIfNotNull(getOrDefault(fromOptions.getCustom(), this.custom)));
