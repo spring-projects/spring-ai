@@ -72,7 +72,7 @@ public class QwenApiHelper {
 		return modelName.contains("-vl-") || modelName.contains("-audio-");
 	}
 
-	public static boolean isSupportingIncrementalOutputModelName(String modelName) {
+	static boolean isSupportingIncrementalOutputModelName(String modelName) {
 		// rough judgment
 		return !(modelName.contains("-vl-") || modelName.contains("-audio-") || modelName.contains("-mt-"));
 	}
