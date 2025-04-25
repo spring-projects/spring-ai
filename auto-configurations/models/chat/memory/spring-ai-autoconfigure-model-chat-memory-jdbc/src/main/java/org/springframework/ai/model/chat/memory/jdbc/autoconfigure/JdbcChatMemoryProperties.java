@@ -20,13 +20,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @ConfigurationProperties(JdbcChatMemoryProperties.CONFIG_PREFIX)
 public class JdbcChatMemoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.jdbc";
+	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc";
 
+	/**
+	 * Whether to initialize the schema on startup.
+	 */
 	private boolean initializeSchema = true;
 
 	public boolean isInitializeSchema() {

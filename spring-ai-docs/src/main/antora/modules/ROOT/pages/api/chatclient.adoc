@@ -366,6 +366,8 @@ In this configuration, the `MessageChatMemoryAdvisor` will be executed first, ad
 
 xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
+TIP: Refer to the xref:api/chat-memory.adoc[Chat Memory] documentation for more information on how to use the `ChatMemory` interface to manage conversation history in combination with the advisors.
+
 The following advisor implementations use the `ChatMemory` interface to advice the prompt with conversation history which differ in the details of how the memory is added to the prompt
 
 * `MessageChatMemoryAdvisor` :  Memory is retrieved and added as a collection of messages to the prompt
@@ -485,7 +487,9 @@ This allows you to tailor the logged information to your specific needs.
 
 TIP: Be cautious about logging sensitive information in production environments.
 
-== Chat Memory
+== Chat Memory (Deprecated)
+
+IMPORTANT: Refer to the new xref:api/chat-memory.adoc[Chat Memory] documentation for the current features and capabilities.
 
 The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 

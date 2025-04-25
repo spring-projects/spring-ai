@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,53 @@
 
 package org.springframework.ai.chat.memory;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.util.Assert;
+
 import java.util.List;
 
-import org.springframework.ai.chat.messages.Message;
-
 /**
- * The ChatMemory interface represents a storage for chat conversation history. It
- * provides methods to add messages to a conversation, retrieve messages from a
- * conversation, and clear the conversation history.
+ * The contract for storing and managing the memory of chat conversations.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public interface ChatMemory {
 
-	// TODO: consider a non-blocking interface for streaming usages
+	String DEFAULT_CONVERSATION_ID = "default";
 
+	/**
+	 * Save the specified message in the chat memory for the specified conversation.
+	 */
 	default void add(String conversationId, Message message) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		Assert.notNull(message, "message cannot be null");
 		this.add(conversationId, List.of(message));
 	}
 
+	/**
+	 * Save the specified messages in the chat memory for the specified conversation.
+	 */
 	void add(String conversationId, List<Message> messages);
 
+	/**
+	 * Get the messages in the chat memory for the specified conversation.
+	 */
+	default List<Message> get(String conversationId) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		return get(conversationId, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * @deprecated in favor of using {@link MessageWindowChatMemory}.
+	 */
+	@Deprecated
 	List<Message> get(String conversationId, int lastN);
 
+	/**
+	 * Clear the chat memory for the specified conversation.
+	 */
 	void clear(String conversationId);
 
 }

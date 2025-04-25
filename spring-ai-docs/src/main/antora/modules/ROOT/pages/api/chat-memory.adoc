@@ -1,0 +1,188 @@
+[[ChatMemory]]
+= Chat Memory
+
+Large language models (LLMs) are stateless, meaning they do not retain information about previous interactions. This can be a limitation when you want to maintain context or state across multiple interactions. To address this, Spring AI provides a `ChatMemory` abstraction that allows you to store and retrieve information across multiple interactions with the LLM.
+
+== Quick Start
+
+Spring AI auto-configures a `ChatMemory` bean that you can use directly in your application. By default, it uses an in-memory repository to store messages (`InMemoryChatMemoryRepository`) and a `MessageWindowChatMemory` implementation to manage the conversation history. If a different repository is already configured (e.g., Cassandra, JDBC, or Neo4j), Spring AI will use that instead.
+
+[source,java]
+----
+@Autowired
+ChatMemory chatMemory;
+----
+
+The following sections will describe further the different memory types and repositories available in Spring AI.
+
+== Memory Types
+
+The `ChatMemory` abstraction allows you to implement various types of memory to suit different use cases. The choice of memory type can significantly impact the performance and behavior of your application. This section describes the built-in memory types provided by Spring AI and their characteristics.
+
+=== Message Window Chat Memory
+
+`MessageWindowChatMemory` maintains a window of messages up to a specified maximum size. When the number of messages exceeds the maximum, older messages are removed while preserving system messages. The default window size is 20 messages.
+
+[source,java]
+----
+MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+    .maxMessages(10)
+    .build();
+----
+
+This is the default message type used by Spring AI to auto-configure a `ChatMemory` bean.
+
+== Memory Storage
+
+Spring AI offers the `ChatMemoryRepository` abstraction for storing chat memory. This section describes the built-in repositories provided by Spring AI and how to use them, but you can also implement your own repository if needed.
+
+=== In-Memory Repository
+
+`InMemoryChatMemoryRepository` stores messages in memory using a `ConcurrentHashMap`.
+
+By default, if no other repository is already configured, Spring AI auto-configures a `ChatMemoryRepository` bean of type `InMemoryChatMemoryRepository` that you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+ChatMemoryRepository chatMemoryRepository;
+----
+
+If you'd rather create the `InMemoryChatMemoryRepository` manually, you can do so as follows:
+
+[source,java]
+----
+ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
+----
+
+=== JDBC Repository
+
+`JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It is suitable for applications that require persistent storage of chat memory.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-jdbc</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-jdbc'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `JdbcChatMemoryRepository`, that you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+JdbcChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by providing a `JdbcTemplate` instance:
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
+    .jdbcTemplate(jdbcTemplate)
+    .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.ai.chat.memory.repository.jdbc.initialize-schema` | Whether to initialize the schema on startup. | `true`
+|===
+
+==== Schema Initialization
+
+The auto-configuration will automatically create the `ai_chat_memory` table using the JDBC driver. Currently, only PostgreSQL and MariaDB are supported.
+
+You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.jdbc.initialize-schema` to `false`.
+
+If your project uses a tool like Flyway or Liquibase to manage your database schemas, you can disable the schema initialization and refer to link:https://github.com/spring-projects/spring-ai/tree/main/memory/spring-ai-model-chat-memory-jdbc/src/main/resources/org/springframework/ai/chat/memory/jdbc[these SQL scripts] for configuring those tools to create the `ai_chat_memory` table.
+
+== Memory in Chat Client
+
+When using the ChatClient API, you can provide a `ChatMemory` implementation to maintain conversation context across multiple interactions.
+
+Spring AI provides a few built-in Advisors that you can use to configure the memory behavior of the `ChatClient`, based on your needs.
+
+WARNING: Currently, the intermediate messages exchanged with a large-language model when performing tool calls are not stored in the memory. This is a limitation of the current implementation and will be addressed in future releases. If you need to store these messages, refer to the instructions for the xref:api/tools.adoc#_user_controlled_tool_execution[User Controlled Tool Execution].
+
+* `MessageChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and includes it in the prompt as a collection of messages.
+* `PromptChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and appends it to the system prompt as plain text.
+* `VectorStoreChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `VectorStore` implementation. On each interaction, it retrieves the conversation history from the vector store and appends it to the system message as plain text.
+
+For example, if you want to use `MessageWindowChatMemory` with the `MessageChatMemoryAdvisor`, you can configure it as follows:
+
+[source,java]
+----
+ChatMemory chatMemory = MessageChatMemoryAdvisor.builder().build();
+
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    .build();
+----
+
+When performing a call to the `ChatClient`, the memory will be automatically managed by the `MessageChatMemoryAdvisor`. The conversation history will be retrieved from the memory based on the specified conversation ID:
+
+[source,java]
+----
+String conversationId = "007";
+
+chatClient.prompt()
+    .user("Do I have license to code?")
+    .advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+    .call()
+    .content();
+----
+
+== Memory in Chat Model
+
+If you're working directly with a `ChatModel` instead of a `ChatClient`, you can manage the memory explicitly:
+
+[source,java]
+----
+// Create a memory instance
+ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+String conversationId = "007";
+
+// First interaction
+UserMessage userMessage1 = new UserMessage("My name is James Bond");
+chatMemory.add(conversationId, userMessage1);
+ChatResponse response1 = chatModel.call(new Prompt(chatMemory.get(conversationId)));
+chatMemory.add(conversationId, response1.getResult().getOutput());
+
+// Second interaction
+UserMessage userMessage2 = new UserMessage("What is my name?");
+chatMemory.add(conversationId, userMessage2);
+ChatResponse response2 = chatModel.call(new Prompt(chatMemory.get(conversationId)));
+chatMemory.add(conversationId, response2.getResult().getOutput());
+
+// The response will contain "James Bond"
+----

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -48,6 +52,12 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -328,6 +338,79 @@ class MistralAiChatModelIT {
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(1050).isGreaterThan(650);
+	}
+
+	@Test
+	void chatMemory() {
+		ChatMemory memory = MessageWindowChatMemory.builder().build();
+		String conversationId = UUID.randomUUID().toString();
+
+		UserMessage userMessage1 = new UserMessage("My name is James Bond");
+		memory.add(conversationId, userMessage1);
+		ChatResponse response1 = chatModel.call(new Prompt(memory.get(conversationId)));
+
+		assertThat(response1).isNotNull();
+		memory.add(conversationId, response1.getResult().getOutput());
+
+		UserMessage userMessage2 = new UserMessage("What is my name?");
+		memory.add(conversationId, userMessage2);
+		ChatResponse response2 = chatModel.call(new Prompt(memory.get(conversationId)));
+
+		assertThat(response2).isNotNull();
+		memory.add(conversationId, response2.getResult().getOutput());
+
+		assertThat(response2.getResults()).hasSize(1);
+		assertThat(response2.getResult().getOutput().getText()).contains("James Bond");
+	}
+
+	@Test
+	void chatMemoryWithTools() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+		String conversationId = UUID.randomUUID().toString();
+
+		ChatOptions chatOptions = ToolCallingChatOptions.builder()
+			.toolCallbacks(ToolCallbacks.from(new MathTools()))
+			.internalToolExecutionEnabled(false)
+			.build();
+		Prompt prompt = new Prompt(
+				List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("What is 6 * 8?")),
+				chatOptions);
+		chatMemory.add(conversationId, prompt.getInstructions());
+
+		Prompt promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
+		ChatResponse chatResponse = chatModel.call(promptWithMemory);
+		chatMemory.add(conversationId, chatResponse.getResult().getOutput());
+
+		while (chatResponse.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(promptWithMemory,
+					chatResponse);
+			chatMemory.add(conversationId, toolExecutionResult.conversationHistory()
+				.get(toolExecutionResult.conversationHistory().size() - 1));
+			promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
+			chatResponse = chatModel.call(promptWithMemory);
+			chatMemory.add(conversationId, chatResponse.getResult().getOutput());
+		}
+
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("48");
+
+		UserMessage newUserMessage = new UserMessage("What did I ask you earlier?");
+		chatMemory.add(conversationId, newUserMessage);
+
+		ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversationId)));
+
+		assertThat(newResponse).isNotNull();
+		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");
+	}
+
+	static class MathTools {
+
+		@Tool(description = "Multiply the two numbers")
+		double multiply(double a, double b) {
+			return a * b;
+		}
+
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
