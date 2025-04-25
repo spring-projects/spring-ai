@@ -57,9 +57,11 @@ import org.springframework.web.servlet.function.ServerResponse;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author lambochen
  * @since 1.0.0
  * @see McpServerProperties
  * @see WebMvcSseServerTransportProvider
+ * @see McpServerAuthProvider
  */
 @AutoConfiguration
 @ConditionalOnClass({ WebMvcSseServerTransportProvider.class })

@@ -62,9 +62,11 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author lambochen
  * @since 1.0.0
  * @see McpServerProperties
  * @see WebFluxSseServerTransportProvider
+ * @see McpServerAuthProvider
  */
 @AutoConfiguration
 @ConditionalOnClass({ WebFluxSseServerTransportProvider.class })
