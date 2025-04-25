@@ -210,11 +210,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-moonshot</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -240,11 +235,11 @@
                 <version>${project.version}</version>
             </dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-qianfan</artifactId>
-				<version>${project.version}</version>
-			</dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-qianfan</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
@@ -534,11 +529,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-moonshot</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -893,11 +883,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-moonshot</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>

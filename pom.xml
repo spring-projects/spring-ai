@@ -67,13 +67,12 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-moonshot</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
+			<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
 
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-qianfan</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
+			<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-watsonx-ai</module>
@@ -170,14 +169,13 @@
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
 		<module>models/spring-ai-qianfan</module>
-		<module>models/spring-ai-stability-ai</module>
+			<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
-		<module>models/spring-ai-moonshot</module>
-
+	
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
@@ -193,14 +191,13 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-qianfan</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
+			<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-moonshot</module>
-
+	
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
@@ -712,11 +709,9 @@
 								<exclude>org.springframework.ai.huggingface/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.minimax/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.moonshot/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.qianfan/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.stabilityai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
@@ -765,12 +760,10 @@
 
 								 <exclude>org.springframework.ai.autoconfigure.minimax/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.moonshot/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.oci/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
 								 <!-- <exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
 								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.qianfan/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
 
