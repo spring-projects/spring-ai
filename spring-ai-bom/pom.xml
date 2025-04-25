@@ -50,6 +50,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-template-st</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI model -->
 
 			<dependency>

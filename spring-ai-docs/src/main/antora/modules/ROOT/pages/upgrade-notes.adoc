@@ -43,6 +43,11 @@ To use this automation:
 
 This approach can save time and reduce the chance of errors when upgrading multiple projects or complex codebases.
 
+[[upgrading-to-1-0-0-m8]]
+== Upgrading to 1.0.0-M8
+
+* The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
+
 [[upgrading-to-1-0-0-m7]]
 == Upgrading to 1.0.0-M7
 

@@ -33,6 +33,7 @@
 		<module>spring-ai-docs</module>
 		<module>spring-ai-bom</module>
 		<module>spring-ai-commons</module>
+		<module>spring-ai-template-st</module>
 		<module>spring-ai-client-chat</module>
 		<module>spring-ai-model</module>
 		<module>spring-ai-test</module>
@@ -262,17 +263,20 @@
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.29.29</bedrockruntime.version>
+		<bedrockruntime.version>2.31.26</bedrockruntime.version>
 		<awssdk.version>2.29.29</awssdk.version>
 
-		<djl.version>0.30.0</djl.version>
+		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
-		<oci-sdk-version>3.51.0</oci-sdk-version>
+		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.59.0</com.google.cloud.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.37.0</jsonschema.version>
 		<swagger-annotations.version>2.2.25</swagger-annotations.version>
+		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
+
+		<jsoup.version>1.18.3</jsoup.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
@@ -291,7 +295,7 @@
 		<fastjson2.version>2.0.46</fastjson2.version>
 		<azure-core.version>1.53.0</azure-core.version>
 		<azure-json.version>1.3.0</azure-json.version>
-		<azure-identity.version>1.14.0</azure-identity.version>
+		<azure-identity.version>1.15.4</azure-identity.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<azure-cosmos.version>5.17.1</azure-cosmos.version>
 		<weaviate-client.version>5.2.0</weaviate-client.version>
@@ -303,6 +307,7 @@
 		<commonmark.version>0.22.0</commonmark.version>
 
 		<couchbase.version>3.8.0</couchbase.version>
+		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
 
 		<!-- testing dependencies -->
 		<okhttp3.version>4.12.0</okhttp3.version>
