@@ -58,6 +58,10 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 			final var imgB64 = Base64.getEncoder().encodeToString(buf.toByteArray());
 			return JsonParser.toJson(Map.of("mimeType", "image/png", "data", imgB64));
 		}
+		else if (result instanceof String stringResult) {
+			logger.debug("Returning string result.");
+			return stringResult;
+		}
 		else {
 			logger.debug("Converting tool result to JSON.");
 			return JsonParser.toJson(result);
