@@ -36,6 +36,36 @@
         <developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
     </scm>
 
+	<organization>
+		<name>Broadcom Inc.</name>
+		<url>https://spring.io</url>
+	</organization>
+
+	<issueManagement>
+		<system>Github Issues</system>
+		<url>https://github.com/spring-projects/spring-ai/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>Github Actions</system>
+		<url>https://github.com/spring-projects/spring-ai/actions</url>
+	</ciManagement>
+	<distributionManagement>
+		<snapshotRepository>
+			<id>spring-snapshots</id>
+			<url>https://repo.spring.io/libs-snapshot-local</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</snapshotRepository>
+	</distributionManagement>
+	<licenses>
+		<license>
+			<name>Apache 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
 	<properties>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 	</properties>
@@ -1023,6 +1053,49 @@
 
     </dependencyManagement>
 
+	<repositories>
+		<repository>
+			<name>Central Portal Snapshots</name>
+			<id>central-portal-snapshots</id>
+			<url>https://central.sonatype.com/repository/maven-snapshots/</url>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+		<repository>
+			<id>maven-central</id>
+			<url>https://repo.maven.apache.org/maven2/</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+		</repository>
+		<repository>
+			<id>spring-snapshots</id>
+			<name>Spring Snapshots</name>
+			<url>https://repo.spring.io/snapshot</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+		</repository>
+		<repository>
+			<id>spring-milestones</id>
+			<name>Spring Milestones</name>
+			<url>https://repo.spring.io/milestone</url>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -1060,5 +1133,32 @@
             </plugin>
         </plugins>
     </build>
+
+	<profiles>
+		<profile>
+			<id>artifactory-staging</id>
+			<distributionManagement>
+				<repository>
+					<id>spring-staging</id>
+					<url>https://repo.spring.io/libs-staging-local</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</repository>
+			</distributionManagement>
+		</profile>
+		<profile>
+			<id>artifactory-milestone</id>
+			<distributionManagement>
+				<repository>
+					<id>spring-milestones</id>
+					<url>https://repo.spring.io/libs-milestone-local</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+				</repository>
+			</distributionManagement>
+		</profile>
+	</profiles>
 
 </project>
