@@ -26,6 +26,7 @@ import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -62,7 +63,6 @@ public class OpenAiImageApi {
 				if (!(apiKey instanceof NoopApiKey)) {
 					h.setBearerAuth(apiKey.getValue());
 				}
-				h.setContentType(MediaType.APPLICATION_JSON);
 				h.addAll(headers);
 			})
 			.defaultStatusHandler(responseErrorHandler)
@@ -77,6 +77,33 @@ public class OpenAiImageApi {
 		return this.restClient.post()
 			.uri("v1/images/generations")
 			.body(openAiImageRequest)
+			.contentType(MediaType.APPLICATION_JSON)
+			.retrieve()
+			.toEntity(OpenAiImageResponse.class);
+	}
+
+	public ResponseEntity<OpenAiImageResponse> createImageEdit(OpenAiImageEditRequest openAiImageEditRequest) {
+		Assert.notNull(openAiImageEditRequest, "Image request cannot be null.");
+		Assert.hasLength(openAiImageEditRequest.prompt(), "Prompt cannot be empty.");
+		Assert.notEmpty(openAiImageEditRequest.image(), "Image cannot be empty.");
+
+		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+		openAiImageEditRequest.image().forEach(image -> multipartBody.add("image[]", new ByteArrayResource(image)));
+		multipartBody.add("model", openAiImageEditRequest.model());
+		multipartBody.add("prompt", openAiImageEditRequest.prompt());
+		multipartBody.add("response_format", openAiImageEditRequest.responseFormat());
+		multipartBody.add("n", openAiImageEditRequest.n());
+		multipartBody.add("quality", openAiImageEditRequest.quality());
+		multipartBody.add("size", openAiImageEditRequest.size());
+		multipartBody.add("user", openAiImageEditRequest.user());
+		if (openAiImageEditRequest.mask() != null) {
+			multipartBody.add("mask", new ByteArrayResource(openAiImageEditRequest.mask()));
+		}
+
+		return this.restClient.post()
+			.uri("v1/images/edits")
+			.body(multipartBody)
+			.contentType(MediaType.MULTIPART_FORM_DATA)
 			.retrieve()
 			.toEntity(OpenAiImageResponse.class);
 	}
@@ -90,6 +117,13 @@ public class OpenAiImageApi {
 	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
 	 */
 	public enum ImageModel {
+
+		/**
+		 * GPT Image 1 is our new state-of-the-art image generation model. It is a
+		 * natively multimodal language model that accepts both text and image inputs, and
+		 * produces image outputs.
+		 */
+		GPT_IMAGE_1("gpt-image-1"),
 
 		/**
 		 * The latest DALL·E model released in Nov 2023.
@@ -129,6 +163,27 @@ public class OpenAiImageApi {
 
 		public OpenAiImageRequest(String prompt, String model) {
 			this(prompt, model, null, null, null, null, null, null);
+		}
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record OpenAiImageEditRequest(
+		@JsonProperty("image") List<byte[]> image ,
+		@JsonProperty("prompt") String prompt,
+		@JsonProperty("model") String model,
+		@JsonProperty("mask") byte[] mask,
+		@JsonProperty("n") Integer n,
+		@JsonProperty("quality") String quality,
+		@JsonProperty("response_format") String responseFormat,
+		@JsonProperty("size") String size,
+		@JsonProperty("user") String user) {
+
+		public OpenAiImageEditRequest(List<byte[]> images, String prompt, String model) {
+			this(images, prompt, model, null, null, null, null, null, null);
+		}
+
+		public OpenAiImageEditRequest(byte[] image, String prompt, String model) {
+			this(List.of(image), prompt, model);
 		}
 	}
 
