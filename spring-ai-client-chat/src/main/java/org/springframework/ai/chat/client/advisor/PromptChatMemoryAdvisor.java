@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
@@ -33,12 +34,12 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.ai.content.Content;
 
 /**
  * Memory is retrieved added into the prompt's system text.
  *
  * @author Christian Tzolov
+ * @author Miloš Havránek
  * @since 1.0.0
  */
 public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
@@ -111,14 +112,16 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 		String memory = (memoryMessages != null) ? memoryMessages.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(m -> m.getMessageType() + ":" + ((Content) m).getText())
+			.map(m -> m.getMessageType() + ":" + m.getText())
 			.collect(Collectors.joining(System.lineSeparator())) : "";
 
 		Map<String, Object> advisedSystemParams = new HashMap<>(request.systemParams());
 		advisedSystemParams.put("memory", memory);
 
 		// 2. Advise the system text.
-		String advisedSystemText = request.systemText() + System.lineSeparator() + this.systemTextAdvise;
+		String systemText = request.systemText();
+		String advisedSystemText = (StringUtils.hasText(systemText) ? systemText + System.lineSeparator() : "")
+				+ this.systemTextAdvise;
 
 		// 3. Create a new request with the advised system text and parameters.
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
