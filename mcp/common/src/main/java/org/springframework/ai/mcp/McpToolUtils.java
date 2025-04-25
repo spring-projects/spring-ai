@@ -16,29 +16,27 @@
 
 package org.springframework.ai.mcp;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Utility class that provides helper methods for working with Model Context Protocol
@@ -284,13 +282,27 @@ public final class McpToolUtils {
 	 */
 	public static McpServerFeatures.AsyncToolSpecification toAsyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
+		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
+				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
 
-		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
-
-		return new AsyncToolSpecification(syncToolSpecification.tool(),
-				(exchange, map) -> Mono
-					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
-					.subscribeOn(Schedulers.boundedElastic()));
+		return new McpServerFeatures.AsyncToolSpecification(tool, (exchange, request) -> Mono.defer(() -> {
+			try {
+				Mono<String> resultMono = toolCallback.reactiveCall(ModelOptionsUtils.toJsonString(request),
+						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
+				if (mimeType != null && mimeType.toString().startsWith("image")) {
+					return resultMono.map(callResult -> new McpSchema.CallToolResult(List
+						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
+							false));
+				}
+				return resultMono
+					.map(callResult -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)),
+							false));
+			}
+			catch (Exception e) {
+				return Mono
+					.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true));
+			}
+		}).subscribeOn(Schedulers.boundedElastic()));
 	}
 
 	/**

@@ -21,6 +21,7 @@ import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.lang.Nullable;
+import reactor.core.publisher.Mono;
 
 /**
  * Represents a tool whose execution can be triggered by an AI model.
@@ -52,11 +53,19 @@ public interface ToolCallback extends FunctionCallback {
 	 * Execute tool with the given input and context, and return the result to send back
 	 * to the AI model.
 	 */
-	default String call(String toolInput, @Nullable ToolContext tooContext) {
-		if (tooContext != null && !tooContext.getContext().isEmpty()) {
+	default String call(String toolInput, @Nullable ToolContext toolContext) {
+		if (toolContext != null && !toolContext.getContext().isEmpty()) {
 			throw new UnsupportedOperationException("Tool context is not supported!");
 		}
 		return call(toolInput);
+	}
+
+	default Mono<String> reactiveCall(String toolInput) {
+		return Mono.just(call(toolInput));
+	}
+
+	default Mono<String> reactiveCall(String toolInput, @Nullable ToolContext toolContext) {
+		return Mono.just(call(toolInput, toolContext));
 	}
 
 	@Override

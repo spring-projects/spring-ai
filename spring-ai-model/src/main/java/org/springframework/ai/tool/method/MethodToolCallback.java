@@ -16,17 +16,10 @@
 
 package org.springframework.ai.tool.method;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -39,6 +32,16 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A {@link ToolCallback} implementation to invoke methods as tools.
@@ -53,6 +56,8 @@ public final class MethodToolCallback implements ToolCallback {
 	private static final ToolCallResultConverter DEFAULT_RESULT_CONVERTER = new DefaultToolCallResultConverter();
 
 	private static final ToolMetadata DEFAULT_TOOL_METADATA = ToolMetadata.builder().build();
+
+	private static final String REACTIVE_ELEMENT_DELIMITER = "\n";
 
 	private final ToolDefinition toolDefinition;
 
@@ -96,6 +101,41 @@ public final class MethodToolCallback implements ToolCallback {
 
 	@Override
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
+		Object result = innerCall(toolInput, toolContext);
+		Type returnType = this.toolMethod.getGenericReturnType();
+		if (result instanceof Publisher publisher) {
+			logger.warn("Reactive Publisher returned from non-reactive tool call:{}", this.toolDefinition.name());
+			return Flux.<Object>from(publisher)
+				.map(o -> toolCallResultConverter.convert(o, returnType))
+				.collect(Collectors.joining(REACTIVE_ELEMENT_DELIMITER))
+				.block();
+		}
+		else {
+			return this.toolCallResultConverter.convert(result, returnType);
+		}
+	}
+
+	@Override
+	public Mono<String> reactiveCall(String toolInput) {
+		return reactiveCall(toolInput, null);
+	}
+
+	@Override
+	public Mono<String> reactiveCall(String toolInput, ToolContext toolContext) {
+		Object result = innerCall(toolInput, toolContext);
+		Type returnType = this.toolMethod.getGenericReturnType();
+		if (result instanceof Publisher publisher) {
+			return Flux.from(publisher)
+				.map(o -> toolCallResultConverter.convert(o, returnType))
+				.collect(Collectors.joining(REACTIVE_ELEMENT_DELIMITER));
+		}
+		else {
+			return Mono.just(this.toolCallResultConverter.convert(result, returnType));
+		}
+	}
+
+	@Nullable
+	private Object innerCall(String toolInput, ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
 		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
@@ -110,9 +150,7 @@ public final class MethodToolCallback implements ToolCallback {
 
 		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
 
-		Type returnType = this.toolMethod.getGenericReturnType();
-
-		return this.toolCallResultConverter.convert(result, returnType);
+		return result;
 	}
 
 	private void validateToolContextSupport(@Nullable ToolContext toolContext) {
