@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.image.ImageMessage;
@@ -88,7 +89,7 @@ public class ZhiPuAiRetryTests {
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new ZhiPuAiChatModel(this.zhiPuAiApi, ZhiPuAiChatOptions.builder().build(), null,
+		this.chatModel = new ZhiPuAiChatModel(this.zhiPuAiApi, ZhiPuAiChatOptions.builder().build(),
 				this.retryTemplate);
 		this.embeddingModel = new ZhiPuAiEmbeddingModel(this.zhiPuAiApi, MetadataMode.EMBED,
 				ZhiPuAiEmbeddingOptions.builder().build(), this.retryTemplate);
@@ -109,7 +110,7 @@ public class ZhiPuAiRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
-		var result = this.chatModel.call(new Prompt("text"));
+		var result = this.chatModel.call(new Prompt("text", ChatOptions.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
@@ -121,7 +122,8 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiChatNonTransientError() {
 		given(this.zhiPuAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
+		assertThrows(RuntimeException.class,
+				() -> this.chatModel.call(new Prompt("text", ChatOptions.builder().build())));
 	}
 
 	@Test
