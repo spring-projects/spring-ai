@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.server.McpServerAuthProvider;
 import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
@@ -70,9 +71,13 @@ public class McpWebMvcServerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
-			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerProperties serverProperties) {
+			ObjectProvider<ObjectMapper> objectMapperProvider,
+			ObjectProvider<McpServerAuthProvider> mcpServerAuthProviderObjectProvider,
+			McpServerProperties serverProperties) {
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-		return new WebMvcSseServerTransportProvider(objectMapper, serverProperties.getSseMessageEndpoint());
+		McpServerAuthProvider authProvider = mcpServerAuthProviderObjectProvider.getIfAvailable(() -> null);
+		return new WebMvcSseServerTransportProvider(objectMapper, serverProperties.getSseMessageEndpoint(),
+				serverProperties.getSseMessageEndpoint(), serverProperties.getSseEndpoint(), authProvider);
 	}
 
 	@Bean
