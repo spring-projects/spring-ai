@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.ai.chat.memory.ChatMemory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -53,7 +54,9 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 
 	/**
 	 * The default conversation id to use when no conversation id is provided.
+	 * @deprecated in favor of {@link ChatMemory#DEFAULT_CONVERSATION_ID}.
 	 */
+	@Deprecated
 	public static final String DEFAULT_CHAT_MEMORY_CONVERSATION_ID = "default";
 
 	/**
@@ -91,7 +94,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 	 * @param chatMemory the chat memory store
 	 */
 	protected AbstractChatMemoryAdvisor(T chatMemory) {
-		this(chatMemory, DEFAULT_CHAT_MEMORY_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE, true);
+		this(chatMemory, ChatMemory.DEFAULT_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE, true);
 	}
 
 	/**
@@ -204,7 +207,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		/**
 		 * The conversation id.
 		 */
-		protected String conversationId = DEFAULT_CHAT_MEMORY_CONVERSATION_ID;
+		protected String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
 		/**
 		 * The chat memory retrieve size.

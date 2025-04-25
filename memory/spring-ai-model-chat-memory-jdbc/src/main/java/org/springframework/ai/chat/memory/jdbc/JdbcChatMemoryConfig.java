@@ -24,7 +24,9 @@ import org.springframework.util.Assert;
  *
  * @author Jonathan Leijendekker
  * @since 1.0.0
+ * @deprecated in favor of using {@link JdbcChatMemoryRepository#builder()}.
  */
+@Deprecated
 public final class JdbcChatMemoryConfig {
 
 	private final JdbcTemplate jdbcTemplate;
