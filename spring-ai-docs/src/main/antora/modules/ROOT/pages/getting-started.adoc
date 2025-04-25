@@ -70,6 +70,29 @@ repositories {
   }  
 }
 ----
+
+**NOTE:** When using Maven with Spring AI snapshots, pay attention to your Maven mirror configuration. If you have configured a mirror in your `settings.xml` like this:
+
+```xml
+<mirror>
+    <id>my-mirror</id>
+    <mirrorOf>*</mirrorOf>
+    <url>https://my-company-repository.com/maven</url>
+</mirror>
+```
+
+The wildcard `*` will redirect all repository requests to your mirror, preventing access to Spring snapshot repositories. To fix this, modify the `mirrorOf` configuration to exclude Spring repositories:
+
+```xml
+<mirror>
+    <id>my-mirror</id>
+    <mirrorOf>*,!spring-snapshots,!central-portal-snapshots</mirrorOf>
+    <url>https://my-company-repository.com/maven</url>
+</mirror>
+```
+
+This configuration allows Maven to access Spring snapshot repositories directly while still using your mirror for other dependencies.
+
 ======
 
 [[dependency-management]]
