@@ -150,6 +150,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-model-chat-memory</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-model-chat-memory-cassandra</artifactId>
 				<version>${project.version}</version>
 			</dependency>

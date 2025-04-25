@@ -20,6 +20,7 @@ import org.neo4j.driver.Driver;
 
 import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemory;
 import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryConfig;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -33,7 +34,7 @@ import org.springframework.context.annotation.Bean;
  * @author Enrico Rampazzo
  * @since 1.0.0
  */
-@AutoConfiguration(after = Neo4jAutoConfiguration.class)
+@AutoConfiguration(after = Neo4jAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ Neo4jChatMemory.class, Driver.class })
 @EnableConfigurationProperties(Neo4jChatMemoryProperties.class)
 public class Neo4jChatMemoryAutoConfiguration {

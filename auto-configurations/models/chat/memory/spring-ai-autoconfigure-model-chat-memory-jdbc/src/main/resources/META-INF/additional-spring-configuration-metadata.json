@@ -1,0 +1,14 @@
+{
+  "groups": [],
+  "properties": [
+    {
+      "name": "spring.ai.chat.memory.jdbc.initialize-schema",
+      "type": "java.lang.Boolean",
+      "description": "Whether to initialize the schema on startup.",
+      "deprecation": {
+        "replacement": "spring.ai.chat.memory.repository.jdbc.initialize-schema"
+      }
+    }
+  ],
+  "hints": []
+}

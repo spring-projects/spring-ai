@@ -20,6 +20,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 
 import org.springframework.ai.chat.memory.cassandra.CassandraChatMemory;
 import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -34,7 +35,7 @@ import org.springframework.context.annotation.Bean;
  * @author Jihoon Kim
  * @since 1.0.0
  */
-@AutoConfiguration(after = CassandraAutoConfiguration.class)
+@AutoConfiguration(after = CassandraAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ CassandraChatMemory.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraChatMemoryProperties.class)
 public class CassandraChatMemoryAutoConfiguration {

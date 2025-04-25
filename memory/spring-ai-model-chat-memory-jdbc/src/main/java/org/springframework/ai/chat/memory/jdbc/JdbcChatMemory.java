@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -38,14 +39,17 @@ import org.springframework.jdbc.core.RowMapper;
  *
  * @author Jonathan Leijendekker
  * @since 1.0.0
+ * @deprecated in favor of building a {@link MessageWindowChatMemory} (or other
+ * {@link ChatMemory} implementations) with a {@link JdbcChatMemoryRepository} instance.
  */
+@Deprecated
 public class JdbcChatMemory implements ChatMemory {
 
 	private static final String QUERY_ADD = """
 			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)""";
 
 	private static final String QUERY_GET = """
-			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC LIMIT ?""";
+			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" LIMIT ?""";
 
 	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";
 
