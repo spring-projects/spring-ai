@@ -554,11 +554,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-qianfan</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -908,11 +903,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-qianfan</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
