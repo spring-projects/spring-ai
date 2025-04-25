@@ -611,7 +611,7 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 	 * annotation function. This function takes effect only when enable_source is true.
 	 * Default value is false.
 	 * @param citationFormat Subscript style. Only available when enable_citation is true.
-	 * Supported styles: “[<number>]” and “[ref_<number>]”. Default value is “[<number>]”.
+	 * Supported styles: “[1]” and “[ref_1]”. Default value is “[1]”.
 	 * @param forcedSearch Whether to force search to start.
 	 * @param searchStrategy The amount of Internet information searched. Supported
 	 * values: “standard” and “pro”. Default value is “standard”.
@@ -739,6 +739,8 @@ public class QwenChatOptions implements ToolCallingChatOptions {
 	}
 
 	/**
+	 * The term.
+	 *
 	 * @param source The term in the source language.
 	 * @param target The term in the target language.
 	 */
