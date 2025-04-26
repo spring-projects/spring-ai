@@ -225,7 +225,6 @@ public class OllamaChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(OllamaApi.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -296,7 +295,6 @@ public class OllamaChatModel implements ChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(OllamaApi.PROVIDER_NAME)
-				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(

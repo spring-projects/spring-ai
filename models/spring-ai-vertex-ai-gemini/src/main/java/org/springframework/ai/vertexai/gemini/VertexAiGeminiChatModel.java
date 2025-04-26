@@ -366,7 +366,6 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(VertexAiGeminiConstants.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -478,7 +477,6 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(VertexAiGeminiConstants.PROVIDER_NAME)
-				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(

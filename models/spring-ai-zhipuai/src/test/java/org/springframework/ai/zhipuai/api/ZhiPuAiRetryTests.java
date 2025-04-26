@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.retry.RetryUtils;
@@ -164,9 +165,9 @@ public class ZhiPuAiRetryTests {
 			.willThrow(new TransientAiException("Transient Error 1"))
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
-
+		EmbeddingOptions options = ZhiPuAiEmbeddingOptions.builder().model("model").build();
 		var result = this.embeddingModel
-			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), options));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
@@ -178,8 +179,9 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiEmbeddingNonTransientError() {
 		given(this.zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
+		EmbeddingOptions options = ZhiPuAiEmbeddingOptions.builder().model("model").build();
 		assertThrows(RuntimeException.class, () -> this.embeddingModel
-			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), options)));
 	}
 
 	@Test

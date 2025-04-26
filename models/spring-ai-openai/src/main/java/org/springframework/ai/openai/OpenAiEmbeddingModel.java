@@ -156,9 +156,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		OpenAiApi.EmbeddingRequest<List<String>> apiRequest = createRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(OpenAiApiConstants.PROVIDER_NAME)
-			.requestOptions(embeddingRequest.getOptions())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
