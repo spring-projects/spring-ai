@@ -25,19 +25,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * all transport types.
  *
  * @author Christian Tzolov
+ * @author Eddú Meléndez
  * @since 1.0.0
  */
 @ConfigurationProperties(McpClientCommonProperties.CONFIG_PREFIX)
 public class McpClientCommonProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.client";
-
-	/**
-	 * Enable/disable the MCP client.
-	 * <p>
-	 * When set to false, the MCP client and all its components will not be initialized.
-	 */
-	private boolean enabled = true;
 
 	/**
 	 * The name of the MCP client instance.
@@ -100,14 +94,6 @@ public class McpClientCommonProperties {
 	 * Defaults to true.
 	 */
 	private boolean rootChangeNotification = true;
-
-	public boolean isEnabled() {
-		return this.enabled;
-	}
-
-	public void setEnabled(boolean enabled) {
-		this.enabled = enabled;
-	}
 
 	public String getName() {
 		return this.name;
