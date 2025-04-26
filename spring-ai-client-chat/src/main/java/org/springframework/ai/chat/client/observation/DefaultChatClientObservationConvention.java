@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.observation;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import io.micrometer.common.KeyValue;
@@ -115,7 +116,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 		if (CollectionUtils.isEmpty(context.getRequest().context())) {
 			return keyValues;
 		}
-		var chatClientContext = context.getRequest().context();
+		var chatClientContext = new HashMap<>(context.getRequest().context());
 		Arrays.stream(ChatClientAttributes.values()).forEach(attribute -> chatClientContext.remove(attribute.getKey()));
 		return keyValues.and(
 				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),

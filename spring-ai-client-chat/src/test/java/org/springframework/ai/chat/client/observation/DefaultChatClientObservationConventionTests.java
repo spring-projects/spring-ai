@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.observation;
 import java.util.List;
 
 import io.micrometer.common.KeyValue;
+import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,6 +169,26 @@ class DefaultChatClientObservationConventionTests {
 						"[\"tool1\", \"tool2\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS.asString(),
 						"[\"toolCallback1\", \"toolCallback2\"]"));
+	}
+
+	@Test
+	void entriesInAdvisorContextAreNotRemoved() {
+		var request = ChatClientRequest.builder()
+			.prompt(new Prompt(""))
+			.context("advParam1", "advisorParam1Value")
+			.context(ChatClientAttributes.ADVISORS.getKey(),
+					List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")))
+			.build();
+
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.request(request)
+			.build();
+
+		assertThat(observationContext.getRequest().context()).hasSize(2);
+
+		this.observationConvention.chatClientAdvisorParams(KeyValues.empty(), observationContext);
+
+		assertThat(observationContext.getRequest().context()).hasSize(2);
 	}
 
 }
