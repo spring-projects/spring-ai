@@ -245,7 +245,6 @@ public class AzureOpenAiChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(AiProvider.AZURE_OPENAI.value())
-			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -300,7 +299,6 @@ public class AzureOpenAiChatModel implements ChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.AZURE_OPENAI.value())
-				.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(

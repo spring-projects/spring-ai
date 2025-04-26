@@ -242,7 +242,6 @@ public class ZhiPuAiChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(requestPrompt)
 			.provider(ZhiPuApiConstants.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -319,7 +318,6 @@ public class ZhiPuAiChatModel implements ChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(requestPrompt)
 				.provider(ZhiPuApiConstants.PROVIDER_NAME)
-				.requestOptions(buildRequestOptions(request))
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(

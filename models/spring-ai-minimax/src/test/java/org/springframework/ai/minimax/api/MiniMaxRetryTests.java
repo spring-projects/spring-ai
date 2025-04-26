@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
@@ -57,6 +58,7 @@ import static org.mockito.BDDMockito.given;
 
 /**
  * @author Geng Rong
+ * @author Soby Chacko
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -150,8 +152,9 @@ public class MiniMaxRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(expectedEmbeddings)));
 
+		EmbeddingOptions options = MiniMaxEmbeddingOptions.builder().model("model").build();
 		var result = this.embeddingModel
-			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), options));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
@@ -163,8 +166,9 @@ public class MiniMaxRetryTests {
 	public void miniMaxEmbeddingNonTransientError() {
 		given(this.miniMaxApi.embeddings(isA(EmbeddingRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
+		EmbeddingOptions options = MiniMaxEmbeddingOptions.builder().model("model").build();
 		assertThrows(RuntimeException.class, () -> this.embeddingModel
-			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
+			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), options)));
 	}
 
 	private class TestRetryListener implements RetryListener {
