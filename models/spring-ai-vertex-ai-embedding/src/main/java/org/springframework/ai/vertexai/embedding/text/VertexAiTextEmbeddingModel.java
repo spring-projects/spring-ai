@@ -35,6 +35,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -59,6 +60,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Rodrigo Malara
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
@@ -117,12 +119,11 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
-		final VertexAiTextEmbeddingOptions finalOptions = mergedOptions(request);
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(AiProvider.VERTEX_AI.value())
-			.requestOptions(finalOptions)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -131,10 +132,11 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 			.observe(() -> {
 				try (PredictionServiceClient client = createPredictionServiceClient()) {
 
-					EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
+					EmbeddingOptions options = embeddingRequest.getOptions();
+					EndpointName endpointName = this.connectionDetails.getEndpointName(options.getModel());
 
 					PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
-							finalOptions);
+							(VertexAiTextEmbeddingOptions) options);
 
 					PredictResponse embeddingResponse = this.retryTemplate
 						.execute(context -> getPredictResponse(client, predictRequestBuilder));
@@ -155,7 +157,7 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 						embeddingList.add(new Embedding(vectorValues, index++));
 					}
 					EmbeddingResponse response = new EmbeddingResponse(embeddingList,
-							generateResponseMetadata(finalOptions.getModel(), totalTokenCount));
+							generateResponseMetadata(options.getModel(), totalTokenCount));
 
 					observationContext.setResponse(response);
 
@@ -164,17 +166,24 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
-	private VertexAiTextEmbeddingOptions mergedOptions(EmbeddingRequest request) {
-
-		VertexAiTextEmbeddingOptions mergedOptions = this.defaultOptions;
-
-		if (request.getOptions() != null) {
-			var defaultOptionsCopy = VertexAiTextEmbeddingOptions.builder().from(this.defaultOptions).build();
-			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
+	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		VertexAiTextEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
 					VertexAiTextEmbeddingOptions.class);
 		}
 
-		return mergedOptions;
+		// Define request options by merging runtime options and default options
+		VertexAiTextEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				VertexAiTextEmbeddingOptions.class);
+
+		// Validate request options
+		if (!StringUtils.hasText(requestOptions.getModel())) {
+			throw new IllegalArgumentException("model cannot be null or empty");
+		}
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
 	}
 
 	protected PredictRequest.Builder getPredictRequestBuilder(EmbeddingRequest request, EndpointName endpointName,

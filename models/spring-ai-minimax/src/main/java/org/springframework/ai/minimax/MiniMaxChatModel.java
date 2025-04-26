@@ -241,7 +241,6 @@ public class MiniMaxChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(requestPrompt)
 			.provider(MiniMaxApiConstants.PROVIDER_NAME)
-			.requestOptions(requestPrompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -334,7 +333,6 @@ public class MiniMaxChatModel implements ChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(requestPrompt)
 				.provider(MiniMaxApiConstants.PROVIDER_NAME)
-				.requestOptions(requestPrompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(

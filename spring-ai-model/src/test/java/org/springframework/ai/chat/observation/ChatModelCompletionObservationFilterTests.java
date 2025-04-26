@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,8 @@ class ChatModelCompletionObservationFilterTests {
 	@Test
 	void whenEmptyResponseThenReturnOriginalContext() {
 		var expectedContext = ChatModelObservationContext.builder()
-			.prompt(generatePrompt())
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		var actualContext = this.observationFilter.map(expectedContext);
 
@@ -63,9 +62,8 @@ class ChatModelCompletionObservationFilterTests {
 	@Test
 	void whenEmptyCompletionThenReturnOriginalContext() {
 		var expectedContext = ChatModelObservationContext.builder()
-			.prompt(generatePrompt())
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		expectedContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("")))));
 		var actualContext = this.observationFilter.map(expectedContext);
@@ -76,9 +74,8 @@ class ChatModelCompletionObservationFilterTests {
 	@Test
 	void whenCompletionWithTextThenAugmentContext() {
 		var originalContext = ChatModelObservationContext.builder()
-			.prompt(generatePrompt())
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(ChatOptions.builder().model("mistral").build())
 			.build();
 		originalContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));
@@ -88,8 +85,8 @@ class ChatModelCompletionObservationFilterTests {
 			.of(HighCardinalityKeyNames.COMPLETION.asString(), "[\"say please\", \"seriously, say please\"]"));
 	}
 
-	private Prompt generatePrompt() {
-		return new Prompt("supercalifragilisticexpialidocious");
+	private Prompt generatePrompt(ChatOptions chatOptions) {
+		return new Prompt("supercalifragilisticexpialidocious", chatOptions);
 	}
 
 }

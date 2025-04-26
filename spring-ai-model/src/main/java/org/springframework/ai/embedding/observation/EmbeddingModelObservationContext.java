@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,39 +22,26 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.util.Assert;
 
 /**
  * Context used to store metadata for embedding model exchanges.
  *
  * @author Thomas Vitale
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class EmbeddingModelObservationContext extends ModelObservationContext<EmbeddingRequest, EmbeddingResponse> {
 
-	private final EmbeddingOptions requestOptions;
-
-	EmbeddingModelObservationContext(EmbeddingRequest embeddingRequest, String provider,
-			EmbeddingOptions requestOptions) {
+	EmbeddingModelObservationContext(EmbeddingRequest embeddingRequest, String provider) {
 		super(embeddingRequest,
 				AiOperationMetadata.builder()
 					.operationType(AiOperationType.EMBEDDING.value())
 					.provider(provider)
 					.build());
-		Assert.notNull(requestOptions, "requestOptions cannot be null");
-		this.requestOptions = requestOptions;
 	}
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	/**
-	 * @deprecated Use {@link #getRequest().getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	public EmbeddingOptions getRequestOptions() {
-		return this.requestOptions;
 	}
 
 	public static final class Builder {
@@ -62,8 +49,6 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 		private EmbeddingRequest embeddingRequest;
 
 		private String provider;
-
-		private EmbeddingOptions requestOptions;
 
 		private Builder() {
 		}
@@ -78,18 +63,8 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 			return this;
 		}
 
-		/**
-		 * @deprecated EmbeddingOptions are passed in the EmbeddingRequest object and
-		 * should not be set separately anymore.
-		 */
-		@Deprecated(forRemoval = true)
-		public Builder requestOptions(EmbeddingOptions requestOptions) {
-			this.requestOptions = requestOptions;
-			return this;
-		}
-
 		public EmbeddingModelObservationContext build() {
-			return new EmbeddingModelObservationContext(this.embeddingRequest, this.provider, this.requestOptions);
+			return new EmbeddingModelObservationContext(this.embeddingRequest, this.provider);
 		}
 
 	}

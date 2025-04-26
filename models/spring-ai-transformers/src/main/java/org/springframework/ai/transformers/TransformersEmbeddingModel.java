@@ -289,7 +289,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(AiProvider.ONNX.value())
-			.requestOptions(request.getOptions())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
