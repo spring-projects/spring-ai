@@ -28,7 +28,7 @@ import org.springframework.ai.chat.client.ChatClientRequest;
  * @deprecated in favor of {@link CallAdvisorChain}
  */
 @Deprecated
-public interface CallAroundAdvisorChain {
+public interface CallAroundAdvisorChain extends AdvisorChain {
 
 	/**
 	 * Invokes the next Around Advisor in the CallAroundAdvisorChain with the given

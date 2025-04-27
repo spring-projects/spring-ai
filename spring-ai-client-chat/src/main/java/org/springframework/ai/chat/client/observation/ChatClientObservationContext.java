@@ -20,12 +20,15 @@ import io.micrometer.observation.Observation;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 /**
  * Context used to store metadata for chat client workflows.
@@ -41,11 +44,17 @@ public class ChatClientObservationContext extends Observation.Context {
 	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(AiOperationType.FRAMEWORK.value(),
 			AiProvider.SPRING_AI.value());
 
+	private final List<? extends Advisor> advisors;
+
 	private final boolean stream;
 
-	ChatClientObservationContext(ChatClientRequest chatClientRequest, boolean isStream) {
+	ChatClientObservationContext(ChatClientRequest chatClientRequest, List<? extends Advisor> advisors,
+			boolean isStream) {
 		Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
+		Assert.notNull(advisors, "advisors cannot be null");
+		Assert.noNullElements(advisors, "advisors cannot contain null elements");
 		this.request = chatClientRequest;
+		this.advisors = advisors;
 		this.stream = isStream;
 	}
 
@@ -59,6 +68,10 @@ public class ChatClientObservationContext extends Observation.Context {
 
 	public AiOperationMetadata getOperationMetadata() {
 		return this.operationMetadata;
+	}
+
+	public List<? extends Advisor> getAdvisors() {
+		return this.advisors;
 	}
 
 	public boolean isStream() {
@@ -91,6 +104,8 @@ public class ChatClientObservationContext extends Observation.Context {
 
 		private ChatClientRequest chatClientRequest;
 
+		private List<? extends Advisor> advisors = List.of();
+
 		private String format;
 
 		private boolean isStream = false;
@@ -118,6 +133,11 @@ public class ChatClientObservationContext extends Observation.Context {
 			return this;
 		}
 
+		public Builder advisors(List<? extends Advisor> advisors) {
+			this.advisors = advisors;
+			return this;
+		}
+
 		public Builder stream(boolean isStream) {
 			this.isStream = isStream;
 			return this;
@@ -132,7 +152,7 @@ public class ChatClientObservationContext extends Observation.Context {
 			if (StringUtils.hasText(format)) {
 				this.chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), format);
 			}
-			return new ChatClientObservationContext(this.chatClientRequest, this.isStream);
+			return new ChatClientObservationContext(this.chatClientRequest, this.advisors, this.isStream);
 		}
 
 	}

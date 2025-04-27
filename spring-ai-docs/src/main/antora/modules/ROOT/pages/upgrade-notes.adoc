@@ -46,6 +46,84 @@ This approach can save time and reduce the chance of errors when upgrading multi
 [[upgrading-to-1-0-0-m8]]
 == Upgrading to 1.0.0-M8
 
+=== Chat Client
+
+* The `ChatClient` has been enhanced to solve some inconsistencies or unwanted behaviour whenever user and system prompts were not rendered before using them in an advisor. The new behavior ensures that the user and system prompts are always rendered before executing the chain of advisors. As part of this enhancement, the `AdvisedRequest` and `AdvisedResponse` APIs have been deprecated, replaced by `ChatClientRequest` and `ChatClientResponse`. Advisors now act on a fully built `Prompt` object included in a `ChatClientRequest` instead of the destructured format used in `AdvisedRequest`, guaranteeing consistency and completeness.
+
+For example, if you had a custom advisor that modified the request prompt in the `before` method, you would refactor it as follows:
+
+[source,java,subs="verbatim,quotes"]
+----
+// --- Before (using AdvisedRequest) ---
+@Override
+public AdvisedRequest before(AdvisedRequest advisedRequest) {
+    // Access original user text and parameters directly from AdvisedRequest
+    String originalUserText = new PromptTemplate(advisedRequest.userText(), advisedRequest.userParams()).render();
+
+    // ... retrieve documents, create augmented prompt text ...
+    List<Document> retrievedDocuments = ...;
+    String augmentedPromptText = ...; // create augmented text from originalUserText and retrievedDocuments
+
+    // Copy existing context and add advisor-specific data
+    Map<String, Object> context = new HashMap<>(advisedRequest.adviseContext());
+    context.put("retrievedDocuments", retrievedDocuments); // Example key
+
+    // Use the AdvisedRequest builder pattern to return the modified request
+    return AdvisedRequest.from(advisedRequest)
+        .userText(augmentedPromptText) // Set the augmented user text
+        .adviseContext(context)        // Set the updated context
+        .build();
+}
+
+// --- After (using ChatClientRequest) ---
+@Override
+public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain chain) {
+    String originalUserText = chatClientRequest.prompt().getUserMessage().getText(); // Access prompt directly
+
+    // ... retrieve documents ...
+    List<Document> retrievedDocuments = ...;
+    String augmentedQueryText = ...; // create augmented text
+
+    // Initialize context with existing data and add advisor-specific data
+    Map<String, Object> context = new HashMap<>(chatClientRequest.context()); // <1>
+    context.put("retrievedDocuments", retrievedDocuments); // Example key
+    context.put("originalUserQuery", originalUserText);   // Example key
+
+    // Use immutable operations
+    return chatClientRequest.mutate()
+        .prompt(chatClientRequest.prompt()
+            .augmentUserMessage(augmentedQueryText) // <2>
+        )
+        .context(context) // <3>
+        .build();
+}
+----
+<1> Initialize the context map with data from the incoming request (`chatClientRequest.context()`) to preserve context from previous advisors, then add new data.
+<2> Use methods like `prompt.augmentUserMessage()` to modify the prompt content safely.
+<3> Pass the updated context map. This map becomes part of the `ChatClientRequest` and is accessible later via `ChatClientResponse.responseContext()` in the `after` method.
+
+* The chain of advisors can populate the execution context with useful data. For example, when performing retrieval augmented generation, the retrieved documents can be added to the context. It's now possible to return a `ChatClientResponse` object from a `ChatClient` call, which contains the execution context. So, besides the `content()` and `chatResponse()` methods, you can now terminate a `ChatClient` call with `chatClientResponse()` which gives you access to both the `ChatResponse` and the execution context.
+
+In addition to directly replacing the user message text with `augmentUserMessage(String)`, you can provide a function to modify the existing `UserMessage` more granularly:
+
+[source,java,subs="verbatim,quotes"]
+----
+Prompt originalPrompt = new Prompt(new UserMessage("Tell me about Large Language Models."));
+
+// Example: Append context or modify properties using a Function
+Prompt augmentedPrompt = originalPrompt.augmentUserMessage(userMessage ->
+    userMessage.mutate()
+        .text(userMessage.getText() + "\n\nFocus on their applications in software development.")
+        // .media(...) // Potentially add/modify media
+        // .metadata(...) // Potentially add/modify metadata
+        .build()
+);
+
+// 'augmentedPrompt' now contains the modified UserMessage
+----
+
+This approach offers more control when you need to conditionally change parts of the `UserMessage` or work with its media and metadata, rather than just replacing the text content.
+
 === Chat Memory
 
 * A `ChatMemory` bean is auto-configured for you whenever using one of the Spring AI Model starters. By default, it uses the `MessageWindowChatMemory` implementation and stores the conversation history in memory.
@@ -58,6 +136,15 @@ This approach can save time and reduce the chance of errors when upgrading multi
 === Prompt Templating
 
 * The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
+
+=== Observability
+
+* Changes to the `spring.ai.client` observation:
+** The `spring.ai.chat.client.tool.function.names` and `spring.ai.chat.client.tool.function.callbacks` attributes have been deprecated, replaced by a new `spring.ai.chat.client.tool.names` attribute that includes the names of all the tools passed to a ChatClient, regardless of the underlying mechanism used to define them.
+** The `spring.ai.chat.client.advisor.params` attribute has been deprecated and will not have a replacement. The reason is that there is a risk to expose sensitive information or break the instrumentation since the entries in the advisor context are used to pass arbitrary Java objects between advisors and are not necessarily serializable. The conversation ID that was previously exported here is now available via the dedicated `spring.ai.chat.client.conversation.id` attribute. If you need to export some of the other parameters in the advisor context to the observability system, you can do so by defining an `ObservationFilter` and making an explicit decision on which parameters to export. For inspiration, you can refer to the `ChatClientPromptContentObservationFilter`.
+** The content of a prompt as specified via a ChatClient API was included optionally in the `spring.ai.client` observation, broken down in a few attributes: `spring.ai.chat.client.user.text`, `spring.ai.chat.client.user.params`, `spring.ai.chat.client.system.text`, `spring.ai.chat.client.system.params`. All those attributes are now deprecated, replaced by a single `gen_ai.prompt` attribute that contains all the messages in the prompt, solving the problem affecting the deprecated attributes where part of the prompt was not included in the observation, and aligning with the observations used in the ChatModel API. This new attribute can be enabled via the `spring.ai.chat.observations.include-prompt` configuration property, whereas the previous `spring.ai.chat.observations.include-input` configuration property is deprecated.
+* Changes to the `spring.ai.advisor` observation:
+** The `spring.ai.advisor.type` attribute has been deprecated. In previous releases, the Advisor API was categorized based on the type of advisor (`before`, `after`, `around`). That distinction doesn't apply anymore meaning that all Advisors are now of the same type (`around`).
 
 [[upgrading-to-1-0-0-m7]]
 == Upgrading to 1.0.0-M7
@@ -803,9 +890,3 @@ You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://mar
     <version>0.7.1-SNAPSHOT</version>
 </dependency>
 ----
-
-== Upgrading to 1.0.0.M4
-
-* PaLM API support removal
-
-As a follow up to the announcement to https://ai.google.dev/palm_docs/deprecation[deprecate PaLM API], the PaLM API support is removed.

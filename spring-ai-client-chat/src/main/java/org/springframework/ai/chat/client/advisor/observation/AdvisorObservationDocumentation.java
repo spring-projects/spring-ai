@@ -89,7 +89,9 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 
 		/**
 		 * Advisor type: Before, After or Around.
+		 * @deprecated advisors don't have types anymore, they're all "around"
 		 */
+		@Deprecated
 		ADVISOR_TYPE {
 			@Override
 			public String asString() {

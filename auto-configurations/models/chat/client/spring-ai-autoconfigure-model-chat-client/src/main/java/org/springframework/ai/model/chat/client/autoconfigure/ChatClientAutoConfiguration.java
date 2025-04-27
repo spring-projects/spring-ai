@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
 import org.springframework.ai.chat.client.observation.ChatClientInputContentObservationFilter;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationFilter;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -79,14 +80,28 @@ public class ChatClientAutoConfiguration {
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 
+	/**
+	 * @deprecated in favour of {@link #chatClientPromptContentObservationFilter()}.
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations", name = "include-input",
 			havingValue = "true")
+	@Deprecated
 	ChatClientInputContentObservationFilter chatClientInputContentObservationFilter() {
 		logger.warn(
 				"You have enabled the inclusion of the input content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
 		return new ChatClientInputContentObservationFilter();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
+			name = "include-prompt", havingValue = "true")
+	ChatClientPromptContentObservationFilter chatClientPromptContentObservationFilter() {
+		logger.warn(
+				"You have enabled the inclusion of the ChatClient prompt content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+		return new ChatClientPromptContentObservationFilter();
 	}
 
 }
