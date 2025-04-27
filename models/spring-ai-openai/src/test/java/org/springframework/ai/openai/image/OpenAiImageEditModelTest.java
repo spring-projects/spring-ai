@@ -12,6 +12,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.image.ImageEditMessage;
 import org.springframework.ai.image.ImageEditPrompt;
 import org.springframework.ai.image.ImageResponse;
@@ -28,6 +29,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.client.RestClient;
 
 @RestClientTest(OpenAiImageEditModelTest.Config.class)
@@ -54,8 +56,8 @@ public class OpenAiImageEditModelTest {
 	void imageEditTest() {
 		prepareMock();
 
-		ImageEditPrompt prompt = new ImageEditPrompt(
-				new ImageEditMessage(List.of(new ClassPathResource("test.png")), "Add a sunset background."),
+		Media image = new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("test.png"));
+		ImageEditPrompt prompt = new ImageEditPrompt(new ImageEditMessage(List.of(image), "Add a sunset background."),
 				OpenAiImageEditOptions.builder().build());
 
 		ImageResponse response = this.openAiImageEditModel.call(prompt);

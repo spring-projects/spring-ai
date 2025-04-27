@@ -18,15 +18,13 @@ package org.springframework.ai.openai.api;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -34,6 +32,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * OpenAI Image API.
@@ -88,7 +89,15 @@ public class OpenAiImageApi {
 		Assert.notEmpty(openAiImageEditRequest.image(), "Image cannot be empty.");
 
 		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
-		openAiImageEditRequest.image().forEach(image -> multipartBody.add("image[]", new ByteArrayResource(image)));
+		openAiImageEditRequest.image().forEach(image -> {
+			Resource imageResource = new ByteArrayResource(image) {
+				@Override
+				public String getFilename() {
+					return "image.png";
+				}
+			};
+			multipartBody.add("image", imageResource);
+		});
 		multipartBody.add("model", openAiImageEditRequest.model());
 		multipartBody.add("prompt", openAiImageEditRequest.prompt());
 		multipartBody.add("response_format", openAiImageEditRequest.responseFormat());
@@ -97,7 +106,13 @@ public class OpenAiImageApi {
 		multipartBody.add("size", openAiImageEditRequest.size());
 		multipartBody.add("user", openAiImageEditRequest.user());
 		if (openAiImageEditRequest.mask() != null) {
-			multipartBody.add("mask", new ByteArrayResource(openAiImageEditRequest.mask()));
+			Resource imageResource = new ByteArrayResource(openAiImageEditRequest.mask()) {
+				@Override
+				public String getFilename() {
+					return "mask.png";
+				}
+			};
+			multipartBody.add("mask", imageResource);
 		}
 
 		return this.restClient.post()

@@ -20,11 +20,12 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageEditModel;
 import org.springframework.ai.image.ImageEditOptions;
-import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageEditPrompt;
+import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -34,7 +35,6 @@ import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageEditRequest;
 import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageResponse;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -105,7 +105,11 @@ public class OpenAiImageEditModel implements ImageEditModel {
 	}
 
 	private OpenAiImageEditRequest createRequest(ImageEditPrompt imageEditPrompt) {
-		List<byte[]> images = imageEditPrompt.getInstructions().getImageResource().stream().map(this::toBytes).toList();
+		List<byte[]> images = imageEditPrompt.getInstructions()
+			.getImage()
+			.stream()
+			.map(Media::getDataAsByteArray)
+			.toList();
 		String prompt = imageEditPrompt.getInstructions().getPrompt();
 		OpenAiImageEditOptions imageOptions = (OpenAiImageEditOptions) imageEditPrompt.getOptions();
 
@@ -154,15 +158,6 @@ public class OpenAiImageEditModel implements ImageEditModel {
 			.build();
 
 		return new ImageEditPrompt(ImageEditPrompt.getInstructions(), requestOptions);
-	}
-
-	private byte[] toBytes(Resource resource) {
-		try {
-			return resource.getInputStream().readAllBytes();
-		}
-		catch (Exception e) {
-			throw new IllegalArgumentException("Failed to read resource: " + resource, e);
-		}
 	}
 
 }

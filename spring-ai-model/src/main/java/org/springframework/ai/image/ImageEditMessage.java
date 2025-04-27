@@ -18,21 +18,21 @@ package org.springframework.ai.image;
 
 import java.util.List;
 
-import org.springframework.core.io.Resource;
+import org.springframework.ai.content.Media;
 
 public class ImageEditMessage {
 
-	private List<Resource> imageResource;
+	private List<Media> image;
 
 	private String prompt;
 
-	public ImageEditMessage(List<Resource> imageResource, String prompt) {
-		this.imageResource = imageResource;
+	public ImageEditMessage(List<Media> image, String prompt) {
+		this.image = image;
 		this.prompt = prompt;
 	}
 
-	public List<Resource> getImageResource() {
-		return imageResource;
+	public List<Media> getImage() {
+		return image;
 	}
 
 	public String getPrompt() {
