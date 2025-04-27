@@ -20,6 +20,8 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 /**
  * A chain of {@link StreamAdvisor} instances orchestrating the execution of a
  * {@link ChatClientRequest} on the next {@link StreamAdvisor} in the chain.
@@ -39,5 +41,7 @@ public interface StreamAdvisorChain extends StreamAroundAdvisorChain {
 	}
 
 	Flux<ChatClientResponse> nextStream(ChatClientRequest chatClientRequest);
+
+	List<StreamAroundAdvisor> getStreamAdvisors();
 
 }

@@ -28,22 +28,43 @@ They measure the time spent performing the invocation and propagate the related 
 |===
 |Name | Description
 
-|`spring.ai.chat.client.advisor.params` | Map of advisor parameters.
+|`gen_ai.prompt` | The content of the prompt sent via the chat client. Optional.
+|`spring.ai.chat.client.advisor.params` (deprecated) | Map of advisor parameters. The conversation ID is now included in `spring.ai.chat.client.conversation.id`.
 |`spring.ai.chat.client.advisors` | List of configured chat client advisors.
-|`spring.ai.chat.client.system.params` |Chat client system parameters. Optional.
-|`spring.ai.chat.client.system.text` |Chat client system text. Optional.
-|`spring.ai.chat.client.tool.function.names` | Enabled tool function names.
-|`spring.ai.chat.client.tool.function.callbacks` |List of configured chat client function callbacks.
-|`spring.ai.chat.client.user.params` | Chat client user parameters. Optional.
-|`spring.ai.chat.client.user.text` | Chat client user text. Optional.
+|`spring.ai.chat.client.conversation.id` | Identifier of the conversation when using the chat memory.
+|`spring.ai.chat.client.system.params` (deprecated) |Chat client system parameters. Optional. Superseded by `gen_ai.prompt`.
+|`spring.ai.chat.client.system.text` (deprecated) |Chat client system text. Optional. Superseded by `gen_ai.prompt`.
+|`spring.ai.chat.client.tool.function.names` (deprecated) | Enabled tool function names. Superseded by `spring.ai.chat.client.tool.names`.
+|`spring.ai.chat.client.tool.function.callbacks` (deprecated) |List of configured chat client function callbacks. Superseded by `spring.ai.chat.client.tool.names`.
+|`spring.ai.chat.client.tool.names` | Names of the tools passed to the chat client.
+|`spring.ai.chat.client.user.params` (deprecated) | Chat client user parameters. Optional. Superseded by `gen_ai.prompt`.
+|`spring.ai.chat.client.user.text` (deprecated) | Chat client user text. Optional. Superseded by `gen_ai.prompt`.
 |===
 
-=== Input Data
+=== Prompt Content
+
+The `ChatClient` prompt content is typically big and possibly containing sensitive information.
+For those reasons, it is not exported by default.
+
+Spring AI supports exporting the prompt content as span attributes/events across all tracing backends.
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+
+| `spring.ai.chat.client.observations.include-prompt` |  Whether to include the chat client prompt content in the observations. | `false`
+|====
+
+WARNING: If you enable the inclusion of the chat client prompt content in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+
+=== Input Data (Deprecated)
+
+WARNING: The `spring.ai.chat.client.observations.include-input` property is deprecated, replaced by `spring.ai.chat.client.observations.include-prompt`. See xref:_prompt_content[Prompt Content].
 
 The `ChatClient` input data is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports exporting input data as span attributes across all tracing backends.
+Spring AI supports exporting input data as span attributes/events across all tracing backends.
 
 [cols="6,3,1", stripes=even]
 |====
@@ -56,7 +77,7 @@ WARNING: If you enable the inclusion of the input content in the observations, t
 
 === Chat Client Advisors
 
-The `spring.ai.advisor` observations are recorded when a call or stream around advisors is performed. 
+The `spring.ai.advisor` observations are recorded when an advisor is executed.
 They measure the time spent in the advisor (including the time spend on the inner advisors) and propagate the related tracing information.
 
 .Low Cardinality Keys
@@ -66,7 +87,7 @@ They measure the time spent in the advisor (including the time spend on the inne
 
 |`gen_ai.operation.name` | Always `framework`.
 |`gen_ai.system` | Always `spring_ai`.
-|`spring.ai.advisor.type` | Where the advisor applies it's logic in the request processing, one of `BEFORE`, `AFTER`, or `AROUND`.
+|`spring.ai.advisor.type` (deprecated) | Where the advisor applies it's logic in the request processing, one of `BEFORE`, `AFTER`, or `AROUND`. This distinction doesn't apply anymore since all Advisors are always of the same type.
 |`spring.ai.kind` | The kind of framework API in Spring AI: `advisor`.
 |===
 

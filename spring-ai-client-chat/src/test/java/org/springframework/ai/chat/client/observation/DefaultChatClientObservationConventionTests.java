@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
@@ -150,25 +151,28 @@ class DefaultChatClientObservationConventionTests {
 						.toolNames("tool1", "tool2")
 						.toolCallbacks(dummyFunction("toolCallback1"), dummyFunction("toolCallback2"))
 						.build()))
-			.context("advParam1", "advisorParam1Value")
-			.context(ChatClientAttributes.ADVISORS.getKey(),
-					List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")))
+			.context(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, "007")
 			.build();
 
 		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 			.request(request)
 			.withFormat("json")
+			.advisors(List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")))
 			.stream(true)
 			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(), "[\"advisor1\", \"advisor2\"]"),
-				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),
-						"[\"advParam1\":\"advisorParam1Value\"]"),
-				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(),
-						"[\"tool1\", \"tool2\"]"),
-				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS.asString(),
-						"[\"toolCallback1\", \"toolCallback2\"]"));
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(), """
+						["advisor1", "advisor2"]"""),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_CONVERSATION_ID.asString(), "007"),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_NAMES.asString(), """
+						["tool1", "tool2", "toolCallback1", "toolCallback2"]"""),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(), """
+						["chat_memory_conversation_id":"007"]"""),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_NAMES.asString(), """
+						["tool1", "tool2"]"""),
+				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS.asString(), """
+						["toolCallback1", "toolCallback2"]"""));
 	}
 
 	@Test

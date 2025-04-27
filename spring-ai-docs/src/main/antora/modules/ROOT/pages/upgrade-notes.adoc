@@ -46,6 +46,11 @@ This approach can save time and reduce the chance of errors when upgrading multi
 [[upgrading-to-1-0-0-m8]]
 == Upgrading to 1.0.0-M8
 
+=== Chat Client
+
+* The `ChatClient` has been enhanced to solve some inconsistencies or unwanted behaviour whenever user and system prompts were not rendered before using them in an advisor. The new behavior ensures that the user and system prompts are always rendered before executing the chain of advisors. As part of this enhancement, the `AdvisedRequest` and `AdvisedResponse` APIs have been deprecated, replaced by `ChatClientRequest` and `ChatClientResponse`. Advisors now act on a fully built `Prompt` object included in a `ChatClientRequest` instead of the destructured format used in `AdvisedRequest`, guaranteeing consistency and completeness.
+* The chain of advisors can populate the execution context with useful data. For example, when performing retrieval augmented generation, the retrieved documents can be added to the context. It's now possible to return a `ChatClientResponse` object from a `ChatClient` call, which contains the execution context. So, besides the `content()` and `chatResponse()` methods, you can now terminate a `ChatClient` call with `chatClientResponse()` which gives you access to both the `ChatResponse` and the execution context.
+
 === Chat Memory
 
 * A `ChatMemory` bean is auto-configured for you whenever using one of the Spring AI Model starters. By default, it uses the `MessageWindowChatMemory` implementation and stores the conversation history in memory.
@@ -58,6 +63,15 @@ This approach can save time and reduce the chance of errors when upgrading multi
 === Prompt Templating
 
 * The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
+
+=== Observability
+
+* Changes to the `spring.ai.client` observation:
+** The `spring.ai.chat.client.tool.function.names` and `spring.ai.chat.client.tool.function.callbacks` attributes have been deprecated, replaced by a new `spring.ai.chat.client.tool.names` attribute that includes the names of all the tools passed to a ChatClient, regardless of the underlying mechanism used to define them.
+** The `spring.ai.chat.client.advisor.params` attribute has been deprecated and will not have a replacement. The reason is that there is a risk to expose sensitive information or break the instrumentation since the entries in the advisor context are used to pass arbitrary Java objects between advisors and are not necessarily serializable. The conversation ID that was previously exported here is now available via the dedicated `spring.ai.chat.client.conversation.id` attribute. If you need to export some of the other parameters in the advisor context to the observability system, you can do so by defining an `ObservationFilter` and making an explicit decision on which parameters to export. For inspiration, you can refer to the `ChatClientPromptContentObservationFilter`.
+** The content of a prompt as specified via a ChatClient API was included optionally in the `spring.ai.client` observation, broken down in a few attributes: `spring.ai.chat.client.user.text`, `spring.ai.chat.client.user.params`, `spring.ai.chat.client.system.text`, `spring.ai.chat.client.system.params`. All those attributes are now deprecated, replaced by a single `gen_ai.prompt` attribute that contains all the messages in the prompt, solving the problem affecting the deprecated attributes where part of the prompt was not included in the observation, and aligning with the observations used in the ChatModel API. This new attribute can be enabled via the `spring.ai.chat.observations.include-prompt` configuration property, whereas the previous `spring.ai.chat.observations.include-input` configuration property is deprecated.
+* Changes to the `spring.ai.advisor` observation:
+** The `spring.ai.advisor.type` attribute has been deprecated. In previous releases, the Advisor API was categorized based on the type of advisor (`before`, `after`, `around`). That distinction doesn't apply anymore meaning that all Advisors are now of the same type (`around`).
 
 [[upgrading-to-1-0-0-m7]]
 == Upgrading to 1.0.0-M7

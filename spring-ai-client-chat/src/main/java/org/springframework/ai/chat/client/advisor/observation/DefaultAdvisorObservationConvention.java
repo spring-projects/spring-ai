@@ -81,6 +81,9 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 		return KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER, AiProvider.SPRING_AI.value());
 	}
 
+	/**
+	 * @deprecated advisors don't have types anymore, they're all "around"
+	 */
 	@Deprecated
 	protected KeyValue advisorType(AdvisorObservationContext context) {
 		return KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, context.getAdvisorType().name());

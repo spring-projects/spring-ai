@@ -493,10 +493,11 @@ public class DefaultChatClient implements ChatClient {
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest,
 				@Nullable String outputFormat) {
 			ChatClientRequest formattedChatClientRequest = StringUtils.hasText(outputFormat)
-					? addFormatInstructionsToPrompt(chatClientRequest, outputFormat) : chatClientRequest;
+					? augmentPromptWithFormatInstructions(chatClientRequest, outputFormat) : chatClientRequest;
 
 			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 				.request(formattedChatClientRequest)
+				.advisors(advisorChain.getCallAdvisors())
 				.stream(false)
 				.withFormat(outputFormat)
 				.build();
@@ -511,42 +512,16 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@NonNull
-		private static ChatClientRequest addFormatInstructionsToPrompt(ChatClientRequest chatClientRequest,
+		private static ChatClientRequest augmentPromptWithFormatInstructions(ChatClientRequest chatClientRequest,
 				String outputFormat) {
-			List<Message> originalMessages = chatClientRequest.prompt().getInstructions();
-
-			if (CollectionUtils.isEmpty(originalMessages)) {
-				return chatClientRequest;
-			}
-
-			// Create a copy of the message list to avoid modifying the original.
-			List<Message> modifiedMessages = new ArrayList<>(originalMessages);
-
-			// Get the last message (without removing it from original list)
-			Message lastMessage = modifiedMessages.get(modifiedMessages.size() - 1);
-
-			// If the last message is a UserMessage, replace it with the modified version
-			if (lastMessage instanceof UserMessage userMessage) {
-				// Remove last message
-				modifiedMessages.remove(modifiedMessages.size() - 1);
-
-				// Create new user message with format instructions
-				UserMessage userMessageWithFormat = userMessage.mutate()
+			Prompt augmentedPrompt = chatClientRequest.prompt()
+				.copyWithAugmentedUserMessage(userMessage -> userMessage.mutate()
 					.text(userMessage.getText() + System.lineSeparator() + outputFormat)
-					.build();
-
-				// Add modified message back
-				modifiedMessages.add(userMessageWithFormat);
-
-				// Build new ChatClientRequest preserving all properties but with modified
-				// prompt
-				return ChatClientRequest.builder()
-					.prompt(chatClientRequest.prompt().mutate().messages(modifiedMessages).build())
-					.context(Map.copyOf(chatClientRequest.context()))
-					.build();
-			}
-
-			return chatClientRequest;
+					.build());
+			return ChatClientRequest.builder()
+				.prompt(augmentedPrompt)
+				.context(Map.copyOf(chatClientRequest.context()))
+				.build();
 		}
 
 		@Nullable
@@ -588,6 +563,7 @@ public class DefaultChatClient implements ChatClient {
 
 				ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 					.request(chatClientRequest)
+					.advisors(advisorChain.getStreamAdvisors())
 					.stream(true)
 					.build();
 
@@ -660,8 +636,6 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> advisorParams = new HashMap<>();
 
-		private final DefaultAroundAdvisorChain.Builder aroundAdvisorChainBuilder;
-
 		private final Map<String, Object> toolContext = new HashMap<>();
 
 		@Nullable
@@ -718,14 +692,6 @@ public class DefaultChatClient implements ChatClient {
 			this.observationConvention = observationConvention != null ? observationConvention
 					: DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION;
 			this.toolContext.putAll(toolContext);
-
-			// At the stack bottom add the model call advisors.
-			// They play the role of the last advisors in the advisor chain.
-			this.advisors.add(new ChatModelCallAdvisor(chatModel));
-			this.advisors.add(new ChatModelStreamAdvisor(chatModel));
-
-			this.aroundAdvisorChainBuilder = DefaultAroundAdvisorChain.builder(observationRegistry)
-				.pushAll(this.advisors);
 		}
 
 		private ObservationRegistry getObservationRegistry() {
@@ -822,7 +788,6 @@ public class DefaultChatClient implements ChatClient {
 			consumer.accept(advisorSpec);
 			this.advisorParams.putAll(advisorSpec.getParams());
 			this.advisors.addAll(advisorSpec.getAdvisors());
-			this.aroundAdvisorChainBuilder.pushAll(advisorSpec.getAdvisors());
 			return this;
 		}
 
@@ -830,7 +795,6 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.noNullElements(advisors, "advisors cannot contain null elements");
 			this.advisors.addAll(Arrays.asList(advisors));
-			this.aroundAdvisorChainBuilder.pushAll(Arrays.asList(advisors));
 			return this;
 		}
 
@@ -838,7 +802,6 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.noNullElements(advisors, "advisors cannot contain null elements");
 			this.advisors.addAll(advisors);
-			this.aroundAdvisorChainBuilder.pushAll(advisors);
 			return this;
 		}
 
@@ -983,15 +946,24 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		public CallResponseSpec call() {
-			BaseAdvisorChain advisorChain = aroundAdvisorChainBuilder.build();
+			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultCallResponseSpec(toAdvisedRequest(this).toChatClientRequest(), advisorChain,
 					observationRegistry, observationConvention);
 		}
 
 		public StreamResponseSpec stream() {
-			BaseAdvisorChain advisorChain = aroundAdvisorChainBuilder.build();
+			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultStreamResponseSpec(toAdvisedRequest(this).toChatClientRequest(), advisorChain,
 					observationRegistry, observationConvention);
+		}
+
+		private BaseAdvisorChain buildAdvisorChain() {
+			// At the stack bottom add the model call advisors.
+			// They play the role of the last advisors in the advisor chain.
+			this.advisors.add(ChatModelCallAdvisor.builder().chatModel(this.chatModel).build());
+			this.advisors.add(ChatModelStreamAdvisor.builder().chatModel(this.chatModel).build());
+
+			return DefaultAroundAdvisorChain.builder(this.observationRegistry).pushAll(this.advisors).build();
 		}
 
 	}

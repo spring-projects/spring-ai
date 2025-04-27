@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,10 @@ import reactor.core.scheduler.Scheduler;
 import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
@@ -78,7 +80,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	private final int order;
 
-	public RetrievalAugmentationAdvisor(@Nullable List<QueryTransformer> queryTransformers,
+	private RetrievalAugmentationAdvisor(@Nullable List<QueryTransformer> queryTransformers,
 			@Nullable QueryExpander queryExpander, DocumentRetriever documentRetriever,
 			@Nullable DocumentJoiner documentJoiner, @Nullable QueryAugmenter queryAugmenter,
 			@Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler, @Nullable Integer order) {
@@ -98,14 +100,24 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		return new Builder();
 	}
 
+	/**
+	 * @deprecated in favour of {@link #before(ChatClientRequest, AdvisorChain)}
+	 */
 	@Override
-	public AdvisedRequest before(AdvisedRequest request) {
-		Map<String, Object> context = new HashMap<>(request.adviseContext());
+	@Deprecated
+	public AdvisedRequest before(AdvisedRequest advisedRequest) {
+		ChatClientRequest chatClientRequest = advisedRequest.toChatClientRequest();
+		return AdvisedRequest.from(before(chatClientRequest, null));
+	}
+
+	@Override
+	public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
+		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
 		// 0. Create a query from the user text, parameters, and conversation history.
 		Query originalQuery = Query.builder()
-			.text(new PromptTemplate(request.userText(), request.userParams()).render())
-			.history(request.messages())
+			.text(chatClientRequest.prompt().getUserMessage().getText())
+			.history(chatClientRequest.prompt().getInstructions())
 			.context(context)
 			.build();
 
@@ -135,8 +147,12 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		// 5. Augment user query with the document contextual data.
 		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
 
-		// 6. Update advised request with augmented prompt.
-		return AdvisedRequest.from(request).userText(augmentedQuery.text()).adviseContext(context).build();
+		// 6. Update ChatClientRequest with augmented prompt.
+		return chatClientRequest.mutate()
+			.prompt(chatClientRequest.prompt()
+				.copyWithAugmentedUserMessage(userMessage -> userMessage.mutate().text(augmentedQuery.text()).build()))
+			.context(context)
+			.build();
 	}
 
 	/**
@@ -148,17 +164,30 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		return Map.entry(query, documents);
 	}
 
+	/**
+	 * @deprecated in favour of {@link #after(ChatClientResponse, AdvisorChain)}
+	 */
 	@Override
+	@Deprecated
 	public AdvisedResponse after(AdvisedResponse advisedResponse) {
+		ChatClientResponse chatClientResponse = advisedResponse.toChatClientResponse();
+		return AdvisedResponse.from(after(chatClientResponse, null));
+	}
+
+	@Override
+	public ChatClientResponse after(ChatClientResponse chatClientResponse, @Nullable AdvisorChain advisorChain) {
 		ChatResponse.Builder chatResponseBuilder;
-		if (advisedResponse.response() == null) {
+		if (chatClientResponse.chatResponse() == null) {
 			chatResponseBuilder = ChatResponse.builder();
 		}
 		else {
-			chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
+			chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse());
 		}
-		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, advisedResponse.adviseContext().get(DOCUMENT_CONTEXT));
-		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
+		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, chatClientResponse.context().get(DOCUMENT_CONTEXT));
+		return ChatClientResponse.builder()
+			.chatResponse(chatResponseBuilder.build())
+			.context(chatClientResponse.context())
+			.build();
 	}
 
 	@Override

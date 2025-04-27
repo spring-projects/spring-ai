@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = TestApplication.class)
 @Import(FunctionToolCallbackTests.Tools.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class FunctionToolCallbackTests {
 
 	// @formatter:off

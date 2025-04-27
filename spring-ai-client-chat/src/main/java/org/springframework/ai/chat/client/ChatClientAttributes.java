@@ -21,7 +21,10 @@ package org.springframework.ai.chat.client;
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated only introduced to smooth the transition to the new APIs and ensure
+ * backward compatibility
  */
+@Deprecated
 public enum ChatClientAttributes {
 
 	//@formatter:off

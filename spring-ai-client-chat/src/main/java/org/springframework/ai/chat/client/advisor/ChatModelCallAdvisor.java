@@ -37,7 +37,8 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 
 	private final ChatModel chatModel;
 
-	public ChatModelCallAdvisor(ChatModel chatModel) {
+	private ChatModelCallAdvisor(ChatModel chatModel) {
+		Assert.notNull(chatModel, "chatModel cannot be null");
 		this.chatModel = chatModel;
 	}
 
@@ -60,6 +61,28 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 	@Override
 	public int getOrder() {
 		return Ordered.LOWEST_PRECEDENCE;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private ChatModel chatModel;
+
+		private Builder() {
+		}
+
+		public Builder chatModel(ChatModel chatModel) {
+			this.chatModel = chatModel;
+			return this;
+		}
+
+		public ChatModelCallAdvisor build() {
+			return new ChatModelCallAdvisor(this.chatModel);
+		}
+
 	}
 
 }

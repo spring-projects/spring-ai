@@ -39,8 +39,12 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 		Assert.noNullElements(context.keySet(), "context keys cannot be null");
 	}
 
+	public ChatClientRequest copy() {
+		return new ChatClientRequest(this.prompt.copy(), new HashMap<>(this.context));
+	}
+
 	public Builder mutate() {
-		return new Builder().prompt(this.prompt).context(this.context);
+		return new Builder().prompt(this.prompt.copy()).context(new HashMap<>(this.context));
 	}
 
 	public static Builder builder() {

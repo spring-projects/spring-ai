@@ -57,6 +57,10 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
+	private final List<CallAroundAdvisor> originalCallAdvisors;
+
+	private final List<StreamAroundAdvisor> originalStreamAdvisors;
+
 	private final Deque<CallAroundAdvisor> callAroundAdvisors;
 
 	private final Deque<StreamAroundAdvisor> streamAroundAdvisors;
@@ -73,6 +77,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		this.observationRegistry = observationRegistry;
 		this.callAroundAdvisors = callAroundAdvisors;
 		this.streamAroundAdvisors = streamAroundAdvisors;
+		this.originalCallAdvisors = List.copyOf(callAroundAdvisors);
+		this.originalStreamAdvisors = List.copyOf(streamAroundAdvisors);
 	}
 
 	public static Builder builder(ObservationRegistry observationRegistry) {
@@ -232,6 +238,21 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		});
 	}
 
+	@Override
+	public List<CallAroundAdvisor> getCallAdvisors() {
+		return this.originalCallAdvisors;
+	}
+
+	@Override
+	public List<StreamAroundAdvisor> getStreamAdvisors() {
+		return this.originalStreamAdvisors;
+	}
+
+	@Override
+	public ObservationRegistry getObservationRegistry() {
+		return this.observationRegistry;
+	}
+
 	public static class Builder {
 
 		private final ObservationRegistry observationRegistry;
@@ -246,13 +267,14 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			this.streamAroundAdvisors = new ConcurrentLinkedDeque<>();
 		}
 
-		public Builder push(Advisor aroundAdvisor) {
-			Assert.notNull(aroundAdvisor, "the aroundAdvisor must be non-null");
-			return this.pushAll(List.of(aroundAdvisor));
+		public Builder push(Advisor advisor) {
+			Assert.notNull(advisor, "the advisor must be non-null");
+			return this.pushAll(List.of(advisor));
 		}
 
 		public Builder pushAll(List<? extends Advisor> advisors) {
 			Assert.notNull(advisors, "the advisors must be non-null");
+			Assert.noNullElements(advisors, "the advisors must not contain null elements");
 			if (!CollectionUtils.isEmpty(advisors)) {
 				List<CallAroundAdvisor> callAroundAdvisorList = advisors.stream()
 					.filter(a -> a instanceof CallAroundAdvisor)

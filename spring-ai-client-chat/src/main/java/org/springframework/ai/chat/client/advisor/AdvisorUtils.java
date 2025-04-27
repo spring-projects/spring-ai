@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,36 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.client.advisor.api;
+package org.springframework.ai.chat.client.advisor;
 
-import java.util.function.Predicate;
-
-import org.springframework.ai.chat.client.advisor.AdvisorUtils;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.util.StringUtils;
 
-/**
- * A stream utility class to provide support methods handling {@link AdvisedResponse}.
- *
- * @deprecated in favour of {@link AdvisorUtils}.
- */
-@Deprecated
-public final class AdvisedResponseStreamUtils {
+import java.util.function.Predicate;
 
-	private AdvisedResponseStreamUtils() {
-		// Avoids instantiation
+/**
+ * Utilities to work with advisors.
+ */
+public final class AdvisorUtils {
+
+	private AdvisorUtils() {
 	}
 
 	/**
-	 * Returns a predicate that checks whether the provided {@link AdvisedResponse}
-	 * contains a {@link ChatResponse} with at least one result having a non-empty finish
-	 * reason in its metadata.
-	 * @return a {@link Predicate} that evaluates whether the finish reason exists within
-	 * the response metadata.
+	 * Checks whether the provided {@link ChatClientResponse} contains a
+	 * {@link ChatResponse} with at least one result having a non-empty finish reason in
+	 * its metadata.
 	 */
-	public static Predicate<AdvisedResponse> onFinishReason() {
-		return advisedResponse -> {
-			ChatResponse chatResponse = advisedResponse.response();
+	public static Predicate<ChatClientResponse> onFinishReason() {
+		return chatClientResponse -> {
+			ChatResponse chatResponse = chatClientResponse.chatResponse();
 			return chatResponse != null && chatResponse.getResults() != null
 					&& chatResponse.getResults()
 						.stream()
