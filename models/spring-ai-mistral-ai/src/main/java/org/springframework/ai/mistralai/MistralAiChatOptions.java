@@ -175,7 +175,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			.stop(fromOptions.getStop())
 			.frequencyPenalty(fromOptions.getFrequencyPenalty())
 			.presencePenalty(fromOptions.getPresencePenalty())
-			.N(fromOptions.getN())
+			.n(fromOptions.getN())
 			.tools(fromOptions.getTools())
 			.toolChoice(fromOptions.getToolChoice())
 			.toolCallbacks(fromOptions.getToolCallbacks())
@@ -489,7 +489,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder N(Integer n) {
+		public Builder n(Integer n) {
 			this.options.n = n;
 			return this;
 		}
