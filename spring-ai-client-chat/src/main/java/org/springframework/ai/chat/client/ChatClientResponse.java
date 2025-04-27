@@ -38,6 +38,14 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 		Assert.noNullElements(context.keySet(), "context keys cannot be null");
 	}
 
+	public ChatClientResponse copy() {
+		return new ChatClientResponse(this.chatResponse, new HashMap<>(this.context));
+	}
+
+	public Builder mutate() {
+		return new Builder().chatResponse(this.chatResponse).context(new HashMap<>(this.context));
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -51,7 +59,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 		private Builder() {
 		}
 
-		public Builder chatResponse(ChatResponse chatResponse) {
+		public Builder chatResponse(@Nullable ChatResponse chatResponse) {
 			this.chatResponse = chatResponse;
 			return this;
 		}

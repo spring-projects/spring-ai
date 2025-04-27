@@ -19,6 +19,8 @@ package org.springframework.ai.chat.client.advisor.api;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 
+import java.util.List;
+
 /**
  * A chain of {@link CallAdvisor} instances orchestrating the execution of a
  * {@link ChatClientRequest} on the next {@link CallAdvisor} in the chain.
@@ -38,5 +40,7 @@ public interface CallAdvisorChain extends CallAroundAdvisorChain {
 	}
 
 	ChatClientResponse nextCall(ChatClientRequest chatClientRequest);
+
+	List<CallAroundAdvisor> getCallAdvisors();
 
 }

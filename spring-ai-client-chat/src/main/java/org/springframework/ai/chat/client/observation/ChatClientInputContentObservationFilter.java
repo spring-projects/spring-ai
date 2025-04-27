@@ -35,7 +35,9 @@ import java.util.Map;
  *
  * @author Christian Tzolov
  * @since 1.0.0
+ * @deprecated in favor of {@link ChatClientPromptContentObservationFilter}.
  */
+@Deprecated
 public class ChatClientInputContentObservationFilter implements ObservationFilter {
 
 	@Override
@@ -43,8 +45,6 @@ public class ChatClientInputContentObservationFilter implements ObservationFilte
 		if (!(context instanceof ChatClientObservationContext chatClientObservationContext)) {
 			return context;
 		}
-		// TODO: we really want these? Should probably align with same format as chat
-		// model observation
 		chatClientSystemText(chatClientObservationContext);
 		chatClientSystemParams(chatClientObservationContext);
 		chatClientUserText(chatClientObservationContext);
