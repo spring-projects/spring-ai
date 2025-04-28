@@ -25,8 +25,7 @@ To use the `QuestionAnswerAdvisor` or `RetrievalAugmentationAdvisor`, you need t
 
 === QuestionAnswerAdvisor
 
-A vector database stores data that the AI model is unaware of.
-When a user question is sent to the AI model, a `QuestionAnswerAdvisor` queries the vector database for documents related to the user question.
+A vector database stores data that the AI model is unaware of. When a user question is sent to the AI model, a `QuestionAnswerAdvisor` queries the vector database for documents related to the user question.
 
 The response from the vector database is appended to the user text to provide context for the AI model to generate a response.
 
@@ -42,17 +41,17 @@ ChatResponse response = ChatClient.builder(chatModel)
         .chatResponse();
 ----
 
-In this example, the `QuestionAnswerAdvisor` will perform a similarity search over all documents in the Vector Database.
-To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
+In this example, the `QuestionAnswerAdvisor` will perform a similarity search over all documents in the Vector Database. To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
 
-This filter expression can be configured when creating the `QuestionAnswerAdvisor` and hence will always apply to all `ChatClient` requests or it can be provided at runtime per request.
+This filter expression can be configured when creating the `QuestionAnswerAdvisor` and hence will always apply to all `ChatClient` requests, or it can be provided at runtime per request.
 
 Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` results.
 
 [source,java]
 ----
-var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
-        SearchRequest.builder().similarityThreshold(0.8d).topK(6).build());
+var qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(SearchRequest.builder().similarityThreshold(0.8d).topK(6).build())
+        .build();
 ----
 
 ==== Dynamic Filter Expressions
@@ -62,7 +61,9 @@ Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRES
 [source,java]
 ----
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build()))
+    .defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(SearchRequest.builder().build())
+        .build())
     .build();
 
 // Update filter expression at runtime
@@ -74,6 +75,43 @@ String content = this.chatClient.prompt()
 ----
 
 The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search results based on the provided expression.
+
+==== Custom Template
+
+The `QuestionAnswerAdvisor` uses a default template to augment the user question with the retrieved documents, but you can always customize it by providing your own template as a `PromptTemplate` object. This object can be created using the `PromptTemplate` builder and can use any `TemplateRenderer` implementation to render the actual template (by default, `PromptTemplate` uses the `StPromptTemplate` implementation based on the https://www.stringtemplate.org/[StringTemplate] engine). The important thing to remember is that the template must contain the following placeholder, independently of the templating syntax: `question_answer_context`.
+
+[source,java]
+----
+PromptTemplate customPromptTemplate = PromptTemplate.builder()
+    .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .template("""
+            Context information is below.
+
+			---------------------
+			<question_answer_context>
+			---------------------
+
+			Given the context information and no prior knowledge, answer the query.
+
+			Follow these rules:
+
+			1. If the answer is not in the context, just say that you don't know.
+			2. Avoid statements like "Based on the context..." or "The provided information...".
+            """)
+    .build();
+
+    String question = "Where does the adventure of Anacletus and Birba take place?";
+
+    QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .promptTemplate(customPromptTemplate)
+        .build();
+
+    String response = ChatClient.builder(chatModel).build()
+        .prompt(question)
+        .advisors(qaAdvisor)
+        .call()
+        .content();
+----
 
 === RetrievalAugmentationAdvisor (Incubating)
 

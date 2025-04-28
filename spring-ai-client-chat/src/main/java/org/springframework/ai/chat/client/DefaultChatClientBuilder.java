@@ -33,6 +33,7 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -66,7 +67,7 @@ public class DefaultChatClientBuilder implements Builder {
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), null, Map.of(), List.of(),
 				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
-				customObservationConvention, Map.of());
+				customObservationConvention, Map.of(), null);
 	}
 
 	public ChatClient build() {
@@ -187,6 +188,12 @@ public class DefaultChatClientBuilder implements Builder {
 
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
 		this.defaultRequest.toolContext(toolContext);
+		return this;
+	}
+
+	public Builder defaultTemplateRenderer(TemplateRenderer templateRenderer) {
+		Assert.notNull(templateRenderer, "templateRenderer cannot be null");
+		this.defaultRequest.templateRenderer(templateRenderer);
 		return this;
 	}
 

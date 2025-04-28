@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -49,6 +50,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Timo Salm
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
@@ -57,7 +59,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
-	private static final String DEFAULT_USER_TEXT_ADVISE = """
+	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 
 			Context information is below, surrounded by ---------------------
 
@@ -68,13 +70,13 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 			Given the context and provided history information and not prior knowledge,
 			reply to the user comment. If the answer is not in the context, inform
 			the user that you can't answer the question.
-			""";
+			""");
 
 	private static final int DEFAULT_ORDER = 0;
 
 	private final VectorStore vectorStore;
 
-	private final String userTextAdvise;
+	private final PromptTemplate promptTemplate;
 
 	private final SearchRequest searchRequest;
 
@@ -88,7 +90,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 * @param vectorStore The vector store to use
 	 */
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
-		this(vectorStore, SearchRequest.builder().build(), DEFAULT_USER_TEXT_ADVISE);
+		this(vectorStore, SearchRequest.builder().build(), DEFAULT_PROMPT_TEMPLATE, true, DEFAULT_ORDER);
 	}
 
 	/**
@@ -97,9 +99,11 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 * @param vectorStore The vector store to use
 	 * @param searchRequest The search request defined using the portable filter
 	 * expression syntax
+	 * @deprecated in favor of the builder: {@link #builder(VectorStore)}
 	 */
+	@Deprecated
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest) {
-		this(vectorStore, searchRequest, DEFAULT_USER_TEXT_ADVISE);
+		this(vectorStore, searchRequest, DEFAULT_PROMPT_TEMPLATE, true, DEFAULT_ORDER);
 	}
 
 	/**
@@ -110,9 +114,12 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 * expression syntax
 	 * @param userTextAdvise The user text to append to the existing user prompt. The text
 	 * should contain a placeholder named "question_answer_context".
+	 * @deprecated in favor of the builder: {@link #builder(VectorStore)}
 	 */
+	@Deprecated
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise) {
-		this(vectorStore, searchRequest, userTextAdvise, true);
+		this(vectorStore, searchRequest, PromptTemplate.builder().template(userTextAdvise).build(), true,
+				DEFAULT_ORDER);
 	}
 
 	/**
@@ -127,10 +134,13 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 * blocking threads. If false the advisor will not protect the execution from blocking
 	 * threads. This is useful when the advisor is used in a non-blocking environment. It
 	 * is true by default.
+	 * @deprecated in favor of the builder: {@link #builder(VectorStore)}
 	 */
+	@Deprecated
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise,
 			boolean protectFromBlocking) {
-		this(vectorStore, searchRequest, userTextAdvise, protectFromBlocking, DEFAULT_ORDER);
+		this(vectorStore, searchRequest, PromptTemplate.builder().template(userTextAdvise).build(), protectFromBlocking,
+				DEFAULT_ORDER);
 	}
 
 	/**
@@ -146,17 +156,23 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 	 * threads. This is useful when the advisor is used in a non-blocking environment. It
 	 * is true by default.
 	 * @param order The order of the advisor.
+	 * @deprecated in favor of the builder: {@link #builder(VectorStore)}
 	 */
+	@Deprecated
 	public QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, String userTextAdvise,
 			boolean protectFromBlocking, int order) {
+		this(vectorStore, searchRequest, PromptTemplate.builder().template(userTextAdvise).build(), protectFromBlocking,
+				order);
+	}
 
-		Assert.notNull(vectorStore, "The vectorStore must not be null!");
-		Assert.notNull(searchRequest, "The searchRequest must not be null!");
-		Assert.hasText(userTextAdvise, "The userTextAdvise must not be empty!");
+	QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, @Nullable PromptTemplate promptTemplate,
+			boolean protectFromBlocking, int order) {
+		Assert.notNull(vectorStore, "vectorStore cannot be null");
+		Assert.notNull(searchRequest, "searchRequest cannot be null");
 
 		this.vectorStore = vectorStore;
 		this.searchRequest = searchRequest;
-		this.userTextAdvise = userTextAdvise;
+		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
 		this.protectFromBlocking = protectFromBlocking;
 		this.order = order;
 	}
@@ -212,32 +228,30 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 		var context = new HashMap<>(request.adviseContext());
 
-		// 1. Advise the system text.
-		String advisedUserText = request.userText() + System.lineSeparator() + this.userTextAdvise;
-
-		// 2. Search for similar documents in the vector store.
-		String query = new PromptTemplate(request.userText(), request.userParams()).render();
+		// 1. Search for similar documents in the vector store.
 		var searchRequestToUse = SearchRequest.from(this.searchRequest)
-			.query(query)
+			.query(request.userText())
 			.filterExpression(doGetFilterExpression(context))
 			.build();
 
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
 
-		// 3. Create the context from the documents.
+		// 2. Create the context from the documents.
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
 		String documentContext = documents.stream()
 			.map(Document::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
-		// 4. Advise the user parameters.
-		Map<String, Object> advisedUserParams = new HashMap<>(request.userParams());
-		advisedUserParams.put("question_answer_context", documentContext);
+		// 3. Augment the user prompt with the document context.
+		String augmentedUserText = this.promptTemplate.mutate()
+			.template(request.userText() + System.lineSeparator() + this.promptTemplate.getTemplate())
+			.variables(Map.of("question_answer_context", documentContext))
+			.build()
+			.render();
 
 		AdvisedRequest advisedRequest = AdvisedRequest.from(request)
-			.userText(advisedUserText)
-			.userParams(advisedUserParams)
+			.userText(augmentedUserText)
 			.adviseContext(context)
 			.build();
 
@@ -266,7 +280,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 
 		private SearchRequest searchRequest = SearchRequest.builder().build();
 
-		private String userTextAdvise = DEFAULT_USER_TEXT_ADVISE;
+		private PromptTemplate promptTemplate;
 
 		private boolean protectFromBlocking = true;
 
@@ -277,15 +291,25 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 			this.vectorStore = vectorStore;
 		}
 
+		public Builder promptTemplate(PromptTemplate promptTemplate) {
+			Assert.notNull(promptTemplate, "promptTemplate cannot be null");
+			this.promptTemplate = promptTemplate;
+			return this;
+		}
+
 		public Builder searchRequest(SearchRequest searchRequest) {
 			Assert.notNull(searchRequest, "The searchRequest must not be null!");
 			this.searchRequest = searchRequest;
 			return this;
 		}
 
+		/**
+		 * @deprecated in favour of {@link #promptTemplate(PromptTemplate)}
+		 */
+		@Deprecated
 		public Builder userTextAdvise(String userTextAdvise) {
 			Assert.hasText(userTextAdvise, "The userTextAdvise must not be empty!");
-			this.userTextAdvise = userTextAdvise;
+			this.promptTemplate = PromptTemplate.builder().template(userTextAdvise).build();
 			return this;
 		}
 
@@ -300,7 +324,7 @@ public class QuestionAnswerAdvisor implements CallAroundAdvisor, StreamAroundAdv
 		}
 
 		public QuestionAnswerAdvisor build() {
-			return new QuestionAnswerAdvisor(this.vectorStore, this.searchRequest, this.userTextAdvise,
+			return new QuestionAnswerAdvisor(this.vectorStore, this.searchRequest, this.promptTemplate,
 					this.protectFromBlocking, this.order);
 		}
 
