@@ -33,7 +33,7 @@ import org.springframework.ai.chat.messages.Message;
  *
  * <p>
  * The context is typically populated from the {@code toolContext} field of
- * {@code FunctionCallingOptions} and is used in the function execution process.
+ * {@code ToolCallingChatOptions} and is used in the function execution process.
  * </p>
  *
  * <p>

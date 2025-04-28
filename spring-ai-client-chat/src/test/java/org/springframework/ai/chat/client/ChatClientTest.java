@@ -248,7 +248,7 @@ public class ChatClientTest {
 		var fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -270,7 +270,7 @@ public class ChatClientTest {
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// mutate builder
 		// @formatter:off
@@ -300,7 +300,7 @@ public class ChatClientTest {
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -322,7 +322,7 @@ public class ChatClientTest {
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 	}
 
@@ -385,7 +385,7 @@ public class ChatClientTest {
 		var tco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(tco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
-		assertThat(tco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(tco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// Streaming
 		// @formatter:off
@@ -416,7 +416,7 @@ public class ChatClientTest {
 		var tcoptions = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(tcoptions.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
-		assertThat(tcoptions.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(tcoptions.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 	}
 
 	@Test

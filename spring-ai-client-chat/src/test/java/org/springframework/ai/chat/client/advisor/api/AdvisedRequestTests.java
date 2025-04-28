@@ -93,7 +93,7 @@ class AdvisedRequestTests {
 	}
 
 	@Test
-	void whenFunctionCallbacksIsNullThenThrows() {
+	void whenToolCallbacksIsNullThenThrows() {
 		assertThatThrownBy(() -> new AdvisedRequest(mock(ChatModel.class), "user", null, null, List.of(), List.of(),
 				null, List.of(), Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of()))
 			.isInstanceOf(IllegalArgumentException.class)

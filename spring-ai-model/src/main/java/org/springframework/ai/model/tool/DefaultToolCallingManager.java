@@ -33,7 +33,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -93,7 +92,9 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			// Skip the tool if it is already present in the request toolCallbacks.
 			// That might happen if a tool is defined in the options
 			// both as a ToolCallback and as a tool name.
-			if (chatOptions.getToolCallbacks().stream().anyMatch(tool -> tool.getName().equals(toolName))) {
+			if (chatOptions.getToolCallbacks()
+				.stream()
+				.anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
 				continue;
 			}
 			ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
@@ -163,9 +164,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	}
 
 	/**
-	 * Execute the tool call and return the response message. To ensure backward
-	 * compatibility, both {@link ToolCallback} and {@link FunctionCallback} are
-	 * supported.
+	 * Execute the tool call and return the response message.
 	 */
 	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
 			ToolContext toolContext) {
@@ -186,7 +185,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			String toolInputArguments = toolCall.arguments();
 
 			ToolCallback toolCallback = toolCallbacks.stream()
-				.filter(tool -> toolName.equals(tool.getName()))
+				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
 				.findFirst()
 				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
 

@@ -44,7 +44,7 @@ public class BedrockConverseProxyChatProperties {
 	}
 
 	public void setOptions(ToolCallingChatOptions options) {
-		Assert.notNull(options, "FunctionCallingOptions must not be null");
+		Assert.notNull(options, "ToolCallingChatOptions must not be null");
 		this.options = options;
 	}
 

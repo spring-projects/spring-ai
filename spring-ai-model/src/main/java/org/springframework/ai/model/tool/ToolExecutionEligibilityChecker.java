@@ -20,7 +20,6 @@ import java.util.function.Function;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.util.Assert;
 
 /**
@@ -68,10 +67,6 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 				&& toolCallingChatOptions.getInternalToolExecutionEnabled() != null) {
 			internalToolExecutionEnabled = Boolean.TRUE
 				.equals(toolCallingChatOptions.getInternalToolExecutionEnabled());
-		}
-		else if (chatOptions instanceof FunctionCallingOptions functionCallingOptions
-				&& functionCallingOptions.getProxyToolCalls() != null) {
-			internalToolExecutionEnabled = Boolean.TRUE.equals(!functionCallingOptions.getProxyToolCalls());
 		}
 		else {
 			internalToolExecutionEnabled = true;
