@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.postretrieval.compression.DocumentCompressor;
+import org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor;
 import org.springframework.ai.rag.postretrieval.ranking.DocumentRanker;
 
 /**
@@ -33,7 +34,10 @@ import org.springframework.ai.rag.postretrieval.ranking.DocumentRanker;
  * documents in the list, but rather removes irrelevant or redundant documents. Unlike
  * {@link DocumentCompressor}, this component does not alter the content of the documents,
  * but rather removes entire documents.
+ *
+ * @deprecated in favour of {@link DocumentPostProcessor}.
  */
+@Deprecated
 public interface DocumentSelector extends BiFunction<Query, List<Document>, List<Document>> {
 
 	/**
