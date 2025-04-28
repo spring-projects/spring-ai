@@ -51,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Linar Abzaltdinov
  */
 @Testcontainers
 class JdbcChatMemoryIT {
@@ -147,10 +148,11 @@ class JdbcChatMemoryIT {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemory.class);
 			var conversationId = UUID.randomUUID().toString();
-			var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + conversationId),
-					new AssistantMessage("Message from assistant 2 - " + conversationId),
-					new UserMessage("Message from user - " + conversationId),
-					new SystemMessage("Message from system - " + conversationId));
+			var messages = List.<Message>of(new SystemMessage("Message from system - " + conversationId),
+					new UserMessage("Message from user 1 - " + conversationId),
+					new AssistantMessage("Message from assistant 1 - " + conversationId),
+					new UserMessage("Message from user 2 - " + conversationId),
+					new AssistantMessage("Message from assistant 2 - " + conversationId));
 
 			chatMemory.add(conversationId, messages);
 
@@ -158,6 +160,24 @@ class JdbcChatMemoryIT {
 
 			assertThat(results.size()).isEqualTo(messages.size());
 			assertThat(results).isEqualTo(messages);
+		});
+	}
+
+	@Test
+	void get_afterMultipleAdds_shouldReturnMessagesInSameOrder() {
+		this.contextRunner.run(context -> {
+			var chatMemory = context.getBean(ChatMemory.class);
+			var conversationId = UUID.randomUUID().toString();
+			var userMessage = new UserMessage("Message from user - " + conversationId);
+			var assistantMessage = new AssistantMessage("Message from assistant - " + conversationId);
+
+			chatMemory.add(conversationId, userMessage);
+			chatMemory.add(conversationId, assistantMessage);
+
+			var results = chatMemory.get(conversationId, Integer.MAX_VALUE);
+
+			assertThat(results.size()).isEqualTo(2);
+			assertThat(results).isEqualTo(List.of(userMessage, assistantMessage));
 		});
 	}
 
