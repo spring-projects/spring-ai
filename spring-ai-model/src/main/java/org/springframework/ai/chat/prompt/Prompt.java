@@ -45,7 +45,6 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	@Nullable
 	private ChatOptions chatOptions;
 
 	public Prompt(String contents) {
@@ -57,24 +56,24 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt(List<Message> messages) {
-		this(messages, null);
+		this(messages, ChatOptions.builder().build());
 	}
 
 	public Prompt(Message... messages) {
-		this(Arrays.asList(messages), null);
+		this(Arrays.asList(messages), ChatOptions.builder().build());
 	}
 
-	public Prompt(String contents, @Nullable ChatOptions chatOptions) {
+	public Prompt(String contents, ChatOptions chatOptions) {
 		this(new UserMessage(contents), chatOptions);
 	}
 
-	public Prompt(Message message, @Nullable ChatOptions chatOptions) {
+	public Prompt(Message message, ChatOptions chatOptions) {
 		this(Collections.singletonList(message), chatOptions);
 	}
 
-	public Prompt(List<Message> messages, @Nullable ChatOptions chatOptions) {
+	public Prompt(List<Message> messages, ChatOptions chatOptions) {
 		this.messages = messages;
-		this.chatOptions = chatOptions;
+		this.chatOptions = (chatOptions != null) ? chatOptions : ChatOptions.builder().build();
 	}
 
 	public String getContents() {
@@ -86,7 +85,6 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	@Override
-	@Nullable
 	public ChatOptions getOptions() {
 		return this.chatOptions;
 	}
@@ -118,7 +116,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), null == this.chatOptions ? null : this.chatOptions.copy());
+		return new Prompt(instructionsCopy(), this.chatOptions.copy());
 	}
 
 	private List<Message> instructionsCopy() {
@@ -155,9 +153,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	public Builder mutate() {
 		Builder builder = new Builder().messages(instructionsCopy());
-		if (this.chatOptions != null) {
-			builder.chatOptions(this.chatOptions.copy());
-		}
+		builder.chatOptions(this.chatOptions.copy());
 		return builder;
 	}
 
