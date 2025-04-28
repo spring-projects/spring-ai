@@ -150,6 +150,26 @@ CreateMessageResult result = exchange.createMessage(new CreateMessageRequest(...
 
 For a complete guide to migrating MCP code, refer to the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/mcp-migration.adoc[MCP Migration Guide].
 
+=== Enabling/Disabling Model Auto-Configuration
+
+The following configuration properties for enabling/disabling model auto-configuration have been removed:
+
+* `spring.ai.<provider>.chat.enabled`
+* `spring.ai.<provider>.embedding.enabled`
+* `spring.ai.<provider>.image.enabled`
+* `spring.ai.<provider>.moderation.enabled`
+
+As a replacement, the following properties can be used to choose for which model provider the auto-configuration should be enabled. If no value is specified, auto-configurations for all model providers are enabled by default. If a certain value is defined (e.g. `mistral`), then only the auto-configuration for that model provider will be enabled. You can refer to the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/SpringAIModels.java[SpringAiModels.java] enumeration for a list of well-known values for the model providers.
+
+* `spring.ai.model.audio.speech=<model-provider>`
+* `spring.ai.model.audio.transcription=<model-provider>`
+* `spring.ai.model.chat=<model-provider>`
+* `spring.ai.model.embedding=<model-provider>`
+* `spring.ai.model.embedding.multimodal=<model-provider>`
+* `spring.ai.model.embedding.text=<model-provider>`
+* `spring.ai.model.image=<model-provider>`
+* `spring.ai.model.moderation=<model-provider>`
+
 === Automating upgrading using AI
 
 You can automate the upgrade process to 1.0.0-M7 using the Claude Code CLI tool with a provided prompt:
