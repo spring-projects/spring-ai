@@ -16,7 +16,11 @@
 
 package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
 
+import java.util.List;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemory;
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository;
@@ -29,14 +33,12 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import java.util.List;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
+ * @author Linar Abzaltdinov
  */
 class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 
@@ -87,6 +89,12 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).hasSize(1);
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).isEqualTo(List.of(userMessage));
 
+			var assistantMessage = new AssistantMessage("Message from the assistant");
+
+			chatMemory.add(conversationId, List.of(assistantMessage));
+
+			assertThat(chatMemory.get(conversationId)).hasSize(2);
+			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
 			chatMemory.clear(conversationId);
 
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).isEmpty();
@@ -141,6 +149,13 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 
 			assertThat(chatMemory.get(conversationId)).hasSize(1);
 			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+
+			var assistantMessage = new AssistantMessage("Message from the assistant");
+
+			chatMemory.add(conversationId, List.of(assistantMessage));
+
+			assertThat(chatMemory.get(conversationId)).hasSize(2);
+			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
 
 			chatMemory.clear(conversationId);
 

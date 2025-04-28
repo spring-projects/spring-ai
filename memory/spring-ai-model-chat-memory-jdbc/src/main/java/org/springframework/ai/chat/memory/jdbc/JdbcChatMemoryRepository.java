@@ -16,25 +16,34 @@
 
 package org.springframework.ai.chat.memory.jdbc;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * An implementation of {@link ChatMemoryRepository} for JDBC.
  *
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
+ * @author Linar Abzaltdinov
  * @since 1.0.0
  */
 public class JdbcChatMemoryRepository implements ChatMemoryRepository {
@@ -44,7 +53,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			""";
 
 	private static final String QUERY_ADD = """
-			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)
+			INSERT INTO ai_chat_memory (conversation_id, content, type, "timestamp") VALUES (?, ?, ?, ?)
 			""";
 
 	private static final String QUERY_GET = """
@@ -93,8 +102,13 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		this.jdbcTemplate.update(QUERY_CLEAR, conversationId);
 	}
 
-	private record AddBatchPreparedStatement(String conversationId,
-			List<Message> messages) implements BatchPreparedStatementSetter {
+	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
+			AtomicLong instantSeq) implements BatchPreparedStatementSetter {
+
+		private AddBatchPreparedStatement(String conversationId, List<Message> messages) {
+			this(conversationId, messages, new AtomicLong(Instant.now().toEpochMilli()));
+		}
+
 		@Override
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
 			var message = this.messages.get(i);
@@ -102,6 +116,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
+			ps.setTimestamp(4, new Timestamp(instantSeq.getAndIncrement()));
 		}
 
 		@Override

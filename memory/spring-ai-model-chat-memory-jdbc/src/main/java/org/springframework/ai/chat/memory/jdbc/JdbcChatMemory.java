@@ -19,7 +19,11 @@ package org.springframework.ai.chat.memory.jdbc;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
@@ -38,6 +42,7 @@ import org.springframework.jdbc.core.RowMapper;
  * <code>JdbcChatMemory.create(JdbcChatMemoryConfig.builder().jdbcTemplate(jdbcTemplate).build());</code>
  *
  * @author Jonathan Leijendekker
+ * @author Linar Abzaltdinov
  * @since 1.0.0
  * @deprecated in favor of building a {@link MessageWindowChatMemory} (or other
  * {@link ChatMemory} implementations) with a {@link JdbcChatMemoryRepository} instance.
@@ -46,10 +51,10 @@ import org.springframework.jdbc.core.RowMapper;
 public class JdbcChatMemory implements ChatMemory {
 
 	private static final String QUERY_ADD = """
-			INSERT INTO ai_chat_memory (conversation_id, content, type) VALUES (?, ?, ?)""";
+			INSERT INTO ai_chat_memory (conversation_id, content, type, "timestamp") VALUES (?, ?, ?, ?)""";
 
 	private static final String QUERY_GET = """
-			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" LIMIT ?""";
+			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp" DESC LIMIT ?""";
 
 	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";
 
@@ -70,7 +75,9 @@ public class JdbcChatMemory implements ChatMemory {
 
 	@Override
 	public List<Message> get(String conversationId, int lastN) {
-		return this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId, lastN);
+		List<Message> messages = this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId, lastN);
+		Collections.reverse(messages);
+		return messages;
 	}
 
 	@Override
@@ -78,8 +85,13 @@ public class JdbcChatMemory implements ChatMemory {
 		this.jdbcTemplate.update(QUERY_CLEAR, conversationId);
 	}
 
-	private record AddBatchPreparedStatement(String conversationId,
-			List<Message> messages) implements BatchPreparedStatementSetter {
+	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
+			AtomicLong instantSeq) implements BatchPreparedStatementSetter {
+
+		private AddBatchPreparedStatement(String conversationId, List<Message> messages) {
+			this(conversationId, messages, new AtomicLong(Instant.now().toEpochMilli()));
+		}
+
 		@Override
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
 			var message = this.messages.get(i);
@@ -87,6 +99,7 @@ public class JdbcChatMemory implements ChatMemory {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
+			ps.setTimestamp(4, new Timestamp(instantSeq.getAndIncrement()));
 		}
 
 		@Override
