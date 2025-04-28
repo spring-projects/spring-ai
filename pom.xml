@@ -44,6 +44,7 @@
 		<module>memory/spring-ai-model-chat-memory-cassandra</module>
 		<module>memory/spring-ai-model-chat-memory-jdbc</module>
 		<module>memory/spring-ai-model-chat-memory-neo4j</module>
+		<module>memory/spring-ai-model-chat-memory-redis</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
@@ -68,11 +69,11 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
-			<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
 
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
-			<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-watsonx-ai</module>
@@ -168,7 +169,7 @@
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
-			<module>models/spring-ai-stability-ai</module>
+		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
@@ -189,7 +190,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
-			<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
