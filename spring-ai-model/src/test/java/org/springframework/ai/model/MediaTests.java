@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.model;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.UUID;
 
@@ -45,6 +46,22 @@ class MediaTests {
 		assertThat(media.getMimeType()).isEqualTo(mimeType);
 		assertThat(media.getData()).isInstanceOf(byte[].class);
 		assertThat(media.getDataAsByteArray()).isEqualTo(data);
+		assertThat(media.getId()).isEqualTo(id);
+		assertThat(media.getName()).isEqualTo(name);
+	}
+
+	@Test
+	void testMediaBuilderWithUri() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		URI uri = URI.create("http://example.com/image.png");
+		String id = "123";
+		String name = "test-media";
+
+		Media media = Media.builder().mimeType(mimeType).data(uri).id(id).name(name).build();
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(String.class);
+		assertThat(media.getData()).isEqualTo(uri.toString());
 		assertThat(media.getId()).isEqualTo(id);
 		assertThat(media.getName()).isEqualTo(name);
 	}
@@ -89,6 +106,13 @@ class MediaTests {
 
 		assertThatThrownBy(media::getDataAsByteArray).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Media data is not a byte[]");
+	}
+
+	@Test
+	void testMediaBuilderWithNullUri() {
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((URI) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("URI must not be null");
 	}
 
 	@Test
@@ -163,6 +187,20 @@ class MediaTests {
 	}
 
 	@Test
+	void testMediaConstructorWithUri() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		URI uri = URI.create("http://example.com/image.png");
+
+		Media media = new Media(mimeType, uri);
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(String.class);
+		assertThat(media.getData()).isEqualTo(uri.toString());
+		assertThat(media.getId()).isNull();
+		assertValidMediaName(media.getName(), "png");
+	}
+
+	@Test
 	void testMediaConstructorWithUrl() throws MalformedURLException {
 		MimeType mimeType = MimeType.valueOf("image/png");
 		URL url = new URL("http://example.com/image.png");
@@ -195,7 +233,7 @@ class MediaTests {
 	}
 
 	@Test
-	void testMediaConstructorWithResource() throws IOException {
+	void testMediaConstructorWithResource() {
 		MimeType mimeType = MimeType.valueOf("image/png");
 		byte[] data = new byte[] { 1, 2, 3 };
 		Resource resource = new ByteArrayResource(data);
@@ -210,7 +248,7 @@ class MediaTests {
 	}
 
 	@Test
-	void testMediaConstructorWithResourceAndId() throws IOException {
+	void testMediaConstructorWithResourceAndId() {
 		MimeType mimeType = MimeType.valueOf("image/png");
 		byte[] data = new byte[] { 1, 2, 3 };
 		Resource resource = new ByteArrayResource(data);
@@ -255,6 +293,30 @@ class MediaTests {
 	}
 
 	/// Tests to ensure two arg ctors behave identically to the builder
+
+	@Test
+	void testUriConstructorMatchesBuilder() {
+		// Given
+		MimeType mimeType = MimeType.valueOf("image/png");
+		URI uri = URI.create("http://example.com/image.png");
+
+		// When
+		Media mediaFromCtor = new Media(mimeType, uri);
+		Media mediaFromBuilder = Media.builder().mimeType(mimeType).data(uri).build();
+
+		// Then - verify all properties match
+		assertThat(mediaFromCtor.getMimeType()).isEqualTo(mediaFromBuilder.getMimeType());
+		assertThat(mediaFromCtor.getData()).isEqualTo(mediaFromBuilder.getData());
+		assertThat(mediaFromCtor.getId()).isEqualTo(mediaFromBuilder.getId());
+
+		// Verify name structure for both instances
+		assertValidMediaName(mediaFromCtor.getName(), "png");
+		assertValidMediaName(mediaFromBuilder.getName(), "png");
+
+		// Data type consistency
+		assertThat(mediaFromCtor.getData()).isInstanceOf(String.class);
+		assertThat(mediaFromBuilder.getData()).isInstanceOf(String.class);
+	}
 
 	@Test
 	void testURLConstructorMatchesBuilder() throws MalformedURLException {
@@ -303,6 +365,30 @@ class MediaTests {
 		// Data type consistency
 		assertThat(mediaFromCtor.getData()).isInstanceOf(byte[].class);
 		assertThat(mediaFromBuilder.getData()).isInstanceOf(byte[].class);
+	}
+
+	@Test
+	void testUriConstructorNullValidation() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+
+		// Test null mimeType
+		assertThatThrownBy(() -> new Media(null, URI.create("http://example.com/image.png")))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		// Test null URL
+		assertThatThrownBy(() -> new Media(mimeType, (URI) null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("URI must not be null");
+
+		// Compare with builder validation
+		assertThatThrownBy(
+				() -> Media.builder().mimeType(null).data(URI.create("http://example.com/image.png")).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		assertThatThrownBy(() -> Media.builder().mimeType(mimeType).data((URI) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("URI must not be null");
 	}
 
 	@Test
@@ -375,7 +461,7 @@ class MediaTests {
 	}
 
 	@Test
-	void testDifferentMimeTypesNameFormat() throws IOException {
+	void testDifferentMimeTypesNameFormat() {
 		// Test constructor name generation
 		Media jpegMediaCtor = new Media(Media.Format.IMAGE_JPEG, new ByteArrayResource(new byte[] { 1, 2, 3 }));
 		assertValidMediaName(jpegMediaCtor.getName(), "jpeg");
