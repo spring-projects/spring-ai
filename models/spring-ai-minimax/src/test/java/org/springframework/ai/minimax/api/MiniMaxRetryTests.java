@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.minimax.MiniMaxChatModel;
@@ -40,6 +41,7 @@ import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionMessage.Role;
 import org.springframework.ai.minimax.api.MiniMaxApi.ChatCompletionRequest;
 import org.springframework.ai.minimax.api.MiniMaxApi.EmbeddingList;
 import org.springframework.ai.minimax.api.MiniMaxApi.EmbeddingRequest;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.http.ResponseEntity;
@@ -76,8 +78,8 @@ public class MiniMaxRetryTests {
 		this.retryListener = new TestRetryListener();
 		this.retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new MiniMaxChatModel(this.miniMaxApi, MiniMaxChatOptions.builder().build(), null,
-				this.retryTemplate);
+		this.chatModel = new MiniMaxChatModel(this.miniMaxApi, MiniMaxChatOptions.builder().build(),
+				ToolCallingManager.builder().build(), this.retryTemplate);
 		this.embeddingModel = new MiniMaxEmbeddingModel(this.miniMaxApi, MetadataMode.EMBED,
 				MiniMaxEmbeddingOptions.builder().build(), this.retryTemplate);
 	}
@@ -95,7 +97,7 @@ public class MiniMaxRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
-		var result = this.chatModel.call(new Prompt("text"));
+		var result = this.chatModel.call(new Prompt("text", ChatOptions.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
@@ -123,7 +125,7 @@ public class MiniMaxRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(Flux.just(expectedChatCompletion));
 
-		var result = this.chatModel.stream(new Prompt("text"));
+		var result = this.chatModel.stream(new Prompt("text", ChatOptions.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");

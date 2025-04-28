@@ -71,15 +71,7 @@ public enum AiProvider {
 	 */
 	MINIMAX("minimax"),
 
-	/**
-	 * AI system provided by Moonshot.
-	 */
-	MOONSHOT("moonshot"),
 
-	/**
-	 * AI system provided by Qianfan.
-	 */
-	QIANFAN("qianfan"),
 
 	/**
 	 * AI system provided by Zhipuai.

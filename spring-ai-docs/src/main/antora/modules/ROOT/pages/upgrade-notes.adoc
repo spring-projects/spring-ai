@@ -43,6 +43,22 @@ To use this automation:
 
 This approach can save time and reduce the chance of errors when upgrading multiple projects or complex codebases.
 
+[[upgrading-to-1-0-0-m8]]
+== Upgrading to 1.0.0-M8
+
+=== Chat Memory
+
+* A `ChatMemory` bean is auto-configured for you whenever using one of the Spring AI Model starters. By default, it uses the `MessageWindowChatMemory` implementation and stores the conversation history in memory.
+* The `ChatMemory` API has been enhanced to support a more flexible and extensible way of managing conversation history. The storage mechanism has been decoupled from the `ChatMemory` interface and is now handled by a new `ChatMemoryRepository` interface. The `ChatMemory` API now can be used to implement different memory strategies without being tied to a specific storage mechanism. By default, Spring AI provides a `MessageWindowChatMemory` implementation that maintains a window of messages up to a specified maximum size.
+* The `get(String conversationId, int lastN)` method in `ChatMemory` has been deprecated in favour of using `MessageWindowChatMemory` when it's needed to keep messages in memory up to a certain limit. The `get(String conversationId)` method is now the preferred way to retrieve messages from the memory whereas the specific implementation of `ChatMemory` can decide the strategy for filtering, processing, and returning messages.
+* The `JdbcChatMemory` has been deprecated in favour of using `JdbcChatMemoryRepository` together with a `ChatMemory` implementation such `MessageWindowChatMemory`. If you were relying on an auto-configured `JdbcChatMemory` bean, you can replace that by auto-wiring a `ChatMemory` bean that is auto-configured to use the `JdbcChatMemoryRepository` internally for storing messages whenever the related dependency is in the classpath.
+* The `spring.ai.chat.memory.jdbc.initialize-schema` property has been deprecated in favor of `spring.ai.chat.memory.repository.jdbc.initialize-schema`.
+* Refer to the new xref:api/chat-memory.adoc[Chat Memory] documentation for more details on the new API and how to use it.
+
+=== Prompt Templating
+
+* The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
+
 [[upgrading-to-1-0-0-m7]]
 == Upgrading to 1.0.0-M7
 
