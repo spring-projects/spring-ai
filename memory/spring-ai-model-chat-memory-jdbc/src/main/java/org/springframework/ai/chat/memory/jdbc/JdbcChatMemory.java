@@ -85,7 +85,7 @@ public class JdbcChatMemory implements ChatMemory {
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
-											 AtomicLong instantSeq) implements BatchPreparedStatementSetter {
+			AtomicLong instantSeq) implements BatchPreparedStatementSetter {
 
 		private AddBatchPreparedStatement(String conversationId, List<Message> messages) {
 			this(conversationId, messages, new AtomicLong(Instant.now().toEpochMilli()));
