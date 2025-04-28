@@ -440,11 +440,6 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		@Deprecated
-		public Builder proxyToolCalls(boolean proxyToolCalls) {
-			return this.internalToolExecutionEnabled(!proxyToolCalls);
-		}
-
 		public Builder internalToolExecutionEnabled(boolean internalToolExecutionEnabled) {
 			this.options.internalToolExecutionEnabled = internalToolExecutionEnabled;
 			return this;
