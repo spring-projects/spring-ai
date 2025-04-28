@@ -59,6 +59,10 @@ This approach can save time and reduce the chance of errors when upgrading multi
 
 * The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
 
+=== Retrieval Augmented Generation
+
+* The `DocumentPostProcessor` API has been introduced to implement post-retrieval components in a Modular RAG architecture, superseding the `DocumentCompressor`, `DocumentRanker`, `DocumentSelector` APIs that are now deprecated.
+
 [[upgrading-to-1-0-0-m7]]
 == Upgrading to 1.0.0-M7
 

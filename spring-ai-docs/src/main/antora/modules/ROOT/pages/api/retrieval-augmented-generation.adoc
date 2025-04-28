@@ -361,31 +361,11 @@ List<Document> documents = documentJoiner.join(documentsForQuery);
 
 Post-Retrieval modules are responsible for processing the retrieved documents to achieve the best possible generation results.
 
-==== Document Ranking
+==== Document Post-Processing
 
-A component for ordering and ranking documents based on their relevance to a query to bring the most relevant documents
-to the top of the list, addressing challenges such as _lost-in-the-middle_.
+A component for post-processing retrieved documents based on a query, addressing challenges such as _lost-in-the-middle_, context length restrictions from the model, and the need to reduce noise and redundancy in the retrieved information.
 
-Unlike `DocumentSelector`, this component does not remove entire documents from the list, but rather changes
-the order/score of the documents in the list. Unlike `DocumentCompressor`, this component does not alter the content
-of the documents.
-
-==== Document Selection
-
-A component for removing irrelevant or redundant documents from a list of retrieved documents, addressing challenges
-such as _lost-in-the-middle_ and context length restrictions from the model.
-
-Unlike `DocumentRanker`, this component does not change the order/score of the documents in the list, but rather
-removes irrelevant or redundant documents. Unlike `DocumentCompressor`, this component does not alter the content
-of the documents, but rather removes entire documents.
-
-==== Document Compression
-
-A component for compressing the content of each document to reduce noise and redundancy in the retrieved information,
-addressing challenges such as _lost-in-the-middle_ and context length restrictions from the model.
-
-Unlike `DocumentSelector`, this component does not remove entire documents from the list, but rather alters the content
-of the documents. Unlike `DocumentRanker`, this component does not change the order/score of the documents in the list.
+For example, it could rank documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
 
 === Generation
 
