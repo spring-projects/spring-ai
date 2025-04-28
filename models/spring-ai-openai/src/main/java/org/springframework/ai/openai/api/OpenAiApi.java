@@ -894,7 +894,8 @@ public class OpenAiApi {
 	 * @param maxTokens The maximum number of tokens that can be generated in the chat
 	 * completion. This value can be used to control costs for text generated via API.
 	 * This value is now deprecated in favor of max_completion_tokens, and is not
-	 * compatible with o1 series models.
+	 * compatible with o1 series models. The field is retained for use with other openai
+	 * models and openai compatible models.
 	 * @param maxCompletionTokens An upper bound for the number of tokens that can be
 	 * generated for a completion, including visible output tokens and reasoning tokens.
 	 * @param n How many chat completion choices to generate for each input message. Note
@@ -960,8 +961,8 @@ public class OpenAiApi {
 			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
 			@JsonProperty("logprobs") Boolean logprobs,
 			@JsonProperty("top_logprobs") Integer topLogprobs,
-			@JsonProperty("max_tokens") @Deprecated Integer maxTokens, // Use maxCompletionTokens instead
-			@JsonProperty("max_completion_tokens") Integer maxCompletionTokens,
+			@JsonProperty("max_tokens") Integer maxTokens, // original field for specifying token usage.
+			@JsonProperty("max_completion_tokens") Integer maxCompletionTokens, // new field for gpt-o1 and other reasoning models
 			@JsonProperty("n") Integer n,
 			@JsonProperty("modalities") List<OutputModality> outputModalities,
 			@JsonProperty("audio") AudioParameters audioParameters,
