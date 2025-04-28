@@ -87,6 +87,13 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).hasSize(1);
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).isEqualTo(List.of(userMessage));
 
+			var assistantMessage = new AssistantMessage("Message from the assistant");
+
+			chatMemory.add(conversationId, List.of(assistantMessage));
+
+			assertThat(chatMemory.get(conversationId)).hasSize(2);
+			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
+
 			chatMemory.clear(conversationId);
 
 			assertThat(chatMemory.get(conversationId, Integer.MAX_VALUE)).isEmpty();
@@ -141,6 +148,13 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 
 			assertThat(chatMemory.get(conversationId)).hasSize(1);
 			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+
+			var assistantMessage = new AssistantMessage("Message from the assistant");
+
+			chatMemory.add(conversationId, List.of(assistantMessage));
+
+			assertThat(chatMemory.get(conversationId)).hasSize(2);
+			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
 
 			chatMemory.clear(conversationId);
 
