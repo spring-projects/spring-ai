@@ -29,7 +29,6 @@ public class EvaluationResponse {
 
 	private final Map<String, Object> metadata;
 
-	@Deprecated
 	public EvaluationResponse(boolean pass, float score, String feedback, Map<String, Object> metadata) {
 		this.pass = pass;
 		this.score = score;
