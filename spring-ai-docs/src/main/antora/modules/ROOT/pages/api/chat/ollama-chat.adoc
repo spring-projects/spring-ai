@@ -483,7 +483,7 @@ Next, create an `OllamaChatModel` instance and use it to send requests for text 
 
 [source,java]
 ----
-var ollamaApi = new OllamaApi();
+var ollamaApi = OllamaApi.builder().build();
 
 var chatModel = OllamaChatModel.builder()
                     .ollamaApi(ollamaApi)
