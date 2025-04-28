@@ -19,6 +19,7 @@ package org.springframework.ai.chat.prompt;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,11 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.util.StreamUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A template for creating prompts. It allows you to define a template string with
@@ -41,6 +46,8 @@ import org.springframework.util.StreamUtils;
  * variables.
  */
 public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
+
+	private static final Logger log = LoggerFactory.getLogger(PromptTemplate.class);
 
 	private static final TemplateRenderer DEFAULT_TEMPLATE_RENDERER = StTemplateRenderer.builder().build();
 
@@ -80,7 +87,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	/**
-	 * @deprecated in favor of {@link PromptTemplate#builder()}.
+	 * @deprecated in fahvor of {@link PromptTemplate#builder()}.
 	 */
 	@Deprecated
 	public PromptTemplate(Resource resource, Map<String, Object> variables) {
@@ -135,7 +142,17 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	@Override
 	public String render() {
-		return this.renderer.apply(template, this.variables);
+		// Process internal variables to handle Resources before rendering
+		Map<String, Object> processedVariables = new HashMap<>();
+		for (Entry<String, Object> entry : this.variables.entrySet()) {
+			if (entry.getValue() instanceof Resource) {
+				processedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
+			}
+			else {
+				processedVariables.put(entry.getKey(), entry.getValue());
+			}
+		}
+		return this.renderer.apply(template, processedVariables);
 	}
 
 	@Override
@@ -155,11 +172,25 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 	}
 
 	private String renderResource(Resource resource) {
+		if (resource == null) {
+			return "";
+		}
+
 		try {
-			return resource.getContentAsString(Charset.defaultCharset());
+			// Handle ByteArrayResource specially
+			if (resource instanceof ByteArrayResource byteArrayResource) {
+				return new String(byteArrayResource.getByteArray(), StandardCharsets.UTF_8);
+			}
+			// If the resource exists but is empty
+			if (!resource.exists() || resource.contentLength() == 0) {
+				return "";
+			}
+			// For other Resource types or as fallback
+			return resource.getContentAsString(StandardCharsets.UTF_8);
 		}
 		catch (IOException e) {
-			throw new RuntimeException(e);
+			log.warn("Failed to render resource: {}", resource.getDescription(), e);
+			return "[Unable to render resource: " + resource.getDescription() + "]";
 		}
 	}
 
@@ -245,21 +276,26 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		}
 
 		public Builder template(String template) {
+			Assert.hasText(template, "template cannot be null or empty");
 			this.template = template;
 			return this;
 		}
 
 		public Builder resource(Resource resource) {
+			Assert.notNull(resource, "resource cannot be null");
 			this.resource = resource;
 			return this;
 		}
 
 		public Builder variables(Map<String, Object> variables) {
+			Assert.notNull(variables, "variables cannot be null");
+			Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
 			this.variables = variables;
 			return this;
 		}
 
 		public Builder renderer(TemplateRenderer renderer) {
+			Assert.notNull(renderer, "renderer cannot be null");
 			this.renderer = renderer;
 			return this;
 		}

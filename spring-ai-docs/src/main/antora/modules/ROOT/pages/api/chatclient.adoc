@@ -165,6 +165,39 @@ String content = this.flux.collectList().block().stream().collect(Collectors.joi
 List<ActorFilms> actorFilms = this.converter.convert(this.content);
 ----
 
+== Prompt Templates
+
+The `ChatClient` fluent API lets you provide user and system text as templates with variables that are replaced at runtime.
+
+[source,java]
+----
+String answer = ChatClient.create(chatModel).prompt()
+    .user(u -> u
+            .text("Tell me the names of 5 movies whose soundtrack was composed by {composer}")
+            .param("composer", "John Williams"))
+    .call()
+    .content();
+----
+
+Internally, the ChatClient uses the `PromptTemplate` class to handle the user and system text and replace the variables with the values provided at runtime relying on a given `TemplateRenderer` implementation. By default, Spring AI uses the `StTemplateRenderer` implementation, which is based on the open-source https://www.stringtemplate.org/[StringTemplate] engine developed by Terence Parr.
+
+NOTE: The `TemplateRenderer` configured directly on the `ChatClient` (via `.templateRenderer()`) applies only to the prompt content defined directly in the `ChatClient` builder chain (e.g., via `.user()`, `.system()`). It does *not* affect templates used internally by xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Advisors] like `QuestionAnswerAdvisor`, which have their own template customization mechanisms (see xref:api/retrieval-augmented-generation.adoc#_custom_template[Custom Advisor Templates]).
+
+If you'd rather use a different template engine, you can provide a custom implementation of the `TemplateRenderer` interface directly to the ChatClient. You can also keep using the default `StTemplateRenderer`, but with a custom configuration.
+
+For example, by default, template variables are identified by the `{}` syntax. If you're planning to include JSON in your prompt, you might want to use a different syntax to avoid conflicts with JSON syntax. For example, you can use the `<` and `>` delimiters.
+
+[source,java]
+----
+String answer = ChatClient.create(chatModel).prompt()
+    .user(u -> u
+            .text("Tell me the names of 5 movies whose soundtrack was composed by <composer>")
+            .param("composer", "John Williams"))
+    .templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .call()
+    .content();
+----
+
 == call() return values
 
 After specifying the `call()` method on `ChatClient`, there are a few different options for the response type.
