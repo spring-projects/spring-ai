@@ -137,6 +137,7 @@ This approach offers more control when you need to conditionally change parts of
 
 * The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
 
+
 === Observability
 
 * Changes to the `spring.ai.client` observation:
@@ -145,6 +146,11 @@ This approach offers more control when you need to conditionally change parts of
 ** The content of a prompt as specified via a ChatClient API was included optionally in the `spring.ai.client` observation, broken down in a few attributes: `spring.ai.chat.client.user.text`, `spring.ai.chat.client.user.params`, `spring.ai.chat.client.system.text`, `spring.ai.chat.client.system.params`. All those attributes are now deprecated, replaced by a single `gen_ai.prompt` attribute that contains all the messages in the prompt, solving the problem affecting the deprecated attributes where part of the prompt was not included in the observation, and aligning with the observations used in the ChatModel API. This new attribute can be enabled via the `spring.ai.chat.observations.include-prompt` configuration property, whereas the previous `spring.ai.chat.observations.include-input` configuration property is deprecated.
 * Changes to the `spring.ai.advisor` observation:
 ** The `spring.ai.advisor.type` attribute has been deprecated. In previous releases, the Advisor API was categorized based on the type of advisor (`before`, `after`, `around`). That distinction doesn't apply anymore meaning that all Advisors are now of the same type (`around`).
+
+=== Retrieval Augmented Generation
+
+* The `DocumentPostProcessor` API has been introduced to implement post-retrieval components in a Modular RAG architecture, superseding the `DocumentCompressor`, `DocumentRanker`, `DocumentSelector` APIs that are now deprecated.
+
 
 [[upgrading-to-1-0-0-m7]]
 == Upgrading to 1.0.0-M7

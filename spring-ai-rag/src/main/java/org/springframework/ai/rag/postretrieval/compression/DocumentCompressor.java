@@ -21,6 +21,7 @@ import java.util.function.BiFunction;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
+import org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor;
 import org.springframework.ai.rag.postretrieval.ranking.DocumentRanker;
 import org.springframework.ai.rag.postretrieval.selection.DocumentSelector;
 
@@ -33,7 +34,10 @@ import org.springframework.ai.rag.postretrieval.selection.DocumentSelector;
  * the list, but rather alters the content of the documents. Unlike
  * {@link DocumentRanker}, this component does not change the order/score of the documents
  * in the list.
+ *
+ * @deprecated in favour of {@link DocumentPostProcessor}.
  */
+@Deprecated
 public interface DocumentCompressor extends BiFunction<Query, List<Document>, List<Document>> {
 
 	/**
