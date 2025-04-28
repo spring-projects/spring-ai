@@ -191,7 +191,7 @@ or the image URL equivalent:
 ----
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG,
-                "https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"));
+                URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png")));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
         ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
