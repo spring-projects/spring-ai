@@ -23,8 +23,6 @@ import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -39,7 +37,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -89,7 +86,7 @@ public class AnthropicChatAutoConfiguration {
 			.defaultOptions(chatProperties.getOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(anthropicToolExecutionEligibilityPredicate
-				.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
+				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
 			.retryTemplate(retryTemplate)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
@@ -97,14 +94,6 @@ public class AnthropicChatAutoConfiguration {
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setApplicationContext(context);
-		return manager;
 	}
 
 }
