@@ -33,6 +33,9 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
+import org.springframework.ai.template.TemplateRenderer;
+import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.lang.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
@@ -57,6 +60,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
 
+	private static final TemplateRenderer DEFAULT_TEMPLATE_RENDERER = StTemplateRenderer.builder().build();
+
 	private final List<CallAroundAdvisor> originalCallAdvisors;
 
 	private final List<StreamAroundAdvisor> originalStreamAdvisors;
@@ -67,14 +72,17 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	private final ObservationRegistry observationRegistry;
 
-	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, Deque<CallAroundAdvisor> callAroundAdvisors,
-			Deque<StreamAroundAdvisor> streamAroundAdvisors) {
+	private final TemplateRenderer templateRenderer;
+
+	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, @Nullable TemplateRenderer templateRenderer,
+			Deque<CallAroundAdvisor> callAroundAdvisors, Deque<StreamAroundAdvisor> streamAroundAdvisors) {
 
 		Assert.notNull(observationRegistry, "the observationRegistry must be non-null");
 		Assert.notNull(callAroundAdvisors, "the callAroundAdvisors must be non-null");
 		Assert.notNull(streamAroundAdvisors, "the streamAroundAdvisors must be non-null");
 
 		this.observationRegistry = observationRegistry;
+		this.templateRenderer = templateRenderer != null ? templateRenderer : DEFAULT_TEMPLATE_RENDERER;
 		this.callAroundAdvisors = callAroundAdvisors;
 		this.streamAroundAdvisors = streamAroundAdvisors;
 		this.originalCallAdvisors = List.copyOf(callAroundAdvisors);
@@ -83,6 +91,11 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	public static Builder builder(ObservationRegistry observationRegistry) {
 		return new Builder(observationRegistry);
+	}
+
+	@Override
+	public TemplateRenderer getTemplateRenderer() {
+		return this.templateRenderer;
 	}
 
 	@Override
@@ -131,7 +144,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 		var observationContext = AdvisorObservationContext.builder()
 			.advisorName(advisor.getName())
-			.chatClientRequest(advisedRequest.toChatClientRequest())
+			.chatClientRequest(advisedRequest.toChatClientRequest(templateRenderer))
 			.order(advisor.getOrder())
 			.build();
 
@@ -140,8 +153,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			.observe(() -> {
 				// Supports both deprecated and new API.
 				if (advisor instanceof CallAdvisor callAdvisor) {
-					ChatClientResponse chatClientResponse = callAdvisor.adviseCall(advisedRequest.toChatClientRequest(),
-							this);
+					ChatClientResponse chatClientResponse = callAdvisor
+						.adviseCall(advisedRequest.toChatClientRequest(templateRenderer), this);
 					return AdvisedResponse.from(chatClientResponse);
 				}
 				AdvisedResponse advisedResponse = advisor.aroundCall(advisedRequest, this);
@@ -209,7 +222,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 			AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 				.advisorName(advisor.getName())
-				.chatClientRequest(advisedRequest.toChatClientRequest())
+				.chatClientRequest(advisedRequest.toChatClientRequest(templateRenderer))
 				.order(advisor.getOrder())
 				.build();
 
@@ -222,7 +235,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			return Flux.defer(() -> {
 				// Supports both deprecated and new API.
 				if (advisor instanceof StreamAdvisor streamAdvisor) {
-					return streamAdvisor.adviseStream(advisedRequest.toChatClientRequest(), this)
+					return streamAdvisor.adviseStream(advisedRequest.toChatClientRequest(templateRenderer), this)
 							.doOnError(observation::error)
 							.doFinally(s -> observation.stop())
 							.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation))
@@ -261,10 +274,17 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 		private final Deque<StreamAroundAdvisor> streamAroundAdvisors;
 
+		private TemplateRenderer templateRenderer;
+
 		public Builder(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			this.callAroundAdvisors = new ConcurrentLinkedDeque<>();
 			this.streamAroundAdvisors = new ConcurrentLinkedDeque<>();
+		}
+
+		public Builder templateRenderer(TemplateRenderer templateRenderer) {
+			this.templateRenderer = templateRenderer;
+			return this;
 		}
 
 		public Builder push(Advisor advisor) {
@@ -315,8 +335,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		}
 
 		public DefaultAroundAdvisorChain build() {
-			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAroundAdvisors,
-					this.streamAroundAdvisors);
+			return new DefaultAroundAdvisorChain(this.observationRegistry, this.templateRenderer,
+					this.callAroundAdvisors, this.streamAroundAdvisors);
 		}
 
 	}

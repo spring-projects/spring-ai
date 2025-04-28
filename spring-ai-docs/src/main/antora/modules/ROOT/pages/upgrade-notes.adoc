@@ -124,6 +124,61 @@ Prompt augmentedPrompt = originalPrompt.augmentUserMessage(userMessage ->
 
 This approach offers more control when you need to conditionally change parts of the `UserMessage` or work with its media and metadata, rather than just replacing the text content.
 
+=== Prompt Templating and Advisors
+
+Several classes and methods related to prompt creation and advisor customization have been deprecated in favor of more flexible approaches using the builder pattern and the `TemplateRenderer` interface.
+
+==== PromptTemplate Deprecations
+
+The `PromptTemplate` class has deprecated several constructors and methods related to the older `templateFormat` enum and direct variable injection:
+
+*   Constructors: `PromptTemplate(String template, Map<String, Object> variables)` and `PromptTemplate(Resource resource, Map<String, Object> variables)` are deprecated.
+*   Fields: `template` and `templateFormat` are deprecated.
+*   Methods: `getTemplateFormat()`, `getInputVariables()`, and `validate(Map<String, Object> model)` are deprecated.
+
+*Migration:* Use the `PromptTemplate.builder()` pattern to create instances. Provide the template string via `.template()` and optionally configure a custom `TemplateRenderer` via `.renderer()`. Pass variables using `.variables()`.
+
+[source,java]
+----
+// Before (Deprecated)
+PromptTemplate oldTemplate = new PromptTemplate("Hello {name}", Map.of("name", "World"));
+String oldRendered = oldTemplate.render(); // Variables passed at construction
+
+// After (Using Builder)
+PromptTemplate newTemplate = PromptTemplate.builder()
+    .template("Hello {name}")
+    .variables(Map.of("name", "World")) // Variables passed during builder configuration
+    .build();
+Prompt prompt = newTemplate.create(); // Create prompt using baked-in variables
+String newRendered = prompt.getContents(); // Or use newTemplate.render()
+----
+
+==== QuestionAnswerAdvisor Deprecations
+
+The `QuestionAnswerAdvisor` has deprecated constructors and builder methods that relied on a simple `userTextAdvise` string:
+
+*   Constructors taking a `userTextAdvise` String argument are deprecated.
+*   Builder method: `userTextAdvise(String userTextAdvise)` is deprecated.
+
+*Migration:* Use the `.promptTemplate(PromptTemplate promptTemplate)` builder method to provide a fully configured `PromptTemplate` object for customizing how retrieved context is merged.
+
+[source,java]
+----
+// Before (Deprecated)
+QuestionAnswerAdvisor oldAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+    .userTextAdvise("Context: {question_answer_context} Question: {question}") // Simple string
+    .build();
+
+// After (Using PromptTemplate)
+PromptTemplate customTemplate = PromptTemplate.builder()
+    .template("Context: {question_answer_context} Question: {question}")
+    .build();
+
+QuestionAnswerAdvisor newAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+    .promptTemplate(customTemplate) // Provide PromptTemplate object
+    .build();
+----
+
 === Chat Memory
 
 * A `ChatMemory` bean is auto-configured for you whenever using one of the Spring AI Model starters. By default, it uses the `MessageWindowChatMemory` implementation and stores the conversation history in memory.
@@ -132,6 +187,7 @@ This approach offers more control when you need to conditionally change parts of
 * The `JdbcChatMemory` has been deprecated in favour of using `JdbcChatMemoryRepository` together with a `ChatMemory` implementation such `MessageWindowChatMemory`. If you were relying on an auto-configured `JdbcChatMemory` bean, you can replace that by auto-wiring a `ChatMemory` bean that is auto-configured to use the `JdbcChatMemoryRepository` internally for storing messages whenever the related dependency is in the classpath.
 * The `spring.ai.chat.memory.jdbc.initialize-schema` property has been deprecated in favor of `spring.ai.chat.memory.repository.jdbc.initialize-schema`.
 * Refer to the new xref:api/chat-memory.adoc[Chat Memory] documentation for more details on the new API and how to use it.
+* The `MessageWindowChatMemory.get(String conversationId, int lastN)` method is deprecated. The windowing size is now managed internally based on the configuration provided during instantiation, so only `get(String conversationId)` should be used.
 
 === Prompt Templating
 
