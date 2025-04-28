@@ -1273,7 +1273,7 @@
 							<flattenMode>ossrh</flattenMode>
 							<pomElements>
 								<distributionManagement>remove</distributionManagement>
-								<dependencyManagement>remove</dependencyManagement>
+								<dependencyManagement>keep</dependencyManagement>
 								<repositories>remove</repositories>
 								<scm>keep</scm>
 								<url>keep</url>
