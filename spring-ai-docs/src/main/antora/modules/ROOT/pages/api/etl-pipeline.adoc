@@ -561,7 +561,7 @@ public class MyPagePdfDocumentReader {
 
 
 === Tika (DOCX, PPTX, HTML...)
-The `TikaDocumentReader` uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/2.9.0/formats.html[Tika documentation].
+The `TikaDocumentReader` uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/3.1.0/formats.html[Tika documentation].
 
 ==== Dependencies
 
