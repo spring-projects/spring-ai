@@ -74,7 +74,7 @@ public interface FunctionCallback {
 	 * @param functionInput JSON string with the function arguments to be passed to the
 	 * function. The arguments are defined as JSON schema usually registered with the
 	 * model. Arguments are provided by the AI model.
-	 * @param tooContext Map with the function context. The context is used to pass
+	 * @param toolContext Map with the function context. The context is used to pass
 	 * additional user provided state in addition to the arguments provided by the AI
 	 * model.
 	 * @return String containing the function call response.
