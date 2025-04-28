@@ -70,6 +70,13 @@ repositories {
   }  
 }
 ----
+**NOTE:** If you're using Maven mirror settings (typically in `settings.xml`), ensure your `<mirrorOf>` configuration excludes Spring repositories:
+```xml
+<mirror>
+    <mirrorOf>*,!spring-snapshots,!central-portal-snapshots</mirrorOf>
+    <!-- other mirror configurations -->
+</mirror>
+```
 ======
 
 [[dependency-management]]
