@@ -237,6 +237,30 @@ CreateMessageResult result = exchange.createMessage(new CreateMessageRequest(...
 
 For a complete guide to migrating MCP code, refer to the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-docs/src/main/antora/modules/ROOT/pages/mcp-migration.adoc[MCP Migration Guide].
 
+=== Enabling/Disabling Model Auto-Configuration
+
+The previous configuration properties for enabling/disabling model auto-configuration have been removed:
+
+* `spring.ai.<provider>.chat.enabled`
+* `spring.ai.<provider>.embedding.enabled`
+* `spring.ai.<provider>.image.enabled`
+* `spring.ai.<provider>.moderation.enabled`
+
+By default, if a model provider (e.g., OpenAI, Ollama) is found on the classpath, its corresponding auto-configuration for relevant model types (chat, embedding, etc.) is enabled. If multiple providers for the same model type are present (e.g., both `spring-ai-openai-spring-boot-starter` and `spring-ai-ollama-spring-boot-starter`), you can use the following properties to select *which* provider's auto-configuration should be active, effectively disabling the others for that specific model type.
+
+To disable auto-configuration for a specific model type entirely, even if only one provider is present, set the corresponding property to a value that does not match any provider on the classpath (e.g., `none` or `disabled`).
+
+You can refer to the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/SpringAIModels.java[`SpringAIModels`] enumeration for a list of well-known provider values.
+
+* `spring.ai.model.audio.speech=<model-provider|none>`
+* `spring.ai.model.audio.transcription=<model-provider|none>`
+* `spring.ai.model.chat=<model-provider|none>`
+* `spring.ai.model.embedding=<model-provider|none>`
+* `spring.ai.model.embedding.multimodal=<model-provider|none>`
+* `spring.ai.model.embedding.text=<model-provider|none>`
+* `spring.ai.model.image=<model-provider|none>`
+* `spring.ai.model.moderation=<model-provider|none>`
+
 === Automating upgrading using AI
 
 You can automate the upgrade process to 1.0.0-M7 using the Claude Code CLI tool with a provided prompt:
