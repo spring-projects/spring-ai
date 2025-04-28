@@ -16,6 +16,10 @@
 
 package org.springframework.ai.chat.client.observation;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
@@ -23,15 +27,11 @@ import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.observation.tracing.TracingHelper;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Default conventions to populate observations for chat client workflows.
@@ -116,7 +116,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 		if (CollectionUtils.isEmpty(context.getRequest().context())) {
 			return keyValues;
 		}
-		var chatClientContext = context.getRequest().context();
+		var chatClientContext = new HashMap<>(context.getRequest().context());
 		Arrays.stream(ChatClientAttributes.values()).forEach(attribute -> chatClientContext.remove(attribute.getKey()));
 		return keyValues.and(
 				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISOR_PARAMS.asString(),
@@ -154,7 +154,10 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 			return keyValues;
 		}
 
-		var toolCallbackNames = toolCallbacks.stream().map(FunctionCallback::getName).sorted().toList();
+		var toolCallbackNames = toolCallbacks.stream()
+			.map(toolCallback -> toolCallback.getToolDefinition().name())
+			.sorted()
+			.toList();
 		return keyValues
 			.and(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS
 				.asString(), TracingHelper.concatenateStrings(toolCallbackNames));

@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.observation;
 import java.util.List;
 
 import io.micrometer.common.KeyValue;
+import io.micrometer.common.KeyValues;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,10 +37,11 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationDocum
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,24 +82,12 @@ class DefaultChatClientObservationConventionTests {
 		};
 	}
 
-	static FunctionCallback dummyFunction(String name) {
-		return new FunctionCallback() {
+	static ToolCallback dummyFunction(String name) {
+		return new ToolCallback() {
 
 			@Override
-			public String getName() {
-				return name;
-			}
-
-			@Override
-			public String getDescription() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("Unimplemented method 'getDescription'");
-			}
-
-			@Override
-			public String getInputTypeSchema() {
-				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("Unimplemented method 'getInputTypeSchema'");
+			public ToolDefinition getToolDefinition() {
+				return ToolDefinition.builder().name(name).inputSchema("{}").build();
 			}
 
 			@Override
@@ -179,6 +169,26 @@ class DefaultChatClientObservationConventionTests {
 						"[\"tool1\", \"tool2\"]"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS.asString(),
 						"[\"toolCallback1\", \"toolCallback2\"]"));
+	}
+
+	@Test
+	void entriesInAdvisorContextAreNotRemoved() {
+		var request = ChatClientRequest.builder()
+			.prompt(new Prompt(""))
+			.context("advParam1", "advisorParam1Value")
+			.context(ChatClientAttributes.ADVISORS.getKey(),
+					List.of(dummyAdvisor("advisor1"), dummyAdvisor("advisor2")))
+			.build();
+
+		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
+			.request(request)
+			.build();
+
+		assertThat(observationContext.getRequest().context()).hasSize(2);
+
+		this.observationConvention.chatClientAdvisorParams(KeyValues.empty(), observationContext);
+
+		assertThat(observationContext.getRequest().context()).hasSize(2);
 	}
 
 }

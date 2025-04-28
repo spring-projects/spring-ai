@@ -94,6 +94,7 @@
 * xref:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation (RAG)]
 ** xref:api/etl-pipeline.adoc[]
 * xref:api/structured-output-converter.adoc[Structured Output]
+* xref:api/chat-memory.adoc[Chat Memory]
 * xref:api/tools.adoc[Tool Calling]
 ** xref:api/tools-migration.adoc[Migrating to ToolCallback API]
 * xref:api/mcp/mcp-overview.adoc[Model Context Protocol (MCP)]
@@ -107,7 +108,7 @@
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
 * xref:api/functions.adoc[Function Calling (Deprecated)]
-** xref:api/function-callback.adoc[FunctionCallback API (Deprecated)]
+
 
 * Service Connections
 ** xref:api/docker-compose.adoc[Docker Compose]

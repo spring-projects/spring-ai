@@ -20,7 +20,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.StaticToolCallbackProvider;
@@ -135,18 +134,16 @@ class ToolCallingAutoConfigurationTests {
 		}
 
 		@Bean
-		public FunctionCallback functionCallbacks3() {
-			return FunctionCallback.builder()
-				.function("getCurrentWeather3", (Request request) -> "15.0°C")
+		public ToolCallback functionCallbacks3() {
+			return FunctionToolCallback.builder("getCurrentWeather3", (Request request) -> "15.0°C")
 				.description("Gets the weather in location")
 				.inputType(Request.class)
 				.build();
 		}
 
 		@Bean
-		public FunctionCallback functionCallbacks4() {
-			return FunctionCallback.builder()
-				.function("getCurrentWeather4", (Request request) -> "15.0°C")
+		public ToolCallback functionCallbacks4() {
+			return FunctionToolCallback.builder("getCurrentWeather4", (Request request) -> "15.0°C")
 				.description("Gets the weather in location")
 				.inputType(Request.class)
 				.build();

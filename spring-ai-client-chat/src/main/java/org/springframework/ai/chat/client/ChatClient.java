@@ -34,7 +34,6 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.StructuredOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
@@ -222,19 +221,13 @@ public interface ChatClient {
 
 		ChatClientRequestSpec tools(String... toolNames);
 
-		ChatClientRequestSpec tools(FunctionCallback... toolCallbacks);
+		ChatClientRequestSpec tools(ToolCallback... toolCallbacks);
 
 		ChatClientRequestSpec tools(List<ToolCallback> toolCallbacks);
 
 		ChatClientRequestSpec tools(Object... toolObjects);
 
 		ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders);
-
-		@Deprecated
-		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
-
-		@Deprecated
-		ChatClientRequestSpec functions(String... functionBeanNames);
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
@@ -291,25 +284,13 @@ public interface ChatClient {
 
 		Builder defaultTools(String... toolNames);
 
-		Builder defaultTools(FunctionCallback... toolCallbacks);
+		Builder defaultTools(ToolCallback... toolCallbacks);
 
 		Builder defaultTools(List<ToolCallback> toolCallbacks);
 
 		Builder defaultTools(Object... toolObjects);
 
 		Builder defaultTools(ToolCallbackProvider... toolCallbackProviders);
-
-		/**
-		 * @deprecated in favor of {@link #defaultTools(String...)}
-		 */
-		@Deprecated
-		Builder defaultFunctions(String... functionNames);
-
-		/**
-		 * @deprecated in favor of {@link #defaultTools(Object...)}
-		 */
-		@Deprecated
-		Builder defaultFunctions(FunctionCallback... functionCallbacks);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
 

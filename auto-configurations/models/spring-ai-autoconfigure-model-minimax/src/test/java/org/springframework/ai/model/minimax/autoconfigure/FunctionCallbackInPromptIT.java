@@ -34,6 +34,7 @@ import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -63,8 +64,7 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = MiniMaxChatOptions.builder()
-				.functionCallbacks(List.of(FunctionCallback.builder()
-					.function("CurrentWeatherService", new MockWeatherService())
+				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
@@ -89,8 +89,7 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			var promptOptions = MiniMaxChatOptions.builder()
-				.functionCallbacks(List.of(FunctionCallback.builder()
-					.function("CurrentWeatherService", new MockWeatherService())
+				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))

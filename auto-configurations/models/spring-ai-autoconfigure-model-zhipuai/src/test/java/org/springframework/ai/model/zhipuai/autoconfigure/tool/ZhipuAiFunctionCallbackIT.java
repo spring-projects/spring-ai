@@ -33,6 +33,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiChatAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -67,7 +69,7 @@ public class ZhipuAiFunctionCallbackIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().function("WeatherInfo").build()));
+				.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().toolNames("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -85,8 +87,8 @@ public class ZhipuAiFunctionCallbackIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
-			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().function("WeatherInfo").build()));
+			Flux<ChatResponse> response = chatModel.stream(
+					new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().toolNames("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()
@@ -109,10 +111,9 @@ public class ZhipuAiFunctionCallbackIT {
 	static class Config {
 
 		@Bean
-		public FunctionCallback weatherFunctionInfo() {
+		public ToolCallback weatherFunctionInfo() {
 
-			return FunctionCallback.builder()
-				.function("WeatherInfo", new MockWeatherService())
+			return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				// .responseConverter(response -> "" + response.temp() + response.unit())

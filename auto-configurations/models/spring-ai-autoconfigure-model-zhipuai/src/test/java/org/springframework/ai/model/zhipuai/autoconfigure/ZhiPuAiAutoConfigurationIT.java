@@ -27,6 +27,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
@@ -58,8 +59,8 @@ public class ZhiPuAiAutoConfigurationIT {
 	void generate() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class)).run(context -> {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
-			String response = chatModel.call("Hello");
-			assertThat(response).isNotEmpty();
+			ChatResponse response = chatModel.call(new Prompt("Hello", ChatOptions.builder().build()));
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			logger.info("Response: " + response);
 		});
 	}
@@ -68,7 +69,8 @@ public class ZhiPuAiAutoConfigurationIT {
 	void generateStreaming() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class)).run(context -> {
 			ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
-			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
+			Flux<ChatResponse> responseFlux = chatModel
+				.stream(new Prompt(new UserMessage("Hello"), ChatOptions.builder().build()));
 			String response = responseFlux.collectList()
 				.block()
 				.stream()

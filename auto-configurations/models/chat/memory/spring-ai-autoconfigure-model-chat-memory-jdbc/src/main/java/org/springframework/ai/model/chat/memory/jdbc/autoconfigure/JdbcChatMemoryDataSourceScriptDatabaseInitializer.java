@@ -25,6 +25,11 @@ import org.springframework.boot.jdbc.init.PlatformPlaceholderDatabaseDriverResol
 import org.springframework.boot.sql.init.DatabaseInitializationMode;
 import org.springframework.boot.sql.init.DatabaseInitializationSettings;
 
+/**
+ * Performs database initialization for the JDBC Chat Memory Repository.
+ *
+ * @since 1.0.0
+ */
 class JdbcChatMemoryDataSourceScriptDatabaseInitializer extends DataSourceScriptDatabaseInitializer {
 
 	private static final String SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql";

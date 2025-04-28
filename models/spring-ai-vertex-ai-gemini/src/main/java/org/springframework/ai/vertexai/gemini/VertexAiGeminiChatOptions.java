@@ -30,7 +30,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
@@ -101,7 +100,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	 * completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
      * Collection of tool names to be resolved at runtime and used for tool calling in the
@@ -234,42 +233,15 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@JsonIgnore
-	@Deprecated
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.getToolCallbacks();
-	}
-
-	@Override
-	@JsonIgnore
-	@Deprecated
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.setToolCallbacks(functionCallbacks);
-	}
-
-	@Override
-	public List<FunctionCallback> getToolCallbacks() {
+	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
-	@JsonIgnore
-	@Deprecated
-	public Set<String> getFunctions() {
-		return this.getToolNames();
-	}
-
-	@JsonIgnore
-	@Deprecated
-	public void setFunctions(Set<String> functions) {
-		this.setToolNames(functions);
 	}
 
 	@Override
@@ -323,19 +295,6 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	public void setSafetySettings(List<VertexAiGeminiSafetySetting> safetySettings) {
 		Assert.notNull(safetySettings, "safetySettings must not be null");
 		this.safetySettings = safetySettings;
-	}
-
-	@Deprecated
-	@Override
-	@JsonIgnore
-	public Boolean getProxyToolCalls() {
-		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
-	}
-
-	@Deprecated
-	@JsonIgnore
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
 	}
 
 	@Override
@@ -447,17 +406,12 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		@Deprecated
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return toolCallbacks(functionCallbacks);
-		}
-
-		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.options.toolCallbacks = toolCallbacks;
 			return this;
 		}
 
-		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
