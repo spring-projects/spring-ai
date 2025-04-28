@@ -17,7 +17,6 @@
 package org.springframework.ai.tool;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.lang.Nullable;
@@ -28,7 +27,7 @@ import org.springframework.lang.Nullable;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface ToolCallback extends FunctionCallback {
+public interface ToolCallback {
 
 	/**
 	 * Definition used by the AI model to determine when and how to call the tool.
@@ -57,24 +56,6 @@ public interface ToolCallback extends FunctionCallback {
 			throw new UnsupportedOperationException("Tool context is not supported!");
 		}
 		return call(toolInput);
-	}
-
-	@Override
-	@Deprecated // Call getToolDefinition().name() instead
-	default String getName() {
-		return getToolDefinition().name();
-	}
-
-	@Override
-	@Deprecated // Call getToolDefinition().description() instead
-	default String getDescription() {
-		return getToolDefinition().description();
-	}
-
-	@Override
-	@Deprecated // Call getToolDefinition().inputTypeSchema() instead
-	default String getInputTypeSchema() {
-		return getToolDefinition().inputSchema();
 	}
 
 }

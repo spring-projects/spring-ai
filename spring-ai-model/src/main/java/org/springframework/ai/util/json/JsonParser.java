@@ -112,7 +112,7 @@ public final class JsonParser {
 
 	/**
 	 * Convert a Java Object to a typed Object. Based on the implementation in
-	 * MethodInvokingFunctionCallback.
+	 * MethodToolCallback.
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Object toTypedObject(Object value, Class<?> type) {

@@ -18,7 +18,7 @@ Your function can in turn invoke other 3rd party services to provide the results
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/tool/ToolCallback.java[ToolCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 == How it works
 
@@ -70,7 +70,7 @@ We start by describing the most POJO-friendly options.
 
 In this approach, you define a `@Bean` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `ToolCallback` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 [source,java]
@@ -115,7 +115,7 @@ The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurati
 TIP: The Mistral AI link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai/src/test/java/org/springframework/ai/model/mistralai/autoconfigure/tool/PaymentStatusBeanOpenAiIT.java[PaymentStatusBeanOpenAiIT] implements the same function using the OpenAI API.
 Mistral AI is almost identical to OpenAI in this regard.
 
-==== FunctionCallback Wrapper
+==== ToolCallback Wrapper
 
 Another way to register a function is to create a `FunctionToolCallback` like this:
 
@@ -141,7 +141,7 @@ It also provides a description (2) and the function signature (3) to let the mod
 
 NOTE: By default, the response converter performs a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionToolCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 

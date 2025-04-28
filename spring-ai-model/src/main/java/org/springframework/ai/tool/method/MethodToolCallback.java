@@ -129,7 +129,7 @@ public final class MethodToolCallback implements ToolCallback {
 		});
 	}
 
-	// Based on the implementation in MethodInvokingFunctionCallback.
+	// Based on the implementation in MethodToolCallback.
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
 		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
 			if (parameter.getType().isAssignableFrom(ToolContext.class)) {

@@ -33,7 +33,6 @@
 **** xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Function Calling (Deprecated)]
 *** xref:api/chat/qianfan-chat.adoc[QianFan]
 *** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]
-// **** xref:api/chat/functions/zhipuai-chat-functions.adoc[Function Calling]
 *** xref:api/chat/watsonx-ai-chat.adoc[watsonx.AI]
 ** xref:api/embeddings.adoc[Embedding Models]
 *** xref:api/bedrock.adoc[Amazon Bedrock]
@@ -107,7 +106,6 @@
 ** xref:api/prompt.adoc[]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
-* xref:api/functions.adoc[Function Calling (Deprecated)]
 
 
 * Service Connections

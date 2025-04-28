@@ -31,14 +31,14 @@ import org.springframework.util.Assert;
  *
  * <p>
  * Example usage: <pre>{@code
- * FunctionCallback callback1 = new MyFunctionCallback();
- * FunctionCallback callback2 = new AnotherFunctionCallback();
+ * ToolCallback callback1 = new MyFunctionCallback();
+ * ToolCallback callback2 = new AnotherFunctionCallback();
  *
  * // Create provider with varargs constructor
  * ToolCallbackProvider provider1 = new StaticToolCallbackProvider(callback1, callback2);
  *
  * // Or create provider with List constructor
- * List<FunctionCallback> callbacks = Arrays.asList(callback1, callback2);
+ * List<ToolCallback> callbacks = Arrays.asList(callback1, callback2);
  * ToolCallbackProvider provider2 = new StaticToolCallbackProvider(callbacks);
  * }</pre>
  *

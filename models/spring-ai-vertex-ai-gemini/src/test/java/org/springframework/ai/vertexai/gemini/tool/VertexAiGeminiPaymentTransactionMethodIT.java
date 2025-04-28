@@ -223,10 +223,10 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 				List<ToolCallbackProvider> tcps, List<ToolCallback> toolCallbacks,
 				ObjectProvider<ObservationRegistry> observationRegistry) {
 
-			List<ToolCallback> allFunctionCallbacks = new ArrayList(toolCallbacks);
-			tcps.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionCallbacks::addAll);
+			List<ToolCallback> allToolCallbacks = new ArrayList(toolCallbacks);
+			tcps.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allToolCallbacks::addAll);
 
-			var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionCallbacks);
+			var staticToolCallbackResolver = new StaticToolCallbackResolver(allToolCallbacks);
 
 			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
 				.applicationContext(applicationContext)
