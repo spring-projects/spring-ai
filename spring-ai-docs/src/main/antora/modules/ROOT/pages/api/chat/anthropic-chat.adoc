@@ -182,7 +182,7 @@ Below is a simple code example extracted from https://github.com/spring-projects
 
 [source,java]
 ----
-byte[] imageData = new ClassPathResource("/multimodal.test.png").getContentAsByteArray();
+var imageData = new ClassPathResource("/multimodal.test.png");
 
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         List.of(new Media(MimeTypeUtils.IMAGE_PNG, this.imageData)));
