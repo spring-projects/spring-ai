@@ -221,7 +221,7 @@ or the image URL equivalent using the `gpt-4o` model:
 ----
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG,
-                "https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"));
+                URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png")));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
         OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
