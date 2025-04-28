@@ -113,16 +113,4 @@ public class VertexAiGeminiChatAutoConfiguration {
 		return chatModel;
 	}
 
-	/**
-	 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
-	 * different from the other JSON schema types.
-	 */
-	// private FunctionCallbackResolver springAiFunctionManager(ApplicationContext
-	// context) {
-	// DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-	// manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
-	// manager.setApplicationContext(context);
-	// return manager;
-	// }
-
 }

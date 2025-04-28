@@ -75,24 +75,26 @@ class ToolCallingAutoConfigurationTests {
 				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
 
 				assertThat(toolCallbackResolver.resolve("getForecast")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getForecast").getName()).isEqualTo("getForecast");
+				assertThat(toolCallbackResolver.resolve("getForecast").getToolDefinition().name())
+					.isEqualTo("getForecast");
 
 				assertThat(toolCallbackResolver.resolve("getAlert")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getAlert").getName()).isEqualTo("getAlert");
+				assertThat(toolCallbackResolver.resolve("getAlert").getToolDefinition().name()).isEqualTo("getAlert");
 
 				assertThat(toolCallbackResolver.resolve("weatherFunction1")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("weatherFunction1").getName()).isEqualTo("weatherFunction1");
+				assertThat(toolCallbackResolver.resolve("weatherFunction1").getToolDefinition().name())
+					.isEqualTo("weatherFunction1");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather3")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather3").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather3").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather3");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather4")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather4").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather4").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather4");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather5")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather5").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather5").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather5");
 			});
 	}

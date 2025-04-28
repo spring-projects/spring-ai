@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Description
 
 
-class FunctionCallbackKotlinIT : BaseOllamaIT() {
+class ToolCallbackKotlinIT : BaseOllamaIT() {
 
 	companion object {
 
@@ -46,7 +46,7 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 		}
 	}
 
-	private val logger = LoggerFactory.getLogger(FunctionCallbackKotlinIT::class.java)
+	private val logger = LoggerFactory.getLogger(ToolCallbackKotlinIT::class.java)
 
 	private val contextRunner = ApplicationContextRunner()
 		.withPropertyValues(
@@ -59,7 +59,7 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 		.withUserConfiguration(Config::class.java)
 
 	@Test
-	fun functionCallTest() {
+	fun toolCallTest() {
 		this.contextRunner.run {context ->
 
 			val chatModel = context.getBean(OllamaChatModel::class.java)

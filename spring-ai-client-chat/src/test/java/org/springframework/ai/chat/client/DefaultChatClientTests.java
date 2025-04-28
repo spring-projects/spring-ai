@@ -1491,8 +1491,6 @@ class DefaultChatClientTests {
 		assertThat(defaultSpec.getToolCallbacks()).contains(toolCallback);
 	}
 
-	// FunctionCallback.builder().description("description").function(null,input->"hello").inputType(String.class).build()
-
 	@Test
 	void whenFunctionNameIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
@@ -1544,7 +1542,8 @@ class DefaultChatClientTests {
 			.description("description")
 			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getToolCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+		assertThat(defaultSpec.getToolCallbacks())
+			.anyMatch(callback -> callback.getToolDefinition().name().equals("name"));
 	}
 
 	@Test
@@ -1556,7 +1555,8 @@ class DefaultChatClientTests {
 			.description("description")
 			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getToolCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+		assertThat(defaultSpec.getToolCallbacks())
+			.anyMatch(callback -> callback.getToolDefinition().name().equals("name"));
 	}
 
 	@Test
@@ -1610,7 +1610,8 @@ class DefaultChatClientTests {
 			.inputType(String.class)
 			.build());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getToolCallbacks()).anyMatch(callback -> callback.getName().equals("name"));
+		assertThat(defaultSpec.getToolCallbacks())
+			.anyMatch(callback -> callback.getToolDefinition().name().equals("name"));
 	}
 
 	@Test
@@ -1632,7 +1633,7 @@ class DefaultChatClientTests {
 	}
 
 	@Test
-	void whenFunctionCallbacksElementIsNullThenThrow() {
+	void whenFunctionToolCallbacksElementIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		assertThatThrownBy(() -> spec.tools(mock(FunctionToolCallback.class), null))
@@ -1641,7 +1642,7 @@ class DefaultChatClientTests {
 	}
 
 	@Test
-	void whenFunctionCallbacksThenReturn() {
+	void whenFunctionToolCallbacksThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		FunctionToolCallback functionToolCallback = mock(FunctionToolCallback.class);
