@@ -43,6 +43,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -112,7 +113,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
-			.provider(OllamaApi.PROVIDER_NAME)
+			.provider(OllamaApiConstants.PROVIDER_NAME)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
