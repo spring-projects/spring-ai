@@ -23,8 +23,6 @@ import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -38,7 +36,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -83,7 +80,7 @@ public class MistralAiChatAutoConfiguration {
 			.defaultOptions(chatProperties.getOptions())
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(mistralAiToolExecutionEligibilityPredicate
-				.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
+				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
 			.retryTemplate(retryTemplate)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
@@ -103,14 +100,6 @@ public class MistralAiChatAutoConfiguration {
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
 		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setApplicationContext(context);
-		return manager;
 	}
 
 }
