@@ -97,7 +97,7 @@ spring:
       mongodb:
         initialize-schema: true
         collection-name: custom_vector_store
-        vector-index-name: custom_vector_index
+        index-name: custom_vector_index
         path-name: custom_embedding
         metadata-fields-to-filter: author,year
 ----
@@ -110,7 +110,7 @@ Properties starting with `spring.ai.vectorstore.mongodb.*` are used to configure
 
 |`spring.ai.vectorstore.mongodb.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.mongodb.collection-name` | The name of the collection to store the vectors | `vector_store`
-|`spring.ai.vectorstore.mongodb.vector-index-name` | The name of the vector search index | `vector_index`
+|`spring.ai.vectorstore.mongodb.index-name` | The name of the vector search index | `vector_index`
 |`spring.ai.vectorstore.mongodb.path-name` | The path where vectors are stored | `embedding`
 |`spring.ai.vectorstore.mongodb.metadata-fields-to-filter` | Comma-separated list of metadata fields that can be used for filtering | empty list
 |===
