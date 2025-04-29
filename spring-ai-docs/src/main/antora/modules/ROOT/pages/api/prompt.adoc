@@ -141,6 +141,24 @@ public interface TemplateRenderer extends BiFunction<String, Map<String, Object>
 }
 ----
 
+Spring AI uses the `TemplateRenderer` interface to handle the actual substitution of variables into the template string.
+The default implementation uses <<StringTemplate>>.
+You can provide your own implementation of `TemplateRenderer` if you need custom logic.
+For scenarios where no template rendering is required (e.g., the template string is already complete), you can use the provided `NoOpTemplateRenderer`.
+
+.Example using a custom StringTemplate renderer with '<' and '>' delimiters
+[source,java]
+----
+PromptTemplate promptTemplate = PromptTemplate.builder()
+    .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .template("""
+            Tell me the names of 5 movies whose soundtrack was composed by <composer>.
+            """)
+    .build();
+
+String prompt = promptTemplate.render(Map.of("composer", "John Williams"));
+----
+
 The interfaces implemented by this class support different aspects of prompt creation:
 
 `PromptTemplateStringActions` focuses on creating and rendering prompt strings, representing the most basic form of prompt generation.
