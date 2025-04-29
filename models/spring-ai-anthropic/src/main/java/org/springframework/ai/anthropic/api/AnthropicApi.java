@@ -1099,8 +1099,11 @@ public class AnthropicApi {
 
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
-		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
-				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text") })
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
+				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text"),
+				@JsonSubTypes.Type(value = ContentBlockThinking.class, name = "thinking")
+		})
 		public interface ContentBlockBody {
 			String type();
 		}
@@ -1130,6 +1133,19 @@ public class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockBody {
 		}
+
+		/**
+		 * Thinking content block.
+		 * @param type The content block type.
+		 * @param thinking The thinking content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ContentBlockThinking(
+			@JsonProperty("type") String type,
+			@JsonProperty("thinking") String thinking,
+			@JsonProperty("signature") String signature) implements ContentBlockBody {
+		}
+		
 	}
 	// @formatter:on
 
