@@ -51,7 +51,7 @@ import org.springframework.util.CollectionUtils;
  * // Get all available tools
  * ToolCallback[] tools = provider.getToolCallbacks();
  * }</pre>
- *
+ * <p>
  * Example usage with multiple clients:
  *
  * <pre>{@code
@@ -63,10 +63,10 @@ import org.springframework.util.CollectionUtils;
  * }</pre>
  *
  * @author Christian Tzolov
- * @since 1.0.0
  * @see ToolCallbackProvider
  * @see SyncMcpToolCallback
  * @see McpSyncClient
+ * @since 1.0.0
  */
 
 public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
@@ -130,17 +130,13 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 */
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-
-		var toolCallbacks = new ArrayList<>();
-
-		this.mcpClients.stream()
-			.forEach(mcpClient -> toolCallbacks.addAll(mcpClient.listTools()
+		var array = this.mcpClients.stream()
+			.flatMap(mcpClient -> mcpClient.listTools()
 				.tools()
 				.stream()
 				.filter(tool -> this.toolFilter.test(mcpClient, tool))
-				.map(tool -> new SyncMcpToolCallback(mcpClient, tool))
-				.toList()));
-		var array = toolCallbacks.toArray(new ToolCallback[0]);
+				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
+			.toArray(ToolCallback[]::new);
 		validateToolCallbacks(array);
 		return array;
 	}
