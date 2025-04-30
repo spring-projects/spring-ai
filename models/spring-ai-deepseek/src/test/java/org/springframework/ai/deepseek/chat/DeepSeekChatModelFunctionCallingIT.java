@@ -95,9 +95,9 @@ class DeepSeekChatModelFunctionCallingIT {
 		var promptOptions = DeepSeekChatOptions.builder()
 			.model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-					.description("Get the weather in location")
-					.inputType(MockWeatherService.Request.class)
-					.build()))
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
@@ -117,9 +117,9 @@ class DeepSeekChatModelFunctionCallingIT {
 
 		var promptOptions = DeepSeekChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
-					.description("Get the weather in location")
-					.inputType(MockWeatherService.Request.class)
-					.build()))
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));

@@ -30,9 +30,9 @@ public class DeepSeekChatCompletionRequestTests {
 	public void createRequestWithChatOptions() {
 
 		var client = DeepSeekChatModel.builder()
-				.deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build())
-				.defaultOptions(DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
-				.build();
+			.deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build())
+			.defaultOptions(DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
+			.build();
 
 		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
 

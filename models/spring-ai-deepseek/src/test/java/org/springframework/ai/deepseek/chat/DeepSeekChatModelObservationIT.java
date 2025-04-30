@@ -171,8 +171,7 @@ public class DeepSeekChatModelObservationIT {
 		public DeepSeekChatModel deepSeekChatModel(DeepSeekApi deepSeekApi,
 				TestObservationRegistry observationRegistry) {
 			return new DeepSeekChatModel(deepSeekApi, DeepSeekChatOptions.builder().build(),
-					ToolCallingManager.builder().build(), RetryTemplate.defaultInstance(),
-					observationRegistry);
+					ToolCallingManager.builder().build(), RetryTemplate.defaultInstance(), observationRegistry);
 		}
 
 	}

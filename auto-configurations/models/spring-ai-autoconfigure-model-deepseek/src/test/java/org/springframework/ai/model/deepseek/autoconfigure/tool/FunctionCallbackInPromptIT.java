@@ -42,7 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Geng Rong
  */
-//@Disabled("the deepseek-chat model's Function Calling capability is unstable see: https://api-docs.deepseek.com/guides/function_calling")
+// @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
+// https://api-docs.deepseek.com/guides/function_calling")
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
 public class FunctionCallbackInPromptIT {
 
@@ -62,11 +63,10 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = DeepSeekChatOptions.builder()
-				.toolCallbacks(
-					List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
-							.description("Get the weather in location")
-							.inputType(MockWeatherService.Request.class)
-							.build()))
+				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build()))
 				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
@@ -88,12 +88,11 @@ public class FunctionCallbackInPromptIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			var promptOptions = DeepSeekChatOptions.builder()
-					.toolCallbacks(
-							List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
-									.description("Get the weather in location")
-									.inputType(MockWeatherService.Request.class)
-									.build()))
-					.build();
+				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build()))
+				.build();
 
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
 

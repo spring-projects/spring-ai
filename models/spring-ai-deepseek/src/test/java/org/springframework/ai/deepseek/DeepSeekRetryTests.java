@@ -61,10 +61,11 @@ public class DeepSeekRetryTests {
 		retryTemplate.registerListener(this.retryListener);
 
 		this.chatModel = DeepSeekChatModel.builder()
-				.deepSeekApi(this.deepSeekApi)
-				.defaultOptions(DeepSeekChatOptions.builder().build())
-				.retryTemplate(retryTemplate)
-				.build();;
+			.deepSeekApi(this.deepSeekApi)
+			.defaultOptions(DeepSeekChatOptions.builder().build())
+			.retryTemplate(retryTemplate)
+			.build();
+		;
 	}
 
 	@Test

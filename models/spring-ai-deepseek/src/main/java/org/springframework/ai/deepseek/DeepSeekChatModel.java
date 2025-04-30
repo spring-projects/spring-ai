@@ -89,7 +89,6 @@ public class DeepSeekChatModel implements ChatModel {
 	 */
 	private final ObservationRegistry observationRegistry;
 
-
 	/**
 	 * The tool calling manager used to execute tools.
 	 */
@@ -106,15 +105,16 @@ public class DeepSeekChatModel implements ChatModel {
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions, ToolCallingManager toolCallingManager,
-						   RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		this(deepSeekApi, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
 				new DefaultToolExecutionEligibilityPredicate());
 	}
 
-	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions, ToolCallingManager toolCallingManager,
-						   RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
-						   ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+	public DeepSeekChatModel(DeepSeekApi deepSeekApi, DeepSeekChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 		Assert.notNull(deepSeekApi, "deepSeekApi cannot be null");
 		Assert.notNull(defaultOptions, "defaultOptions cannot be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager cannot be null");
@@ -194,9 +194,9 @@ public class DeepSeekChatModel implements ChatModel {
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
 				return ChatResponse.builder()
-						.from(response)
-						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-						.build();
+					.from(response)
+					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					.build();
 			}
 			else {
 				// Send the tool execution result back to the model.
@@ -295,7 +295,6 @@ public class DeepSeekChatModel implements ChatModel {
 			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
-
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 
@@ -425,12 +424,12 @@ public class DeepSeekChatModel implements ChatModel {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
 				toolMessage.getResponses()
-						.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
+					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
 				return toolMessage.getResponses()
-						.stream()
-						.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-								tr.id(), null))
-						.toList();
+					.stream()
+					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
+							tr.id(), null))
+					.toList();
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
@@ -501,9 +500,9 @@ public class DeepSeekChatModel implements ChatModel {
 		private DeepSeekApi deepSeekApi;
 
 		private DeepSeekChatOptions defaultOptions = DeepSeekChatOptions.builder()
-				.model(DeepSeekApi.DEFAULT_CHAT_MODEL)
-				.temperature(0.7)
-				.build();
+			.model(DeepSeekApi.DEFAULT_CHAT_MODEL)
+			.temperature(0.7)
+			.build();
 
 		private ToolCallingManager toolCallingManager;
 

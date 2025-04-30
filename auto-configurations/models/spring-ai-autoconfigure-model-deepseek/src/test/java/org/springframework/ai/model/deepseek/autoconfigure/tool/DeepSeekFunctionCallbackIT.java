@@ -48,17 +48,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Geng Rong
  */
-//@Disabled("the deepseek-chat model's Function Calling capability is unstable see: https://api-docs.deepseek.com/guides/function_calling")
+// @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
+// https://api-docs.deepseek.com/guides/function_calling")
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
 public class DeepSeekFunctionCallbackIT {
 
 	private final Logger logger = LoggerFactory.getLogger(DeepSeekFunctionCallbackIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"))
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, DeepSeekAutoConfiguration.class))
-			.withUserConfiguration(Config.class);
+		.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+				RestClientAutoConfiguration.class, DeepSeekAutoConfiguration.class))
+		.withUserConfiguration(Config.class);
 
 	@Test
 	void functionCallTest() {
@@ -70,8 +71,7 @@ public class DeepSeekFunctionCallbackIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			ChatResponse response = chatModel
-					.call(new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().toolNames("WeatherInfo").build()));
-
+				.call(new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().toolNames("WeatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -89,18 +89,18 @@ public class DeepSeekFunctionCallbackIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
-			Flux<ChatResponse> response = chatModel
-					.stream(new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().toolNames("WeatherInfo").build()));
+			Flux<ChatResponse> response = chatModel.stream(
+					new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().toolNames("WeatherInfo").build()));
 
 			String content = response.collectList()
-					.block()
-					.stream()
-					.map(ChatResponse::getResults)
-					.flatMap(List::stream)
-					.map(Generation::getOutput)
-					.map(AssistantMessage::getText)
-					.filter(Objects::nonNull)
-					.collect(Collectors.joining());
+				.block()
+				.stream()
+				.map(ChatResponse::getResults)
+				.flatMap(List::stream)
+				.map(Generation::getOutput)
+				.map(AssistantMessage::getText)
+				.filter(Objects::nonNull)
+				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
@@ -117,9 +117,9 @@ public class DeepSeekFunctionCallbackIT {
 		public ToolCallback weatherFunctionInfo() {
 
 			return FunctionToolCallback.builder("WeatherInfo", new MockWeatherService())
-					.description("Get the weather in location")
-					.inputType(MockWeatherService.Request.class)
-					.build();
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 	}

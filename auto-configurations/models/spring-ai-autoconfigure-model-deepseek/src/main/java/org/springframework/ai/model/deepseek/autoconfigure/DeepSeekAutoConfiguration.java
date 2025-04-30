@@ -63,52 +63,53 @@ public class DeepSeekAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public DeepSeekChatModel deepSeekChatModel(DeepSeekConnectionProperties commonProperties,
-											 DeepSeekChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-											 ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
-											 RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
-											 ObjectProvider<ObservationRegistry> observationRegistry,
-											 ObjectProvider<ChatModelObservationConvention> observationConvention,
-											 ObjectProvider<ToolExecutionEligibilityPredicate> deepseekToolExecutionEligibilityPredicate) {
+			DeepSeekChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention,
+			ObjectProvider<ToolExecutionEligibilityPredicate> deepseekToolExecutionEligibilityPredicate) {
 
 		var deepSeekApi = deepSeekApi(chatProperties, commonProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		var chatModel = DeepSeekChatModel.builder()
-				.deepSeekApi(deepSeekApi)
-				.defaultOptions(chatProperties.getOptions())
-				.toolCallingManager(toolCallingManager)
-				.toolExecutionEligibilityPredicate(
-						deepseekToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
-				.retryTemplate(retryTemplate)
-				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-				.build();
+			.deepSeekApi(deepSeekApi)
+			.defaultOptions(chatProperties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.toolExecutionEligibilityPredicate(deepseekToolExecutionEligibilityPredicate
+				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
 	}
 
-	private DeepSeekApi deepSeekApi(DeepSeekChatProperties chatProperties, DeepSeekConnectionProperties commonProperties,
-								RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-								ResponseErrorHandler responseErrorHandler) {
+	private DeepSeekApi deepSeekApi(DeepSeekChatProperties chatProperties,
+			DeepSeekConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
-
-		String resolvedBaseUrl = StringUtils.hasText(chatProperties.getBaseUrl()) ? chatProperties.getBaseUrl() : commonProperties.getBaseUrl();
+		String resolvedBaseUrl = StringUtils.hasText(chatProperties.getBaseUrl()) ? chatProperties.getBaseUrl()
+				: commonProperties.getBaseUrl();
 		Assert.hasText(resolvedBaseUrl, "DeepSeek base URL must be set");
 
-		String resolvedApiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey() : commonProperties.getApiKey();
+		String resolvedApiKey = StringUtils.hasText(chatProperties.getApiKey()) ? chatProperties.getApiKey()
+				: commonProperties.getApiKey();
 		Assert.hasText(resolvedApiKey, "DeepSeek API key must be set");
 
 		return DeepSeekApi.builder()
-				.baseUrl(resolvedBaseUrl)
-				.apiKey(new SimpleApiKey(resolvedApiKey))
-				.completionsPath(chatProperties.getCompletionsPath())
-				.betaPrefixPath(chatProperties.getBetaPrefixPath())
-				.restClientBuilder(restClientBuilder)
-				.webClientBuilder(webClientBuilder)
-				.responseErrorHandler(responseErrorHandler)
-				.build();
+			.baseUrl(resolvedBaseUrl)
+			.apiKey(new SimpleApiKey(resolvedApiKey))
+			.completionsPath(chatProperties.getCompletionsPath())
+			.betaPrefixPath(chatProperties.getBetaPrefixPath())
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

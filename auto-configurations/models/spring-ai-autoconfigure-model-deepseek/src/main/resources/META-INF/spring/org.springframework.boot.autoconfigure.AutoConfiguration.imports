@@ -13,6 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiChatAutoConfiguration
-org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiEmbeddingAutoConfiguration
-org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiImageAutoConfiguration
+org.springframework.ai.model.deepseek.autoconfigure.DeepSeekAutoConfiguration

@@ -47,7 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  */
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
-//@Disabled("the deepseek-chat model's Function Calling capability is unstable see: https://api-docs.deepseek.com/guides/function_calling")
+// @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
+// https://api-docs.deepseek.com/guides/function_calling")
 class FunctionCallbackWithPlainFunctionBeanIT {
 
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackWithPlainFunctionBeanIT.class);
@@ -96,8 +97,8 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 					"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius");
 
 			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
-					.toolNames("weatherFunction")
-					.build();
+				.toolNames("weatherFunction")
+				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
