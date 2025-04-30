@@ -47,7 +47,8 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	private final ChatOptions chatOptions;
+	@Nullable
+	private ChatOptions chatOptions;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -58,26 +59,26 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt(List<Message> messages) {
-		this(messages, ChatOptions.builder().build());
+		this(messages, null);
 	}
 
 	public Prompt(Message... messages) {
-		this(Arrays.asList(messages), ChatOptions.builder().build());
+		this(Arrays.asList(messages), null);
 	}
 
-	public Prompt(String contents, ChatOptions chatOptions) {
+	public Prompt(String contents, @Nullable ChatOptions chatOptions) {
 		this(new UserMessage(contents), chatOptions);
 	}
 
-	public Prompt(Message message, ChatOptions chatOptions) {
+	public Prompt(Message message, @Nullable ChatOptions chatOptions) {
 		this(Collections.singletonList(message), chatOptions);
 	}
 
-	public Prompt(List<Message> messages, ChatOptions chatOptions) {
+	public Prompt(List<Message> messages, @Nullable ChatOptions chatOptions) {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 		this.messages = messages;
-		this.chatOptions = (chatOptions != null) ? chatOptions : ChatOptions.builder().build();
+		this.chatOptions = chatOptions;
 	}
 
 	public String getContents() {
@@ -89,6 +90,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	@Override
+	@Nullable
 	public ChatOptions getOptions() {
 		return this.chatOptions;
 	}
@@ -134,7 +136,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), this.chatOptions.copy());
+		return new Prompt(instructionsCopy(), null == this.chatOptions ? null : this.chatOptions.copy());
 	}
 
 	private List<Message> instructionsCopy() {
@@ -196,7 +198,9 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	public Builder mutate() {
 		Builder builder = new Builder().messages(instructionsCopy());
-		builder.chatOptions(this.chatOptions.copy());
+		if (this.chatOptions != null) {
+			builder.chatOptions(this.chatOptions.copy());
+		}
 		return builder;
 	}
 
