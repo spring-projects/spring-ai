@@ -49,7 +49,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class DefaultToolCallingManager implements ToolCallingManager {
+public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallingManager.class);
 
