@@ -36,6 +36,7 @@ import com.azure.ai.openai.models.ChatCompletionsFunctionToolDefinitionFunction;
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsOptions;
 import com.azure.ai.openai.models.ChatCompletionsResponseFormat;
+import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import com.azure.ai.openai.models.ChatCompletionsTextResponseFormat;
 import com.azure.ai.openai.models.ChatCompletionsToolCall;
 import com.azure.ai.openai.models.ChatCompletionsToolDefinition;
@@ -496,8 +497,9 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 		options = this.merge(options, this.defaultOptions);
 
+		AzureOpenAiChatOptions updatedRuntimeOptions;
+
 		if (prompt.getOptions() != null) {
-			AzureOpenAiChatOptions updatedRuntimeOptions;
 			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
 						ToolCallingChatOptions.class, AzureOpenAiChatOptions.class);
@@ -519,6 +521,18 @@ public class AzureOpenAiChatModel implements ChatModel {
 				.map(t -> ((ChatCompletionsToolDefinition) t))
 				.toList();
 			options.setTools(tools2);
+		}
+
+		Boolean enableStreamUsage =
+				(prompt.getOptions() instanceof AzureOpenAiChatOptions azureOpenAiChatOptions
+						&& azureOpenAiChatOptions.getStreamUsage() != null)
+						? azureOpenAiChatOptions.getStreamUsage()
+						: this.defaultOptions.getStreamUsage();
+
+		if (Boolean.TRUE.equals(enableStreamUsage) && options.getStreamOptions() == null) {
+			ChatCompletionsOptionsAccessHelper.setStreamOptions(
+					options, new ChatCompletionStreamOptions().setIncludeUsage(true)
+			);
 		}
 
 		return options;
@@ -644,6 +658,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setStreamUsage(ModelOptionsUtils.mergeOption(runtimeOptions.getStreamUsage(),
+					this.defaultOptions.getStreamUsage()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -653,6 +669,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setStreamUsage(this.defaultOptions.getStreamUsage());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());

@@ -175,7 +175,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getUser()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
-		assertThat(options.getStreamUsage()).isFalse();
+		assertThat(options.getStreamUsage()).isNull();
 		assertThat(options.getSeed()).isNull();
 		assertThat(options.isLogprobs()).isNull();
 		assertThat(options.getTopLogProbs()).isNull();
