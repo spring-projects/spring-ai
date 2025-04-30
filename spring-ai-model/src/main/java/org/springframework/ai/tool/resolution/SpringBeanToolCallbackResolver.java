@@ -16,8 +16,6 @@
 
 package org.springframework.ai.tool.resolution;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -56,11 +54,9 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
+public class SpringBeanToolCallbackResolver extends CachableToolCallbackResolver {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringBeanToolCallbackResolver.class);
-
-	private static final Map<String, ToolCallback> toolCallbacksCache = new HashMap<>();
 
 	private static final SchemaType DEFAULT_SCHEMA_TYPE = SchemaType.JSON_SCHEMA;
 
@@ -77,16 +73,10 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 	}
 
 	@Override
-	public ToolCallback resolve(String toolName) {
+	public ToolCallback uncachedResolve(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 
 		logger.debug("ToolCallback resolution attempt from Spring application context");
-
-		ToolCallback resolvedToolCallback = toolCallbacksCache.get(toolName);
-
-		if (resolvedToolCallback != null) {
-			return resolvedToolCallback;
-		}
 
 		ResolvableType toolType = TypeResolverHelper.resolveBeanType(this.applicationContext, toolName);
 		ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
@@ -94,12 +84,7 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 
 		String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
 		Object bean = this.applicationContext.getBean(toolName);
-
-		resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
-
-		toolCallbacksCache.put(toolName, resolvedToolCallback);
-
-		return resolvedToolCallback;
+		return buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
 	}
 
 	public SchemaType getSchemaType() {
