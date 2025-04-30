@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.util;
+package org.springframework.ai.rag.util;
 
 import java.util.ArrayList;
 import java.util.List;
