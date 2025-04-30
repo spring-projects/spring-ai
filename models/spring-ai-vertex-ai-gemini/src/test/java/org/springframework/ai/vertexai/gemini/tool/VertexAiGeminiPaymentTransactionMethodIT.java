@@ -76,7 +76,7 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 	@Test
 	public void paymentStatuses() {
 
-		String content = this.chatClient.prompt().advisors(new LoggingAdvisor()).tools("paymentStatus").user("""
+		String content = this.chatClient.prompt().advisors(new LoggingAdvisor()).toolNames("paymentStatus").user("""
 				What is the status of my payment transactions 001, 002 and 003?
 				If requred invoke the function per transaction.
 				""").call().content();
@@ -91,7 +91,7 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new LoggingAdvisor())
-			.tools("paymentStatus")
+			.toolNames("paymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If requred invoke the function per transaction.

@@ -151,20 +151,20 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	@Override
-	public Builder defaultTools(String... toolNames) {
-		this.defaultRequest.tools(toolNames);
+	public Builder defaultToolNames(String... toolNames) {
+		this.defaultRequest.toolNames(toolNames);
 		return this;
 	}
 
 	@Override
-	public Builder defaultTools(ToolCallback... toolCallbacks) {
-		this.defaultRequest.tools(toolCallbacks);
+	public Builder defaultToolCallbacks(ToolCallback... toolCallbacks) {
+		this.defaultRequest.toolCallbacks(toolCallbacks);
 		return this;
 	}
 
 	@Override
-	public Builder defaultTools(List<ToolCallback> toolCallbacks) {
-		this.defaultRequest.tools(toolCallbacks);
+	public Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks) {
+		this.defaultRequest.toolCallbacks(toolCallbacks);
 		return this;
 	}
 
@@ -175,14 +175,15 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	@Override
-	public Builder defaultTools(ToolCallbackProvider... toolCallbackProviders) {
-		this.defaultRequest.tools(toolCallbackProviders);
+	public Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
+		this.defaultRequest.toolCallbacks(toolCallbackProviders);
 		return this;
 	}
 
 	@Deprecated // Use defaultTools()
 	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
-		this.defaultRequest.tools(FunctionToolCallback.builder(name, function).description(description).build());
+		this.defaultRequest
+			.toolCallbacks(FunctionToolCallback.builder(name, function).description(description).build());
 		return this;
 	}
 
@@ -203,7 +204,7 @@ public class DefaultChatClientBuilder implements Builder {
 
 	void addToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		this.defaultRequest.tools(toolCallbacks.toArray(ToolCallback[]::new));
+		this.defaultRequest.toolCallbacks(toolCallbacks.toArray(ToolCallback[]::new));
 	}
 
 	void addToolContext(Map<String, Object> toolContext) {

@@ -216,8 +216,8 @@ public class ChatClientTest {
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
-				.defaultTools("fun1", "fun2")
-				.defaultTools(FunctionToolCallback.builder("fun3", mockFunction)
+				.defaultToolNames("fun1", "fun2")
+				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
 						.inputType(String.class)
 						.build())
@@ -276,7 +276,7 @@ public class ChatClientTest {
 		// @formatter:off
 		chatClient = chatClient.mutate()
 				.defaultSystem("Mutated default system text {param1}, {param2}")
-				.defaultTools("fun4")
+				.defaultToolNames("fun4")
 				.defaultUser("Mutated default user text {uparam1}, {uparam2}")
 				.build();
 		// @formatter:on
@@ -346,8 +346,8 @@ public class ChatClientTest {
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
-				.defaultTools("fun1", "fun2")
-				.defaultTools(FunctionToolCallback.builder("fun3", mockFunction)
+				.defaultToolNames("fun1", "fun2")
+				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
 						.inputType(String.class)
 						.build())
@@ -363,7 +363,7 @@ public class ChatClientTest {
 					.system("New default system text {param1}, {param2}")
 					.user(u -> u.param("uparam1", "userValue1")
 						.param("uparam2", "userValue2"))
-					.tools("fun5")
+					.toolNames("fun5")
 				.mutate().build() // mutate and build new prompt
 				.prompt().call().content();
 		// @formatter:on
@@ -394,7 +394,7 @@ public class ChatClientTest {
 						.system("New default system text {param1}, {param2}")
 						.user(u -> u.param("uparam1", "userValue1")
 							.param("uparam2", "userValue2"))
-						.tools("fun5")
+						.toolNames("fun5")
 					.mutate().build() // mutate and build new prompt
 					.prompt().stream().content());
 		// @formatter:on
@@ -523,7 +523,7 @@ public class ChatClientTest {
 		// @formatter:off
 		ChatClient client = ChatClient.builder(this.chatModel)
 				.defaultSystem("System text")
-				.defaultTools("function1")
+				.defaultToolNames("function1")
 				.build();
 
 		String response = client.prompt()

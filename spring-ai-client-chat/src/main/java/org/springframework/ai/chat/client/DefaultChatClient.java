@@ -768,7 +768,7 @@ public class DefaultChatClient implements ChatClient {
 		public Builder mutate() {
 			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
 				.builder(this.chatModel, this.observationRegistry, this.observationConvention)
-				.defaultTools(StringUtils.toStringArray(this.toolNames));
+				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
 
 			if (StringUtils.hasText(this.userText)) {
 				builder.defaultUser(
@@ -834,7 +834,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(String... toolNames) {
+		public ChatClientRequestSpec toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
 			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
 			this.toolNames.addAll(List.of(toolNames));
@@ -842,7 +842,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(ToolCallback... toolCallbacks) {
+		public ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 			this.toolCallbacks.addAll(List.of(toolCallbacks));
@@ -850,7 +850,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(List<ToolCallback> toolCallbacks) {
+		public ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 			this.toolCallbacks.addAll(toolCallbacks);
@@ -866,7 +866,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders) {
+		public ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
 			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
 			Assert.noNullElements(toolCallbackProviders, "toolCallbackProviders cannot contain null elements");
 			for (ToolCallbackProvider toolCallbackProvider : toolCallbackProviders) {

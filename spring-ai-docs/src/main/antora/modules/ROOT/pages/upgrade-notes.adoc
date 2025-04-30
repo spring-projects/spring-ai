@@ -124,6 +124,13 @@ Prompt augmentedPrompt = originalPrompt.augmentUserMessage(userMessage ->
 
 This approach offers more control when you need to conditionally change parts of the `UserMessage` or work with its media and metadata, rather than just replacing the text content.
 
+* The overloaded `tools` methods in the `ChatClient` prompt builder API have been renamed for clarity and to avoid ambiguity in method dispatching based on argument types.
+
+*   `ChatClient.PromptRequestSpec#tools(String... toolNames)` has been renamed to `ChatClient.PromptRequestSpec#toolNames(String... toolNames)`. Use this method to specify the names of tool functions (registered elsewhere, e.g., via `@Bean` definitions with `@Description`) that the model is allowed to call.
+*   `ChatClient.PromptRequestSpec#tools(ToolCallback... toolCallbacks)` has been renamed to `ChatClient.PromptRequestSpec#toolCallbacks(ToolCallback... toolCallbacks)`. Use this method to provide inline `ToolCallback` instances, which include the function implementation, name, description, and input type definition.
+
+This change addresses potential confusion where the Java compiler might not select the intended overload based on the provided arguments.
+
 === Prompt Templating and Advisors
 
 Several classes and methods related to prompt creation and advisor customization have been deprecated in favor of more flexible approaches using the builder pattern and the `TemplateRenderer` interface.
