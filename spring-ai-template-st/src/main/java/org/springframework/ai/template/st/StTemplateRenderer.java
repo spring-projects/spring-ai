@@ -49,7 +49,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private static final ValidationMode DEFAULT_VALIDATION_MODE = ValidationMode.THROW;
 
-	private static final boolean DEFAULT_SKIP_BUILT_IN_FUNCTIONS_VALIDATION = false;
+	private static final boolean DEFAULT_SUPPORT_ST_FUNCTIONS = false;
 
 	private final char startDelimiterToken;
 
@@ -57,14 +57,14 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private final ValidationMode validationMode;
 
-	private final boolean skipBuiltInFunctionsValidation;
+	private final boolean supportStFunctions;
 
-	StTemplateRenderer(char startDelimiterToken, char endDelimiterToken, ValidationMode validationMode, boolean skipBuiltInFunctionsValidation) {
+	StTemplateRenderer(char startDelimiterToken, char endDelimiterToken, ValidationMode validationMode, boolean supportStFunctions) {
 		Assert.notNull(validationMode, "validationMode cannot be null");
 		this.startDelimiterToken = startDelimiterToken;
 		this.endDelimiterToken = endDelimiterToken;
 		this.validationMode = validationMode;
-		this.skipBuiltInFunctionsValidation = skipBuiltInFunctionsValidation;
+		this.supportStFunctions = supportStFunctions;
 	}
 
 	@Override
@@ -120,7 +120,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 					&& tokens.get(i + 1).getType() == STLexer.ID) {
 				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
 					String text = tokens.get(i + 1).getText();
-					if (!Compiler.funcs.containsKey(text) || !skipBuiltInFunctionsValidation) {
+					if (!Compiler.funcs.containsKey(text) || !supportStFunctions) {
 						inputVariables.add(text);
 						isInsideList = true;
 					}
@@ -130,7 +130,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 				isInsideList = false;
 			}
 			else if (!isInsideList && token.getType() == STLexer.ID) {
-				if (!Compiler.funcs.containsKey(token.getText()) || !skipBuiltInFunctionsValidation) {
+				if (!Compiler.funcs.containsKey(token.getText()) || !supportStFunctions) {
 					inputVariables.add(token.getText());
 				}
 			}
@@ -151,7 +151,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 		private ValidationMode validationMode = DEFAULT_VALIDATION_MODE;
 
-		private boolean skipBuiltInFunctionsValidation = DEFAULT_SKIP_BUILT_IN_FUNCTIONS_VALIDATION;
+		private boolean supportStFunctions = DEFAULT_SUPPORT_ST_FUNCTIONS;
 
 		private Builder() {
 		}
@@ -171,13 +171,13 @@ public class StTemplateRenderer implements TemplateRenderer {
 			return this;
 		}
 
-		public Builder skipBuiltInFunctionsValidation() {
-			this.skipBuiltInFunctionsValidation = true;
+		public Builder supportStFunctions() {
+			this.supportStFunctions = true;
 			return this;
 		}
 
 		public StTemplateRenderer build() {
-			return new StTemplateRenderer(startDelimiterToken, endDelimiterToken, validationMode, skipBuiltInFunctionsValidation);
+			return new StTemplateRenderer(startDelimiterToken, endDelimiterToken, validationMode, supportStFunctions);
 		}
 
 	}
