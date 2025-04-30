@@ -32,7 +32,15 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Renders a template using the StringTemplate (ST) library.
+ * Renders a template using the StringTemplate (ST) v4 library.
+ *
+ * <p>
+ * This renderer allows customization of delimiters, validation behavior when template
+ * variables are missing, and how StringTemplate's built-in functions are handled during
+ * validation.
+ *
+ * <p>
+ * Use the {@link #builder()} to create and configure instances.
  *
  * @author Thomas Vitale
  * @since 1.0.0
@@ -49,7 +57,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private static final ValidationMode DEFAULT_VALIDATION_MODE = ValidationMode.THROW;
 
-	private static final boolean DEFAULT_SKIP_BUILT_IN_FUNCTIONS_VALIDATION = false;
+	private static final boolean DEFAULT_SUPPORT_ST_FUNCTIONS = false;
 
 	private final char startDelimiterToken;
 
@@ -57,14 +65,15 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private final ValidationMode validationMode;
 
-	private final boolean skipBuiltInFunctionsValidation;
+	private final boolean supportStFunctions;
 
-	StTemplateRenderer(char startDelimiterToken, char endDelimiterToken, ValidationMode validationMode, boolean skipBuiltInFunctionsValidation) {
+	StTemplateRenderer(char startDelimiterToken, char endDelimiterToken, ValidationMode validationMode,
+			boolean supportStFunctions) {
 		Assert.notNull(validationMode, "validationMode cannot be null");
 		this.startDelimiterToken = startDelimiterToken;
 		this.endDelimiterToken = endDelimiterToken;
 		this.validationMode = validationMode;
-		this.skipBuiltInFunctionsValidation = skipBuiltInFunctionsValidation;
+		this.supportStFunctions = supportStFunctions;
 	}
 
 	@Override
@@ -120,7 +129,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 					&& tokens.get(i + 1).getType() == STLexer.ID) {
 				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
 					String text = tokens.get(i + 1).getText();
-					if (!Compiler.funcs.containsKey(text) || !skipBuiltInFunctionsValidation) {
+					if (!Compiler.funcs.containsKey(text) || !supportStFunctions) {
 						inputVariables.add(text);
 						isInsideList = true;
 					}
@@ -130,7 +139,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 				isInsideList = false;
 			}
 			else if (!isInsideList && token.getType() == STLexer.ID) {
-				if (!Compiler.funcs.containsKey(token.getText()) || !skipBuiltInFunctionsValidation) {
+				if (!Compiler.funcs.containsKey(token.getText()) || !supportStFunctions) {
 					inputVariables.add(token.getText());
 				}
 			}
@@ -143,6 +152,9 @@ public class StTemplateRenderer implements TemplateRenderer {
 		return new Builder();
 	}
 
+	/**
+	 * Builder for configuring and creating {@link StTemplateRenderer} instances.
+	 */
 	public static class Builder {
 
 		private char startDelimiterToken = DEFAULT_START_DELIMITER_TOKEN;
@@ -151,33 +163,70 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 		private ValidationMode validationMode = DEFAULT_VALIDATION_MODE;
 
-		private boolean skipBuiltInFunctionsValidation = DEFAULT_SKIP_BUILT_IN_FUNCTIONS_VALIDATION;
+		private boolean supportStFunctions = DEFAULT_SUPPORT_ST_FUNCTIONS;
 
 		private Builder() {
 		}
 
+		/**
+		 * Sets the character used as the start delimiter for template expressions.
+		 * Default is '{'.
+		 * @param startDelimiterToken The start delimiter character.
+		 * @return This builder instance for chaining.
+		 */
 		public Builder startDelimiterToken(char startDelimiterToken) {
 			this.startDelimiterToken = startDelimiterToken;
 			return this;
 		}
 
+		/**
+		 * Sets the character used as the end delimiter for template expressions. Default
+		 * is '}'.
+		 * @param endDelimiterToken The end delimiter character.
+		 * @return This builder instance for chaining.
+		 */
 		public Builder endDelimiterToken(char endDelimiterToken) {
 			this.endDelimiterToken = endDelimiterToken;
 			return this;
 		}
 
+		/**
+		 * Sets the validation mode to control behavior when the provided variables do not
+		 * match the variables required by the template. Default is
+		 * {@link ValidationMode#THROW}.
+		 * @param validationMode The desired validation mode.
+		 * @return This builder instance for chaining.
+		 */
 		public Builder validationMode(ValidationMode validationMode) {
 			this.validationMode = validationMode;
 			return this;
 		}
 
-		public Builder skipBuiltInFunctionsValidation() {
-			this.skipBuiltInFunctionsValidation = true;
+		/**
+		 * Configures the renderer to support StringTemplate's built-in functions during
+		 * validation.
+		 * <p>
+		 * When enabled (set to true), identifiers in the template that match known ST
+		 * function names (e.g., "first", "rest", "length") will not be treated as
+		 * required input variables during validation.
+		 * <p>
+		 * When disabled (default, false), these identifiers are treated like regular
+		 * variables and must be provided in the input map if validation is enabled
+		 * ({@link ValidationMode#WARN} or {@link ValidationMode#THROW}).
+		 * @return This builder instance for chaining.
+		 */
+		public Builder supportStFunctions() {
+			this.supportStFunctions = true;
 			return this;
 		}
 
+		/**
+		 * Builds and returns a new {@link StTemplateRenderer} instance with the
+		 * configured settings.
+		 * @return A configured {@link StTemplateRenderer}.
+		 */
 		public StTemplateRenderer build() {
-			return new StTemplateRenderer(startDelimiterToken, endDelimiterToken, validationMode, skipBuiltInFunctionsValidation);
+			return new StTemplateRenderer(startDelimiterToken, endDelimiterToken, validationMode, supportStFunctions);
 		}
 
 	}
