@@ -60,13 +60,11 @@ public class DeepSeekRetryTests {
 		this.retryListener = new TestRetryListener();
 		retryTemplate.registerListener(this.retryListener);
 
-		this.chatModel = new DeepSeekChatModel(this.deepSeekApi,
-				DeepSeekChatOptions.builder()
-					.temperature(0.7)
-					.topP(1.0)
-					.model(ChatModel.DEEPSEEK_CHAT.getValue())
-					.build(),
-				null, retryTemplate);
+		this.chatModel = DeepSeekChatModel.builder()
+				.deepSeekApi(this.deepSeekApi)
+				.defaultOptions(DeepSeekChatOptions.builder().build())
+				.retryTemplate(retryTemplate)
+				.build();;
 	}
 
 	@Test

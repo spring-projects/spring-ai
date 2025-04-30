@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ package org.springframework.ai.vectorstore.neo4j;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +40,10 @@ import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -53,10 +58,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Michael Simons
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class Neo4jVectorStoreIT {
+class Neo4jVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>(Neo4jImage.DEFAULT_IMAGE).withRandomPassword();
@@ -76,6 +82,14 @@ class Neo4jVectorStoreIT {
 	void cleanDatabase() {
 		this.contextRunner
 			.run(context -> context.getBean(Driver.class).executableQuery("MATCH (n) DETACH DELETE n").execute());
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
 	}
 
 	@Test
@@ -301,6 +315,47 @@ class Neo4jVectorStoreIT {
 			.isTrue());
 	}
 
+	@Test
+	void deleteWithComplexFilterExpression() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var doc1 = new Document("Content 1", Map.of("type", "A", "priority", 1L));
+			var doc2 = new Document("Content 2", Map.of("type", "A", "priority", 2L));
+			var doc3 = new Document("Content 3", Map.of("type", "B", "priority", 1L));
+
+			vectorStore.add(List.of(doc1, doc2, doc3));
+
+			// Complex filter expression: (type == 'A' AND priority > 1)
+			Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
+					new Filter.Key("priority"), new Filter.Value(1));
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("A"));
+			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+					priorityFilter);
+
+			vectorStore.delete(complexFilter);
+
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(2);
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder("A", "B");
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder(1L, 1L);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.run(context -> {
+			Neo4jVectorStore vectorStore = context.getBean(Neo4jVectorStore.class);
+			Optional<Driver> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
@@ -319,7 +374,7 @@ class Neo4jVectorStoreIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 	}

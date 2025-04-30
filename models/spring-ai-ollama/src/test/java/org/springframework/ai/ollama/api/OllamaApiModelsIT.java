@@ -19,6 +19,7 @@ package org.springframework.ai.ollama.api;
 import java.io.IOException;
 import java.time.Duration;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -89,6 +90,10 @@ public class OllamaApiModelsIT extends BaseOllamaIT {
 			.block();
 
 		assertThat(progressResponses).isNotNull();
+		Awaitility.await().until(() -> {
+			OllamaApi.ProgressResponse progressResponse = progressResponses.get(progressResponses.size() - 1);
+			return progressResponse.status().equals("success");
+		});
 		assertThat(progressResponses.get(progressResponses.size() - 1))
 			.isEqualTo(new OllamaApi.ProgressResponse("success", null, null, null));
 

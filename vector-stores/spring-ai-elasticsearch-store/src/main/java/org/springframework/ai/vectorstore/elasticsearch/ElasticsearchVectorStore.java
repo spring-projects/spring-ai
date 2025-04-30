@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
-import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -41,10 +40,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -145,6 +142,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -191,11 +189,12 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
 				this.batchingStrategy);
 
-		for (Document document : documents) {
-			ElasticSearchDocument doc = new ElasticSearchDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
-			bulkRequestBuilder.operations(
-					op -> op.index(idx -> idx.index(this.options.getIndexName()).id(document.getId()).document(doc)));
+		for (int i = 0; i < embeddings.size(); i++) {
+			Document document = documents.get(i);
+			float[] embedding = embeddings.get(i);
+			bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(this.options.getIndexName())
+				.id(document.getId())
+				.document(getDocument(document, embedding, this.options.getEmbeddingFieldName()))));
 		}
 		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
 		if (bulkRequest.errors()) {
@@ -208,8 +207,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 	}
 
+	private Object getDocument(Document document, float[] embedding, String embeddingFieldName) {
+		Assert.notNull(document.getText(), "document's text must not be null");
+
+		return Map.of("id", document.getId(), "content", document.getText(), "metadata", document.getMetadata(),
+				embeddingFieldName, embedding);
+	}
+
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
@@ -219,7 +225,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
-		return Optional.of(bulkRequest(bulkRequestBuilder.build()).errors());
+		if (bulkRequest(bulkRequestBuilder.build()).errors()) {
+			throw new IllegalStateException("Delete operation failed");
+		}
 	}
 
 	@Override
@@ -263,9 +271,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			SearchResponse<Document> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 					.similarity(finalThreshold)
-					.k((long) searchRequest.getTopK())
-					.field("embedding")
-					.numCandidates((long) (1.5 * searchRequest.getTopK()))
+					.k(searchRequest.getTopK())
+					.field(this.options.getEmbeddingFieldName())
+					.numCandidates((int) (1.5 * searchRequest.getTopK()))
 					.filter(fl -> fl
 						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
 				.size(searchRequest.getTopK()), Document.class);
@@ -322,7 +330,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		try {
 			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(this.options.getIndexName())
-					.mappings(map -> map.properties("embedding",
+					.mappings(map -> map.properties(this.options.getEmbeddingFieldName(),
 							p -> p.denseVector(dv -> dv.similarity(this.options.getSimilarity().toString())
 								.dims(this.options.getDimensions())))));
 		}
@@ -356,23 +364,19 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		return SIMILARITY_TYPE_MAPPING.get(this.options.getSimilarity()).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.elasticsearchClient;
+		return Optional.of(client);
+	}
+
 	/**
 	 * Creates a new builder instance for ElasticsearchVectorStore.
 	 * @return a new ElasticsearchBuilder instance
 	 */
 	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
 		return new Builder(restClient, embeddingModel);
-	}
-
-	/**
-	 * The representation of {@link Document} along with its embedding.
-	 *
-	 * @param id The id of the document
-	 * @param content The content of the document
-	 * @param metadata The metadata of the document
-	 * @param embedding The vectors representing the content of the document
-	 */
-	public record ElasticSearchDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {

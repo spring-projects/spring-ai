@@ -10,7 +10,7 @@ link:https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemin
 
 == Prerequisites
 
-- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, apropriate for you OS.
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for you OS.
 - Authenticate by running the following command.
 Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
 
@@ -21,6 +21,12 @@ gcloud auth application-default login <ACCOUNT>
 ----
 
 == Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
 
 Spring AI provides Spring Boot auto-configuration for the VertexAI Gemini Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
@@ -33,7 +39,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-vertex-ai-gemini-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-vertex-ai-gemini</artifactId>
 </dependency>
 ----
 
@@ -42,7 +48,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-vertex-ai-gemini-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini'
 }
 ----
 ======
@@ -51,12 +57,24 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Chat Properties
 
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=vertexai (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match vertexai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.vertex.ai.gemini` is used as the property prefix that lets you connect to VertexAI.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
+| spring.ai.model.chat   | Enable Chat Model client |  vertexai
 | spring.ai.vertex.ai.gemini.projectId   | Google Cloud Platform project ID |  -
 | spring.ai.vertex.ai.gemini.location    | Region           |  -
 | spring.ai.vertex.ai.gemini.credentialsUri    | URI to Vertex AI Gemini credentials. When provided it is used to create an a `GoogleCredentials` instance to authenticate the `VertexAI`. |  -
@@ -82,7 +100,8 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 | spring.ai.vertex.ai.gemini.chat.options.maxOutputTokens | The maximum number of tokens to generate. | -
 | spring.ai.vertex.ai.gemini.chat.options.frequencyPenalty |  | -
 | spring.ai.vertex.ai.gemini.chat.options.presencePenalty |  | -
-| spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
+| spring.ai.vertex.ai.gemini.chat.options.toolNames | List of tools, identified by their names, to enable for function calling in a single prompt requests. Tools with those names must exist in the ToolCallback registry. | -
+| (**deprecated** by `toolNames`) spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
 | spring.ai.vertex.ai.gemini.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 | spring.ai.vertex.ai.gemini.chat.options.safetySettings | List of safety settings to control safety filters, as defined by https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters[Vertex AI Safety Filters]. Each safety setting can have a method, threshold, and category. | -
 
@@ -110,18 +129,52 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
-https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
+https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
 
-== Function Calling
+== Tool Calling
 
-WARNING: As of 30th of April 2023, the Vertex AI `Gemini Pro` model has significantly degraded the support for function calling! While the feature is still available, it is not recommended for production use.
-Apparently the Gemini Pro can not handle anymore the function name correctly.
-The parallel function calling is gone as well.
+The Vertex AI Gemini model supports tool calling capabilities, allowing models to use tools during conversations. 
+Here's an example of how to define and use `@Tool`-based tools:
 
-You can register custom Java functions with the VertexAiGeminiChatModel and have the Gemini Pro model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
-This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/vertexai-gemini-chat-functions.adoc[Vertex AI Gemini Function Calling].
+[source,java]
+----
+
+public class WeatherService {
+
+    @Tool(description = "Get the weather in location")
+    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
+        ...
+    }
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .tools(new WeatherService())
+        .call()
+        .content();
+----
+
+You can use the java.util.function beans as tools as well:
+
+[source,java]
+----
+@Bean
+@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+public Function<Request, Response> weatherFunction() {
+    return new MockWeatherService();
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")				
+        .tools("weatherFunction")
+        .inputType(Request.class)
+        .call()
+        .content();
+----
+
+Find more in xref:api/tools.adoc[Tools] documentation.
+
 
 == Multimodal
 
@@ -166,7 +219,7 @@ var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-vertex-ai-gemini-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-vertex-ai-gemini` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the VertexAi chat model:
 

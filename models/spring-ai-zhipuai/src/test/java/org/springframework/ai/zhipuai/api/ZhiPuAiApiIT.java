@@ -83,4 +83,15 @@ public class ZhiPuAiApiIT {
 		assertThat(response.getBody().data().get(0).embedding()).hasSize(1024);
 	}
 
+	@Test
+	void embeddingsWithDimensions() {
+		ResponseEntity<EmbeddingList<Embedding>> response = this.zhiPuAiApi
+			.embeddings(new ZhiPuAiApi.EmbeddingRequest<>("Hello world",
+					ZhiPuAiApi.EmbeddingModel.Embedding_3.getValue(), 1536));
+
+		assertThat(response).isNotNull();
+		assertThat(Objects.requireNonNull(response.getBody()).data()).hasSize(1);
+		assertThat(response.getBody().data().get(0).embedding()).hasSize(1536);
+	}
+
 }

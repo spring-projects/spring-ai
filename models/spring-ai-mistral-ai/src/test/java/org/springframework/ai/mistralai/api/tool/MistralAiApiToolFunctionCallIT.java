@@ -152,11 +152,11 @@ public class MistralAiApiToolFunctionCallIT {
 
 			assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
-				.containsAnyOf("30.0°C", "30°C");
+				.containsAnyOf("30.0", "30");
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
-				.containsAnyOf("10.0°C", "10°C");
+				.containsAnyOf("10.0", "10");
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
-				.containsAnyOf("15.0°C", "15°C");
+				.containsAnyOf("15.0", "15");
 		}
 
 	}

@@ -19,11 +19,13 @@ package org.springframework.ai.vectorstore.pgvector;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.sql.DataSource;
@@ -42,13 +44,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.document.id.RandomIdGenerator;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser.FilterExpressionParseException;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIdType;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -70,10 +74,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jihoon Kim
+ * @author YeongMin Song
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class PgVectorStoreIT {
+public class PgVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	@SuppressWarnings("resource")
@@ -140,6 +146,14 @@ public class PgVectorStoreIT {
 		return true;
 	}
 
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			testFunction.accept(vectorStore);
+		});
+	}
+
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE_DISTANCE", "EUCLIDEAN_DISTANCE", "NEGATIVE_INNER_PRODUCT" })
 	public void addAndSearch(String distanceType) {
@@ -164,6 +178,100 @@ public class PgVectorStoreIT {
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 				assertThat(results2).hasSize(0);
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithUuidIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(List.of(new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithTextIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "TEXT")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(List.of(new Document("NOT_UUID", "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithSerialIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "SERIAL")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(List.of(new Document("1", "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testToPgTypeWithBigSerialIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "BIGSERIAL")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				vectorStore.add(List.of(new Document("1", "TEXT", new HashMap<>())));
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testBulkOperationWithUuidIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				List<Document> documents = List.of(
+						new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>()),
+						new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>()),
+						new Document(new RandomIdGenerator().generateId(), "TEXT", new HashMap<>()));
+				vectorStore.add(documents);
+
+				List<String> idList = documents.stream().map(Document::getId).toList();
+				vectorStore.delete(idList);
+
+				dropTable(context);
+			});
+	}
+
+	@Test
+	public void testBulkOperationWithNonUuidIdType() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=" + "COSINE_DISTANCE")
+			.withPropertyValues("test.spring.ai.vectorstore.pgvector.idType=" + "TEXT")
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				List<Document> documents = List.of(new Document("NON_UUID_1", "TEXT", new HashMap<>()),
+						new Document("NON_UUID_2", "TEXT", new HashMap<>()),
+						new Document("NON_UUID_3", "TEXT", new HashMap<>()));
+				vectorStore.add(documents);
+
+				List<String> idList = documents.stream().map(Document::getId).toList();
+				vectorStore.delete(idList);
 
 				dropTable(context);
 			});
@@ -368,117 +476,13 @@ public class PgVectorStoreIT {
 	}
 
 	@Test
-	public void deleteByIds() {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE")
-			.run(context -> {
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-
-				// Create test documents
-				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2020));
-				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "NL", "year", 2021));
-				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2023));
-
-				// Add documents to store
-				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-				// Verify initial state
-				SearchRequest searchRequest = SearchRequest.builder()
-					.query("The World")
-					.topK(5)
-					.similarityThresholdAll()
-					.build();
-
-				List<Document> results = vectorStore.similaritySearch(searchRequest);
-				assertThat(results).hasSize(3);
-
-				// Delete two documents by ID
-				Optional<Boolean> deleteResult = vectorStore.delete(List.of(bgDocument.getId(), nlDocument.getId()));
-
-				assertThat(deleteResult).isPresent().contains(true);
-
-				// Verify deletion
-				results = vectorStore.similaritySearch(searchRequest);
-				assertThat(results).hasSize(1);
-				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
-
-				// Remove all documents from the store
-				dropTable(context);
-			});
-	}
-
-	@Test
-	public void deleteByFilter() {
-		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE")
-			.run(context -> {
-				VectorStore vectorStore = context.getBean(VectorStore.class);
-
-				// Create test documents
-				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2020));
-				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "NL", "year", 2021));
-				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-						Map.of("country", "BG", "year", 2023));
-
-				// Add documents to store
-				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-				// Verify initial state
-				SearchRequest searchRequest = SearchRequest.builder()
-					.query("The World")
-					.topK(5)
-					.similarityThresholdAll()
-					.build();
-
-				List<Document> results = vectorStore.similaritySearch(searchRequest);
-				assertThat(results).hasSize(3);
-
-				// Create filter to delete all documents with country=BG
-				Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
-						new Filter.Key("country"), new Filter.Value("BG"));
-
-				// Delete documents using filter
-				vectorStore.delete(filterExpression);
-
-				// Verify deletion - should only have NL document remaining
-				results = vectorStore.similaritySearch(searchRequest);
-				assertThat(results).hasSize(1);
-				assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-				// Remove all documents from the store
-				dropTable(context);
-			});
-	}
-
-	@Test
-	public void deleteWithStringFilterExpression() {
+	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
-			VectorStore vectorStore = context.getBean(VectorStore.class);
+			PgVectorStore vectorStore = context.getBean(PgVectorStore.class);
+			Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
 
-			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2020));
-			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "NL", "year", 2021));
-			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
-					Map.of("country", "BG", "year", 2023));
-
-			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
-
-			var searchRequest = SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build();
-
-			List<Document> results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(3);
-
-			vectorStore.delete("country == 'BG'");
-
-			results = vectorStore.similaritySearch(searchRequest);
-			assertThat(results).hasSize(1);
-			assertThat(results.get(0).getMetadata()).containsEntry("country", "NL");
-
-			vectorStore.delete(List.of(nlDocument.getId()));
+			dropTable(context);
 		});
 	}
 
@@ -489,12 +493,19 @@ public class PgVectorStoreIT {
 		@Value("${test.spring.ai.vectorstore.pgvector.distanceType}")
 		PgVectorStore.PgDistanceType distanceType;
 
+		@Value("${test.spring.ai.vectorstore.pgvector.initializeSchema:true}")
+		boolean initializeSchema;
+
+		@Value("${test.spring.ai.vectorstore.pgvector.idType:UUID}")
+		PgIdType idType;
+
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 				.dimensions(PgVectorStore.INVALID_EMBEDDING_DIMENSION)
+				.idType(this.idType)
 				.distanceType(this.distanceType)
-				.initializeSchema(true)
+				.initializeSchema(this.initializeSchema)
 				.indexType(PgIndexType.HNSW)
 				.removeExistingVectorStoreTable(true)
 				.build();
@@ -519,7 +530,7 @@ public class PgVectorStoreIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 	}

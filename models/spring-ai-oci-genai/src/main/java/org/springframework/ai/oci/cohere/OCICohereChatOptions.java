@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.springframework.ai.oci.cohere;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,6 +31,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
+ * @author Alexnadros Pappas
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OCICohereChatOptions implements ChatOptions {
@@ -124,11 +127,11 @@ public class OCICohereChatOptions implements ChatOptions {
 			.temperature(fromOptions.temperature)
 			.topP(fromOptions.topP)
 			.topK(fromOptions.topK)
-			.stop(fromOptions.stop)
+			.stop(fromOptions.stop != null ? new ArrayList<>(fromOptions.stop) : null)
 			.frequencyPenalty(fromOptions.frequencyPenalty)
 			.presencePenalty(fromOptions.presencePenalty)
-			.documents(fromOptions.documents)
-			.tools(fromOptions.tools)
+			.documents(fromOptions.documents != null ? new ArrayList<>(fromOptions.documents) : null)
+			.tools(fromOptions.tools != null ? new ArrayList<>(fromOptions.tools) : null)
 			.build();
 	}
 
@@ -257,8 +260,35 @@ public class OCICohereChatOptions implements ChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public ChatOptions copy() {
 		return fromOptions(this);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(model, maxTokens, compartment, servingMode, preambleOverride, temperature, topP, topK, stop,
+				frequencyPenalty, presencePenalty, documents, tools);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
+
+		OCICohereChatOptions that = (OCICohereChatOptions) o;
+
+		return Objects.equals(this.model, that.model) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.compartment, that.compartment)
+				&& Objects.equals(this.servingMode, that.servingMode)
+				&& Objects.equals(this.preambleOverride, that.preambleOverride)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.documents, that.documents) && Objects.equals(this.tools, that.tools);
 	}
 
 	public static class Builder {

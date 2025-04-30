@@ -21,8 +21,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.ResponseFormat;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 import java.util.*;
@@ -35,7 +36,7 @@ import java.util.*;
  * @author Geng Rong
  */
 @JsonInclude(Include.NON_NULL)
-public class DeepSeekChatOptions implements FunctionCallingOptions {
+public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	/**
@@ -107,63 +108,36 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 	private @JsonProperty("tool_choice") Object toolChoice;
 
 	/**
-	 * DeepSeek Tool Function Callbacks to register with the ChatModel. For Prompt Options
-	 * the functionCallbacks are automatically enabled for the duration of the prompt
-	 * execution. For Default Options the functionCallbacks are registered but disabled by
-	 * default. Use the enableFunctions to set the functions from the registry to be used
-	 * by the ChatModel chat completion requests.
+	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private Boolean internalToolExecutionEnabled;
+
+	/**
+	 * Tool Function Callbacks to register with the ChatModel.
+	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
+	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
+	 * from the registry to be used by the ChatModel chat completion requests.
+	 */
+	@JsonIgnore
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests. Functions with those names must exist in the
-	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
-	 * are automatically enabled for the duration of the prompt execution.
-	 *
-	 * Note that function enabled with the default options are enabled for all chat
-	 * completion requests. This could impact the token count and the billing. If the
-	 * functions is set in a prompt options, then the enabled functions are only active
-	 * for the duration of this prompt execution.
+	 * the chat completion requests.
+	 * Functions with those names must exist in the toolCallbacks registry.
+	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
+	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
-
-	/**
-	 * If true, the Spring AI will not handle the function calls internally, but will proxy them to the client.
-	 * It is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results.
-	 * If false, the Spring AI will handle the function calls internally.
-	 */
-	@JsonIgnore
-	private Boolean proxyToolCalls;
+	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();;
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	// @formatter:on
-
-	@Override
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
-	}
-
-	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
-	}
-
-	@Override
-	public Set<String> getFunctions() {
-		return this.functions;
-	}
-
-	public void setFunctions(Set<String> functionNames) {
-		this.functions = functionNames;
 	}
 
 	@Override
@@ -263,6 +237,49 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 		this.toolChoice = toolChoice;
 	}
 
+
+	@Override
+	@JsonIgnore
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
 	public Boolean getLogprobs() {
 		return this.logprobs;
 	}
@@ -285,14 +302,6 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 		return null;
 	}
 
-	@Override
-	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
-	}
-
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
-	}
 
 	@Override
 	public Map<String, Object> getToolContext() {
@@ -306,147 +315,66 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public DeepSeekChatOptions copy() {
-		return builder().model(this.model)
-			.maxTokens(this.maxTokens)
-			.temperature(this.temperature)
-			.topP(this.topP)
-			.presencePenalty(this.presencePenalty)
-			.frequencyPenalty(this.frequencyPenalty)
-			.stop(this.stop)
-			.tools(this.tools)
-			.toolChoice(this.toolChoice)
-			.functionCallbacks(this.functionCallbacks)
-			.functions(this.functions)
-			.proxyToolCalls(this.proxyToolCalls)
-			.toolContext(this.toolContext)
-			.build();
+		return DeepSeekChatOptions.fromOptions(this);
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
-		return result;
+		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs,
+				this.maxTokens,  this.presencePenalty, this.responseFormat,
+				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
+				 this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object o) {
+		if (this == o) {
 			return true;
 		}
-		if (obj == null) {
+		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		DeepSeekChatOptions other = (DeepSeekChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.proxyToolCalls == null) {
-			return other.proxyToolCalls == null;
-		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
-			return false;
-		}
-		if (this.toolContext == null) {
-			return other.toolContext == null;
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-		return true;
+		DeepSeekChatOptions other = (DeepSeekChatOptions) o;
+		return Objects.equals(this.model, other.model) && Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
+				&& Objects.equals(this.logprobs, other.logprobs)
+				&& Objects.equals(this.topLogprobs, other.topLogprobs)
+				&& Objects.equals(this.maxTokens, other.maxTokens)
+				&& Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.responseFormat, other.responseFormat)
+				&& Objects.equals(this.stop, other.stop) && Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.tools, other.tools)
+				&& Objects.equals(this.toolChoice, other.toolChoice)
+				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
+				&& Objects.equals(this.toolNames, other.toolNames)
+				&& Objects.equals(this.toolContext, other.toolContext)
+				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled);
 	}
 
 	public static class Builder {
 
-		private final DeepSeekChatOptions options = new DeepSeekChatOptions();
+		protected DeepSeekChatOptions options;
+
+		public Builder() {
+			this.options = new DeepSeekChatOptions();
+		}
+
+		public Builder(DeepSeekChatOptions options) {
+			this.options = options;
+		}
 
 		public Builder model(String model) {
 			this.options.model = model;
 			return this;
 		}
 
-		public Builder model(DeepSeekApi.ChatModel model) {
-			this.options.model = model.getName();
+		public Builder model(DeepSeekApi.ChatModel deepseekAiChatModel) {
+			this.options.model = deepseekAiChatModel.getName();
 			return this;
 		}
 
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
@@ -460,6 +388,11 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
 		public Builder presencePenalty(Double presencePenalty) {
 			this.options.presencePenalty = presencePenalty;
 			return this;
@@ -470,13 +403,18 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
+		public Builder stop(List<String> stop) {
+			this.options.stop = stop;
 			return this;
 		}
 
-		public Builder stop(List<String> stop) {
-			this.options.stop = stop;
+		public Builder temperature(Double temperature) {
+			this.options.temperature = temperature;
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.topP = topP;
 			return this;
 		}
 
@@ -490,28 +428,31 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
-		public Builder functions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
-		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			if (this.options.functions == null) {
-				this.options.functions = new HashSet<>();
-			}
-			this.options.functions.add(functionName);
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
 			return this;
 		}
 
-		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
 		}
 
@@ -532,23 +473,25 @@ public class DeepSeekChatOptions implements FunctionCallingOptions {
 	}
 
 	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
-		return builder().model(fromOptions.getModel())
-			.frequencyPenalty(fromOptions.getFrequencyPenalty())
-			.logprobs(fromOptions.getLogprobs())
-			.topLogprobs(fromOptions.getTopLogprobs())
-			.maxTokens(fromOptions.getMaxTokens())
-			.presencePenalty(fromOptions.getPresencePenalty())
-			.responseFormat(fromOptions.getResponseFormat())
-			.stop(fromOptions.getStop())
-			.temperature(fromOptions.getTemperature())
-			.topP(fromOptions.getTopP())
-			.tools(fromOptions.getTools())
-			.toolChoice(fromOptions.getToolChoice())
-			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
-			.proxyToolCalls(fromOptions.getProxyToolCalls())
-			.toolContext(fromOptions.getToolContext())
-			.build();
+		return DeepSeekChatOptions.builder()
+				.model(fromOptions.getModel())
+				.frequencyPenalty(fromOptions.getFrequencyPenalty())
+				.logprobs(fromOptions.getLogprobs())
+				.topLogprobs(fromOptions.getTopLogprobs())
+				.maxTokens(fromOptions.getMaxTokens())
+				.presencePenalty(fromOptions.getPresencePenalty())
+				.responseFormat(fromOptions.getResponseFormat())
+				.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
+				.temperature(fromOptions.getTemperature())
+				.topP(fromOptions.getTopP())
+				.tools(fromOptions.getTools())
+				.toolChoice(fromOptions.getToolChoice())
+				.toolCallbacks(
+						fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
+				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+				.build();
 	}
 
 }

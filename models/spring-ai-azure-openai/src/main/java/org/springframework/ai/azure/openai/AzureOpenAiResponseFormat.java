@@ -27,7 +27,7 @@ public enum AzureOpenAiResponseFormat {
 	// default value used by OpenAI
 	TEXT,
 	/*
-	 * From the OpenAI API documentation: Compatability: Compatible with GPT-4 Turbo and
+	 * From the OpenAI API documentation: Compatibility: Compatible with GPT-4 Turbo and
 	 * all GPT-3.5 Turbo models newer than gpt-3.5-turbo-1106. Caveats: This enables JSON
 	 * mode, which guarantees the message the model generates is valid JSON. Important:
 	 * when using JSON mode, you must also instruct the model to produce JSON yourself via

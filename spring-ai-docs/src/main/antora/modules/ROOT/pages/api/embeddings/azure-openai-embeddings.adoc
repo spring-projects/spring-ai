@@ -52,12 +52,19 @@ If this bean is available, an `OpenAIClient` instance will be created using the 
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
 
 == Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
 
 Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
@@ -66,7 +73,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-azure-openai</artifactId>
 </dependency>
 ----
 
@@ -75,7 +82,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-azure-openai'
 }
 ----
 
@@ -93,9 +100,20 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
 | spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
-With this configuraiton the `spring.ai.azure.openai.embedding.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+With this configuration the `spring.ai.azure.openai.embedding.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 |====
 
+
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=azure-openai (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match azure-openai)
+
+This change is done to allow configuration of multiple models.
+====
 
 The prefix `spring.ai.azure.openai.embedding` is the property prefix that configures the `EmbeddingModel` implementation for Azure OpenAI
 
@@ -103,7 +121,8 @@ The prefix `spring.ai.azure.openai.embedding` is the property prefix that config
 |====
 | Property | Description | Default
 
-| spring.ai.azure.openai.embedding.enabled | Enable Azure OpenAI embedding model.  | true
+| spring.ai.azure.openai.embedding.enabled (Removed and no longer valid) | Enable Azure OpenAI embedding model.  | true
+| spring.ai.model.embedding | Enable Azure OpenAI embedding model.  | azure-openai
 | spring.ai.azure.openai.embedding.metadata-mode | Document content extraction mode    | EMBED
 | spring.ai.azure.openai.embedding.options.deployment-name | This is the value of the 'Deployment Name' as presented in the Azure AI Portal | text-embedding-ada-002
 | spring.ai.azure.openai.embedding.options.user | An identifier for the caller or end user of the operation. This may be used for tracking or rate-limiting purposes. | -

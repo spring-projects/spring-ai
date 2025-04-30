@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,12 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.EmbeddingItem;
 import com.azure.ai.openai.models.Embeddings;
 import com.azure.ai.openai.models.EmbeddingsOptions;
+import com.azure.ai.openai.models.EmbeddingsUsage;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.azure.openai.metadata.AzureOpenAiEmbeddingUsage;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -50,6 +51,7 @@ import org.springframework.util.CollectionUtils;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -123,12 +125,15 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.from(this.defaultOptions)
 			.merge(embeddingRequest.getOptions())
 			.build();
-		EmbeddingsOptions azureOptions = options.toAzureOptions(embeddingRequest.getInstructions());
+
+		EmbeddingRequest embeddingRequestWithMergedOptions = new EmbeddingRequest(embeddingRequest.getInstructions(),
+				options);
+
+		EmbeddingsOptions azureOptions = options.toAzureOptions(embeddingRequestWithMergedOptions.getInstructions());
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(embeddingRequest)
+			.embeddingRequest(embeddingRequestWithMergedOptions)
 			.provider(AiProvider.AZURE_OPENAI.value())
-			.requestOptions(options)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -159,8 +164,12 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	private EmbeddingResponse generateEmbeddingResponse(Embeddings embeddings) {
 		List<Embedding> data = generateEmbeddingList(embeddings.getData());
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.setUsage(AzureOpenAiEmbeddingUsage.from(embeddings.getUsage()));
+		metadata.setUsage(getDefaultUsage(embeddings.getUsage()));
 		return new EmbeddingResponse(data, metadata);
+	}
+
+	private DefaultUsage getDefaultUsage(EmbeddingsUsage usage) {
+		return new DefaultUsage(usage.getPromptTokens(), 0, usage.getTotalTokens(), usage);
 	}
 
 	private List<Embedding> generateEmbeddingList(List<EmbeddingItem> nativeData) {

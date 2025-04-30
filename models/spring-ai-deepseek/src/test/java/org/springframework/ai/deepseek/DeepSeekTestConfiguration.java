@@ -28,7 +28,7 @@ public class DeepSeekTestConfiguration {
 
 	@Bean
 	public DeepSeekApi deepSeekApi() {
-		return new DeepSeekApi(getApiKey());
+		return DeepSeekApi.builder().apiKey(getApiKey()).build();
 	}
 
 	private String getApiKey() {
@@ -42,7 +42,7 @@ public class DeepSeekTestConfiguration {
 
 	@Bean
 	public DeepSeekChatModel deepSeekChatModel(DeepSeekApi api) {
-		return new DeepSeekChatModel(api);
+		return DeepSeekChatModel.builder().deepSeekApi(api).build();
 	}
 
 }

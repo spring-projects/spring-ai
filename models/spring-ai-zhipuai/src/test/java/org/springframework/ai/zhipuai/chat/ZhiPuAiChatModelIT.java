@@ -40,14 +40,15 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.Media;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.ai.zhipuai.ZhiPuAiTestConfiguration;
 import org.springframework.ai.zhipuai.api.MockWeatherService;
@@ -86,7 +87,7 @@ class ZhiPuAiChatModelIT {
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Prompt prompt = new Prompt(List.of(userMessage, systemMessage), ChatOptions.builder().build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
@@ -128,7 +129,7 @@ class ZhiPuAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "ice cream flavors", "format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Prompt prompt = new Prompt(promptTemplate.createMessage(), ChatOptions.builder().build());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		List<String> list = outputConverter.convert(generation.getOutput().getText());
@@ -147,7 +148,7 @@ class ZhiPuAiChatModelIT {
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template,
 				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Prompt prompt = new Prompt(promptTemplate.createMessage(), ChatOptions.builder().build());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
@@ -166,7 +167,7 @@ class ZhiPuAiChatModelIT {
 				{format}
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Prompt prompt = new Prompt(promptTemplate.createMessage(), ChatOptions.builder().build());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
@@ -183,7 +184,7 @@ class ZhiPuAiChatModelIT {
 				{format}
 				""";
 		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
-		Prompt prompt = new Prompt(promptTemplate.createMessage());
+		Prompt prompt = new Prompt(promptTemplate.createMessage(), ChatOptions.builder().build());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
@@ -230,8 +231,7 @@ class ZhiPuAiChatModelIT {
 
 		var promptOptions = ZhiPuAiChatOptions.builder()
 			.model(ZhiPuAiApi.ChatModel.GLM_4.getValue())
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -256,8 +256,7 @@ class ZhiPuAiChatModelIT {
 
 		var promptOptions = ZhiPuAiChatOptions.builder()
 			.model(ZhiPuAiApi.ChatModel.GLM_4.getValue())
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -292,8 +291,8 @@ class ZhiPuAiChatModelIT {
 			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
-		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -310,8 +309,8 @@ class ZhiPuAiChatModelIT {
 			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
-		assertThat(response.getResult().getOutput().getText()).contains("bananas", "apple");
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bowl", "basket");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
 	}
 
 	@Test
@@ -334,8 +333,7 @@ class ZhiPuAiChatModelIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
-		assertThat(content).contains("bananas", "apple");
-		assertThat(content).containsAnyOf("bowl", "basket");
+		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

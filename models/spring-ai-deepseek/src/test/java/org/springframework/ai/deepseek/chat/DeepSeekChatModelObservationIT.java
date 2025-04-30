@@ -28,7 +28,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,7 +147,7 @@ public class DeepSeekChatModelObservationIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-					String.valueOf(responseMetadata.getUsage().getGenerationTokens()))
+					String.valueOf(responseMetadata.getUsage().getCompletionTokens()))
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
@@ -164,14 +164,14 @@ public class DeepSeekChatModelObservationIT {
 
 		@Bean
 		public DeepSeekApi deepSeekApi() {
-			return new DeepSeekApi(System.getenv("DEEPSEEK_API_KEY"));
+			return DeepSeekApi.builder().apiKey(System.getenv("DEEPSEEK_API_KEY")).build();
 		}
 
 		@Bean
 		public DeepSeekChatModel deepSeekChatModel(DeepSeekApi deepSeekApi,
 				TestObservationRegistry observationRegistry) {
 			return new DeepSeekChatModel(deepSeekApi, DeepSeekChatOptions.builder().build(),
-					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
+					ToolCallingManager.builder().build(), RetryTemplate.defaultInstance(),
 					observationRegistry);
 		}
 

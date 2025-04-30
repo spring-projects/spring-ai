@@ -15,6 +15,12 @@ The link:https://opensearch.org/docs/latest/search-plugins/knn/index/[OpenSearch
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the OpenSearch Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
@@ -22,7 +28,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-opensearch-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
 </dependency>
 ----
 
@@ -31,7 +37,7 @@ or to your Gradle `build.gradle` build file:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-opensearch-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
 }
 ----
 
@@ -43,7 +49,7 @@ For Amazon OpenSearch Service, use these dependencies instead:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-aws-opensearch-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
 </dependency>
 ----
 
@@ -52,7 +58,7 @@ or for Gradle:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-aws-opensearch-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
 }
 ----
 
@@ -77,7 +83,7 @@ List<Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = vectorStore.similaritySearch(SearchRequest.build().query("Spring").topK(5).build());
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 === Configuration Properties
@@ -97,7 +103,6 @@ spring:
         index-name: spring-ai-document-index
         initialize-schema: true
         similarity-function: cosinesimil
-        batching-strategy: TOKEN_COUNT
         aws:  # Only for Amazon OpenSearch Service
           host: <aws opensearch host>
           service-name: <aws service name>
@@ -118,7 +123,6 @@ Properties starting with `spring.ai.vectorstore.opensearch.*` are used to config
 |`spring.ai.vectorstore.opensearch.index-name`| Name of the index to store vectors | `spring-ai-document-index`
 |`spring.ai.vectorstore.opensearch.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use | `cosinesimil`
-|`spring.ai.vectorstore.opensearch.batching-strategy`| Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |`spring.ai.vectorstore.opensearch.aws.host`| Hostname of the OpenSearch instance | -
 |`spring.ai.vectorstore.opensearch.aws.service-name`| AWS service name | -
 |`spring.ai.vectorstore.opensearch.aws.access-key`| AWS access key | -
@@ -238,3 +242,20 @@ is converted into the proprietary OpenSearch filter format:
 ----
 (metadata.author:john OR jill) AND metadata.article_type:blog
 ----
+
+== Accessing the Native Client
+
+The OpenSearch Vector Store implementation provides access to the underlying native OpenSearch client (`OpenSearchClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
+Optional<OpenSearchClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    OpenSearchClient client = nativeClient.get();
+    // Use the native client for OpenSearch-specific operations
+}
+----
+
+The native client gives you access to OpenSearch-specific features and operations that might not be exposed through the `VectorStore` interface.

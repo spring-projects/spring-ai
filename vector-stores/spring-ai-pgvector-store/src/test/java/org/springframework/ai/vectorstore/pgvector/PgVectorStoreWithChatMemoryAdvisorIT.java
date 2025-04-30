@@ -31,7 +31,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.VectorStoreChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -135,7 +135,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			.build()
 			.prompt()
 			.user("joke")
-			.advisors(new VectorStoreChatMemoryAdvisor(store))
+			.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
 			.call()
 			.chatResponse();
 

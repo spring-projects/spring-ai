@@ -177,7 +177,10 @@ public class TitanEmbeddingBedrockApi extends
 	public record TitanEmbeddingResponse(
 			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("inputTextTokenCount") Integer inputTextTokenCount,
+			@JsonProperty("successCount") Integer successCount,
+			@JsonProperty("failureCount") Integer failureCount,
 			@JsonProperty("embeddingsByType") Map<String, Object> embeddingsByType,
+			@JsonProperty("results") Object results,
 			@JsonProperty("message") Object message) {
 
 

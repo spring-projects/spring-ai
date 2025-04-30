@@ -1,0 +1,22 @@
+{
+  "groups": [
+	{
+	  "name": "spring.ai.openai.chat.output-audio",
+	  "type": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters",
+	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions"
+	}
+  ],
+  "properties": [
+	{
+	  "name": "spring.ai.openai.chat.output-audio.voice",
+	  "type": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters$Voice",
+	  "sourceType": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters"
+	},
+	{
+	  "name": "spring.ai.openai.chat.output-audio.format",
+	  "type": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters$AudioResponseFormat",
+	  "sourceType": "org.springframework.ai.openai.api.OpenAiApi$ChatCompletionRequest$AudioParameters"
+	}
+  ],
+  "hints": []
+}

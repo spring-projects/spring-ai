@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -36,7 +36,6 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.mistralai.api.MistralAiApi;
-import org.springframework.ai.mistralai.metadata.MistralAiUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
@@ -110,12 +109,15 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
-		var apiRequest = createRequest(request);
+		// Before moving any further, build the final request Prompt,
+		// merging runtime and default options.
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+
+		var apiRequest = createRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(MistralAiApi.PROVIDER_NAME)
-			.requestOptions(buildRequestOptions(apiRequest))
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -131,7 +133,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				var metadata = new EmbeddingResponseMetadata(apiEmbeddingResponse.model(),
-						MistralAiUsage.from(apiEmbeddingResponse.usage()));
+						getDefaultUsage(apiEmbeddingResponse.usage()));
 
 				var embeddings = apiEmbeddingResponse.data()
 					.stream()
@@ -146,26 +148,35 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
-	@SuppressWarnings("unchecked")
-	private MistralAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request) {
-		var embeddingRequest = new MistralAiApi.EmbeddingRequest<>(request.getInstructions(),
-				this.defaultOptions.getModel(), this.defaultOptions.getEncodingFormat());
-
-		if (request.getOptions() != null) {
-			embeddingRequest = ModelOptionsUtils.merge(request.getOptions(), embeddingRequest,
-					MistralAiApi.EmbeddingRequest.class);
+	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		MistralAiEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					MistralAiEmbeddingOptions.class);
 		}
-		return embeddingRequest;
+
+		// Define request options by merging runtime options and default options
+		MistralAiEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				MistralAiEmbeddingOptions.class);
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+	}
+
+	private DefaultUsage getDefaultUsage(MistralAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
+	}
+
+	private MistralAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request) {
+		MistralAiEmbeddingOptions requestOptions = (MistralAiEmbeddingOptions) request.getOptions();
+		return new MistralAiApi.EmbeddingRequest<>(request.getInstructions(), requestOptions.getModel(),
+				requestOptions.getEncodingFormat());
 	}
 
 	@Override
 	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent(this.metadataMode));
-	}
-
-	private EmbeddingOptions buildRequestOptions(MistralAiApi.EmbeddingRequest<List<String>> request) {
-		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
 	}
 
 	/**

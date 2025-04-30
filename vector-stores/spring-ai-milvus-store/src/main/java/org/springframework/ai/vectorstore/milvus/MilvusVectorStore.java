@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,16 @@
 
 package org.springframework.ai.vectorstore.milvus;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.common.clientenum.ConsistencyLevelEnum;
 import io.milvus.exception.ParamException;
@@ -54,16 +57,15 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -160,7 +162,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	public static final String EMBEDDING_FIELD_NAME = "embedding";
 
 	// Metadata, automatically assigned by Milvus.
-	private static final String DISTANCE_FIELD_NAME = "distance";
+	public static final String SIMILARITY_FIELD_NAME = "score";
 
 	private static final Logger logger = LoggerFactory.getLogger(MilvusVectorStore.class);
 
@@ -235,7 +237,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		List<String> docIdArray = new ArrayList<>();
 		List<String> contentArray = new ArrayList<>();
-		List<JSONObject> metadataArray = new ArrayList<>();
+		List<JsonObject> metadataArray = new ArrayList<>();
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
@@ -247,7 +249,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
 			contentArray.add(document.getText());
-			metadataArray.add(new JSONObject(document.getMetadata()));
+			Gson gson = new Gson();
+			String jsonString = gson.toJson(document.getMetadata());
+			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
 			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
 		}
 
@@ -273,7 +277,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 
 		String deleteExpression = String.format("%s in [%s]", this.idFieldName,
@@ -289,15 +293,48 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		if (deleteCount != idList.size()) {
 			logger.warn(String.format("Deleted only %s entries from requested %s ", deleteCount, idList.size()));
 		}
+	}
 
-		return Optional.of(status.getStatus() == Status.Success.getCode());
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
+				.withDatabaseName(this.databaseName)
+				.withCollectionName(this.collectionName)
+				.withExpr(nativeFilterExpression)
+				.build());
+
+			if (status.getStatus() != Status.Success.getCode()) {
+				throw new IllegalStateException("Failed to delete documents by filter: " + status.getMessage());
+			}
+
+			long deleteCount = status.getData().getDeleteCnt();
+			logger.debug("Deleted {} documents matching filter expression", deleteCount);
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
 	}
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		String nativeFilterExpressions = "";
+		String searchParamsJson = null;
+		if (request instanceof MilvusSearchRequest milvusReq) {
+			nativeFilterExpressions = StringUtils.hasText(milvusReq.getNativeExpression())
+					? milvusReq.getNativeExpression() : getConvertedFilterExpression(request);
 
-		String nativeFilterExpressions = (request.getFilterExpression() != null)
-				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+			searchParamsJson = StringUtils.hasText(milvusReq.getSearchParamsJson()) ? milvusReq.getSearchParamsJson()
+					: null;
+		}
+		else {
+			nativeFilterExpressions = getConvertedFilterExpression(request);
+		}
 
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 		List<String> outFieldNames = new ArrayList<>();
@@ -320,6 +357,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			searchParamBuilder.withExpr(nativeFilterExpressions);
 		}
 
+		if (StringUtils.hasText(searchParamsJson)) {
+			searchParamBuilder.withParams(searchParamsJson);
+		}
+
 		R<SearchResults> respSearch = this.milvusClient.search(searchParamBuilder.build());
 
 		if (respSearch.getException() != null) {
@@ -334,29 +375,37 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.map(rowRecord -> {
 				String docId = String.valueOf(rowRecord.get(this.idFieldName));
 				String content = (String) rowRecord.get(this.contentFieldName);
-				JSONObject metadata = null;
+				JsonObject metadata = new JsonObject();
 				try {
-					metadata = (JSONObject) rowRecord.get(this.metadataFieldName);
+					metadata = (JsonObject) rowRecord.get(this.metadataFieldName);
 					// inject the distance into the metadata.
-					metadata.put(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
 				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
 					// collection
 				}
+				Gson gson = new Gson();
+				Type type = new TypeToken<Map<String, Object>>() {
+				}.getType();
 				return Document.builder()
 					.id(docId)
 					.text(content)
-					.metadata((metadata != null) ? metadata.getInnerMap() : Map.of())
+					.metadata((metadata != null) ? gson.fromJson(metadata, type) : Map.of())
 					.score((double) getResultSimilarity(rowRecord))
 					.build();
 			})
 			.toList();
 	}
 
+	private String getConvertedFilterExpression(SearchRequest request) {
+		return (request.getFilterExpression() != null)
+				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+	}
+
 	private float getResultSimilarity(RowRecord rowRecord) {
-		Float distance = (Float) rowRecord.get(DISTANCE_FIELD_NAME);
-		return (this.metricType == MetricType.IP || this.metricType == MetricType.COSINE) ? distance : (1 - distance);
+		Float score = (Float) rowRecord.get(SIMILARITY_FIELD_NAME);
+		return (this.metricType == MetricType.IP || this.metricType == MetricType.COSINE) ? score : (1 - score);
 	}
 
 	// ---------------------------------------------------------------------------------
@@ -531,6 +580,13 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			return this.metricType.name();
 		}
 		return SIMILARITY_TYPE_MAPPING.get(this.metricType).value();
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.milvusClient;
+		return Optional.of(client);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,10 +32,8 @@ import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsReque
 import org.springframework.ai.chroma.vectorstore.ChromaApi.Embedding;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -160,10 +157,9 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(@NonNull List<String> idList) {
+	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
-		int status = this.chromaApi.deleteEmbeddings(this.collectionId, new DeleteEmbeddingsRequest(idList));
-		return Optional.of(status == 200);
+		this.chromaApi.deleteEmbeddings(this.collectionId, new DeleteEmbeddingsRequest(idList));
 	}
 
 	@Override
@@ -176,7 +172,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 			Map<String, Object> whereClause = this.chromaApi.where(whereClauseStr);
 
-			logger.debug("Deleting with where clause: {}", whereClause);
+			logger.debug("Deleting with where clause: " + whereClause);
 
 			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
 			this.chromaApi.deleteEmbeddings(this.collectionId, deleteRequest);

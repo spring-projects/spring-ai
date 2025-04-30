@@ -16,12 +16,20 @@
 
 package org.springframework.ai.integration.tests.tool;
 
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
+import org.springframework.ai.integration.tests.tool.domain.Author;
+import org.springframework.ai.integration.tests.tool.domain.Book;
+import org.springframework.ai.integration.tests.tool.domain.BookService;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,12 +38,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
 import org.springframework.context.annotation.Import;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = TestApplication.class)
 @Import(FunctionToolCallbackTests.Tools.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class FunctionToolCallbackTests {
 
 	// @formatter:off
@@ -74,9 +78,8 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome the users to the library")
-			.toolCallbacks(FunctionToolCallback.builder("sayWelcome", (input) -> {
-						logger.info("CALLBACK - Welcoming users to the library");
-					})
+			.tools(FunctionToolCallback.builder("sayWelcome",
+							(Consumer<Object>) input -> logger.info("CALLBACK - Welcoming users to the library"))
 					.description("Welcome users to the library")
 					.inputType(Void.class)
 					.build())
@@ -103,9 +106,8 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.toolCallbacks(FunctionToolCallback.builder("welcomeUser", (user) -> {
-						logger.info("CALLBACK - Welcoming {} to the library", ((User) user).name());
-					})
+			.tools(FunctionToolCallback.builder("welcomeUser",
+							(Consumer<Object>) user -> logger.info("CALLBACK - Welcoming {} to the library", ((User) user).name()))
 					.description("Welcome a specific user to the library")
 					.inputType(User.class)
 					.build())
@@ -139,7 +141,7 @@ public class FunctionToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
-			.toolCallbacks(FunctionToolCallback.builder("availableBooksByAuthor", function)
+			.tools(FunctionToolCallback.builder("availableBooksByAuthor", function)
 				.description("Get the list of books written by the given author available in the library")
 				.inputType(Author.class)
 				.build())
@@ -156,7 +158,7 @@ public class FunctionToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
 			.tools(Tools.AUTHORS_BY_BOOKS)
 			.call()
 			.content();
@@ -172,8 +174,8 @@ public class FunctionToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
-			.toolCallbacks(FunctionToolCallback.builder("authorsByAvailableBooks", function)
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "The Lion, the Witch and the Wardrobe"))
+			.tools(FunctionToolCallback.builder("authorsByAvailableBooks", function)
 				.description("Get the list of authors who wrote the given books available in the library")
 				.inputType(Books.class)
 				.build())
@@ -200,7 +202,7 @@ public class FunctionToolCallbackTests {
 		@Bean(WELCOME)
 		@Description("Welcome users to the library")
 		Consumer<Void> welcome() {
-			return (input) -> logger.info("Welcoming users to the library");
+			return input -> logger.info("Welcoming users to the library");
 		}
 
 		@Bean(WELCOME_USER)
@@ -213,8 +215,8 @@ public class FunctionToolCallbackTests {
 		@Description("Get the list of books written by the given author available in the library")
 		Function<Author, List<Book>> booksByAuthor() {
 			return author -> {
-				logger.info("Getting books by author: {}", author.name());
-				return bookService.getBooksByAuthor(author);
+				logger.info("Getting books by author: " + author.name());
+				return this.bookService.getBooksByAuthor(author);
 			};
 		}
 
@@ -222,8 +224,9 @@ public class FunctionToolCallbackTests {
 		@Description("Get the list of authors who wrote the given books available in the library")
 		Function<Books, List<Author>> authorsByBooks() {
 			return books -> {
-				logger.info("Getting authors by books: {}", books.books().stream().map(Book::title).toList());
-				return bookService.getAuthorsByBook(books.books());
+				List<Author> authors = this.bookService.getAuthorsByBook(books.books());
+				logger.info("Getting authors: {} by books: {}", authors, books.books().stream().map(Book::title).toList());
+				return authors;
 			};
 		}
 
@@ -232,42 +235,7 @@ public class FunctionToolCallbackTests {
 	public record User(String name) {
 	}
 
-	public record Author(String name) {
-	}
-
-	public record Authors(List<Author> authors) {
-	}
-
-	public record Book(String title, String author) {
-	}
-
 	public record Books(List<Book> books) {
-	}
-
-	static class BookService {
-
-		private static final Map<Integer, Book> books = new ConcurrentHashMap<>();
-
-		static {
-			books.put(1, new Book("His Dark Materials", "Philip Pullman"));
-			books.put(2, new Book("Narnia", "C.S. Lewis"));
-			books.put(3, new Book("The Hobbit", "J.R.R. Tolkien"));
-			books.put(4, new Book("The Lord of The Rings", "J.R.R. Tolkien"));
-			books.put(5, new Book("The Silmarillion", "J.R.R. Tolkien"));
-		}
-
-		public List<Book> getBooksByAuthor(Author author) {
-			return books.values().stream().filter(book -> author.name().equals(book.author())).toList();
-		}
-
-		public List<Author> getAuthorsByBook(List<Book> booksToSearch) {
-			return books.values()
-				.stream()
-				.filter(book -> booksToSearch.stream().anyMatch(b -> b.title().equals(book.title())))
-				.map(book -> new Author(book.author()))
-				.toList();
-		}
-
 	}
 
 	// @formatter:on

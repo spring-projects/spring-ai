@@ -52,6 +52,12 @@ b. For a managed offering https://astra.datastax.com/[Astra DB] offers a healthy
 
 == Dependencies
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 TIP: For dependency management, we recommend using the Spring AI BOM as explained in the xref:getting-started.adoc#dependency-management[Dependency Management] section.
 
 Add these dependencies to your project:
@@ -72,7 +78,7 @@ Add these dependencies to your project:
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-cassandra-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-cassandra</artifactId>
 </dependency>
 ----
 
@@ -319,3 +325,20 @@ nodetool import wikidata articles ${CASSANDRA_DATA}/data/wikidata/articles-*/
 * An alternative to `nodetool import` is to just restart Cassandra.
 * If there are any failures in the indexes they will be rebuilt automatically.
 ====
+
+== Accessing the Native Client
+
+The Cassandra Vector Store implementation provides access to the underlying native Cassandra client (`CqlSession`) through the `getNativeClient()` method:
+
+[source,java]
+----
+CassandraVectorStore vectorStore = context.getBean(CassandraVectorStore.class);
+Optional<CqlSession> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    CqlSession session = nativeClient.get();
+    // Use the native client for Cassandra-specific operations
+}
+----
+
+The native client gives you access to Cassandra-specific features and operations that might not be exposed through the `VectorStore` interface.

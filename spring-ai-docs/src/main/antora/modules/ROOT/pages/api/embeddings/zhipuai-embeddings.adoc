@@ -19,12 +19,19 @@ export SPRING_AI_ZHIPU_AI_API_KEY=<INSERT KEY HERE>
 
 === Add Repositories and BOM
 
-Spring AI artifacts are published in Spring Milestone and Snapshot repositories.   Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
 
 == Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
 
 Spring AI provides Spring Boot auto-configuration for the Azure ZhiPuAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
@@ -33,7 +40,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-zhipuai</artifactId>
 </dependency>
 ----
 
@@ -42,7 +49,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-zhipuai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-zhipuai'
 }
 ----
 
@@ -81,16 +88,29 @@ The prefix `spring.ai.zhipuai` is used as the property prefix that lets you conn
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=zhipuai (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match zhipuai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.zhipuai.embedding` is property prefix that configures the `EmbeddingModel` implementation for ZhiPuAI.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.zhipuai.embedding.enabled | Enable ZhiPuAI embedding model.  | true
+| spring.ai.zhipuai.embedding.enabled (Removed and no longer valid) | Enable ZhiPuAI embedding model.  | true
+| spring.ai.model.embedding | Enable ZhiPuAI embedding model.  | zhipuai
 | spring.ai.zhipuai.embedding.base-url   | Optional overrides the spring.ai.zhipuai.base-url to provide embedding specific url | -
 | spring.ai.zhipuai.embedding.api-key    | Optional overrides the spring.ai.zhipuai.api-key to provide embedding specific api-key  | -
 | spring.ai.zhipuai.embedding.options.model      | The model to use      | embedding-2
+| spring.ai.zhipuai.embedding.options.dimensions      | The number of dimensions, the default value is 2048 when the model is embedding-3 | -
 |====
 
 NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
@@ -185,7 +205,8 @@ var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
 var embeddingModel = new ZhiPuAiEmbeddingModel(api, MetadataMode.EMBED,
 				ZhiPuAiEmbeddingOptions.builder()
-						.model("embedding-2")
+						.model("embedding-3")
+						.dimensions(1536)
 						.build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel

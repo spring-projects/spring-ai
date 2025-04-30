@@ -35,10 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -153,6 +151,8 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author Jihoon Kim
+ * @author YeongMin Song
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -162,6 +162,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
 
 	public static final String DEFAULT_TABLE_NAME = "vector_store";
+
+	public static final PgIdType DEFAULT_ID_TYPE = PgIdType.UUID;
 
 	public static final String DEFAULT_VECTOR_INDEX_NAME = "spring_ai_vector_index";
 
@@ -187,6 +189,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	private final JdbcTemplate jdbcTemplate;
 
 	private final String schemaName;
+
+	private final PgIdType idType;
 
 	private final boolean schemaValidation;
 
@@ -225,6 +229,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				: this.vectorTableName + "_index";
 
 		this.schemaName = builder.schemaName;
+		this.idType = builder.idType;
 		this.schemaValidation = builder.vectorTableValidationsEnabled;
 
 		this.jdbcTemplate = builder.jdbcTemplate;
@@ -273,13 +278,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 
 				var document = batch.get(i);
+				var id = convertIdToPgType(document.getId());
 				var content = document.getText();
 				var json = toJson(document.getMetadata());
 				var embedding = embeddings.get(documents.indexOf(document));
 				var pGvector = new PGvector(embedding);
 
-				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN,
-						UUID.fromString(document.getId()));
+				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, id);
 				StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
 				StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
 				StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
@@ -304,16 +309,32 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 	}
 
-	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
-		int updateCount = 0;
-		for (String id : idList) {
-			int count = this.jdbcTemplate.update("DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?",
-					UUID.fromString(id));
-			updateCount = updateCount + count;
-		}
+	private Object convertIdToPgType(String id) {
+		return switch (getIdType()) {
+			case UUID -> UUID.fromString(id);
+			case TEXT -> id;
+			case INTEGER, SERIAL -> Integer.valueOf(id);
+			case BIGSERIAL -> Long.valueOf(id);
+		};
+	}
 
-		return Optional.of(updateCount == idList.size());
+	@Override
+	public void doDelete(List<String> idList) {
+		String sql = "DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?";
+
+		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				var id = idList.get(i);
+				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, convertIdToPgType(id));
+			}
+
+			@Override
+			public int getBatchSize() {
+				return idList.size();
+			}
+		});
 	}
 
 	@Override
@@ -399,7 +420,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// Enable the PGVector, JSONB and UUID support.
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
-		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+
+		if (this.idType == PgIdType.UUID) {
+			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+		}
 
 		this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", this.getSchemaName()));
 
@@ -410,12 +434,12 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		this.jdbcTemplate.execute(String.format("""
 				CREATE TABLE IF NOT EXISTS %s (
-					id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+					id %s PRIMARY KEY,
 					content text,
 					metadata json,
 					embedding vector(%d)
 				)
-				""", this.getFullyQualifiedTableName(), this.embeddingDimensions()));
+				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.embeddingDimensions()));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
@@ -429,6 +453,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.schemaName + "." + this.vectorTableName;
 	}
 
+	private PgIdType getIdType() {
+		return this.idType;
+	}
+
 	private String getVectorTableName() {
 		return this.vectorTableName;
 	}
@@ -439,6 +467,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private String getVectorIndexName() {
 		return this.vectorIndexName;
+	}
+
+	private String getColumnTypeName() {
+		return switch (getIdType()) {
+			case UUID -> "uuid DEFAULT uuid_generate_v4()";
+			case TEXT -> "text";
+			case INTEGER -> "integer";
+			case SERIAL -> "serial";
+			case BIGSERIAL -> "bigserial";
+		};
 	}
 
 	int embeddingDimensions() {
@@ -477,6 +515,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jdbcTemplate;
+		return Optional.of(client);
+	}
+
 	/**
 	 * By default, pgvector performs exact nearest neighbor search, which provides perfect
 	 * recall. You can add an index to use approximate nearest neighbor search, which
@@ -503,6 +548,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		 * be created without any data in the table.
 		 */
 		HNSW
+
+	}
+
+	/**
+	 * The ID type for the Pg vector store schema. Defaults to UUID.
+	 */
+	public enum PgIdType {
+
+		UUID, TEXT, INTEGER, SERIAL, BIGSERIAL
 
 	}
 
@@ -601,6 +655,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private String vectorTableName = PgVectorStore.DEFAULT_TABLE_NAME;
 
+		private PgIdType idType = PgVectorStore.DEFAULT_ID_TYPE;
+
 		private boolean vectorTableValidationsEnabled = PgVectorStore.DEFAULT_SCHEMA_VALIDATION;
 
 		private int dimensions = PgVectorStore.INVALID_EMBEDDING_DIMENSION;
@@ -628,6 +684,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStoreBuilder vectorTableName(String vectorTableName) {
 			this.vectorTableName = vectorTableName;
+			return this;
+		}
+
+		public PgVectorStoreBuilder idType(PgIdType idType) {
+			this.idType = idType;
 			return this;
 		}
 

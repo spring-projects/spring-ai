@@ -1,4 +1,6 @@
-= Ollama Function Calling
+= Ollama Function Calling (Deprecated)
+
+WARNING: This page describes the previous version of the Function Calling API, which has been deprecated and marked for remove in the next release. The current version is available at xref:api/tools.adoc[Tool Calling]. See the xref:api/tools-migration.adoc[Migration Guide] for more information.
 
 TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
 
@@ -21,7 +23,7 @@ Your function can in turn invoke other 3rd party services to provide the results
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/tool/ToolCallback.java[ToolCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 == How it works
 
@@ -76,7 +78,7 @@ We start by describing the most POJO-friendly options.
 
 In this approach, you define a `@Bean` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `ToolCallback` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 [source,java]
@@ -115,9 +117,9 @@ public record Request(String location, Unit unit) {}
 
 It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
-==== FunctionCallback
+==== ToolCallback
 
-Another way to register a function is to create a `FunctionCallback` like this:
+Another way to register a function is to create a `ToolCallback` like this:
 
 [source,java]
 ----
@@ -125,10 +127,9 @@ Another way to register a function is to create a `FunctionCallback` like this:
 static class Config {
 
 	@Bean
-	public FunctionCallback weatherFunctionInfo() {
+	public FunctionToolCallback weatherFunctionInfo() {
 
-    return FunctionCallback.builder()
-		.function("CurrentWeather", new MockWeatherService()) // (1) function name
+    return FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build();
@@ -142,7 +143,7 @@ It also provides a description (2) and the function signature (3) to let the mod
 
 NOTE: By default, the response converter performs a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionToolCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -155,7 +156,7 @@ OllamaChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		OllamaOptions.builder().function("CurrentWeather").build())); // Enable the function
+		OllamaOptions.builder().tools("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -171,7 +172,7 @@ Here is the current weather for the requested cities:
 - Paris, France: 15.0°C
 ----
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/tool/OllamaFunctionCallbackIT.java[OllamaFunctionCallbackIT.java] test demo this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-ollama/src/test/java/org/springframework/ai/model/ollama/autoconfigure/tool/OllamaFunctionCallbackIT.java[OllamaFunctionCallbackIT.java] test demo this approach.
 
 === Register/Call Functions with Prompt Options
 
@@ -184,8 +185,7 @@ OllamaChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OllamaOptions.builder()
-	.functionCallbacks(List.of(FunctionCallback.builder()
-		.function("CurrentWeather", new MockWeatherService()) // (1) function name and instance        
+	.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
 		.inputType(MockWeatherService.Request.class) // (3) function signature
         .build())) // function code
@@ -198,7 +198,7 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 
 This approach allows you to dynamically choose different functions to be called based on the user input.
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/ollama/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OllamaChatModel` and use it in a prompt request.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-ollama/src/test/java/org/springframework/ai/model/ollama/autoconfigure/tool/auto-configurations/models/spring-ai-autoconfigure-model-ollama/src/test/java/org/springframework/ai/model/ollama/autoconfigure/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OllamaChatModel` and use it in a prompt request.
 
 == Appendices:
 

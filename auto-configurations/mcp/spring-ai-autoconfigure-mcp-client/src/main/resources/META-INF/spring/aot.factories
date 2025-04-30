@@ -1,0 +1,2 @@
+org.springframework.aot.hint.RuntimeHintsRegistrar=\
+	org.springframework.ai.mcp.client.autoconfigure.aot.McpClientAutoConfigurationRuntimeHints

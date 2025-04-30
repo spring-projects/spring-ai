@@ -16,22 +16,21 @@
 
 package org.springframework.ai.testcontainers.service.connection.typesense;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.typesense.TypesenseContainer;
 
-import org.springframework.ai.ResourceUtils;
-import org.springframework.ai.autoconfigure.vectorstore.typesense.TypesenseVectorStoreAutoConfiguration;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.util.ResourceUtils;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.typesense.autoconfigure.TypesenseVectorStoreAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -51,11 +50,7 @@ class TypesenseContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	private static final GenericContainer<?> typesense = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
-		.withExposedPorts(8108)
-		.withCommand("--data-dir", "/tmp", "--enable-cors")
-		.withEnv("TYPESENSE_API_KEY", "secret")
-		.withStartupTimeout(Duration.ofSeconds(100));
+	private static final TypesenseContainer typesense = new TypesenseContainer(TypesenseImage.DEFAULT_IMAGE);
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

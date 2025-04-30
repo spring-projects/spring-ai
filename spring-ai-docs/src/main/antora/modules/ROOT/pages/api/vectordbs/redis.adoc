@@ -21,6 +21,12 @@ link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] ex
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Redis Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
@@ -28,7 +34,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-redis-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-redis</artifactId>
 </dependency>
 ----
 
@@ -37,13 +43,13 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis'
 }
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 
@@ -84,14 +90,24 @@ A simple configuration can be provided via Spring Boot's `application.yml`,
 spring:
   data:
     redis:
-      uri: <redis instance uri>
+      url: <redis instance url>
   ai:
     vectorstore:
       redis:
         initialize-schema: true
         index-name: custom-index
         prefix: custom-prefix
-        batching-strategy: TOKEN_COUNT # Optional: Controls how documents are batched for embedding
+----
+
+For redis connection configuration, alternatively, a simple configuration can be provided via Spring Boot's _application.properties_.
+
+[source,properties]
+----
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+spring.data.redis.username=default
+spring.data.redis.password=
+
 ----
 
 Properties starting with `spring.ai.vectorstore.redis.*` are used to configure the `RedisVectorStore`:
@@ -103,7 +119,6 @@ Properties starting with `spring.ai.vectorstore.redis.*` are used to configure t
 |`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.redis.index-name` | The name of the index to store the vectors | `spring-ai-index`
 |`spring.ai.vectorstore.redis.prefix` | The prefix for Redis keys | `embedding:`
-|`spring.ai.vectorstore.redis.batching-strategy` | Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
 |===
 
 == Metadata Filtering
@@ -212,3 +227,20 @@ public EmbeddingModel embeddingModel() {
 You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expressions.
 The `metadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
 ====
+
+== Accessing the Native Client
+
+The Redis Vector Store implementation provides access to the underlying native Redis client (`JedisPooled`) through the `getNativeClient()` method:
+
+[source,java]
+----
+RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    JedisPooled jedis = nativeClient.get();
+    // Use the native client for Redis-specific operations
+}
+----
+
+The native client gives you access to Redis-specific features and operations that might not be exposed through the `VectorStore` interface.

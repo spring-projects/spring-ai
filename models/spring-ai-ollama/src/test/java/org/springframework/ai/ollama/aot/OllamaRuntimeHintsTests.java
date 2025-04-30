@@ -16,6 +16,7 @@
 
 package org.springframework.ai.ollama.aot;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,6 @@ import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
-import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 class OllamaRuntimeHintsTests {
 
@@ -37,15 +37,20 @@ class OllamaRuntimeHintsTests {
 		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
 		ollamaRuntimeHints.registerHints(runtimeHints, null);
 
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(OllamaApi.class);
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.ollama");
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
-			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
+			assertThat(registeredTypes.contains(jsonAnnotatedClass)).isTrue();
 		}
 
-		jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(OllamaOptions.class);
-		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
-			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
-		}
+		// Check a few more specific ones
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.Tool.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.Message.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaOptions.class))).isTrue();
 	}
 
 }

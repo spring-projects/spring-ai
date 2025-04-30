@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -40,16 +41,16 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
-import org.springframework.ai.zhipuai.metadata.ZhiPuAiUsage;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * ZhiPuAI Embedding Model implementation.
  *
  * @author Geng Rong
- * @since 1.0.0 M1
+ * @author Soby Chacko
+ * @since 1.0.0
  */
 public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -153,12 +154,12 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 			logger.warn(
 					"ZhiPu Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
 		}
-		ZhiPuAiEmbeddingOptions requestOptions = mergeOptions(request.getOptions(), this.defaultOptions);
+
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(ZhiPuApiConstants.PROVIDER_NAME)
-			.requestOptions(requestOptions)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -170,7 +171,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 				var totalUsage = new ZhiPuAiApi.Usage(0, 0, 0);
 
 				for (String inputContent : request.getInstructions()) {
-					var apiRequest = createEmbeddingRequest(inputContent, requestOptions);
+					var apiRequest = createEmbeddingRequest(inputContent, embeddingRequest.getOptions());
 
 					ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding> response = this.retryTemplate
 						.execute(ctx -> this.zhiPuAiApi.embeddings(apiRequest).getBody());
@@ -190,7 +191,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 				String model = (request.getOptions() != null && request.getOptions().getModel() != null)
 						? request.getOptions().getModel() : "unknown";
 
-				var metadata = new EmbeddingResponseMetadata(model, ZhiPuAiUsage.from(totalUsage));
+				var metadata = new EmbeddingResponseMetadata(model, getDefaultUsage(totalUsage));
 
 				var indexCounter = new AtomicInteger(0);
 
@@ -206,26 +207,32 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
-	/**
-	 * Merge runtime and default {@link EmbeddingOptions} to compute the final options to
-	 * use in the request.
-	 */
-	private ZhiPuAiEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions runtimeOptions,
-			ZhiPuAiEmbeddingOptions defaultOptions) {
-		var runtimeOptionsForProvider = ModelOptionsUtils.copyToTarget(runtimeOptions, EmbeddingOptions.class,
-				ZhiPuAiEmbeddingOptions.class);
+	private DefaultUsage getDefaultUsage(ZhiPuAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
+	}
 
-		if (runtimeOptionsForProvider == null) {
-			return defaultOptions;
+	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		ZhiPuAiEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					ZhiPuAiEmbeddingOptions.class);
 		}
 
-		return ZhiPuAiEmbeddingOptions.builder()
-			.model(ModelOptionsUtils.mergeOption(runtimeOptionsForProvider.getModel(), defaultOptions.getModel()))
-			.build();
+		// Define request options by merging runtime options and default options
+		ZhiPuAiEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				ZhiPuAiEmbeddingOptions.class);
+
+		// Validate request options
+		if (!StringUtils.hasText(requestOptions.getModel())) {
+			throw new IllegalArgumentException("model cannot be null or empty");
+		}
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
 	}
 
 	private ZhiPuAiApi.EmbeddingRequest<String> createEmbeddingRequest(String text, EmbeddingOptions requestOptions) {
-		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel());
+		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel(), requestOptions.getDimensions());
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {

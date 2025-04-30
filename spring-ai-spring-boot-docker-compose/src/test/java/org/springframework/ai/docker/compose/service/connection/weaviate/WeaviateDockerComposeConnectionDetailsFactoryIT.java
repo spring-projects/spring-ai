@@ -16,11 +16,10 @@
 
 package org.springframework.ai.docker.compose.service.connection.weaviate;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.autoconfigure.vectorstore.weaviate.WeaviateConnectionDetails;
+import org.springframework.ai.vectorstore.weaviate.autoconfigure.WeaviateConnectionDetails;
 import org.springframework.boot.docker.compose.service.connection.test.AbstractDockerComposeIT;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +31,6 @@ class WeaviateDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComp
 	}
 
 	@Test
-	@Disabled("GH-2026")
 	void runCreatesConnectionDetails() {
 		WeaviateConnectionDetails connectionDetails = run(WeaviateConnectionDetails.class);
 		assertThat(connectionDetails.getHost()).isNotNull();

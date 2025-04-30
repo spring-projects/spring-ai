@@ -1,7 +1,7 @@
 package org.springframework.ai.deepseek;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.content.Media;
 
 import java.util.List;
 import java.util.Map;

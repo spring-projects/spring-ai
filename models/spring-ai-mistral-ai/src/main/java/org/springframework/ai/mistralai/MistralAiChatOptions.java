@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.ai.mistralai;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +33,9 @@ import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -45,7 +48,7 @@ import org.springframework.util.Assert;
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MistralAiChatOptions implements FunctionCallingOptions {
+public class MistralAiChatOptions implements ToolCallingChatOptions {
 
 	/**
 	 * ID of the model to use
@@ -98,6 +101,28 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 	private @JsonProperty("stop") List<String> stop;
 
 	/**
+	 * Number between -2.0 and 2.0. frequency_penalty penalizes the repetition of words
+	 * based on their frequency in the generated text. A higher frequency penalty
+	 * discourages the model from repeating words that have already appeared frequently in
+	 * the output, promoting diversity and reducing repetition.
+	 */
+	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
+
+	/**
+	 * Number between -2.0 and 2.0. presence_penalty determines how much the model
+	 * penalizes the repetition of words or phrases. A higher presence penalty encourages
+	 * the model to use a wider variety of words and phrases, making the output more
+	 * diverse and creative.
+	 */
+	private @JsonProperty("presence_penalty") Double presencePenalty;
+
+	/**
+	 * Number of completions to return for each request, input tokens are only billed
+	 * once.
+	 */
+	private @JsonProperty("n") Integer n;
+
+	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a
 	 * tool. Use this to provide a list of functions the model may generate JSON inputs
 	 * for.
@@ -112,34 +137,27 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 	private @JsonProperty("tool_choice") ToolChoice toolChoice;
 
 	/**
-	 * MistralAI Tool Function Callbacks to register with the ChatModel. For Prompt
-	 * Options the functionCallbacks are automatically enabled for the duration of the
-	 * prompt execution. For Default Options the functionCallbacks are registered but
-	 * disabled by default. Use the enableFunctions to set the functions from the registry
-	 * to be used by the ChatModel chat completion requests.
+	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
+	 * completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests. Functions with those names must exist in the
-	 * functionCallbacks registry. The {@link #functionCallbacks} from the PromptOptions
-	 * are automatically enabled for the duration of the prompt execution.
-	 *
-	 * Note that function enabled with the default options are enabled for all chat
-	 * completion requests. This could impact the token count and the billing. If the
-	 * functions is set in a prompt options, then the enabled functions are only active
-	 * for the duration of this prompt execution.
+	 * Collection of tool names to be resolved at runtime and used for tool calling in the
+	 * chat completion requests.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
+
+	/**
+	 * Whether to enable the tool execution lifecycle internally in ChatModel.
+	 */
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Boolean proxyToolCalls;
-
-	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
 		return new Builder();
@@ -154,11 +172,14 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 			.topP(fromOptions.getTopP())
 			.responseFormat(fromOptions.getResponseFormat())
 			.stop(fromOptions.getStop())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.n(fromOptions.getN())
 			.tools(fromOptions.getTools())
 			.toolChoice(fromOptions.getToolChoice())
-			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
-			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolCallbacks(fromOptions.getToolCallbacks())
+			.toolNames(fromOptions.getToolNames())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -259,37 +280,71 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
-	}
-
-	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		Assert.notNull(functionCallbacks, "FunctionCallbacks must not be null");
-		this.functionCallbacks = functionCallbacks;
-	}
-
-	@Override
-	public Set<String> getFunctions() {
-		return this.functions;
-	}
-
-	@Override
-	public void setFunctions(Set<String> functions) {
-		Assert.notNull(functions, "Function must not be null");
-		this.functions = functions;
-	}
-
-	@Override
-	@JsonIgnore
 	public Double getFrequencyPenalty() {
-		return null;
+		return this.frequencyPenalty;
+	}
+
+	public void setFrequencyPenalty(Double frequencyPenalty) {
+		this.frequencyPenalty = frequencyPenalty;
+	}
+
+	@Override
+	public Double getPresencePenalty() {
+		return this.presencePenalty;
+	}
+
+	public void setPresencePenalty(Double presencePenalty) {
+		this.presencePenalty = presencePenalty;
+	}
+
+	public Integer getN() {
+		return this.n;
+	}
+
+	public void setN(Integer n) {
+		this.n = n;
 	}
 
 	@Override
 	@JsonIgnore
-	public Double getPresencePenalty() {
-		return null;
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -299,20 +354,13 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
-	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
-	}
-
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
-	}
-
-	@Override
+	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
+	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
@@ -324,10 +372,9 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 
 	@Override
 	public int hashCode() {
-
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
-				this.responseFormat, this.stop, this.tools, this.toolChoice, this.functionCallbacks, this.functions,
-				this.proxyToolCalls, this.toolContext);
+				this.responseFormat, this.stop, this.frequencyPenalty, this.presencePenalty, this.n, this.tools,
+				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
@@ -347,10 +394,12 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 				&& Objects.equals(this.safePrompt, other.safePrompt)
 				&& Objects.equals(this.randomSeed, other.randomSeed)
 				&& Objects.equals(this.responseFormat, other.responseFormat) && Objects.equals(this.stop, other.stop)
+				&& Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
+				&& Objects.equals(this.presencePenalty, other.presencePenalty) && Objects.equals(this.n, other.n)
 				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
-				&& Objects.equals(this.functionCallbacks, other.functionCallbacks)
-				&& Objects.equals(this.functions, other.functions)
-				&& Objects.equals(this.proxyToolCalls, other.proxyToolCalls)
+				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
+				&& Objects.equals(this.toolNames, other.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
@@ -388,6 +437,21 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
+		public Builder frequencyPenalty(Double frequencyPenalty) {
+			this.options.frequencyPenalty = frequencyPenalty;
+			return this;
+		}
+
+		public Builder presencePenalty(Double presencePenalty) {
+			this.options.presencePenalty = presencePenalty;
+			return this;
+		}
+
+		public Builder n(Integer n) {
+			this.options.n = n;
+			return this;
+		}
+
 		public Builder temperature(Double temperature) {
 			this.options.setTemperature(temperature);
 			return this;
@@ -413,25 +477,31 @@ public class MistralAiChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
-		public Builder functions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
-		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
 			return this;
 		}
 
-		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
 		}
 

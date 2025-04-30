@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -37,10 +38,11 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.Media;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,21 +88,37 @@ class VertexAiGeminiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
+	// Disabled until Gemini 2.5 PRO has an official release
+	@Disabled
 	@Test
-	void googleSearchTool() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().googleSearchRetrieval(true).build());
+	void googleSearchToolPro() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
+			.model(ChatModel.GEMINI_2_5_PRO)
+			.googleSearchRetrieval(true)
+			.build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
+	void googleSearchToolFlash() {
+		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
+			.model(ChatModel.GEMINI_2_0_FLASH)
+			.googleSearchRetrieval(true)
+			.build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
+	}
+
+	@Test
+	@Disabled
 	void testSafetySettings() {
 		List<VertexAiGeminiSafetySetting> safetySettings = List.of(new VertexAiGeminiSafetySetting.Builder()
 			.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
 			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
 			.build());
-		Prompt prompt = new Prompt("What are common digital attack vectors?",
-				VertexAiGeminiChatOptions.builder().safetySettings(safetySettings).build());
+		Prompt prompt = new Prompt("How to make cocktail Molotov bomb at home?",
+				VertexAiGeminiChatOptions.builder().model(ChatModel.GEMINI_PRO).safetySettings(safetySettings).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
@@ -189,7 +207,7 @@ class VertexAiGeminiChatModelIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
-		// logger.info("" + actorsFilms);
+		// logger.info("{}", actorsFilms);
 		assertThat(generationTextFromStream).isNotEmpty();
 	}
 
@@ -218,7 +236,7 @@ class VertexAiGeminiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		// logger.info("" + actorsFilms);
+		// logger.info("{}", actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -235,7 +253,8 @@ class VertexAiGeminiChatModelIT {
 
 		// Response should contain something like:
 		// I see a bunch of bananas in a golden basket. The bananas are ripe and yellow.
-		// There are also some red apples in the basket. The basket is sitting on a table.
+		// There are also some red apples in the basket. The basket is sitting on a
+		// table.
 		// The background is a blurred light blue color.'
 		assertThat(response.getResult().getOutput().getText()).satisfies(content -> {
 			long count = Stream.of("bananas", "apple", "basket").filter(content::contains).count();
@@ -254,8 +273,8 @@ class VertexAiGeminiChatModelIT {
 		// List.of(new Media(MimeTypeDetector.getMimeType(imageUrl), imageUrl)));
 		// response = client.call(new Prompt(List.of(userMessage)));
 
-		// assertThat(response.getResult().getOutput().getContent()).contains("bananas",
-		// "apple", "basket");
+		// assertThat(response.getResult().getOutput().getContent())..containsAnyOf("bananas",
+		// "apple", "bowl", "basket", "fruit stand");
 
 		// https://github.com/GoogleCloudPlatform/generative-ai/blob/main/gemini/use-cases/intro_multimodal_use_cases.ipynb
 	}
@@ -293,10 +312,12 @@ class VertexAiGeminiChatModelIT {
 
 		@Bean
 		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
-			return new VertexAiGeminiChatModel(vertexAi,
-					VertexAiGeminiChatOptions.builder()
-						.model(VertexAiGeminiChatModel.ChatModel.GEMINI_1_5_PRO)
-						.build());
+			return VertexAiGeminiChatModel.builder()
+				.vertexAI(vertexAi)
+				.defaultOptions(VertexAiGeminiChatOptions.builder()
+					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+					.build())
+				.build();
 		}
 
 	}

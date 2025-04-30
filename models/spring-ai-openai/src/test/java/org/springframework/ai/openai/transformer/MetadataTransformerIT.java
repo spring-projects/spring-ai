@@ -24,14 +24,13 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.transformer.KeywordMetadataEnricher;
+import org.springframework.ai.chat.transformer.SummaryMetadataEnricher;
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.transformer.ContentFormatTransformer;
-import org.springframework.ai.transformer.KeywordMetadataEnricher;
-import org.springframework.ai.transformer.SummaryMetadataEnricher;
-import org.springframework.ai.transformer.SummaryMetadataEnricher.SummaryType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -163,13 +162,12 @@ public class MetadataTransformerIT {
 				throw new IllegalArgumentException(
 						"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 			}
-			return new OpenAiApi(apiKey);
+			return OpenAiApi.builder().apiKey(apiKey).build();
 		}
 
 		@Bean
 		public OpenAiChatModel openAiChatModel(OpenAiApi openAiApi) {
-			OpenAiChatModel openAiChatModel = new OpenAiChatModel(openAiApi);
-			return openAiChatModel;
+			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
 		}
 
 		@Bean
@@ -179,8 +177,8 @@ public class MetadataTransformerIT {
 
 		@Bean
 		public SummaryMetadataEnricher summaryMetadata(OpenAiChatModel chatModel) {
-			return new SummaryMetadataEnricher(chatModel,
-					List.of(SummaryType.PREVIOUS, SummaryType.CURRENT, SummaryType.NEXT));
+			return new SummaryMetadataEnricher(chatModel, List.of(SummaryMetadataEnricher.SummaryType.PREVIOUS,
+					SummaryMetadataEnricher.SummaryType.CURRENT, SummaryMetadataEnricher.SummaryType.NEXT));
 		}
 
 		@Bean

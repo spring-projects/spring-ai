@@ -19,7 +19,6 @@ package org.springframework.ai.vectorstore.gemfire;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -32,10 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -231,7 +228,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		try {
 			this.client.method(HttpMethod.DELETE)
 				.uri("/" + this.indexName + EMBEDDINGS)
@@ -242,9 +239,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		}
 		catch (Exception e) {
 			logger.warn("Error removing embedding: {}", e.getMessage(), e);
-			return Optional.of(false);
 		}
-		return Optional.of(true);
 	}
 
 	@Override

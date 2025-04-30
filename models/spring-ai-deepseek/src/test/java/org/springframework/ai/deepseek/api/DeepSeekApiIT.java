@@ -32,12 +32,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 public class DeepSeekApiIT {
 
-	DeepSeekApi DeepSeekApi = new DeepSeekApi(System.getenv("DEEPSEEK_API_KEY"));
+	DeepSeekApi deepSeekApi = DeepSeekApi.builder().apiKey(System.getenv("DEEPSEEK_API_KEY")).build();
 
 	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		ResponseEntity<ChatCompletion> response = DeepSeekApi.chatCompletionEntity(
+		ResponseEntity<ChatCompletion> response = deepSeekApi.chatCompletionEntity(
 				new ChatCompletionRequest(List.of(chatCompletionMessage), ChatModel.DEEPSEEK_CHAT.value, 1D, false));
 
 		assertThat(response).isNotNull();
@@ -47,7 +47,7 @@ public class DeepSeekApiIT {
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
-		Flux<ChatCompletionChunk> response = DeepSeekApi.chatCompletionStream(
+		Flux<ChatCompletionChunk> response = deepSeekApi.chatCompletionStream(
 				new ChatCompletionRequest(List.of(chatCompletionMessage), ChatModel.DEEPSEEK_CHAT.value, 1D, true));
 
 		assertThat(response).isNotNull();

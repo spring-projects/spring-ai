@@ -18,7 +18,7 @@ package org.springframework.ai.testcontainers.service.connection.qdrant;
 
 import org.testcontainers.qdrant.QdrantContainer;
 
-import org.springframework.ai.autoconfigure.vectorstore.qdrant.QdrantConnectionDetails;
+import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantConnectionDetails;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
 

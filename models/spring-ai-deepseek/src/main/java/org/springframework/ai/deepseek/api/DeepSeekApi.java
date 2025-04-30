@@ -22,8 +22,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.deepseek.PrefixCompletionAssistantMessage;
+import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
+import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -70,66 +73,6 @@ public class DeepSeekApi {
 	private DeepSeekStreamFunctionCallingHelper chunkMerger = new DeepSeekStreamFunctionCallingHelper();
 
 	/**
-	 * Create a new chat completion api with base URL set to https://api.deepseek.com
-	 * @param apiKey DeepSeek apiKey.
-	 */
-	public DeepSeekApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey);
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey DeepSeek apiKey.
-	 */
-	public DeepSeekApi(String baseUrl, String apiKey) {
-		this(baseUrl, apiKey, RestClient.builder(), WebClient.builder());
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey DeepSeek apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 */
-	public DeepSeekApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder) {
-		this(baseUrl, apiKey, restClientBuilder, webClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey DeepSeek apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	public DeepSeekApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, apiKey, DEFAULT_COMPLETIONS_PATH, DEFAULT_BETA_PATH, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey DeepSeek apiKey.
-	 * @param completionsPath the path to the chat completions endpoint.
-	 * @param betaPrefixPath the prefix path to the beta feature endpoint.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	public DeepSeekApi(String baseUrl, String apiKey, String completionsPath, String betaPrefixPath,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, apiKey, CollectionUtils.toMultiValueMap(Map.of()), completionsPath, betaPrefixPath,
-				restClientBuilder, webClientBuilder, responseErrorHandler);
-	}
-
-	/**
 	 * Create a new chat completion api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey DeepSeek apiKey.
@@ -140,7 +83,7 @@ public class DeepSeekApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public DeepSeekApi(String baseUrl, String apiKey, MultiValueMap<String, String> headers, String completionsPath,
+	public DeepSeekApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String betaPrefixPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -152,7 +95,7 @@ public class DeepSeekApi {
 		this.betaPrefixPath = betaPrefixPath;
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			h.setBearerAuth(apiKey);
+			h.setBearerAuth(apiKey.getValue());
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
@@ -948,6 +891,90 @@ public class DeepSeekApi {
 			.anyMatch(prefix -> prefix);
 		String endpointPrefix = isPrefix ? betaPrefixPath : "";
 		return endpointPrefix + completionsPath;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private ApiKey apiKey;
+
+		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+
+		private String completionsPath = DEFAULT_COMPLETIONS_PATH;
+
+		private String betaPrefixPath = DEFAULT_BETA_PATH;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder headers(MultiValueMap<String, String> headers) {
+			Assert.notNull(headers, "headers cannot be null");
+			this.headers = headers;
+			return this;
+		}
+
+		public Builder completionsPath(String completionsPath) {
+			Assert.hasText(completionsPath, "completionsPath cannot be null or empty");
+			this.completionsPath = completionsPath;
+			return this;
+		}
+
+		public Builder betaPrefixPath(String betaPrefixPath) {
+			Assert.hasText(betaPrefixPath, "betaPrefixPath cannot be null or empty");
+			this.betaPrefixPath = betaPrefixPath;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public DeepSeekApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new DeepSeekApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath, this.betaPrefixPath,
+					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+		}
+
 	}
 
 }

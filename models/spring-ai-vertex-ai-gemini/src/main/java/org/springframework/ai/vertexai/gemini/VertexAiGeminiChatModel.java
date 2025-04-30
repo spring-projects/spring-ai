@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,11 @@
 
 package org.springframework.ai.vertexai.gemini;
 
+import com.google.cloud.vertexai.api.Tool.GoogleSearch;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -47,7 +46,10 @@ import com.google.protobuf.util.JsonFormat;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -57,7 +59,10 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.model.AbstractToolCallSupport;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -68,16 +73,19 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
-import org.springframework.ai.vertexai.gemini.metadata.VertexAiUsage;
+import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.support.RetryTemplate;
@@ -86,7 +94,37 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Vertex AI Gemini Chat Model implementation.
+ * Vertex AI Gemini Chat Model implementation that provides access to Google's Gemini
+ * language models.
+ *
+ * <p>
+ * Key features include:
+ * <ul>
+ * <li>Support for multiple Gemini model versions including Gemini Pro, Gemini 1.5 Pro,
+ * Gemini 1.5/2.0 Flash variants</li>
+ * <li>Tool/Function calling capabilities through {@link ToolCallingManager}</li>
+ * <li>Streaming support via {@link #stream(Prompt)} method</li>
+ * <li>Configurable safety settings through {@link VertexAiGeminiSafetySetting}</li>
+ * <li>Support for system messages and multi-modal content (text and images)</li>
+ * <li>Built-in retry mechanism and observability through Micrometer</li>
+ * <li>Google Search Retrieval integration</li>
+ * </ul>
+ *
+ * <p>
+ * The model can be configured with various options including temperature, top-k, top-p
+ * sampling, maximum output tokens, and candidate count through
+ * {@link VertexAiGeminiChatOptions}.
+ *
+ * <p>
+ * Use the {@link Builder} to create instances with custom configurations:
+ *
+ * <pre>{@code
+ * VertexAiGeminiChatModel model = VertexAiGeminiChatModel.builder()
+ * 		.vertexAI(vertexAI)
+ * 		.defaultOptions(options)
+ * 		.toolCallingManager(toolManager)
+ * 		.build();
+ * }</pre>
  *
  * @author Christian Tzolov
  * @author Grogdunn
@@ -96,11 +134,19 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Jihoon Kim
  * @author Alexandros Pappas
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.1
+ * @see VertexAiGeminiChatOptions
+ * @see ToolCallingManager
+ * @see ChatModel
  */
-public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements ChatModel, DisposableBean {
+public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private final VertexAI vertexAI;
 
@@ -119,51 +165,75 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	private final ObservationRegistry observationRegistry;
 
 	/**
+	 * Tool calling manager used to call tools.
+	 */
+	private final ToolCallingManager toolCallingManager;
+
+	/**
+	 * The tool execution eligibility predicate used to determine if a tool can be
+	 * executed.
+	 */
+	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+	/**
 	 * Conventions to use for generating observations.
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public VertexAiGeminiChatModel(VertexAI vertexAI) {
-		this(vertexAI, VertexAiGeminiChatOptions.builder().model(ChatModel.GEMINI_1_5_PRO).temperature(0.8).build());
+	/**
+	 * Creates a new instance of VertexAiGeminiChatModel.
+	 * @param vertexAI the Vertex AI instance to use
+	 * @param defaultOptions the default options to use
+	 * @param toolCallingManager the tool calling manager to use. It is wrapped in a
+	 * {@link VertexToolCallingManager} to ensure compatibility with Vertex AI's OpenAPI
+	 * schema format.
+	 * @param retryTemplate the retry template to use
+	 * @param observationRegistry the observation registry to use
+	 */
+	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
+		this(vertexAI, defaultOptions, toolCallingManager, retryTemplate, observationRegistry,
+				new DefaultToolExecutionEligibilityPredicate());
 	}
 
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options) {
-		this(vertexAI, options, null);
-	}
-
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver) {
-		this(vertexAI, options, functionCallbackResolver, List.of());
-	}
-
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks) {
-		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate) {
-		this(vertexAI, options, functionCallbackResolver, toolFunctionCallbacks, retryTemplate,
-				ObservationRegistry.NOOP);
-	}
-
-	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions options,
-			FunctionCallbackResolver functionCallbackResolver, List<FunctionCallback> toolFunctionCallbacks,
-			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
-
-		super(functionCallbackResolver, options, toolFunctionCallbacks);
+	/**
+	 * Creates a new instance of VertexAiGeminiChatModel.
+	 * @param vertexAI the Vertex AI instance to use
+	 * @param defaultOptions the default options to use
+	 * @param toolCallingManager the tool calling manager to use. It is wrapped in a
+	 * {@link VertexToolCallingManager} to ensure compatibility with Vertex AI's OpenAPI
+	 * schema format.
+	 * @param retryTemplate the retry template to use
+	 * @param observationRegistry the observation registry to use
+	 * @param toolExecutionEligibilityPredicate the tool execution eligibility predicate
+	 */
+	public VertexAiGeminiChatModel(VertexAI vertexAI, VertexAiGeminiChatOptions defaultOptions,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate, ObservationRegistry observationRegistry,
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
 		Assert.notNull(vertexAI, "VertexAI must not be null");
-		Assert.notNull(options, "VertexAiGeminiChatOptions must not be null");
-		Assert.notNull(options.getModel(), "VertexAiGeminiChatOptions.modelName must not be null");
+		Assert.notNull(defaultOptions, "VertexAiGeminiChatOptions must not be null");
+		Assert.notNull(defaultOptions.getModel(), "VertexAiGeminiChatOptions.modelName must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		Assert.notNull(toolCallingManager, "ToolCallingManager must not be null");
+		Assert.notNull(toolExecutionEligibilityPredicate, "ToolExecutionEligibilityPredicate must not be null");
 
 		this.vertexAI = vertexAI;
-		this.defaultOptions = options;
-		this.generationConfig = toGenerationConfig(options);
+		this.defaultOptions = defaultOptions;
+		this.generationConfig = toGenerationConfig(defaultOptions);
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
+		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+
+		// Wrap the provided tool calling manager in a VertexToolCallingManager to ensure
+		// compatibility with Vertex AI's OpenAPI schema format.
+		if (toolCallingManager instanceof VertexToolCallingManager) {
+			this.toolCallingManager = toolCallingManager;
+		}
+		else {
+			this.toolCallingManager = new VertexToolCallingManager(toolCallingManager);
+		}
 	}
 
 	private static GeminiMessageType toGeminiMessageType(@NonNull MessageType type) {
@@ -287,13 +357,15 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 	// https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		var requestPrompt = this.buildRequestPrompt(prompt);
+		return this.internalCall(requestPrompt, null);
+	}
 
-		VertexAiGeminiChatOptions vertexAiGeminiChatOptions = vertexAiGeminiChatOptions(prompt);
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(VertexAiGeminiConstants.PROVIDER_NAME)
-			.requestOptions(vertexAiGeminiChatOptions)
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -301,7 +373,7 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 					this.observationRegistry)
 			.observe(() -> this.retryTemplate.execute(context -> {
 
-				var geminiRequest = createGeminiRequest(prompt, vertexAiGeminiChatOptions);
+				var geminiRequest = createGeminiRequest(prompt);
 
 				GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
 
@@ -311,33 +383,100 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 					.flatMap(List::stream)
 					.toList();
 
-				ChatResponse chatResponse = new ChatResponse(generations,
-						toChatResponseMetadata(generateContentResponse));
+				GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
+				Usage currentUsage = (usage != null)
+						? new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount())
+						: new EmptyUsage();
+				Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
+				ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 
 				observationContext.setResponse(chatResponse);
 				return chatResponse;
 			}));
 
-		if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(response, Set.of(FinishReason.STOP.name()))) {
-			var toolCallConversation = handleToolCalls(prompt, response);
-			// Recursively call the call method with the tool call message
-			// conversation that contains the call responses.
-			return this.call(new Prompt(toolCallConversation, prompt.getOptions()));
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+			if (toolExecutionResult.returnDirect()) {
+				// Return tool execution result directly to the client.
+				return ChatResponse.builder()
+					.from(response)
+					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					.build();
+			}
+			else {
+				// Send the tool execution result back to the model.
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+						response);
+			}
 		}
 
 		return response;
 
 	}
 
+	Prompt buildRequestPrompt(Prompt prompt) {
+		// Process runtime options
+		VertexAiGeminiChatOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						VertexAiGeminiChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						VertexAiGeminiChatOptions.class);
+			}
+		}
+
+		// Define request options by merging runtime options and default options
+		VertexAiGeminiChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				VertexAiGeminiChatOptions.class);
+
+		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
+		// Jackson, used by ModelOptionsUtils.
+		if (runtimeOptions != null) {
+			requestOptions.setInternalToolExecutionEnabled(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
+							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
+					this.defaultOptions.getToolNames()));
+			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
+					this.defaultOptions.getToolCallbacks()));
+			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
+					this.defaultOptions.getToolContext()));
+
+			requestOptions.setGoogleSearchRetrieval(ModelOptionsUtils.mergeOption(
+					runtimeOptions.getGoogleSearchRetrieval(), this.defaultOptions.getGoogleSearchRetrieval()));
+			requestOptions.setSafetySettings(ModelOptionsUtils.mergeOption(runtimeOptions.getSafetySettings(),
+					this.defaultOptions.getSafetySettings()));
+		}
+		else {
+			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setToolNames(this.defaultOptions.getToolNames());
+			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
+			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+
+			requestOptions.setGoogleSearchRetrieval(this.defaultOptions.getGoogleSearchRetrieval());
+			requestOptions.setSafetySettings(this.defaultOptions.getSafetySettings());
+		}
+
+		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
+
+		return new Prompt(prompt.getInstructions(), requestOptions);
+	}
+
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		var requestPrompt = this.buildRequestPrompt(prompt);
+		return this.internalStream(requestPrompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
-			VertexAiGeminiChatOptions vertexAiGeminiChatOptions = vertexAiGeminiChatOptions(prompt);
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(VertexAiGeminiConstants.PROVIDER_NAME)
-				.requestOptions(vertexAiGeminiChatOptions)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -345,47 +484,68 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 					this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
-			var request = createGeminiRequest(prompt, vertexAiGeminiChatOptions);
+
+			var request = createGeminiRequest(prompt);
 
 			try {
 				ResponseStream<GenerateContentResponse> responseStream = request.model
 					.generateContentStream(request.contents);
 
-				return Flux.fromStream(responseStream.stream()).switchMap(response -> {
-
+				Flux<ChatResponse> chatResponseFlux = Flux.fromStream(responseStream.stream()).switchMap(response -> {
 					List<Generation> generations = response.getCandidatesList()
 						.stream()
 						.map(this::responseCandidateToGeneration)
 						.flatMap(List::stream)
 						.toList();
 
-					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(response));
-
-					if (!isProxyToolCalls(prompt, this.defaultOptions) && isToolCall(chatResponse,
-							Set.of(FinishReason.STOP.name(), FinishReason.FINISH_REASON_UNSPECIFIED.name()))) {
-						var toolCallConversation = handleToolCalls(prompt, chatResponse);
-						// Recursively call the stream method with the tool call message
-						// conversation that contains the call responses.
-						return this.stream(new Prompt(toolCallConversation, prompt.getOptions()));
-					}
-
-					Flux<ChatResponse> chatResponseFlux = Flux.just(chatResponse)
-						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
-						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-
-					return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+					GenerateContentResponse.UsageMetadata usage = response.getUsageMetadata();
+					Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+					Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
+					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
+					return Flux.just(chatResponse);
 				});
+
+				// @formatter:off
+				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
+					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+						// FIXME: bounded elastic needs to be used since tool calling
+						// is currently only synchronous
+						return Flux.defer(() -> {
+							var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+							if (toolExecutionResult.returnDirect()) {
+								// Return tool execution result directly to the client.
+								return Flux.just(ChatResponse.builder().from(response)
+										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+										.build());
+							}
+							else {
+								// Send the tool execution result back to the model.
+								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()), response);
+							}
+						}).subscribeOn(Schedulers.boundedElastic());
+					}
+					else {
+						return Flux.just(response);
+					}
+				})
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+				// @formatter:on;
+
+				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+
 			}
 			catch (Exception e) {
 				throw new RuntimeException("Failed to generate content", e);
 			}
+
 		});
 	}
 
 	protected List<Generation> responseCandidateToGeneration(Candidate candidate) {
 
-		// TODO - The candidateIndex (e.g. choice must be asigned to the generation).
+		// TODO - The candidateIndex (e.g. choice must be assigned to the generation).
 		int candidateIndex = candidate.getIndex();
 		FinishReason candidateFinishReason = candidate.getFinishReason();
 
@@ -427,8 +587,13 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		}
 	}
 
-	private ChatResponseMetadata toChatResponseMetadata(GenerateContentResponse response) {
-		return ChatResponseMetadata.builder().usage(new VertexAiUsage(response.getUsageMetadata())).build();
+	private ChatResponseMetadata toChatResponseMetadata(Usage usage) {
+		return ChatResponseMetadata.builder().usage(usage).build();
+	}
+
+	private DefaultUsage getDefaultUsage(GenerateContentResponse.UsageMetadata usageMetadata) {
+		return new DefaultUsage(usageMetadata.getPromptTokenCount(), usageMetadata.getCandidatesTokenCount(),
+				usageMetadata.getTotalTokenCount(), usageMetadata);
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {
@@ -443,70 +608,54 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 				VertexAiGeminiChatOptions.class);
 
 		return updatedRuntimeOptions;
-
 	}
 
-	/**
-	 * Tests access to the {@link #createGeminiRequest(Prompt, VertexAiGeminiChatOptions)}
-	 * method.
-	 */
-	GeminiRequest createGeminiRequest(Prompt prompt, VertexAiGeminiChatOptions updatedRuntimeOptions) {
+	GeminiRequest createGeminiRequest(Prompt prompt) {
 
-		Set<String> functionsForThisRequest = new HashSet<>();
+		VertexAiGeminiChatOptions requestOptions = (VertexAiGeminiChatOptions) prompt.getOptions();
+
+		var generativeModelBuilder = new GenerativeModel.Builder().setVertexAi(this.vertexAI)
+			.setSafetySettings(toGeminiSafetySettings(requestOptions.getSafetySettings()));
+
+		if (requestOptions.getModel() != null) {
+			generativeModelBuilder.setModelName(requestOptions.getModel());
+		}
+		else {
+			generativeModelBuilder.setModelName(this.defaultOptions.getModel());
+		}
 
 		GenerationConfig generationConfig = this.generationConfig;
 
-		var generativeModelBuilder = new GenerativeModel.Builder().setModelName(this.defaultOptions.getModel())
-			.setVertexAi(this.vertexAI)
-			.setSafetySettings(toGeminiSafetySettings(this.defaultOptions.getSafetySettings()));
-
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof FunctionCallingOptions functionCallingOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(functionCallingOptions,
-						FunctionCallingOptions.class, VertexAiGeminiChatOptions.class);
-			}
-			else {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						VertexAiGeminiChatOptions.class);
-			}
-			functionsForThisRequest.addAll(runtimeFunctionCallbackConfigurations(updatedRuntimeOptions));
-		}
-
-		if (!CollectionUtils.isEmpty(this.defaultOptions.getFunctions())) {
-			functionsForThisRequest.addAll(this.defaultOptions.getFunctions());
-		}
-
-		if (updatedRuntimeOptions != null) {
-
-			if (StringUtils.hasText(updatedRuntimeOptions.getModel())
-					&& !updatedRuntimeOptions.getModel().equals(this.defaultOptions.getModel())) {
-				// Override model name
-				generativeModelBuilder.setModelName(updatedRuntimeOptions.getModel());
-			}
-
-			generationConfig = toGenerationConfig(updatedRuntimeOptions);
+		if (requestOptions != null) {
+			generationConfig = toGenerationConfig(requestOptions);
 		}
 
 		// Add the enabled functions definitions to the request's tools parameter.
 		List<Tool> tools = new ArrayList<>();
-		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
-			tools.addAll(this.getFunctionTools(functionsForThisRequest));
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
+		if (!CollectionUtils.isEmpty(toolDefinitions)) {
+			final List<FunctionDeclaration> functionDeclarations = toolDefinitions.stream()
+				.map(toolDefinition -> FunctionDeclaration.newBuilder()
+					.setName(toolDefinition.name())
+					.setDescription(toolDefinition.description())
+					.setParameters(jsonToSchema(toolDefinition.inputSchema()))
+					.build())
+				.toList();
+			tools.add(Tool.newBuilder().addAllFunctionDeclarations(functionDeclarations).build());
 		}
 
 		if (prompt.getOptions() instanceof VertexAiGeminiChatOptions options && options.getGoogleSearchRetrieval()) {
-			final var googleSearchRetrieval = GoogleSearchRetrieval.newBuilder().getDefaultInstanceForType();
-			final var googleSearchRetrievalTool = Tool.newBuilder()
-				.setGoogleSearchRetrieval(googleSearchRetrieval)
-				.build();
+			var googleSearch = GoogleSearch.newBuilder().getDefaultInstanceForType();
+			final var googleSearchRetrievalTool = Tool.newBuilder().setGoogleSearch(googleSearch).build();
 			tools.add(googleSearchRetrievalTool);
 		}
+
 		if (!CollectionUtils.isEmpty(tools)) {
 			generativeModelBuilder.setTools(tools);
 		}
 
-		if (prompt.getOptions() instanceof VertexAiGeminiChatOptions options
-				&& !CollectionUtils.isEmpty(options.getSafetySettings())) {
-			generativeModelBuilder.setSafetySettings(toGeminiSafetySettings(options.getSafetySettings()));
+		if (!CollectionUtils.isEmpty(requestOptions.getSafetySettings())) {
+			generativeModelBuilder.setSafetySettings(toGeminiSafetySettings(requestOptions.getSafetySettings()));
 		}
 
 		generativeModelBuilder.setGenerationConfig(generationConfig);
@@ -577,22 +726,6 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 			.toList();
 	}
 
-	private List<Tool> getFunctionTools(Set<String> functionNames) {
-
-		final var tool = Tool.newBuilder();
-
-		final List<FunctionDeclaration> functionDeclarations = this.resolveFunctionCallbacks(functionNames)
-			.stream()
-			.map(functionCallback -> FunctionDeclaration.newBuilder()
-				.setName(functionCallback.getName())
-				.setDescription(functionCallback.getDescription())
-				.setParameters(jsonToSchema(functionCallback.getInputTypeSchema()))
-				.build())
-			.toList();
-		tool.addAllFunctionDeclarations(functionDeclarations);
-		return List.of(tool.build());
-	}
-
 	/**
 	 * Generates the content response based on the provided Gemini request. Package
 	 * protected for testing purposes.
@@ -630,6 +763,73 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 		this.observationConvention = observationConvention;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private VertexAI vertexAI;
+
+		private VertexAiGeminiChatOptions defaultOptions = VertexAiGeminiChatOptions.builder()
+			.temperature(0.7)
+			.topP(1.0)
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.build();
+
+		private ToolCallingManager toolCallingManager;
+
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private Builder() {
+		}
+
+		public Builder vertexAI(VertexAI vertexAI) {
+			this.vertexAI = vertexAI;
+			return this;
+		}
+
+		public Builder defaultOptions(VertexAiGeminiChatOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public VertexAiGeminiChatModel build() {
+			if (this.toolCallingManager != null) {
+				return new VertexAiGeminiChatModel(this.vertexAI, this.defaultOptions, this.toolCallingManager,
+						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+			}
+			return new VertexAiGeminiChatModel(this.vertexAI, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+		}
+
+	}
+
 	public enum GeminiMessageType {
 
 		USER("user"),
@@ -657,9 +857,17 @@ public class VertexAiGeminiChatModel extends AbstractToolCallSupport implements 
 
 		GEMINI_PRO("gemini-pro"),
 
-		GEMINI_1_5_PRO("gemini-1.5-pro-001"),
+		GEMINI_1_5_PRO("gemini-1.5-pro-002"),
 
-		GEMINI_1_5_FLASH("gemini-1.5-flash-001");
+		GEMINI_1_5_FLASH("gemini-1.5-flash-002"),
+
+		GEMINI_1_5_FLASH_8B("gemini-1.5-flash-8b-001"),
+
+		GEMINI_2_0_FLASH("gemini-2.0-flash"),
+
+		GEMINI_2_0_FLASH_LIGHT("gemini-2.0-flash-lite"),
+
+		GEMINI_2_5_PRO("gemini-2.5-pro-exp-03-25");
 
 		public final String value;
 

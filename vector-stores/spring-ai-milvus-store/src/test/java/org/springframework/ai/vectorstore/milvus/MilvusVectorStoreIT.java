@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -40,8 +44,10 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -56,10 +62,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Thomas Vitale
+ * @author Soby Chacko
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-public class MilvusVectorStoreIT {
+public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
@@ -85,6 +92,15 @@ public class MilvusVectorStoreIT {
 	private void resetCollection(VectorStore vectorStore) {
 		((MilvusVectorStore) vectorStore).dropCollection();
 		((MilvusVectorStore) vectorStore).createCollection();
+	}
+
+	@Override
+	protected void executeTest(Consumer<VectorStore> testFunction) {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=" + "COSINE")
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				testFunction.accept(vectorStore);
+			});
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -273,6 +289,49 @@ public class MilvusVectorStoreIT {
 			});
 	}
 
+	@Test
+	public void deleteWithComplexFilterExpression() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=COSINE").run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			resetCollection(vectorStore);
+
+			var doc1 = new Document("Content 1", Map.of("type", "A", "priority", 1));
+			var doc2 = new Document("Content 2", Map.of("type", "A", "priority", 2));
+			var doc3 = new Document("Content 3", Map.of("type", "B", "priority", 1));
+
+			vectorStore.add(List.of(doc1, doc2, doc3));
+
+			// Complex filter expression: (type == 'A' AND priority > 1)
+			Filter.Expression priorityFilter = new Filter.Expression(Filter.ExpressionType.GT,
+					new Filter.Key("priority"), new Filter.Value(1));
+			Filter.Expression typeFilter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("type"),
+					new Filter.Value("A"));
+			Filter.Expression complexFilter = new Filter.Expression(Filter.ExpressionType.AND, typeFilter,
+					priorityFilter);
+
+			vectorStore.delete(complexFilter);
+
+			var results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(2);
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder("A", "B");
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
+				.containsExactlyInAnyOrder(1.0, 1.0);
+		});
+	}
+
+	@Test
+	void getNativeClientTest() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=COSINE").run(context -> {
+			MilvusVectorStore vectorStore = context.getBean(MilvusVectorStore.class);
+			Optional<MilvusServiceClient> nativeClient = vectorStore.getNativeClient();
+			assertThat(nativeClient).isPresent();
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
@@ -302,7 +361,7 @@ public class MilvusVectorStoreIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 			// return new OpenAiEmbeddingModel(new
 			// OpenAiApi(System.getenv("OPENAI_API_KEY")), MetadataMode.EMBED,
 			// OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());

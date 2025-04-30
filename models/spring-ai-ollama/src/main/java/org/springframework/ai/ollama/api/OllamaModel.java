@@ -33,6 +33,11 @@ public enum OllamaModel implements ChatModelDescription {
 	QWEN_2_5_7B("qwen2.5"),
 
 	/**
+	 * QwQ is the reasoning model of the Qwen series.
+	 */
+	QWQ("qwq"),
+
+	/**
 	 * Llama 2 is a collection of language models ranging from 7B to 70B parameters.
 	 */
 	LLAMA2("llama2"),
@@ -66,6 +71,11 @@ public enum OllamaModel implements ChatModelDescription {
 	 * The Llama 3.2 1B language model from Meta.
 	 */
 	LLAMA3_2_1B("llama3.2:1b"),
+
+	/**
+	 * The Llama 3.2 3B language model from Meta.
+	 */
+	LLAMA3_2_3B("llama3.2:3b"),
 
 	/**
 	 * The 7B parameters model

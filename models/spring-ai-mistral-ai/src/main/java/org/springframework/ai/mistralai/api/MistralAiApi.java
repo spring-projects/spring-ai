@@ -265,15 +265,18 @@ public class MistralAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
-		OPEN_MISTRAL_7B("open-mistral-7b"),
-		OPEN_MIXTRAL_7B("open-mixtral-8x7b"),
-		OPEN_MIXTRAL_22B("open-mixtral-8x22b"),
-		SMALL("mistral-small-latest"),
-		@Deprecated(since = "1.0.0-M1", forRemoval = true) // Mistral will be removing this model - see https://docs.mistral.ai/getting-started/models/models_overview/
-		MEDIUM("mistral-medium-latest"),
+		// Premier Models
+		CODESTRAL("codestral-latest"),
 		LARGE("mistral-large-latest"),
+		PIXTRAL_LARGE("pixtral-large-latest"),
+		MINISTRAL_3B_LATEST("ministral-3b-latest"),
+		MINISTRAL_8B_LATEST("ministral-8b-latest"),
+		// Free Models
+		SMALL("mistral-small-latest"),
 		PIXTRAL("pixtral-12b-2409"),
-		PIXTRAL_LARGE("pixtral-large-latest");
+		// Free Models - Research
+		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
+		OPEN_CODESTRAL_MAMBA("open-codestral-mamba");
 		// @formatter:on
 
 		private final String value;
@@ -624,9 +627,11 @@ public class MistralAiApi {
 	 * @param stop A list of tokens that the model should stop generating after. If set,
 	 * @param randomSeed The seed to use for random sampling. If set, different calls will
 	 * generate deterministic results.
-	 * @param responseFormat An object specifying the format that the model must output.
-	 * Setting to { "type": "json_object" } enables JSON mode, which guarantees the
-	 * message the model generates is valid JSON.
+	 * @param responseFormat An object specifying the format or schema that the model must
+	 * output. Setting to { "type": "json_object" } enables JSON mode, which guarantees
+	 * the message the model generates is valid JSON. Setting to { "type": "json_object" ,
+	 * "json_schema": schema} allows you to ensure the model provides an answer in a very
+	 * specific JSON format by supplying a clear JSON schema.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -729,10 +734,11 @@ public class MistralAiApi {
 		 * An object specifying the format that the model must output.
 		 *
 		 * @param type Must be one of 'text' or 'json_object'.
+		 * @param jsonSchema A specific JSON schema to match, if 'type' is 'json_object'.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(@JsonProperty("type") String type) {
-
+		public record ResponseFormat(@JsonProperty("type") String type,
+				@JsonProperty("json_schema") Map<String, Object> jsonSchema) {
 		}
 
 	}
@@ -824,10 +830,11 @@ public class MistralAiApi {
 		 * @param type The type of tool call the output is required for. For now, this is
 		 * always function.
 		 * @param function The function definition.
+		 * @param index The index of the tool call in the list of tool calls.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
-				@JsonProperty("function") ChatCompletionFunction function) {
+				@JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
 
 		}
 

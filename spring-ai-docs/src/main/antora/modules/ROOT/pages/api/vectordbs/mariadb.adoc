@@ -15,6 +15,12 @@ It provides efficient vector similarity search capabilities using vector indexes
 
 == Auto-Configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the MariaDB Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
@@ -22,7 +28,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mariadb-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-mariadb</artifactId>
 </dependency>
 ----
 
@@ -31,7 +37,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-mariadb-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-mariadb'
 }
 ----
 
@@ -49,11 +55,11 @@ For example, to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI Embedd
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
 </dependency>
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 Now you can auto-wire the `MariaDBVectorStore` in your application:
 
@@ -204,3 +210,20 @@ vectorStore.similaritySearch(SearchRequest.builder()
 ----
 
 NOTE: These filter expressions are automatically converted into the equivalent MariaDB JSON path expressions.
+
+== Accessing the Native Client
+
+The MariaDB Vector Store implementation provides access to the underlying native JDBC client (`JdbcTemplate`) through the `getNativeClient()` method:
+
+[source,java]
+----
+MariaDBVectorStore vectorStore = context.getBean(MariaDBVectorStore.class);
+Optional<JdbcTemplate> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    JdbcTemplate jdbc = nativeClient.get();
+    // Use the native client for MariaDB-specific operations
+}
+----
+
+The native client gives you access to MariaDB-specific features and operations that might not be exposed through the `VectorStore` interface.

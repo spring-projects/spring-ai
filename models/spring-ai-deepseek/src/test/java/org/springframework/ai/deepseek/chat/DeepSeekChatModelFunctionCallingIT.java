@@ -18,7 +18,6 @@ package org.springframework.ai.deepseek.chat;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -32,7 +31,7 @@ import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.MockWeatherService;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import reactor.core.publisher.Flux;
@@ -95,11 +94,10 @@ class DeepSeekChatModelFunctionCallingIT {
 
 		var promptOptions = DeepSeekChatOptions.builder()
 			.model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build()))
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
@@ -118,11 +116,10 @@ class DeepSeekChatModelFunctionCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = DeepSeekChatOptions.builder()
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location")
-				.inputType(MockWeatherService.Request.class)
-				.build()))
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build()))
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
@@ -146,9 +143,8 @@ class DeepSeekChatModelFunctionCallingIT {
 		var promptOptions = DeepSeekChatOptions.builder()
 			.model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
 			.tools(Arrays.asList(FUNCTION_TOOL))
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
@@ -168,9 +164,8 @@ class DeepSeekChatModelFunctionCallingIT {
 		var promptOptions = DeepSeekChatOptions.builder()
 			.model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
 			.tools(Arrays.asList(FUNCTION_TOOL))
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
-				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();

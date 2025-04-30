@@ -188,12 +188,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> documentIds) {
+	public void doDelete(List<String> documentIds) {
 
 		Assert.notNull(documentIds, "The document ID list should not be null.");
-		if (CollectionUtils.isEmpty(documentIds)) {
-			return Optional.of(true); // nothing to do;
-		}
 
 		final var searchDocumentIds = documentIds.stream().map(documentId -> {
 			SearchDocument searchDocument = new SearchDocument();
@@ -201,18 +198,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return searchDocument;
 		}).toList();
 
-		var results = this.searchClient.deleteDocuments(searchDocumentIds);
-
-		boolean resSuccess = true;
-
-		for (IndexingResult result : results.getResults()) {
-			if (!result.isSucceeded()) {
-				resSuccess = false;
-				break;
-			}
-		}
-
-		return Optional.of(resSuccess);
+		this.searchClient.deleteDocuments(searchDocumentIds);
 	}
 
 	@Override
@@ -330,6 +316,13 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.collectionName(this.indexName)
 			.dimensions(this.embeddingModel.dimensions())
 			.similarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null);
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.searchClient;
+		return Optional.of(client);
 	}
 
 	public record MetadataField(String name, SearchFieldDataType fieldType) {

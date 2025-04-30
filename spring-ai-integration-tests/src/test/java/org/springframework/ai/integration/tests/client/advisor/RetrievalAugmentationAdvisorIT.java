@@ -26,7 +26,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
@@ -36,6 +35,7 @@ import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.RelevancyEvaluator;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
 import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
@@ -106,6 +106,29 @@ class RetrievalAugmentationAdvisorIT {
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
+	}
+
+	@Test
+	void ragWithRequestFilter() {
+		String question = "Where does the adventure of Anacletus and Birba take place?";
+
+		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
+			.build();
+
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(question)
+			.advisors(ragAdvisor)
+			.advisors(a -> a.param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "location == 'Italy'"))
+			.call()
+			.chatResponse();
+
+		assertThat(chatResponse).isNotNull();
+		// No documents retrieved since the filter expression matches none of the
+		// documents in the vector store.
+		assertThat((String) chatResponse.getResult().getMetadata().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT))
+			.isNull();
 	}
 
 	@Test

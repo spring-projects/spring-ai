@@ -17,7 +17,6 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 import com.google.cloud.vertexai.VertexAI;
@@ -75,9 +74,9 @@ public class VertexAiGeminiRetryTests {
 				VertexAiGeminiChatOptions.builder()
 					.temperature(0.7)
 					.topP(1.0)
-					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_PRO.getValue())
+					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 					.build(),
-				null, Collections.emptyList(), this.retryTemplate);
+				this.retryTemplate);
 
 		this.chatModel.setMockGenerativeModel(this.mockGenerativeModel);
 	}

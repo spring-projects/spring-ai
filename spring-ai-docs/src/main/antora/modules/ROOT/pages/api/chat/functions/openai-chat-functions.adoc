@@ -1,5 +1,7 @@
 = Function Calling
 
+WARNING: This page describes the previous version of the Function Calling API, which has been deprecated and marked for remove in the next release. The current version is available at xref:api/tools.adoc[Tool Calling]. See the xref:api/tools-migration.adoc[Migration Guide] for more information.
+
 You can register custom Java functions with the `OpenAiChatModel` and have the OpenAI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This allows you to connect the LLM capabilities with external tools and APIs.
 The OpenAI models are trained to detect when a function should be called and to respond with JSON that adheres to the function signature.
@@ -14,7 +16,7 @@ As a developer, you need to implement a function that takes the function call ar
 Spring AI makes this as easy as defining a `@Bean` definition that returns a `java.util.Function` and supplying the bean name as an option when invoking the `ChatModel`.
 
 Under the hood, Spring wraps your POJO (the function) with the appropriate adapter code that enables interaction with the AI Model, saving you from writing tedious boilerplate code.
-The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/model/function/FunctionCallback.java[FunctionCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
+The basis of the underlying infrastructure is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/tool/ToolCallback.java[ToolCallback.java] interface and the companion Builder utility class to simplify the implementation and registration of Java callback functions.
 
 // Additionally, the Auto-Configuration provides a way to auto-register any Function<I, O> beans definition as function calling candidates in the `ChatModel`.
 
@@ -69,7 +71,7 @@ We start by describing the most POJO-friendly options.
 
 In this approach, you define a `@Bean` in your application context as you would any other Spring managed object.
 
-Internally, Spring AI `ChatModel` will create an instance of a `FunctionCallback` that adds the logic for it being invoked via the AI model.
+Internally, Spring AI `ChatModel` will create an instance of a `ToolCallback` that adds the logic for it being invoked via the AI model.
 The name of the `@Bean` is passed as a `ChatOption`.
 
 [source,java]
@@ -108,11 +110,11 @@ public record Request(String location, Unit unit) {}
 
 It is a best practice to annotate the request object with information such that the generated JSON schema of that function is as descriptive as possible to help the AI model pick the correct function to invoke.
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] demonstrates this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-openai/src/test/java/org/springframework/ai/model/openai/autoconfigure/tool/FunctionCallbackWithPlainFunctionBeanIT.java[FunctionCallbackWithPlainFunctionBeanIT.java] demonstrates this approach.
 
-==== FunctionCallback Wrapper
+==== FunctionToolCallback Wrapper
 
-Another way to register a function is to create a `FunctionCallback` like this:
+Another way to register a function is to create a `toolCallback` like this:
 
 [source,java]
 ----
@@ -120,10 +122,9 @@ Another way to register a function is to create a `FunctionCallback` like this:
 static class Config {
 
 	@Bean
-	public FunctionCallback weatherFunctionInfo() {
+	public FunctionToolCallback weatherFunctionInfo() {
 
-	    return FunctionCallback.builder()
-	        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	    return FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
 	        .description("Get the weather in location") // (2) function description
 	        .inputType(MockWeatherService.Request.class) // (3) function input type
 	        .build();
@@ -137,7 +138,7 @@ It also provides a description (2) and an input type (3) used to generate the JS
 
 NOTE: By default, the response converter performs a JSON serialization of the Response object.
 
-NOTE: The `FunctionCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
+NOTE: The `FunctionToolCallback` internally resolves the function call signature based on the `MockWeatherService.Request` class.
 
 === Specifying functions in Chat Options
 
@@ -150,7 +151,7 @@ OpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 ChatResponse response = this.chatModel.call(new Prompt(this.userMessage,
-		OpenAiChatOptions.builder().function("CurrentWeather").build())); // Enable the function
+		OpenAiChatOptions.builder().tools("CurrentWeather").build())); // Enable the function
 
 logger.info("Response: {}", response);
 ----
@@ -166,7 +167,7 @@ Here is the current weather for the requested cities:
 - Paris, France: 15.0°C
 ----
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/OpenAiFunctionCallbackIT.java[OpenAiFunctionCallbackIT.java] test demo this approach.
+The link:https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-openai/src/test/java/org/springframework/ai/model/openai/autoconfigure/tool/OpenAiFunctionCallbackIT.java[OpenAiFunctionCallbackIT.java] test demo this approach.
 
 === Register/Call Functions with Prompt Options
 
@@ -179,8 +180,7 @@ OpenAiChatModel chatModel = ...
 UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
 
 var promptOptions = OpenAiChatOptions.builder()
-	.functionCallbacks(List.of(FunctionCallback.builder()
-        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService()) // (1) function name and instance
         .description("Get the weather in location") // (2) function description
         .inputType(MockWeatherService.Request.class) // (3) function input type
         .build())) // function code
@@ -193,7 +193,7 @@ NOTE: The in-prompt registered functions are enabled by default for the duration
 
 This approach allows to choose dynamically different functions to be called based on the user input.
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-spring-boot-autoconfigure/src/test/java/org/springframework/ai/autoconfigure/openai/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OpenAiChatModel` and use it in a prompt request.
+The https://github.com/spring-projects/spring-ai/blob/main/auto-configurations/models/spring-ai-autoconfigure-model-openai/src/test/java/org/springframework/ai/model/openai/autoconfigure/tool/FunctionCallbackInPromptIT.java[FunctionCallbackInPromptIT.java] integration test provides a complete example of how to register a function with the `OpenAiChatModel` and use it in a prompt request.
 
 
 === Tool Context Support
@@ -230,8 +230,7 @@ BiFunction<MockWeatherService.Request, ToolContext, MockWeatherService.Response>
 
 OpenAiChatOptions options = OpenAiChatOptions.builder()
     .model(OpenAiApi.ChatModel.GPT_4_O.getValue())
-    .functionCallbacks(List.of(FunctionCallback.builder()
-        .function("getCurrentWeather", this.weatherFunction)
+    .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", this.weatherFunction)
         .description("Get the weather in location")
         .inputType(MockWeatherService.Request.class)
         .build()))
@@ -265,5 +264,5 @@ The following diagram illustrates the flow of the OpenAI API https://platform.op
 
 image:openai-function-calling-flow.jpg[title="OpenAI API Function Calling Flow", width=800, link=https://platform.openai.com/docs/guides/function-calling]
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] provides a complete example on how to use the OpenAI API function calling.
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] provides a complete example on how to use the OpenAI API function calling.
 It is based on the https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling tutorial].

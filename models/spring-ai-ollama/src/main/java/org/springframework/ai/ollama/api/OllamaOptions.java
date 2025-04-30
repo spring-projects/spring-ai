@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.ai.ollama.api;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +33,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -48,7 +51,7 @@ import org.springframework.util.Assert;
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
+public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
@@ -189,6 +192,16 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	private Double topP;
 
 	/**
+	 * Alternative to the top_p, and aims to ensure a balance of quality and variety.
+	 * The parameter p represents the minimum probability for a token to be considered,
+	 * relative to the probability of the most likely token. For example, with p=0.05 and
+	 * the most likely token having a probability of 0.9, logits with a value
+	 * less than 0.045 are filtered out. (Default: 0.0)
+	 */
+	@JsonProperty("min_p")
+	private Double minP;
+
+	/**
 	 * Tail free sampling is used to reduce the impact of less probable tokens
 	 * from the output. A higher value (e.g., 2.0) will reduce the impact more, while a
 	 * value of 1.0 disables this setting. (default: 1)
@@ -305,31 +318,31 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	@JsonProperty("truncate")
 	private Boolean truncate;
 
+	@JsonIgnore
+	private Boolean internalToolExecutionEnabled;
+
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
-	 * For Prompt Options the functionCallbacks are automatically enabled for the duration of the prompt execution.
-	 * For Default Options the functionCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
+	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
+	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
 	 * the chat completion requests.
-	 * Functions with those names must exist in the functionCallbacks registry.
-	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * Functions with those names must exist in the toolCallbacks registry.
+	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Boolean proxyToolCalls;
-
-	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
 		return new Builder();
@@ -369,6 +382,7 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				.numPredict(fromOptions.getNumPredict())
 				.topK(fromOptions.getTopK())
 				.topP(fromOptions.getTopP())
+				.minP(fromOptions.getMinP())
 				.tfsZ(fromOptions.getTfsZ())
 				.typicalP(fromOptions.getTypicalP())
 				.repeatLastN(fromOptions.getRepeatLastN())
@@ -381,9 +395,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				.mirostatEta(fromOptions.getMirostatEta())
 				.penalizeNewline(fromOptions.getPenalizeNewline())
 				.stop(fromOptions.getStop())
-				.functions(fromOptions.getFunctions())
-				.proxyToolCalls(fromOptions.getProxyToolCalls())
-				.functionCallbacks(fromOptions.getFunctionCallbacks())
+				.toolNames(fromOptions.getToolNames())
+				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.toolCallbacks(fromOptions.getToolCallbacks())
 				.toolContext(fromOptions.getToolContext()).build();
 	}
 
@@ -564,6 +578,14 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 		this.topP = topP;
 	}
 
+	public Double getMinP() {
+		return this.minP;
+	}
+
+	public void setMinP(Double minP) {
+		this.minP = minP;
+	}
+
 	public Float getTfsZ() {
 		return this.tfsZ;
 	}
@@ -683,23 +705,45 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	}
 
 	@Override
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
+	@JsonIgnore
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
 	}
 
 	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
+	@JsonIgnore
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
 	}
 
 	@Override
-	public Set<String> getFunctions() {
-		return this.functions;
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
 	}
 
 	@Override
-	public void setFunctions(Set<String> functions) {
-		this.functions = functions;
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -709,20 +753,13 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 	}
 
 	@Override
-	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
-	}
-
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
-	}
-
-	@Override
+	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
+	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
@@ -760,8 +797,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				&& Objects.equals(this.useMLock, that.useMLock) && Objects.equals(this.numThread, that.numThread)
 				&& Objects.equals(this.numKeep, that.numKeep) && Objects.equals(this.seed, that.seed)
 				&& Objects.equals(this.numPredict, that.numPredict) && Objects.equals(this.topK, that.topK)
-				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.tfsZ, that.tfsZ)
-				&& Objects.equals(this.typicalP, that.typicalP) && Objects.equals(this.repeatLastN, that.repeatLastN)
+				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.minP, that.minP)
+				&& Objects.equals(this.tfsZ, that.tfsZ) && Objects.equals(this.typicalP, that.typicalP)
+				&& Objects.equals(this.repeatLastN, that.repeatLastN)
 				&& Objects.equals(this.temperature, that.temperature)
 				&& Objects.equals(this.repeatPenalty, that.repeatPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
@@ -769,9 +807,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
-				&& Objects.equals(this.functionCallbacks, that.functionCallbacks)
-				&& Objects.equals(this.proxyToolCalls, that.proxyToolCalls)
-				&& Objects.equals(this.functions, that.functions) && Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
@@ -779,9 +817,9 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
 				this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
 				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
-				this.topP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
+				this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.functionCallbacks, this.functions, this.proxyToolCalls,
+				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
 				this.toolContext);
 	}
 
@@ -899,6 +937,11 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 			return this;
 		}
 
+		public Builder minP(Double minP) {
+			this.options.minP = minP;
+			return this;
+		}
+
 		public Builder tfsZ(Float tfsZ) {
 			this.options.tfsZ = tfsZ;
 			return this;
@@ -959,25 +1002,30 @@ public class OllamaOptions implements FunctionCallingOptions, EmbeddingOptions {
 			return this;
 		}
 
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
-		public Builder functions(Set<String> functions) {
-			Assert.notNull(functions, "Function names must not be null");
-			this.options.functions = functions;
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
-		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
+		public Builder toolNames(Set<String> toolNames) {
+			this.options.setToolNames(toolNames);
 			return this;
 		}
 
-		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
 		}
 

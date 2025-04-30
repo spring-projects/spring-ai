@@ -47,15 +47,14 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
-import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -281,7 +280,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 			for (String id : idList) {
 				pipeline.jsonDel(key(id));
@@ -292,9 +291,46 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				if (logger.isErrorEnabled()) {
 					logger.error("Could not delete document: {}", errResponse.get());
 				}
-				return Optional.of(false);
 			}
-			return Optional.of(true);
+		}
+	}
+
+	@Override
+	protected void doDelete(Filter.Expression filterExpression) {
+		Assert.notNull(filterExpression, "Filter expression must not be null");
+
+		try {
+			String filterStr = this.filterExpressionConverter.convertExpression(filterExpression);
+
+			List<String> matchingIds = new ArrayList<>();
+			SearchResult searchResult = this.jedis.ftSearch(this.indexName, filterStr);
+
+			for (redis.clients.jedis.search.Document doc : searchResult.getDocuments()) {
+				String docId = doc.getId();
+				matchingIds.add(docId.replace(key(""), "")); // Remove the key prefix to
+																// get original ID
+			}
+
+			if (!matchingIds.isEmpty()) {
+				try (Pipeline pipeline = this.jedis.pipelined()) {
+					for (String id : matchingIds) {
+						pipeline.jsonDel(key(id));
+					}
+					List<Object> responses = pipeline.syncAndReturnAll();
+					Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_DEL_OK)).findAny();
+
+					if (errResponse.isPresent()) {
+						logger.error("Could not delete document: {}", errResponse.get());
+						throw new IllegalStateException("Failed to delete some documents");
+					}
+				}
+
+				logger.debug("Deleted {} documents matching filter expression", matchingIds.size());
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter", e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
 
@@ -426,6 +462,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.fieldName(this.embeddingFieldName)
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
 
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.jedis;
+		return Optional.of(client);
 	}
 
 	public static Builder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {

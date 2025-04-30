@@ -16,7 +16,6 @@
 
 package org.springframework.ai.minimax.aot;
 
-import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -37,7 +36,8 @@ public class MiniMaxRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(MiniMaxApi.class)) {
+
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.minimax")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

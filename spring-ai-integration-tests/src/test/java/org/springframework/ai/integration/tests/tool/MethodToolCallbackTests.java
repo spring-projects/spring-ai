@@ -16,22 +16,25 @@
 
 package org.springframework.ai.integration.tests.tool;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.integration.tests.TestApplication;
+import org.springframework.ai.integration.tests.tool.domain.Author;
+import org.springframework.ai.integration.tests.tool.domain.Book;
+import org.springframework.ai.integration.tests.tool.domain.BookService;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = TestApplication.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MethodToolCallbackTests {
 
 	@Autowired
@@ -55,7 +59,7 @@ public class MethodToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome the user to the library")
-			.tools(tools)
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -67,7 +71,7 @@ public class MethodToolCallbackTests {
 			.build()
 			.prompt()
 			.user("Welcome %s to the library".formatted("James Bond"))
-			.tools(tools)
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty();
@@ -79,13 +83,13 @@ public class MethodToolCallbackTests {
 			.build()
 			.prompt()
 			.user("What books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
-			.tools(tools)
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty()
-			.contains("The Hobbit")
-			.contains("The Lord of The Rings")
-			.contains("The Silmarillion");
+			.containsIgnoringCase("The Hobbit")
+			.containsIgnoringCase("The Lord of The Rings")
+			.containsIgnoringCase("The Silmarillion");
 	}
 
 	@Test
@@ -93,8 +97,9 @@ public class MethodToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
-			.tools(tools)
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
+					"The Lion, the Witch and the Wardrobe"))
+			.tools(this.tools)
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
@@ -105,8 +110,9 @@ public class MethodToolCallbackTests {
 		var content = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt()
-			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit", "Narnia"))
-			.toolCallbacks(ToolCallbacks.from(tools))
+			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
+					"The Lion, the Witch and the Wardrobe"))
+			.tools(ToolCallbacks.from(this.tools))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
@@ -115,7 +121,7 @@ public class MethodToolCallbackTests {
 	@Test
 	void chatMethodCallbackDefault() {
 		var content = ChatClient.builder(this.openAiChatModel)
-			.defaultTools(tools)
+			.defaultTools(this.tools)
 			.build()
 			.prompt()
 			.user("How many books written by %s are available in the library?".formatted("J.R.R. Tolkien"))
@@ -147,45 +153,13 @@ public class MethodToolCallbackTests {
 		@Tool(description = "Get the list of books written by the given author available in the library")
 		List<Book> booksByAuthor(String author) {
 			logger.info("Getting books by author: {}", author);
-			return bookService.getBooksByAuthor(new Author(author));
+			return this.bookService.getBooksByAuthor(new Author(author));
 		}
 
 		@Tool(description = "Get the list of authors who wrote the given books available in the library")
 		List<Author> authorsByBooks(List<String> books) {
 			logger.info("Getting authors by books: {}", String.join(", ", books));
-			return bookService.getAuthorsByBook(books.stream().map(b -> new Book(b, "")).toList());
-		}
-
-	}
-
-	public record Author(String name) {
-	}
-
-	public record Book(String title, String author) {
-	}
-
-	static class BookService {
-
-		private static final Map<Integer, Book> books = new ConcurrentHashMap<>();
-
-		static {
-			books.put(1, new Book("His Dark Materials", "Philip Pullman"));
-			books.put(2, new Book("Narnia", "C.S. Lewis"));
-			books.put(3, new Book("The Hobbit", "J.R.R. Tolkien"));
-			books.put(4, new Book("The Lord of The Rings", "J.R.R. Tolkien"));
-			books.put(5, new Book("The Silmarillion", "J.R.R. Tolkien"));
-		}
-
-		public List<Book> getBooksByAuthor(Author author) {
-			return books.values().stream().filter(book -> author.name().equals(book.author())).toList();
-		}
-
-		public List<Author> getAuthorsByBook(List<Book> booksToSearch) {
-			return books.values()
-				.stream()
-				.filter(book -> booksToSearch.stream().anyMatch(b -> b.title().equals(book.title())))
-				.map(book -> new Author(book.author()))
-				.toList();
+			return this.bookService.getAuthorsByBook(books.stream().map(b -> new Book(b, "")).toList());
 		}
 
 	}

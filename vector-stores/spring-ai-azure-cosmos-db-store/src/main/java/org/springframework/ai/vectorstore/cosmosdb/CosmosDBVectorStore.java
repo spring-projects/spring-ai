@@ -18,7 +18,10 @@ package org.springframework.ai.vectorstore.cosmosdb;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,6 +33,7 @@ import com.azure.cosmos.implementation.guava25.collect.ImmutableList;
 import com.azure.cosmos.models.CosmosBulkOperations;
 import com.azure.cosmos.models.CosmosContainerProperties;
 import com.azure.cosmos.models.CosmosItemOperation;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.CosmosVectorDataType;
 import com.azure.cosmos.models.CosmosVectorDistanceFunction;
@@ -38,6 +42,7 @@ import com.azure.cosmos.models.CosmosVectorEmbeddingPolicy;
 import com.azure.cosmos.models.CosmosVectorIndexSpec;
 import com.azure.cosmos.models.CosmosVectorIndexType;
 import com.azure.cosmos.models.ExcludedPath;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.models.IncludedPath;
 import com.azure.cosmos.models.IndexingMode;
 import com.azure.cosmos.models.IndexingPolicy;
@@ -48,6 +53,7 @@ import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.azure.cosmos.models.ThroughputProperties;
 import com.azure.cosmos.util.CosmosPagedFlux;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -57,7 +63,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -87,9 +92,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 	private final String databaseName;
 
-	private final String partitionKeyPath;
+	private String partitionKeyPath;
 
-	private final int vectorStoreThroughput;
+	private int vectorStoreThroughput;
 
 	private final long vectorDimensions;
 
@@ -108,7 +113,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		Assert.notNull(builder.cosmosClient, "CosmosClient must not be null");
 		Assert.hasText(builder.containerName, "Container name must not be empty");
 		Assert.hasText(builder.databaseName, "Database name must not be empty");
-		Assert.hasText(builder.partitionKeyPath, "Partition key path must not be empty");
 
 		this.cosmosClient = builder.cosmosClient;
 		this.containerName = builder.containerName;
@@ -118,7 +122,16 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.vectorDimensions = builder.vectorDimensions;
 		this.metadataFieldsList = builder.metadataFieldsList;
 
-		this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		try {
+			this.cosmosClient.createDatabaseIfNotExists(this.databaseName).block();
+		}
+		catch (Exception e) {
+			// likely failed due to RBAC, so database is assumed to be already created
+			// (and
+			// if not, it will fail later)
+			logger.error("Error creating database: {}", e.getMessage());
+		}
+
 		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
 				this.partitionKeyPath);
 	}
@@ -132,10 +145,12 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		// Set defaults if not provided
 		if (this.vectorStoreThroughput == 0) {
-			vectorStoreThroughput = 400;
+			this.vectorStoreThroughput = 400;
+			vectorStoreThroughput = this.vectorStoreThroughput;
 		}
 		if (this.partitionKeyPath == null) {
-			partitionKeyPath = "/id";
+			this.partitionKeyPath = "/id";
+			partitionKeyPath = this.partitionKeyPath;
 		}
 
 		// handle hierarchical partition key
@@ -224,10 +239,30 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID
 		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
+			String partitionKeyValue;
+
+			if ("/id".equals(this.partitionKeyPath)) {
+				partitionKeyValue = doc.getId();
+			}
+			else if (this.partitionKeyPath.startsWith("/metadata/")) {
+				// Extract the key, e.g. "/metadata/country" -> "country"
+				String metadataKey = this.partitionKeyPath.substring("/metadata/".length());
+				Object value = doc.getMetadata() != null ? doc.getMetadata().get(metadataKey) : null;
+				if (value == null) {
+					throw new IllegalArgumentException(
+							"Partition key '" + metadataKey + "' not found in document metadata.");
+				}
+				partitionKeyValue = value.toString();
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported partition key path: " + this.partitionKeyPath);
+			}
+
 			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
-					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))), new PartitionKey(doc.getId()));
-			return new ImmutablePair<>(doc.getId(), operation); // Pair the document ID
+					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))),
+					new PartitionKey(partitionKeyValue)); // Pair the document ID
 			// with the operation
+			return new ImmutablePair<>(doc.getId(), operation);
 		}).toList();
 
 		try {
@@ -271,12 +306,51 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		try {
 			// Convert the list of IDs into bulk delete operations
-			List<CosmosItemOperation> itemOperations = idList.stream()
-				.map(id -> CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(id)))
-				.collect(Collectors.toList());
+			List<CosmosItemOperation> itemOperations = idList.stream().map(id -> {
+				String partitionKeyValue;
+
+				if ("/id".equals(this.partitionKeyPath)) {
+					partitionKeyValue = id;
+				}
+
+				else if (this.partitionKeyPath.startsWith("/metadata/")) {
+					// Will be inefficient for large numbers of documents but there is no
+					// other way to get the partition key value
+					// with current method signature. Ideally, we should be able to pass
+					// the partition key value directly.
+					String metadataKey = this.partitionKeyPath.substring("/metadata/".length());
+
+					// Run a reactive query to fetch the document by ID
+					String query = String.format("SELECT * FROM c WHERE c.id = '%s'", id);
+					CosmosPagedFlux<JsonNode> queryFlux = this.container.queryItems(query,
+							new CosmosQueryRequestOptions(), JsonNode.class);
+
+					// Block to retrieve the first page synchronously
+					List<JsonNode> documents = queryFlux.byPage(1).blockFirst().getResults();
+
+					if (documents == null || documents.isEmpty()) {
+						throw new IllegalArgumentException("No document found for id: " + id);
+					}
+
+					JsonNode document = documents.get(0);
+					JsonNode metadataNode = document.get("metadata");
+
+					if (metadataNode == null || metadataNode.get(metadataKey) == null) {
+						throw new IllegalArgumentException("Partition key '" + metadataKey
+								+ "' not found in metadata for document with id: " + id);
+					}
+
+					partitionKeyValue = metadataNode.get(metadataKey).asText();
+				}
+				else {
+					throw new IllegalArgumentException("Unsupported partition key path: " + this.partitionKeyPath);
+				}
+
+				return CosmosBulkOperations.getDeleteItemOperation(id, new PartitionKey(partitionKeyValue));
+			}).collect(Collectors.toList());
 
 			// Execute bulk delete operations synchronously by using blockLast() on the
 			// Flux
@@ -284,13 +358,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.doOnNext(response -> logger.info("Document deleted with status: {}",
 						response.getResponse().getStatusCode()))
 				.doOnError(error -> logger.error("Error deleting document: {}", error.getMessage()))
-				.blockLast(); // This will block until all operations have finished
-
-			return Optional.of(true);
+				.blockLast();
 		}
 		catch (Exception e) {
-			logger.error("Exception while deleting documents: {}", e.getMessage());
-			return Optional.of(false);
+			logger.error("Exception while deleting documents: {}", e.getMessage(), e);
+			throw e;
 		}
 	}
 
@@ -352,9 +424,26 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.flatMap(page -> Flux.fromIterable(page.getResults()))
 				.collectList()
 				.block();
+
+			// Collect metadata fields from the documents
+			Map<String, Object> docFields = new HashMap<>();
+			for (var doc : documents) {
+				JsonNode metadata = doc.get("metadata");
+				metadata.fieldNames().forEachRemaining(field -> {
+					JsonNode value = metadata.get(field);
+					Object parsedValue = value.isTextual() ? value.asText() : value.isNumber() ? value.numberValue()
+							: value.isBoolean() ? value.booleanValue() : value.toString();
+					docFields.put(field, parsedValue);
+				});
+			}
+
 			// Convert JsonNode to Document
 			List<Document> docs = documents.stream()
-				.map(doc -> Document.builder().id(doc.get("id").asText()).text(doc.get("content").asText()).build())
+				.map(doc -> Document.builder()
+					.id(doc.get("id").asText())
+					.text(doc.get("content").asText())
+					.metadata(docFields)
+					.build())
 				.collect(Collectors.toList());
 
 			return docs != null ? docs : List.of();
@@ -372,6 +461,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			.dimensions(this.embeddingModel.dimensions())
 			.namespace(this.container.getDatabase().getId())
 			.similarityMetric("cosine");
+	}
+
+	@Override
+	public <T> Optional<T> getNativeClient() {
+		@SuppressWarnings("unchecked")
+		T client = (T) this.container;
+		return Optional.of(client);
 	}
 
 	/**
@@ -413,7 +509,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if containerName is null or empty
 		 */
 		public Builder containerName(String containerName) {
-			Assert.hasText(this.containerName, "Container name must not be empty");
+			Assert.hasText(containerName, "Container name must not be empty");
 			this.containerName = containerName;
 			return this;
 		}
@@ -425,7 +521,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if databaseName is null or empty
 		 */
 		public Builder databaseName(String databaseName) {
-			Assert.hasText(this.databaseName, "Database name must not be empty");
+			Assert.hasText(databaseName, "Database name must not be empty");
 			this.databaseName = databaseName;
 			return this;
 		}
@@ -437,7 +533,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if partitionKeyPath is null or empty
 		 */
 		public Builder partitionKeyPath(String partitionKeyPath) {
-			Assert.hasText(this.partitionKeyPath, "Partition key path must not be empty");
+			Assert.hasText(partitionKeyPath, "Partition key path must not be empty");
 			this.partitionKeyPath = partitionKeyPath;
 			return this;
 		}
@@ -449,7 +545,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if vectorStoreThroughput is not positive
 		 */
 		public Builder vectorStoreThroughput(int vectorStoreThroughput) {
-			Assert.isTrue(this.vectorStoreThroughput > 0, "Vector store throughput must be positive");
+			Assert.isTrue(vectorStoreThroughput > 0, "Vector store throughput must be positive");
 			this.vectorStoreThroughput = vectorStoreThroughput;
 			return this;
 		}
@@ -461,7 +557,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @throws IllegalArgumentException if vectorDimensions is not positive
 		 */
 		public Builder vectorDimensions(long vectorDimensions) {
-			Assert.isTrue(this.vectorDimensions > 0, "Vector dimensions must be positive");
+			Assert.isTrue(vectorDimensions > 0, "Vector dimensions must be positive");
 			this.vectorDimensions = vectorDimensions;
 			return this;
 		}
@@ -472,7 +568,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		 * @return the builder instance
 		 */
 		public Builder metadataFields(List<String> metadataFieldsList) {
-			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(this.metadataFieldsList)
+			this.metadataFieldsList = metadataFieldsList != null ? new ArrayList<>(metadataFieldsList)
 					: new ArrayList<>();
 			return this;
 		}

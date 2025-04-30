@@ -18,7 +18,6 @@ package org.springframework.ai.vectorstore.hanadb;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -126,10 +125,9 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public Optional<Boolean> doDelete(List<String> idList) {
+	public void doDelete(List<String> idList) {
 		int deleteCount = this.repository.deleteEmbeddingsById(this.tableName, idList);
 		logger.info("{} embeddings deleted", deleteCount);
-		return Optional.of(deleteCount == idList.size());
 	}
 
 	public int purgeEmbeddings() {
