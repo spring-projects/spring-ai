@@ -200,6 +200,23 @@ QuestionAnswerAdvisor newAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
 
 * The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
 
+=== Class Package Refactoring
+
+Several classes have been moved to different modules and packages for better organization:
+
+* Evaluation classes moved:
+** `org.springframework.ai.evaluation.FactCheckingEvaluator` moved to `org.springframework.ai.chat.evaluation` package within `spring-ai-client-chat`.
+** `org.springframework.ai.evaluation.RelevancyEvaluator` moved to `org.springframework.ai.chat.evaluation` package within `spring-ai-client-chat`.
+** `org.springframework.ai.evaluation.EvaluationRequest`, `EvaluationResponse`, and `Evaluator` moved from `spring-ai-client-chat` to `spring-ai-commons` under the `org.springframework.ai.evaluation` package.
+* Output converter classes moved:
+** Classes within `org.springframework.ai.converter` (e.g., `BeanOutputConverter`, `ListOutputConverter`, `MapOutputConverter`, `StructuredOutputConverter`, etc.) moved from `spring-ai-client-chat` to `spring-ai-model`.
+* Transformer classes moved:
+** `org.springframework.ai.chat.transformer.KeywordMetadataEnricher` moved to `org.springframework.ai.model.transformer.KeywordMetadataEnricher` in `spring-ai-model`.
+** `org.springframework.ai.chat.transformer.SummaryMetadataEnricher` moved to `org.springframework.ai.model.transformer.SummaryMetadataEnricher` in `spring-ai-model`.
+* Utility classes moved:
+** `org.springframework.ai.util.PromptAssert` moved from `spring-ai-client-chat` to `org.springframework.ai.rag.util.PromptAssert` in `spring-ai-rag`.
+
+Please update your imports accordingly.
 
 === Observability
 

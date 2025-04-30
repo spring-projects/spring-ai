@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.evaluation;
+package org.springframework.ai.chat.evaluation;
 
 import java.util.Collections;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.evaluation.EvaluationRequest;
+import org.springframework.ai.evaluation.EvaluationResponse;
+import org.springframework.ai.evaluation.Evaluator;
 
 public class RelevancyEvaluator implements Evaluator {
 
