@@ -38,7 +38,6 @@
 
 	<properties>
 		<spring-ai-testcontainers.skipITs>false</spring-ai-testcontainers.skipITs>
-		<maven.javadoc.skip>true</maven.javadoc.skip>
 	</properties>
 
 	<dependencies>
