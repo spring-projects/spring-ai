@@ -29,7 +29,12 @@ public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 	private ImageOptions imageModelOptions;
 
 	public ImagePrompt(List<ImageMessage> messages) {
-		this(messages, ImageOptionsBuilder.builder().build());
+		this.messages = messages;
+	}
+
+	public ImagePrompt(List<ImageMessage> messages, ImageOptions imageModelOptions) {
+		this.messages = messages;
+		this.imageModelOptions = imageModelOptions;
 	}
 
 	public ImagePrompt(ImageMessage imageMessage, ImageOptions imageOptions) {
@@ -42,11 +47,6 @@ public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 
 	public ImagePrompt(String instructions) {
 		this(new ImageMessage(instructions), ImageOptionsBuilder.builder().build());
-	}
-
-	public ImagePrompt(List<ImageMessage> messages, ImageOptions imageModelOptions) {
-		this.messages = messages;
-		this.imageModelOptions = imageModelOptions != null ? imageModelOptions : ImageOptionsBuilder.builder().build();
 	}
 
 	@Override
