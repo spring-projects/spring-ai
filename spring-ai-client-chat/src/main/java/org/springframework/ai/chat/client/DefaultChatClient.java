@@ -834,6 +834,11 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
+		public ChatClientRequestSpec tools(String... toolNames) {
+			return this.toolNames(toolNames);
+		}
+
+		@Override
 		public ChatClientRequestSpec toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
 			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");

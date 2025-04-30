@@ -151,6 +151,11 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	@Override
+	public Builder defaultTools(String... toolNames) {
+		return defaultToolNames(toolNames);
+	}
+
+	@Override
 	public Builder defaultToolNames(String... toolNames) {
 		this.defaultRequest.toolNames(toolNames);
 		return this;
