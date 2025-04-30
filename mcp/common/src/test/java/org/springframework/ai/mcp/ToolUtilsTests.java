@@ -21,12 +21,16 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Map;
 
+import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.Implementation;
+import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
@@ -209,6 +213,120 @@ class ToolUtilsTests {
 		when(callback.getToolDefinition()).thenReturn(definition);
 		when(callback.call(anyString(), any())).thenThrow(error);
 		return callback;
+	}
+
+	@Test
+	void getToolCallbacksFromSyncClientsWithEmptyListShouldReturnEmptyList() {
+		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(List.of());
+		assertThat(result).isEmpty();
+	}
+
+	@Test
+	void getToolCallbacksFromSyncClientsWithSingleClientShouldReturnToolCallbacks() {
+		McpSyncClient mockClient = mock(McpSyncClient.class);
+		Implementation clientInfo = new Implementation("test-client", "1.0.0");
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+		when(tool1.description()).thenReturn("Test Tool 1");
+
+		Tool tool2 = mock(Tool.class);
+		when(tool2.name()).thenReturn("tool2");
+		when(tool2.description()).thenReturn("Test Tool 2");
+
+		when(mockClient.getClientInfo()).thenReturn(clientInfo);
+
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
+		when(mockClient.listTools()).thenReturn(listToolsResult);
+
+		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient);
+
+		assertThat(result).hasSize(2);
+		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("test_client_tool1");
+		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("test_client_tool2");
+
+		List<ToolCallback> result2 = McpToolUtils.getToolCallbacksFromSyncClients(List.of(mockClient));
+
+		assertThat(result2).hasSize(2);
+		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("test_client_tool1");
+		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("test_client_tool2");
+	}
+
+	@Test
+	void getToolCallbacksFromSyncClientsWithMultipleClientsShouldReturnCombinedToolCallbacks() {
+
+		McpSyncClient mockClient1 = mock(McpSyncClient.class);
+		Implementation clientInfo1 = new Implementation("client1", "1.0.0");
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+		when(tool1.description()).thenReturn("Test Tool 1");
+
+		McpSyncClient mockClient2 = mock(McpSyncClient.class);
+		Implementation clientInfo2 = new Implementation("client2", "1.0.0");
+
+		Tool tool2 = mock(Tool.class);
+		when(tool2.name()).thenReturn("tool2");
+		when(tool2.description()).thenReturn("Test Tool 2");
+
+		when(mockClient1.getClientInfo()).thenReturn(clientInfo1);
+
+		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
+		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
+		when(mockClient1.listTools()).thenReturn(listToolsResult1);
+
+		when(mockClient2.getClientInfo()).thenReturn(clientInfo2);
+
+		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
+		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
+		when(mockClient2.listTools()).thenReturn(listToolsResult2);
+
+		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient1, mockClient2);
+
+		assertThat(result).hasSize(2);
+		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("client1_tool1");
+		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("client2_tool2");
+
+		List<ToolCallback> result2 = McpToolUtils.getToolCallbacksFromSyncClients(List.of(mockClient1, mockClient2));
+
+		assertThat(result2).hasSize(2);
+		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("client1_tool1");
+		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("client2_tool2");
+	}
+
+	@Test
+	void getToolCallbacksFromSyncClientsShouldHandleDuplicateToolNames() {
+
+		McpSyncClient mockClient1 = mock(McpSyncClient.class);
+		Implementation clientInfo1 = new Implementation("client", "1.0.0");
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool");
+		when(tool1.description()).thenReturn("Test Tool 1");
+
+		McpSyncClient mockClient2 = mock(McpSyncClient.class);
+		Implementation clientInfo2 = new Implementation("client", "1.0.0");
+
+		Tool tool2 = mock(Tool.class);
+		when(tool2.name()).thenReturn("tool");
+		when(tool2.description()).thenReturn("Test Tool 2");
+
+		when(mockClient1.getClientInfo()).thenReturn(clientInfo1);
+
+		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
+		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
+		when(mockClient1.listTools()).thenReturn(listToolsResult1);
+
+		when(mockClient2.getClientInfo()).thenReturn(clientInfo2);
+
+		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
+		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
+		when(mockClient2.listTools()).thenReturn(listToolsResult2);
+
+		assertThatThrownBy(() -> McpToolUtils.getToolCallbacksFromSyncClients(mockClient1, mockClient2))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Multiple tools with the same name");
 	}
 
 }
