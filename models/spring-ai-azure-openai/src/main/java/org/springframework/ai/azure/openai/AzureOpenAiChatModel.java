@@ -523,16 +523,13 @@ public class AzureOpenAiChatModel implements ChatModel {
 			options.setTools(tools2);
 		}
 
-		Boolean enableStreamUsage =
-				(prompt.getOptions() instanceof AzureOpenAiChatOptions azureOpenAiChatOptions
-						&& azureOpenAiChatOptions.getStreamUsage() != null)
-						? azureOpenAiChatOptions.getStreamUsage()
+		Boolean enableStreamUsage = (prompt.getOptions() instanceof AzureOpenAiChatOptions azureOpenAiChatOptions
+				&& azureOpenAiChatOptions.getStreamUsage() != null) ? azureOpenAiChatOptions.getStreamUsage()
 						: this.defaultOptions.getStreamUsage();
 
 		if (Boolean.TRUE.equals(enableStreamUsage) && options.getStreamOptions() == null) {
-			ChatCompletionsOptionsAccessHelper.setStreamOptions(
-					options, new ChatCompletionStreamOptions().setIncludeUsage(true)
-			);
+			ChatCompletionsOptionsAccessHelper.setStreamOptions(options,
+					new ChatCompletionStreamOptions().setIncludeUsage(true));
 		}
 
 		return options;
