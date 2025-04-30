@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -213,7 +212,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
@@ -231,7 +230,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
@@ -248,7 +247,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -270,7 +269,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())

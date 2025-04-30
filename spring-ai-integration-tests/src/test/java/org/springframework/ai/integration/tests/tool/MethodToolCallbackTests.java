@@ -112,7 +112,7 @@ public class MethodToolCallbackTests {
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
 					"The Lion, the Witch and the Wardrobe"))
-			.tools(ToolCallbacks.from(this.tools))
+			.toolCallbacks(ToolCallbacks.from(this.tools))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");
