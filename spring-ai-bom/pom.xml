@@ -1115,6 +1115,29 @@
 		</repository>
 	</repositories>
 
+	<developers>
+		<developer>
+			<id>mpollack</id>
+			<name>Mark Pollack</name>
+			<email>mpollack at vmware.com</email>
+			<organization>VMware</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+			<roles>
+				<role>lead</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>tzolov</id>
+			<name>Christian Tzolov</name>
+			<email>christian tzolov at broadcom.com</email>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+			<roles>
+				<role>lead</role>
+			</roles>
+		</developer>
+	</developers>
+
 	<build>
 		<plugins>
 			<plugin>
