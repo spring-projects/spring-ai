@@ -19,6 +19,7 @@ package org.springframework.ai.tool.method;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -44,6 +45,7 @@ import org.springframework.util.ReflectionUtils;
  * {@link Tool}-annotated methods.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public final class MethodToolCallbackProvider implements ToolCallbackProvider {
@@ -55,7 +57,26 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	private MethodToolCallbackProvider(List<Object> toolObjects) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
 		Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+		assertToolAnnotatedMethodsPresent(toolObjects);
 		this.toolObjects = toolObjects;
+		validateToolCallbacks(getToolCallbacks());
+	}
+
+	private void assertToolAnnotatedMethodsPresent(List<Object> toolObjects) {
+
+		for (Object toolObject : toolObjects) {
+			List<Method> toolMethods = Stream
+				.of(ReflectionUtils.getDeclaredMethods(
+						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
+				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
+				.filter(toolMethod -> !isFunctionalType(toolMethod))
+				.toList();
+
+			if (toolMethods.isEmpty()) {
+				throw new IllegalStateException("No @Tool annotated methods found in " + toolObject + "."
+						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, you have to use .toolCallbacks() instead of .tool()");
+			}
+		}
 	}
 
 	@Override
