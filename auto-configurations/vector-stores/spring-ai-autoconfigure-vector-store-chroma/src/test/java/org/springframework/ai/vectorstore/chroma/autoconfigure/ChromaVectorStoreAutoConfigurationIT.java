@@ -58,7 +58,7 @@ import static org.springframework.ai.test.vectorstore.ObservationTestUtil.assert
 public class ChromaVectorStoreAutoConfigurationIT {
 
 	@Container
-	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:0.5.20");
+	static ChromaDBContainer chroma = new ChromaDBContainer("ghcr.io/chroma-core/chroma:1.0.0");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations
@@ -69,7 +69,6 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				"spring.ai.vectorstore.chroma.collectionName=TestCollection");
 
 	@Test
-	@Disabled("This throws an Invalid HTTP request exception - will investigate")
 	public void addAndSearchWithFilters() {
 
 		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=true").run(context -> {
