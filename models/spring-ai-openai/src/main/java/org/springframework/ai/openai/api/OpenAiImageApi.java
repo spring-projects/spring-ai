@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,6 +92,11 @@ public class OpenAiImageApi {
 	public enum ImageModel {
 
 		/**
+		 * The state-of-the-art image generation model released in April 2025.
+		 */
+		GPT_IMAGE_1("gpt-image-1"),
+
+		/**
 		 * The latest DALL·E model released in Nov 2023.
 		 */
 		DALL_E_3("dall-e-3"),
@@ -120,6 +125,10 @@ public class OpenAiImageApi {
 	public record OpenAiImageRequest(
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("model") String model,
+		@JsonProperty("background") String background,
+		@JsonProperty("moderation") String moderation,
+		@JsonProperty("output_compression") Integer outputCompression,
+		@JsonProperty("output_format") String outputFormat,
 		@JsonProperty("n") Integer n,
 		@JsonProperty("quality") String quality,
 		@JsonProperty("response_format") String responseFormat,
@@ -128,7 +137,7 @@ public class OpenAiImageApi {
 		@JsonProperty("user") String user) {
 
 		public OpenAiImageRequest(String prompt, String model) {
-			this(prompt, model, null, null, null, null, null, null);
+			this(prompt, model, null, null, null, null, null, null,null,null,null,null);
 		}
 	}
 

@@ -69,8 +69,12 @@ public class OpenAiImageModelNoOpApiKeysIT {
 
 		@Bean
 		public OpenAiImageModel openAiImageModel(OpenAiImageApi openAiImageApi) {
-			return new OpenAiImageModel(openAiImageApi, OpenAiImageOptions.builder().build(),
-					RetryTemplate.defaultInstance(), TestObservationRegistry.create());
+			return OpenAiImageModel.builder()
+				.openAiImageApi(openAiImageApi)
+				.defaultOptions(OpenAiImageOptions.builder().build())
+				.retryTemplate(RetryTemplate.defaultInstance())
+				.observationRegistry(TestObservationRegistry.create())
+				.build();
 		}
 
 	}

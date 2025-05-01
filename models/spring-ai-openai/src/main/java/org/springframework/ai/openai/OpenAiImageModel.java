@@ -50,6 +50,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Hyunjoon Choi
  * @author Thomas Vitale
+ * @author Jonghoon Park
  * @since 0.8.0
  */
 public class OpenAiImageModel implements ImageModel {
@@ -88,7 +89,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * @param openAiImageApi The OpenAiImageApi instance to be used for interacting with
 	 * the OpenAI Image API.
 	 * @throws IllegalArgumentException if openAiImageApi is null
+	 * @deprecated use {@link OpenAiImageModel.Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M8")
 	public OpenAiImageModel(OpenAiImageApi openAiImageApi) {
 		this(openAiImageApi, OpenAiImageOptions.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
@@ -99,7 +102,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * the OpenAI Image API.
 	 * @param options The OpenAiImageOptions to configure the image model.
 	 * @param retryTemplate The retry template.
+	 * @deprecated use {@link OpenAiImageModel.Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M8")
 	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate) {
 		this(openAiImageApi, options, retryTemplate, ObservationRegistry.NOOP);
 	}
@@ -111,7 +116,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * @param options The OpenAiImageOptions to configure the image model.
 	 * @param retryTemplate The retry template.
 	 * @param observationRegistry The ObservationRegistry used for instrumentation.
+	 * @deprecated use {@link OpenAiImageModel.Builder} instead.
 	 */
+	@Deprecated(forRemoval = true, since = "1.0.0-M8")
 	public OpenAiImageModel(OpenAiImageApi openAiImageApi, OpenAiImageOptions options, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
 		Assert.notNull(openAiImageApi, "OpenAiImageApi must not be null");
@@ -198,6 +205,14 @@ public class OpenAiImageModel implements ImageModel {
 			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), this.defaultOptions.getHeight()))
 			.style(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), this.defaultOptions.getStyle()))
 			// Handle OpenAI specific image options
+			.background(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getBackground(), this.defaultOptions.getBackground()))
+			.moderation(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getModeration(), this.defaultOptions.getModeration()))
+			.outputCompression(ModelOptionsUtils.mergeOption(runtimeOptions.getOutputCompression(),
+					this.defaultOptions.getOutputCompression()))
+			.outputFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getOutputFormat(),
+					this.defaultOptions.getOutputFormat()))
 			.quality(ModelOptionsUtils.mergeOption(runtimeOptions.getQuality(), this.defaultOptions.getQuality()))
 			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), this.defaultOptions.getUser()))
 			.build();
@@ -212,6 +227,50 @@ public class OpenAiImageModel implements ImageModel {
 	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	public static OpenAiImageModel.Builder builder() {
+		return new OpenAiImageModel.Builder();
+	}
+
+	public static final class Builder {
+
+		private OpenAiImageApi openAiImageApi;
+
+		private OpenAiImageOptions defaultOptions = OpenAiImageOptions.builder().build();
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		private Builder() {
+		}
+
+		public OpenAiImageModel.Builder openAiImageApi(OpenAiImageApi openAiImageApi) {
+			this.openAiImageApi = openAiImageApi;
+			return this;
+		}
+
+		public OpenAiImageModel.Builder defaultOptions(OpenAiImageOptions defaultOptions) {
+			this.defaultOptions = defaultOptions;
+			return this;
+		}
+
+		public OpenAiImageModel.Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public OpenAiImageModel.Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public OpenAiImageModel build() {
+			return new OpenAiImageModel(this.openAiImageApi, this.defaultOptions, this.retryTemplate,
+					this.observationRegistry);
+		}
+
 	}
 
 }
