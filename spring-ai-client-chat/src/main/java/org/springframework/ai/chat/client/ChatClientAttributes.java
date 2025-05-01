@@ -21,10 +21,7 @@ package org.springframework.ai.chat.client;
  *
  * @author Thomas Vitale
  * @since 1.0.0
- * @deprecated only introduced to smooth the transition to the new APIs and ensure
- * backward compatibility
  */
-@Deprecated
 public enum ChatClientAttributes {
 
 	//@formatter:off
@@ -33,7 +30,6 @@ public enum ChatClientAttributes {
 	ADVISORS("spring.ai.chat.client.advisors"),
 	@Deprecated // Only for backward compatibility until the next release.
 	CHAT_MODEL("spring.ai.chat.client.model"),
-	@Deprecated // Only for backward compatibility until the next release.
 	OUTPUT_FORMAT("spring.ai.chat.client.output.format"),
 	@Deprecated // Only for backward compatibility until the next release.
 	USER_PARAMS("spring.ai.chat.client.user.params"),

@@ -496,11 +496,13 @@ public class DefaultChatClient implements ChatClient {
 
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest,
 				@Nullable String outputFormat) {
-			ChatClientRequest formattedChatClientRequest = StringUtils.hasText(outputFormat)
-					? augmentPromptWithFormatInstructions(chatClientRequest, outputFormat) : chatClientRequest;
+
+			if (outputFormat != null) {
+				chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputFormat);
+			}
 
 			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
-				.request(formattedChatClientRequest)
+				.request(chatClientRequest)
 				.advisors(advisorChain.getCallAdvisors())
 				.stream(false)
 				.withFormat(outputFormat)
@@ -510,7 +512,7 @@ public class DefaultChatClient implements ChatClient {
 					DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION, () -> observationContext, observationRegistry);
 			var chatClientResponse = observation.observe(() -> {
 				// Apply the advisor chain that terminates with the ChatModelCallAdvisor.
-				return advisorChain.nextCall(formattedChatClientRequest);
+				return advisorChain.nextCall(chatClientRequest);
 			});
 			return chatClientResponse != null ? chatClientResponse : ChatClientResponse.builder().build();
 		}
