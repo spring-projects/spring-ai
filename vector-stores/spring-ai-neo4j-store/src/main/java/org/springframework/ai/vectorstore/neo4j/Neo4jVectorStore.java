@@ -148,6 +148,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	public static final String DEFAULT_ID_PROPERTY = "id";
 
+	public static final String DEFAULT_TEXT_PROPERTY = "text";
+
 	public static final String DEFAULT_CONSTRAINT_NAME = DEFAULT_LABEL + "_unique_idx";
 
 	private static final Map<Neo4jDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
@@ -172,6 +174,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final String idProperty;
 
+	private final String textProperty;
+
 	private final String constraintName;
 
 	private final Neo4jVectorFilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
@@ -192,6 +196,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		this.indexNameNotSanitized = builder.indexName;
 		this.indexName = SchemaNames.sanitize(builder.indexName, true).orElseThrow();
 		this.idProperty = SchemaNames.sanitize(builder.idProperty).orElseThrow();
+		this.textProperty = SchemaNames.sanitize(builder.textProperty).orElseThrow();
 		this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
 		this.initializeSchema = builder.initializeSchema;
 	}
@@ -323,7 +328,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		row.put("id", document.getId());
 
 		var properties = new HashMap<String, Object>();
-		properties.put("text", document.getText());
+		properties.put(this.textProperty, document.getText());
 
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
@@ -345,7 +350,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		return Document.builder()
 			.id(node.get(this.idProperty).asString())
-			.text(node.get("text").asString())
+			.text(node.get(this.textProperty).asString())
 			.metadata(Map.copyOf(metaData))
 			.score((double) score)
 			.build();
@@ -410,6 +415,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		private String indexName = DEFAULT_INDEX_NAME;
 
 		private String idProperty = DEFAULT_ID_PROPERTY;
+
+		private String textProperty = DEFAULT_TEXT_PROPERTY;
 
 		private String constraintName = DEFAULT_CONSTRAINT_NAME;
 
@@ -512,6 +519,18 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		public Builder idProperty(String idProperty) {
 			if (StringUtils.hasText(idProperty)) {
 				this.idProperty = idProperty;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the property name for text-content.
+		 * @param textProperty the text property to use
+		 * @return the builder instance
+		 */
+		public Builder textProperty(String textProperty) {
+			if (StringUtils.hasText(textProperty)) {
+				this.textProperty = textProperty;
 			}
 			return this;
 		}

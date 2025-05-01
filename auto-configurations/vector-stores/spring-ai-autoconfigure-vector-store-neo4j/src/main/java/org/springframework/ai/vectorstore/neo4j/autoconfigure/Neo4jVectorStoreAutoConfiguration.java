@@ -75,6 +75,7 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.indexName(properties.getIndexName())
 			.idProperty(properties.getIdProperty())
 			.constraintName(properties.getConstraintName())
+			.textProperty(properties.getTextProperty())
 			.build();
 	}
 
