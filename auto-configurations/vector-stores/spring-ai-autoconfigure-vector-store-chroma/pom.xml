@@ -94,6 +94,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>chromadb</artifactId>
+			<version>1.21.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
