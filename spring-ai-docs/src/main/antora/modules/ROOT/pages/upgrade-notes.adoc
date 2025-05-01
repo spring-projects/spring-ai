@@ -35,6 +35,12 @@ Hopefully Watson will reappear in a future version of Spring AI
 
 
 
+
+[[upgrading-to-1-0-0-RC1]]
+== Upgrading to 1.0.0-RC1
+
+
+
 [[upgrading-to-1-0-0-m8]]
 == Upgrading to 1.0.0-M8
 
