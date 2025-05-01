@@ -163,6 +163,28 @@ public class QuestionAnswerAdvisorIT {
 		evaluateRelevancy(question, chatResponse);
 	}
 
+	@Test
+	void qaOutputConverter() {
+		String question = "Where does the adventure of Anacletus and Birba take place?";
+
+		QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(this.pgVectorStore).build();
+
+		Answer answer = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(question)
+			.advisors(qaAdvisor)
+			.call()
+			.entity(Answer.class);
+
+		assertThat(answer).isNotNull();
+
+		System.out.println(answer);
+		assertThat(answer.content()).containsIgnoringCase("Highlands");
+	}
+
+	private record Answer(String content) {
+	}
+
 	private void evaluateRelevancy(String question, ChatResponse chatResponse) {
 		EvaluationRequest evaluationRequest = new EvaluationRequest(question,
 				chatResponse.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS),
