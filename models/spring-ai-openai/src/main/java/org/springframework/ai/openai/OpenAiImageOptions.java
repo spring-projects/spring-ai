@@ -306,41 +306,73 @@ public class OpenAiImageOptions implements ImageOptions {
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #N(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withN(Integer n) {
 			this.options.setN(n);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #model(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withModel(String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #quality(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withQuality(String quality) {
 			this.options.setQuality(quality);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #responseFormat(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withResponseFormat(String responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #width(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withWidth(Integer width) {
 			this.options.setWidth(width);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #height(Integer)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withHeight(Integer height) {
 			this.options.setHeight(height);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #style(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withStyle(String style) {
 			this.options.setStyle(style);
 			return this;
 		}
 
+		/**
+		 * @deprecated use {@link #user(String)} instead.
+		 */
+		@Deprecated(forRemoval = true, since = "1.0.0-M8")
 		public Builder withUser(String user) {
 			this.options.setUser(user);
 			return this;
