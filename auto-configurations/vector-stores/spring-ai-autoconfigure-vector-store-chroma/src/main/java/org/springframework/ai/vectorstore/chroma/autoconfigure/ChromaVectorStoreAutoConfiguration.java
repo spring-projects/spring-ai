@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,11 @@ public class ChromaVectorStoreAutoConfiguration {
 
 		String chromaUrl = String.format("%s:%s", connectionDetails.getHost(), connectionDetails.getPort());
 
-		var chromaApi = new ChromaApi(chromaUrl, restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				objectMapper);
+		var chromaApi = ChromaApi.builder()
+			.baseUrl(chromaUrl)
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.objectMapper(objectMapper)
+			.build();
 
 		if (StringUtils.hasText(connectionDetails.getKeyToken())) {
 			chromaApi.withKeyToken(connectionDetails.getKeyToken());

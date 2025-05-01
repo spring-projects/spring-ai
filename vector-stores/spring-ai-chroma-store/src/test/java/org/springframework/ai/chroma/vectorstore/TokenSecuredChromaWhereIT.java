@@ -22,6 +22,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.chromadb.ChromaDBContainer;
+import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -143,7 +145,10 @@ public class TokenSecuredChromaWhereIT {
 
 		@Bean
 		public ChromaApi chromaApi(RestClient.Builder builder) {
-			var chromaApi = new ChromaApi(chromaContainer.getEndpoint(), builder);
+			var chromaApi = ChromaApi.builder()
+				.baseUrl(chromaContainer.getEndpoint())
+				.restClientBuilder(builder)
+				.build();
 			chromaApi.withKeyToken(CHROMA_SERVER_AUTH_CREDENTIALS);
 			return chromaApi;
 		}

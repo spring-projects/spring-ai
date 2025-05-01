@@ -25,6 +25,8 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.chromadb.ChromaDBContainer;
+import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -49,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Thomas Vitale
+ * @author Jonghoon Park
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -56,6 +59,11 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static ChromaDBContainer chromaContainer = new ChromaDBContainer(ChromaImage.DEFAULT_IMAGE);
+
+	private void resetCollection(VectorStore vectorStore) {
+		((ChromaVectorStore) vectorStore).deleteCollection();
+		((ChromaVectorStore) vectorStore).createCollection();
+	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
@@ -83,6 +91,8 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
+			resetCollection(vectorStore);
+
 			vectorStore.add(this.documents);
 
 			List<Document> results = vectorStore
@@ -109,6 +119,8 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			resetCollection(vectorStore);
 
 			var document = Document.builder()
 				.id("simpleDoc")
@@ -138,6 +150,8 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			resetCollection(vectorStore);
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "Bulgaria"));
@@ -185,6 +199,8 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
+			resetCollection(vectorStore);
+
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
 					Collections.singletonMap("meta1", "meta1"));
 
@@ -227,6 +243,8 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
+			resetCollection(vectorStore);
+
 			vectorStore.add(this.documents);
 
 			var request = SearchRequest.builder().query("Great").topK(5).build();
@@ -266,7 +284,7 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public ChromaApi chromaApi(RestClient.Builder builder) {
-			return new ChromaApi(chromaContainer.getEndpoint(), builder);
+			return ChromaApi.builder().baseUrl(chromaContainer.getEndpoint()).restClientBuilder(builder).build();
 		}
 
 		@Bean
