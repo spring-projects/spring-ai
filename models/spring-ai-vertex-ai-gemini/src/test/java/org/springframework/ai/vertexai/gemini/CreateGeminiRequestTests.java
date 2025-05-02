@@ -17,6 +17,7 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
@@ -83,8 +84,11 @@ public class CreateGeminiRequestTests {
 
 		var systemMessage = new SystemMessage("System Message Text");
 
-		var userMessage = new UserMessage("User Message Text",
-				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new URL("http://example.com")).build()));
+		var userMessage = UserMessage.builder()
+			.text("User Message Text")
+			.media(List
+				.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(URI.create("http://example.com")).build()))
+			.build();
 
 		var client = VertexAiGeminiChatModel.builder()
 			.vertexAI(this.vertexAI)

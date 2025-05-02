@@ -51,8 +51,10 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 	void unsupportedMediaType() {
 		var imageData = new ClassPathResource("/norway.webp");
 
-		var userMessage = new UserMessage("Explain what do you see in this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see in this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		assertThatThrownBy(() -> this.chatModel.call(new Prompt(List.of(userMessage))))
 			.isInstanceOf(RuntimeException.class);
@@ -62,8 +64,10 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 	void multiModalityTest() {
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see in this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see in this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 

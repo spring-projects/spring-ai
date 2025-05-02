@@ -470,8 +470,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
@@ -485,11 +487,13 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
@@ -502,11 +506,13 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
 				OpenAiChatOptions.builder().model(OpenAiApi.ChatModel.GPT_4_O.getValue()).build()));
@@ -565,8 +571,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void multiModalityInputAudio(String modelName) {
 		var audioResource = new ClassPathResource("speech1.mp3");
-		var userMessage = new UserMessage("What is this recording about?",
-				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
+		var userMessage = UserMessage.builder()
+			.text("What is this recording about?")
+			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
+			.build();
 
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
@@ -580,8 +588,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void streamingMultiModalityInputAudio(String modelName) {
 		var audioResource = new ClassPathResource("speech1.mp3");
-		var userMessage = new UserMessage("What is this recording about?",
-				List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)));
+		var userMessage = UserMessage.builder()
+			.text("What is this recording about?")
+			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
+			.build();
 
 		Flux<ChatResponse> response = this.chatModel
 			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));

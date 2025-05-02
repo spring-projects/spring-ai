@@ -261,8 +261,10 @@ class VertexAiGeminiChatModelIT {
 
 		var data = new ClassPathResource("/vertex.test.png");
 
-		var userMessage = new UserMessage("Explain what do you see o this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see o this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
@@ -299,9 +301,10 @@ class VertexAiGeminiChatModelIT {
 
 		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
 
-		var userMessage = new UserMessage(
-				"You are a very professional document summarization specialist. Please summarize the given document.",
-				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+		var userMessage = UserMessage.builder()
+			.text("You are a very professional document summarization specialist. Please summarize the given document.")
+			.media(List.of(new Media(new MimeType("application", "pdf"), pdfData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 

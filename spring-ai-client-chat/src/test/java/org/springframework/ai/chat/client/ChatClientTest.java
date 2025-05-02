@@ -478,7 +478,7 @@ public class ChatClientTest {
 		var media = new Media(MimeTypeUtils.IMAGE_JPEG,
 				new DefaultResourceLoader().getResource("classpath:/bikes.json"));
 
-		UserMessage message = new UserMessage("User prompt", List.of(media));
+		UserMessage message = UserMessage.builder().text("User prompt").media(List.of(media)).build();
 		Prompt prompt = new Prompt(message);
 		assertThat(ChatClient.builder(this.chatModel).build().prompt(prompt).call().content()).isEqualTo("response");
 
@@ -605,7 +605,7 @@ public class ChatClientTest {
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var prompt = new Prompt(new SystemMessage("instructions"), new UserMessage("my question"));
+		var prompt = new Prompt(new SystemMessage("instructions"), UserMessage.builder().text("my question").build());
 		var content = chatClient.prompt(prompt).call().content();
 
 		assertThat(content).isEqualTo("response");

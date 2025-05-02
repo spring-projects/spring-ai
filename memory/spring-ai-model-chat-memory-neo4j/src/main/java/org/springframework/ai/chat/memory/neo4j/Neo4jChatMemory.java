@@ -265,8 +265,11 @@ public class Neo4jChatMemory implements ChatMemory {
 			List<Media> mediaList) {
 		Message message;
 		Map<String, Object> metadata = record.get("metadata").asMap();
-		message = new UserMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(), mediaList,
-				metadata);
+		message = UserMessage.builder()
+			.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
+			.media(mediaList)
+			.metadata(metadata)
+			.build();
 		return message;
 	}
 
