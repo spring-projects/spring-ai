@@ -246,7 +246,7 @@ public record AdvisedRequest(
 					.build()
 					.render();
 			}
-			messages.add(new UserMessage(processedUserText, this.media()));
+			messages.add(UserMessage.builder().text(processedUserText).media(this.media()).build());
 		}
 
 		if (this.chatOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {

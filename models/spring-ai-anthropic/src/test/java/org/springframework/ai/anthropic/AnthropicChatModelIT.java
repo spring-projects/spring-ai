@@ -247,8 +247,10 @@ class AnthropicChatModelIT {
 
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
@@ -262,9 +264,10 @@ class AnthropicChatModelIT {
 
 		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
 
-		var userMessage = new UserMessage(
-				"You are a very professional document summarization specialist. Please summarize the given document.",
-				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+		var userMessage = UserMessage.builder()
+			.text("You are a very professional document summarization specialist. Please summarize the given document.")
+			.media(List.of(new Media(new MimeType("application", "pdf"), pdfData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage),
 				ToolCallingChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName()).build()));

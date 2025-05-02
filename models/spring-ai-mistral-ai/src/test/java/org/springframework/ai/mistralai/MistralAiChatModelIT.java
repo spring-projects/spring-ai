@@ -276,8 +276,10 @@ class MistralAiChatModelIT {
 	void multiModalityEmbeddedImage(String modelName) {
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
@@ -290,11 +292,13 @@ class MistralAiChatModelIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "pixtral-large-latest" })
 	void multiModalityImageUrl(String modelName) throws IOException {
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
@@ -306,11 +310,13 @@ class MistralAiChatModelIT {
 
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
 				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));
