@@ -140,7 +140,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.systemParams(advisedSystemParams)
 			.build();
 
-		UserMessage userMessage = new UserMessage(request.userText(), request.media());
+		UserMessage userMessage = UserMessage.builder().text(request.userText()).media(request.media()).build();
 		this.getChatMemoryStore()
 			.write(toDocuments(List.of(userMessage), this.doGetConversationId(request.adviseContext())));
 

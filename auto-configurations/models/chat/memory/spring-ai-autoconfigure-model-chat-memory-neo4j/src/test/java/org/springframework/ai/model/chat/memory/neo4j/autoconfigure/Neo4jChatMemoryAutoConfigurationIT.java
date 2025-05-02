@@ -101,7 +101,7 @@ class Neo4jChatMemoryAutoConfigurationIT {
 						.data("hello".getBytes(StandardCharsets.UTF_8))
 						.build(),
 					Media.builder().data(URI.create("http://www.google.com").toURL()).mimeType(textPlain).build());
-			UserMessage userMessageWithMedia = new UserMessage("Message with media", media);
+			UserMessage userMessageWithMedia = UserMessage.builder().text("Message with media").media(media).build();
 			memory.add(sessionId, userMessageWithMedia);
 
 			messages = memory.get(sessionId, Integer.MAX_VALUE);
