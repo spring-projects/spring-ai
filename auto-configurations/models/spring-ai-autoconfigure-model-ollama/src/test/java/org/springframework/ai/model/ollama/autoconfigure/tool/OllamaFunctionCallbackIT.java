@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -63,6 +64,24 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 	@BeforeAll
 	public static void beforeAll() {
 		initializeOllama(MODEL_NAME);
+	}
+
+	/**
+	 * See https://github.com/spring-projects/spring-ai/issues/2957
+	 */
+	@Test
+	void chatClientHelloWorld() {
+		this.contextRunner.run(context -> {
+
+			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ChatClient chatClient = ChatClient.builder(chatModel).build();
+
+			UserMessage userMessage = new UserMessage("What is 2+2");
+
+			var response = chatClient.prompt(new Prompt(userMessage)).call().content();
+			logger.info("Response: " + response);
+
+		});
 	}
 
 	@Test
