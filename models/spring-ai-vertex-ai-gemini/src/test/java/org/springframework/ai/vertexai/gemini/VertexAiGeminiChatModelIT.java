@@ -25,11 +25,13 @@ import java.util.stream.Stream;
 
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
+import io.micrometer.observation.ObservationRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -42,6 +44,8 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -291,6 +295,70 @@ class VertexAiGeminiChatModelIT {
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
+	}
+
+	/**
+	 * Helper method to create a VertexAI instance for tests
+	 */
+	private VertexAI vertexAiApi() {
+		String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
+		String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+		return new VertexAI.Builder().setProjectId(projectId)
+			.setLocation(location)
+			.setTransport(Transport.REST)
+			.build();
+	}
+
+	@Test
+	void jsonArrayToolCallingTest() {
+		// Test for the improved jsonToStruct method that handles JSON arrays in tool
+		// calling
+
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+			.observationRegistry(ObservationRegistry.NOOP)
+			.build();
+
+		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
+			.vertexAI(vertexAiApi())
+			.toolCallingManager(toolCallingManager)
+			.defaultOptions(VertexAiGeminiChatOptions.builder()
+				.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.temperature(0.1)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		String response = chatClient.prompt()
+			.tools(new ScientistTools())
+			.user("List 3 famous scientists and their discoveries. Make sure to use the tool to get this information.")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+
+		assertThat(response).satisfiesAnyOf(content -> assertThat(content).contains("Einstein"),
+				content -> assertThat(content).contains("Newton"), content -> assertThat(content).contains("Curie"));
+
+	}
+
+	/**
+	 * Tool class that returns a JSON array to test the jsonToStruct method's ability to
+	 * handle JSON arrays. This specifically tests the PR changes that improve the
+	 * jsonToStruct method to handle JSON arrays in addition to JSON objects.
+	 */
+	public static class ScientistTools {
+
+		@Tool(description = "Get information about famous scientists and their discoveries")
+		public List<Map<String, String>> getScientists() {
+			// Return a JSON array with scientist information
+			return List.of(Map.of("name", "Albert Einstein", "discovery", "Theory of Relativity"),
+					Map.of("name", "Isaac Newton", "discovery", "Laws of Motion"),
+					Map.of("name", "Marie Curie", "discovery", "Radioactivity"));
+		}
+
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

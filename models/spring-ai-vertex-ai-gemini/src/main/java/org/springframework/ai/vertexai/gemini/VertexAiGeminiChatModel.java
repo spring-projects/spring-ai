@@ -16,7 +16,6 @@
 
 package org.springframework.ai.vertexai.gemini;
 
-import com.google.cloud.vertexai.api.Tool.GoogleSearch;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +23,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Candidate;
 import com.google.cloud.vertexai.api.Candidate.FinishReason;
@@ -33,15 +33,16 @@ import com.google.cloud.vertexai.api.FunctionDeclaration;
 import com.google.cloud.vertexai.api.FunctionResponse;
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.GenerationConfig;
-import com.google.cloud.vertexai.api.GoogleSearchRetrieval;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.SafetySetting;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
+import com.google.cloud.vertexai.api.Tool.GoogleSearch;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.PartMaker;
 import com.google.cloud.vertexai.generativeai.ResponseStream;
 import com.google.protobuf.Struct;
+import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -226,7 +227,8 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		this.observationRegistry = observationRegistry;
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 
-		// Wrap the provided tool calling manager in a VertexToolCallingManager to ensure
+		// Wrap the provided tool calling manager in a VertexToolCallingManager to
+		// ensure
 		// compatibility with Vertex AI's OpenAPI schema format.
 		if (toolCallingManager instanceof VertexToolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
@@ -334,8 +336,34 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 	private static Struct jsonToStruct(String json) {
 		try {
-			var structBuilder = Struct.newBuilder();
-			JsonFormat.parser().ignoringUnknownFields().merge(json, structBuilder);
+			JsonNode rootNode = ModelOptionsUtils.OBJECT_MAPPER.readTree(json);
+
+			Struct.Builder structBuilder = Struct.newBuilder();
+
+			if (rootNode.isArray()) {
+				// Handle JSON array
+				List<Value> values = new ArrayList<>();
+
+				for (JsonNode element : rootNode) {
+					String elementJson = element.toString();
+					Struct.Builder elementBuilder = Struct.newBuilder();
+					JsonFormat.parser().ignoringUnknownFields().merge(elementJson, elementBuilder);
+
+					// Add each parsed object as a value in an array field
+					values.add(Value.newBuilder().setStructValue(elementBuilder.build()).build());
+				}
+
+				// Add the array to the main struct with a field name like "items"
+				structBuilder.putFields("items",
+						Value.newBuilder()
+							.setListValue(com.google.protobuf.ListValue.newBuilder().addAllValues(values).build())
+							.build());
+			}
+			else {
+				// Original behavior for single JSON object
+				JsonFormat.parser().ignoringUnknownFields().merge(json, structBuilder);
+			}
+
 			return structBuilder.build();
 		}
 		catch (Exception e) {

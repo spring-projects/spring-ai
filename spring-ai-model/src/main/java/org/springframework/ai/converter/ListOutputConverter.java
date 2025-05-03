@@ -31,6 +31,10 @@ import org.springframework.lang.NonNull;
  */
 public class ListOutputConverter extends AbstractConversionServiceOutputConverter<List<String>> {
 
+	public ListOutputConverter() {
+		this(new DefaultConversionService());
+	}
+
 	public ListOutputConverter(DefaultConversionService defaultConversionService) {
 		super(defaultConversionService);
 	}
