@@ -25,6 +25,16 @@ For details, refer to:
 - xref:upgrade-notes.adoc#common-package-changes[Common Package Changes]
 - xref:upgrade-notes.adoc#common-module-structure[Common Module Structure]
 
+
+[[upgrading-to-1-0-0-RC1]]
+== Upgrading to 1.0.0-RC1
+
+=== Breaking Changes
+The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
+Hopefully Watson will reappear in a future version of Spring AI
+
+
+
 [[upgrading-to-1-0-0-m8]]
 == Upgrading to 1.0.0-M8
 

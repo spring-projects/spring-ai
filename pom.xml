@@ -75,7 +75,6 @@
 			<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-watsonx-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
@@ -172,7 +171,6 @@
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
-		<module>models/spring-ai-watsonx-ai</module>
 		<module>models/spring-ai-zhipuai</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
@@ -193,7 +191,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-watsonx-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
@@ -716,7 +713,6 @@
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.watsonx/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.zhipuai/**/*IT.java</exclude>
 
 								<!-- Vector Stores -->
@@ -773,7 +769,6 @@
 								 <exclude>org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.watsonxai/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
