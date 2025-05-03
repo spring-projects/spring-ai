@@ -55,6 +55,21 @@
 			<artifactId>spring-data-redis</artifactId>
 		</dependency>
 
+		<!-- temporary -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-client-chat</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-advisors-vector-store</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- end temporary -->
+
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
@@ -108,6 +123,7 @@
 		  <scope>test</scope>
 		</dependency>
 
-	</dependencies>
+
+    </dependencies>
 
 </project>

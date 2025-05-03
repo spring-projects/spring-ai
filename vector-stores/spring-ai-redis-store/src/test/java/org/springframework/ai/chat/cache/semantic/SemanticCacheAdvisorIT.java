@@ -17,6 +17,8 @@
 package org.springframework.ai.chat.cache.semantic;
 
 import com.redis.testcontainers.RedisStackContainer;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -26,6 +28,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -42,6 +45,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.retry.support.RetryTemplate;
+
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.JedisPooled;
@@ -207,18 +212,24 @@ class SemanticCacheAdvisorIT {
 
 		@Bean(name = "openAiEmbeddingModel")
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
+		}
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
 		}
 
 		@Bean(name = "openAiChatModel")
-		public OpenAiChatModel openAiChatModel() {
-			var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+		public OpenAiChatModel openAiChatModel(ObservationRegistry observationRegistry) {
+			var openAiApi = OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
 			var openAiChatOptions = OpenAiChatOptions.builder()
 				.model("gpt-3.5-turbo")
 				.temperature(0.4)
 				.maxTokens(200)
 				.build();
-			return new OpenAiChatModel(openAiApi, openAiChatOptions);
+			return new OpenAiChatModel(openAiApi, openAiChatOptions, ToolCallingManager.builder().build(),
+					RetryTemplate.defaultInstance(), observationRegistry);
 		}
 
 	}
