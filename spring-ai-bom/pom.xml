@@ -315,11 +315,6 @@
                 <version>${project.version}</version>
             </dependency>
 
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-watsonx-ai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -620,12 +615,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-vertex-ai</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-watsonx-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -975,12 +964,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-vertex-ai-gemini</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-model-watsonx-ai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
