@@ -71,16 +71,6 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	Boolean getInternalToolExecutionEnabled();
 
 	/**
-	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
-	 * the model or if the tools should be executed directly by the caller.
-	 */
-	@Nullable
-	@Deprecated
-	default Boolean isInternalToolExecutionEnabled() {
-		return getInternalToolExecutionEnabled();
-	}
-
-	/**
 	 * Set whether the {@link ChatModel} is responsible for executing the tools requested
 	 * by the model or if the tools should be executed directly by the caller.
 	 */

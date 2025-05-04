@@ -222,12 +222,6 @@ public interface ChatClient {
 
 		ChatClientRequestSpec toolNames(String... toolNames);
 
-		/**
-		 * Use toolNames instead
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-m8")
-		ChatClientRequestSpec tools(String... toolNames);
-
 		ChatClientRequestSpec tools(Object... toolObjects);
 
 		ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks);
@@ -294,9 +288,6 @@ public interface ChatClient {
 		Builder defaultTemplateRenderer(TemplateRenderer templateRenderer);
 
 		Builder defaultToolNames(String... toolNames);
-
-		@Deprecated
-		Builder defaultTools(String... tools);
 
 		Builder defaultTools(Object... toolObjects);
 
