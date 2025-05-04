@@ -46,9 +46,11 @@ export SPRING_AI_AZURE_OPENAI_OPENAI_API_KEY=<INSERT OPENAI KEY HERE>
 
 === Microsoft Entra ID
 
-To authenticate using Microsoft Entra ID (formerly Azure Active Directory), create a `TokenCredential` bean in your configuration.
-If this bean is available, an `OpenAIClient` instance will be created using the token credentials.
+For keyless authentication using Microsoft Entra ID (formerly Azure Active Directory), set _only_ the `spring.ai.azure.openai.endpoint` configuration property and _not_ the api-key property mentioned above.
 
+Finding only the endpoint property, your application will evaluate several different options for retrieving credentials and an `OpenAIClient` instance will be created using the token credentials.
+
+NOTE: It is no longer necessary to create a `TokenCredential` bean; it is configured for you automatically.
 
 === Add Repositories and BOM
 
