@@ -96,42 +96,6 @@ public class AnthropicApi {
 	private final WebClient webClient;
 
 	/**
-	 * Create a new client api with DEFAULT_BASE_URL
-	 * @param anthropicApiKey Anthropic api Key.
-	 */
-	@Deprecated(since = "1.0.0.M8")
-	public AnthropicApi(String anthropicApiKey) {
-		this(DEFAULT_BASE_URL, anthropicApiKey);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
-	 * @param anthropicApiKey Anthropic api Key.
-	 */
-	@Deprecated(since = "1.0.0.M8")
-	public AnthropicApi(String baseUrl, String anthropicApiKey) {
-		this(baseUrl, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
-	 * @param anthropicApiKey Anthropic api Key.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	@Deprecated(since = "1.0.0.M8")
-	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, DEFAULT_MESSAGE_COMPLETIONS_PATH, anthropicApiKey, anthropicVersion, restClientBuilder,
-				webClientBuilder, responseErrorHandler, DEFAULT_ANTHROPIC_BETA_VERSION);
-	}
-
-	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
 	 * @param completionsPath path to append to the base URL.
@@ -142,7 +106,7 @@ public class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	public AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
+	private AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 

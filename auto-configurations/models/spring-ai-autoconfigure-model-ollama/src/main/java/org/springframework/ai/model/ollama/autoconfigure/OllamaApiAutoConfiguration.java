@@ -51,9 +51,11 @@ public class OllamaApiAutoConfiguration {
 	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider) {
-		return new OllamaApi(connectionDetails.getBaseUrl(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder));
+		return OllamaApi.builder()
+			.baseUrl(connectionDetails.getBaseUrl())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.build();
 	}
 
 	static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {

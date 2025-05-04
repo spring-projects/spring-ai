@@ -102,7 +102,7 @@ public class AnthropicPropertiesTests {
 	public void chatCompletionDisabled() {
 
 		// It is enabled by default
-		new ApplicationContextRunner()
+		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
@@ -111,7 +111,8 @@ public class AnthropicPropertiesTests {
 			});
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=anthropic")
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY", "spring.ai.model.chat=anthropic")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
