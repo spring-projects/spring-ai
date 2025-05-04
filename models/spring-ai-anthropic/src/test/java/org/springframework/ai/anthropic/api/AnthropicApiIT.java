@@ -110,7 +110,7 @@ public class AnthropicApiIT {
 	void chatCompletionStreamError() {
 		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?")),
 				Role.USER);
-		AnthropicApi api = new AnthropicApi("FAKE_KEY_FOR_ERROR_RESPONSE");
+		AnthropicApi api = AnthropicApi.builder().baseUrl("FAKE_KEY_FOR_ERROR_RESPONSE").build();
 
 		Flux<ChatCompletionResponse> response = api.chatCompletionStream(new ChatCompletionRequest(
 				AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(), List.of(chatCompletionMessage), null, 100, 0.8, true));
