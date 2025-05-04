@@ -10,12 +10,11 @@ The Azure OpenAI client offers three options to connect: using an Azure API key 
 
 === Azure API Key & Endpoint
 
-Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the https://portal.azure.com[Azure Portal].
+To access models using an API key, obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the https://portal.azure.com[Azure Portal].
 
 Spring AI defines two configuration properties:
 
-
-1. `spring.ai.azure.openai.api-key`: Set this to the value of the `API Key` obtained from Azure.
+1. `spring.ai.azure.openai.api-key`: Set this to the value the `API Key` obtained from Azure.
 2. `spring.ai.azure.openai.endpoint`: Set this to the endpoint URL obtained when provisioning your model in Azure.
 
 You can set these configuration properties by exporting environment variables:
@@ -39,9 +38,12 @@ export SPRING_AI_AZURE_OPENAI_OPENAI_API_KEY=<INSERT OPENAI KEY HERE>
 
 === Microsoft Entra ID
 
-To authenticate using Microsoft Entra ID (formerly Azure Active Directory), create a `TokenCredential` bean in your configuration.
-If this bean is available, an `OpenAIClient` instance will be created using the token credentials.
-bd
+For keyless authentication using Microsoft Entra ID (formerly Azure Active Directory), set _only_ the `spring.ai.azure.openai.endpoint` configuration property and _not_ the api-key property mentioned above.
+
+Finding only the endpoint property, your application will evaluate several different options for retrieving credentials and an `OpenAIClient` instance will be created using the token credentials.
+
+NOTE: It is no longer necessary to create a `TokenCredential` bean; it is configured for you automatically.
+
 === Deployment Name
 
 To use Azure AI applications, you need to create an Azure AI Deployment through the link:https://oai.azure.com/portal[Azure AI Portal].
@@ -67,7 +69,7 @@ This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 NOTE: The property `spring.ai.azure.openai.chat.options.model` has been renamed to `spring.ai.azure.openai.chat.options.deployment-name`.
 
 NOTE: If you decide to connect to `OpenAI` instead of `Azure OpenAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property, 
-then the `spring.ai.azure.openai.chat.options.deployment-name` is treathed as an link:https://platform.openai.com/docs/models[OpenAI model] name.
+then the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an link:https://platform.openai.com/docs/models[OpenAI model] name.
 
 ==== Access the OpenAI Model
 
