@@ -103,6 +103,12 @@
 			<artifactId>mockito-core</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-identity</artifactId>
+            <version>1.15.4</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 
 </project>
