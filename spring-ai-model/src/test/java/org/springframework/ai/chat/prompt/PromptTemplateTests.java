@@ -77,7 +77,8 @@ class PromptTemplateTests {
 	void createWithNullVariables() {
 		String template = "Hello!";
 		Map<String, Object> variables = null;
-		assertThatThrownBy(() -> new PromptTemplate(template, variables)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> PromptTemplate.builder().template(template).variables(variables).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("variables cannot be null");
 	}
 
@@ -86,7 +87,8 @@ class PromptTemplateTests {
 		String template = "Hello!";
 		Map<String, Object> variables = new HashMap<>();
 		variables.put(null, "value");
-		assertThatThrownBy(() -> new PromptTemplate(template, variables)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> PromptTemplate.builder().template(template).variables(variables).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("variables keys cannot be null");
 	}
 
@@ -107,7 +109,7 @@ class PromptTemplateTests {
 	void renderWithVariables() {
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("name", "Spring AI");
-		PromptTemplate promptTemplate = new PromptTemplate("Hello {name}!", variables);
+		PromptTemplate promptTemplate = PromptTemplate.builder().template("Hello {name}!").variables(variables).build();
 		assertThat(promptTemplate.render()).isEqualTo("Hello Spring AI!");
 	}
 
@@ -115,7 +117,10 @@ class PromptTemplateTests {
 	void renderWithAdditionalVariables() {
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("greeting", "Hello");
-		PromptTemplate promptTemplate = new PromptTemplate("{greeting} {name}!", variables);
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("{greeting} {name}!")
+			.variables(variables)
+			.build();
 
 		Map<String, Object> additionalVariables = new HashMap<>();
 		additionalVariables.put("name", "Spring AI");
@@ -162,7 +167,7 @@ class PromptTemplateTests {
 	void createPromptWithVariables() {
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("name", "Spring AI");
-		PromptTemplate promptTemplate = new PromptTemplate("Hello {name}!", variables);
+		PromptTemplate promptTemplate = PromptTemplate.builder().template("Hello {name}!").variables(variables).build();
 		Prompt prompt = promptTemplate.create(variables);
 		assertThat(prompt.getContents()).isEqualTo("Hello Spring AI!");
 	}

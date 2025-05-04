@@ -218,7 +218,7 @@ public class QuestionAnswerAdvisorTests {
 		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
 
 		var userTextTemplate = "Please answer my question {question}";
-		var userPromptTemplate = new PromptTemplate(userTextTemplate, Map.of("question", "XYZ"));
+		var userPromptTemplate = PromptTemplate.builder().template(userTextTemplate).variables(Map.of("question", "XYZ")).build();
 		var userMessage = userPromptTemplate.createMessage();
 		// @formatter:off
 		chatClient.prompt(new Prompt(userMessage))

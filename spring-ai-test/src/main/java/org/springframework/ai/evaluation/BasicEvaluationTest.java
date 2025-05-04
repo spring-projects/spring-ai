@@ -58,8 +58,10 @@ public class BasicEvaluationTest {
 		assertThat(answer).isNotNull();
 		logger.info("Question: " + question);
 		logger.info("Answer:" + answer);
-		PromptTemplate userPromptTemplate = new PromptTemplate(this.userEvaluatorResource,
-				Map.of("question", question, "answer", answer));
+		PromptTemplate userPromptTemplate = PromptTemplate.builder()
+			.resource(this.userEvaluatorResource)
+			.variables(Map.of("question", question, "answer", answer))
+			.build();
 		SystemMessage systemMessage;
 		if (factBased) {
 			systemMessage = new SystemMessage(this.qaEvaluatorFactBasedAnswerResource);
