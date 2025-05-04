@@ -44,7 +44,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.retry.support.RetryTemplate;
 
 import org.testcontainers.junit.jupiter.Container;
@@ -53,7 +52,6 @@ import redis.clients.jedis.JedisPooled;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -74,10 +72,12 @@ class SemanticCacheAdvisorIT {
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
 
+	// Use host and port explicitly since getRedisURI() might not be consistent
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(RedisAutoConfiguration.class))
 		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI());
+		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
+				"spring.data.redis.port=" + redisContainer.getFirstMappedPort());
 
 	@Autowired
 	OpenAiChatModel openAiChatModel;
@@ -202,10 +202,10 @@ class SemanticCacheAdvisorIT {
 	public static class TestApplication {
 
 		@Bean
-		public SemanticCache semanticCache(EmbeddingModel embeddingModel,
-				JedisConnectionFactory jedisConnectionFactory) {
-			JedisPooled jedisPooled = new JedisPooled(Objects.requireNonNull(jedisConnectionFactory.getPoolConfig()),
-					jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort());
+		public SemanticCache semanticCache(EmbeddingModel embeddingModel) {
+			// Create JedisPooled directly with container properties for more reliable
+			// connection
+			JedisPooled jedisPooled = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
 
 			return DefaultSemanticCache.builder().embeddingModel(embeddingModel).jedisClient(jedisPooled).build();
 		}

@@ -57,6 +57,8 @@ class RedisChatMemoryIT {
 
 	@BeforeEach
 	void setUp() {
+		// Create JedisPooled directly with container properties for more reliable
+		// connection
 		jedisClient = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
 		chatMemory = RedisChatMemory.builder()
 			.jedisClient(jedisClient)

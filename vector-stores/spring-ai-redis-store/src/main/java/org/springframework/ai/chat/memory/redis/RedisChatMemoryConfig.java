@@ -32,6 +32,12 @@ public class RedisChatMemoryConfig {
 
 	public static final String DEFAULT_KEY_PREFIX = "chat-memory:";
 
+	/**
+	 * Default maximum number of results to return (1000 is Redis's default cursor read
+	 * size).
+	 */
+	public static final int DEFAULT_MAX_RESULTS = 1000;
+
 	private final JedisPooled jedisClient;
 
 	private final String indexName;
@@ -41,6 +47,16 @@ public class RedisChatMemoryConfig {
 	private final Integer timeToLiveSeconds;
 
 	private final boolean initializeSchema;
+
+	/**
+	 * Maximum number of conversation IDs to return.
+	 */
+	private final int maxConversationIds;
+
+	/**
+	 * Maximum number of messages to return per conversation.
+	 */
+	private final int maxMessagesPerConversation;
 
 	private RedisChatMemoryConfig(Builder builder) {
 		Assert.notNull(builder.jedisClient, "JedisPooled client must not be null");
@@ -52,6 +68,8 @@ public class RedisChatMemoryConfig {
 		this.keyPrefix = builder.keyPrefix;
 		this.timeToLiveSeconds = builder.timeToLiveSeconds;
 		this.initializeSchema = builder.initializeSchema;
+		this.maxConversationIds = builder.maxConversationIds;
+		this.maxMessagesPerConversation = builder.maxMessagesPerConversation;
 	}
 
 	public static Builder builder() {
@@ -79,6 +97,22 @@ public class RedisChatMemoryConfig {
 	}
 
 	/**
+	 * Gets the maximum number of conversation IDs to return.
+	 * @return maximum number of conversation IDs
+	 */
+	public int getMaxConversationIds() {
+		return maxConversationIds;
+	}
+
+	/**
+	 * Gets the maximum number of messages to return per conversation.
+	 * @return maximum number of messages per conversation
+	 */
+	public int getMaxMessagesPerConversation() {
+		return maxMessagesPerConversation;
+	}
+
+	/**
 	 * Builder for RedisChatMemoryConfig.
 	 */
 	public static class Builder {
@@ -92,6 +126,10 @@ public class RedisChatMemoryConfig {
 		private Integer timeToLiveSeconds = -1;
 
 		private boolean initializeSchema = true;
+
+		private int maxConversationIds = DEFAULT_MAX_RESULTS;
+
+		private int maxMessagesPerConversation = DEFAULT_MAX_RESULTS;
 
 		/**
 		 * Sets the Redis client.
@@ -142,6 +180,28 @@ public class RedisChatMemoryConfig {
 		 */
 		public Builder initializeSchema(boolean initialize) {
 			this.initializeSchema = initialize;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of conversation IDs to return. Default is 1000, which
+		 * is Redis's default cursor read size.
+		 * @param maxConversationIds maximum number of conversation IDs
+		 * @return the builder instance
+		 */
+		public Builder maxConversationIds(int maxConversationIds) {
+			this.maxConversationIds = maxConversationIds;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of messages to return per conversation. Default is
+		 * 1000, which is Redis's default cursor read size.
+		 * @param maxMessagesPerConversation maximum number of messages
+		 * @return the builder instance
+		 */
+		public Builder maxMessagesPerConversation(int maxMessagesPerConversation) {
+			this.maxMessagesPerConversation = maxMessagesPerConversation;
 			return this;
 		}
 
