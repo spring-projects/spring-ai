@@ -98,7 +98,7 @@ class PromptTests {
 		Map<String, Object> model = new HashMap<>();
 		model.put("name", "Alice");
 		model.put("age", 30);
-		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+		PromptTemplate promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
 
 		Prompt prompt = promptTemplate.create(model, chatOptions);
@@ -115,7 +115,7 @@ class PromptTests {
 		Map<String, Object> model = new HashMap<>();
 		model.put("name", "Alice");
 		model.put("age", 30);
-		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+		PromptTemplate promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
 
 		Prompt prompt = promptTemplate.create(model, chatOptions);

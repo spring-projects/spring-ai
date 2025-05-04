@@ -58,7 +58,10 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 				Generate the filmography of 5 movies for Tom Hanks and Bill Murray.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -84,7 +87,10 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 				Generate the filmography of 5 movies for Tom Hanks and Bill Murray.
 					{format}
 					""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = this.streamingChatModel.stream(prompt)

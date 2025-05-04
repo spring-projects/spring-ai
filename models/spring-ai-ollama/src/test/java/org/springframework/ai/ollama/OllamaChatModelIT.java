@@ -163,8 +163,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				List five {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors.", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "ice cream flavors.", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -182,7 +184,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				Example: R -> Red.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		Generation generation = this.chatModel.call(prompt).getResult();
@@ -203,7 +208,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				Consider the filmography of Tom Hanks and tell me 5 of his movies.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -221,7 +229,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				Consider the filmography of Tom Hanks and tell me 5 of his movies.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = this.chatModel.stream(prompt)
