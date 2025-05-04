@@ -51,7 +51,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -836,11 +835,6 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		public ChatClientRequestSpec tools(String... toolNames) {
-			return this.toolNames(toolNames);
-		}
-
-		@Override
 		public ChatClientRequestSpec toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
 			Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
@@ -988,74 +982,6 @@ public class DefaultChatClient implements ChatClient {
 				.pushAll(this.advisors)
 				.templateRenderer(this.templateRenderer)
 				.build();
-		}
-
-	}
-
-	// Prompt
-
-	@Deprecated // never used, to be removed
-	public static class DefaultCallPromptResponseSpec implements CallPromptResponseSpec {
-
-		private final ChatModel chatModel;
-
-		private final Prompt prompt;
-
-		public DefaultCallPromptResponseSpec(ChatModel chatModel, Prompt prompt) {
-			Assert.notNull(chatModel, "chatModel cannot be null");
-			Assert.notNull(prompt, "prompt cannot be null");
-			this.chatModel = chatModel;
-			this.prompt = prompt;
-		}
-
-		public String content() {
-			return doGetChatResponse(this.prompt).getResult().getOutput().getText();
-		}
-
-		public List<String> contents() {
-			return doGetChatResponse(this.prompt).getResults().stream().map(r -> r.getOutput().getText()).toList();
-		}
-
-		public ChatResponse chatResponse() {
-			return doGetChatResponse(this.prompt);
-		}
-
-		private ChatResponse doGetChatResponse(Prompt prompt) {
-			return this.chatModel.call(prompt);
-		}
-
-	}
-
-	@Deprecated // never used, to be removed
-	public static class DefaultStreamPromptResponseSpec implements StreamPromptResponseSpec {
-
-		private final Prompt prompt;
-
-		private final StreamingChatModel chatModel;
-
-		public DefaultStreamPromptResponseSpec(StreamingChatModel streamingChatModel, Prompt prompt) {
-			Assert.notNull(streamingChatModel, "streamingChatModel cannot be null");
-			Assert.notNull(prompt, "prompt cannot be null");
-			this.chatModel = streamingChatModel;
-			this.prompt = prompt;
-		}
-
-		public Flux<ChatResponse> chatResponse() {
-			return doGetFluxChatResponse(this.prompt);
-		}
-
-		private Flux<ChatResponse> doGetFluxChatResponse(Prompt prompt) {
-			return this.chatModel.stream(prompt);
-		}
-
-		public Flux<String> content() {
-			return doGetFluxChatResponse(this.prompt).map(r -> {
-				if (r.getResult() == null || r.getResult().getOutput() == null
-						|| r.getResult().getOutput().getText() == null) {
-					return "";
-				}
-				return r.getResult().getOutput().getText();
-			}).filter(StringUtils::hasLength);
 		}
 
 	}

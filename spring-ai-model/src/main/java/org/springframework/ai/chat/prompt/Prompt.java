@@ -236,15 +236,6 @@ public class Prompt implements ModelRequest<List<Message>> {
 			return this;
 		}
 
-		@Deprecated
-		public Builder addMessage(Message message) {
-			if (this.messages == null) {
-				this.messages = new ArrayList<>();
-			}
-			this.messages.add(message);
-			return this;
-		}
-
 		public Builder chatOptions(ChatOptions chatOptions) {
 			this.chatOptions = chatOptions;
 			return this;
