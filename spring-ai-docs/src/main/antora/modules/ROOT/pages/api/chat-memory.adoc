@@ -1,7 +1,16 @@
 [[ChatMemory]]
 = Chat Memory
 
-Large language models (LLMs) are stateless, meaning they do not retain information about previous interactions. This can be a limitation when you want to maintain context or state across multiple interactions. To address this, Spring AI provides a `ChatMemory` abstraction that allows you to store and retrieve information across multiple interactions with the LLM.
+Large language models (LLMs) are stateless, meaning they do not retain information about previous interactions. This can be a limitation when you want to maintain context or state across multiple interactions. To address this, Spring AI provides chat memory features that allow you to store and retrieve information across multiple interactions with the LLM.
+
+The `ChatMemory` abstraction allows you to implement various types of memory to support different use cases. The underlying storage of the messages is handled by the `ChatMemoryRepository`, whose sole responsibility is to store and retrieve messages. It's up to the `ChatMemory` implementation to decide which messages to keep and when to remove them. Examples of strategies could include keeping the last N messages, keeping messages for a certain time period, or keeping messages up to a certain token limit.
+
+Before choosing a memory type, it's important to understand the difference between chat memory and chat history.
+
+* *Chat Memory*. The information that a large-language model retains and uses to maintain contextual awareness throughout a conversation.
+* *Chat History*. The entire conversation history, including all messages exchanged between the user and the model.
+
+The `ChatMemory` abstraction is designed to manage the _chat memory_. It allows you to store and retrieve messages that are relevant to the current conversation context. However, it is not the best fit for storing the _chat history_. If you need to maintain a complete record of all the messages exchanged, you should consider using a different approach, such as relying on Spring Data for efficient storage and retrieval of the complete chat history.
 
 == Quick Start
 

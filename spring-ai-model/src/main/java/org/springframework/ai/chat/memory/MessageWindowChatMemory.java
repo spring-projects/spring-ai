@@ -40,7 +40,7 @@ import java.util.Set;
  */
 public final class MessageWindowChatMemory implements ChatMemory {
 
-	private static final int DEFAULT_MAX_MESSAGES = 200;
+	private static final int DEFAULT_MAX_MESSAGES = 20;
 
 	private static final ChatMemoryRepository DEFAULT_CHAT_MEMORY_REPOSITORY = new InMemoryChatMemoryRepository();
 
