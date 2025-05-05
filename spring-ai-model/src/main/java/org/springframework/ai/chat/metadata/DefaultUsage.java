@@ -91,7 +91,6 @@ public class DefaultUsage implements Usage {
 	 * with completionTokens and the legacy format with generationTokens.
 	 * @param promptTokens the number of tokens in the prompt
 	 * @param completionTokens the number of tokens in the completion (new format)
-	 * @param generationTokens the number of tokens in the generation (legacy format)
 	 * @param totalTokens the total number of tokens
 	 * @param nativeUsage the native usage object
 	 * @return a new DefaultUsage instance
