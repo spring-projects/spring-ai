@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -202,7 +203,12 @@ public class DefaultChatClient implements ChatClient {
 		public PromptUserSpec media(MimeType mimeType, URL url) {
 			Assert.notNull(mimeType, "mimeType cannot be null");
 			Assert.notNull(url, "url cannot be null");
-			this.media.add(Media.builder().mimeType(mimeType).data(url).build());
+			try {
+				this.media.add(Media.builder().mimeType(mimeType).data(url.toURI()).build());
+			}
+			catch (URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
 			return this;
 		}
 

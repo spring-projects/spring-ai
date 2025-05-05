@@ -114,7 +114,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		var document = Document.builder()
 			.media(Media.builder()
 				.mimeType(MimeTypeUtils.TEXT_PLAIN)
-				.data(URI.create("http://example.com/image.png").toURL())
+				.data(URI.create("http://example.com/image.png"))
 				.build())
 			.build();
 
