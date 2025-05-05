@@ -17,7 +17,7 @@
 package org.springframework.ai.openai.chat;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,12 +49,6 @@ import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.tool.ToolCallbacks;
-import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -63,6 +57,10 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -71,6 +69,8 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioPa
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -491,7 +491,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
 				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
 				.build()))
 			.build();
 
@@ -510,7 +510,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
 				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
 				.build()))
 			.build();
 

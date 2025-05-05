@@ -127,10 +127,10 @@ public class MessageTypeContentTests {
 		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
 			.willReturn(Mockito.mock(ResponseEntity.class));
 
-		URL mediaUrl = new URL("http://test");
+		URI mediaUri = URI.create("http://test");
 		this.chatModel.call(new Prompt(List.of(UserMessage.builder()
 			.text("test message")
-			.media(List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build()))
+			.media(List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUri).build()))
 			.build())));
 
 		validateComplexContent(this.pomptCaptor.getValue());

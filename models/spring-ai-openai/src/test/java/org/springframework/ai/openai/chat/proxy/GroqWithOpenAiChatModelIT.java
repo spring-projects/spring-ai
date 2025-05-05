@@ -17,7 +17,7 @@
 package org.springframework.ai.openai.chat.proxy;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -334,7 +334,7 @@ class GroqWithOpenAiChatModelIT {
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
 				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
 				.build()))
 			.build();
 
@@ -354,7 +354,7 @@ class GroqWithOpenAiChatModelIT {
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
 				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
 				.build()))
 			.build();
 

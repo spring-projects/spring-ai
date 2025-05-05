@@ -17,7 +17,7 @@
 package org.springframework.ai.mistralai;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,9 +35,9 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -296,7 +296,7 @@ class MistralAiChatModelIT {
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
 				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
 				.build()))
 			.build();
 
@@ -314,7 +314,7 @@ class MistralAiChatModelIT {
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
 				.mimeType(MimeTypeUtils.IMAGE_PNG)
-				.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
 				.build()))
 			.build();
 

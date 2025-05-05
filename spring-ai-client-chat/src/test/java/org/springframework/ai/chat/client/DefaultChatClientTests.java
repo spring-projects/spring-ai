@@ -169,12 +169,12 @@ class DefaultChatClientTests {
 	@Test
 	void whenUserMediaThenReturn() throws MalformedURLException {
 		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
-		URL mediaUrl = URI.create("http://example.com/image.png").toURL();
+		URI mediaUri = URI.create("http://example.com/image.png");
 		spec = (DefaultChatClient.DefaultPromptUserSpec) spec
-			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(mediaUrl).build());
+			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(mediaUri).build());
 		assertThat(spec.media()).hasSize(1);
 		assertThat(spec.media().get(0).getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG);
-		assertThat(spec.media().get(0).getData()).isEqualTo(mediaUrl.toString());
+		assertThat(spec.media().get(0).getData()).isEqualTo(mediaUri.toString());
 	}
 
 	@Test
