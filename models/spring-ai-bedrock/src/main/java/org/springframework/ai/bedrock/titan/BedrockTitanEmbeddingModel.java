@@ -38,10 +38,8 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.Observation;
 
 /**
- * {@link org.springframework.ai.embedding.EmbeddingModel} implementation that
- * uses the
- * Bedrock Titan Embedding API. Titan Embedding supports text and image (encoded
- * in
+ * {@link org.springframework.ai.embedding.EmbeddingModel} implementation that uses the
+ * Bedrock Titan Embedding API. Titan Embedding supports text and image (encoded in
  * base64) inputs.
  *
  * Note: Titan Embedding does not support batch embedding.
@@ -59,8 +57,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	private final ObservationRegistry observationRegistry;
 
 	/**
-	 * Titan Embedding API input types. Could be either text or image (encoded in
-	 * base64).
+	 * Titan Embedding API input types. Could be either text or image (encoded in base64).
 	 */
 	private InputType inputType = InputType.TEXT;
 
@@ -71,9 +68,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	/**
-	 * Titan Embedding API input types. Could be either text or image (encoded in
-	 * base64).
-	 * 
+	 * Titan Embedding API input types. Could be either text or image (encoded in base64).
 	 * @param inputType the input type to use.
 	 */
 	public BedrockTitanEmbeddingModel withInputType(InputType inputType) {
@@ -101,15 +96,15 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 			try {
 				TitanEmbeddingResponse response = Observation
-						.createNotStarted("bedrock.embedding", this.observationRegistry)
-						.lowCardinalityKeyValue("model", "titan")
-						.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase())
-						.highCardinalityKeyValue("input_length", String.valueOf(inputContent.length()))
-						.observe(() -> {
-							TitanEmbeddingResponse r = this.embeddingApi.embedding(apiRequest);
-							Assert.notNull(r, "Embedding API returned null response");
-							return r;
-						});
+					.createNotStarted("bedrock.embedding", this.observationRegistry)
+					.lowCardinalityKeyValue("model", "titan")
+					.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase())
+					.highCardinalityKeyValue("input_length", String.valueOf(inputContent.length()))
+					.observe(() -> {
+						TitanEmbeddingResponse r = this.embeddingApi.embedding(apiRequest);
+						Assert.notNull(r, "Embedding API returned null response");
+						return r;
+					});
 
 				if (response.embedding() == null || response.embedding().length == 0) {
 					logger.warn("Empty embedding vector returned for input at index {}. Skipping.", indexCounter.get());
@@ -117,10 +112,12 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				embeddings.add(new Embedding(response.embedding(), indexCounter.getAndIncrement()));
-			} catch (Exception ex) {
+			}
+			catch (Exception ex) {
 				logger.error("Titan API embedding failed for input at index {}: {}", indexCounter.get(),
 						summarizeInput(inputContent), ex);
-				throw ex; // Optional: Continue instead of throwing if you want partial success
+				throw ex; // Optional: Continue instead of throwing if you want partial
+							// success
 			}
 		}
 
