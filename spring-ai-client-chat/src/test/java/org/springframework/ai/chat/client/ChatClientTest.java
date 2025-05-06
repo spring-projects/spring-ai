@@ -713,7 +713,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}
@@ -747,7 +747,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("other instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}
@@ -769,7 +769,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}
@@ -808,7 +808,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("other instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import static org.mockito.BDDMockito.given;
  * @author Christian Tzolov
  * @author Timo Salm
  * @author Alexandros Pappas
+ * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
 public class QuestionAnswerAdvisorTests {
@@ -112,8 +113,9 @@ public class QuestionAnswerAdvisorTests {
 		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
 			.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
-		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
-				SearchRequest.builder().similarityThreshold(0.99d).topK(6).build());
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+			.searchRequest(SearchRequest.builder().similarityThreshold(0.99d).topK(6).build())
+			.build();
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
@@ -187,7 +189,9 @@ public class QuestionAnswerAdvisorTests {
 				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+				.searchRequest(SearchRequest.builder().build())
+				.build();
 
 		var userTextTemplate = "Please answer my question {question}";
 		// @formatter:off
@@ -215,10 +219,15 @@ public class QuestionAnswerAdvisorTests {
 				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore, SearchRequest.builder().build());
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+				.searchRequest(SearchRequest.builder().build())
+				.build();
 
 		var userTextTemplate = "Please answer my question {question}";
-		var userPromptTemplate = PromptTemplate.builder().template(userTextTemplate).variables(Map.of("question", "XYZ")).build();
+		var userPromptTemplate = PromptTemplate.builder()
+				.template(userTextTemplate)
+				.variables(Map.of("question", "XYZ"))
+				.build();
 		var userMessage = userPromptTemplate.createMessage();
 		// @formatter:off
 		chatClient.prompt(new Prompt(userMessage))

@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
-import org.springframework.ai.chat.client.observation.ChatClientInputContentObservationFilter;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationFilter;
 import org.springframework.ai.chat.model.ChatModel;
@@ -78,20 +77,6 @@ public class ChatClientAutoConfiguration {
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 				observationConvention.getIfUnique(() -> null));
 		return chatClientBuilderConfigurer.configure(builder);
-	}
-
-	/**
-	 * @deprecated in favour of {@link #chatClientPromptContentObservationFilter()}.
-	 */
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations", name = "include-input",
-			havingValue = "true")
-	@Deprecated
-	ChatClientInputContentObservationFilter chatClientInputContentObservationFilter() {
-		logger.warn(
-				"You have enabled the inclusion of the input content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
-		return new ChatClientInputContentObservationFilter();
 	}
 
 	@Bean

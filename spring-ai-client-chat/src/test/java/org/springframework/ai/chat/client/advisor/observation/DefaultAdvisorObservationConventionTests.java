@@ -20,8 +20,10 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
@@ -46,6 +48,7 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void contextualName() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
 			.advisorName("MyName")
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("my_name");
@@ -54,6 +57,7 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void supportsAdvisorObservationContext() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
 			.advisorName("MyName")
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
@@ -63,6 +67,7 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
 			.advisorName("MyName")
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
@@ -75,6 +80,7 @@ class DefaultAdvisorObservationConventionTests {
 	@Test
 	void shouldHaveKeyValuesWhenDefinedAndResponse() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
 			.advisorName("MyName")
 			.order(678)
 			.build();

@@ -20,7 +20,7 @@ import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -46,7 +46,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 	}
 
 	@Override
-	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAroundAdvisorChain chain) {
+	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
 
 		ChatClientRequest formattedChatClientRequest = augmentWithFormatInstructions(chatClientRequest);

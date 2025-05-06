@@ -78,26 +78,12 @@ public class ChatClientObservationContext extends Observation.Context {
 		return this.stream;
 	}
 
-	/**
-	 * @deprecated not used anymore. The format instructions are already included in the
-	 * ChatModelObservationContext.
-	 */
 	@Nullable
-	@Deprecated
 	public String getFormat() {
 		if (this.request.context().get(ChatClientAttributes.OUTPUT_FORMAT.getKey()) instanceof String format) {
 			return format;
 		}
 		return null;
-	}
-
-	/**
-	 * @deprecated not used anymore. The format instructions are already included in the
-	 * ChatModelObservationContext.
-	 */
-	@Deprecated
-	public void setFormat(@Nullable String format) {
-		this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), format);
 	}
 
 	public static final class Builder {
@@ -106,6 +92,7 @@ public class ChatClientObservationContext extends Observation.Context {
 
 		private List<? extends Advisor> advisors = List.of();
 
+		@Nullable
 		private String format;
 
 		private boolean isStream = false;
@@ -118,17 +105,7 @@ public class ChatClientObservationContext extends Observation.Context {
 			return this;
 		}
 
-		@Deprecated // use request(ChatClientRequest chatClientRequest)
-		public Builder withRequest(ChatClientRequest chatClientRequest) {
-			return request(chatClientRequest);
-		}
-
-		/**
-		 * @deprecated not used anymore. The format instructions are already included in
-		 * the ChatModelObservationContext.
-		 */
-		@Deprecated
-		public Builder withFormat(String format) {
+		public Builder format(@Nullable String format) {
 			this.format = format;
 			return this;
 		}
@@ -141,11 +118,6 @@ public class ChatClientObservationContext extends Observation.Context {
 		public Builder stream(boolean isStream) {
 			this.isStream = isStream;
 			return this;
-		}
-
-		@Deprecated // use stream(boolean isStream)
-		public Builder withStream(boolean isStream) {
-			return stream(isStream);
 		}
 
 		public ChatClientObservationContext build() {

@@ -43,7 +43,8 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 	}
 
 	@Override
-	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest, StreamAroundAdvisorChain chain) {
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
 
 		return chatModel.stream(chatClientRequest.prompt())
