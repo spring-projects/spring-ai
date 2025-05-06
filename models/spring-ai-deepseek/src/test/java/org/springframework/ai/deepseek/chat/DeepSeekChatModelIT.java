@@ -32,17 +32,19 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
-import org.springframework.ai.deepseek.PrefixCompletionAssistantMessage;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
+import org.springframework.ai.deepseek.api.DeepSeekApi;
+import org.springframework.ai.deepseek.api.MockWeatherService;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,7 +73,7 @@ class DeepSeekChatModelIT {
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
-		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
+		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 		ChatResponse response = chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
@@ -181,7 +183,7 @@ class DeepSeekChatModelIT {
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
-			.map(AssistantMessage::getText)
+			.map(m -> m.getText() != null ? m.getText() : "")
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
@@ -207,11 +209,56 @@ class DeepSeekChatModelIT {
 				```
 				""";
 		UserMessage userMessage = new UserMessage(userMessageContent);
-		Message assistantMessage = new PrefixCompletionAssistantMessage(
-				"{\"code\":200,\"result\":{\"total\":1,\"data\":[1");
+		Message assistantMessage = new DeepSeekAssistantMessage("{\"code\":200,\"result\":{\"total\":1,\"data\":[1");
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
 		ChatResponse response = chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText().equals(",2,3]}}"));
+	}
+
+	/**
+	 * For deepseek-reasoner model only. The reasoning contents of the assistant message,
+	 * before the final answer.
+	 */
+	@Test
+	void reasonerModelTest() {
+		var promptOptions = DeepSeekChatOptions.builder()
+			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
+			.build();
+		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
+		ChatResponse response = chatModel.call(prompt);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
+		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
+	}
+
+	/**
+	 * the deepseek-reasoner model Multi-round Conversation.
+	 */
+	@Test
+	void reasonerModelMultiRoundTest() {
+		List<Message> messages = new ArrayList<>();
+		messages.add(new UserMessage("9.11 and 9.8, which is greater?"));
+		var promptOptions = DeepSeekChatOptions.builder()
+			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
+			.build();
+
+		Prompt prompt = new Prompt(messages, promptOptions);
+		ChatResponse response = chatModel.call(prompt);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
+		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
+
+		messages.add(new AssistantMessage(Objects.requireNonNull(deepSeekAssistantMessage.getText())));
+		messages.add(new UserMessage("How many Rs are there in the word 'strawberry'?"));
+		Prompt prompt2 = new Prompt(messages, promptOptions);
+		ChatResponse response2 = chatModel.call(prompt2);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage2 = (DeepSeekAssistantMessage) response2.getResult()
+			.getOutput();
+		assertThat(deepSeekAssistantMessage2.getReasoningContent()).isNotEmpty();
+		assertThat(deepSeekAssistantMessage2.getText()).isNotEmpty();
 	}
 
 }

@@ -314,8 +314,10 @@ public class DeepSeekChatModel implements ChatModel {
 		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
 
 		String textContent = choice.message().content();
+		String reasoningContent = choice.message().reasoningContent();
 
-		AssistantMessage assistantMessage = new AssistantMessage(textContent, metadata, toolCalls);
+		DeepSeekAssistantMessage assistantMessage = new DeepSeekAssistantMessage(textContent, reasoningContent,
+				metadata, toolCalls);
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 
@@ -416,9 +418,13 @@ public class DeepSeekChatModel implements ChatModel {
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				boolean isPrefixAssistantMessage = message instanceof PrefixCompletionAssistantMessage;
+				Boolean isPrefixAssistantMessage = null;
+				if (message instanceof DeepSeekAssistantMessage
+						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
+					isPrefixAssistantMessage = true;
+				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, isPrefixAssistantMessage));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, isPrefixAssistantMessage, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;

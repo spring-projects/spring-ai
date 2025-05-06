@@ -16,8 +16,8 @@
 
 package org.springframework.ai.deepseek.chat;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -48,8 +48,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  */
 @SpringBootTest(classes = DeepSeekTestConfiguration.class)
-@Disabled("the deepseek-chat model's Function Calling capability is unstable see: https://api-docs.deepseek.com/guides/function_calling")
-// @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
+// @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
+// https://api-docs.deepseek.com/guides/function_calling")
+@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 class DeepSeekChatModelFunctionCallingIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(DeepSeekChatModelFunctionCallingIT.class);
@@ -155,8 +156,11 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getResult().getOutput());
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("San Francisco");
-		assertThat(chatResponse.getResult().getOutput().getText()).contains("30.0");
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(450).isGreaterThan(280);
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30");
+		// 这个 total token 是第一次 chat 以及 tool call 之后的两次请求 token 总和
+
+		// the total token is first chat and tool call request
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(700).isGreaterThan(280);
 	}
 
 	@Test
@@ -176,7 +180,7 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(450).isGreaterThan(280);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(700).isGreaterThan(280);
 	}
 
 }

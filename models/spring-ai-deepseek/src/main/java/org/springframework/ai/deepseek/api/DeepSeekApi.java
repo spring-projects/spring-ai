@@ -21,8 +21,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.ai.deepseek.PrefixCompletionAssistantMessage;
-import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -32,7 +30,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -597,7 +594,8 @@ public class DeepSeekApi {
 			@JsonProperty("tool_call_id") String toolCallId,
 			@JsonProperty("tool_calls")
 			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
-			@JsonProperty("prefix") Boolean prefix
+			@JsonProperty("prefix") Boolean prefix,
+			@JsonProperty("reasoning_content") String reasoningContent
         ) { // @formatter:on
 
 		/**
@@ -607,7 +605,7 @@ public class DeepSeekApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null);
+			this(content, role, null, null, null, null, null);
 		}
 
 		/**
@@ -621,7 +619,7 @@ public class DeepSeekApi {
 		 */
 		public ChatCompletionMessage(Object content, Role role, String name, String toolCallId,
 				List<ToolCall> toolCalls) {
-			this(content, role, name, toolCallId, toolCalls, null);
+			this(content, role, name, toolCallId, toolCalls, null, null);
 		}
 
 		/**
