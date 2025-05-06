@@ -28,7 +28,6 @@ import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -39,7 +38,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Model.
+ * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding
+ * Model.
  *
  * @author Christian Tzolov
  * @author Wei Jiang
@@ -48,13 +48,9 @@ import org.springframework.context.annotation.Import;
 @AutoConfiguration
 @ConditionalOnClass(TitanEmbeddingBedrockApi.class)
 @EnableConfigurationProperties({ BedrockTitanEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
-@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.BEDROCK_TITAN,
-		matchIfMissing = true)
+@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.BEDROCK_TITAN, matchIfMissing = true)
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockTitanEmbeddingAutoConfiguration {
-
-	@Autowired
-	private ObservationRegistry observationRegistry;
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -62,17 +58,35 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockTitanEmbeddingProperties properties,
 			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
+
+		// Validate required properties
+		if (properties.getModel() == null || awsProperties.getTimeout() == null) {
+			throw new IllegalArgumentException("Required properties for TitanEmbeddingBedrockApi are missing.");
+		}
+
 		return new TitanEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
 				objectMapper, awsProperties.getTimeout());
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
+	public ObservationRegistry observationRegistry() {
+		return ObservationRegistry.create();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	@ConditionalOnBean(TitanEmbeddingBedrockApi.class)
 	public BedrockTitanEmbeddingModel titanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingApi,
-			BedrockTitanEmbeddingProperties properties) {
+			BedrockTitanEmbeddingProperties properties, ObservationRegistry observationRegistry) {
+
+		// Validate required properties
+		if (properties.getInputType() == null) {
+			throw new IllegalArgumentException("InputType property for BedrockTitanEmbeddingModel is missing.");
+		}
+
 		return new BedrockTitanEmbeddingModel(titanEmbeddingApi, observationRegistry)
-			.withInputType(properties.getInputType());
+				.withInputType(properties.getInputType());
 	}
 
 }
