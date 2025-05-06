@@ -29,6 +29,13 @@ For details, refer to:
 [[upgrading-to-1-0-0-RC1]]
 == Upgrading to 1.0.0-RC1
 
+=== Chat Client And Advisors
+
+* When building a `Prompt` from the ChatClient input, the `SystemMessage` built from `systemText()` is now placed first in the message list. Before, it was put last, resulting in errors with several model providers.
+*  In `AbstractChatMemoryAdvisor`, the `doNextWithProtectFromBlockingBefore()` protected method has been changed from accepting the old `AdvisedRequest` to the new `ChatClientRequest`. It’s a breaking change since the alternative was not part of M8.
+* `MessageAggregator` has a new method to aggregate messages from `ChatClientRequest`. The previous method aggregating messages from the old `AdvisedRequest` has been removed, since it was already marked as deprecated in M8.
+* In `SimpleLoggerAdvisor`, the `requestToString` input argument needs to be updated to use `ChatClientRequest`. It’s a breaking change since the alternative was not part of M8 yet. Same thing about the constructor.
+
 === Breaking Changes
 The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
 Hopefully Watson will reappear in a future version of Spring AI

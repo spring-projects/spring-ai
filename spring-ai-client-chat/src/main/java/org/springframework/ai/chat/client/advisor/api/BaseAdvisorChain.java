@@ -16,9 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
-import org.springframework.ai.template.TemplateRenderer;
-import org.springframework.ai.template.st.StTemplateRenderer;
-
 /**
  * A base interface for advisor chains that can be used to chain multiple advisors
  * together, both for call and stream advisors.
@@ -27,9 +24,5 @@ import org.springframework.ai.template.st.StTemplateRenderer;
  * @since 1.0.0
  */
 public interface BaseAdvisorChain extends CallAdvisorChain, StreamAdvisorChain {
-
-	default TemplateRenderer getTemplateRenderer() {
-		return StTemplateRenderer.builder().build();
-	}
 
 }

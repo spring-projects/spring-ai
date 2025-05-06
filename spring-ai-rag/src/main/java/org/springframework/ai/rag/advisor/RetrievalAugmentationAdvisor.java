@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 import reactor.core.scheduler.Scheduler;
 
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -100,16 +98,6 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		return new Builder();
 	}
 
-	/**
-	 * @deprecated in favour of {@link #before(ChatClientRequest, AdvisorChain)}
-	 */
-	@Override
-	@Deprecated
-	public AdvisedRequest before(AdvisedRequest advisedRequest) {
-		ChatClientRequest chatClientRequest = advisedRequest.toChatClientRequest();
-		return AdvisedRequest.from(before(chatClientRequest, null));
-	}
-
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
@@ -161,16 +149,6 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	private Map.Entry<Query, List<Document>> getDocumentsForQuery(Query query) {
 		List<Document> documents = this.documentRetriever.retrieve(query);
 		return Map.entry(query, documents);
-	}
-
-	/**
-	 * @deprecated in favour of {@link #after(ChatClientResponse, AdvisorChain)}
-	 */
-	@Override
-	@Deprecated
-	public AdvisedResponse after(AdvisedResponse advisedResponse) {
-		ChatClientResponse chatClientResponse = advisedResponse.toChatClientResponse();
-		return AdvisedResponse.from(after(chatClientResponse, null));
 	}
 
 	@Override

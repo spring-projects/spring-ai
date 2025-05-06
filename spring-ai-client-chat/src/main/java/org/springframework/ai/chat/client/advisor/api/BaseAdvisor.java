@@ -31,10 +31,10 @@ import org.springframework.util.Assert;
  * {@link StreamAdvisor}, reducing the boilerplate code needed to implement an advisor.
  * <p>
  * It provides default implementations for the
- * {@link #adviseCall(ChatClientRequest, CallAroundAdvisorChain)} and
- * {@link #adviseStream(ChatClientRequest, StreamAroundAdvisorChain)} methods, delegating
- * the actual logic to the {@link #before(ChatClientRequest, AdvisorChain advisorChain)}
- * and {@link #after(ChatClientResponse, AdvisorChain advisorChain)} methods.
+ * {@link #adviseCall(ChatClientRequest, CallAdvisorChain)} and
+ * {@link #adviseStream(ChatClientRequest, StreamAdvisorChain)} methods, delegating the
+ * actual logic to the {@link #before(ChatClientRequest, AdvisorChain advisorChain)} and
+ * {@link #after(ChatClientResponse, AdvisorChain advisorChain)} methods.
  *
  * @author Thomas Vitale
  * @since 1.0.0
@@ -44,79 +44,32 @@ public interface BaseAdvisor extends CallAdvisor, StreamAdvisor {
 	Scheduler DEFAULT_SCHEDULER = Schedulers.boundedElastic();
 
 	@Override
-	default ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAroundAdvisorChain chain) {
+	default ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 		Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
-		Assert.notNull(chain, "chain cannot be null");
+		Assert.notNull(callAdvisorChain, "callAdvisorChain cannot be null");
 
-		ChatClientRequest processedChatClientRequest = before(chatClientRequest, chain);
-		ChatClientResponse chatClientResponse;
-		if (chain instanceof CallAdvisorChain callAdvisorChain) {
-			chatClientResponse = callAdvisorChain.nextCall(processedChatClientRequest);
-		}
-		else {
-			chatClientResponse = chain.nextAroundCall(AdvisedRequest.from(processedChatClientRequest))
-				.toChatClientResponse();
-		}
-		return after(chatClientResponse, chain);
+		ChatClientRequest processedChatClientRequest = before(chatClientRequest, callAdvisorChain);
+		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(processedChatClientRequest);
+		return after(chatClientResponse, callAdvisorChain);
 	}
 
 	@Override
-	@Deprecated
-	default AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-		Assert.notNull(advisedRequest, "advisedRequest cannot be null");
-		Assert.notNull(chain, "chain cannot be null");
-
-		AdvisedRequest processedAdvisedRequest = before(advisedRequest);
-		AdvisedResponse advisedResponse = chain.nextAroundCall(processedAdvisedRequest);
-		return after(advisedResponse);
-	}
-
-	@Override
-	default Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest, StreamAroundAdvisorChain chain) {
+	default Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
 		Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
-		Assert.notNull(chain, "chain cannot be null");
+		Assert.notNull(streamAdvisorChain, "streamAdvisorChain cannot be null");
 		Assert.notNull(getScheduler(), "scheduler cannot be null");
 
-		Flux<ChatClientResponse> chatClientResponseFlux;
-		if (chain instanceof StreamAdvisorChain streamAdvisorChain) {
-			chatClientResponseFlux = Mono.just(chatClientRequest)
-				.publishOn(getScheduler())
-				.map(request -> this.before(request, streamAdvisorChain))
-				.flatMapMany(streamAdvisorChain::nextStream);
-		}
-		else {
-			chatClientResponseFlux = Mono.just(AdvisedRequest.from(chatClientRequest))
-				.publishOn(getScheduler())
-				.map(this::before)
-				.flatMapMany(chain::nextAroundStream)
-				.map(AdvisedResponse::toChatClientResponse);
-		}
+		Flux<ChatClientResponse> chatClientResponseFlux = Mono.just(chatClientRequest)
+			.publishOn(getScheduler())
+			.map(request -> this.before(request, streamAdvisorChain))
+			.flatMapMany(streamAdvisorChain::nextStream);
 
 		return chatClientResponseFlux.map(response -> {
 			if (AdvisorUtils.onFinishReason().test(response)) {
-				response = after(response, chain);
+				response = after(response, streamAdvisorChain);
 			}
 			return response;
-		}).onErrorResume(error -> Flux.error(new IllegalStateException("Stream processing failed", error)));
-	}
-
-	@Override
-	@Deprecated
-	default Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-		Assert.notNull(advisedRequest, "advisedRequest cannot be null");
-		Assert.notNull(chain, "chain cannot be null");
-		Assert.notNull(getScheduler(), "scheduler cannot be null");
-
-		Flux<AdvisedResponse> advisedResponses = Mono.just(advisedRequest)
-			.publishOn(getScheduler())
-			.map(this::before)
-			.flatMapMany(chain::nextAroundStream);
-
-		return advisedResponses.map(ar -> {
-			if (AdvisedResponseStreamUtils.onFinishReason().test(ar)) {
-				ar = after(ar);
-			}
-			return ar;
 		}).onErrorResume(error -> Flux.error(new IllegalStateException("Stream processing failed", error)));
 	}
 
@@ -128,32 +81,12 @@ public interface BaseAdvisor extends CallAdvisor, StreamAdvisor {
 	/**
 	 * Logic to be executed before the rest of the advisor chain is called.
 	 */
-	default ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-		Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
-		return before(AdvisedRequest.from(chatClientRequest)).toChatClientRequest();
-	}
+	ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain);
 
 	/**
 	 * Logic to be executed after the rest of the advisor chain is called.
 	 */
-	default ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
-		Assert.notNull(chatClientResponse, "chatClientResponse cannot be null");
-		return after(AdvisedResponse.from(chatClientResponse)).toChatClientResponse();
-	}
-
-	/**
-	 * Logic to be executed before the rest of the advisor chain is called.
-	 * @deprecated in favor of {@link #before(ChatClientRequest,AdvisorChain)}
-	 */
-	@Deprecated
-	AdvisedRequest before(AdvisedRequest request);
-
-	/**
-	 * Logic to be executed after the rest of the advisor chain is called.
-	 * @deprecated in favor of {@link #after(ChatClientResponse,AdvisorChain)}
-	 */
-	@Deprecated
-	AdvisedResponse after(AdvisedResponse advisedResponse);
+	ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain);
 
 	/**
 	 * Scheduler used for processing the advisor logic when streaming.
