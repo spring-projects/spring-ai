@@ -26,15 +26,17 @@ import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConf
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.autoconfigure.sql.init.OnDatabaseInitializationCondition;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
@@ -52,11 +54,19 @@ public class JdbcChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = JdbcChatMemoryProperties.CONFIG_PREFIX, name = "initialize-schema",
-			havingValue = "true", matchIfMissing = true)
-	JdbcChatMemoryDataSourceScriptDatabaseInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource) {
+	@Conditional(OnJdbcChatMemoryDatasourceInitializationCondition.class)
+	JdbcChatMemoryDataSourceScriptDatabaseInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource,
+			JdbcChatMemoryProperties properties) {
 		logger.debug("Initializing schema for JdbcChatMemoryRepository");
-		return new JdbcChatMemoryDataSourceScriptDatabaseInitializer(dataSource);
+		return new JdbcChatMemoryDataSourceScriptDatabaseInitializer(dataSource, properties);
+	}
+
+	static class OnJdbcChatMemoryDatasourceInitializationCondition extends OnDatabaseInitializationCondition {
+
+		OnJdbcChatMemoryDatasourceInitializationCondition() {
+			super("Jdbc Chat Memory", JdbcChatMemoryProperties.CONFIG_PREFIX + ".initialize-schema");
+		}
+
 	}
 
 }

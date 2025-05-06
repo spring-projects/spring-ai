@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
  * @author Linar Abzaltdinov
+ * @author Yanming Zhou
  */
 class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 
@@ -48,84 +49,85 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldBeLoaded() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.jdbc.initialize-schema=true")
-			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue());
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=true")
+		this.contextRunner.withPropertyValues(JdbcChatMemoryProperties.CONFIG_PREFIX + ".initialize-schema=always")
 			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue());
 	}
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldNotBeLoaded() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=false")
+		this.contextRunner.withPropertyValues(JdbcChatMemoryProperties.CONFIG_PREFIX + ".initialize-schema=never")
 			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isFalse());
 	}
 
 	@Test
 	void initializeSchemaEnabledWithProperty() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=true")
+		this.contextRunner.withPropertyValues(JdbcChatMemoryProperties.CONFIG_PREFIX + ".initialize-schema=always")
 			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue());
 	}
 
 	@Test
 	void useAutoConfiguredJdbcChatMemoryRepository() {
-		this.contextRunner.run(context -> {
-			var chatMemoryRepository = context.getBean(JdbcChatMemoryRepository.class);
-			var conversationId = UUID.randomUUID().toString();
-			var userMessage = new UserMessage("Message from the user");
+		this.contextRunner.withPropertyValues(JdbcChatMemoryProperties.CONFIG_PREFIX + ".initialize-schema=always")
+			.run(context -> {
+				var chatMemoryRepository = context.getBean(JdbcChatMemoryRepository.class);
+				var conversationId = UUID.randomUUID().toString();
+				var userMessage = new UserMessage("Message from the user");
 
-			chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
+				chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
 
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(1);
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(List.of(userMessage));
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(1);
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(List.of(userMessage));
 
-			chatMemoryRepository.deleteByConversationId(conversationId);
+				chatMemoryRepository.deleteByConversationId(conversationId);
 
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
 
-			var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
-					new AssistantMessage("Message from the assistant 1"));
+				var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
+						new AssistantMessage("Message from the assistant 1"));
 
-			chatMemoryRepository.saveAll(conversationId, multipleMessages);
+				chatMemoryRepository.saveAll(conversationId, multipleMessages);
 
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(multipleMessages.size());
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(multipleMessages);
-		});
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(multipleMessages.size());
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(multipleMessages);
+			});
 	}
 
 	@Test
 	void useAutoConfiguredChatMemoryWithJdbc() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(ChatMemoryAutoConfiguration.class)).run(context -> {
-			assertThat(context).hasSingleBean(ChatMemory.class);
-			assertThat(context).hasSingleBean(JdbcChatMemoryRepository.class);
+		this.contextRunner.withPropertyValues(JdbcChatMemoryProperties.CONFIG_PREFIX + ".initialize-schema=always")
+			.withConfiguration(AutoConfigurations.of(ChatMemoryAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(ChatMemory.class);
+				assertThat(context).hasSingleBean(JdbcChatMemoryRepository.class);
 
-			var chatMemory = context.getBean(ChatMemory.class);
-			var conversationId = UUID.randomUUID().toString();
-			var userMessage = new UserMessage("Message from the user");
+				var chatMemory = context.getBean(ChatMemory.class);
+				var conversationId = UUID.randomUUID().toString();
+				var userMessage = new UserMessage("Message from the user");
 
-			chatMemory.add(conversationId, userMessage);
+				chatMemory.add(conversationId, userMessage);
 
-			assertThat(chatMemory.get(conversationId)).hasSize(1);
-			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+				assertThat(chatMemory.get(conversationId)).hasSize(1);
+				assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
 
-			var assistantMessage = new AssistantMessage("Message from the assistant");
+				var assistantMessage = new AssistantMessage("Message from the assistant");
 
-			chatMemory.add(conversationId, List.of(assistantMessage));
+				chatMemory.add(conversationId, List.of(assistantMessage));
 
-			assertThat(chatMemory.get(conversationId)).hasSize(2);
-			assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
+				assertThat(chatMemory.get(conversationId)).hasSize(2);
+				assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
 
-			chatMemory.clear(conversationId);
+				chatMemory.clear(conversationId);
 
-			assertThat(chatMemory.get(conversationId)).isEmpty();
+				assertThat(chatMemory.get(conversationId)).isEmpty();
 
-			var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
-					new AssistantMessage("Message from the assistant 1"));
+				var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
+						new AssistantMessage("Message from the assistant 1"));
 
-			chatMemory.add(conversationId, multipleMessages);
+				chatMemory.add(conversationId, multipleMessages);
 
-			assertThat(chatMemory.get(conversationId)).hasSize(multipleMessages.size());
-			assertThat(chatMemory.get(conversationId)).isEqualTo(multipleMessages);
-		});
+				assertThat(chatMemory.get(conversationId)).hasSize(multipleMessages.size());
+				assertThat(chatMemory.get(conversationId)).isEqualTo(multipleMessages);
+			});
 	}
 
 }

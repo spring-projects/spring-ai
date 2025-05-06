@@ -17,10 +17,12 @@
 package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.sql.init.DatabaseInitializationMode;
 
 /**
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 @ConfigurationProperties(JdbcChatMemoryProperties.CONFIG_PREFIX)
@@ -28,16 +30,45 @@ public class JdbcChatMemoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc";
 
-	/**
-	 * Whether to initialize the schema on startup.
-	 */
-	private boolean initializeSchema = true;
+	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql";
 
-	public boolean isInitializeSchema() {
+	/**
+	 * Path to the SQL file to use to initialize the database schema.
+	 */
+	private String schema = DEFAULT_SCHEMA_LOCATION;
+
+	/**
+	 * Platform to use in initialization scripts if the @@platform@@ placeholder is used.
+	 * Auto-detected by default.
+	 */
+	private String platform;
+
+	/**
+	 * Database schema initialization mode.
+	 */
+	private DatabaseInitializationMode initializeSchema = DatabaseInitializationMode.EMBEDDED;
+
+	public String getPlatform() {
+		return platform;
+	}
+
+	public void setPlatform(String platform) {
+		this.platform = platform;
+	}
+
+	public String getSchema() {
+		return schema;
+	}
+
+	public void setSchema(String schema) {
+		this.schema = schema;
+	}
+
+	public DatabaseInitializationMode getInitializeSchema() {
 		return this.initializeSchema;
 	}
 
-	public void setInitializeSchema(boolean initializeSchema) {
+	public void setInitializeSchema(DatabaseInitializationMode initializeSchema) {
 		this.initializeSchema = initializeSchema;
 	}
 

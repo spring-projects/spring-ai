@@ -22,35 +22,36 @@ import javax.sql.DataSource;
 
 import org.springframework.boot.jdbc.init.DataSourceScriptDatabaseInitializer;
 import org.springframework.boot.jdbc.init.PlatformPlaceholderDatabaseDriverResolver;
-import org.springframework.boot.sql.init.DatabaseInitializationMode;
 import org.springframework.boot.sql.init.DatabaseInitializationSettings;
+import org.springframework.util.StringUtils;
 
 /**
  * Performs database initialization for the JDBC Chat Memory Repository.
  *
+ * @author Jonathan Leijendekker
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 class JdbcChatMemoryDataSourceScriptDatabaseInitializer extends DataSourceScriptDatabaseInitializer {
 
-	private static final String SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql";
-
-	JdbcChatMemoryDataSourceScriptDatabaseInitializer(DataSource dataSource) {
-		super(dataSource, getSettings(dataSource));
+	JdbcChatMemoryDataSourceScriptDatabaseInitializer(DataSource dataSource, JdbcChatMemoryProperties properties) {
+		super(dataSource, getSettings(dataSource, properties));
 	}
 
-	static DatabaseInitializationSettings getSettings(DataSource dataSource) {
+	static DatabaseInitializationSettings getSettings(DataSource dataSource, JdbcChatMemoryProperties properties) {
 		var settings = new DatabaseInitializationSettings();
-		settings.setSchemaLocations(resolveSchemaLocations(dataSource));
-		settings.setMode(DatabaseInitializationMode.ALWAYS);
+		settings.setSchemaLocations(resolveSchemaLocations(dataSource, properties));
+		settings.setMode(properties.getInitializeSchema());
 		settings.setContinueOnError(true);
-
 		return settings;
 	}
 
-	static List<String> resolveSchemaLocations(DataSource dataSource) {
+	static List<String> resolveSchemaLocations(DataSource dataSource, JdbcChatMemoryProperties properties) {
 		var platformResolver = new PlatformPlaceholderDatabaseDriverResolver();
-
-		return platformResolver.resolveAll(dataSource, SCHEMA_LOCATION);
+		if (StringUtils.hasText(properties.getPlatform())) {
+			return platformResolver.resolveAll(properties.getPlatform(), properties.getSchema());
+		}
+		return platformResolver.resolveAll(dataSource, properties.getSchema());
 	}
 
 }
