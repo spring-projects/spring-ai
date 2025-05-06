@@ -142,7 +142,7 @@ For example, if you want to use `MessageWindowChatMemory` with the `MessageChatM
 
 [source,java]
 ----
-ChatMemory chatMemory = MessageChatMemoryAdvisor.builder().build();
+ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 
 ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
