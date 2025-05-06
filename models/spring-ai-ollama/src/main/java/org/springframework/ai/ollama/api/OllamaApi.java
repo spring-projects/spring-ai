@@ -16,7 +16,6 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -30,12 +29,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.ai.ollama.api.common.OllamaApiConstants;
-import org.springframework.ai.retry.RetryUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.ollama.api.common.OllamaApiConstants;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -65,35 +64,6 @@ public class OllamaApi {
 	private final RestClient restClient;
 
 	private final WebClient webClient;
-
-	/**
-	 * Default constructor that uses the default localhost url.
-	 */
-	@Deprecated(since = "1.0.0.M8")
-	public OllamaApi() {
-		this(OllamaApiConstants.DEFAULT_BASE_URL);
-	}
-
-	/**
-	 * Crate a new OllamaApi instance with the given base url.
-	 * @param baseUrl The base url of the Ollama server.
-	 */
-	@Deprecated(since = "1.0.0.M8")
-	public OllamaApi(String baseUrl) {
-		this(baseUrl, RestClient.builder(), WebClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Crate a new OllamaApi instance with the given base url and
-	 * {@link RestClient.Builder}.
-	 * @param baseUrl The base url of the Ollama server.
-	 * @param restClientBuilder The {@link RestClient.Builder} to use.
-	 * @param webClientBuilder The {@link WebClient.Builder} to use.
-	 */
-	@Deprecated(since = "1.0.0.M8")
-	public OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder) {
-		this(baseUrl, restClientBuilder, webClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
 
 	/**
 	 * Create a new OllamaApi instance

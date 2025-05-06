@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.memory.neo4j;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -265,8 +264,11 @@ public class Neo4jChatMemory implements ChatMemory {
 			List<Media> mediaList) {
 		Message message;
 		Map<String, Object> metadata = record.get("metadata").asMap();
-		message = new UserMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(), mediaList,
-				metadata);
+		message = UserMessage.builder()
+			.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
+			.media(mediaList)
+			.metadata(metadata)
+			.build();
 		return message;
 	}
 
@@ -279,12 +281,7 @@ public class Neo4jChatMemory implements ChatMemory {
 				.id(Optional.ofNullable(mediaMap.get(MediaAttributes.ID.getValue())).map(Object::toString).orElse(null))
 				.mimeType(MimeType.valueOf(mediaMap.get(MediaAttributes.MIME_TYPE.getValue()).toString()));
 			if (mediaMap.get(MediaAttributes.DATA.getValue()) instanceof String stringData) {
-				try {
-					mediaBuilder.data(URI.create(stringData).toURL());
-				}
-				catch (MalformedURLException e) {
-					throw new IllegalArgumentException("Media data contains an invalid URL");
-				}
+				mediaBuilder.data(URI.create(stringData));
 			}
 			else if (mediaMap.get(MediaAttributes.DATA.getValue()).getClass().isArray()) {
 				mediaBuilder.data(mediaMap.get(MediaAttributes.DATA.getValue()));

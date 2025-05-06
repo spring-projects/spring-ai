@@ -28,7 +28,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
-import org.springframework.ai.evaluation.RelevancyEvaluator;
+import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
@@ -161,6 +161,28 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
+	}
+
+	@Test
+	void qaOutputConverter() {
+		String question = "Where does the adventure of Anacletus and Birba take place?";
+
+		QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(this.pgVectorStore).build();
+
+		Answer answer = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(question)
+			.advisors(qaAdvisor)
+			.call()
+			.entity(Answer.class);
+
+		assertThat(answer).isNotNull();
+
+		System.out.println(answer);
+		assertThat(answer.content()).containsIgnoringCase("Highlands");
+	}
+
+	private record Answer(String content) {
 	}
 
 	private void evaluateRelevancy(String question, ChatResponse chatResponse) {

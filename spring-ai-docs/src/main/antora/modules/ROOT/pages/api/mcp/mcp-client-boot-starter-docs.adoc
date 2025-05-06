@@ -176,15 +176,21 @@ Currently, the Claude Desktop format supports only STDIO connection types.
 
 Properties for Server-Sent Events (SSE) transport are prefixed with `spring.ai.mcp.client.sse`:
 
-[cols="2,4"]
+[cols="3,4,3"]
 |===
-|Property |Description
+|Property |Description | Default Value
 
 |`connections`
 |Map of named SSE connection configurations
+|-
 
 |`connections.[name].url`
-|URL endpoint for SSE communication with the MCP server
+|Base URL endpoint for SSE communication with the MCP server
+|-
+
+|`connections.[name].sse-endpoint`
+|the sse endpoint (as url suffix) to use for the connection
+|`/sse`
 |===
 
 Example configuration:
@@ -200,6 +206,7 @@ spring:
               url: http://localhost:8080
             server2:
               url: http://otherserver:8081
+              sse-endpoint: /custom-sse
 ----
 
 == Features

@@ -17,7 +17,7 @@
 package org.springframework.ai.mistralai;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,9 +35,9 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -127,8 +127,10 @@ class MistralAiChatModelIT {
 				List five {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "ice cream flavors", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -145,8 +147,11 @@ class MistralAiChatModelIT {
 				Provide me a List of {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format",
+					format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -165,7 +170,10 @@ class MistralAiChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -185,7 +193,10 @@ class MistralAiChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = this.streamingChatModel.stream(prompt)
@@ -265,8 +276,10 @@ class MistralAiChatModelIT {
 	void multiModalityEmbeddedImage(String modelName) {
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
@@ -279,11 +292,13 @@ class MistralAiChatModelIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "pixtral-large-latest" })
 	void multiModalityImageUrl(String modelName) throws IOException {
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		ChatResponse response = this.chatModel
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
@@ -295,11 +310,13 @@ class MistralAiChatModelIT {
 
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
 				ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));

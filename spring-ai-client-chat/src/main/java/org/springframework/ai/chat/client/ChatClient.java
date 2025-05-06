@@ -220,15 +220,15 @@ public interface ChatClient {
 
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
-		ChatClientRequestSpec tools(String... toolNames);
-
-		ChatClientRequestSpec tools(ToolCallback... toolCallbacks);
-
-		ChatClientRequestSpec tools(List<ToolCallback> toolCallbacks);
+		ChatClientRequestSpec toolNames(String... toolNames);
 
 		ChatClientRequestSpec tools(Object... toolObjects);
 
-		ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders);
+		ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks);
+
+		ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks);
+
+		ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
@@ -287,15 +287,15 @@ public interface ChatClient {
 
 		Builder defaultTemplateRenderer(TemplateRenderer templateRenderer);
 
-		Builder defaultTools(String... toolNames);
-
-		Builder defaultTools(ToolCallback... toolCallbacks);
-
-		Builder defaultTools(List<ToolCallback> toolCallbacks);
+		Builder defaultToolNames(String... toolNames);
 
 		Builder defaultTools(Object... toolObjects);
 
-		Builder defaultTools(ToolCallbackProvider... toolCallbackProviders);
+		Builder defaultToolCallbacks(ToolCallback... toolCallbacks);
+
+		Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks);
+
+		Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
 

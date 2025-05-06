@@ -36,7 +36,9 @@ class AzureOpenAiChatOptionsTests {
 
 	@Test
 	void testBuilderWithAllFields() {
-		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.TEXT;
+		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.TEXT)
+			.build();
 		ChatCompletionStreamOptions streamOptions = new ChatCompletionStreamOptions();
 		streamOptions.setIncludeUsage(true);
 
@@ -56,6 +58,7 @@ class AzureOpenAiChatOptionsTests {
 			.topP(0.9)
 			.user("test-user")
 			.responseFormat(responseFormat)
+			.streamUsage(true)
 			.seed(12345L)
 			.logprobs(true)
 			.topLogprobs(5)
@@ -65,16 +68,18 @@ class AzureOpenAiChatOptionsTests {
 
 		assertThat(options)
 			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "n", "presencePenalty", "stop",
-					"temperature", "topP", "user", "responseFormat", "seed", "logprobs", "topLogProbs", "enhancements",
-					"streamOptions")
+					"temperature", "topP", "user", "responseFormat", "streamUsage", "seed", "logprobs", "topLogProbs",
+					"enhancements", "streamOptions")
 			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), 200, 2, 0.8,
-					List.of("stop1", "stop2"), 0.7, 0.9, "test-user", responseFormat, 12345L, true, 5, enhancements,
-					streamOptions);
+					List.of("stop1", "stop2"), 0.7, 0.9, "test-user", responseFormat, true, 12345L, true, 5,
+					enhancements, streamOptions);
 	}
 
 	@Test
 	void testCopy() {
-		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.TEXT;
+		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.TEXT)
+			.build();
 		ChatCompletionStreamOptions streamOptions = new ChatCompletionStreamOptions();
 		streamOptions.setIncludeUsage(true);
 
@@ -94,6 +99,7 @@ class AzureOpenAiChatOptionsTests {
 			.topP(0.9)
 			.user("test-user")
 			.responseFormat(responseFormat)
+			.streamUsage(true)
 			.seed(12345L)
 			.logprobs(true)
 			.topLogprobs(5)
@@ -111,7 +117,9 @@ class AzureOpenAiChatOptionsTests {
 
 	@Test
 	void testSetters() {
-		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.TEXT;
+		AzureOpenAiResponseFormat responseFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.TEXT)
+			.build();
 		ChatCompletionStreamOptions streamOptions = new ChatCompletionStreamOptions();
 		streamOptions.setIncludeUsage(true);
 		AzureChatEnhancementConfiguration enhancements = new AzureChatEnhancementConfiguration();
@@ -128,6 +136,7 @@ class AzureOpenAiChatOptionsTests {
 		options.setTopP(0.9);
 		options.setUser("test-user");
 		options.setResponseFormat(responseFormat);
+		options.setStreamUsage(true);
 		options.setSeed(12345L);
 		options.setLogprobs(true);
 		options.setTopLogProbs(5);
@@ -148,6 +157,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getTopP()).isEqualTo(0.9);
 		assertThat(options.getUser()).isEqualTo("test-user");
 		assertThat(options.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(options.getStreamUsage()).isTrue();
 		assertThat(options.getSeed()).isEqualTo(12345L);
 		assertThat(options.isLogprobs()).isTrue();
 		assertThat(options.getTopLogProbs()).isEqualTo(5);
@@ -171,6 +181,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getUser()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
+		assertThat(options.getStreamUsage()).isNull();
 		assertThat(options.getSeed()).isNull();
 		assertThat(options.isLogprobs()).isNull();
 		assertThat(options.getTopLogProbs()).isNull();

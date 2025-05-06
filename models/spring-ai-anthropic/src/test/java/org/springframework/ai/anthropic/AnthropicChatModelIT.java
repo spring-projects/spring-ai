@@ -154,8 +154,10 @@ class AnthropicChatModelIT {
 				List five {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "ice cream flavors", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -172,8 +174,11 @@ class AnthropicChatModelIT {
 				Provide me a List of {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format",
+					format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -192,7 +197,10 @@ class AnthropicChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -212,7 +220,10 @@ class AnthropicChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = this.streamingChatModel.stream(prompt)
@@ -236,8 +247,10 @@ class AnthropicChatModelIT {
 
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
@@ -251,9 +264,10 @@ class AnthropicChatModelIT {
 
 		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
 
-		var userMessage = new UserMessage(
-				"You are a very professional document summarization specialist. Please summarize the given document.",
-				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+		var userMessage = UserMessage.builder()
+			.text("You are a very professional document summarization specialist. Please summarize the given document.")
+			.media(List.of(new Media(new MimeType("application", "pdf"), pdfData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage),
 				ToolCallingChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName()).build()));

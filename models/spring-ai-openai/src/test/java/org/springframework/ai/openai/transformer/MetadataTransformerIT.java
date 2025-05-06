@@ -24,8 +24,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.chat.transformer.KeywordMetadataEnricher;
-import org.springframework.ai.chat.transformer.SummaryMetadataEnricher;
+import org.springframework.ai.model.transformer.KeywordMetadataEnricher;
+import org.springframework.ai.model.transformer.SummaryMetadataEnricher;
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatModel;

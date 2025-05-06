@@ -52,8 +52,6 @@ public final class SpringAIModels {
 
 	public static final String VERTEX_AI = "vertexai";
 
-	public static final String WATSONX_AI = "watsonx";
-
 	public static final String ZHIPUAI = "zhipuai";
 
 	public static final String DEEPSEEK = "deepseek";

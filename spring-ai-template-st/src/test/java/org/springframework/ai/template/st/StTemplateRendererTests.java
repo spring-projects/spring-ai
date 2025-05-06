@@ -280,4 +280,20 @@ class StTemplateRendererTests {
 		assertThat(result).isEqualTo("Person: John, Age: 30");
 	}
 
+	/**
+	 * Test whether StringTemplate can correctly render a template containing built-in
+	 * functions when {@code supportStFunctions()} is enabled. It should render properly.
+	 */
+	@Test
+	void shouldRenderTemplateWithSupportStFunctions() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().supportStFunctions().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("memory", "you are a helpful assistant");
+		String template = "{if(strlen(memory))}Hello!{endif}";
+
+		String result = renderer.apply(template, variables);
+
+		assertThat(result).isEqualTo("Hello!");
+	}
+
 }

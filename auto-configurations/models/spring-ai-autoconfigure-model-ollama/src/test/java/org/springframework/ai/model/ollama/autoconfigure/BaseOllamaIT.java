@@ -93,7 +93,7 @@ public abstract class BaseOllamaIT {
 
 	public static OllamaApi buildOllamaApiWithModel(final String model) {
 		final String baseUrl = SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
-		final OllamaApi api = new OllamaApi(baseUrl);
+		final OllamaApi api = OllamaApi.builder().baseUrl(baseUrl).build();
 		ensureModelIsPresent(api, model);
 		return api;
 	}

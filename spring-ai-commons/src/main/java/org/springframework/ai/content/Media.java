@@ -18,7 +18,6 @@ package org.springframework.ai.content;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -113,22 +112,6 @@ public class Media {
 		this.mimeType = mimeType;
 		this.id = null;
 		this.data = uri.toString();
-		this.name = generateDefaultName(mimeType);
-	}
-
-	/**
-	 * Create a new Media instance.
-	 * @param mimeType the media MIME type
-	 * @param url the URL for the media data
-	 * @deprecated in favour of {@link #Media(MimeType, URI)}
-	 */
-	@Deprecated
-	public Media(MimeType mimeType, URL url) {
-		Assert.notNull(mimeType, "MimeType must not be null");
-		Assert.notNull(url, "URL must not be null");
-		this.mimeType = mimeType;
-		this.id = null;
-		this.data = url.toString();
 		this.name = generateDefaultName(mimeType);
 	}
 
@@ -288,20 +271,6 @@ public class Media {
 		public Builder data(URI uri) {
 			Assert.notNull(uri, "URI must not be null");
 			this.data = uri.toString();
-			return this;
-		}
-
-		/**
-		 * Sets the media data from a URL.
-		 * @param url the media URL, must not be null
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if url is null
-		 * @deprecated in favour of {@link #data(URI)}
-		 */
-		@Deprecated
-		public Builder data(URL url) {
-			Assert.notNull(url, "URL must not be null");
-			this.data = url.toString();
 			return this;
 		}
 
