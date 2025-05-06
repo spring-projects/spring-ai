@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,41 +16,35 @@
 
 package org.springframework.ai.model.chat.observation.autoconfigure;
 
-import java.util.List;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.Tracer;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.observation.ChatModelCompletionObservationFilter;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
-import org.springframework.ai.chat.observation.ChatModelPromptContentObservationFilter;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
+import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 /**
  * Auto-configuration for Spring AI chat model observations.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 @AutoConfiguration(
@@ -63,12 +57,12 @@ public class ChatObservationAutoConfiguration {
 
 	private static void logPromptContentWarning() {
 		logger.warn(
-				"You have enabled the inclusion of the prompt content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+				"You have enabled logging out the prompt content with the risk of exposing sensitive or private information. Please, be careful!");
 	}
 
 	private static void logCompletionWarning() {
 		logger.warn(
-				"You have enabled the inclusion of the completion content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+				"You have enabled logging out the completion content with the risk of exposing sensitive or private information. Please, be careful!");
 	}
 
 	@Bean
@@ -78,21 +72,53 @@ public class ChatObservationAutoConfiguration {
 		return new ChatModelMeterObservationHandler(meterRegistry.getObject());
 	}
 
-	/**
-	 * The chat content is typically too big to be included in an observation as span
-	 * attributes. That's why the preferred way to store it is as span events, which are
-	 * supported by OpenTelemetry but not yet surfaced through the Micrometer APIs. This
-	 * primary/fallback configuration is a temporary solution until
-	 * https://github.com/micrometer-metrics/micrometer/issues/5238 is delivered.
-	 */
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnClass(OtelTracer.class)
-	@ConditionalOnBean(OtelTracer.class)
-	static class PrimaryChatContentObservationConfiguration {
+	@ConditionalOnClass(Tracer.class)
+	@ConditionalOnBean(Tracer.class)
+	static class TracerPresentObservationConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean(value = ChatModelPromptContentObservationHandler.class,
+				name = "chatModelPromptContentObservationHandler")
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "log-prompt",
+				havingValue = "true")
+		TracingAwareLoggingObservationHandler<ChatModelObservationContext> chatModelPromptContentObservationHandler(
+				Tracer tracer) {
+			logPromptContentWarning();
+			return new TracingAwareLoggingObservationHandler<>(new ChatModelPromptContentObservationHandler(), tracer);
+		}
+
+		@Bean
+		@ConditionalOnMissingBean(value = ChatModelCompletionObservationHandler.class,
+				name = "chatModelCompletionObservationHandler")
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "log-completion",
+				havingValue = "true")
+		TracingAwareLoggingObservationHandler<ChatModelObservationContext> chatModelCompletionObservationHandler(
+				Tracer tracer) {
+			logCompletionWarning();
+			return new TracingAwareLoggingObservationHandler<>(new ChatModelCompletionObservationHandler(), tracer);
+		}
 
 		@Bean
 		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-prompt",
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-error-logging",
+				havingValue = "true")
+		ErrorLoggingObservationHandler errorLoggingObservationHandler(Tracer tracer) {
+			return new ErrorLoggingObservationHandler(tracer,
+					List.of(EmbeddingModelObservationContext.class, ImageModelObservationContext.class,
+							ChatModelObservationContext.class, ChatClientObservationContext.class,
+							AdvisorObservationContext.class));
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnMissingClass("io.micrometer.tracing.Tracer")
+	static class TracerNotPresentObservationConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "log-prompt",
 				havingValue = "true")
 		ChatModelPromptContentObservationHandler chatModelPromptContentObservationHandler() {
 			logPromptContentWarning();
@@ -101,53 +127,11 @@ public class ChatObservationAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-completion",
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "log-completion",
 				havingValue = "true")
 		ChatModelCompletionObservationHandler chatModelCompletionObservationHandler() {
 			logCompletionWarning();
 			return new ChatModelCompletionObservationHandler();
-		}
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnMissingClass("io.micrometer.tracing.otel.bridge.OtelTracer")
-	static class FallbackChatContentObservationConfiguration {
-
-		@Bean
-		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-prompt",
-				havingValue = "true")
-		ChatModelPromptContentObservationFilter chatModelPromptObservationFilter() {
-			logPromptContentWarning();
-			return new ChatModelPromptContentObservationFilter();
-		}
-
-		@Bean
-		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-completion",
-				havingValue = "true")
-		ChatModelCompletionObservationFilter chatModelCompletionObservationFilter() {
-			logCompletionWarning();
-			return new ChatModelCompletionObservationFilter();
-		}
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnClass(Tracer.class)
-	@ConditionalOnBean(Tracer.class)
-	static class TracingChatContentObservationConfiguration {
-
-		@Bean
-		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-error-logging",
-				havingValue = "true")
-		public ErrorLoggingObservationHandler errorLoggingObservationHandler(Tracer tracer) {
-			return new ErrorLoggingObservationHandler(tracer,
-					List.of(EmbeddingModelObservationContext.class, ImageModelObservationContext.class,
-							ChatModelObservationContext.class, ChatClientObservationContext.class,
-							AdvisorObservationContext.class));
 		}
 
 	}

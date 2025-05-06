@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,14 @@
 package org.springframework.ai.model.chat.observation.autoconfigure;
 
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
-import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
-import io.opentelemetry.api.OpenTelemetry;
+import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.observation.ChatModelCompletionObservationFilter;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
-import org.springframework.ai.chat.observation.ChatModelPromptContentObservationFilter;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link ChatObservationAutoConfiguration}.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
 class ChatObservationAutoConfigurationTests {
 
@@ -54,12 +52,6 @@ class ChatObservationAutoConfigurationTests {
 	}
 
 	@Test
-	void promptFilterDefault() {
-		this.contextRunner
-			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationFilter.class));
-	}
-
-	@Test
 	void promptHandlerDefault() {
 		this.contextRunner
 			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class));
@@ -67,22 +59,15 @@ class ChatObservationAutoConfigurationTests {
 
 	@Test
 	void promptHandlerEnabled() {
-		this.contextRunner
-			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
-			.withPropertyValues("spring.ai.chat.observations.include-prompt=true")
+		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
+			.withPropertyValues("spring.ai.chat.observations.log-prompt=true")
 			.run(context -> assertThat(context).hasSingleBean(ChatModelPromptContentObservationHandler.class));
 	}
 
 	@Test
 	void promptHandlerDisabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-prompt=true")
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.log-prompt=false")
 			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class));
-	}
-
-	@Test
-	void completionFilterDefault() {
-		this.contextRunner
-			.run(context -> assertThat(context).doesNotHaveBean(ChatModelCompletionObservationFilter.class));
 	}
 
 	@Test
@@ -93,15 +78,14 @@ class ChatObservationAutoConfigurationTests {
 
 	@Test
 	void completionHandlerEnabled() {
-		this.contextRunner
-			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
-			.withPropertyValues("spring.ai.chat.observations.include-completion=true")
+		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
+			.withPropertyValues("spring.ai.chat.observations.log-completion=true")
 			.run(context -> assertThat(context).hasSingleBean(ChatModelCompletionObservationHandler.class));
 	}
 
 	@Test
 	void completionHandlerDisabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-completion=true")
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.log-completion=false")
 			.run(context -> assertThat(context).doesNotHaveBean(ChatModelCompletionObservationHandler.class));
 	}
 

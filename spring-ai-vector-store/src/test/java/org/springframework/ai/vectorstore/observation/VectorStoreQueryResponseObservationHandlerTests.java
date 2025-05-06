@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,56 +16,60 @@
 
 package org.springframework.ai.vectorstore.observation;
 
-import java.util.List;
-
-import io.micrometer.tracing.handler.TracingObservationHandler;
-import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.trace.ReadableSpan;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.observation.conventions.VectorStoreObservationAttributes;
-import org.springframework.ai.observation.conventions.VectorStoreObservationEventNames;
-import org.springframework.ai.observation.tracing.TracingHelper;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link VectorStoreQueryResponseObservationHandler}.
  *
+ * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
+@ExtendWith(OutputCaptureExtension.class)
 class VectorStoreQueryResponseObservationHandlerTests {
 
+	private final VectorStoreQueryResponseObservationHandler observationHandler = new VectorStoreQueryResponseObservationHandler();
+
 	@Test
-	void whenCompletionWithTextThenSpanEvent() {
-		var observationContext = VectorStoreObservationContext
-			.builder("db", VectorStoreObservationContext.Operation.ADD)
-			.queryResponse(List.of(new Document("hello"), new Document("other-side")))
-			.build();
-		var sdkTracer = SdkTracerProvider.builder().build().get("test");
-		var otelTracer = new OtelTracer(sdkTracer, new OtelCurrentTraceContext(), null);
-		var span = otelTracer.nextSpan();
-		var tracingContext = new TracingObservationHandler.TracingContext();
-		tracingContext.setSpan(span);
-		observationContext.put(TracingObservationHandler.TracingContext.class, tracingContext);
+	void whenNotSupportedObservationContextThenReturnFalse() {
+		var context = new Observation.Context();
+		assertThat(this.observationHandler.supportsContext(context)).isFalse();
+	}
 
-		new VectorStoreQueryResponseObservationHandler().onStop(observationContext);
+	@Test
+	void whenSupportedObservationContextThenReturnTrue() {
+		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
+		assertThat(this.observationHandler.supportsContext(context)).isTrue();
+	}
 
-		var otelSpan = TracingHelper.extractOtelSpan(tracingContext);
-		assertThat(otelSpan).isNotNull();
-		var spanData = ((ReadableSpan) otelSpan).toSpanData();
-		assertThat(spanData.getEvents().size()).isEqualTo(1);
-		assertThat(spanData.getEvents().get(0).getName())
-			.isEqualTo(VectorStoreObservationEventNames.CONTENT_QUERY_RESPONSE.value());
-		assertThat(spanData.getEvents()
-			.get(0)
-			.getAttributes()
-			.get(AttributeKey.stringArrayKey(VectorStoreObservationAttributes.DB_VECTOR_QUERY_CONTENT.value())))
-			.containsOnly("hello", "other-side");
+	@Test
+	void whenEmptyQueryResponseThenOutputNothing(CapturedOutput output) {
+		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Vector Store Query Response:
+				[]
+				""");
+	}
+
+	@Test
+	void whenNonEmptyQueryResponseThenOutputIt(CapturedOutput output) {
+		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
+		context.setQueryResponse(List.of(new Document("doc1"), new Document("doc2")));
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Vector Store Query Response:
+				["doc1", "doc2"]
+				""");
 	}
 
 }
