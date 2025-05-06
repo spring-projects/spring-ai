@@ -69,7 +69,8 @@ public abstract class ModelOptionsUtils {
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 		.addModules(JacksonUtils.instantiateAvailableModules())
-		.build();
+		.build()
+		.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
@@ -82,13 +83,25 @@ public abstract class ModelOptionsUtils {
 	};
 
 	/**
-	 * Converts the given JSON string to a Map of String and Object.
+	 * Converts the given JSON string to a Map of String and Object using the default
+	 * ObjectMapper.
 	 * @param json the JSON string to convert to a Map.
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> jsonToMap(String json) {
+		return jsonToMap(json, OBJECT_MAPPER);
+	}
+
+	/**
+	 * Converts the given JSON string to a Map of String and Object using a custom
+	 * ObjectMapper.
+	 * @param json the JSON string to convert to a Map.
+	 * @param objectMapper the ObjectMapper to use for deserialization.
+	 * @return the converted Map.
+	 */
+	public static Map<String, Object> jsonToMap(String json, ObjectMapper objectMapper) {
 		try {
-			return OBJECT_MAPPER.readValue(json, MAP_TYPE_REF);
+			return objectMapper.readValue(json, MAP_TYPE_REF);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
