@@ -152,10 +152,90 @@ class PromptTests {
 
 		Prompt copy = prompt.augmentUserMessage(message -> message.mutate().text("How are you?").build());
 
+		assertThat(copy.getInstructions().get(copy.getInstructions().size() - 1)).isInstanceOf(UserMessage.class);
 		assertThat(copy.getUserMessage()).isNotNull();
 		assertThat(copy.getUserMessage().getText()).isEqualTo("How are you?");
 		assertThat(prompt.getUserMessage()).isNotNull();
 		assertThat(prompt.getUserMessage().getText()).isEqualTo("");
+	}
+
+	@Test
+	void getSystemMessageWhenSingle() {
+		Prompt prompt = Prompt.builder().messages(new SystemMessage("Hello")).build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void getSystemMessageWhenMultiple() {
+		Prompt prompt = Prompt.builder()
+			.messages(new SystemMessage("Hello"), new SystemMessage("How are you?"))
+			.build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void getSystemMessageWhenNone() {
+		Prompt prompt = Prompt.builder().messages(new UserMessage("You'll be back!")).build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("");
+
+		prompt = Prompt.builder().messages(List.of()).build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("");
+	}
+
+	@Test
+	void augmentSystemMessageWhenSingle() {
+		Prompt prompt = Prompt.builder().messages(new SystemMessage("Hello")).build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+
+		Prompt copy = prompt.augmentSystemMessage(message -> message.mutate().text("How are you?").build());
+
+		assertThat(copy.getSystemMessage()).isNotNull();
+		assertThat(copy.getSystemMessage().getText()).isEqualTo("How are you?");
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void augmentSystemMessageWhenMultiple() {
+		Prompt prompt = Prompt.builder()
+			.messages(new SystemMessage("Hello"), new SystemMessage("How are you?"))
+			.build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+
+		Prompt copy = prompt.augmentSystemMessage(message -> message.mutate().text("What about you?").build());
+
+		assertThat(copy.getSystemMessage()).isNotNull();
+		assertThat(copy.getSystemMessage().getText()).isEqualTo("What about you?");
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void augmentSystemMessageWhenNone() {
+		Prompt prompt = Prompt.builder().messages(new UserMessage("You'll be back!")).build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("");
+
+		Prompt copy = prompt.augmentSystemMessage(message -> message.mutate().text("How are you?").build());
+
+		assertThat(copy.getInstructions().get(0)).isInstanceOf(SystemMessage.class);
+		assertThat(copy.getSystemMessage()).isNotNull();
+		assertThat(copy.getSystemMessage().getText()).isEqualTo("How are you?");
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("");
 	}
 
 }

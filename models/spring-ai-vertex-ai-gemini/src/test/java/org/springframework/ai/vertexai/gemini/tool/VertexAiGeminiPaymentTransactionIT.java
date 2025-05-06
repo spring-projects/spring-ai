@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -57,6 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
@@ -75,7 +73,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 	public void paymentStatuses() {
 		// @formatter:off
 		String content = this.chatClient.prompt()
-				.advisors(new LoggingAdvisor())
+				.advisors(new SimpleLoggerAdvisor())
 				.toolNames("paymentStatus")
 				.user("""
 				What is the status of my payment transactions 001, 002 and 003?
@@ -92,7 +90,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 	public void streamingPaymentStatuses() {
 
 		Flux<String> streamContent = this.chatClient.prompt()
-			.advisors(new LoggingAdvisor())
+			.advisors(new SimpleLoggerAdvisor())
 			.toolNames("paymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
@@ -117,45 +115,6 @@ public class VertexAiGeminiPaymentTransactionIT {
 	}
 
 	record TransactionStatusResponse(String id, String status) {
-
-	}
-
-	private static class LoggingAdvisor implements CallAroundAdvisor {
-
-		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
-
-		@Override
-		public String getName() {
-			return this.getClass().getSimpleName();
-		}
-
-		@Override
-		public int getOrder() {
-			return 0;
-		}
-
-		@Override
-		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-			var response = chain.nextAroundCall(before(advisedRequest));
-			observeAfter(response);
-			return response;
-		}
-
-		private AdvisedRequest before(AdvisedRequest request) {
-			logger.info("System text: \n" + request.systemText());
-			logger.info("System params: " + request.systemParams());
-			logger.info("User text: \n" + request.userText());
-			logger.info("User params:" + request.userParams());
-			logger.info("Function names: " + request.toolNames());
-
-			logger.info("Options: " + request.chatOptions().toString());
-
-			return request;
-		}
-
-		private void observeAfter(AdvisedResponse advisedResponse) {
-			logger.info("Response: " + advisedResponse.response());
-		}
 
 	}
 

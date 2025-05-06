@@ -22,8 +22,8 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,7 +38,6 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.advisor.ChatModelCallAdvisor;
 import org.springframework.ai.chat.client.advisor.ChatModelStreamAdvisor;
 import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
@@ -47,16 +46,18 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationDocum
 import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
@@ -64,7 +65,6 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -95,52 +95,6 @@ public class DefaultChatClient implements ChatClient {
 	public DefaultChatClient(DefaultChatClientRequestSpec defaultChatClientRequest) {
 		Assert.notNull(defaultChatClientRequest, "defaultChatClientRequest cannot be null");
 		this.defaultChatClientRequest = defaultChatClientRequest;
-	}
-
-	private static AdvisedRequest toAdvisedRequest(DefaultChatClientRequestSpec inputRequest) {
-		Assert.notNull(inputRequest, "inputRequest cannot be null");
-
-		Map<String, Object> advisorContext = new ConcurrentHashMap<>(inputRequest.getAdvisorParams());
-
-		// Process userText, media and messages before creating the AdvisedRequest.
-		String userText = inputRequest.userText;
-		List<Media> media = inputRequest.media;
-		List<Message> messages = inputRequest.messages;
-
-		// If the userText is empty, then try extracting the userText from the last
-		// message
-		// in the messages list and remove it from the messages list.
-		if (!StringUtils.hasText(userText) && !CollectionUtils.isEmpty(messages)) {
-			Message lastMessage = messages.get(messages.size() - 1);
-			if (lastMessage.getMessageType() == MessageType.USER) {
-				UserMessage userMessage = (UserMessage) lastMessage;
-				if (StringUtils.hasText(userMessage.getText())) {
-					userText = lastMessage.getText();
-				}
-				Collection<Media> messageMedia = userMessage.getMedia();
-				if (!CollectionUtils.isEmpty(messageMedia)) {
-					media.addAll(messageMedia);
-				}
-				messages = messages.subList(0, messages.size() - 1);
-			}
-		}
-
-		return new AdvisedRequest(inputRequest.chatModel, userText, inputRequest.systemText, inputRequest.chatOptions,
-				media, inputRequest.toolNames, inputRequest.toolCallbacks, messages, inputRequest.userParams,
-				inputRequest.systemParams, inputRequest.advisors, inputRequest.advisorParams, advisorContext,
-				inputRequest.toolContext);
-	}
-
-	@Deprecated
-	public static DefaultChatClientRequestSpec toDefaultChatClientRequestSpec(AdvisedRequest advisedRequest,
-			ObservationRegistry observationRegistry, ChatClientObservationConvention customObservationConvention) {
-
-		return new DefaultChatClientRequestSpec(advisedRequest.chatModel(), advisedRequest.userText(),
-				advisedRequest.userParams(), advisedRequest.systemText(), advisedRequest.systemParams(),
-				advisedRequest.toolCallbacks(), advisedRequest.messages(), advisedRequest.toolNames(),
-				advisedRequest.media(), advisedRequest.chatOptions(), advisedRequest.advisors(),
-				advisedRequest.advisorParams(), observationRegistry, customObservationConvention,
-				advisedRequest.toolContext(), null);
 	}
 
 	@Override
@@ -510,7 +464,7 @@ public class DefaultChatClient implements ChatClient {
 				.request(chatClientRequest)
 				.advisors(advisorChain.getCallAdvisors())
 				.stream(false)
-				.withFormat(outputFormat)
+				.format(outputFormat)
 				.build();
 
 			var observation = ChatClientObservationDocumentation.AI_CHAT_CLIENT.observation(observationConvention,
@@ -696,14 +650,6 @@ public class DefaultChatClient implements ChatClient {
 			this.templateRenderer = templateRenderer != null ? templateRenderer : DEFAULT_TEMPLATE_RENDERER;
 		}
 
-		private ObservationRegistry getObservationRegistry() {
-			return this.observationRegistry;
-		}
-
-		private ChatClientObservationConvention getCustomObservationConvention() {
-			return this.observationConvention;
-		}
-
 		@Nullable
 		public String getUserText() {
 			return this.userText;
@@ -755,6 +701,10 @@ public class DefaultChatClient implements ChatClient {
 			return this.toolContext;
 		}
 
+		public TemplateRenderer getTemplateRenderer() {
+			return this.templateRenderer;
+		}
+
 		/**
 		 * Return a {@code ChatClient2Builder} to create a new {@code ChatClient2} whose
 		 * settings are replicated from this {@code ChatClientRequest}.
@@ -762,6 +712,9 @@ public class DefaultChatClient implements ChatClient {
 		public Builder mutate() {
 			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
 				.builder(this.chatModel, this.observationRegistry, this.observationConvention)
+				.defaultTemplateRenderer(this.templateRenderer)
+				.defaultToolCallbacks(this.toolCallbacks)
+				.defaultToolContext(this.toolContext)
 				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
 
 			if (StringUtils.hasText(this.userText)) {
@@ -778,8 +731,6 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			builder.addMessages(this.messages);
-			builder.addToolCallbacks(this.toolCallbacks);
-			builder.addToolContext(this.toolContext);
 
 			return builder;
 		}
@@ -955,14 +906,14 @@ public class DefaultChatClient implements ChatClient {
 
 		public CallResponseSpec call() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
-			return new DefaultCallResponseSpec(toAdvisedRequest(this).toChatClientRequest(this.templateRenderer),
-					advisorChain, observationRegistry, observationConvention);
+			return new DefaultCallResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
+					observationRegistry, observationConvention);
 		}
 
 		public StreamResponseSpec stream() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
-			return new DefaultStreamResponseSpec(toAdvisedRequest(this).toChatClientRequest(this.templateRenderer),
-					advisorChain, observationRegistry, observationConvention);
+			return new DefaultStreamResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
+					observationRegistry, observationConvention);
 		}
 
 		private BaseAdvisorChain buildAdvisorChain() {

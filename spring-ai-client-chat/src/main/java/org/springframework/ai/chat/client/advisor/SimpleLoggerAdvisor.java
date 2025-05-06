@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,39 +18,39 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.function.Function;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.lang.Nullable;
 
 /**
  * A simple logger advisor that logs the request and response messages.
  *
  * @author Christian Tzolov
  */
-public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
-	public static final Function<AdvisedRequest, String> DEFAULT_REQUEST_TO_STRING = request -> request.toString();
+	public static final Function<ChatClientRequest, String> DEFAULT_REQUEST_TO_STRING = ChatClientRequest::toString;
 
-	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = response -> ModelOptionsUtils
-		.toJsonStringPrettyPrinter(response);
+	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = ModelOptionsUtils::toJsonStringPrettyPrinter;
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
-	private final Function<AdvisedRequest, String> requestToString;
+	private final Function<ChatClientRequest, String> requestToString;
 
 	private final Function<ChatResponse, String> responseToString;
 
-	private int order;
+	private final int order;
 
 	public SimpleLoggerAdvisor() {
 		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING, 0);
@@ -60,11 +60,40 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 		this(DEFAULT_REQUEST_TO_STRING, DEFAULT_RESPONSE_TO_STRING, order);
 	}
 
-	public SimpleLoggerAdvisor(Function<AdvisedRequest, String> requestToString,
-			Function<ChatResponse, String> responseToString, int order) {
-		this.requestToString = requestToString;
-		this.responseToString = responseToString;
+	public SimpleLoggerAdvisor(@Nullable Function<ChatClientRequest, String> requestToString,
+			@Nullable Function<ChatResponse, String> responseToString, int order) {
+		this.requestToString = requestToString != null ? requestToString : DEFAULT_REQUEST_TO_STRING;
+		this.responseToString = responseToString != null ? responseToString : DEFAULT_RESPONSE_TO_STRING;
 		this.order = order;
+	}
+
+	@Override
+	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+		logRequest(chatClientRequest);
+
+		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
+
+		logResponse(chatClientResponse);
+
+		return chatClientResponse;
+	}
+
+	@Override
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
+		logRequest(chatClientRequest);
+
+		Flux<ChatClientResponse> chatClientResponses = streamAdvisorChain.nextStream(chatClientRequest);
+
+		return new MessageAggregator().aggregateChatClientResponse(chatClientResponses, this::logResponse);
+	}
+
+	private void logRequest(ChatClientRequest request) {
+		logger.debug("request: {}", this.requestToString.apply(request));
+	}
+
+	private void logResponse(ChatClientResponse chatClientResponse) {
+		logger.debug("response: {}", this.responseToString.apply(chatClientResponse.chatResponse()));
 	}
 
 	@Override
@@ -77,40 +106,45 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 		return this.order;
 	}
 
-	private AdvisedRequest before(AdvisedRequest request) {
-		logger.debug("request: {}", this.requestToString.apply(request));
-		return request;
-	}
-
-	private void observeAfter(AdvisedResponse advisedResponse) {
-		logger.debug("response: {}", this.responseToString.apply(advisedResponse.response()));
-	}
-
 	@Override
 	public String toString() {
 		return SimpleLoggerAdvisor.class.getSimpleName();
 	}
 
-	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-
-		advisedRequest = before(advisedRequest);
-
-		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
-
-		observeAfter(advisedResponse);
-
-		return advisedResponse;
+	public static Builder builder() {
+		return new Builder();
 	}
 
-	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+	public static class Builder {
 
-		advisedRequest = before(advisedRequest);
+		private Function<ChatClientRequest, String> requestToString;
 
-		Flux<AdvisedResponse> advisedResponses = chain.nextAroundStream(advisedRequest);
+		private Function<ChatResponse, String> responseToString;
 
-		return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, this::observeAfter);
+		private int order = 0;
+
+		private Builder() {
+		}
+
+		public Builder requestToString(Function<ChatClientRequest, String> requestToString) {
+			this.requestToString = requestToString;
+			return this;
+		}
+
+		public Builder responseToString(Function<ChatResponse, String> responseToString) {
+			this.responseToString = responseToString;
+			return this;
+		}
+
+		public Builder order(int order) {
+			this.order = order;
+			return this;
+		}
+
+		public SimpleLoggerAdvisor build() {
+			return new SimpleLoggerAdvisor(requestToString, responseToString, order);
+		}
+
 	}
 
 }

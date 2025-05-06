@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,17 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.springframework.ai.chat.memory.ChatMemory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.util.Assert;
 
 /**
@@ -38,9 +38,10 @@ import org.springframework.util.Assert;
  * @param <T> the type of the chat memory.
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor, StreamAroundAdvisor {
+public abstract class AbstractChatMemoryAdvisor<T> implements CallAdvisor, StreamAdvisor {
 
 	/**
 	 * The key to retrieve the chat memory conversation id from the context.
@@ -176,26 +177,18 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 				: this.defaultChatMemoryRetrieveSize;
 	}
 
-	/**
-	 * Execute the next advisor in the chain.
-	 * @param advisedRequest the advised request
-	 * @param chain the advisor chain
-	 * @param beforeAdvise the before advise function
-	 * @return the advised response
-	 */
-	protected Flux<AdvisedResponse> doNextWithProtectFromBlockingBefore(AdvisedRequest advisedRequest,
-			StreamAroundAdvisorChain chain, Function<AdvisedRequest, AdvisedRequest> beforeAdvise) {
-
+	protected Flux<ChatClientResponse> doNextWithProtectFromBlockingBefore(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain, Function<ChatClientRequest, ChatClientRequest> before) {
 		// This can be executed by both blocking and non-blocking Threads
 		// E.g. a command line or Tomcat blocking Thread implementation
 		// or by a WebFlux dispatch in a non-blocking manner.
 		return (this.protectFromBlocking) ?
 		// @formatter:off
-			Mono.just(advisedRequest)
-				.publishOn(Schedulers.boundedElastic())
-				.map(beforeAdvise)
-				.flatMapMany(request -> chain.nextAroundStream(request))
-			: chain.nextAroundStream(beforeAdvise.apply(advisedRequest));
+				Mono.just(chatClientRequest)
+						.publishOn(Schedulers.boundedElastic())
+						.map(before)
+						.flatMapMany(streamAdvisorChain::nextStream)
+				: streamAdvisorChain.nextStream(before.apply(chatClientRequest));
 	}
 
 	/**
@@ -242,7 +235,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param conversationId the conversation id
 		 * @return the builder
 		 */
-		public AbstractBuilder conversationId(String conversationId) {
+		public AbstractBuilder<T> conversationId(String conversationId) {
 			this.conversationId = conversationId;
 			return this;
 		}
@@ -252,7 +245,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param chatMemoryRetrieveSize the chat memory retrieve size
 		 * @return the builder
 		 */
-		public AbstractBuilder chatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
+		public AbstractBuilder<T> chatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
 			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
 			return this;
 		}
@@ -262,7 +255,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param protectFromBlocking whether to protect from blocking
 		 * @return the builder
 		 */
-		public AbstractBuilder protectFromBlocking(boolean protectFromBlocking) {
+		public AbstractBuilder<T> protectFromBlocking(boolean protectFromBlocking) {
 			this.protectFromBlocking = protectFromBlocking;
 			return this;
 		}
@@ -272,7 +265,7 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAroundAdvisor,
 		 * @param order the order
 		 * @return the builder
 		 */
-		public AbstractBuilder order(int order) {
+		public AbstractBuilder<T> order(int order) {
 			this.order = order;
 			return this;
 		}

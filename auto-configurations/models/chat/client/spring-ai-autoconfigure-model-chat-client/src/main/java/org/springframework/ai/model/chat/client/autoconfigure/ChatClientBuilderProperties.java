@@ -17,7 +17,6 @@
 package org.springframework.ai.model.chat.client.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for the chat client builder.
@@ -56,25 +55,9 @@ public class ChatClientBuilderProperties {
 	public static class Observations {
 
 		/**
-		 * Whether to include the input content in the observations.
-		 * @deprecated Use {@link #includePrompt} instead.
-		 */
-		@Deprecated
-		private boolean includeInput = false;
-
-		/**
 		 * Whether to include the prompt content in the observations.
 		 */
 		private boolean includePrompt = false;
-
-		@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.observations.include-prompt")
-		public boolean isIncludeInput() {
-			return this.includeInput;
-		}
-
-		public void setIncludeInput(boolean includeCompletion) {
-			this.includeInput = includeCompletion;
-		}
 
 		public boolean isIncludePrompt() {
 			return this.includePrompt;
