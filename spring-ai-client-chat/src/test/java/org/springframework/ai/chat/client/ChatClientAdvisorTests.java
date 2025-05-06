@@ -29,7 +29,8 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -76,8 +77,10 @@ public class ChatClientAdvisorTests {
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your name is John"))),
 					chatResponseMetadata));
 
-		// Initialize an in-memory chat memory to store conversation history
-		ChatMemory chatMemory = new InMemoryChatMemory();
+		// Initialize a message window chat memory to store conversation history
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
 
 		// Build a ChatClient with default system text and a memory advisor
 		var chatClient = ChatClient.builder(this.chatModel)
@@ -153,8 +156,10 @@ public class ChatClientAdvisorTests {
 						return state;
 					}));
 
-		// Initialize an in-memory chat memory to store conversation history
-		ChatMemory chatMemory = new InMemoryChatMemory();
+		// Initialize a message window chat memory to store conversation history
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
 
 		// Build a ChatClient with default system text and a memory advisor
 		var chatClient = ChatClient.builder(this.chatModel)

@@ -26,13 +26,13 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
-import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
@@ -133,7 +133,9 @@ class RetrievalAugmentationAdvisorIT {
 
 	@Test
 	void ragWithCompression() {
-		MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor.builder(new InMemoryChatMemory()).build();
+		MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor
+			.builder(MessageWindowChatMemory.builder().build())
+			.build();
 
 		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
 			.queryTransformers(CompressionQueryTransformer.builder()
