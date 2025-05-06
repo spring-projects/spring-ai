@@ -90,8 +90,10 @@ class DeepSeekChatModelIT {
 				List five {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "ice cream flavors", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -110,8 +112,11 @@ class DeepSeekChatModelIT {
 				Provide me a List of {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format",
+					format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatModel.call(prompt).getResult();
 
@@ -131,7 +136,10 @@ class DeepSeekChatModelIT {
 				Please provide the JSON response without any code block markers such as ```json```.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatModel.call(prompt).getResult();
 
@@ -152,7 +160,10 @@ class DeepSeekChatModelIT {
 				Please provide the JSON response without any code block markers such as ```json```.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = chatModel.call(prompt).getResult();
 
@@ -173,7 +184,10 @@ class DeepSeekChatModelIT {
 				Please provide the JSON response without any code block markers such as ```json```.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = streamingChatModel.stream(prompt)
