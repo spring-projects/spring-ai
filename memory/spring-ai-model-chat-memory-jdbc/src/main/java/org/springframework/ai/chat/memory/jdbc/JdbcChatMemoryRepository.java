@@ -48,30 +48,51 @@ import org.springframework.util.Assert;
  */
 public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
-	private static final String QUERY_GET_IDS = """
-			SELECT DISTINCT conversation_id FROM ai_chat_memory
-			""";
+	private final String queryGetIds;
 
-	private static final String QUERY_ADD = """
-			INSERT INTO ai_chat_memory (conversation_id, content, type, "timestamp") VALUES (?, ?, ?, ?)
-			""";
+	private final String queryAdd;
 
-	private static final String QUERY_GET = """
-			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp"
-			""";
+	private final String queryGet;
 
-	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";
+	private final String queryClear;
 
 	private final JdbcTemplate jdbcTemplate;
 
-	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	public final static String DEFAULT_TABLE_NAME = "ai_chat_memory";
+	public final static String DEFAULT_CONVERSION_ID_FIELD_NAME = "conversation_id";
+	public final static String DEFAULT_CONTENT_FIELD_NAME = "content";
+	public final static String DEFAULT_TYPE_FIELD_NAME = "type";
+	public final static String DEFAULT_TIMESTAMP_FIELD_NAME = "\"timestamp\"";
+
+	public final static String DEFAULT_GET_IDS_QUERY = "SELECT DISTINCT %s FROM %s";
+	public final static String DEFAULT_ADD_QUERY = "INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)";
+	public final static String DEFAULT_GET_QUERY = "SELECT %s, %s FROM %s WHERE %s = ? ORDER BY %s";
+	public final static String DEFAULT_CLEAR_QUERY = "DELETE FROM %s WHERE %s = ?";
+
+	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate,
+									 String tableName,
+									 String conversionIdFiledName,
+									 String contentFiledName,
+									 String typeFiledName,
+									 String timestampFiledName) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
+		Assert.notNull(tableName, "tableName cannot be null");
+		Assert.notNull(conversionIdFiledName, "conversionIdFiledName cannot be null");
+		Assert.notNull(contentFiledName, "contentFiledName cannot be null");
+		Assert.notNull(typeFiledName, "typeFiledName cannot be null");
+		Assert.notNull(timestampFiledName, "timestampFiledName cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
+		this.queryGetIds = DEFAULT_GET_IDS_QUERY.formatted(conversionIdFiledName, tableName);
+		this.queryAdd = DEFAULT_ADD_QUERY.formatted(
+				tableName, conversionIdFiledName, contentFiledName, typeFiledName, timestampFiledName);
+		this.queryGet = DEFAULT_GET_QUERY.formatted(contentFiledName, typeFiledName,
+				tableName, conversionIdFiledName, timestampFiledName);
+		this.queryClear = DEFAULT_CLEAR_QUERY.formatted(tableName, conversionIdFiledName);
 	}
 
 	@Override
 	public List<String> findConversationIds() {
-		List<String> conversationIds = this.jdbcTemplate.query(QUERY_GET_IDS, rs -> {
+		List<String> conversationIds = this.jdbcTemplate.query(queryGetIds, rs -> {
 			var ids = new ArrayList<String>();
 			while (rs.next()) {
 				ids.add(rs.getString(1));
@@ -84,7 +105,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		return this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId);
+		return this.jdbcTemplate.query(queryGet, new MessageRowMapper(), conversationId);
 	}
 
 	@Override
@@ -93,13 +114,13 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 		this.deleteByConversationId(conversationId);
-		this.jdbcTemplate.batchUpdate(QUERY_ADD, new AddBatchPreparedStatement(conversationId, messages));
+		this.jdbcTemplate.batchUpdate(queryAdd, new AddBatchPreparedStatement(conversationId, messages));
 	}
 
 	@Override
 	public void deleteByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		this.jdbcTemplate.update(QUERY_CLEAR, conversationId);
+		this.jdbcTemplate.update(queryClear, conversationId);
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
@@ -154,6 +175,12 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcTemplate jdbcTemplate;
 
+		private String tableName = DEFAULT_TABLE_NAME;
+		private String conversionIdFiledName = DEFAULT_CONVERSION_ID_FIELD_NAME;
+		private String contentFiledName = DEFAULT_CONTENT_FIELD_NAME;
+		private String typeFiledName = DEFAULT_TYPE_FIELD_NAME;
+		private String timestampFiledName = DEFAULT_TIMESTAMP_FIELD_NAME;
+
 		private Builder() {
 		}
 
@@ -162,8 +189,34 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			return this;
 		}
 
+		public Builder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
+		public Builder conversionIdFiledName(String conversionIdFiledName) {
+			this.conversionIdFiledName = conversionIdFiledName;
+			return this;
+		}
+
+		public Builder contentFiledName(String contentFiledName) {
+			this.contentFiledName = contentFiledName;
+			return this;
+		}
+
+		public Builder typeFiledName(String typeFiledName) {
+			this.typeFiledName = typeFiledName;
+			return this;
+		}
+
+		public Builder timestampFiledName(String timestampFiledName) {
+			this.timestampFiledName = timestampFiledName;
+			return this;
+		}
+
 		public JdbcChatMemoryRepository build() {
-			return new JdbcChatMemoryRepository(this.jdbcTemplate);
+			return new JdbcChatMemoryRepository(this.jdbcTemplate, this.tableName, this.conversionIdFiledName,
+					this.contentFiledName, this.typeFiledName, this.timestampFiledName);
 		}
 
 	}
