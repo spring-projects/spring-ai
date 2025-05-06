@@ -278,7 +278,7 @@
 		<pgvector.version>0.1.6</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<coherence.version>24.09</coherence.version>
-		<milvus.version>2.5.7</milvus.version>
+		<milvus.version>2.5.8</milvus.version>
 		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
 
 		<pinecone.version>4.0.1</pinecone.version>
