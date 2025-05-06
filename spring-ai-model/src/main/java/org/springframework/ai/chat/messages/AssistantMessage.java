@@ -16,14 +16,15 @@
 
 package org.springframework.ai.chat.messages;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
+import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
+import java.util.*;
 
 /**
  * Lets the generative know the content was generated as a response to the user. This role
@@ -33,6 +34,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Josh Long
  * @since 1.0.0
  */
 public class AssistantMessage extends AbstractMessage implements MediaContent {
@@ -101,6 +103,83 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	}
 
 	public record ToolCall(String id, String type, String name, String arguments) {
+
+	}
+
+	//
+
+	public AssistantMessage copy() {
+		return new AssistantMessage.Builder().text(getText())
+			.media(List.copyOf(getMedia()))
+			.metadata(Map.copyOf(getMetadata()))
+			.build();
+	}
+
+	public AssistantMessage.Builder mutate() {
+		return new AssistantMessage.Builder().text(getText())
+			.media(List.copyOf(getMedia()))
+			.metadata(Map.copyOf(getMetadata()));
+	}
+
+	public static AssistantMessage.Builder builder() {
+		return new AssistantMessage.Builder();
+	}
+
+	public static class Builder {
+
+		@Nullable
+		private String textContent;
+
+		@Nullable
+		private Resource resource;
+
+		private List<Media> media = new ArrayList<>();
+
+		private List<ToolCall> toolCalls = new ArrayList<>();
+
+		private Map<String, Object> metadata = new HashMap<>();
+
+		public AssistantMessage.Builder text(String textContent) {
+			this.textContent = textContent;
+			return this;
+		}
+
+		public AssistantMessage.Builder toolCalls(List<ToolCall> toolCalls) {
+			this.toolCalls = toolCalls;
+			return this;
+		}
+
+		public AssistantMessage.Builder text(Resource resource) {
+			this.resource = resource;
+			return this;
+		}
+
+		public AssistantMessage.Builder media(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		public AssistantMessage.Builder media(@Nullable Media... media) {
+			if (media != null) {
+				this.media = Arrays.asList(media);
+			}
+			return this;
+		}
+
+		public AssistantMessage.Builder metadata(Map<String, Object> metadata) {
+			this.metadata = metadata;
+			return this;
+		}
+
+		public AssistantMessage build() {
+			if (StringUtils.hasText(textContent) && resource != null) {
+				throw new IllegalArgumentException("textContent and resource cannot be set at the same time");
+			}
+			else if (resource != null) {
+				this.textContent = MessageUtils.readResource(resource);
+			}
+			return new AssistantMessage(this.textContent, this.metadata, this.toolCalls, this.media);
+		}
 
 	}
 
