@@ -14,45 +14,42 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.observation;
+package org.springframework.ai.image.observation;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.content.Content;
-import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.util.CollectionUtils;
 
-import java.util.List;
+import java.util.StringJoiner;
 
 /**
- * Handler for emitting the chat prompt content to logs.
+ * Handler for emitting image prompt content to logs.
  *
  * @author Thomas Vitale
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-public class ChatModelPromptContentObservationHandler implements ObservationHandler<ChatModelObservationContext> {
+public class ImageModelPromptContentObservationHandler implements ObservationHandler<ImageModelObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatModelPromptContentObservationHandler.class);
+	private static final Logger logger = LoggerFactory.getLogger(ImageModelPromptContentObservationHandler.class);
 
 	@Override
-	public void onStop(ChatModelObservationContext context) {
-		logger.debug("Chat Model Prompt Content:\n{}", ObservabilityHelper.concatenateStrings(prompt(context)));
-	}
+	public void onStop(ImageModelObservationContext context) {
+		if (!CollectionUtils.isEmpty(context.getRequest().getInstructions())) {
+			StringJoiner promptMessagesJoiner = new StringJoiner(", ", "[", "]");
+			context.getRequest()
+				.getInstructions()
+				.forEach(message -> promptMessagesJoiner.add("\"" + message.getText() + "\""));
 
-	private List<String> prompt(ChatModelObservationContext context) {
-		if (CollectionUtils.isEmpty(context.getRequest().getInstructions())) {
-			return List.of();
+			logger.debug("Image Model Prompt Content:\n{}", promptMessagesJoiner);
 		}
-
-		return context.getRequest().getInstructions().stream().map(Content::getText).toList();
 	}
 
 	@Override
 	public boolean supportsContext(Observation.Context context) {
-		return context instanceof ChatModelObservationContext;
+		return context instanceof ImageModelObservationContext;
 	}
 
 }

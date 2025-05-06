@@ -14,29 +14,32 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore.observation;
+package org.springframework.ai.observation;
 
 import java.util.List;
-
-import org.springframework.ai.document.Document;
-import org.springframework.util.CollectionUtils;
+import java.util.Map;
+import java.util.StringJoiner;
 
 /**
- * Utilities to process the query content in observations for vector store operations.
+ * Utilities for observability.
  *
  * @author Thomas Vitale
  */
-public final class VectorStoreObservationContentProcessor {
+public final class ObservabilityHelper {
 
-	private VectorStoreObservationContentProcessor() {
+	private ObservabilityHelper() {
 	}
 
-	public static List<String> documents(VectorStoreObservationContext context) {
-		if (CollectionUtils.isEmpty(context.getQueryResponse())) {
-			return List.of();
-		}
+	public static String concatenateEntries(Map<String, Object> keyValues) {
+		var keyValuesJoiner = new StringJoiner(", ", "[", "]");
+		keyValues.forEach((key, value) -> keyValuesJoiner.add("\"" + key + "\":\"" + value + "\""));
+		return keyValuesJoiner.toString();
+	}
 
-		return context.getQueryResponse().stream().map(Document::getText).toList();
+	public static String concatenateStrings(List<String> strings) {
+		var stringsJoiner = new StringJoiner(", ", "[", "]");
+		strings.forEach(string -> stringsJoiner.add("\"" + string + "\""));
+		return stringsJoiner.toString();
 	}
 
 }

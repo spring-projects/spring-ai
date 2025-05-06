@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@
 
 package org.springframework.ai.vectorstore.observation.autoconfigure;
 
-import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
-import io.opentelemetry.api.OpenTelemetry;
+import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationFilter;
 import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,17 +30,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link VectorStoreObservationAutoConfiguration}.
  *
  * @author Christian Tzolov
+ * @author Jonatan Ivanov
  */
 class VectorStoreObservationAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(VectorStoreObservationAutoConfiguration.class));
-
-	@Test
-	void queryResponseFilterDefault() {
-		this.contextRunner
-			.run(context -> assertThat(context).doesNotHaveBean(VectorStoreQueryResponseObservationFilter.class));
-	}
 
 	@Test
 	void queryResponseHandlerDefault() {
@@ -52,10 +45,15 @@ class VectorStoreObservationAutoConfigurationTests {
 
 	@Test
 	void queryResponseHandlerEnabled() {
-		this.contextRunner
-			.withBean(OtelTracer.class, OpenTelemetry.noop().getTracer("test"), new OtelCurrentTraceContext(), null)
-			.withPropertyValues("spring.ai.vectorstore.observations.include-query-response=true")
+		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
+			.withPropertyValues("spring.ai.vectorstore.observations.log-query-response=true")
 			.run(context -> assertThat(context).hasSingleBean(VectorStoreQueryResponseObservationHandler.class));
+	}
+
+	@Test
+	void queryResponseHandlerDisabled() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.observations.log-query-response=false")
+			.run(context -> assertThat(context).doesNotHaveBean(VectorStoreQueryResponseObservationHandler.class));
 	}
 
 }

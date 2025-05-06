@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,16 +168,6 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 			@Override
 			public String asString() {
 				return "db.vector.query.filter";
-			}
-		},
-
-		/**
-		 * Returned documents from a similarity search query.
-		 */
-		DB_VECTOR_QUERY_RESPONSE_DOCUMENTS {
-			@Override
-			public String asString() {
-				return "db.vector.query.response.documents";
 			}
 		},
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,34 +18,47 @@ package org.springframework.ai.chat.observation;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import io.micrometer.tracing.handler.TracingObservationHandler;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.trace.Span;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.observation.ObservabilityHelper;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
-import org.springframework.ai.observation.conventions.AiObservationAttributes;
-import org.springframework.ai.observation.conventions.AiObservationEventNames;
-import org.springframework.ai.observation.tracing.TracingHelper;
+import java.util.List;
 
 /**
- * Handler for including the chat completion content in the observation as a span event.
+ * Handler for emitting the chat completion content to logs.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 public class ChatModelCompletionObservationHandler implements ObservationHandler<ChatModelObservationContext> {
 
+	private static final Logger logger = LoggerFactory.getLogger(ChatModelCompletionObservationHandler.class);
+
 	@Override
 	public void onStop(ChatModelObservationContext context) {
-		TracingObservationHandler.TracingContext tracingContext = context
-			.get(TracingObservationHandler.TracingContext.class);
-		Span otelSpan = TracingHelper.extractOtelSpan(tracingContext);
+		logger.debug("Chat Model Completion:\n{}", ObservabilityHelper.concatenateStrings(completion(context)));
+	}
 
-		if (otelSpan != null) {
-			otelSpan.addEvent(AiObservationEventNames.CONTENT_COMPLETION.value(),
-					Attributes.of(AttributeKey.stringArrayKey(AiObservationAttributes.COMPLETION.value()),
-							ChatModelObservationContentProcessor.completion(context)));
+	private List<String> completion(ChatModelObservationContext context) {
+		if (context.getResponse() == null || context.getResponse().getResults() == null
+				|| CollectionUtils.isEmpty(context.getResponse().getResults())) {
+			return List.of();
 		}
+
+		if (!StringUtils.hasText(context.getResponse().getResult().getOutput().getText())) {
+			return List.of();
+		}
+
+		return context.getResponse()
+			.getResults()
+			.stream()
+			.filter(generation -> generation.getOutput() != null
+					&& StringUtils.hasText(generation.getOutput().getText()))
+			.map(generation -> generation.getOutput().getText())
+			.toList();
 	}
 
 	@Override

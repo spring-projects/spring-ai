@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,15 @@
 
 package org.springframework.ai.vectorstore.observation.autoconfigure;
 
-import io.micrometer.tracing.otel.bridge.OtelTracer;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationFilter;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 @AutoConfiguration(
@@ -50,43 +47,39 @@ public class VectorStoreObservationAutoConfiguration {
 
 	private static void logQueryResponseContentWarning() {
 		logger.warn(
-				"You have enabled the inclusion of the query response content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+				"You have enabled logging out of the query response content with the risk of exposing sensitive or private information. Please, be careful!");
 	}
 
-	/**
-	 * The query response content is typically too big to be included in an observation as
-	 * span attributes. That's why the preferred way to store it is as span events, which
-	 * are supported by OpenTelemetry but not yet surfaced through the Micrometer APIs.
-	 * This primary/fallback configuration is a temporary solution until
-	 * https://github.com/micrometer-metrics/micrometer/issues/5238 is delivered.
-	 */
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnClass(OtelTracer.class)
-	@ConditionalOnBean(OtelTracer.class)
-	static class PrimaryVectorStoreQueryResponseContentObservationConfiguration {
+	@ConditionalOnClass(Tracer.class)
+	@ConditionalOnBean(Tracer.class)
+	static class TracerPresentObservationConfiguration {
 
 		@Bean
-		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = VectorStoreObservationProperties.CONFIG_PREFIX, name = "include-query-response",
+		@ConditionalOnMissingBean(value = VectorStoreQueryResponseObservationHandler.class,
+				name = "vectorStoreQueryResponseObservationHandler")
+		@ConditionalOnProperty(prefix = VectorStoreObservationProperties.CONFIG_PREFIX, name = "log-query-response",
 				havingValue = "true")
-		VectorStoreQueryResponseObservationHandler vectorStoreQueryResponseObservationHandler() {
+		TracingAwareLoggingObservationHandler<VectorStoreObservationContext> vectorStoreQueryResponseObservationHandler(
+				Tracer tracer) {
 			logQueryResponseContentWarning();
-			return new VectorStoreQueryResponseObservationHandler();
+			return new TracingAwareLoggingObservationHandler<>(new VectorStoreQueryResponseObservationHandler(),
+					tracer);
 		}
 
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnMissingClass("io.micrometer.tracing.otel.bridge.OtelTracer")
-	static class FallbackVectorStoreQueryResponseContentObservationConfiguration {
+	@ConditionalOnMissingClass("io.micrometer.tracing.Tracer")
+	static class TracerNotPresentObservationConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = VectorStoreObservationProperties.CONFIG_PREFIX, name = "include-query-response",
+		@ConditionalOnProperty(prefix = VectorStoreObservationProperties.CONFIG_PREFIX, name = "log-query-response",
 				havingValue = "true")
-		VectorStoreQueryResponseObservationFilter vectorStoreQueryResponseContentObservationFilter() {
+		VectorStoreQueryResponseObservationHandler vectorStoreQueryResponseObservationHandler() {
 			logQueryResponseContentWarning();
-			return new VectorStoreQueryResponseObservationFilter();
+			return new VectorStoreQueryResponseObservationHandler();
 		}
 
 	}
