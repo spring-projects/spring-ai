@@ -54,13 +54,6 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAdvisor, Strea
 	public static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat_memory_response_size";
 
 	/**
-	 * The default conversation id to use when no conversation id is provided.
-	 * @deprecated in favor of {@link ChatMemory#DEFAULT_CONVERSATION_ID}.
-	 */
-	@Deprecated
-	public static final String DEFAULT_CHAT_MEMORY_CONVERSATION_ID = "default";
-
-	/**
 	 * The default chat memory retrieve size to use when no retrieve size is provided.
 	 */
 	public static final int DEFAULT_CHAT_MEMORY_RESPONSE_SIZE = 100;
