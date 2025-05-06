@@ -23,12 +23,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryRepository;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemory;
 import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryConfig;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -51,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0
  */
 @Testcontainers
-class Neo4jChatMemoryAutoConfigurationIT {
+class Neo4jChatMemoryRepositoryAutoConfigurationIT {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("neo4j");
 
@@ -67,31 +69,31 @@ class Neo4jChatMemoryAutoConfigurationIT {
 	@Test
 	void addAndGet() {
 		this.contextRunner.withPropertyValues("spring.neo4j.uri=" + neo4jContainer.getBoltUrl()).run(context -> {
-			Neo4jChatMemory memory = context.getBean(Neo4jChatMemory.class);
+			ChatMemoryRepository memory = context.getBean(ChatMemoryRepository.class);
 
 			String sessionId = UUID.randomUUID().toString();
-			assertThat(memory.get(sessionId, Integer.MAX_VALUE)).isEmpty();
+			assertThat(memory.findByConversationId(sessionId)).isEmpty();
 
 			UserMessage userMessage = new UserMessage("test question");
 
-			memory.add(sessionId, userMessage);
-			List<Message> messages = memory.get(sessionId, Integer.MAX_VALUE);
+			memory.saveAll(sessionId, List.of(userMessage));
+			List<Message> messages = memory.findByConversationId(sessionId);
 			assertThat(messages).hasSize(1);
 			assertThat(messages.get(0)).usingRecursiveAssertion().isEqualTo(userMessage);
 
-			memory.clear(sessionId);
-			assertThat(memory.get(sessionId, Integer.MAX_VALUE)).isEmpty();
+			memory.deleteByConversationId(sessionId);
+			assertThat(memory.findByConversationId(sessionId)).isEmpty();
 
 			AssistantMessage assistantMessage = new AssistantMessage("test answer", Map.of(),
 					List.of(new AssistantMessage.ToolCall("id", "type", "name", "arguments")));
 
-			memory.add(sessionId, List.of(userMessage, assistantMessage));
-			messages = memory.get(sessionId, Integer.MAX_VALUE);
+			memory.saveAll(sessionId, List.of(userMessage, assistantMessage));
+			messages = memory.findByConversationId(sessionId);
 			assertThat(messages).hasSize(2);
-			assertThat(messages.get(1)).isEqualTo(userMessage);
+			assertThat(messages.get(0)).isEqualTo(userMessage);
 
-			assertThat(messages.get(0)).isEqualTo(assistantMessage);
-			memory.clear(sessionId);
+			assertThat(messages.get(1)).isEqualTo(assistantMessage);
+			memory.deleteByConversationId(sessionId);
 			MimeType textPlain = MimeType.valueOf("text/plain");
 			List<Media> media = List.of(
 					Media.builder()
@@ -102,28 +104,28 @@ class Neo4jChatMemoryAutoConfigurationIT {
 						.build(),
 					Media.builder().data(URI.create("http://www.google.com")).mimeType(textPlain).build());
 			UserMessage userMessageWithMedia = UserMessage.builder().text("Message with media").media(media).build();
-			memory.add(sessionId, userMessageWithMedia);
+			memory.saveAll(sessionId, List.of(userMessageWithMedia));
 
-			messages = memory.get(sessionId, Integer.MAX_VALUE);
+			messages = memory.findByConversationId(sessionId);
 			assertThat(messages.size()).isEqualTo(1);
 			assertThat(messages.get(0)).isEqualTo(userMessageWithMedia);
 			assertThat(((UserMessage) messages.get(0)).getMedia()).hasSize(2);
 			assertThat(((UserMessage) messages.get(0)).getMedia()).usingRecursiveFieldByFieldElementComparator()
 				.isEqualTo(media);
-			memory.clear(sessionId);
+			memory.deleteByConversationId(sessionId);
 			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(
 					List.of(new ToolResponse("id", "name", "responseData"),
 							new ToolResponse("id2", "name2", "responseData2")),
 					Map.of("id", "id", "metadataKey", "metadata"));
-			memory.add(sessionId, toolResponseMessage);
-			messages = memory.get(sessionId, Integer.MAX_VALUE);
+			memory.saveAll(sessionId, List.of(toolResponseMessage));
+			messages = memory.findByConversationId(sessionId);
 			assertThat(messages.size()).isEqualTo(1);
 			assertThat(messages.get(0)).isEqualTo(toolResponseMessage);
 
-			memory.clear(sessionId);
+			memory.deleteByConversationId(sessionId);
 			SystemMessage sm = new SystemMessage("this is a System message");
-			memory.add(sessionId, sm);
-			messages = memory.get(sessionId, Integer.MAX_VALUE);
+			memory.saveAll(sessionId, List.of(sm));
+			messages = memory.findByConversationId(sessionId);
 			assertThat(messages).hasSize(1);
 			assertThat(messages.get(0)).usingRecursiveAssertion().isEqualTo(sm);
 		});
@@ -148,7 +150,7 @@ class Neo4jChatMemoryAutoConfigurationIT {
 					propertyBase.formatted("toolresponselabel", toolResponseLabel),
 					propertyBase.formatted("medialabel", mediaLabel))
 			.run(context -> {
-				Neo4jChatMemory chatMemory = context.getBean(Neo4jChatMemory.class);
+				Neo4jChatMemoryRepository chatMemory = context.getBean(Neo4jChatMemoryRepository.class);
 				Neo4jChatMemoryConfig config = chatMemory.getConfig();
 				assertThat(config.getMessageLabel()).isEqualTo(messageLabel);
 				assertThat(config.getMediaLabel()).isEqualTo(mediaLabel);
