@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.observation;
+package org.springframework.ai.chat.client.observation;
 
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -31,70 +31,66 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {@link ChatModelPromptContentObservationHandler}.
+ * Unit tests for {@link ChatClientPromptContentObservationHandler}.
  *
  * @author Thomas Vitale
  * @author Jonatan Ivanov
  */
 @ExtendWith(OutputCaptureExtension.class)
-class ChatModelPromptContentObservationHandlerTests {
+class ChatClientPromptContentObservationHandlerTests {
 
-	private final ChatModelPromptContentObservationHandler observationHandler = new ChatModelPromptContentObservationHandler();
+	private final ChatClientPromptContentObservationHandler observationHandler = new ChatClientPromptContentObservationHandler();
 
 	@Test
 	void whenNotSupportedObservationContextThenReturnFalse() {
 		var context = new Observation.Context();
-		assertThat(observationHandler.supportsContext(context)).isFalse();
+		assertThat(this.observationHandler.supportsContext(context)).isFalse();
 	}
 
 	@Test
 	void whenSupportedObservationContextThenReturnTrue() {
-		var context = ChatModelObservationContext.builder()
-			.prompt(new Prompt(List.of(), ChatOptions.builder().model("mistral").build()))
-			.provider("superprovider")
+		var context = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt(List.of())).build())
 			.build();
-		assertThat(observationHandler.supportsContext(context)).isTrue();
+		assertThat(this.observationHandler.supportsContext(context)).isTrue();
 	}
 
 	@Test
 	void whenEmptyPromptThenOutputNothing(CapturedOutput output) {
-		var context = ChatModelObservationContext.builder()
-			.prompt(new Prompt(List.of(), ChatOptions.builder().model("mistral").build()))
-			.provider("superprovider")
+		var context = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt(List.of())).build())
 			.build();
 		observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
+				Chat Client Prompt Content:
 				[]
 				""");
 	}
 
 	@Test
 	void whenPromptWithTextThenOutputIt(CapturedOutput output) {
-		var context = ChatModelObservationContext.builder()
-			.prompt(new Prompt("supercalifragilisticexpialidocious", ChatOptions.builder().model("mistral").build()))
-			.provider("superprovider")
+		var context = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt("supercalifragilisticexpialidocious")).build())
 			.build();
 		observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
-				["supercalifragilisticexpialidocious"]
+				Chat Client Prompt Content:
+				["user":"supercalifragilisticexpialidocious"]
 				""");
 	}
 
 	@Test
 	void whenPromptWithMessagesThenOutputIt(CapturedOutput output) {
-		var context = ChatModelObservationContext.builder()
-			.prompt(new Prompt(
-					List.of(new SystemMessage("you're a chimney sweep"),
-							new UserMessage("supercalifragilisticexpialidocious")),
-					ChatOptions.builder().model("mistral").build()))
-			.provider("superprovider")
+		var context = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder()
+				.prompt(new Prompt(List.of(new SystemMessage("you're a chimney sweep"),
+						new UserMessage("supercalifragilisticexpialidocious"))))
+				.build())
 			.build();
 		observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
-				["you're a chimney sweep", "supercalifragilisticexpialidocious"]
+				Chat Client Prompt Content:
+				["system":"you're a chimney sweep", "user":"supercalifragilisticexpialidocious"]
 				""");
 	}
 

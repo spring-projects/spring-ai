@@ -17,36 +17,29 @@
 package org.springframework.ai.chat.client.observation;
 
 import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationFilter;
-import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
-import org.springframework.ai.observation.tracing.TracingHelper;
+import io.micrometer.observation.ObservationHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * An {@link ObservationFilter} to include the chat client prompt content in the
- * observation.
+ * Handler for emitting the chat client prompt content to logs.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
-public final class ChatClientPromptContentObservationFilter implements ObservationFilter {
+public class ChatClientPromptContentObservationHandler implements ObservationHandler<ChatClientObservationContext> {
+
+	private static final Logger logger = LoggerFactory.getLogger(ChatClientPromptContentObservationHandler.class);
 
 	@Override
-	public Observation.Context map(Observation.Context context) {
-		if (!(context instanceof ChatClientObservationContext chatClientObservationContext)) {
-			return context;
-		}
-
-		var prompts = processPrompt(chatClientObservationContext);
-
-		chatClientObservationContext
-			.addHighCardinalityKeyValue(ChatModelObservationDocumentation.HighCardinalityKeyNames.PROMPT
-				.withValue(TracingHelper.concatenateMaps(prompts)));
-
-		return chatClientObservationContext;
+	public void onStop(ChatClientObservationContext context) {
+		logger.debug("Chat Client Prompt Content:\n{}", ObservabilityHelper.concatenateEntries(processPrompt(context)));
 	}
 
 	private Map<String, Object> processPrompt(ChatClientObservationContext context) {
@@ -60,6 +53,11 @@ public final class ChatClientPromptContentObservationFilter implements Observati
 			.getInstructions()
 			.forEach(message -> messages.put(message.getMessageType().getValue(), message.getText()));
 		return messages;
+	}
+
+	@Override
+	public boolean supportsContext(Observation.Context context) {
+		return context instanceof ChatClientObservationContext;
 	}
 
 }

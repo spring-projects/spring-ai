@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,37 +18,36 @@ package org.springframework.ai.vectorstore.observation;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import io.micrometer.tracing.handler.TracingObservationHandler;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.trace.Span;
-
-import org.springframework.ai.observation.conventions.VectorStoreObservationAttributes;
-import org.springframework.ai.observation.conventions.VectorStoreObservationEventNames;
-import org.springframework.ai.observation.tracing.TracingHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.util.CollectionUtils;
 
+import java.util.List;
+
 /**
- * Handler for including the query response content in the observation as a span event.
+ * Handler for emitting the query response content to logs.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 public class VectorStoreQueryResponseObservationHandler implements ObservationHandler<VectorStoreObservationContext> {
 
+	private static final Logger logger = LoggerFactory.getLogger(VectorStoreQueryResponseObservationHandler.class);
+
 	@Override
 	public void onStop(VectorStoreObservationContext context) {
-		TracingObservationHandler.TracingContext tracingContext = context
-			.get(TracingObservationHandler.TracingContext.class);
-		Span otelSpan = TracingHelper.extractOtelSpan(tracingContext);
+		logger.debug("Vector Store Query Response:\n{}", ObservabilityHelper.concatenateStrings(documents(context)));
+	}
 
-		var documents = VectorStoreObservationContentProcessor.documents(context);
-
-		if (!CollectionUtils.isEmpty(documents) && otelSpan != null) {
-			otelSpan.addEvent(VectorStoreObservationEventNames.CONTENT_QUERY_RESPONSE.value(), Attributes.of(
-					AttributeKey.stringArrayKey(VectorStoreObservationAttributes.DB_VECTOR_QUERY_CONTENT.value()),
-					documents));
+	private List<String> documents(VectorStoreObservationContext context) {
+		if (CollectionUtils.isEmpty(context.getQueryResponse())) {
+			return List.of();
 		}
+
+		return context.getQueryResponse().stream().map(Document::getText).toList();
 	}
 
 	@Override
