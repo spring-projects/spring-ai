@@ -38,8 +38,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding
- * Model.
+ * {@link AutoConfiguration Auto-configuration} for Bedrock Titan Embedding Model.
  *
  * @author Christian Tzolov
  * @author Wei Jiang
@@ -48,7 +47,8 @@ import org.springframework.context.annotation.Import;
 @AutoConfiguration
 @ConditionalOnClass(TitanEmbeddingBedrockApi.class)
 @EnableConfigurationProperties({ BedrockTitanEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
-@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.BEDROCK_TITAN, matchIfMissing = true)
+@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.BEDROCK_TITAN,
+		matchIfMissing = true)
 @Import(BedrockAwsConnectionConfiguration.class)
 public class BedrockTitanEmbeddingAutoConfiguration {
 
@@ -86,7 +86,7 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 		}
 
 		return new BedrockTitanEmbeddingModel(titanEmbeddingApi, observationRegistry)
-				.withInputType(properties.getInputType());
+			.withInputType(properties.getInputType());
 	}
 
 }
