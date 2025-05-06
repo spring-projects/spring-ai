@@ -522,19 +522,6 @@ public class DefaultChatClient implements ChatClient {
 			return chatClientResponse != null ? chatClientResponse : ChatClientResponse.builder().build();
 		}
 
-		@NonNull
-		private static ChatClientRequest augmentPromptWithFormatInstructions(ChatClientRequest chatClientRequest,
-				String outputFormat) {
-			Prompt augmentedPrompt = chatClientRequest.prompt()
-				.augmentUserMessage(userMessage -> userMessage.mutate()
-					.text(userMessage.getText() + System.lineSeparator() + outputFormat)
-					.build());
-			return ChatClientRequest.builder()
-				.prompt(augmentedPrompt)
-				.context(Map.copyOf(chatClientRequest.context()))
-				.build();
-		}
-
 		@Nullable
 		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
 			return Optional.ofNullable(chatResponse)
