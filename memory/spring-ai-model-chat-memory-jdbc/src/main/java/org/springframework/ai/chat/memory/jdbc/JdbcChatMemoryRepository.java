@@ -59,22 +59,25 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	private final JdbcTemplate jdbcTemplate;
 
 	public final static String DEFAULT_TABLE_NAME = "ai_chat_memory";
+
 	public final static String DEFAULT_CONVERSION_ID_FIELD_NAME = "conversation_id";
+
 	public final static String DEFAULT_CONTENT_FIELD_NAME = "content";
+
 	public final static String DEFAULT_TYPE_FIELD_NAME = "type";
+
 	public final static String DEFAULT_TIMESTAMP_FIELD_NAME = "\"timestamp\"";
 
 	public final static String DEFAULT_GET_IDS_QUERY = "SELECT DISTINCT %s FROM %s";
+
 	public final static String DEFAULT_ADD_QUERY = "INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)";
+
 	public final static String DEFAULT_GET_QUERY = "SELECT %s, %s FROM %s WHERE %s = ? ORDER BY %s";
+
 	public final static String DEFAULT_CLEAR_QUERY = "DELETE FROM %s WHERE %s = ?";
 
-	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate,
-									 String tableName,
-									 String conversionIdFiledName,
-									 String contentFiledName,
-									 String typeFiledName,
-									 String timestampFiledName) {
+	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, String tableName, String conversionIdFiledName,
+			String contentFiledName, String typeFiledName, String timestampFiledName) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(tableName, "tableName cannot be null");
 		Assert.notNull(conversionIdFiledName, "conversionIdFiledName cannot be null");
@@ -83,10 +86,10 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(timestampFiledName, "timestampFiledName cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.queryGetIds = DEFAULT_GET_IDS_QUERY.formatted(conversionIdFiledName, tableName);
-		this.queryAdd = DEFAULT_ADD_QUERY.formatted(
-				tableName, conversionIdFiledName, contentFiledName, typeFiledName, timestampFiledName);
-		this.queryGet = DEFAULT_GET_QUERY.formatted(contentFiledName, typeFiledName,
-				tableName, conversionIdFiledName, timestampFiledName);
+		this.queryAdd = DEFAULT_ADD_QUERY.formatted(tableName, conversionIdFiledName, contentFiledName, typeFiledName,
+				timestampFiledName);
+		this.queryGet = DEFAULT_GET_QUERY.formatted(contentFiledName, typeFiledName, tableName, conversionIdFiledName,
+				timestampFiledName);
 		this.queryClear = DEFAULT_CLEAR_QUERY.formatted(tableName, conversionIdFiledName);
 	}
 
@@ -176,9 +179,13 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		private JdbcTemplate jdbcTemplate;
 
 		private String tableName = DEFAULT_TABLE_NAME;
+
 		private String conversionIdFiledName = DEFAULT_CONVERSION_ID_FIELD_NAME;
+
 		private String contentFiledName = DEFAULT_CONTENT_FIELD_NAME;
+
 		private String typeFiledName = DEFAULT_TYPE_FIELD_NAME;
+
 		private String timestampFiledName = DEFAULT_TIMESTAMP_FIELD_NAME;
 
 		private Builder() {

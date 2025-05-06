@@ -162,13 +162,13 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
 			return JdbcChatMemoryRepository.builder()
-					.jdbcTemplate(jdbcTemplate)
-					.tableName(DEFAULT_TABLE_NAME)
-					.conversionIdFiledName(DEFAULT_CONVERSION_ID_FIELD_NAME)
-					.contentFiledName(DEFAULT_CONTENT_FIELD_NAME)
-					.typeFiledName(DEFAULT_TYPE_FIELD_NAME)
-					.timestampFiledName(DEFAULT_TIMESTAMP_FIELD_NAME)
-					.build();
+				.jdbcTemplate(jdbcTemplate)
+				.tableName(DEFAULT_TABLE_NAME)
+				.conversionIdFiledName(DEFAULT_CONVERSION_ID_FIELD_NAME)
+				.contentFiledName(DEFAULT_CONTENT_FIELD_NAME)
+				.typeFiledName(DEFAULT_TYPE_FIELD_NAME)
+				.timestampFiledName(DEFAULT_TIMESTAMP_FIELD_NAME)
+				.build();
 		}
 
 	}
