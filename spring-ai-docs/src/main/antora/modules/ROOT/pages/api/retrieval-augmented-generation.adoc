@@ -82,13 +82,18 @@ The `QuestionAnswerAdvisor` uses a default template to augment the user question
 
 NOTE: The `PromptTemplate` provided here customizes how the advisor merges retrieved context with the user query. This is distinct from configuring a `TemplateRenderer` on the `ChatClient` itself (using `.templateRenderer()`), which affects the rendering of the initial user/system prompt content *before* the advisor runs. See xref:api/chatclient.adoc#_prompt_templates[ChatClient Prompt Templates] for more details on client-level template rendering.
 
-The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain a placeholder to receive the retrieved context, which the advisor provides under the key `question_answer_context`.
+The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain the following two placeholders:
+
+* a `query` placeholder to receive the user question.
+* a `question_answer_context` placeholder to receive the retrieved context.
 
 [source,java]
 ----
 PromptTemplate customPromptTemplate = PromptTemplate.builder()
     .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
     .template("""
+            <query>
+
             Context information is below.
 
 			---------------------

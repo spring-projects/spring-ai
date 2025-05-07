@@ -25,6 +25,7 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.messages.UserMessage;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -56,6 +57,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 	public static final String FILTER_EXPRESSION = "qa_filter_expression";
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
+			{query}
 
 			Context information is below, surrounded by ---------------------
 
@@ -124,12 +126,9 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 				: documents.stream().map(Document::getText).collect(Collectors.joining(System.lineSeparator()));
 
 		// 3. Augment the user prompt with the document context.
-		String augmentedUserText = this.promptTemplate.mutate()
-			.template(chatClientRequest.prompt().getUserMessage().getText() + System.lineSeparator()
-					+ this.promptTemplate.getTemplate())
-			.variables(Map.of("question_answer_context", documentContext))
-			.build()
-			.render();
+		UserMessage userMessage = chatClientRequest.prompt().getUserMessage();
+		String augmentedUserText = this.promptTemplate
+			.render(Map.of("query", userMessage.getText(), "question_answer_context", documentContext));
 
 		// 4. Update ChatClientRequest with augmented prompt.
 		return chatClientRequest.mutate()

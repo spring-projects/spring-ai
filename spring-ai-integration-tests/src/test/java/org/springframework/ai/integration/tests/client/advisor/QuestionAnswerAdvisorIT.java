@@ -128,6 +128,7 @@ public class QuestionAnswerAdvisorIT {
 		PromptTemplate customPromptTemplate = PromptTemplate.builder()
 			.renderer(StTemplateRenderer.builder().startDelimiterToken('$').endDelimiterToken('$').build())
 			.template("""
+					$query$
 
 					Context information is below, surrounded by ---------------------
 
