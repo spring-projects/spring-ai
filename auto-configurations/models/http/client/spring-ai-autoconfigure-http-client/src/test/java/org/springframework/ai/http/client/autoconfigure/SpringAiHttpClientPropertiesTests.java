@@ -35,7 +35,8 @@ public class SpringAiHttpClientPropertiesTests {
 	@Test
 	public void httpClientDefaultProperties() {
 
-		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(SpringAiHttpClientAutoConfiguration.class))
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(SpringAiHttpClientAutoConfiguration.class))
 			.run(context -> {
 				var httpClientProperties = context.getBean(SpringAiHttpClientProperties.class);
 

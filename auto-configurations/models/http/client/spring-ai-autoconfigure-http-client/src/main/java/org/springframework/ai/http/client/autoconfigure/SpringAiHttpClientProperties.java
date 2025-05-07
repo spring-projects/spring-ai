@@ -49,4 +49,5 @@ public class SpringAiHttpClientProperties {
 	public void setReadTimeout(Duration readTimeout) {
 		this.readTimeout = readTimeout;
 	}
+
 }

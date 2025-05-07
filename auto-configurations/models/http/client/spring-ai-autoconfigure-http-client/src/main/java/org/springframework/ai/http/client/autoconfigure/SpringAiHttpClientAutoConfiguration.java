@@ -34,7 +34,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Song Jaegeun
  */
 @AutoConfiguration
-@ConditionalOnClass({ RestClient.class, WebClient.class})
+@ConditionalOnClass({ RestClient.class, WebClient.class })
 @EnableConfigurationProperties({ SpringAiHttpClientProperties.class })
 public class SpringAiHttpClientAutoConfiguration {
 
@@ -43,11 +43,12 @@ public class SpringAiHttpClientAutoConfiguration {
 	public RestClientCustomizer restClientCustomizer(SpringAiHttpClientProperties props) {
 		return restClientBuilder -> {
 			ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.defaults()
-					.withConnectTimeout(props.getConnectionTimeout())
-					.withReadTimeout(props.getReadTimeout());
+				.withConnectTimeout(props.getConnectionTimeout())
+				.withReadTimeout(props.getReadTimeout());
 
 			ClientHttpRequestFactory factory = ClientHttpRequestFactoryBuilder.detect().build(settings);
 			restClientBuilder.requestFactory(factory);
 		};
 	}
+
 }
