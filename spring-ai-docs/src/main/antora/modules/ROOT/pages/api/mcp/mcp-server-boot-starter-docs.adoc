@@ -28,7 +28,7 @@ Full MCP Server features support with `STDIO` server transport.
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-mcp-server</artifactId>
+    <artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
 </dependency>
 ----
 
