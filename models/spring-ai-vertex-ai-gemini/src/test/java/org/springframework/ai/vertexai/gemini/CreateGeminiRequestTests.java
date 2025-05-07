@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -77,6 +78,27 @@ public class CreateGeminiRequestTests {
 		assertThat(request.model().getSystemInstruction()).isNotPresent();
 		assertThat(request.model().getModelName()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.model().getGenerationConfig().getTemperature()).isEqualTo(99.9f);
+	}
+
+	@Test
+	public void createRequestWithFrequencyAndPresencePenalty() {
+
+		var client = VertexAiGeminiChatModel.builder()
+			.vertexAI(this.vertexAI)
+			.defaultOptions(VertexAiGeminiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.frequencePenalty(.25)
+				.presencePenalty(.75)
+				.build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(client
+			.buildRequestPrompt(new Prompt("Test message content", VertexAiGeminiChatOptions.builder().build())));
+
+		assertThat(request.contents()).hasSize(1);
+
+		assertThat(request.model().getGenerationConfig().getFrequencyPenalty()).isEqualTo(.25F);
+		assertThat(request.model().getGenerationConfig().getPresencePenalty()).isEqualTo(.75F);
 	}
 
 	@Test

@@ -103,6 +103,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author Soby Chacko
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -507,6 +508,10 @@ public class OpenAiChatModel implements ChatModel {
 		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
+			if (runtimeOptions.getTopK() != null) {
+				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
+			}
+
 			requestOptions.setHttpHeaders(
 					mergeHttpHeaders(runtimeOptions.getHttpHeaders(), this.defaultOptions.getHttpHeaders()));
 			requestOptions.setInternalToolExecutionEnabled(

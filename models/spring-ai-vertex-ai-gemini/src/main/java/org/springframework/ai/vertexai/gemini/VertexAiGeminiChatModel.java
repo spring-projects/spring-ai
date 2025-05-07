@@ -728,6 +728,12 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		if (options.getResponseMimeType() != null) {
 			generationConfigBuilder.setResponseMimeType(options.getResponseMimeType());
 		}
+		if (options.getFrequencyPenalty() != null) {
+			generationConfigBuilder.setFrequencyPenalty(options.getFrequencyPenalty().floatValue());
+		}
+		if (options.getPresencePenalty() != null) {
+			generationConfigBuilder.setPresencePenalty(options.getPresencePenalty().floatValue());
+		}
 
 		return generationConfigBuilder.build();
 	}
