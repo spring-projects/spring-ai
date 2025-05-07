@@ -115,7 +115,7 @@ public class MiniMaxApi {
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
-		this.webClient = WebClient.builder()
+		this.webClient = WebClient.builder() // FIXME: use a bean instead
 				.baseUrl(baseUrl)
 				.defaultHeaders(authHeaders)
 				.build();

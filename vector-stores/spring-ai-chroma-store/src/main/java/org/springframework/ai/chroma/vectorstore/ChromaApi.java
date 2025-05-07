@@ -113,7 +113,6 @@ public class ChromaApi {
 		return result;
 	}
 
-	@Nullable
 	public void createTenant(String tenantName) {
 
 		this.restClient.post()
@@ -144,7 +143,6 @@ public class ChromaApi {
 		}
 	}
 
-	@Nullable
 	public void createDatabase(String tenantName, String databaseName) {
 
 		this.restClient.post()

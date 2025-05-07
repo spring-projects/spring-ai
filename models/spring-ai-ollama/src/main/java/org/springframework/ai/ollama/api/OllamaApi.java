@@ -79,12 +79,15 @@ public class OllamaApi {
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder
+				.clone()
+				.baseUrl(baseUrl)
 				.defaultHeaders(defaultHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = webClientBuilder
+				.clone()
 				.baseUrl(baseUrl)
 				.defaultHeaders(defaultHeaders)
 				.build();

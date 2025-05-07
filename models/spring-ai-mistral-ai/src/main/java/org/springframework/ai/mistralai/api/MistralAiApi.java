@@ -101,18 +101,31 @@ public class MistralAiApi {
 	 */
 	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, mistralAiApiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
+	}
+
+	/**
+	 * Create a new client api.
+	 * @param baseUrl api base URL.
+	 * @param mistralAiApiKey Mistral api Key.
+	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(mistralAiApiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
 	}
 
 	/**
