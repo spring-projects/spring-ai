@@ -119,7 +119,7 @@ PromptTemplate customPromptTemplate = PromptTemplate.builder()
 
 NOTE: The `QuestionAnswerAdvisor.Builder.userTextAdvise()` method is deprecated in favor of using `.promptTemplate()` for more flexible customization.
 
-=== RetrievalAugmentationAdvisor (Incubating)
+=== RetrievalAugmentationAdvisor
 
 Spring AI includes a xref:api/retrieval-augmented-generation.adoc#modules[library of RAG modules] that you can use to build your own RAG flows.
 The `RetrievalAugmentationAdvisor` is an `Advisor` providing an out-of-the-box implementation for the most common RAG flows,
@@ -210,6 +210,8 @@ String answer = chatClient.prompt()
         .call()
         .content();
 ----
+
+You can also use the `DocumentPostProcessor` API to post-process the retrieved documents before passing them to the model. For example, you can use such an interface to perform re-ranking of the retrieved documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
 
 [[modules]]
 == Modules

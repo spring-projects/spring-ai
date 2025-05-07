@@ -261,6 +261,32 @@ class RetrievalAugmentationAdvisorIT {
 		evaluateRelevancy(question, chatResponse);
 	}
 
+	@Test
+	void ragWithDocumentPostProcessor() {
+		String question = "Where does the adventure of Anacletus and Birba take place?";
+
+		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
+			.documentPostProcessors((query, documents) -> List
+				.of(Document.builder().text("The adventure of Anacletus and Birba takes place in Molise").build()))
+			.build();
+
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(question)
+			.advisors(ragAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(chatResponse).isNotNull();
+
+		String response = chatResponse.getResult().getOutput().getText();
+		System.out.println(response);
+		assertThat(response).containsIgnoringCase("Molise");
+
+		evaluateRelevancy(question, chatResponse);
+	}
+
 	private void evaluateRelevancy(String question, ChatResponse chatResponse) {
 		EvaluationRequest evaluationRequest = new EvaluationRequest(question,
 				chatResponse.getMetadata().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT),
