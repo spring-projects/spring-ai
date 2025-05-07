@@ -282,11 +282,11 @@ class StTemplateRendererTests {
 
 	/**
 	 * Test whether StringTemplate can correctly render a template containing built-in
-	 * functions when {@code supportStFunctions()} is enabled. It should render properly.
+	 * functions. It should render properly.
 	 */
 	@Test
-	void shouldRenderTemplateWithSupportStFunctions() {
-		StTemplateRenderer renderer = StTemplateRenderer.builder().supportStFunctions().build();
+	void shouldRenderTemplateWithBuiltInFunctions() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("memory", "you are a helpful assistant");
 		String template = "{if(strlen(memory))}Hello!{endif}";
