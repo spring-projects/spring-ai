@@ -119,12 +119,14 @@ public class AnthropicApi {
 
 		this.completionsPath = completionsPath;
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl)
+		this.webClient = webClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(HttpStatusCode::isError,
 					resp -> resp.bodyToMono(String.class)

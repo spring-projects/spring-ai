@@ -35,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
@@ -42,6 +43,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Chat {@link AutoConfiguration Auto-configuration} for Mistral AI.
@@ -52,28 +54,30 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @since 0.8.1
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
+		SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MISTRAL,
 		matchIfMissing = true)
 @ConditionalOnClass(MistralAiApi.class)
 @ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class })
+		WebClientAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 public class MistralAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	public MistralAiChatModel mistralAiChatModel(MistralAiCommonProperties commonProperties,
 			MistralAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> mistralAiToolExecutionEligibilityPredicate) {
 
 		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
 				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		var chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(mistralAiApi)
@@ -91,7 +95,8 @@ public class MistralAiChatAutoConfiguration {
 	}
 
 	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -99,7 +104,8 @@ public class MistralAiChatAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
-		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
+		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
+				responseErrorHandler);
 	}
 
 }
