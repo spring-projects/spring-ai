@@ -34,13 +34,17 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Song Jaegeun
  */
 @AutoConfiguration
-@ConditionalOnClass({ RestClient.class, WebClient.class })
+@ConditionalOnClass({ RestClient.class })
 @EnableConfigurationProperties({ SpringAiHttpClientProperties.class })
 public class SpringAiHttpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(RestClientCustomizer.class)
 	public RestClientCustomizer restClientCustomizer(SpringAiHttpClientProperties props) {
+		// RestClient.Builder is not registered as a bean in the context,
+		// so there's no need to use @ConditionalOnMissingBean(RestClient.Builder.class).
+		// Spring Boot will automatically apply this RestClientCustomizer
+		// to any RestClient.Builder instance created via RestClient.create().
 		return restClientBuilder -> {
 			ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings.defaults()
 				.withConnectTimeout(props.getConnectionTimeout())
