@@ -89,6 +89,7 @@ import org.springframework.util.StringUtils;
  * @author Claudio Silva Junior
  * @author Alexandros Pappas
  * @author Jonghoon Park
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class AnthropicChatModel implements ChatModel {
@@ -424,6 +425,12 @@ public class AnthropicChatModel implements ChatModel {
 		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
+			if (runtimeOptions.getFrequencyPenalty() != null) {
+				logger.warn("Frequency penalty option is ignored by the Anthropic API");
+			}
+			if (runtimeOptions.getPresencePenalty() != null) {
+				logger.warn("Presence penalty option is ignored by the Anthropic API");
+			}
 			requestOptions.setHttpHeaders(
 					mergeHttpHeaders(runtimeOptions.getHttpHeaders(), this.defaultOptions.getHttpHeaders()));
 			requestOptions.setInternalToolExecutionEnabled(
