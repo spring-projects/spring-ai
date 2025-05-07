@@ -88,18 +88,24 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 			return resolvedToolCallback;
 		}
 
-		ResolvableType toolType = TypeResolverHelper.resolveBeanType(this.applicationContext, toolName);
-		ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
-				? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(toolType, 0);
+		try {
+			ResolvableType toolType = TypeResolverHelper.resolveBeanType(this.applicationContext, toolName);
+			ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
+					? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(toolType, 0);
 
-		String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
-		Object bean = this.applicationContext.getBean(toolName);
+			String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
+			Object bean = this.applicationContext.getBean(toolName);
 
-		resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
+			resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
 
-		toolCallbacksCache.put(toolName, resolvedToolCallback);
+			toolCallbacksCache.put(toolName, resolvedToolCallback);
 
-		return resolvedToolCallback;
+			return resolvedToolCallback;
+		}
+		catch (Exception e) {
+			logger.debug("ToolCallback resolution failed from Spring application context", e);
+			return null;
+		}
 	}
 
 	public SchemaType getSchemaType() {

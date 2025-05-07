@@ -99,6 +99,18 @@ class ToolCallingAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void resolveMissingToolCallbacks() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
+
+				assertThat(toolCallbackResolver.resolve("NonExisting")).isNull();
+			});
+	}
+
 	static class WeatherService {
 
 		@Tool(description = "Get the weather in location. Return temperature in 36°F or 36°C format.")
