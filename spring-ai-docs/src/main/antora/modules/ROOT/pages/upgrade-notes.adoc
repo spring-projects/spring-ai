@@ -36,6 +36,21 @@ For details, refer to:
 * `MessageAggregator` has a new method to aggregate messages from `ChatClientRequest`. The previous method aggregating messages from the old `AdvisedRequest` has been removed, since it was already marked as deprecated in M8.
 * In `SimpleLoggerAdvisor`, the `requestToString` input argument needs to be updated to use `ChatClientRequest`. It’s a breaking change since the alternative was not part of M8 yet. Same thing about the constructor.
 
+==== Self-contained Templates in Advisors
+
+The built-in advisors that perform prompt augmentation have been updated to use self-contained templates. The goal is for each advisor to be able to perform templating operations without affecting nor being affected by templating and prompt decisions in other advisors.
+If you were providing custom templates for the following advisors, you'll need to update them to ensure all expected placeholders are included.
+
+* The `QuestionAnswerAdvisor` expects a template with the following placeholders (see xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[more details]):
+** a `query` placeholder to receive the user question.
+** a `question_answer_context` placeholder to receive the retrieved context.
+* The `PromptChatMemoryAdvisor` expects a template with the following placeholders (see xref:api/chat-memory.adoc#_promptchatmemoryadvisor[more details]):
+** an `instructions` placeholder to receive the original system message.
+** a `memory` placeholder to receive the retrieved conversation memory.
+* The `VectorStoreChatMemoryAdvisor` expects a template with the following placeholders (see xref:api/chat-memory.adoc#_vectorstorechatmemoryadvisor[more details]):
+** an `instructions` placeholder to receive the original system message.
+** a `long_term_memory` placeholder to receive the retrieved conversation memory.
+
 === Breaking Changes
 The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
 Hopefully Watson will reappear in a future version of Spring AI

@@ -244,6 +244,32 @@ chatClient.prompt()
     .content();
 ----
 
+=== PromptChatMemoryAdvisor
+
+==== Custom Template
+
+The `PromptChatMemoryAdvisor` uses a default template to augment the system message with the retrieved conversation memory. You can customize this behavior by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method.
+
+NOTE: The `PromptTemplate` provided here customizes how the advisor merges retrieved memory with the system message. This is distinct from configuring a `TemplateRenderer` on the `ChatClient` itself (using `.templateRenderer()`), which affects the rendering of the initial user/system prompt content *before* the advisor runs. See xref:api/chatclient.adoc#_prompt_templates[ChatClient Prompt Templates] for more details on client-level template rendering.
+
+The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain the following two placeholders:
+
+* an `instructions` placeholder to receive the original system message.
+* a `memory` placeholder to receive the retrieved conversation memory.
+
+=== VectorStoreChatMemoryAdvisor
+
+==== Custom Template
+
+The `VectorStoreChatMemoryAdvisor` uses a default template to augment the system message with the retrieved conversation memory. You can customize this behavior by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method.
+
+NOTE: The `PromptTemplate` provided here customizes how the advisor merges retrieved memory with the system message. This is distinct from configuring a `TemplateRenderer` on the `ChatClient` itself (using `.templateRenderer()`), which affects the rendering of the initial user/system prompt content *before* the advisor runs. See xref:api/chatclient.adoc#_prompt_templates[ChatClient Prompt Templates] for more details on client-level template rendering.
+
+The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain the following two placeholders:
+
+* an `instructions` placeholder to receive the original system message.
+* a `long_term_memory` placeholder to receive the retrieved conversation memory.
+
 == Memory in Chat Model
 
 If you're working directly with a `ChatModel` instead of a `ChatClient`, you can manage the memory explicitly:

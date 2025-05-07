@@ -46,7 +46,8 @@ import org.springframework.ai.chat.model.MessageAggregator;
  */
 public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
-	private static final String DEFAULT_SYSTEM_TEXT_ADVISE = """
+	private static final PromptTemplate DEFAULT_SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
+			{instructions}
 
 			Use the conversation memory from the MEMORY section to provide accurate answers.
 
@@ -55,29 +56,34 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			{memory}
 			---------------------
 
-			""";
+			""");
 
-	private final String systemTextAdvise;
+	private final PromptTemplate systemPromptTemplate;
 
 	public PromptChatMemoryAdvisor(ChatMemory chatMemory) {
-		this(chatMemory, DEFAULT_SYSTEM_TEXT_ADVISE);
+		this(chatMemory, DEFAULT_SYSTEM_PROMPT_TEMPLATE.getTemplate());
 	}
 
-	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String systemTextAdvise) {
+	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String systemPromptTemplate) {
 		super(chatMemory);
-		this.systemTextAdvise = systemTextAdvise;
+		this.systemPromptTemplate = new PromptTemplate(systemPromptTemplate);
 	}
 
 	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			String systemTextAdvise) {
-		this(chatMemory, defaultConversationId, chatHistoryWindowSize, systemTextAdvise,
+			String systemPromptTemplate) {
+		this(chatMemory, defaultConversationId, chatHistoryWindowSize, new PromptTemplate(systemPromptTemplate),
 				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
 	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			String systemTextAdvise, int order) {
+			String systemPromptTemplate, int order) {
+		this(chatMemory, defaultConversationId, chatHistoryWindowSize, new PromptTemplate(systemPromptTemplate), order);
+	}
+
+	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
+			PromptTemplate systemPromptTemplate, int order) {
 		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
-		this.systemTextAdvise = systemTextAdvise;
+		this.systemPromptTemplate = systemPromptTemplate;
 	}
 
 	public static Builder builder(ChatMemory chatMemory) {
@@ -119,11 +125,8 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 		// 2. Augment the system message.
 		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
-		String augmentedSystemText = PromptTemplate.builder()
-			.template(systemMessage.getText() + System.lineSeparator() + this.systemTextAdvise)
-			.variables(Map.of("memory", memory))
-			.build()
-			.render();
+		String augmentedSystemText = this.systemPromptTemplate
+			.render(Map.of("instructions", systemMessage.getText(), "memory", memory));
 
 		// 3. Create a new request with the augmented system message.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
@@ -151,20 +154,25 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory> {
 
-		private String systemTextAdvise = DEFAULT_SYSTEM_TEXT_ADVISE;
+		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
 		protected Builder(ChatMemory chatMemory) {
 			super(chatMemory);
 		}
 
 		public Builder systemTextAdvise(String systemTextAdvise) {
-			this.systemTextAdvise = systemTextAdvise;
+			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
+			return this;
+		}
+
+		public Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
+			this.systemPromptTemplate = systemPromptTemplate;
 			return this;
 		}
 
 		public PromptChatMemoryAdvisor build() {
 			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.systemTextAdvise, this.order);
+					this.systemPromptTemplate, this.order);
 		}
 
 	}

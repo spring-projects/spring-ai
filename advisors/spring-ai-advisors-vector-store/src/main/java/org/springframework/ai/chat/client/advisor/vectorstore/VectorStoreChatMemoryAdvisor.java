@@ -56,7 +56,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	private static final String DOCUMENT_METADATA_MESSAGE_TYPE = "messageType";
 
-	private static final String DEFAULT_SYSTEM_TEXT_ADVISE = """
+	private static final PromptTemplate DEFAULT_SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
+			{instructions}
 
 			Use the long term conversation memory from the LONG_TERM_MEMORY section to provide accurate answers.
 
@@ -64,24 +65,14 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			LONG_TERM_MEMORY:
 			{long_term_memory}
 			---------------------
-			""";
+			""");
 
-	private final String systemTextAdvise;
+	private final PromptTemplate systemPromptTemplate;
 
-	/**
-	 * Constructor for VectorStoreChatMemoryAdvisor.
-	 * @param vectorStore the vector store instance used for managing and querying
-	 * documents.
-	 * @param defaultConversationId the default conversation ID used if none is provided
-	 * in the context.
-	 * @param chatHistoryWindowSize the window size for the chat history retrieval.
-	 * @param systemTextAdvise the system text advice used for the chat advisor system.
-	 * @param order the order of precedence for this advisor in the chain.
-	 */
 	private VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
-			int chatHistoryWindowSize, String systemTextAdvise, int order) {
+			int chatHistoryWindowSize, PromptTemplate systemPromptTemplate, int order) {
 		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true, order);
-		this.systemTextAdvise = systemTextAdvise;
+		this.systemPromptTemplate = systemPromptTemplate;
 	}
 
 	public static Builder builder(VectorStore chatMemory) {
@@ -127,11 +118,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 		// 2. Augment the system message.
 		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
-		String augmentedSystemText = PromptTemplate.builder()
-			.template(systemMessage.getText() + System.lineSeparator() + this.systemTextAdvise)
-			.variables(Map.of("long_term_memory", longTermMemory))
-			.build()
-			.render();
+		String augmentedSystemText = this.systemPromptTemplate
+			.render(Map.of("instructions", systemMessage.getText(), "long_term_memory", longTermMemory));
 
 		// 3. Create a new request with the augmented system message.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
@@ -187,21 +175,26 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<VectorStore> {
 
-		private String systemTextAdvise = DEFAULT_SYSTEM_TEXT_ADVISE;
+		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
 		protected Builder(VectorStore chatMemory) {
 			super(chatMemory);
 		}
 
 		public Builder systemTextAdvise(String systemTextAdvise) {
-			this.systemTextAdvise = systemTextAdvise;
+			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
+			return this;
+		}
+
+		public Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
+			this.systemPromptTemplate = systemPromptTemplate;
 			return this;
 		}
 
 		@Override
 		public VectorStoreChatMemoryAdvisor build() {
 			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.systemTextAdvise, this.order);
+					this.systemPromptTemplate, this.order);
 		}
 
 	}
