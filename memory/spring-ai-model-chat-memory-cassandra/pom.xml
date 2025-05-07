@@ -27,8 +27,8 @@
     </parent>
 
     <artifactId>spring-ai-model-chat-memory-cassandra</artifactId>
-    <name>Spring AI Cassandra Chat Memory</name>
-    <description>Spring AI Cassandra Chat Memory implementation</description>
+    <name>Spring AI Apache Cassandra Chat Memory</name>
+    <description>Spring AI Apache Cassandra Chat Memory implementation</description>
 
 	<url>https://github.com/spring-projects/spring-ai</url>
 
