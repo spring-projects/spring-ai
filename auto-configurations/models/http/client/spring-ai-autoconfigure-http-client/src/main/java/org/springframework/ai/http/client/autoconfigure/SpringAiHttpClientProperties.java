@@ -21,9 +21,9 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Properties for AI Retry.
+ * Properties for AI http-client.
  *
- * @author Christian Tzolov
+ * @author Song Jaegeun
  */
 @ConfigurationProperties(SpringAiHttpClientProperties.CONFIG_PREFIX)
 public class SpringAiHttpClientProperties {
