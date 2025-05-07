@@ -172,6 +172,83 @@ ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
     .build();
 ----
 
+
+=== CassandraChatMemoryRepository
+
+`CassandraChatMemoryRepository` uses Apache Cassandra to store messages. It is suitable for applications that require persistent storage of chat memory, especially for availability, at scale, or when taking advantage of time-to-live (TTL) messages.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-cassandra</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-cassandra'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `CassandraChatMemoryRepository` that you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+CassandraChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `CassandraChatMemoryRepository` manually, you can do so by providing a `CassandraChatMemoryConfig` instance:
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = CassandraChatMemoryRepository
+    .create(CassandraChatMemoryConfig.builder().withCqlSession(cqlSession));
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.cassandra.contactPoints` | Host(s) to initiate cluster discovery | `127.0.0.1`
+| `spring.cassandra.port` | Cassandra native protocol port to connect to | `9042`
+| `spring.cassandra.localDatacenter` | Cassandra datacenter to connect to | `datacenter1`
+| `spring.ai.chat.memory.repository.cassandra.time-to-live` | Time to live (TTL) for messages written in Cassandra |
+| `spring.ai.chat.memory.repository.cassandra.keyspace` | Cassandra keyspace | `springframework`
+| `spring.ai.chat.memory.repository.cassandra.table` | Cassandra table | `ai_chat_memory`
+| `spring.ai.chat.memory.repository.cassandra.initialize-schema` | Whether to initialize the schema on startup. | `true`
+|===
+
+Configuration properties are the same and compatible with the previous and now deprecated `CassandraChatMemory`.
+
+==== Schema Initialization
+
+The auto-configuration will automatically create the `ai_chat_memory` table.
+
+You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.cassandra.initialize-schema` to `false`.
+
 === Neo4j ChatMemoryRepository
 
 `Neo4jChatMemoryRepository` is a built-in implementation that uses Neo4j to store chat messages as nodes and relationships in a property graph database. It is suitable for applications that want to leverage Neo4j's graph capabilities for chat memory persistence.

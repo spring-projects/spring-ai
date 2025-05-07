@@ -32,7 +32,6 @@ import org.testcontainers.cassandra.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -44,27 +43,39 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 
 /**
- * Use `mvn failsafe:integration-test -Dit.test=CassandraChatMemoryIT`
+ * Use `mvn failsafe:integration-test -Dit.test=CassandraChatMemoryRepositoryIT`
  *
  * @author Mick Semb Wever
  * @author Thomas Vitale
  * @since 1.0.0
  */
 @Testcontainers
-class CassandraChatMemoryIT {
+class CassandraChatMemoryRepositoryIT {
 
 	@Container
 	static CassandraContainer cassandraContainer = new CassandraContainer(CassandraImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(CassandraChatMemoryIT.TestApplication.class);
+		.withUserConfiguration(CassandraChatMemoryRepositoryIT.TestApplication.class);
 
 	@Test
-	void ensureBeanGetsCreated() {
+	void ensureLegacyBeanGetsCreated() {
+
+		new ApplicationContextRunner().withUserConfiguration(CassandraChatMemoryRepositoryIT.TestApplication.class)
+			.run(context -> {
+				CassandraChatMemory memory = context.getBean(CassandraChatMemory.class);
+				Assertions.assertNotNull(memory);
+				memory.conf.checkSchemaValid();
+			});
+	}
+
+	@Test
+	void ensureBeansGetsCreated() {
 		this.contextRunner.run(context -> {
-			CassandraChatMemory memory = context.getBean(CassandraChatMemory.class);
+			CassandraChatMemoryRepository memory = context.getBean(CassandraChatMemoryRepository.class);
 			Assertions.assertNotNull(memory);
 			memory.conf.checkSchemaValid();
 		});
@@ -74,7 +85,8 @@ class CassandraChatMemoryIT {
 	@CsvSource({ "Message from assistant,ASSISTANT", "Message from user,USER" })
 	void add_shouldInsertSingleMessage(String content, MessageType messageType) {
 		this.contextRunner.run(context -> {
-			var chatMemory = context.getBean(ChatMemory.class);
+			var chatMemory = context.getBean(ChatMemoryRepository.class);
+			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
 			var sessionId = UUID.randomUUID().toString();
 			var message = switch (messageType) {
 				case ASSISTANT -> new AssistantMessage(content);
@@ -82,7 +94,7 @@ class CassandraChatMemoryIT {
 				default -> throw new IllegalArgumentException("Type not supported: " + messageType);
 			};
 
-			chatMemory.add(sessionId, message);
+			chatMemory.saveAll(sessionId, List.of(message));
 
 			var cqlSession = context.getBean(CqlSession.class);
 			var query = """
@@ -113,12 +125,13 @@ class CassandraChatMemoryIT {
 	@Test
 	void add_shouldInsertMessages() {
 		this.contextRunner.run(context -> {
-			var chatMemory = context.getBean(ChatMemory.class);
+			var chatMemory = context.getBean(ChatMemoryRepository.class);
+			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
 			var sessionId = UUID.randomUUID().toString();
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant"),
 					new UserMessage("Message from user"));
 
-			chatMemory.add(sessionId, messages);
+			chatMemory.saveAll(sessionId, messages);
 
 			var cqlSession = context.getBean(CqlSession.class);
 			var query = """
@@ -154,15 +167,18 @@ class CassandraChatMemoryIT {
 	@Test
 	void get_shouldReturnMessages() {
 		this.contextRunner.run(context -> {
-			var chatMemory = context.getBean(ChatMemory.class);
+			var chatMemory = context.getBean(ChatMemoryRepository.class);
+			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
 			var sessionId = UUID.randomUUID().toString();
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + sessionId),
 					new AssistantMessage("Message from assistant 2 - " + sessionId),
 					new UserMessage("Message from user - " + sessionId));
 
-			chatMemory.add(sessionId, messages);
+			chatMemory.saveAll(sessionId, messages);
 
-			var results = chatMemory.get(sessionId, Integer.MAX_VALUE);
+			assertThat(chatMemory.findConversationIds()).isNotEmpty();
+
+			var results = chatMemory.findByConversationId(sessionId);
 
 			assertThat(results.size()).isEqualTo(messages.size());
 
@@ -179,15 +195,17 @@ class CassandraChatMemoryIT {
 	@Test
 	void get_afterMultipleAdds_shouldReturnMessagesInSameOrder() {
 		this.contextRunner.run(context -> {
-			var chatMemory = context.getBean(ChatMemory.class);
+			var chatMemory = context.getBean(ChatMemoryRepository.class);
+			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
 			var sessionId = UUID.randomUUID().toString();
 			var userMessage = new UserMessage("Message from user - " + sessionId);
 			var assistantMessage = new AssistantMessage("Message from assistant - " + sessionId);
 
-			chatMemory.add(sessionId, userMessage);
-			chatMemory.add(sessionId, assistantMessage);
+			chatMemory.saveAll(sessionId, List.of(userMessage, assistantMessage));
 
-			var results = chatMemory.get(sessionId, Integer.MAX_VALUE);
+			assertThat(chatMemory.findConversationIds()).isNotEmpty();
+
+			var results = chatMemory.findByConversationId(sessionId);
 
 			assertThat(results.size()).isEqualTo(2);
 
@@ -205,14 +223,17 @@ class CassandraChatMemoryIT {
 	@Test
 	void clear_shouldDeleteMessages() {
 		this.contextRunner.run(context -> {
-			var chatMemory = context.getBean(ChatMemory.class);
+			var chatMemory = context.getBean(ChatMemoryRepository.class);
+			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
 			var sessionId = UUID.randomUUID().toString();
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + sessionId),
 					new UserMessage("Message from user - " + sessionId));
 
-			chatMemory.add(sessionId, messages);
+			chatMemory.saveAll(sessionId, messages);
 
-			chatMemory.clear(sessionId);
+			assertThat(chatMemory.findConversationIds()).isNotEmpty();
+
+			chatMemory.deleteByConversationId(sessionId);
 
 			var cqlSession = context.getBean(CqlSession.class);
 			var query = """
@@ -232,7 +253,7 @@ class CassandraChatMemoryIT {
 	public static class TestApplication {
 
 		@Bean
-		public CassandraChatMemory memory(CqlSession cqlSession) {
+		public CassandraChatMemory memoryLegacy(CqlSession cqlSession) {
 
 			var conf = CassandraChatMemoryConfig.builder()
 				.withCqlSession(cqlSession)
@@ -244,6 +265,21 @@ class CassandraChatMemoryIT {
 
 			conf.dropKeyspace();
 			return CassandraChatMemory.create(conf);
+		}
+
+		@Bean
+		public CassandraChatMemoryRepository memory(CqlSession cqlSession) {
+
+			var conf = CassandraChatMemoryConfig.builder()
+				.withCqlSession(cqlSession)
+				.withKeyspaceName("test_" + CassandraChatMemoryConfig.DEFAULT_KEYSPACE_NAME)
+				.withAssistantColumnName("a")
+				.withUserColumnName("u")
+				.withTimeToLive(Duration.ofMinutes(1))
+				.build();
+
+			conf.dropKeyspace();
+			return CassandraChatMemoryRepository.create(conf);
 		}
 
 		@Bean

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.cassandra.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.cassandra.autoconfigure;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 
-import org.springframework.ai.chat.memory.cassandra.CassandraChatMemory;
 import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
@@ -36,13 +36,13 @@ import org.springframework.context.annotation.Bean;
  * @since 1.0.0
  */
 @AutoConfiguration(after = CassandraAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ CassandraChatMemory.class, CqlSession.class })
+@ConditionalOnClass({ CassandraChatMemoryRepository.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraChatMemoryProperties.class)
 public class CassandraChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CassandraChatMemory chatMemory(CassandraChatMemoryProperties properties, CqlSession cqlSession) {
+	public CassandraChatMemoryRepository chatMemory(CassandraChatMemoryProperties properties, CqlSession cqlSession) {
 
 		var builder = CassandraChatMemoryConfig.builder().withCqlSession(cqlSession);
 
@@ -58,7 +58,7 @@ public class CassandraChatMemoryAutoConfiguration {
 			builder = builder.withTimeToLive(properties.getTimeToLive());
 		}
 
-		return CassandraChatMemory.create(builder.build());
+		return CassandraChatMemoryRepository.create(builder.build());
 	}
 
 }

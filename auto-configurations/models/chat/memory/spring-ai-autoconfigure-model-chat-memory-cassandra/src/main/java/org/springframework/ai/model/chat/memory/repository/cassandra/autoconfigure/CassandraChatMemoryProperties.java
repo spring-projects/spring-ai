@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.cassandra.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.cassandra.autoconfigure;
 
 import java.time.Duration;
 
@@ -35,7 +35,7 @@ import org.springframework.lang.Nullable;
 @ConfigurationProperties(CassandraChatMemoryProperties.CONFIG_PREFIX)
 public class CassandraChatMemoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.cassandra";
+	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.cassandra";
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryProperties.class);
 
