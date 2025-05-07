@@ -9,7 +9,7 @@
 		<version>1.0.0-SNAPSHOT</version>
 		<relativePath>../../../../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-http-client</artifactId>
+	<artifactId>spring-ai-autoconfigure-http-client</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Http Client Auto Configuration</name>
 	<description>Spring AI Http Client Auto Configuration</description>
