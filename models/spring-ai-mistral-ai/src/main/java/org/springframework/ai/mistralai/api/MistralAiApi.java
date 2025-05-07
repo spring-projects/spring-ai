@@ -112,7 +112,11 @@ public class MistralAiApi {
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build(); // FIXME:
+																											// use
+																											// a
+																											// bean
+																											// instead
 	}
 
 	/**

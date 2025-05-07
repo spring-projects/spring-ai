@@ -116,7 +116,7 @@ public class ZhiPuAiApi {
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
-		this.webClient = WebClient.builder()
+		this.webClient = WebClient.builder() // FIXME: use a builder instead
 				.baseUrl(baseUrl)
 				.defaultHeaders(authHeaders)
 				.build();

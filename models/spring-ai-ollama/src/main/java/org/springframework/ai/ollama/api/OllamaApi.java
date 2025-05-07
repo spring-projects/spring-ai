@@ -80,11 +80,13 @@ public class OllamaApi {
 		};
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
+				.clone()
 				.defaultHeaders(defaultHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
 		this.webClient = webClientBuilder
+				.clone()
 				.baseUrl(baseUrl)
 				.defaultHeaders(defaultHeaders)
 				.build();
