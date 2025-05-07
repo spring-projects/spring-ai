@@ -180,6 +180,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 * Whether to store the output of this chat completion request for use in our model <a href="https://platform.openai.com/docs/guides/distillation">distillation</a> or <a href="https://platform.openai.com/docs/guides/evals">evals</a> products.
 	 */
 	private @JsonProperty("store") Boolean store;
+
 	/**
 	 * Developer-defined tags and values used for filtering completions in the <a href="https://platform.openai.com/chat-completions">dashboard</a>.
 	 */
