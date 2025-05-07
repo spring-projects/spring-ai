@@ -687,7 +687,29 @@ public class OpenAiChatModel implements ChatModel {
 		return new Builder();
 	}
 
+	/**
+	 * Returns a builder pre-populated with the current configuration for mutation.
+	 */
+	public Builder mutate() {
+		return new Builder(this);
+	}
+
+	@Override
+	public OpenAiChatModel clone() {
+		return this.mutate().build();
+	}
+
 	public static final class Builder {
+
+		// Copy constructor for mutate()
+		public Builder(OpenAiChatModel model) {
+			this.openAiApi = model.openAiApi;
+			this.defaultOptions = model.defaultOptions;
+			this.toolCallingManager = model.toolCallingManager;
+			this.toolExecutionEligibilityPredicate = model.toolExecutionEligibilityPredicate;
+			this.retryTemplate = model.retryTemplate;
+			this.observationRegistry = model.observationRegistry;
+		}
 
 		private OpenAiApi openAiApi;
 
