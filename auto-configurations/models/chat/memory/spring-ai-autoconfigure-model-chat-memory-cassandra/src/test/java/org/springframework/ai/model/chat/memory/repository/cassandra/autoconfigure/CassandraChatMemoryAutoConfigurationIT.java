@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.cassandra.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.cassandra.autoconfigure;
 
 import java.time.Duration;
 import java.util.List;
@@ -26,7 +26,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.chat.memory.cassandra.CassandraChatMemory;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -61,30 +61,29 @@ class CassandraChatMemoryAutoConfigurationIT {
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
 			.withPropertyValues("spring.ai.chat.memory.cassandra.time-to-live=" + getTimeToLive())
 			.run(context -> {
-				CassandraChatMemory memory = context.getBean(CassandraChatMemory.class);
+				CassandraChatMemoryRepository memory = context.getBean(CassandraChatMemoryRepository.class);
 
 				String sessionId = UUIDs.timeBased().toString();
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).isEmpty();
+				assertThat(memory.findByConversationId(sessionId)).isEmpty();
 
-				memory.add(sessionId, new UserMessage("test question"));
+				memory.saveAll(sessionId, List.of(new UserMessage("test question")));
 
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).hasSize(1);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getMessageType())
-					.isEqualTo(MessageType.USER);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getText()).isEqualTo("test question");
+				assertThat(memory.findByConversationId(sessionId)).hasSize(1);
+				assertThat(memory.findByConversationId(sessionId).get(0).getMessageType()).isEqualTo(MessageType.USER);
+				assertThat(memory.findByConversationId(sessionId).get(0).getText()).isEqualTo("test question");
 
-				memory.clear(sessionId);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).isEmpty();
+				memory.deleteByConversationId(sessionId);
+				assertThat(memory.findByConversationId(sessionId)).isEmpty();
 
-				memory.add(sessionId, List.of(new UserMessage("test question"), new AssistantMessage("test answer")));
+				memory.saveAll(sessionId,
+						List.of(new UserMessage("test question"), new AssistantMessage("test answer")));
 
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE)).hasSize(2);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getMessageType())
+				assertThat(memory.findByConversationId(sessionId)).hasSize(2);
+				assertThat(memory.findByConversationId(sessionId).get(1).getMessageType())
 					.isEqualTo(MessageType.ASSISTANT);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(1).getText()).isEqualTo("test answer");
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getMessageType())
-					.isEqualTo(MessageType.USER);
-				assertThat(memory.get(sessionId, Integer.MAX_VALUE).get(0).getText()).isEqualTo("test question");
+				assertThat(memory.findByConversationId(sessionId).get(1).getText()).isEqualTo("test answer");
+				assertThat(memory.findByConversationId(sessionId).get(0).getMessageType()).isEqualTo(MessageType.USER);
+				assertThat(memory.findByConversationId(sessionId).get(0).getText()).isEqualTo("test question");
 
 				CassandraChatMemoryProperties properties = context.getBean(CassandraChatMemoryProperties.class);
 				assertThat(properties.getTimeToLive()).isEqualTo(getTimeToLive());

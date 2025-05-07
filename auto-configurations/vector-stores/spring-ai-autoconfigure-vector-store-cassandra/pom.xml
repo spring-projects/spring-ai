@@ -27,8 +27,8 @@
 	</parent>
 	<artifactId>spring-ai-autoconfigure-vector-store-cassandra</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI Auto Configuration for Cassandra vector store</name>
-	<description>Spring AI Auto Configuration for Cassandra vector store</description>
+	<name>Spring AI Auto Configuration for Apache Cassandra vector store</name>
+	<description>Spring AI Auto Configuration for Apache Cassandra vector store</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>

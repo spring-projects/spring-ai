@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.cassandra.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.cassandra.autoconfigure;
 
 import java.time.Duration;
 

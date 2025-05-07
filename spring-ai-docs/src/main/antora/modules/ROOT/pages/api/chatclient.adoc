@@ -545,6 +545,8 @@ To create a `CassandraChatMemory` with `time-to-live`:
 CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
 ----
 
+IMPORTANT: Refer to the new xref:api/chat-memory.adoc#_cassandra_repository[Cassandra Chat Memory Repository] documentation for the current features and capabilities.
+
 === Neo4jChatMemory
 
 The Neo4j chat memory supports the following configuration parameters:
