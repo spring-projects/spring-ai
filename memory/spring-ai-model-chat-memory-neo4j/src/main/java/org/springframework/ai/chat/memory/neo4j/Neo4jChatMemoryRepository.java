@@ -1,96 +1,59 @@
-/*
- * Copyright 2025-2025 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.springframework.ai.chat.memory.neo4j;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
+import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
-
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.util.MimeType;
 
+import java.net.URI;
+import java.util.*;
+
 /**
- * Chat memory implementation using Neo4j.
+ * An implementation of {@link ChatMemoryRepository} for Neo4J
  *
  * @author Enrico Rampazzo
+ * @since 1.0.0
  */
-public class Neo4jChatMemory implements ChatMemory {
+
+public class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	private final Neo4jChatMemoryConfig config;
 
-	private final Driver driver;
-
-	public Neo4jChatMemory(Neo4jChatMemoryConfig config) {
+	public Neo4jChatMemoryRepository(Neo4jChatMemoryConfig config) {
 		this.config = config;
-		this.driver = config.getDriver();
-	}
-
-	public static Neo4jChatMemory create(Neo4jChatMemoryConfig config) {
-		return new Neo4jChatMemory(config);
 	}
 
 	@Override
-	public void add(String conversationId, Message message) {
-		add(conversationId, List.of(message));
-	}
-
-	@Override
-	public void add(String conversationId, List<Message> messages) {
-		try (Transaction t = this.driver.session().beginTransaction()) {
-			for (Message m : messages) {
-				addMessageToTransaction(t, conversationId, m);
-			}
-			t.commit();
+	public List<String> findConversationIds() {
+		try (var session = config.getDriver().session()) {
+			return session.run("MATCH (conversation:%s) RETURN conversation.id".formatted(config.getSessionLabel()))
+				.stream()
+				.map(r -> r.get("conversation.id").asString())
+				.toList();
 		}
 	}
 
 	@Override
-	public List<Message> get(String conversationId, int lastN) {
+	public List<Message> findByConversationId(String conversationId) {
 		String statementBuilder = """
 				MATCH (s:%s {id:$conversationId})-[r:HAS_MESSAGE]->(m:%s)
-				WITH m ORDER BY m.idx DESC LIMIT $lastN
+				WITH m
 				OPTIONAL MATCH (m)-[:HAS_METADATA]->(metadata:%s)
 				OPTIONAL MATCH (m)-[:HAS_MEDIA]->(media:%s) WITH m, metadata, media ORDER BY media.idx ASC
 				OPTIONAL MATCH (m)-[:HAS_TOOL_RESPONSE]-(tr:%s) WITH m, metadata, media, tr ORDER BY tr.idx ASC
 				OPTIONAL MATCH (m)-[:HAS_TOOL_CALL]->(tc:%s)
 				WITH m, metadata, media, tr, tc ORDER BY tc.idx ASC
 				RETURN m, metadata, collect(tr) as toolResponses, collect(tc) as toolCalls, collect(media) as medias
+				ORDER BY m.idx ASC
 				""".formatted(this.config.getSessionLabel(), this.config.getMessageLabel(),
 				this.config.getMetadataLabel(), this.config.getMediaLabel(), this.config.getToolResponseLabel(),
 				this.config.getToolCallLabel());
-		Result res = this.driver.session()
-			.run(statementBuilder, Map.of("conversationId", conversationId, "lastN", lastN));
-		return res.list(record -> {
+		Result res = this.config.getDriver().session().run(statementBuilder, Map.of("conversationId", conversationId));
+		return res.stream().map(record -> {
 			Map<String, Object> messageMap = record.get("m").asMap();
 			String msgType = messageMap.get(MessageAttributes.MESSAGE_TYPE.getValue()).toString();
 			Message message = null;
@@ -105,7 +68,13 @@ public class Neo4jChatMemory implements ChatMemory {
 				message = buildAssistantMessage(record, messageMap, mediaList);
 			}
 			if (msgType.equals(MessageType.SYSTEM.getValue())) {
-				message = new SystemMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString());
+				SystemMessage.Builder systemMessageBuilder = SystemMessage.builder()
+					.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString());
+				if (!record.get("metadata").isNull()) {
+					Map<String, Object> retrievedMetadata = record.get("metadata").asMap();
+					systemMessageBuilder.metadata(retrievedMetadata);
+				}
+				message = systemMessageBuilder.build();
 			}
 			if (msgType.equals(MessageType.TOOL.getValue())) {
 				message = buildToolMessage(record);
@@ -116,17 +85,30 @@ public class Neo4jChatMemory implements ChatMemory {
 			}
 			message.getMetadata().put("messageType", message.getMessageType());
 			return message;
-		});
+		}).toList();
 
-	}
-
-	public Neo4jChatMemoryConfig getConfig() {
-		return this.config;
 	}
 
 	@Override
-	public void clear(String conversationId) {
-		String statementBuilder = """
+	public void saveAll(String conversationId, List<Message> messages) {
+		// First delete existing messages for this conversation
+		deleteByConversationId(conversationId);
+
+		// Then add the new messages
+		try (Session s = this.config.getDriver().session()) {
+			try (Transaction t = s.beginTransaction()) {
+				for (Message m : messages) {
+					addMessageToTransaction(t, conversationId, m);
+				}
+				t.commit();
+			}
+		}
+	}
+
+	@Override
+	public void deleteByConversationId(String conversationId) {
+		// First delete all messages and related nodes
+		String deleteMessagesStatement = """
 				MATCH (s:%s {id:$conversationId})-[r:HAS_MESSAGE]->(m:%s)
 				OPTIONAL MATCH (m)-[:HAS_METADATA]->(metadata:%s)
 				OPTIONAL MATCH (m)-[:HAS_MEDIA]->(media:%s)
@@ -136,10 +118,82 @@ public class Neo4jChatMemory implements ChatMemory {
 				""".formatted(this.config.getSessionLabel(), this.config.getMessageLabel(),
 				this.config.getMetadataLabel(), this.config.getMediaLabel(), this.config.getToolResponseLabel(),
 				this.config.getToolCallLabel());
-		try (Transaction t = this.driver.session().beginTransaction()) {
-			t.run(statementBuilder, Map.of("conversationId", conversationId));
-			t.commit();
+
+		// Then delete the conversation node itself
+		String deleteConversationStatement = """
+				MATCH (s:%s {id:$conversationId})
+				DETACH DELETE s
+				""".formatted(this.config.getSessionLabel());
+
+		try (Session s = this.config.getDriver().session()) {
+			try (Transaction t = s.beginTransaction()) {
+				// First delete messages
+				t.run(deleteMessagesStatement, Map.of("conversationId", conversationId));
+				// Then delete the conversation node
+				t.run(deleteConversationStatement, Map.of("conversationId", conversationId));
+				t.commit();
+			}
 		}
+	}
+
+	public Neo4jChatMemoryConfig getConfig() {
+		return this.config;
+	}
+
+	private Message buildToolMessage(org.neo4j.driver.Record record) {
+		Message message;
+		message = new ToolResponseMessage(record.get("toolResponses").asList(v -> {
+			Map<String, Object> trMap = v.asMap();
+			return new ToolResponseMessage.ToolResponse((String) trMap.get(ToolResponseAttributes.ID.getValue()),
+					(String) trMap.get(ToolResponseAttributes.NAME.getValue()),
+					(String) trMap.get(ToolResponseAttributes.RESPONSE_DATA.getValue()));
+		}), record.get("metadata").asMap());
+		return message;
+	}
+
+	private Message buildAssistantMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
+			List<Media> mediaList) {
+		Message message;
+		message = new AssistantMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(),
+				record.get("metadata").asMap(Map.of()), record.get("toolCalls").asList(v -> {
+					var toolCallMap = v.asMap();
+					return new AssistantMessage.ToolCall((String) toolCallMap.get("id"),
+							(String) toolCallMap.get("type"), (String) toolCallMap.get("name"),
+							(String) toolCallMap.get("arguments"));
+				}), mediaList);
+		return message;
+	}
+
+	private Message buildUserMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
+			List<Media> mediaList) {
+		Message message;
+		Map<String, Object> metadata = record.get("metadata").asMap();
+		message = UserMessage.builder()
+			.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
+			.media(mediaList)
+			.metadata(metadata)
+			.build();
+		return message;
+	}
+
+	private List<Media> getMedia(org.neo4j.driver.Record record) {
+		List<Media> mediaList;
+		mediaList = record.get("medias").asList(v -> {
+			Map<String, Object> mediaMap = v.asMap();
+			var mediaBuilder = Media.builder()
+				.name((String) mediaMap.get(MediaAttributes.NAME.getValue()))
+				.id(Optional.ofNullable(mediaMap.get(MediaAttributes.ID.getValue())).map(Object::toString).orElse(null))
+				.mimeType(MimeType.valueOf(mediaMap.get(MediaAttributes.MIME_TYPE.getValue()).toString()));
+			if (mediaMap.get(MediaAttributes.DATA.getValue()) instanceof String stringData) {
+				mediaBuilder.data(URI.create(stringData));
+			}
+			else if (mediaMap.get(MediaAttributes.DATA.getValue()).getClass().isArray()) {
+				mediaBuilder.data(mediaMap.get(MediaAttributes.DATA.getValue()));
+			}
+			return mediaBuilder.build();
+
+		});
+		return mediaList;
 	}
 
 	private void addMessageToTransaction(Transaction t, String conversationId, Message message) {
@@ -234,62 +288,6 @@ public class Neo4jChatMemory implements ChatMemory {
 			mediaMaps.add(mediaMap);
 		}
 		return mediaMaps;
-	}
-
-	private Message buildToolMessage(org.neo4j.driver.Record record) {
-		Message message;
-		message = new ToolResponseMessage(record.get("toolResponses").asList(v -> {
-			Map<String, Object> trMap = v.asMap();
-			return new ToolResponseMessage.ToolResponse((String) trMap.get(ToolResponseAttributes.ID.getValue()),
-					(String) trMap.get(ToolResponseAttributes.NAME.getValue()),
-					(String) trMap.get(ToolResponseAttributes.RESPONSE_DATA.getValue()));
-		}), record.get("metadata").asMap());
-		return message;
-	}
-
-	private Message buildAssistantMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
-			List<Media> mediaList) {
-		Message message;
-		message = new AssistantMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(),
-				record.get("metadata").asMap(Map.of()), record.get("toolCalls").asList(v -> {
-					var toolCallMap = v.asMap();
-					return new AssistantMessage.ToolCall((String) toolCallMap.get("id"),
-							(String) toolCallMap.get("type"), (String) toolCallMap.get("name"),
-							(String) toolCallMap.get("arguments"));
-				}), mediaList);
-		return message;
-	}
-
-	private Message buildUserMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
-			List<Media> mediaList) {
-		Message message;
-		Map<String, Object> metadata = record.get("metadata").asMap();
-		message = UserMessage.builder()
-			.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
-			.media(mediaList)
-			.metadata(metadata)
-			.build();
-		return message;
-	}
-
-	private List<Media> getMedia(org.neo4j.driver.Record record) {
-		List<Media> mediaList;
-		mediaList = record.get("medias").asList(v -> {
-			Map<String, Object> mediaMap = v.asMap();
-			var mediaBuilder = Media.builder()
-				.name((String) mediaMap.get(MediaAttributes.NAME.getValue()))
-				.id(Optional.ofNullable(mediaMap.get(MediaAttributes.ID.getValue())).map(Object::toString).orElse(null))
-				.mimeType(MimeType.valueOf(mediaMap.get(MediaAttributes.MIME_TYPE.getValue()).toString()));
-			if (mediaMap.get(MediaAttributes.DATA.getValue()) instanceof String stringData) {
-				mediaBuilder.data(URI.create(stringData));
-			}
-			else if (mediaMap.get(MediaAttributes.DATA.getValue()).getClass().isArray()) {
-				mediaBuilder.data(mediaMap.get(MediaAttributes.DATA.getValue()));
-			}
-			return mediaBuilder.build();
-
-		});
-		return mediaList;
 	}
 
 }

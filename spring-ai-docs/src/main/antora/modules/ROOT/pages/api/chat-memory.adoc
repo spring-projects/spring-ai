@@ -64,7 +64,7 @@ If you'd rather create the `InMemoryChatMemoryRepository` manually, you can do s
 ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 ----
 
-=== JDBC Repository
+=== JdbcChatMemoryRepository
 
 `JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It is suitable for applications that require persistent storage of chat memory.
 
@@ -127,6 +127,7 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 | `spring.ai.chat.memory.repository.jdbc.initialize-schema` | Whether to initialize the schema on startup. | `true`
 |===
 
+
 ==== Schema Initialization
 
 The auto-configuration will automatically create the `ai_chat_memory` table using the JDBC driver. Currently, only PostgreSQL and MariaDB are supported.
@@ -134,6 +135,78 @@ The auto-configuration will automatically create the `ai_chat_memory` table usin
 You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.jdbc.initialize-schema` to `false`.
 
 If your project uses a tool like Flyway or Liquibase to manage your database schemas, you can disable the schema initialization and refer to link:https://github.com/spring-projects/spring-ai/tree/main/memory/spring-ai-model-chat-memory-jdbc/src/main/resources/org/springframework/ai/chat/memory/jdbc[these SQL scripts] for configuring those tools to create the `ai_chat_memory` table.
+
+=== Neo4j ChatMemoryRepository
+
+`Neo4jChatMemoryRepository` is a built-in implementation that uses Neo4j to store chat messages as nodes and relationships in a property graph database. It is suitable for applications that want to leverage Neo4j's graph capabilities for chat memory persistence.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-neo4j</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-neo4j'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `Neo4jChatMemoryRepository`, which you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+Neo4jChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `Neo4jChatMemoryRepository` manually, you can do so by providing a Neo4j `Driver` instance:
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = Neo4jChatMemoryRepository.builder()
+    .driver(driver)
+    .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.ai.chat.memory.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
+| `spring.ai.chat.memory.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
+| `spring.ai.chat.memory.neo4j.toolCallLabel` | The label for nodes that store tool calls (e.g. in Assistant Messages) | `ToolCall`
+| `spring.ai.chat.memory.neo4j.metadataLabel` | The label for nodes that store message metadata | `Metadata`
+| `spring.ai.chat.memory.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
+| `spring.ai.chat.memory.neo4j.mediaLabel` | The label for the nodes that store media associated with a message | `Media`
+|===
+
+==== Index Initialization
+
+The Neo4j repository will automatically ensure that indexes are created for conversation IDs and message indices to optimize performance. If you use custom labels, indexes will be created for those labels as well. No schema initialization is required, but you should ensure your Neo4j instance is accessible to your application.
 
 == Memory in Chat Client
 

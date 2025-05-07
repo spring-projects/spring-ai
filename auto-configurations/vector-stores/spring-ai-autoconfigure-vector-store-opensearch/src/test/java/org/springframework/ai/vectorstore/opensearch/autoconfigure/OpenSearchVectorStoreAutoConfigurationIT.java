@@ -65,7 +65,8 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 				SpringAiRetryAutoConfiguration.class))
 		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true",
+		.withPropertyValues("spring.ai.vectorstore.opensearch.aws.enabled=false",
+				"spring.ai.vectorstore.opensearch.initialize-schema=true",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".uris=" + opensearchContainer.getHttpHostAddress(),
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=" + DOCUMENT_INDEX,
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """

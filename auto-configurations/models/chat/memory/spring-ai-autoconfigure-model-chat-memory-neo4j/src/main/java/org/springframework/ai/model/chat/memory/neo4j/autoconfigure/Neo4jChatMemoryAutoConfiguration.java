@@ -18,8 +18,8 @@ package org.springframework.ai.model.chat.memory.neo4j.autoconfigure;
 
 import org.neo4j.driver.Driver;
 
-import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemory;
 import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryConfig;
+import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -29,19 +29,19 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for {@link Neo4jChatMemory}.
+ * {@link AutoConfiguration Auto-configuration} for {@link Neo4jChatMemoryRepository}.
  *
  * @author Enrico Rampazzo
  * @since 1.0.0
  */
 @AutoConfiguration(after = Neo4jAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ Neo4jChatMemory.class, Driver.class })
+@ConditionalOnClass({ Neo4jChatMemoryRepository.class, Driver.class })
 @EnableConfigurationProperties(Neo4jChatMemoryProperties.class)
 public class Neo4jChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public Neo4jChatMemory chatMemory(Neo4jChatMemoryProperties properties, Driver driver) {
+	public Neo4jChatMemoryRepository chatMemoryRepository(Neo4jChatMemoryProperties properties, Driver driver) {
 
 		var builder = Neo4jChatMemoryConfig.builder()
 			.withMediaLabel(properties.getMediaLabel())
@@ -52,7 +52,7 @@ public class Neo4jChatMemoryAutoConfiguration {
 			.withToolResponseLabel(properties.getToolResponseLabel())
 			.withDriver(driver);
 
-		return Neo4jChatMemory.create(builder.build());
+		return new Neo4jChatMemoryRepository(builder.build());
 	}
 
 }
