@@ -130,6 +130,7 @@ import org.springframework.util.StringUtils;
  * @author Wei Jiang
  * @author Alexandros Pappas
  * @author Jihoon Kim
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -279,19 +280,23 @@ public class BedrockProxyChatModel implements ChatModel {
 			updatedRuntimeOptions = this.defaultOptions.copy();
 		}
 		else {
+			if (runtimeOptions.getFrequencyPenalty() != null) {
+				logger.warn("The frequencyPenalty option is not supported by BedrockProxyChatModel. Ignoring.");
+			}
+			if (runtimeOptions.getPresencePenalty() != null) {
+				logger.warn("The presencePenalty option is not supported by BedrockProxyChatModel. Ignoring.");
+			}
+			if (runtimeOptions.getTopK() != null) {
+				logger.warn("The topK option is not supported by BedrockProxyChatModel. Ignoring.");
+			}
 			updatedRuntimeOptions = ToolCallingChatOptions.builder()
 				.model(runtimeOptions.getModel() != null ? runtimeOptions.getModel() : this.defaultOptions.getModel())
-				.frequencyPenalty(runtimeOptions.getFrequencyPenalty() != null ? runtimeOptions.getFrequencyPenalty()
-						: this.defaultOptions.getFrequencyPenalty())
 				.maxTokens(runtimeOptions.getMaxTokens() != null ? runtimeOptions.getMaxTokens()
 						: this.defaultOptions.getMaxTokens())
-				.presencePenalty(runtimeOptions.getPresencePenalty() != null ? runtimeOptions.getPresencePenalty()
-						: this.defaultOptions.getPresencePenalty())
 				.stopSequences(runtimeOptions.getStopSequences() != null ? runtimeOptions.getStopSequences()
 						: this.defaultOptions.getStopSequences())
 				.temperature(runtimeOptions.getTemperature() != null ? runtimeOptions.getTemperature()
 						: this.defaultOptions.getTemperature())
-				.topK(runtimeOptions.getTopK() != null ? runtimeOptions.getTopK() : this.defaultOptions.getTopK())
 				.topP(runtimeOptions.getTopP() != null ? runtimeOptions.getTopP() : this.defaultOptions.getTopP())
 
 				.toolCallbacks(runtimeOptions.getToolCallbacks() != null ? runtimeOptions.getToolCallbacks()
