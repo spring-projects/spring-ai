@@ -17,6 +17,7 @@
 package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -128,13 +129,15 @@ public final class JsonParser {
 			return Byte.parseByte(value.toString());
 		}
 		else if (javaType == Integer.class) {
-			return Integer.parseInt(value.toString());
+			BigDecimal bigDecimal = new BigDecimal(value.toString());
+			return bigDecimal.intValueExact();
 		}
 		else if (javaType == Short.class) {
 			return Short.parseShort(value.toString());
 		}
 		else if (javaType == Long.class) {
-			return Long.parseLong(value.toString());
+			BigDecimal bigDecimal = new BigDecimal(value.toString());
+			return bigDecimal.longValueExact();
 		}
 		else if (javaType == Double.class) {
 			return Double.parseDouble(value.toString());
