@@ -1261,9 +1261,9 @@ public class OpenAiApi {
 	 * @param annotations Annotations for the message, when applicable, as when using the
 	 * web search tool.
 	 */
-	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record ChatCompletionMessage(
-	// @formatter:off
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record ChatCompletionMessage(// @formatter:off
 			@JsonProperty("content") Object rawContent,
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
@@ -1337,6 +1337,7 @@ public class OpenAiApi {
 		 * @param inputAudio Audio content part.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MediaContent(// @formatter:off
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text,
@@ -1416,6 +1417,7 @@ public class OpenAiApi {
 		 * @param function The function definition.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(// @formatter:off
 				@JsonProperty("index") Integer index,
 				@JsonProperty("id") String id,
@@ -1436,6 +1438,7 @@ public class OpenAiApi {
 		 * function.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChatCompletionFunction(// @formatter:off
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) { // @formatter:on
@@ -1451,6 +1454,7 @@ public class OpenAiApi {
 		 * @param transcript Transcript of the audio output from the model.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record AudioOutput(// @formatter:off
 				@JsonProperty("id") String id,
 				@JsonProperty("data") String data,
@@ -1502,6 +1506,7 @@ public class OpenAiApi {
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletion(// @formatter:off
 			@JsonProperty("id") String id,
 			@JsonProperty("choices") List<Choice> choices,
@@ -1522,6 +1527,7 @@ public class OpenAiApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Choice(// @formatter:off
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
@@ -1538,6 +1544,7 @@ public class OpenAiApi {
 	 * @param refusal A list of message refusal tokens with log probability information.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record LogProbs(@JsonProperty("content") List<Content> content,
 			@JsonProperty("refusal") List<Content> refusal) {
 
@@ -1556,6 +1563,7 @@ public class OpenAiApi {
 		 * requested top_logprobs returned.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Content(// @formatter:off
 				@JsonProperty("token") String token,
 				@JsonProperty("logprob") Float logprob,
@@ -1574,6 +1582,7 @@ public class OpenAiApi {
 			 * is no bytes representation for the token.
 			 */
 			@JsonInclude(Include.NON_NULL)
+			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record TopLogProbs(// @formatter:off
 					@JsonProperty("token") String token,
 					@JsonProperty("logprob") Float logprob,
@@ -1627,6 +1636,7 @@ public class OpenAiApi {
 		 * @param cachedTokens Cached tokens present in the prompt.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record PromptTokensDetails(// @formatter:off
 			@JsonProperty("audio_tokens") Integer audioTokens,
 			@JsonProperty("cached_tokens") Integer cachedTokens) { // @formatter:on
@@ -1672,6 +1682,7 @@ public class OpenAiApi {
 	 * only if the StreamOptions.includeUsage is set to true.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionChunk(// @formatter:off
 			@JsonProperty("id") String id,
 			@JsonProperty("choices") List<ChunkChoice> choices,
@@ -1691,6 +1702,7 @@ public class OpenAiApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(// @formatter:off
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
@@ -1710,6 +1722,7 @@ public class OpenAiApi {
 	 * @param object The object type, which is always 'embedding'.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Embedding(// @formatter:off
 			@JsonProperty("index") Integer index,
 			@JsonProperty("embedding") float[] embedding,
@@ -1784,6 +1797,7 @@ public class OpenAiApi {
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record EmbeddingList<T>(// @formatter:off
 			@JsonProperty("object") String object,
 			@JsonProperty("data") List<T> data,

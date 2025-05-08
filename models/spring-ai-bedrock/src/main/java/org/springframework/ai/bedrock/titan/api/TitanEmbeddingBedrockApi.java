@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.titan.api;
 import java.time.Duration;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -174,6 +175,7 @@ public class TitanEmbeddingBedrockApi extends
 	 * @param message No idea what this is.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record TitanEmbeddingResponse(
 			@JsonProperty("embedding") float[] embedding,
 			@JsonProperty("inputTextTokenCount") Integer inputTextTokenCount,
