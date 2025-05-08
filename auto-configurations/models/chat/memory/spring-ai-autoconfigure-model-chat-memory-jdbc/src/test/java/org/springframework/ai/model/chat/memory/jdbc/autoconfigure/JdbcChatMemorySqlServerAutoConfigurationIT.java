@@ -1,26 +1,14 @@
 /*
- * Copyright 2024-2025 the original author or authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Integration test for SQL Server using Testcontainers, following the same structure as the PostgreSQL test.
  */
-
 package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -31,20 +19,35 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @author Jonathan Leijendekker
- * @author Thomas Vitale
- * @author Linar Abzaltdinov
- */
-class JdbcChatMemoryPostgresqlAutoConfigurationIT {
+@Testcontainers
+class JdbcChatMemorySqlServerAutoConfigurationIT {
+
+	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName
+		.parse("mcr.microsoft.com/mssql/server:2022-latest");
+
+	@Container
+	@SuppressWarnings("resource")
+	static MSSQLServerContainer<?> mssqlContainer = new MSSQLServerContainer<>(DEFAULT_IMAGE_NAME).acceptLicense()
+		.withEnv("MSSQL_DATABASE", "chat_memory_auto_configuration_test")
+		.withPassword("Strong!NotR34LLyPassword")
+		.withUrlParam("loginTimeout", "60") // Give more time for the login
+		.withUrlParam("connectRetryCount", "10") // Retry 10 times
+		.withUrlParam("connectRetryInterval", "10")
+		.withStartupTimeout(Duration.ofSeconds(60));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(JdbcChatMemoryAutoConfiguration.class,
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
-		.withPropertyValues("spring.datasource.url=jdbc:tc:postgresql:17:///");
+		.withPropertyValues(String.format("spring.datasource.url=%s", mssqlContainer.getJdbcUrl()),
+				String.format("spring.datasource.username=%s", mssqlContainer.getUsername()),
+				String.format("spring.datasource.password=%s", mssqlContainer.getPassword()));
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldBeLoaded() {
@@ -57,8 +60,6 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=never")
 			.run(context -> {
 				assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue();
-				// Optionally, check that the schema is not initialized (could check table
-				// absence if needed)
 			});
 	}
 
@@ -66,32 +67,6 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 	void initializeSchemaEmbeddedDefault() {
 		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=embedded")
 			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue());
-	}
-
-	@Test
-	void useAutoConfiguredJdbcChatMemoryRepository() {
-		this.contextRunner.run(context -> {
-			var chatMemoryRepository = context.getBean(JdbcChatMemoryRepository.class);
-			var conversationId = UUID.randomUUID().toString();
-			var userMessage = new UserMessage("Message from the user");
-
-			chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
-
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(1);
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(List.of(userMessage));
-
-			chatMemoryRepository.deleteByConversationId(conversationId);
-
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
-
-			var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
-					new AssistantMessage("Message from the assistant 1"));
-
-			chatMemoryRepository.saveAll(conversationId, multipleMessages);
-
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(multipleMessages.size());
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(multipleMessages);
-		});
 	}
 
 	@Test

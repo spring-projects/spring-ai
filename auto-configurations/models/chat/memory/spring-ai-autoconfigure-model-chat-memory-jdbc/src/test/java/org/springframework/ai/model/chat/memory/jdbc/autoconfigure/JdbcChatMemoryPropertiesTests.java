@@ -28,16 +28,14 @@ class JdbcChatMemoryPropertiesTests {
 	@Test
 	void defaultValues() {
 		var props = new JdbcChatMemoryProperties();
-
-		assertThat(props.isInitializeSchema()).isTrue();
+		assertThat(props.getInitializeSchema()).isEqualTo("embedded");
 	}
 
 	@Test
 	void customValues() {
 		var props = new JdbcChatMemoryProperties();
-		props.setInitializeSchema(false);
-
-		assertThat(props.isInitializeSchema()).isFalse();
+		props.setInitializeSchema("never");
+		assertThat(props.getInitializeSchema()).isEqualTo("never");
 	}
 
 }

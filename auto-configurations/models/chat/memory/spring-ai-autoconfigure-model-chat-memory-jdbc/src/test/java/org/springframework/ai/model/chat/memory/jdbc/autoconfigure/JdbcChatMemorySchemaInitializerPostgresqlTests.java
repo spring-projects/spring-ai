@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jonathan Leijendekker
  */
 @Testcontainers
-class JdbcChatMemoryDataSourceScriptDatabaseInitializerPostgresqlTests {
+class JdbcChatMemorySchemaInitializerPostgresqlTests {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("postgres:17");
 
@@ -57,7 +57,8 @@ class JdbcChatMemoryDataSourceScriptDatabaseInitializerPostgresqlTests {
 	void getSettings_shouldHaveSchemaLocations() {
 		this.contextRunner.run(context -> {
 			var dataSource = context.getBean(DataSource.class);
-			var settings = JdbcChatMemoryDataSourceScriptDatabaseInitializer.getSettings(dataSource);
+			// Use new signature: requires JdbcChatMemoryProperties
+			var settings = JdbcChatMemorySchemaInitializer.getSettings(dataSource, new JdbcChatMemoryProperties());
 
 			assertThat(settings.getSchemaLocations())
 				.containsOnly("classpath:org/springframework/ai/chat/memory/jdbc/schema-postgresql.sql");

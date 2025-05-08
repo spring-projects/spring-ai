@@ -5,7 +5,7 @@ Large language models (LLMs) are stateless, meaning they do not retain informati
 
 The `ChatMemory` abstraction allows you to implement various types of memory to support different use cases. The underlying storage of the messages is handled by the `ChatMemoryRepository`, whose sole responsibility is to store and retrieve messages. It's up to the `ChatMemory` implementation to decide which messages to keep and when to remove them. Examples of strategies could include keeping the last N messages, keeping messages for a certain time period, or keeping messages up to a certain token limit.
 
-Before choosing a memory type, it's important to understand the difference between chat memory and chat history.
+Before choosing a memory type, it's essential to understand the difference between chat memory and chat history.
 
 * *Chat Memory*. The information that a large-language model retains and uses to maintain contextual awareness throughout a conversation.
 * *Chat History*. The entire conversation history, including all messages exchanged between the user and the model.
@@ -66,7 +66,7 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 
 === JdbcChatMemoryRepository
 
-`JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It is suitable for applications that require persistent storage of chat memory.
+`JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory.
 
 First, add the following dependency to your project:
 
@@ -105,12 +105,13 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
-If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by providing a `JdbcTemplate` instance:
+If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by providing a `JdbcTemplate` instance and optionally a custom `ChatMemoryDialect`:
 
 [source,java]
 ----
 ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
     .jdbcTemplate(jdbcTemplate)
+    .dialect(new PostgresChatMemoryDialect()) // Optional: custom dialect, auto-detected by default
     .build();
 
 ChatMemory chatMemory = MessageWindowChatMemory.builder()
@@ -119,22 +120,70 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
+==== Supported Databases and Dialect Abstraction
+
+Spring AI supports multiple relational databases via a dialect abstraction. The following databases are supported out-of-the-box:
+
+- PostgreSQL
+- MySQL / MariaDB
+- SQL Server
+- HSQLDB
+
+The correct dialect is auto-detected from the JDBC URL. You can extend support for other databases by implementing the `ChatMemoryDialect` interface.
+
 ==== Configuration Properties
 
 [cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
-| `spring.ai.chat.memory.repository.jdbc.initialize-schema` | Whether to initialize the schema on startup. | `true`
+| `spring.ai.chat.memory.jdbc.initialize-schema` | Controls when to initialize the schema. Values: `embedded` (default), `always`, `never`. | `embedded`
+| `spring.ai.chat.memory.jdbc.schema` | Location of the schema script to use for initialization. Supports `classpath:` URLs and platform placeholders. | `classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql`
 |===
-
 
 ==== Schema Initialization
 
-The auto-configuration will automatically create the `ai_chat_memory` table using the JDBC driver. Currently, only PostgreSQL and MariaDB are supported.
+The auto-configuration will automatically create the `ai_chat_memory` table on startup, using a vendor-specific SQL script for your database. By default, schema initialization runs only for embedded databases (H2, HSQL, Derby, etc.).
 
-You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.jdbc.initialize-schema` to `false`.
+You can control schema initialization using the `spring.ai.chat.memory.jdbc.initialize-schema` property:
 
-If your project uses a tool like Flyway or Liquibase to manage your database schemas, you can disable the schema initialization and refer to link:https://github.com/spring-projects/spring-ai/tree/main/memory/spring-ai-model-chat-memory-jdbc/src/main/resources/org/springframework/ai/chat/memory/jdbc[these SQL scripts] for configuring those tools to create the `ai_chat_memory` table.
+[source,properties]
+----
+spring.ai.chat.memory.jdbc.initialize-schema=embedded # Only for embedded DBs (default)
+spring.ai.chat.memory.jdbc.initialize-schema=always   # Always initialize
+spring.ai.chat.memory.jdbc.initialize-schema=never    # Never initialize (useful with Flyway/Liquibase)
+----
+
+To override the schema script location, use:
+
+[source,properties]
+----
+spring.ai.chat.memory.jdbc.schema=classpath:/custom/path/schema-mysql.sql
+----
+
+If your project uses Flyway or Liquibase to manage database schemas, set `initialize-schema=never` and refer to the built-in SQL scripts under `org/springframework/ai/chat/memory/jdbc/` for your database.
+
+==== Extending Dialects
+
+To add support for a new database, implement the `ChatMemoryDialect` interface and provide SQL for selecting, inserting, and deleting messages. You can then pass your custom dialect to the repository builder.
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
+    .jdbcTemplate(jdbcTemplate)
+    .dialect(new MyCustomDbDialect())
+    .build();
+----
+
+==== Summary Table
+
+|===
+| Feature | Supported | Details/Property
+| Postgres, MySQL, SQLServer, HSQLDB | Yes | Auto-detected, dialect abstraction
+| Custom DB support | Yes | Implement `ChatMemoryDialect`
+| Schema auto-init | Yes | `spring.ai.chat.memory.jdbc.initialize-schema`
+| Custom schema script | Yes | `spring.ai.chat.memory.jdbc.schema`
+| Disable auto-init | Yes | Set `initialize-schema=never`
+|===
 
 === Neo4j ChatMemoryRepository
 
