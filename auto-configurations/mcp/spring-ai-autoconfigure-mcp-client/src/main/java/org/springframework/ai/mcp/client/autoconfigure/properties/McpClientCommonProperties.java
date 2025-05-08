@@ -18,9 +18,6 @@ package org.springframework.ai.mcp.client.autoconfigure.properties;
 
 import java.time.Duration;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -110,7 +107,7 @@ public class McpClientCommonProperties {
 	 * <p>
 	 * This configuration is used to enable or disable tool callbacks in the MCP client.
 	 */
-	private Toolcallback toolcallback = new Toolcallback(false);
+	private Toolcallback toolcallback = new Toolcallback();
 
 	/**
 	 * Represents a callback configuration for tools.
@@ -121,14 +118,22 @@ public class McpClientCommonProperties {
 	 * @param enabled A boolean flag indicating whether the tool callback is enabled. If
 	 * true, the tool callback is active; otherwise, it is disabled.
 	 */
-	@JsonInclude(JsonInclude.Include.NON_ABSENT)
-	public record Toolcallback(
+	public static class Toolcallback {
 
-			/**
-			 * A boolean flag indicating whether the tool callback is enabled. If true,
-			 * the tool callback is active; otherwise, it is disabled.
-			 */
-			@JsonProperty("enabled") boolean enabled) {
+		/**
+		 * A boolean flag indicating whether the tool callback is enabled. If true, the
+		 * tool callback is active; otherwise, it is disabled.
+		 */
+		private boolean enabled = true;
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
 	}
 
 	public boolean isEnabled() {

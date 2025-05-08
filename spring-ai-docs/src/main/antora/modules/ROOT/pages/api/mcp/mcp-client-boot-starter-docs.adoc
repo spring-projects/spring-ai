@@ -87,7 +87,7 @@ The common properties are prefixed with `spring.ai.mcp.client`:
 
 |`toolcallback.enabled`
 |Enable/disable the MCP tool callback integration with Spring AI's tool execution framework
-|`false`
+|`true`
 |===
 
 === Stdio Transport Properties
