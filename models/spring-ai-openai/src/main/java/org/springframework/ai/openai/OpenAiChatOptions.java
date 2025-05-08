@@ -195,6 +195,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("reasoning_effort") String reasoningEffort;
 
 	/**
+	 * Whether to enable the thinking mode
+	 */
+	private @JsonProperty("enable_thinking") Boolean enableThinking;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
 	 */
 	@JsonIgnore
@@ -260,6 +265,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.store(fromOptions.getStore())
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
+			.enableThinking(fromOptions.getEnableThinking())
 			.build();
 	}
 
@@ -548,6 +554,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.reasoningEffort = reasoningEffort;
 	}
 
+	public Boolean getEnableThinking() {
+		return this.enableThinking;
+	}
+
+	public void setEnableThinking(Boolean enableThinking) {
+		this.enableThinking = enableThinking;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -560,7 +574,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort);
+				this.store, this.metadata, this.reasoningEffort, this.enableThinking);
 	}
 
 	@Override
@@ -592,7 +606,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.outputModalities, other.outputModalities)
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
 				&& Objects.equals(this.metadata, other.metadata)
-				&& Objects.equals(this.reasoningEffort, other.reasoningEffort);
+				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
+				&& Objects.equals(this.enableThinking, other.enableThinking);
 	}
 
 	@Override
@@ -777,6 +792,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder reasoningEffort(String reasoningEffort) {
 			this.options.reasoningEffort = reasoningEffort;
+			return this;
+		}
+
+		public Builder enableThinking(boolean enableThinking) {
+			this.options.enableThinking = enableThinking;
 			return this;
 		}
 
