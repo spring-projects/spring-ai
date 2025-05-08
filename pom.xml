@@ -76,6 +76,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
@@ -188,11 +189,12 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
-			<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
