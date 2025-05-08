@@ -44,34 +44,25 @@ import org.springframework.util.Assert;
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
  * @author Linar Abzaltdinov
+ * @author Mark Pollack
  * @since 1.0.0
  */
 public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
-	private static final String QUERY_GET_IDS = """
-			SELECT DISTINCT conversation_id FROM ai_chat_memory
-			""";
-
-	private static final String QUERY_ADD = """
-			INSERT INTO ai_chat_memory (conversation_id, content, type, "timestamp") VALUES (?, ?, ?, ?)
-			""";
-
-	private static final String QUERY_GET = """
-			SELECT content, type FROM ai_chat_memory WHERE conversation_id = ? ORDER BY "timestamp"
-			""";
-
-	private static final String QUERY_CLEAR = "DELETE FROM ai_chat_memory WHERE conversation_id = ?";
-
 	private final JdbcTemplate jdbcTemplate;
 
-	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate) {
+	private final JdbcChatMemoryDialect dialect;
+
+	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryDialect dialect) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
+		Assert.notNull(dialect, "dialect cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
+		this.dialect = dialect;
 	}
 
 	@Override
 	public List<String> findConversationIds() {
-		List<String> conversationIds = this.jdbcTemplate.query(QUERY_GET_IDS, rs -> {
+		List<String> conversationIds = this.jdbcTemplate.query(dialect.getSelectConversationIdsSql(), rs -> {
 			var ids = new ArrayList<String>();
 			while (rs.next()) {
 				ids.add(rs.getString(1));
@@ -84,7 +75,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		return this.jdbcTemplate.query(QUERY_GET, new MessageRowMapper(), conversationId);
+		return this.jdbcTemplate.query(dialect.getSelectMessagesSql(), new MessageRowMapper(), conversationId);
 	}
 
 	@Override
@@ -93,13 +84,14 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 		this.deleteByConversationId(conversationId);
-		this.jdbcTemplate.batchUpdate(QUERY_ADD, new AddBatchPreparedStatement(conversationId, messages));
+		this.jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
+				new AddBatchPreparedStatement(conversationId, messages));
 	}
 
 	@Override
 	public void deleteByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		this.jdbcTemplate.update(QUERY_CLEAR, conversationId);
+		this.jdbcTemplate.update(dialect.getDeleteMessagesSql(), conversationId);
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
@@ -154,6 +146,8 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcTemplate jdbcTemplate;
 
+		private JdbcChatMemoryDialect dialect;
+
 		private Builder() {
 		}
 
@@ -162,8 +156,15 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			return this;
 		}
 
+		public Builder dialect(JdbcChatMemoryDialect dialect) {
+			this.dialect = dialect;
+			return this;
+		}
+
 		public JdbcChatMemoryRepository build() {
-			return new JdbcChatMemoryRepository(this.jdbcTemplate);
+			if (this.dialect == null)
+				throw new IllegalStateException("Dialect must be set");
+			return new JdbcChatMemoryRepository(this.jdbcTemplate, this.dialect);
 		}
 
 	}

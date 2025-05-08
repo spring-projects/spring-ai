@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryDialect;
 import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -39,24 +39,23 @@ import org.springframework.jdbc.core.JdbcTemplate;
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ JdbcChatMemoryRepository.class, DataSource.class, JdbcTemplate.class })
-@EnableConfigurationProperties(JdbcChatMemoryProperties.class)
-public class JdbcChatMemoryAutoConfiguration {
+@EnableConfigurationProperties(JdbcChatMemoryRepositoryProperties.class)
+public class JdbcChatMemoryRepositoryAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryAutoConfiguration.class);
+	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepositoryAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
-	JdbcChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
-		return JdbcChatMemoryRepository.builder().jdbcTemplate(jdbcTemplate).build();
+	JdbcChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate, DataSource dataSource) {
+		JdbcChatMemoryDialect dialect = JdbcChatMemoryDialect.from(dataSource);
+		return JdbcChatMemoryRepository.builder().jdbcTemplate(jdbcTemplate).dialect(dialect).build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = JdbcChatMemoryProperties.CONFIG_PREFIX, name = "initialize-schema",
-			havingValue = "true", matchIfMissing = true)
-	JdbcChatMemoryDataSourceScriptDatabaseInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource) {
-		logger.debug("Initializing schema for JdbcChatMemoryRepository");
-		return new JdbcChatMemoryDataSourceScriptDatabaseInitializer(dataSource);
+	JdbcChatMemoryRepositorySchemaInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource,
+			JdbcChatMemoryRepositoryProperties properties) {
+		return new JdbcChatMemoryRepositorySchemaInitializer(dataSource, properties);
 	}
 
 }

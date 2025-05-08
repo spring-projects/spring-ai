@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,21 +23,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Jonathan Leijendekker
  */
-class JdbcChatMemoryPropertiesTests {
+class JdbcChatMemoryRepositoryPropertiesTests {
 
 	@Test
 	void defaultValues() {
-		var props = new JdbcChatMemoryProperties();
-
-		assertThat(props.isInitializeSchema()).isTrue();
+		var props = new JdbcChatMemoryRepositoryProperties();
+		assertThat(props.getInitializeSchema())
+			.isEqualTo(JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.EMBEDDED);
 	}
 
 	@Test
 	void customValues() {
-		var props = new JdbcChatMemoryProperties();
-		props.setInitializeSchema(false);
-
-		assertThat(props.isInitializeSchema()).isFalse();
+		var props = new JdbcChatMemoryRepositoryProperties();
+		props.setInitializeSchema(JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.NEVER);
+		assertThat(props.getInitializeSchema())
+			.isEqualTo(JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.NEVER);
 	}
 
 }

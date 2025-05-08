@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.jdbc.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import javax.sql.DataSource;
 
@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jonathan Leijendekker
  */
 @Testcontainers
-class JdbcChatMemoryDataSourceScriptDatabaseInitializerPostgresqlTests {
+class JdbcChatMemoryRepositorySchemaInitializerPostgresqlTests {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("postgres:17");
 
@@ -47,7 +47,7 @@ class JdbcChatMemoryDataSourceScriptDatabaseInitializerPostgresqlTests {
 		.withPassword("postgres");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(JdbcChatMemoryAutoConfiguration.class,
+		.withConfiguration(AutoConfigurations.of(JdbcChatMemoryRepositoryAutoConfiguration.class,
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withPropertyValues(String.format("spring.datasource.url=%s", postgresContainer.getJdbcUrl()),
 				String.format("spring.datasource.username=%s", postgresContainer.getUsername()),
@@ -57,7 +57,9 @@ class JdbcChatMemoryDataSourceScriptDatabaseInitializerPostgresqlTests {
 	void getSettings_shouldHaveSchemaLocations() {
 		this.contextRunner.run(context -> {
 			var dataSource = context.getBean(DataSource.class);
-			var settings = JdbcChatMemoryDataSourceScriptDatabaseInitializer.getSettings(dataSource);
+			// Use new signature: requires JdbcChatMemoryRepositoryProperties
+			var settings = JdbcChatMemoryRepositorySchemaInitializer.getSettings(dataSource,
+					new JdbcChatMemoryRepositoryProperties());
 
 			assertThat(settings.getSchemaLocations())
 				.containsOnly("classpath:org/springframework/ai/chat/memory/jdbc/schema-postgresql.sql");
