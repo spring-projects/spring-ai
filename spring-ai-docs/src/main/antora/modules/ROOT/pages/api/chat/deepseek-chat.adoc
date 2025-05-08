@@ -17,7 +17,7 @@ Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-a
 Visit https://api-docs.deepseek.com/[here] to create an API Key. Configure it using the `spring.ai.openai.api-key` property in your Spring AI project.
 
 * **Set the DeepSeek Base URL**:
-Set the `spring.ai.openai.base-url` property to `https://api.deepseek.com`.
+Set the `spring.ai.openai.base-url` property to `+https://api.deepseek.com+`.
 
 * **Select a DeepSeek Model**:
 Use the `spring.ai.openai.chat.options.model=<model name>` property to specify the model. Refer to https://api-docs.deepseek.com/quick_start/pricing[Supported Models] for available options.
@@ -101,7 +101,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://api.deepseek.com` | -
+| spring.ai.openai.base-url   | The URL to connect to. Must be set to `+https://api.deepseek.com+` | -
 | spring.ai.openai.api-key    | Your DeepSeek API Key | -
 |====
 
@@ -127,7 +127,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 
 | spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
 | spring.ai.model.chat | Enable OpenAI chat model.  | openai
-| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://api.deepseek.com` |  -
+| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `+https://api.deepseek.com+` |  -
 | spring.ai.openai.chat.api-key   | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.chat.options.model | The link:https://api-docs.deepseek.com/quick_start/pricing[DeepSeek LLM model] to use | -
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
