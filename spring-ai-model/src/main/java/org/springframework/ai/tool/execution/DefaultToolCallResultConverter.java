@@ -45,7 +45,7 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
-			return "Done";
+			return JsonParser.toJson("Done");
 		}
 		if (result instanceof RenderedImage) {
 			final var buf = new ByteArrayOutputStream(1024 * 4);

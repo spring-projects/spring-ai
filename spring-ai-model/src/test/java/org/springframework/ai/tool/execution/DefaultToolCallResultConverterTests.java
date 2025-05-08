@@ -50,9 +50,9 @@ class DefaultToolCallResultConverterTests {
 	}
 
 	@Test
-	void convertVoidReturnTypeShouldReturnDone() {
+	void convertVoidReturnTypeShouldReturnDoneJson() {
 		String result = this.converter.convert(null, void.class);
-		assertThat(result).isEqualTo("Done");
+		assertThat(result).isEqualTo("\"Done\"");
 	}
 
 	@Test
