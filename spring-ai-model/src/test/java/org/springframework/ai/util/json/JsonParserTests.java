@@ -241,6 +241,20 @@ class JsonParserTests {
 		assertThat(value).isEqualTo(new TestRecord("John", 30));
 	}
 
+	@Test
+	void fromScientificNotationToInteger() {
+		var value = JsonParser.toTypedObject("1.5E7", Integer.class);
+		assertThat(value).isInstanceOf(Integer.class);
+		assertThat(value).isEqualTo(15_000_000);
+	}
+
+	@Test
+	void fromScientificNotationToLong() {
+		var value = JsonParser.toTypedObject("1.5E12", Long.class);
+		assertThat(value).isInstanceOf(Long.class);
+		assertThat(value).isEqualTo(1_500_000_000_000L);
+	}
+
 	record TestRecord(String name, Integer age) {
 	}
 
