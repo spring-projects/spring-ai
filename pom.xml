@@ -123,7 +123,6 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-hanadb</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
@@ -146,7 +145,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-couchbase</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-elasticsearch</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-gemfire</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-hanadb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mariadb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-milvus</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mongodb-atlas</module>
