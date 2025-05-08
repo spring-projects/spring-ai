@@ -77,7 +77,7 @@ public class McpToolCallbackAutoConfiguration {
 		}
 
 		@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX + ".toolcallback", name = "enabled",
-				havingValue = "true", matchIfMissing = false)
+				havingValue = "true", matchIfMissing = true)
 		static class ToolCallbackProviderEnabled {
 
 		}
