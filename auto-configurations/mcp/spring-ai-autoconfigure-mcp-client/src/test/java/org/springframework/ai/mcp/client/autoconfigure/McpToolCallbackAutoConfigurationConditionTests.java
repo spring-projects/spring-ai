@@ -63,18 +63,14 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 	}
 
 	@Test
-	void doesNotMatchWhenToolCallbackPropertyIsMissing() {
-		// McpClientEnabled is true by default if missing, but ToolCallbackEnabled is
-		// false by default if missing
+	void doesMatchWhenToolCallbackPropertyIsMissing() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.client.enabled=true")
-			.run(context -> assertThat(context).doesNotHaveBean("testBean"));
+			.run(context -> assertThat(context).hasBean("testBean"));
 	}
 
 	@Test
-	void doesNotMatchWhenBothPropertiesAreMissing() {
-		// McpClientEnabled is true by default if missing, but ToolCallbackEnabled is
-		// false by default if missing
-		this.contextRunner.run(context -> assertThat(context).doesNotHaveBean("testBean"));
+	void doesMatchWhenBothPropertiesAreMissing() {
+		this.contextRunner.run(context -> assertThat(context).hasBean("testBean"));
 	}
 
 	@Configuration
