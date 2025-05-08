@@ -681,12 +681,6 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-vector-store-hanadb</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-vector-store-mariadb</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -804,12 +798,6 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-gemfire</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-starter-vector-store-hanadb</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
