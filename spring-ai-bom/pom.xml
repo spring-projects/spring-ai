@@ -322,6 +322,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-deepseek</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <!-- Spring AI Vector Stores -->
 
 			<dependency>
@@ -621,6 +627,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-zhipuai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-deepseek</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -970,6 +982,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-zhipuai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-deepseek</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

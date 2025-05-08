@@ -11,7 +11,7 @@
 **** xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic Function Calling (Deprecated)]
 *** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling]
-*** xref:api/chat/deepseek-chat.adoc[DeepSeek AI]
+*** xref:api/chat/deepseek-chat.adoc[DeepSeek]
 *** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
 *** xref:api/chat/google-vertexai.adoc[Google VertexAI]
 **** xref:api/chat/vertexai-gemini-chat.adoc[VertexAI Gemini]
