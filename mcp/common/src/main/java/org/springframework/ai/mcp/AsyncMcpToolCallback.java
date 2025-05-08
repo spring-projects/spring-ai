@@ -25,6 +25,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 /**
@@ -84,7 +85,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 */
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return ToolDefinition.builder()
+		return DefaultToolDefinition.builder()
 			.name(McpToolUtils.prefixedToolName(this.asyncMcpClient.getClientInfo().name(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))

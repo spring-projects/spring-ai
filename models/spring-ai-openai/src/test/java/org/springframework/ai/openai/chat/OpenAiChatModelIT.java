@@ -69,7 +69,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioPa
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
-import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;

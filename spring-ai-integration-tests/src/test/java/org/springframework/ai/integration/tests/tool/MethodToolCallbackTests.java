@@ -29,7 +29,7 @@ import org.springframework.ai.integration.tests.tool.domain.Author;
 import org.springframework.ai.integration.tests.tool.domain.Book;
 import org.springframework.ai.integration.tests.tool.domain.BookService;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;

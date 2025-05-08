@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.metadata;
+package org.springframework.ai.support;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 
 /**
@@ -23,9 +25,9 @@ import org.springframework.ai.chat.model.ChatResponse;
  *
  * @author Ilayaperumal Gopinathan
  */
-public final class UsageUtils {
+public final class UsageCalculator {
 
-	private UsageUtils() {
+	private UsageCalculator() {
 		throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
 	}
 

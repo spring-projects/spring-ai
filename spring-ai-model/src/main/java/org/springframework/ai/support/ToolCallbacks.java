@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool;
+package org.springframework.ai.support;
 
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 
 /**

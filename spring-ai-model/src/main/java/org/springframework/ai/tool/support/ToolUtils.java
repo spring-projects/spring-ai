@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.util;
+package org.springframework.ai.tool.support;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;

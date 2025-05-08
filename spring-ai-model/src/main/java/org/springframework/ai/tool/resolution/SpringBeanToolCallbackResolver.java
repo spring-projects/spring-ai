@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.util.json.schema.SchemaType;
 import org.springframework.context.ApplicationContext;

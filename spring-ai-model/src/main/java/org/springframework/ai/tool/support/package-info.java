@@ -16,7 +16,7 @@
 
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.tool.util;
+package org.springframework.ai.tool.support;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

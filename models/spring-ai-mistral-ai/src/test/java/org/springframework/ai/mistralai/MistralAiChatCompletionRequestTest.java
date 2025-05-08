@@ -25,6 +25,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -106,7 +107,7 @@ public class MistralAiChatCompletionRequestTest {
 		private final ToolDefinition toolDefinition;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override

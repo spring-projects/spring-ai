@@ -26,7 +26,6 @@ import org.springframework.ai.tool.StaticToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -34,6 +33,7 @@ import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -175,7 +175,7 @@ class ToolCallingAutoConfigurationTests {
 		public ToolCallback toolCallbacks6() {
 			var toolMethod = ReflectionUtils.findMethod(WeatherService.class, "getAlert", String.class);
 			return MethodToolCallback.builder()
-				.toolDefinition(ToolDefinition.builder(toolMethod).build())
+				.toolDefinition(ToolDefinitions.builder(toolMethod).build())
 				.toolMethod(toolMethod)
 				.toolObject(new WeatherService())
 				.build();

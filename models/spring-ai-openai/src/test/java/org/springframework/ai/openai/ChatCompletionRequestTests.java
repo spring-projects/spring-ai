@@ -27,6 +27,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
@@ -166,7 +167,7 @@ class ChatCompletionRequestTests {
 		private final ToolDefinition toolDefinition;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
