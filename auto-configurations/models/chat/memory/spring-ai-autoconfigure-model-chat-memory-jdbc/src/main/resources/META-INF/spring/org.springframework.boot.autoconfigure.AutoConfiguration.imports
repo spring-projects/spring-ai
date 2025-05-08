@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.model.chat.memory.jdbc.autoconfigure.JdbcChatMemoryAutoConfiguration
+org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure.JdbcChatMemoryRepositoryAutoConfiguration
