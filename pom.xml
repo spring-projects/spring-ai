@@ -46,6 +46,7 @@
 		<module>memory/spring-ai-model-chat-memory-neo4j</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
+		<module>auto-configurations/common/spring-ai-autoconfigure-tool</module>
 
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
