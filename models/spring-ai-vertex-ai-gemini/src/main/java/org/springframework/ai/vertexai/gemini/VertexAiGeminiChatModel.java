@@ -340,7 +340,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 			Struct.Builder structBuilder = Struct.newBuilder();
 
-			if (rootNode.isArray()) {
+			if (rootNode.isTextual()) {
+				structBuilder.putFields("result", Value.newBuilder().setStringValue(json).build());
+			}
+			else if (rootNode.isArray()) {
 				// Handle JSON array
 				List<Value> values = new ArrayList<>();
 

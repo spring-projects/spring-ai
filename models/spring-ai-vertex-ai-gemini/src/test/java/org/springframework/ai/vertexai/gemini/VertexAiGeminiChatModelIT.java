@@ -361,6 +361,38 @@ class VertexAiGeminiChatModelIT {
 
 	}
 
+	@Test
+	void jsonTextToolCallingTest() {
+		// Test for the improved jsonToStruct method that handles JSON texts in tool
+		// calling
+
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+			.observationRegistry(ObservationRegistry.NOOP)
+			.build();
+
+		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
+			.vertexAI(vertexAiApi())
+			.toolCallingManager(toolCallingManager)
+			.defaultOptions(VertexAiGeminiChatOptions.builder()
+				.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.temperature(0.1)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		String response = chatClient.prompt()
+			.tools(new CurrentTimeTools())
+			.user("Get the current time. Make sure to use the getCurrentDateTime tool to get this information.")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		assertThat(response).contains("2025-05-08T10:10:10+02:00[Europe/Berlin]");
+	}
+
 	/**
 	 * Tool class that returns a JSON array to test the jsonToStruct method's ability to
 	 * handle JSON arrays. This specifically tests the PR changes that improve the
@@ -374,6 +406,21 @@ class VertexAiGeminiChatModelIT {
 			return List.of(Map.of("name", "Albert Einstein", "discovery", "Theory of Relativity"),
 					Map.of("name", "Isaac Newton", "discovery", "Laws of Motion"),
 					Map.of("name", "Marie Curie", "discovery", "Radioactivity"));
+		}
+
+	}
+
+	/**
+	 * Tool class that returns a String to test the jsonToStruct method's ability to
+	 * handle JSON texts. This specifically tests the PR changes that improve the
+	 * jsonToStruct method to handle JSON texts in addition to JSON objects and JSON
+	 * arrays.
+	 */
+	public static class CurrentTimeTools {
+
+		@Tool(description = "Get the current date and time in the user's timezone")
+		String getCurrentDateTime() {
+			return "2025-05-08T10:10:10+02:00[Europe/Berlin]";
 		}
 
 	}
