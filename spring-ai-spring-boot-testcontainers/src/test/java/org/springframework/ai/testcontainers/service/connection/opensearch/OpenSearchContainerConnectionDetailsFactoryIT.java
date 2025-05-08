@@ -55,7 +55,8 @@ class OpenSearchContainerConnectionDetailsFactoryIT {
 				OpenSearchVectorStoreAutoConfiguration.class))
 		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true",
+		.withPropertyValues("spring.ai.vectorstore.opensearch.aws.enabled=false",
+				"spring.ai.vectorstore.opensearch.initialize-schema=true",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=auto-spring-ai-document-index",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
 						{
