@@ -45,62 +45,7 @@
 		<module>memory/spring-ai-model-chat-memory-jdbc</module>
 		<module>memory/spring-ai-model-chat-memory-neo4j</module>
 
-		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
-		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
-
-		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
-
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-cassandra</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-jdbc</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-neo4j</module>
-
-		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
-
-		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
-		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
-
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
-			<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
-
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
-			<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
-
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
-
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-hanadb</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-observation</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
@@ -133,6 +78,65 @@
 		<module>vector-stores/spring-ai-redis-store</module>
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
+
+
+		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
+
+		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
+
+		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
+
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-cassandra</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-jdbc</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-neo4j</module>
+
+		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
+
+		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
+		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
+
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
+
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
+
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
+
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-hanadb</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-observation</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
@@ -188,11 +192,12 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
-			<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
@@ -564,6 +569,7 @@
 					<overview>
 						${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 					<detectJavaApiLink>false</detectJavaApiLink>
+					<detectOfflineLinks>false</detectOfflineLinks>
 					<failOnError>false</failOnError>
 					<doclint>none</doclint>
 				</configuration>
