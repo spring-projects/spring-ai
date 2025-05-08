@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -253,6 +254,7 @@ public class OllamaApi {
 	 * @param toolCalls The relevant tool call.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
@@ -523,6 +525,7 @@ public class OllamaApi {
 	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatResponse(
 			@JsonProperty("model") String model,
 			@JsonProperty("created_at") Instant createdAt,
@@ -599,6 +602,7 @@ public class OllamaApi {
 	 * @param promptEvalCount The number of tokens in the prompt.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record EmbeddingsResponse(
 			@JsonProperty("model") String model,
 			@JsonProperty("embeddings") List<float[]> embeddings,
@@ -609,6 +613,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Model(
 			@JsonProperty("name") String name,
 			@JsonProperty("model") String model,
@@ -618,6 +623,7 @@ public class OllamaApi {
 			@JsonProperty("details") Details details
 	) {
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Details(
 				@JsonProperty("parent_model") String parentModel,
 				@JsonProperty("format") String format,
@@ -629,6 +635,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ListModelResponse(
 			@JsonProperty("models") List<Model> models
 	) { }
@@ -646,6 +653,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ShowModelResponse(
 			@JsonProperty("license") String license,
 			@JsonProperty("modelfile") String modelfile,
@@ -692,6 +700,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ProgressResponse(
 			@JsonProperty("status") String status,
 			@JsonProperty("digest") String digest,

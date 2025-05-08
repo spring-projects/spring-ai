@@ -22,7 +22,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -331,6 +331,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param invocationLatency The time in milliseconds between the request being sent and the response being received.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record AmazonBedrockInvocationMetrics(
 			@JsonProperty("inputTokenCount") Long inputTokenCount,
 			@JsonProperty("firstByteLatency") Long firstByteLatency,

@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -488,6 +489,7 @@ public class MistralAiApi {
 	 * applicable for completion requests.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("prompt_tokens") Integer promptTokens,
@@ -505,6 +507,7 @@ public class MistralAiApi {
 	 * @param object The object type, which is always 'embedding'.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Embedding(
 	// @formatter:off
 		@JsonProperty("index") Integer index,
@@ -598,6 +601,7 @@ public class MistralAiApi {
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record EmbeddingList<T>(
 	// @formatter:off
 			@JsonProperty("object") String object,
@@ -770,6 +774,7 @@ public class MistralAiApi {
 	 * the {@link Role#TOOL} role and null otherwise.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(
 	// @formatter:off
 		@JsonProperty("content") Object rawContent,
@@ -846,6 +851,7 @@ public class MistralAiApi {
 		 * @param index The index of the tool call in the list of tool calls.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
 
@@ -859,6 +865,7 @@ public class MistralAiApi {
 		 * function.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
 
@@ -873,6 +880,7 @@ public class MistralAiApi {
 		 * @param imageUrl The image content of the message.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MediaContent(
 		// @formatter:off
 		   		@JsonProperty("type") String type,
@@ -936,6 +944,7 @@ public class MistralAiApi {
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletion(
 	// @formatter:off
 		@JsonProperty("id") String id,
@@ -955,6 +964,7 @@ public class MistralAiApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Choice(
 		// @formatter:off
 			@JsonProperty("index") Integer index,
@@ -973,6 +983,7 @@ public class MistralAiApi {
 	 * @param content A list of message content tokens with log probability information.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record LogProbs(@JsonProperty("content") List<Content> content) {
 
 		/**
@@ -990,6 +1001,7 @@ public class MistralAiApi {
 		 * requested top_logprobs returned.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Content(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
 				@JsonProperty("bytes") List<Integer> probBytes,
 				@JsonProperty("top_logprobs") List<TopLogProbs> topLogprobs) {
@@ -1006,6 +1018,7 @@ public class MistralAiApi {
 			 * is no bytes representation for the token.
 			 */
 			@JsonInclude(Include.NON_NULL)
+			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record TopLogProbs(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
 					@JsonProperty("bytes") List<Integer> probBytes) {
 
@@ -1029,6 +1042,7 @@ public class MistralAiApi {
 	 * @param usage usage metrics for the chat completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionChunk(
 	// @formatter:off
 		@JsonProperty("id") String id,
@@ -1048,12 +1062,13 @@ public class MistralAiApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(
 		// @formatter:off
 			@JsonProperty("index") Integer index,
 			@JsonProperty("delta") ChatCompletionMessage delta,
 			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-		@JsonProperty("logprobs") LogProbs logprobs) {
+			@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
 		}
 
