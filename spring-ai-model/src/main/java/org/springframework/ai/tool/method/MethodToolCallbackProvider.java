@@ -19,7 +19,6 @@ package org.springframework.ai.tool.method;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -32,9 +31,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolDefinitions;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -88,7 +87,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
 				.map(toolMethod -> MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.from(toolMethod))
+					.toolDefinition(ToolDefinitions.from(toolMethod))
 					.toolMetadata(ToolMetadata.from(toolMethod))
 					.toolMethod(toolMethod)
 					.toolObject(toolObject)

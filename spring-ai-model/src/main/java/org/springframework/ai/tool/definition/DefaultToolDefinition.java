@@ -16,7 +16,8 @@
 
 package org.springframework.ai.tool.definition;
 
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
+import org.springframework.ai.util.ParsingUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -66,7 +67,8 @@ public record DefaultToolDefinition(String name, String description, String inpu
 
 		public ToolDefinition build() {
 			if (!StringUtils.hasText(this.description)) {
-				this.description = ToolUtils.getToolDescriptionFromName(this.name);
+				Assert.hasText(this.name, "toolName cannot be null or empty");
+				this.description = ParsingUtils.reConcatenateCamelCase(this.name, " ");
 			}
 			return new DefaultToolDefinition(this.name, this.description, this.inputSchema);
 		}

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -193,7 +194,7 @@ class ToolUtilsTests {
 
 	private ToolCallback createMockToolCallback(String name, String result) {
 		ToolCallback callback = mock(ToolCallback.class);
-		ToolDefinition definition = ToolDefinition.builder()
+		ToolDefinition definition = DefaultToolDefinition.builder()
 			.name(name)
 			.description("Test tool")
 			.inputSchema("{}")
@@ -205,7 +206,7 @@ class ToolUtilsTests {
 
 	private ToolCallback createMockToolCallback(String name, RuntimeException error) {
 		ToolCallback callback = mock(ToolCallback.class);
-		ToolDefinition definition = ToolDefinition.builder()
+		ToolDefinition definition = DefaultToolDefinition.builder()
 			.name(name)
 			.description("Test tool")
 			.inputSchema("{}")
