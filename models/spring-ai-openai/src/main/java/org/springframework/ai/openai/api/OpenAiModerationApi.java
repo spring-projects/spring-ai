@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -100,6 +101,7 @@ public class OpenAiModerationApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record OpenAiModerationResponse(
 			@JsonProperty("id") String id,
 			@JsonProperty("model") String model,
@@ -108,6 +110,7 @@ public class OpenAiModerationApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record OpenAiModerationResult(
 			@JsonProperty("flagged") boolean flagged,
 			@JsonProperty("categories") Categories categories,
@@ -116,6 +119,7 @@ public class OpenAiModerationApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Categories(
 			@JsonProperty("sexual") boolean sexual,
 			@JsonProperty("hate") boolean hate,
@@ -131,6 +135,8 @@ public class OpenAiModerationApi {
 
 	}
 
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record CategoryScores(
 			@JsonProperty("sexual") double sexual,
 			@JsonProperty("hate") double hate,
@@ -148,6 +154,7 @@ public class OpenAiModerationApi {
 	// @formatter:onn
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Data(@JsonProperty("url") String url, @JsonProperty("b64_json") String b64Json,
 			@JsonProperty("revised_prompt") String revisedPrompt) {
 

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -699,6 +700,7 @@ public class AnthropicApi {
 	 * response.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlock(
 	// @formatter:off
 		@JsonProperty("type") Type type,
@@ -958,6 +960,7 @@ public class AnthropicApi {
 	 * @param usage Input and output token usage.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionResponse(
 	// @formatter:off
 		@JsonProperty("id") String id,
@@ -980,6 +983,7 @@ public class AnthropicApi {
 	 * @param outputTokens The number of output tokens which were used. completion).
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
@@ -1078,6 +1082,7 @@ public class AnthropicApi {
 	 * @param contentBlock The content block body.
 	*/
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlockStartEvent(
 			// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1100,6 +1105,7 @@ public class AnthropicApi {
 		  * @param input The tool use input.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockToolUse(
 			@JsonProperty("type") String type,
 			@JsonProperty("id") String id,
@@ -1113,6 +1119,7 @@ public class AnthropicApi {
 		  * @param text The text content.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockText(
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockBody {
@@ -1130,6 +1137,7 @@ public class AnthropicApi {
 	 * @param delta The content block delta body.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlockDeltaEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1153,6 +1161,7 @@ public class AnthropicApi {
 		 * @param text The text content.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockDeltaText(
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockDeltaBody {
@@ -1164,6 +1173,7 @@ public class AnthropicApi {
 		  * @param partialJson The partial JSON content.
 		  */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockDeltaJson(
 			@JsonProperty("type") String type,
 			@JsonProperty("partial_json") String partialJson) implements ContentBlockDeltaBody {
@@ -1174,6 +1184,8 @@ public class AnthropicApi {
 		 * @param type The content block type.
 		 * @param thinking The thinking content.
 		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockDeltaThinking(
 			@JsonProperty("type") String type,
 			@JsonProperty("thinking") String thinking) implements ContentBlockDeltaBody {
@@ -1184,6 +1196,8 @@ public class AnthropicApi {
 		 * @param type The content block type.
 		 * @param signature The signature content.
 		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockDeltaSignature(
 			@JsonProperty("type") String type,
 			@JsonProperty("signature") String signature) implements ContentBlockDeltaBody {
@@ -1200,6 +1214,7 @@ public class AnthropicApi {
 	 * @param index The index of the content block.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlockStopEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1214,6 +1229,7 @@ public class AnthropicApi {
 	 * @param message The message body.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record MessageStartEvent(// @formatter:off
 		@JsonProperty("type") EventType type,
 		@JsonProperty("message") ChatCompletionResponse message) implements StreamEvent {
@@ -1228,6 +1244,7 @@ public class AnthropicApi {
 	 * @param usage The message delta usage.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record MessageDeltaEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1239,6 +1256,7 @@ public class AnthropicApi {
 		  * @param stopSequence The stop sequence.
 		  */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MessageDelta(
 			@JsonProperty("stop_reason") String stopReason,
 			@JsonProperty("stop_sequence") String stopSequence) {
@@ -1249,6 +1267,7 @@ public class AnthropicApi {
 		 * @param outputTokens The output tokens.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MessageDeltaUsage(
 			@JsonProperty("output_tokens") Integer outputTokens) {
 		}
@@ -1261,6 +1280,7 @@ public class AnthropicApi {
 	 * @param type The event type.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record MessageStopEvent(
 	//@formatter:off
 		@JsonProperty("type") EventType type) implements StreamEvent {
@@ -1277,6 +1297,7 @@ public class AnthropicApi {
 	 * @param error The error body.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ErrorEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1288,6 +1309,7 @@ public class AnthropicApi {
 		 * @param message The error message.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Error(
 			@JsonProperty("type") String type,
 			@JsonProperty("message") String message) {
@@ -1304,6 +1326,7 @@ public class AnthropicApi {
 	 * @param type The event type.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record PingEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type) implements StreamEvent {
