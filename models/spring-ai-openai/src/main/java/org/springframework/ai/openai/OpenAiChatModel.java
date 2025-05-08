@@ -43,7 +43,7 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -227,7 +227,8 @@ public class OpenAiChatModel implements ChatModel {
 				// Current usage
 				OpenAiApi.Usage usage = chatCompletion.usage();
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
+						previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(chatCompletion, rateLimit, accumulatedUsage));
 
@@ -321,7 +322,7 @@ public class OpenAiChatModel implements ChatModel {
 						// @formatter:on
 						OpenAiApi.Usage usage = chatCompletion2.usage();
 						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-						Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage,
+						Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 								previousChatResponse);
 						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
 					}
@@ -345,7 +346,7 @@ public class OpenAiChatModel implements ChatModel {
 								// This is the usage from the final Chat response for a
 								// given Chat request.
 								Usage usage = secondResponse.getMetadata().getUsage();
-								if (!UsageUtils.isEmpty(usage)) {
+								if (!UsageCalculator.isEmpty(usage)) {
 									// Store the usage from the final response to the
 									// penultimate response for accumulation.
 									return new ChatResponse(firstResponse.getResults(),

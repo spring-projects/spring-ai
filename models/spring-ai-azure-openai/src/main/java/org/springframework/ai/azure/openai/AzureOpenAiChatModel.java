@@ -77,7 +77,7 @@ import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.PromptMetadata.PromptFilterMetadata;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -357,7 +357,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 				// Accumulate the usage from the previous chat response
 				CompletionsUsage usage = chatCompletion.getUsage();
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
+						previousChatResponse);
 				return toChatResponse(chatCompletion, accumulatedUsage);
 			}).buffer(2, 1).map(bufferList -> {
 				ChatResponse chatResponse1 = bufferList.get(0);
@@ -365,7 +366,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 					if (bufferList.size() == 2) {
 						ChatResponse chatResponse2 = bufferList.get(1);
 						if (chatResponse2 != null && chatResponse2.getMetadata() != null
-								&& !UsageUtils.isEmpty(chatResponse2.getMetadata().getUsage())) {
+								&& !UsageCalculator.isEmpty(chatResponse2.getMetadata().getUsage())) {
 							return toChatResponse(chatResponse1, chatResponse2.getMetadata().getUsage());
 						}
 					}
@@ -462,7 +463,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 		if (chatCompletions.getUsage() != null) {
 			currentUsage = getDefaultUsage(chatCompletions.getUsage());
 		}
-		Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
+		Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 		return new ChatResponse(generations, from(chatCompletions, promptFilterMetadata, cumulativeUsage));
 	}
 

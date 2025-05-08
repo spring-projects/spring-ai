@@ -39,6 +39,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,7 +87,7 @@ class DefaultChatClientObservationConventionTests {
 
 			@Override
 			public ToolDefinition getToolDefinition() {
-				return ToolDefinition.builder().name(name).inputSchema("{}").build();
+				return DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 			}
 
 			@Override

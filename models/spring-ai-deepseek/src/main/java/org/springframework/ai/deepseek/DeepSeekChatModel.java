@@ -43,6 +43,7 @@ import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.*;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -179,7 +180,8 @@ public class DeepSeekChatModel implements ChatModel {
 				// Current usage
 				DeepSeekApi.Usage usage = completionEntity.getBody().usage();
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
+						previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(completionEntity.getBody(), accumulatedUsage));
 
@@ -256,7 +258,7 @@ public class DeepSeekChatModel implements ChatModel {
 						}).toList();
 						DeepSeekApi.Usage usage = chatCompletion2.usage();
 						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
-						Usage cumulativeUsage = UsageUtils.getCumulativeUsage(currentUsage, previousChatResponse);
+						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 
 						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
 					}

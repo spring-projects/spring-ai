@@ -39,7 +39,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -216,7 +216,7 @@ public class MistralAiChatModel implements ChatModel {
 				}).toList();
 
 				DefaultUsage usage = getDefaultUsage(completionEntity.getBody().usage());
-				Usage cumulativeUsage = UsageUtils.getCumulativeUsage(usage, previousChatResponse);
+				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(completionEntity.getBody(), cumulativeUsage));
 
@@ -298,7 +298,7 @@ public class MistralAiChatModel implements ChatModel {
 
 						if (chatCompletion2.usage() != null) {
 							DefaultUsage usage = getDefaultUsage(chatCompletion2.usage());
-							Usage cumulativeUsage = UsageUtils.getCumulativeUsage(usage, previousChatResponse);
+							Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
 							return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
 						}
 						else {

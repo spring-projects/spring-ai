@@ -26,6 +26,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
@@ -419,12 +420,12 @@ class DefaultChatClientUtilsTests {
 		private final ToolMetadata toolMetadata;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 			this.toolMetadata = ToolMetadata.builder().build();
 		}
 
 		TestToolCallback(String name, boolean returnDirect) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
 		}
 
