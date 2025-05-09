@@ -128,12 +128,7 @@ public final class JsonSchemaGenerator {
 		for (int i = 0; i < method.getParameterCount(); i++) {
 			String parameterName = method.getParameters()[i].getName();
 			Type parameterType = method.getGenericParameterTypes()[i];
-			if (parameterType instanceof Class<?> parameterClass
-					&& ClassUtils.isAssignable(parameterClass, ToolContext.class)) {
-				// A ToolContext method parameter is not included in the JSON Schema
-				// generation.
-				// It's a special type used by Spring AI to pass contextual data to tools
-				// outside the model interaction flow.
+			if (shouldIgnoredInJsonSchema(parameterType)) {
 				continue;
 			}
 			if (isMethodParameterRequired(method, i)) {
@@ -153,6 +148,15 @@ public final class JsonSchemaGenerator {
 		processSchemaOptions(schemaOptions, schema);
 
 		return schema.toPrettyString();
+	}
+
+	private static boolean shouldIgnoredInJsonSchema(final Type parameterType) {
+		// A ToolContext method parameter is not included in the JSON Schema
+		// generation.
+		// It's a special type used by Spring AI to pass contextual data to tools
+		// outside the model interaction flow.
+		return parameterType instanceof Class<?> parameterClass
+				&& ClassUtils.isAssignable(parameterClass, ToolContext.class);
 	}
 
 	/**
