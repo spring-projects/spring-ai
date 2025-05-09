@@ -528,43 +528,15 @@ This allows you to tailor the logged information to your specific needs.
 
 TIP: Be cautious about logging sensitive information in production environments.
 
-== Chat Memory (Deprecated)
-
-IMPORTANT: Refer to the new xref:api/chat-memory.adoc[Chat Memory] documentation for the current features and capabilities.
+== Chat Memory
 
 The interface `ChatMemory` represents a storage for chat conversation history. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 
-There are currently four implementations: `CassandraChatMemory`, `Neo4jChatMemory`, and `JdbcChatMemory`, which provide storage for chat conversation history in-memory, persisted with `time-to-live` in Cassandra, and persisted without `time-to-live` in Neo4j and Jdbc, respectively.
+There is currently one implementation: `MessageWindowChatMemory`.
 
-=== CassandraChatMemory
+`MessageWindowChatMemory` is a chat memory implementation that maintains a window of messages up to a specified maximum size (default: 20 messages). When the number of messages exceeds this limit, older messages are evicted, but system messages are preserved. If a new system message is added, all previous system messages are removed from memory. This ensures that the most recent context is always available for the conversation while keeping memory usage bounded.
 
-To create a `CassandraChatMemory` with `time-to-live`:
 
-[source,java]
-----
-CassandraChatMemory.create(CassandraChatMemoryConfig.builder().withTimeToLive(Duration.ofDays(1)).build());
-----
+The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation history. There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository` and `Neo4jChatMemoryRepository`.
 
-IMPORTANT: Refer to the new xref:api/chat-memory.adoc#_cassandra_repository[Cassandra Chat Memory Repository] documentation for the current features and capabilities.
-
-=== Neo4jChatMemory
-
-The Neo4j chat memory supports the following configuration parameters:
-
-[cols="2,5,1",stripes=even]
-|===
-|Property | Description | Default Value
-
-| `spring.ai.chat.memory.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
-| `spring.ai.chat.memory.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
-| `spring.ai.chat.memory.neo4j.toolCallLabel` | The label for nodes that store tool calls, for example
-in Assistant Messages | `ToolCall`
-| `spring.ai.chat.memory.neo4j.metadataLabel` | The label for the node that store a message metadata | `Metadata`
-| `spring.ai.chat.memory.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
-| `spring.ai.chat.memory.neo4j.mediaLabel` | The label for the nodes that store the media associated to a message | `ToolResponse`
-
-|===
-
-=== JdbcChatMemory
-
-IMPORTANT: Refer to the new xref:api/chat-memory.adoc#_jdbc_repository[JDBC Chat Memory Repository] documentation for the current features and capabilities.
+This implementation is the default for conversation history management in Spring AI. For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] section.
