@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.http.client.autoconfigure.SpringAiHttpClientAutoConfiguration
+org.springframework.ai.http.client.autoconfigure.SpringAiRestClientAutoConfiguration

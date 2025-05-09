@@ -26,19 +26,19 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link SpringAiHttpClientPropertiesTests}.
+ * Unit Tests for {@link SpringAiRestClientProperties}.
  *
  * @author Song Jaegeun
  */
-public class SpringAiHttpClientPropertiesTests {
+public class SpringAiRestClientPropertiesTests {
 
 	@Test
-	public void httpClientDefaultProperties() {
+	public void restClientDefaultProperties() {
 
 		new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(SpringAiHttpClientAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRestClientAutoConfiguration.class))
 			.run(context -> {
-				var httpClientProperties = context.getBean(SpringAiHttpClientProperties.class);
+				var httpClientProperties = context.getBean(SpringAiRestClientProperties.class);
 
 				assertThat(httpClientProperties.getConnectionTimeout()).isEqualTo(Duration.ofSeconds(10));
 				assertThat(httpClientProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
@@ -46,15 +46,15 @@ public class SpringAiHttpClientPropertiesTests {
 	}
 
 	@Test
-	public void httpClientCustomProperties() {
+	public void restClientCustomProperties() {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
-				"spring.ai.http.client.connection-timeout=10s",
-				"spring.ai.http.client.read-timeout=30s")
+				"spring.ai.rest.client.connection-timeout=10s",
+				"spring.ai.rest.client.read-timeout=30s")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiHttpClientAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRestClientAutoConfiguration.class))
 			.run(context -> {
-				var httpClientProperties = context.getBean(SpringAiHttpClientProperties.class);
+				var httpClientProperties = context.getBean(SpringAiRestClientProperties.class);
 
 				assertThat(httpClientProperties.getConnectionTimeout()).isEqualTo(Duration.ofSeconds(10));
 				assertThat(httpClientProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));

@@ -21,14 +21,14 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Properties for AI http-client.
+ * Properties for AI rest-client.
  *
  * @author Song Jaegeun
  */
-@ConfigurationProperties(SpringAiHttpClientProperties.CONFIG_PREFIX)
-public class SpringAiHttpClientProperties {
+@ConfigurationProperties(SpringAiRestClientProperties.CONFIG_PREFIX)
+public class SpringAiRestClientProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.http.client";
+	public static final String CONFIG_PREFIX = "spring.ai.rest.client";
 
 	private Duration connectionTimeout = Duration.ofSeconds(10);
 

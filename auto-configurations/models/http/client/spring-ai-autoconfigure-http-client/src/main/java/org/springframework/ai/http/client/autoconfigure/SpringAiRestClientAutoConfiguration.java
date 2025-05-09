@@ -26,21 +26,20 @@ import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.*;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for AI http-client.
+ * {@link AutoConfiguration Auto-configuration} for AI rest-client.
  *
  * @author Song Jaegeun
  */
 @AutoConfiguration
 @ConditionalOnClass({ RestClient.class })
-@EnableConfigurationProperties({ SpringAiHttpClientProperties.class })
-public class SpringAiHttpClientAutoConfiguration {
+@EnableConfigurationProperties({ SpringAiRestClientProperties.class })
+public class SpringAiRestClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(RestClientCustomizer.class)
-	public RestClientCustomizer restClientCustomizer(SpringAiHttpClientProperties props) {
+	public RestClientCustomizer restClientCustomizer(SpringAiRestClientProperties props) {
 		// RestClient.Builder is not registered as a bean in the context,
 		// so there's no need to use @ConditionalOnMissingBean(RestClient.Builder.class).
 		// Spring Boot will automatically apply this RestClientCustomizer

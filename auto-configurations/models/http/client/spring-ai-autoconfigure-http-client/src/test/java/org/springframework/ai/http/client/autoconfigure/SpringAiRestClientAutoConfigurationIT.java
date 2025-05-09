@@ -27,13 +27,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Song jaegeun
  */
-public class SpringAiHttpClientAutoConfigurationIT {
+public class SpringAiRestClientAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(SpringAiHttpClientAutoConfigurationIT.class, RestClientAutoConfiguration.class));
+			AutoConfigurations.of(SpringAiRestClientAutoConfigurationIT.class, RestClientAutoConfiguration.class));
 
 	@Test
-	void testHttpClientAutoConfiguration() {
+	void testRestClientAutoConfiguration() {
 		this.contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(RestClientCustomizer.class);
 		});
