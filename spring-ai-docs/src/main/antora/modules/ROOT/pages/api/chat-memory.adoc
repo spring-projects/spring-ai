@@ -137,7 +137,7 @@ The correct dialect is auto-detected from the JDBC URL. You can extend support f
 |===
 |Property | Description | Default Value
 | `spring.ai.chat.memory.repository.jdbc.initialize-schema` | Controls when to initialize the schema. Values: `embedded` (default), `always`, `never`. | `embedded`
-| `spring.ai.chat.memory.jdbc.schema` | Location of the schema script to use for initialization. Supports `classpath:` URLs and platform placeholders. | `classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql`
+| `spring.ai.chat.memory.repository.jdbc.schema` | Location of the schema script to use for initialization. Supports `classpath:` URLs and platform placeholders. | `classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql`
 |===
 
 ==== Schema Initialization
