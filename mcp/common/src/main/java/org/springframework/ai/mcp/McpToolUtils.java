@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -323,7 +324,7 @@ public final class McpToolUtils {
 		if (CollectionUtils.isEmpty(mcpClients)) {
 			return List.of();
 		}
-		return List.of((new SyncMcpToolCallbackProvider(mcpClients).getToolCallbacks()));
+		return Arrays.asList(new SyncMcpToolCallbackProvider(mcpClients).getToolCallbacks());
 	}
 
 	/**
