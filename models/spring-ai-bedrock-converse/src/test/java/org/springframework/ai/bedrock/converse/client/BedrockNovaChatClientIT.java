@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.converse.client;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -169,6 +171,61 @@ public class BedrockNovaChatClientIT {
 	}
 
 	public record WeatherResponse(int temp, String unit) {
+	}
+
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@Test
+	void toolAnnotationWeatherForecastTest() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		String response = chatClient.prompt()
+			.tools(new DummyWeatherForcastTools())
+			.user("Get current weather in Amsterdam")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		assertThat(response).contains("20 degrees");
+	}
+
+	public static class DummyWeatherForcastTools {
+
+		@Tool(description = "Get the current weather forcast in Amsterdam")
+		String getCurrentDateTime() {
+			return "Weahter is hot and sunny wiht a temperature of 20 degrees";
+		}
+
+	}
+
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@Test
+	void supplierBasedToolCalling() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		WeatherService.Response response = chatClient.prompt()
+			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+				.description("Get the current weather")
+				.inputType(Void.class)
+				.build())
+			.user("Get current weather in Amsterdam")
+			.call()
+			.entity(WeatherService.Response.class);
+
+		assertThat(response).isNotNull();
+		assertThat(response.temp()).isEqualTo(30.0);
+	}
+
+	public static class WeatherService implements Supplier<WeatherService.Response> {
+
+		public record Response(double temp) {
+		}
+
+		public Response get() {
+			return new Response(30.0);
+		}
+
 	}
 
 	@SpringBootConfiguration
