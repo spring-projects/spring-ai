@@ -30,9 +30,9 @@ Exporting an environment variable is one way to set that configuration property:
 
 [source,shell]
 ----
-export SPRING_AI_OPENAI_API_KEY=<INSERT GROQ API KEY HERE>
-export SPRING_AI_OPENAI_BASE_URL=https://api.groq.com/openai
-export SPRING_AI_OPENAI_CHAT_MODEL=llama3-70b-8192
+export SPRING_AI_GROQ_API_KEY=<INSERT GROQ API KEY HERE>
+export SPRING_AI_GROQ_BASE_URL=https://api.groq.com/openai
+export SPRING_AI_GROQ_CHAT_MODEL=llama3-70b-8192
 ----
 
 === Add Repositories and BOM
@@ -254,7 +254,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 
 [source,application.properties]
 ----
-spring.ai.openai.api-key=<GROQ_API_KEY>
+spring.ai.openai.api-key=<SPRING_AI_GROQ_API_KEY>
 spring.ai.openai.base-url=https://api.groq.com/openai
 spring.ai.openai.chat.options.model=llama3-70b-8192
 spring.ai.openai.chat.options.temperature=0.7
@@ -319,13 +319,19 @@ Next, create a `OpenAiChatModel` and use it for text generations:
 
 [source,java]
 ----
-var openAiApi = new OpenAiApi("https://api.groq.com/openai", System.getenv("GROQ_API_KEY"));
-var openAiChatOptions = OpenAiChatOptions.builder()
-            .model("llama3-70b-8192")
-            .temperature(0.4)
-            .maxTokens(200)
+var openAiApi = OpenAiApi.builder()
+        .baseUrl("https://api.groq.com/openai")
+        .apiKey(System.getenv("SPRING_AI_GROQ_API_KEY"))
         .build();
-var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
+var openAiChatOptions = OpenAiChatOptions.builder()
+        .model("llama3-70b-8192")
+        .temperature(0.4)
+        .maxTokens(200)
+        .build();
+var chatModel = OpenAiChatModel.builder()
+        .openAiApi(this.openAiApi)
+        .defaultOptions(this.openAiChatOptions)
+        .build();
 
 
 ChatResponse response = this.chatModel.call(
