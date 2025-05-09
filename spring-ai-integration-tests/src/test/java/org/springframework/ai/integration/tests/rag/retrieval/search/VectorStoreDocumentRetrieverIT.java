@@ -30,6 +30,7 @@ import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -122,6 +123,30 @@ class VectorStoreDocumentRetrieverIT {
 		Query query = Query.builder()
 			.text("Who is Anacletus?")
 			.context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "location == 'Whispering Woods'"))
+			.build();
+		List<Document> retrievedDocuments = documentRetriever.retrieve(query);
+
+		assertThat(retrievedDocuments).hasSize(2);
+		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("1").getId()));
+		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("2").getId()));
+
+		// No request filter expression applied, so full access to all documents.
+		retrievedDocuments = documentRetriever.retrieve(new Query("Who is Birba?"));
+		assertThat(retrievedDocuments).anyMatch(document -> document.getId().equals(documents.get("4").getId()));
+	}
+
+	@Test
+	void withRequestFilterExpression() {
+		FilterExpressionBuilder b = new FilterExpressionBuilder();
+		DocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
+			.vectorStore(this.pgVectorStore)
+			.similarityThreshold(0.50)
+			.topK(3)
+			.build();
+
+		Query query = Query.builder()
+			.text("Who is Anacletus?")
+			.context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, b.eq("location", "Whispering Woods").build()))
 			.build();
 		List<Document> retrievedDocuments = documentRetriever.retrieve(query);
 
