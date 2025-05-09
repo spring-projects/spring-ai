@@ -28,11 +28,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * An in-memory implementation of {@link ChatMemoryRepository}.
  *
  * @author Thomas Vitale
+ * @author Josh Long
  * @since 1.0.0
  */
-public final class InMemoryChatMemoryRepository implements ChatMemoryRepository {
+public class InMemoryChatMemoryRepository implements ChatMemoryRepository {
 
-	Map<String, List<Message>> chatMemoryStore = new ConcurrentHashMap<>();
+	private final Map<String, List<Message>> chatMemoryStore = new ConcurrentHashMap<>();
 
 	@Override
 	public List<String> findConversationIds() {

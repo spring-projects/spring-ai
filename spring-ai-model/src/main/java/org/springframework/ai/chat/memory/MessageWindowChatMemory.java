@@ -36,9 +36,10 @@ import java.util.Set;
  * {@link SystemMessage} messages are preserved while evicting other types of messages.
  *
  * @author Thomas Vitale
+ * @author Josh Long
  * @since 1.0.0
  */
-public final class MessageWindowChatMemory implements ChatMemory {
+public class MessageWindowChatMemory implements ChatMemory {
 
 	private static final int DEFAULT_MAX_MESSAGES = 20;
 
