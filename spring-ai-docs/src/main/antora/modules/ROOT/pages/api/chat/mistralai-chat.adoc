@@ -342,3 +342,58 @@ Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-
 
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/tool/PaymentStatusFunctionCallingIT.java[PaymentStatusFunctionCallingIT.java] tests show how to use the low-level API to call tool functions.
 Based on the link:https://docs.mistral.ai/guides/function-calling/[Mistral AI Function Calling] tutorial.
+
+== Mistral AI OCR
+
+Spring AI supports Optical Character Recognition (OCR) with Mistral AI. This allows you to extract text and image data from documents.
+
+== Prerequisites
+
+You will need to create an API with Mistral AI to access Mistral AI language models.
+Create an account at https://auth.mistral.ai/ui/registration[Mistral AI registration page] and generate the token on the https://console.mistral.ai/api-keys/[API Keys page].
+
+
+=== Add Dependencies
+
+To use the Mistral AI OCR API, you will need to add the `spring-ai-mistral-ai` dependency to your project.
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mistral-ai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-mistral-ai'
+}
+----
+
+=== Low-level MistralOcrApi Client
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralOcrApi.java[MistralOcrApi] provides a lightweight Java client for link:https://docs.mistral.ai/api/#tag/OCR[Mistral AI OCR API].
+
+Here is a simple snippet showing how to use the API programmatically:
+
+[source,java]
+----
+MistralOcrApi mistralAiApi = new MistralOcrApi(System.getenv("MISTRAL_AI_API_KEY"));
+
+String documentUrl = "https://arxiv.org/pdf/2201.04234";
+MistralOcrApi.OCRRequest request = new MistralOcrApi.OCRRequest(
+        MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue(), "test_id",
+        new MistralOcrApi.OCRRequest.DocumentURLChunk(documentUrl), List.of(0, 1, 2), true, 5, 50);
+
+ResponseEntity<MistralOcrApi.OCRResponse> response = mistralAiApi.ocr(request);
+----
+
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralOcrApi.java[MistralOcrApi.java]'s JavaDoc for further information.
+
+==== MistralOcrApi Sample
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/MistralOcrApiIT.java[MistralOcrApiIT.java] tests provide some general examples of how to use the lightweight library.
