@@ -70,8 +70,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	private final PromptTemplate systemPromptTemplate;
 
 	private VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
-			int chatHistoryWindowSize, PromptTemplate systemPromptTemplate, int order) {
-		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true, order);
+			int chatHistoryWindowSize, boolean protectFromBlocking, PromptTemplate systemPromptTemplate, int order) {
+		super(vectorStore, defaultConversationId, chatHistoryWindowSize, protectFromBlocking, order);
 		this.systemPromptTemplate = systemPromptTemplate;
 	}
 
@@ -194,7 +194,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		@Override
 		public VectorStoreChatMemoryAdvisor build() {
 			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.systemPromptTemplate, this.order);
+					this.protectFromBlocking, this.systemPromptTemplate, this.order);
 		}
 
 	}
