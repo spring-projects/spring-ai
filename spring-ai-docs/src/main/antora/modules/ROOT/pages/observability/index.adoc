@@ -142,6 +142,7 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |`gen_ai.prompt` | The full prompt sent to the model. Optional.
 |`gen_ai.completion` | The full response received from the model. Optional.
+|`spring.ai.model.request.tool.names` | List of tool definitions provided to the model in the request.
 |===
 
 NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
@@ -176,6 +177,46 @@ Furthermore, Spring AI supports logging chat prompt and completion data, useful 
 |====
 
 WARNING: If you enable the inclusion of the chat prompt and completion data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+
+== Tool Calling
+
+The `spring.ai.tool` observations are recorded when performing tool calling in the context of a chat model interaction. They measure the time spent on toll call completion and propagate the related tracing information.
+
+.Low Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.operation.name` | The name of the operation being performed. It's always `framework`.
+|`gen_ai.system` | The provider responsible for the operation. It's always `spring_ai`.
+|`spring.ai.kind` | The kind of operation performed by Spring AI. It's always `tool_call`.
+|`spring.ai.tool.definition.name` | The name of the tool.
+|===
+
+.High Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+|`spring.ai.tool.definition.description` | Description of the tool.
+|`spring.ai.tool.definition.schema` | Schema of the parameters used to call the tool.
+|`spring.ai.tool.call.arguments` | The input arguments to the tool call. (Only when enabled)
+|`spring.ai.tool.call.result` | Schema of the parameters used to call the tool. (Only when enabled)
+|===
+
+=== Tool Call Arguments and Result Data
+
+The input arguments and result from the tool call are not exported by default, as they can be potentially sensitive.
+
+Spring AI supports exporting tool call arguments and result data as span attributes.
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+
+| `spring.ai.tools.observations.include-content` | Include the tool call content in observations. `true` or `false` | `false`
+|====
+
+WARNING: If you enable the inclusion of the tool call arguments and result in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
 
 == EmbeddingModel
 

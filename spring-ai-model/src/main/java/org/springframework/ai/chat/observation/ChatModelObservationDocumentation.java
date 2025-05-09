@@ -157,6 +157,16 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 		},
 
 		/**
+		 * List of tool definitions provided to the model in the request.
+		 */
+		REQUEST_TOOL_NAMES {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.REQUEST_TOOL_NAMES.value();
+			}
+		},
+
+		/**
 		 * The top_k sampling setting for the model request.
 		 */
 		REQUEST_TOP_K {
