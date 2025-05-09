@@ -91,6 +91,9 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 
 	private Filter.Expression computeRequestFilterExpression(Query query) {
 		var contextFilterExpression = query.context().get(FILTER_EXPRESSION);
+		if (contextFilterExpression instanceof Filter.Expression) {
+			return (Filter.Expression) contextFilterExpression;
+		}
 		if (contextFilterExpression != null && StringUtils.hasText(contextFilterExpression.toString())) {
 			return new FilterExpressionTextParser().parse(contextFilterExpression.toString());
 		}
