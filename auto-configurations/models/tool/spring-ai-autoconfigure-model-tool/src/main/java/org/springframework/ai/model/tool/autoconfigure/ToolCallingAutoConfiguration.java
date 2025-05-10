@@ -22,6 +22,9 @@ import java.util.List;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.chat.model.ToolContextCreator;
+import org.springframework.ai.model.tool.DefaultToolContextCreator;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -74,12 +77,20 @@ public class ToolCallingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	ToolContextCreator<ToolContext> toolContextCreator() {
+		return new DefaultToolContextCreator();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
+			ToolContextCreator<? extends ToolContext> toolContextCreator,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
 			ObjectProvider<ObservationRegistry> observationRegistry) {
 		return ToolCallingManager.builder()
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallbackResolver(toolCallbackResolver)
+			.toolContextCreator(toolContextCreator)
 			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 			.build();
 	}

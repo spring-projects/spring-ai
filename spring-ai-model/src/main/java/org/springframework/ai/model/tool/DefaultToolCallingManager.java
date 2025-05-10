@@ -32,6 +32,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.chat.model.ToolContextCreator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -61,6 +62,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static final ToolCallbackResolver DEFAULT_TOOL_CALLBACK_RESOLVER
 			= new DelegatingToolCallbackResolver(List.of());
 
+	private static final DefaultToolContextCreator DEFAULT_TOOL_CONTEXT_CREATOR
+			= new DefaultToolContextCreator();
+
 	private static final ToolExecutionExceptionProcessor DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR
 			= DefaultToolExecutionExceptionProcessor.builder().build();
 
@@ -70,9 +74,12 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	private final ToolCallbackResolver toolCallbackResolver;
 
+	private final ToolContextCreator<? extends ToolContext> toolContextCreator;
+
 	private final ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
 
 	public DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
+			ToolContextCreator<? extends ToolContext> toolContextCreator,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		Assert.notNull(toolCallbackResolver, "toolCallbackResolver cannot be null");
@@ -80,6 +87,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		this.observationRegistry = observationRegistry;
 		this.toolCallbackResolver = toolCallbackResolver;
+		this.toolContextCreator = toolContextCreator;
 		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 	}
 
@@ -137,7 +145,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			.build();
 	}
 
-	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
+	private ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
 		Map<String, Object> toolContextMap = Map.of();
 
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions
@@ -152,7 +160,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					buildConversationHistoryBeforeToolExecution(prompt, assistantMessage));
 		}
 
-		return new ToolContext(toolContextMap);
+		return toolContextCreator.create(toolContextMap);
 	}
 
 	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
@@ -235,6 +243,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		private ToolCallbackResolver toolCallbackResolver = DEFAULT_TOOL_CALLBACK_RESOLVER;
 
+		private ToolContextCreator<? extends ToolContext> toolContextCreator = DEFAULT_TOOL_CONTEXT_CREATOR;
+
 		private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor = DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR;
 
 		private Builder() {
@@ -250,6 +260,11 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			return this;
 		}
 
+		public Builder toolContextCreator(ToolContextCreator<? extends ToolContext> toolContextCreator) {
+			this.toolContextCreator = toolContextCreator;
+			return this;
+		}
+
 		public Builder toolExecutionExceptionProcessor(
 				ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
 			this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
@@ -258,7 +273,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		public DefaultToolCallingManager build() {
 			return new DefaultToolCallingManager(this.observationRegistry, this.toolCallbackResolver,
-					this.toolExecutionExceptionProcessor);
+					this.toolContextCreator, this.toolExecutionExceptionProcessor);
 		}
 
 	}
