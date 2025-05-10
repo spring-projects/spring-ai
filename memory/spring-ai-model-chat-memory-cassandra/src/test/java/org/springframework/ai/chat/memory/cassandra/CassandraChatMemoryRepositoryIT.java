@@ -62,17 +62,6 @@ class CassandraChatMemoryRepositoryIT {
 		.withUserConfiguration(CassandraChatMemoryRepositoryIT.TestApplication.class);
 
 	@Test
-	void ensureLegacyBeanGetsCreated() {
-
-		new ApplicationContextRunner().withUserConfiguration(CassandraChatMemoryRepositoryIT.TestApplication.class)
-			.run(context -> {
-				CassandraChatMemory memory = context.getBean(CassandraChatMemory.class);
-				Assertions.assertNotNull(memory);
-				memory.conf.checkSchemaValid();
-			});
-	}
-
-	@Test
 	void ensureBeansGetsCreated() {
 		this.contextRunner.run(context -> {
 			CassandraChatMemoryRepository memory = context.getBean(CassandraChatMemoryRepository.class);
@@ -253,26 +242,11 @@ class CassandraChatMemoryRepositoryIT {
 	public static class TestApplication {
 
 		@Bean
-		public CassandraChatMemory memoryLegacy(CqlSession cqlSession) {
-
-			var conf = CassandraChatMemoryConfig.builder()
-				.withCqlSession(cqlSession)
-				.withKeyspaceName("test_" + CassandraChatMemoryConfig.DEFAULT_KEYSPACE_NAME)
-				.withAssistantColumnName("a")
-				.withUserColumnName("u")
-				.withTimeToLive(Duration.ofMinutes(1))
-				.build();
-
-			conf.dropKeyspace();
-			return CassandraChatMemory.create(conf);
-		}
-
-		@Bean
 		public CassandraChatMemoryRepository memory(CqlSession cqlSession) {
 
-			var conf = CassandraChatMemoryConfig.builder()
+			var conf = CassandraChatMemoryRepositoryConfig.builder()
 				.withCqlSession(cqlSession)
-				.withKeyspaceName("test_" + CassandraChatMemoryConfig.DEFAULT_KEYSPACE_NAME)
+				.withKeyspaceName("test_" + CassandraChatMemoryRepositoryConfig.DEFAULT_KEYSPACE_NAME)
 				.withAssistantColumnName("a")
 				.withUserColumnName("u")
 				.withTimeToLive(Duration.ofMinutes(1))

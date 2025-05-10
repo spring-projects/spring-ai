@@ -214,7 +214,7 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
-If you'd rather create the `CassandraChatMemoryRepository` manually, you can do so by providing a `CassandraChatMemoryConfig` instance:
+If you'd rather create the `CassandraChatMemoryRepository` manually, you can do so by providing a `CassandraChatMemoryRepositoryConfig` instance:
 
 [source,java]
 ----
@@ -240,8 +240,6 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 | `spring.ai.chat.memory.repository.cassandra.table` | Cassandra table | `ai_chat_memory`
 | `spring.ai.chat.memory.repository.cassandra.initialize-schema` | Whether to initialize the schema on startup. | `true`
 |===
-
-Configuration properties are the same and compatible with the previous and now deprecated `CassandraChatMemory`.
 
 ==== Schema Initialization
 

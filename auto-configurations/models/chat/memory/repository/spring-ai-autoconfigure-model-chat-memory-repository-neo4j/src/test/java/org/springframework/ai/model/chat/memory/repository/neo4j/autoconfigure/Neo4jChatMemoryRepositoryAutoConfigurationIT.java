@@ -31,7 +31,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryConfig;
+import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryRepositoryConfig;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -151,7 +151,7 @@ class Neo4jChatMemoryRepositoryAutoConfigurationIT {
 					propertyBase.formatted("medialabel", mediaLabel))
 			.run(context -> {
 				Neo4jChatMemoryRepository chatMemory = context.getBean(Neo4jChatMemoryRepository.class);
-				Neo4jChatMemoryConfig config = chatMemory.getConfig();
+				Neo4jChatMemoryRepositoryConfig config = chatMemory.getConfig();
 				assertThat(config.getMessageLabel()).isEqualTo(messageLabel);
 				assertThat(config.getMediaLabel()).isEqualTo(mediaLabel);
 				assertThat(config.getMetadataLabel()).isEqualTo(metadataLabel);

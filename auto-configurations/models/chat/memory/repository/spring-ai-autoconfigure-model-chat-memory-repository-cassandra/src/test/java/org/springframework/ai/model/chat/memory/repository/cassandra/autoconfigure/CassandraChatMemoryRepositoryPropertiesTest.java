@@ -20,7 +20,7 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryRepositoryConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,10 +34,11 @@ class CassandraChatMemoryRepositoryPropertiesTest {
 	@Test
 	void defaultValues() {
 		var props = new CassandraChatMemoryRepositoryProperties();
-		assertThat(props.getKeyspace()).isEqualTo(CassandraChatMemoryConfig.DEFAULT_KEYSPACE_NAME);
-		assertThat(props.getTable()).isEqualTo(CassandraChatMemoryConfig.DEFAULT_TABLE_NAME);
-		assertThat(props.getAssistantColumn()).isEqualTo(CassandraChatMemoryConfig.DEFAULT_ASSISTANT_COLUMN_NAME);
-		assertThat(props.getUserColumn()).isEqualTo(CassandraChatMemoryConfig.DEFAULT_USER_COLUMN_NAME);
+		assertThat(props.getKeyspace()).isEqualTo(CassandraChatMemoryRepositoryConfig.DEFAULT_KEYSPACE_NAME);
+		assertThat(props.getTable()).isEqualTo(CassandraChatMemoryRepositoryConfig.DEFAULT_TABLE_NAME);
+		assertThat(props.getAssistantColumn())
+			.isEqualTo(CassandraChatMemoryRepositoryConfig.DEFAULT_ASSISTANT_COLUMN_NAME);
+		assertThat(props.getUserColumn()).isEqualTo(CassandraChatMemoryRepositoryConfig.DEFAULT_USER_COLUMN_NAME);
 		assertThat(props.getTimeToLive()).isNull();
 		assertThat(props.isInitializeSchema()).isTrue();
 	}

@@ -32,7 +32,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
 import org.testcontainers.containers.Neo4jContainer;
@@ -71,12 +70,12 @@ class Neo4jChatMemoryRepositoryIT {
 
 	private Driver driver;
 
-	private Neo4jChatMemoryConfig config;
+	private Neo4jChatMemoryRepositoryConfig config;
 
 	@BeforeEach
 	void setUp() {
 		driver = Neo4jDriverFactory.create(neo4jContainer.getBoltUrl());
-		config = Neo4jChatMemoryConfig.builder().withDriver(driver).build();
+		config = Neo4jChatMemoryRepositoryConfig.builder().withDriver(driver).build();
 		chatMemoryRepository = new Neo4jChatMemoryRepository(config);
 	}
 

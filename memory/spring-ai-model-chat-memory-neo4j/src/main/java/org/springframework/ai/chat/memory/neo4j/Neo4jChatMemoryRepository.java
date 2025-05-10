@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
 
 public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
-	private final Neo4jChatMemoryConfig config;
+	private final Neo4jChatMemoryRepositoryConfig config;
 
-	public Neo4jChatMemoryRepository(Neo4jChatMemoryConfig config) {
+	public Neo4jChatMemoryRepository(Neo4jChatMemoryRepositoryConfig config) {
 		this.config = config;
 	}
 
@@ -139,7 +139,7 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 		}
 	}
 
-	public Neo4jChatMemoryConfig getConfig() {
+	public Neo4jChatMemoryRepositoryConfig getConfig() {
 		return this.config;
 	}
 

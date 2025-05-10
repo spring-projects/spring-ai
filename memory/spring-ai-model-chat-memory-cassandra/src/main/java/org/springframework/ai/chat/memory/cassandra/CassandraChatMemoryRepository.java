@@ -39,9 +39,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.Assert;
 
-import static org.springframework.ai.chat.messages.MessageType.ASSISTANT;
-import static org.springframework.ai.chat.messages.MessageType.USER;
-
 /**
  * An implementation of {@link ChatMemoryRepository} for Apache Cassandra.
  *
@@ -53,7 +50,7 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 	public static final String CONVERSATION_TS = CassandraChatMemoryRepository.class.getSimpleName()
 			+ "_message_timestamp";
 
-	final CassandraChatMemoryConfig conf;
+	final CassandraChatMemoryRepositoryConfig conf;
 
 	private final PreparedStatement allStmt;
 
@@ -65,7 +62,7 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 
 	private final PreparedStatement deleteStmt;
 
-	private CassandraChatMemoryRepository(CassandraChatMemoryConfig conf) {
+	private CassandraChatMemoryRepository(CassandraChatMemoryRepositoryConfig conf) {
 		Assert.notNull(conf, "conf cannot be null");
 		this.conf = conf;
 		this.conf.ensureSchemaExists();
@@ -76,7 +73,7 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 		this.deleteStmt = prepareDeleteStmt();
 	}
 
-	public static CassandraChatMemoryRepository create(CassandraChatMemoryConfig conf) {
+	public static CassandraChatMemoryRepository create(CassandraChatMemoryRepositoryConfig conf) {
 		return new CassandraChatMemoryRepository(conf);
 	}
 
@@ -91,7 +88,7 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 			emptyQuery = true;
 			for (Row r : this.conf.session.execute(stmt)) {
 				emptyQuery = false;
-				conversationIds.add(r.getString(CassandraChatMemoryConfig.DEFAULT_SESSION_ID_NAME));
+				conversationIds.add(r.getString(CassandraChatMemoryRepositoryConfig.DEFAULT_SESSION_ID_NAME));
 				token = r.getLong("t");
 			}
 		}
@@ -106,7 +103,7 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 		BoundStatementBuilder builder = this.getStmt.boundStatementBuilder();
 
 		for (int k = 0; k < primaryKeys.size(); ++k) {
-			CassandraChatMemoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
+			CassandraChatMemoryRepositoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
 			builder = builder.set(keyColumn.name(), primaryKeys.get(k), keyColumn.javaType());
 		}
 
@@ -155,13 +152,13 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 		BoundStatementBuilder builder = stmt.boundStatementBuilder();
 
 		for (int k = 0; k < primaryKeys.size(); ++k) {
-			CassandraChatMemoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
+			CassandraChatMemoryRepositoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
 			builder = builder.set(keyColumn.name(), primaryKeys.get(k), keyColumn.javaType());
 		}
 
 		Instant instant = (Instant) msg.getMetadata().get(CONVERSATION_TS);
 
-		builder = builder.setInstant(CassandraChatMemoryConfig.DEFAULT_EXCHANGE_ID_NAME, instant)
+		builder = builder.setInstant(CassandraChatMemoryRepositoryConfig.DEFAULT_EXCHANGE_ID_NAME, instant)
 			.setString("message", msg.getText());
 
 		this.conf.session.execute(builder.build());
@@ -175,7 +172,7 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 		BoundStatementBuilder builder = this.deleteStmt.boundStatementBuilder();
 
 		for (int k = 0; k < primaryKeys.size(); ++k) {
-			CassandraChatMemoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
+			CassandraChatMemoryRepositoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
 			builder = builder.set(keyColumn.name(), primaryKeys.get(k), keyColumn.javaType());
 		}
 
@@ -198,10 +195,10 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 	private PreparedStatement prepareAllStatement() {
 		Select stmt = QueryBuilder.selectFrom(this.conf.schema.keyspace(), this.conf.schema.table())
 			.distinct()
-			.raw(String.format("token(%s)", CassandraChatMemoryConfig.DEFAULT_SESSION_ID_NAME))
+			.raw(String.format("token(%s)", CassandraChatMemoryRepositoryConfig.DEFAULT_SESSION_ID_NAME))
 			.as("t")
-			.column(CassandraChatMemoryConfig.DEFAULT_SESSION_ID_NAME)
-			.whereToken(CassandraChatMemoryConfig.DEFAULT_SESSION_ID_NAME)
+			.column(CassandraChatMemoryRepositoryConfig.DEFAULT_SESSION_ID_NAME)
+			.whereToken(CassandraChatMemoryRepositoryConfig.DEFAULT_SESSION_ID_NAME)
 			.isGreaterThan(QueryBuilder.bindMarker("after_token"))
 			.limit(10000);
 
