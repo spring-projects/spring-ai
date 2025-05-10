@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mock;
  * Unit tests for {@link DefaultChatClientBuilder}.
  *
  * @author Thomas Vitale
+ * @author Andres da Silva Santos
  */
 class DefaultChatClientBuilderTests {
 
@@ -40,14 +41,17 @@ class DefaultChatClientBuilderTests {
 		var chatModel = mock(ChatModel.class);
 		var originalBuilder = new DefaultChatClientBuilder(chatModel);
 		originalBuilder.defaultSystem("first instructions");
+		originalBuilder.defaultDeveloper("first instructions");
 		var clonedBuilder = (DefaultChatClientBuilder) originalBuilder.clone();
 		originalBuilder.defaultSystem("second instructions");
+		originalBuilder.defaultDeveloper("second instructions");
 
 		assertThat(clonedBuilder).isNotSameAs(originalBuilder);
 		var clonedBuilderRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils
 			.getField(clonedBuilder, "defaultRequest");
 		assertThat(clonedBuilderRequestSpec).isNotNull();
 		assertThat(clonedBuilderRequestSpec.getSystemText()).isEqualTo("first instructions");
+		assertThat(clonedBuilderRequestSpec.getDeveloperText()).isEqualTo("first instructions");
 	}
 
 	@Test
@@ -88,9 +92,25 @@ class DefaultChatClientBuilderTests {
 	}
 
 	@Test
+	void whenDeveloperResourceIsNullThenThrows() {
+		DefaultChatClientBuilder builder = new DefaultChatClientBuilder(mock(ChatModel.class));
+		assertThatThrownBy(() -> builder.defaultDeveloper(null, Charset.defaultCharset()))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("text cannot be null");
+	}
+
+	@Test
 	void whenSystemCharsetIsNullThenThrows() {
 		DefaultChatClientBuilder builder = new DefaultChatClientBuilder(mock(ChatModel.class));
 		assertThatThrownBy(() -> builder.defaultSystem(new ClassPathResource("system-prompt.txt"), null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("charset cannot be null");
+	}
+
+	@Test
+	void whenDeveloperCharsetIsNullThenThrows() {
+		DefaultChatClientBuilder builder = new DefaultChatClientBuilder(mock(ChatModel.class));
+		assertThatThrownBy(() -> builder.defaultDeveloper(new ClassPathResource("system-prompt.txt"), null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("charset cannot be null");
 	}

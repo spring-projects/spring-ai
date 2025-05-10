@@ -36,11 +36,11 @@ class PromptTests {
 	@Test
 	void whenContentIsNullThenThrow() {
 		assertThatThrownBy(() -> new Prompt((String) null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Content must not be null for SYSTEM or USER messages");
+			.hasMessageContaining("Content must not be null for SYSTEM, DEVELOPER or USER messages");
 
 		assertThatThrownBy(() -> new Prompt((String) null, ChatOptions.builder().build()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Content must not be null for SYSTEM or USER messages");
+			.hasMessageContaining("Content must not be null for SYSTEM, DEVELOPER or USER messages");
 	}
 
 	@Test

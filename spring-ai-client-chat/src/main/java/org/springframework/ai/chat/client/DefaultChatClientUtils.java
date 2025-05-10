@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client;
 
+import org.springframework.ai.chat.messages.DeveloperMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Utilities for supporting the {@link DefaultChatClient} implementation.
  *
  * @author Thomas Vitale
+ * @author Andres da Silva Santos
  * @since 1.0.0
  */
 class DefaultChatClientUtils {
@@ -64,6 +66,20 @@ class DefaultChatClientUtils {
 					.render();
 			}
 			processedMessages.add(new SystemMessage(processedSystemText));
+		}
+
+		// Developer Text => First in the list
+		String processedDeveloperText = inputRequest.getDeveloperText();
+		if (StringUtils.hasText(processedDeveloperText)) {
+			if (!CollectionUtils.isEmpty(inputRequest.getDeveloperParams())) {
+				processedDeveloperText = PromptTemplate.builder()
+					.template(processedDeveloperText)
+					.variables(inputRequest.getDeveloperParams())
+					.renderer(inputRequest.getTemplateRenderer())
+					.build()
+					.render();
+			}
+			processedMessages.add(new DeveloperMessage(processedDeveloperText));
 		}
 
 		// Messages => In the middle of the list

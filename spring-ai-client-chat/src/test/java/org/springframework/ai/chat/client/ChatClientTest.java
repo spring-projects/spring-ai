@@ -34,6 +34,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.DeveloperMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -196,6 +197,136 @@ public class ChatClientTest {
 	}
 
 	@Test
+	void defaultDeveloperText() {
+
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		given(this.chatModel.stream(this.promptCaptor.capture())).willReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+					sink.next(state);
+					sink.complete();
+					return state;
+				}));
+
+		var chatClient = ChatClient.builder(this.chatModel).defaultDeveloper("Default developer text").build();
+
+		var content = chatClient.prompt("What's Spring AI?").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		Message developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		content = join(chatClient.prompt("What's Spring AI?").stream().content());
+
+		assertThat(content).isEqualTo("response");
+
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		// Override the default developer text with prompt developer
+		content = chatClient.prompt("What's Spring AI?").developer("Override default developer text").call().content();
+
+		assertThat(content).isEqualTo("response");
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Override default developer text");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		// Streaming
+		content = join(
+				chatClient.prompt("What's Spring AI?").developer("Override default developer text").stream().content());
+
+		assertThat(content).isEqualTo("response");
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Override default developer text");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+	}
+
+	@Test
+	void defaultDeveloperTextLambda() {
+
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		given(this.chatModel.stream(this.promptCaptor.capture())).willReturn(Flux.generate(
+				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("response")))), (state, sink) -> {
+					sink.next(state);
+					sink.complete();
+					return state;
+				}));
+
+		var chatClient = ChatClient.builder(this.chatModel)
+			.defaultDeveloper(s -> s.text("Default developer text {param1}, {param2}")
+				.param("param1", "value1")
+				.param("param2", "value2"))
+			.build();
+
+		var content = chatClient.prompt("What's Spring AI?").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		Message developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text value1, value2");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		// Streaming
+		content = join(chatClient.prompt("What's Spring AI?").stream().content());
+
+		assertThat(content).isEqualTo("response");
+
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text value1, value2");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		// Override single default developer parameter
+		content = chatClient.prompt("What's Spring AI?")
+			.developer(s -> s.param("param1", "value1New"))
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("response");
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text value1New, value2");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		// streaming
+		content = join(chatClient.prompt("What's Spring AI?")
+			.developer(s -> s.param("param1", "value1New"))
+			.stream()
+			.content());
+
+		assertThat(content).isEqualTo("response");
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text value1New, value2");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		// Override default developer text
+		content = chatClient.prompt("What's Spring AI?")
+			.developer(s -> s.text("Override default developer text {param3}").param("param3", "value3"))
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("response");
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Override default developer text value3");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+
+		// Streaming
+		content = join(chatClient.prompt("What's Spring AI?")
+			.developer(s -> s.text("Override default developer text {param3}").param("param3", "value3"))
+			.stream()
+			.content());
+
+		assertThat(content).isEqualTo("response");
+		developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Override default developer text value3");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+	}
+
+	@Test
 	void mutateDefaults() {
 
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
@@ -214,6 +345,9 @@ public class ChatClientTest {
 		// @formatter:off
 		var chatClient = ChatClient.builder(this.chatModel)
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
+						.param("param1", "value1")
+						.param("param2", "value2"))
+				.defaultDeveloper(s -> s.text("Default developer text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
 				.defaultToolNames("fun1", "fun2")
@@ -239,7 +373,11 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text value1, value2");
 
-		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(1);
+		Message developerMessage = prompt.getInstructions().get(1);
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text value1, value2");
+
+		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(2);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -261,7 +399,11 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text value1, value2");
 
-		userMessage = (UserMessage) prompt.getInstructions().get(1);
+		developerMessage = prompt.getInstructions().get(1);
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+		assertThat(developerMessage.getText()).isEqualTo("Default developer text value1, value2");
+
+		userMessage = (UserMessage) prompt.getInstructions().get(2);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -276,6 +418,7 @@ public class ChatClientTest {
 		// @formatter:off
 		chatClient = chatClient.mutate()
 				.defaultSystem("Mutated default system text {param1}, {param2}")
+				.defaultDeveloper("Mutated default developer text {param1}, {param2}")
 				.defaultToolNames("fun4")
 				.defaultUser("Mutated default user text {uparam1}, {uparam2}")
 				.build();
@@ -291,7 +434,11 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Mutated default system text value1, value2");
 
-		userMessage = (UserMessage) prompt.getInstructions().get(1);
+		developerMessage = prompt.getInstructions().get(1);
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+		assertThat(developerMessage.getText()).isEqualTo("Mutated default developer text value1, value2");
+
+		userMessage = (UserMessage) prompt.getInstructions().get(2);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Mutated default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -313,7 +460,11 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Mutated default system text value1, value2");
 
-		userMessage = (UserMessage) prompt.getInstructions().get(1);
+		developerMessage = prompt.getInstructions().get(1);
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+		assertThat(developerMessage.getText()).isEqualTo("Mutated default developer text value1, value2");
+
+		userMessage = (UserMessage) prompt.getInstructions().get(2);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Mutated default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -346,6 +497,9 @@ public class ChatClientTest {
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
+				.defaultDeveloper(s -> s.text("Default developer text {param1}, {param2}")
+						.param("param1", "value1")
+						.param("param2", "value2"))
 				.defaultToolNames("fun1", "fun2")
 				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
@@ -361,6 +515,7 @@ public class ChatClientTest {
 		var content = chatClient
 				.prompt()
 					.system("New default system text {param1}, {param2}")
+					.developer("New default developer text {param1}, {param2}")
 					.user(u -> u.param("uparam1", "userValue1")
 						.param("uparam2", "userValue2"))
 					.toolNames("fun5")
@@ -376,7 +531,11 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("New default system text value1, value2");
 
-		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(1);
+		Message developerMessage = prompt.getInstructions().get(1);
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+		assertThat(developerMessage.getText()).isEqualTo("New default developer text value1, value2");
+
+		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(2);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text userValue1, userValue2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -392,6 +551,7 @@ public class ChatClientTest {
 		content = join(chatClient
 					.prompt()
 						.system("New default system text {param1}, {param2}")
+						.developer("New default developer text {param1}, {param2}")
 						.user(u -> u.param("uparam1", "userValue1")
 							.param("uparam2", "userValue2"))
 						.toolNames("fun5")
@@ -407,7 +567,11 @@ public class ChatClientTest {
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("New default system text value1, value2");
 
-		userMessage = (UserMessage) prompt.getInstructions().get(1);
+		developerMessage = prompt.getInstructions().get(1);
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+		assertThat(developerMessage.getText()).isEqualTo("New default developer text value1, value2");
+
+		userMessage = (UserMessage) prompt.getInstructions().get(2);
 		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text userValue1, userValue2");
 		assertThat(userMessage.getMedia()).hasSize(1);
@@ -508,6 +672,27 @@ public class ChatClientTest {
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("System prompt");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	@Test
+	void simpleDeveloperPrompt() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		String response = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt("What's Spring AI?")
+			.developer("Developer prompt")
+			.call()
+			.content();
+
+		assertThat(response).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
+
+		Message developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("Developer prompt");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
 	}
 
 	@Test
@@ -811,6 +996,124 @@ public class ChatClientTest {
 		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("other instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+	}
+
+	// Prompt Tests - Developer
+
+	@Test
+	void whenPromptWithMessagesAndDeveloperText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new UserMessage("my question"), new AssistantMessage("your answer"));
+		var content = chatClient.prompt(prompt).developer("instructions").user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("instructions");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+	}
+
+	@Test
+	void whenPromptWithDeveloperMessageAndNoDeveloperText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new DeveloperMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt(prompt).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
+		var developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("instructions");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+	}
+
+	@Test
+	void whenPromptWithDeveloperMessageAndDeveloperText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		var prompt = new Prompt(new DeveloperMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt(prompt)
+			.developer("other instructions")
+			.user("another question")
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("other instructions");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+	}
+
+	@Test
+	void whenMessagesAndDeveloperText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new UserMessage("my question"), new AssistantMessage("your answer"));
+		var content = chatClient.prompt()
+			.messages(messages)
+			.developer("instructions")
+			.user("another question")
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("instructions");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+	}
+
+	@Test
+	void whenMessagesWithDeveloperMessageAndNoDeveloperText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new DeveloperMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt().messages(messages).user("another question").call().content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
+		var developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("instructions");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
+	}
+
+	@Test
+	void whenMessagesWithDeveloperMessageAndDeveloperText() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+		List<Message> messages = List.of(new DeveloperMessage("instructions"), new UserMessage("my question"));
+		var content = chatClient.prompt()
+			.messages(messages)
+			.developer("other instructions")
+			.user("another question")
+			.call()
+			.content();
+
+		assertThat(content).isEqualTo("response");
+
+		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
+		var developerMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(developerMessage.getText()).isEqualTo("other instructions");
+		assertThat(developerMessage.getMessageType()).isEqualTo(MessageType.DEVELOPER);
 	}
 
 }

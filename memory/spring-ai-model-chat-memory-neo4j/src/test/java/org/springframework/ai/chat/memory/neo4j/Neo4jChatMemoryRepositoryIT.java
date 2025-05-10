@@ -25,13 +25,8 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
@@ -402,6 +397,7 @@ class Neo4jChatMemoryRepositoryIT {
 			case ASSISTANT -> new AssistantMessage(content);
 			case USER -> new UserMessage(content);
 			case SYSTEM -> new SystemMessage(content);
+			case DEVELOPER -> new DeveloperMessage(content);
 			case TOOL -> new ToolResponseMessage(List.of(new ToolResponse("id", "name", "responseData")));
 		};
 	}

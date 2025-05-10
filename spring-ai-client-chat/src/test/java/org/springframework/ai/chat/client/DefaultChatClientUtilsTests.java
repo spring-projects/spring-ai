@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.DeveloperMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.content.Media;
@@ -85,6 +86,42 @@ class DefaultChatClientUtilsTests {
 		assertThat(result.prompt().getInstructions()).isNotEmpty();
 		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(result.prompt().getInstructions().get(0).getText()).isEqualTo("System instructions for Spring AI");
+	}
+
+	@Test
+	void whenDeveloperTextIsProvidedThenDeveloperMessageIsAddedToPrompt() {
+		String developerText = "Developer instructions";
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.developer(developerText);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getInstructions()).isNotEmpty();
+		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(DeveloperMessage.class);
+		assertThat(result.prompt().getInstructions().get(0).getText()).isEqualTo(developerText);
+	}
+
+	@Test
+	void whenDeveloperTextWithParamsIsProvidedThenDeveloperMessageIsRenderedAndAddedToPrompt() {
+		String developerText = "Developer instructions for {name}";
+		Map<String, Object> developerParams = Map.of("name", "Spring Boot");
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.developer(s -> s.text(developerText).params(developerParams));
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getInstructions()).isNotEmpty();
+		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(DeveloperMessage.class);
+		assertThat(result.prompt().getInstructions().get(0).getText())
+			.isEqualTo("Developer instructions for Spring Boot");
 	}
 
 	@Test
@@ -176,6 +213,25 @@ class DefaultChatClientUtilsTests {
 		assertThat(result.prompt().getInstructions()).hasSize(2);
 		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(result.prompt().getInstructions().get(0).getText()).isEqualTo(systemText);
+	}
+
+	@Test
+	void whenDeveloperTextAndMessagesAreProvidedThenDeveloperMessageIsFirst() {
+		String developerText = "Developer instructions";
+		List<Message> messages = List.of(new DeveloperMessage("Developer message"));
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.developer(developerText)
+			.messages(messages);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getInstructions()).hasSize(2);
+		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(DeveloperMessage.class);
+		assertThat(result.prompt().getInstructions().get(0).getText()).isEqualTo(developerText);
 	}
 
 	@Test
@@ -397,6 +453,84 @@ class DefaultChatClientUtilsTests {
 		assertThat(result.prompt().getInstructions()).hasSize(3);
 		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(result.prompt().getInstructions().get(0).getText()).isEqualTo("System instructions for Spring AI");
+		assertThat(result.prompt().getInstructions().get(1).getText()).isEqualTo("Intermediate message");
+		assertThat(result.prompt().getInstructions().get(2)).isInstanceOf(UserMessage.class);
+		assertThat(result.prompt().getInstructions().get(2).getText()).isEqualTo("Question about Spring AI");
+		UserMessage userMessage = (UserMessage) result.prompt().getInstructions().get(2);
+		assertThat(userMessage.getMedia()).contains(media);
+
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolNames()).containsExactlyInAnyOrderElementsOf(toolNames);
+		assertThat(resultOptions.getToolCallbacks()).contains(toolCallback);
+		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext);
+
+		assertThat(result.context()).containsAllEntriesOf(advisorParams);
+	}
+
+	@Test
+	void whenCustomTemplateRendererWithDeveloperThenItIsUsedForRendering() {
+		String developerText = "Instructions <name>";
+		Map<String, Object> developerParams = Map.of("name", "Spring AI");
+		TemplateRenderer customRenderer = StTemplateRenderer.builder()
+			.startDelimiterToken('<')
+			.endDelimiterToken('>')
+			.build();
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.developer(s -> s.text(developerText).params(developerParams))
+			.templateRenderer(customRenderer);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getInstructions()).isNotEmpty();
+		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(DeveloperMessage.class);
+		assertThat(result.prompt().getInstructions().get(0).getText()).isEqualTo("Instructions Spring AI");
+	}
+
+	@Test
+	void whenAllComponentsAreProvidedWithDeveloperThenCompleteRequestIsCreated() {
+		String developerText = "Developer instructions for {name}";
+		Map<String, Object> developerParams = Map.of("name", "Spring AI");
+
+		String userText = "Question about {topic}";
+		Map<String, Object> userParams = Map.of("topic", "Spring AI");
+		Media media = mock(Media.class);
+
+		List<Message> messages = List.of(new UserMessage("Intermediate message"));
+
+		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().build();
+		List<String> toolNames = List.of("tool1", "tool2");
+		ToolCallback toolCallback = new TestToolCallback("tool3");
+		Map<String, Object> toolContext = Map.of("toolKey", "toolValue");
+		Map<String, Object> advisorParams = Map.of("advisorKey", "advisorValue");
+
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.developer(s -> s.text(developerText).params(developerParams))
+			.user(u -> u.text(userText).params(userParams).media(media))
+			.messages(messages)
+			.toolNames(toolNames.toArray(new String[0]))
+			.toolCallbacks(toolCallback)
+			.toolContext(toolContext)
+			.options(chatOptions)
+			.advisors(a -> a.params(advisorParams));
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+
+		assertThat(result.prompt().getInstructions()).hasSize(3);
+		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(DeveloperMessage.class);
+		assertThat(result.prompt().getInstructions().get(0).getText())
+			.isEqualTo("Developer instructions for Spring AI");
+		assertThat(result.prompt().getInstructions().get(1)).isInstanceOf(Message.class);
 		assertThat(result.prompt().getInstructions().get(1).getText()).isEqualTo("Intermediate message");
 		assertThat(result.prompt().getInstructions().get(2)).isInstanceOf(UserMessage.class);
 		assertThat(result.prompt().getInstructions().get(2).getText()).isEqualTo("Question about Spring AI");

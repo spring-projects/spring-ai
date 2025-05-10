@@ -38,7 +38,7 @@ class UserMessageTests {
 	@Test
 	void userMessageWithNullText() {
 		assertThatThrownBy(() -> new UserMessage((String) null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Content must not be null for SYSTEM or USER messages");
+			.hasMessageContaining("Content must not be null for SYSTEM, DEVELOPER or USER messages");
 		;
 	}
 

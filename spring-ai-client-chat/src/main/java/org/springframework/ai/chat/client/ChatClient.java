@@ -53,6 +53,7 @@ import org.springframework.util.MimeType;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Thomas Vitale
+ * @author Andres da Silva Santos
  * @since 1.0.0
  */
 public interface ChatClient {
@@ -130,6 +131,23 @@ public interface ChatClient {
 		PromptSystemSpec params(Map<String, Object> p);
 
 		PromptSystemSpec param(String k, Object v);
+
+	}
+
+	/**
+	 * Specification for a prompt developer.
+	 */
+	interface PromptDeveloperSpec {
+
+		PromptDeveloperSpec text(String text);
+
+		PromptDeveloperSpec text(Resource text, Charset charset);
+
+		PromptDeveloperSpec text(Resource text);
+
+		PromptDeveloperSpec params(Map<String, Object> p);
+
+		PromptDeveloperSpec param(String k, Object v);
 
 	}
 
@@ -232,6 +250,14 @@ public interface ChatClient {
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
+		ChatClientRequestSpec developer(String text);
+
+		ChatClientRequestSpec developer(Resource textResource, Charset charset);
+
+		ChatClientRequestSpec developer(Resource text);
+
+		ChatClientRequestSpec developer(Consumer<PromptDeveloperSpec> consumer);
+
 		ChatClientRequestSpec system(String text);
 
 		ChatClientRequestSpec system(Resource textResource, Charset charset);
@@ -276,6 +302,14 @@ public interface ChatClient {
 		Builder defaultUser(Resource text);
 
 		Builder defaultUser(Consumer<PromptUserSpec> userSpecConsumer);
+
+		Builder defaultDeveloper(String text);
+
+		Builder defaultDeveloper(Resource text, Charset charset);
+
+		Builder defaultDeveloper(Resource text);
+
+		Builder defaultDeveloper(Consumer<PromptDeveloperSpec> developerSpecConsumer);
 
 		Builder defaultSystem(String text);
 
