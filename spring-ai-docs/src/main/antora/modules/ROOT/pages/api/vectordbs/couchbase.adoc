@@ -246,7 +246,9 @@ public VectorStore couchbaseSearchVectorStore(Cluster cluster,
 // This can be any EmbeddingModel implementation.
 @Bean
 public EmbeddingModel embeddingModel() {
-    return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(this.openaiKey).build());
+    return new OpenAiEmbeddingModel(OpenAiApi.builder()
+                .apiKey(System.getenv("SPRING_AI_OPENAI_API_KEY"))
+                .build());
 }
 ----
 

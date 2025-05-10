@@ -515,14 +515,17 @@ Next, create an `OpenAiChatModel` and use it for text generations:
 [source,java]
 ----
 var openAiApi = OpenAiApi.builder()
-            .apiKey(System.getenv("OPENAI_API_KEY"))
+            .apiKey(System.getenv("SPRING_AI_OPENAI_API_KEY"))
             .build();
 var openAiChatOptions = OpenAiChatOptions.builder()
             .model("gpt-3.5-turbo")
             .temperature(0.4)
             .maxTokens(200)
             .build();
-var chatModel = new OpenAiChatModel(this.openAiApi, this.openAiChatOptions);
+var chatModel = OpenAiChatModel.builder()
+        .openAiApi(this.openAiApi)
+        .defaultOptions(this.openAiChatOptions)
+        .build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -548,7 +551,7 @@ Here is a simple snippet showing how to use the API programmatically:
 [source,java]
 ----
 OpenAiApi openAiApi = OpenAiApi.builder()
-            .apiKey(System.getenv("OPENAI_API_KEY"))
+            .apiKey(System.getenv("SPRING_AI_OPENAI_API_KEY"))
             .build();
 
 ChatCompletionMessage chatCompletionMessage =

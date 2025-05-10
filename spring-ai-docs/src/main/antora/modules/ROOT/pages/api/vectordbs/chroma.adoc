@@ -62,7 +62,9 @@ Here is an example of the needed bean:
 @Bean
 public EmbeddingModel embeddingModel() {
     // Can be any other EmbeddingModel implementation.
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+    return new OpenAiEmbeddingModel(OpenAiApi.builder()
+                .apiKey(System.getenv("SPRING_AI_OPENAI_API_KEY"))
+                .build());
 }
 ----
 
