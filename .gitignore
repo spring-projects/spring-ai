@@ -44,3 +44,4 @@ shell.log
 /vector-stores/spring-ai-cassandra-store/nbproject/
 
 **/.claude/settings.local.json
+.devcontainer
