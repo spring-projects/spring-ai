@@ -155,11 +155,14 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 	@Nullable
 	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
-		if (!context.containsKey(FILTER_EXPRESSION)
-				|| !StringUtils.hasText(context.get(FILTER_EXPRESSION).toString())) {
+		var filterExpression = context.get(FILTER_EXPRESSION);
+		if (filterExpression instanceof Filter.Expression) {
+			return (Filter.Expression) filterExpression;
+		}
+		if (!context.containsKey(FILTER_EXPRESSION) || !StringUtils.hasText(filterExpression.toString())) {
 			return this.searchRequest.getFilterExpression();
 		}
-		return new FilterExpressionTextParser().parse(context.get(FILTER_EXPRESSION).toString());
+		return new FilterExpressionTextParser().parse(filterExpression.toString());
 	}
 
 	@Override
