@@ -26,6 +26,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.client.ChatClient.Builder;
 import org.springframework.ai.chat.client.ChatClient.PromptSystemSpec;
+import org.springframework.ai.chat.client.ChatClient.PromptDeveloperSpec;
 import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -50,6 +51,7 @@ import org.springframework.util.Assert;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Thomas Vitale
+ * @author Andres da Silva Santos
  * @since 1.0.0
  */
 public class DefaultChatClientBuilder implements Builder {
@@ -64,8 +66,8 @@ public class DefaultChatClientBuilder implements Builder {
 			@Nullable ChatClientObservationConvention customObservationConvention) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
-		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), null, Map.of(), List.of(),
-				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
+		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), null, Map.of(), null,
+				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
 				customObservationConvention, Map.of(), null);
 	}
 
@@ -146,6 +148,32 @@ public class DefaultChatClientBuilder implements Builder {
 
 	public Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer) {
 		this.defaultRequest.system(systemSpecConsumer);
+		return this;
+	}
+
+	public Builder defaultDeveloper(String text) {
+		this.defaultRequest.developer(text);
+		return this;
+	}
+
+	public Builder defaultDeveloper(Resource text, Charset charset) {
+		Assert.notNull(text, "text cannot be null");
+		Assert.notNull(charset, "charset cannot be null");
+		try {
+			this.defaultRequest.developer(text.getContentAsString(charset));
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return this;
+	}
+
+	public Builder defaultDeveloper(Resource text) {
+		return this.defaultDeveloper(text, Charset.defaultCharset());
+	}
+
+	public Builder defaultDeveloper(Consumer<PromptDeveloperSpec> developerSpecConsumer) {
+		this.defaultRequest.developer(developerSpecConsumer);
 		return this;
 	}
 

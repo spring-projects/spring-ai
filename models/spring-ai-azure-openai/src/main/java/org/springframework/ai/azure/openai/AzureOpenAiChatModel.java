@@ -49,6 +49,7 @@ import com.azure.ai.openai.models.ChatMessageTextContentItem;
 import com.azure.ai.openai.models.ChatRequestAssistantMessage;
 import com.azure.ai.openai.models.ChatRequestMessage;
 import com.azure.ai.openai.models.ChatRequestSystemMessage;
+import com.azure.ai.openai.models.ChatRequestDeveloperMessage;
 import com.azure.ai.openai.models.ChatRequestToolMessage;
 import com.azure.ai.openai.models.ChatRequestUserMessage;
 import com.azure.ai.openai.models.CompletionsFinishReason;
@@ -575,6 +576,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 				return List.of(new ChatRequestUserMessage(items));
 			case SYSTEM:
 				return List.of(new ChatRequestSystemMessage(message.getText()));
+			case DEVELOPER:
+				return List.of(new ChatRequestDeveloperMessage(message.getText()));
 			case ASSISTANT:
 				AssistantMessage assistantMessage = (AssistantMessage) message;
 				List<ChatCompletionsToolCall> toolCalls = null;

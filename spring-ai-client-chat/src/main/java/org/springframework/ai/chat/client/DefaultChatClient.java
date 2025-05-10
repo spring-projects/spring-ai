@@ -75,6 +75,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
+ * @author Andres da Silva Santos
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -270,6 +271,68 @@ public class DefaultChatClient implements ChatClient {
 
 		@Override
 		public PromptSystemSpec params(Map<String, Object> params) {
+			Assert.notNull(params, "params cannot be null");
+			Assert.noNullElements(params.keySet(), "param keys cannot contain null elements");
+			Assert.noNullElements(params.values(), "param values cannot contain null elements");
+			this.params.putAll(params);
+			return this;
+		}
+
+		@Nullable
+		protected String text() {
+			return this.text;
+		}
+
+		protected Map<String, Object> params() {
+			return this.params;
+		}
+
+	}
+
+	public static class DefaultPromptDeveloperSpec implements PromptDeveloperSpec {
+
+		private final Map<String, Object> params = new HashMap<>();
+
+		@Nullable
+		private String text;
+
+		@Override
+		public PromptDeveloperSpec text(String text) {
+			Assert.hasText(text, "text cannot be null or empty");
+			this.text = text;
+			return this;
+		}
+
+		@Override
+		public PromptDeveloperSpec text(Resource text, Charset charset) {
+			Assert.notNull(text, "text cannot be null");
+			Assert.notNull(charset, "charset cannot be null");
+			try {
+				this.text(text.getContentAsString(charset));
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
+
+		@Override
+		public PromptDeveloperSpec text(Resource text) {
+			Assert.notNull(text, "text cannot be null");
+			this.text(text, Charset.defaultCharset());
+			return this;
+		}
+
+		@Override
+		public PromptDeveloperSpec param(String key, Object value) {
+			Assert.hasText(key, "key cannot be null or empty");
+			Assert.notNull(value, "value cannot be null");
+			this.params.put(key, value);
+			return this;
+		}
+
+		@Override
+		public PromptDeveloperSpec params(Map<String, Object> params) {
 			Assert.notNull(params, "params cannot be null");
 			Assert.noNullElements(params.keySet(), "param keys cannot contain null elements");
 			Assert.noNullElements(params.values(), "param values cannot contain null elements");
@@ -577,6 +640,8 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> systemParams = new HashMap<>();
 
+		private final Map<String, Object> developerParams = new HashMap<>();
+
 		private final List<Advisor> advisors = new ArrayList<>();
 
 		private final Map<String, Object> advisorParams = new HashMap<>();
@@ -592,26 +657,31 @@ public class DefaultChatClient implements ChatClient {
 		private String systemText;
 
 		@Nullable
+		private String developerText;
+
+		@Nullable
 		private ChatOptions chatOptions;
 
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
-			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.toolCallbacks,
-					ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
-					ccr.observationRegistry, ccr.observationConvention, ccr.toolContext, ccr.templateRenderer);
+			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.developerText,
+					ccr.developerParams, ccr.toolCallbacks, ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions,
+					ccr.advisors, ccr.advisorParams, ccr.observationRegistry, ccr.observationConvention,
+					ccr.toolContext, ccr.templateRenderer);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, @Nullable String systemText, Map<String, Object> systemParams,
-				List<ToolCallback> toolCallbacks, List<Message> messages, List<String> toolNames, List<Media> media,
-				@Nullable ChatOptions chatOptions, List<Advisor> advisors, Map<String, Object> advisorParams,
-				ObservationRegistry observationRegistry,
+				@Nullable String developerText, Map<String, Object> developerParams, List<ToolCallback> toolCallbacks,
+				List<Message> messages, List<String> toolNames, List<Media> media, @Nullable ChatOptions chatOptions,
+				List<Advisor> advisors, Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext,
 				@Nullable TemplateRenderer templateRenderer) {
 
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
 			Assert.notNull(systemParams, "systemParams cannot be null");
+			Assert.notNull(developerParams, "developerParams cannot be null");
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.notNull(messages, "messages cannot be null");
 			Assert.notNull(toolNames, "toolNames cannot be null");
@@ -629,6 +699,8 @@ public class DefaultChatClient implements ChatClient {
 			this.userParams.putAll(userParams);
 			this.systemText = systemText;
 			this.systemParams.putAll(systemParams);
+			this.developerText = developerText;
+			this.developerParams.putAll(developerParams);
 
 			this.toolNames.addAll(toolNames);
 			this.toolCallbacks.addAll(toolCallbacks);
@@ -659,6 +731,15 @@ public class DefaultChatClient implements ChatClient {
 
 		public Map<String, Object> getSystemParams() {
 			return this.systemParams;
+		}
+
+		@Nullable
+		public String getDeveloperText() {
+			return this.developerText;
+		}
+
+		public Map<String, Object> getDeveloperParams() {
+			return this.developerParams;
 		}
 
 		@Nullable
@@ -717,6 +798,10 @@ public class DefaultChatClient implements ChatClient {
 
 			if (StringUtils.hasText(this.systemText)) {
 				builder.defaultSystem(s -> s.text(this.systemText).params(this.systemParams));
+			}
+
+			if (StringUtils.hasText(this.developerText)) {
+				builder.defaultDeveloper(s -> s.text(this.developerText).params(this.developerParams));
 			}
 
 			if (this.chatOptions != null) {
@@ -818,6 +903,41 @@ public class DefaultChatClient implements ChatClient {
 			Assert.noNullElements(toolContext.keySet(), "toolContext keys cannot contain null elements");
 			Assert.noNullElements(toolContext.values(), "toolContext values cannot contain null elements");
 			this.toolContext.putAll(toolContext);
+			return this;
+		}
+
+		public ChatClientRequestSpec developer(String text) {
+			Assert.hasText(text, "text cannot be null or empty");
+			this.developerText = text;
+			return this;
+		}
+
+		public ChatClientRequestSpec developer(Resource text, Charset charset) {
+			Assert.notNull(text, "text cannot be null");
+			Assert.notNull(charset, "charset cannot be null");
+
+			try {
+				this.developerText = text.getContentAsString(charset);
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return this;
+		}
+
+		public ChatClientRequestSpec developer(Resource text) {
+			Assert.notNull(text, "text cannot be null");
+			return this.developer(text, Charset.defaultCharset());
+		}
+
+		public ChatClientRequestSpec developer(Consumer<PromptDeveloperSpec> consumer) {
+			Assert.notNull(consumer, "consumer cannot be null");
+
+			var developerSpec = new DefaultPromptDeveloperSpec();
+			consumer.accept(developerSpec);
+			this.developerText = StringUtils.hasText(developerSpec.text()) ? developerSpec.text() : this.developerText;
+			this.developerParams.putAll(developerSpec.params());
+
 			return this;
 		}
 

@@ -104,6 +104,7 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
  * @author Soby Chacko
+ * @author Andres da Silva Santos
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -552,7 +553,8 @@ public class OpenAiChatModel implements ChatModel {
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
-			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
+			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM
+					|| message.getMessageType() == MessageType.DEVELOPER) {
 				Object content = message.getText();
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {

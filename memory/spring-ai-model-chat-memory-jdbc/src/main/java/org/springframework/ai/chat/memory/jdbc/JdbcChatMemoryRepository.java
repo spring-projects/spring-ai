@@ -30,6 +30,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.DeveloperMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -129,6 +130,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 				case USER -> new UserMessage(content);
 				case ASSISTANT -> new AssistantMessage(content);
 				case SYSTEM -> new SystemMessage(content);
+				case DEVELOPER -> new DeveloperMessage(content);
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
 				// AddBatchPreparedStatement to support it.
