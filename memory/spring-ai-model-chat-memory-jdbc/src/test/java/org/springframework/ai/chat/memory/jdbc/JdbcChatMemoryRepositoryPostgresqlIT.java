@@ -24,6 +24,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.DeveloperMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -72,6 +73,7 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 			case ASSISTANT -> new AssistantMessage(content + " - " + conversationId);
 			case USER -> new UserMessage(content + " - " + conversationId);
 			case SYSTEM -> new SystemMessage(content + " - " + conversationId);
+			case DEVELOPER -> new DeveloperMessage(content + " - " + conversationId);
 			default -> throw new IllegalArgumentException("Type not supported: " + messageType);
 		};
 
