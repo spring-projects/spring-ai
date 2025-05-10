@@ -45,6 +45,13 @@ public enum MessageType {
 	SYSTEM("system"),
 
 	/**
+	 * A {@link Message} of type {@literal developer} passed as input {@link Message}
+	 * Messages containing instructions or requests from developers using the API.
+	 * @see DeveloperMessage
+	 */
+	DEVELOPER("developer"),
+
+	/**
 	 * A {@link Message} of type {@literal function} passed as input {@link Message
 	 * Messages} with function content in a chat application.
 	 * @see ToolResponseMessage
