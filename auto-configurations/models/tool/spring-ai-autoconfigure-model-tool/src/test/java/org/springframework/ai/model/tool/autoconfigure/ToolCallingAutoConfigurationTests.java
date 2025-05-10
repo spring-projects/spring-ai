@@ -31,6 +31,7 @@ import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.tool.support.ToolDefinitions;
@@ -108,6 +109,25 @@ class ToolCallingAutoConfigurationTests {
 				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
 
 				assertThat(toolCallbackResolver.resolve("NonExisting")).isNull();
+			});
+	}
+
+	@Test
+	void observationFilterDefault() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				assertThat(context).doesNotHaveBean(ToolCallingContentObservationFilter.class);
+			});
+	}
+
+	@Test
+	void observationFilterEnabled() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.observations.include-content=true")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				assertThat(context).hasSingleBean(ToolCallingContentObservationFilter.class);
 			});
 	}
 

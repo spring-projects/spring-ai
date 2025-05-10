@@ -32,6 +32,11 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
@@ -145,6 +150,7 @@ class DefaultChatModelObservationConventionTests {
 					HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
 					HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(),
+					HighCardinalityKeyNames.REQUEST_TOOL_NAMES.asString(),
 					HighCardinalityKeyNames.REQUEST_TOP_K.asString(), HighCardinalityKeyNames.REQUEST_TOP_P.asString(),
 					HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(),
 					HighCardinalityKeyNames.RESPONSE_ID.asString(),
@@ -171,6 +177,23 @@ class DefaultChatModelObservationConventionTests {
 					HighCardinalityKeyNames.RESPONSE_ID.asString());
 	}
 
+	@Test
+	void shouldHaveKeyValuesWhenTools() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ToolCallingChatOptions.builder()
+				.model("mistral")
+				.toolNames("toolA", "toolB")
+				.toolCallbacks(new TestToolCallback("tool1", true), new TestToolCallback("tool2", false),
+						new TestToolCallback("toolB"))
+				.build()))
+			.provider("superprovider")
+			.build();
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).anySatisfy(keyValue -> {
+			assertThat(keyValue.getKey()).isEqualTo(HighCardinalityKeyNames.REQUEST_TOOL_NAMES.asString());
+			assertThat(keyValue.getValue()).contains("toolA", "toolB", "tool1", "tool2");
+		});
+	}
+
 	private Prompt generatePrompt(ChatOptions chatOptions) {
 		return new Prompt("Who let the dogs out?", chatOptions);
 	}
@@ -194,6 +217,39 @@ class DefaultChatModelObservationConventionTests {
 			usage.put("completionTokens", getCompletionTokens());
 			usage.put("totalTokens", getTotalTokens());
 			return usage;
+		}
+
+	}
+
+	static class TestToolCallback implements ToolCallback {
+
+		private final ToolDefinition toolDefinition;
+
+		private final ToolMetadata toolMetadata;
+
+		TestToolCallback(String name) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolMetadata = ToolMetadata.builder().build();
+		}
+
+		TestToolCallback(String name, boolean returnDirect) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return this.toolDefinition;
+		}
+
+		@Override
+		public ToolMetadata getToolMetadata() {
+			return this.toolMetadata;
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return "Mission accomplished!";
 		}
 
 	}

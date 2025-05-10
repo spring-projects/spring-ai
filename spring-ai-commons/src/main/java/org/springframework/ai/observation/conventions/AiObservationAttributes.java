@@ -68,6 +68,10 @@ public enum AiObservationAttributes {
 	 */
 	REQUEST_TEMPERATURE("gen_ai.request.temperature"),
 	/**
+	 * List of tool definitions provided to the model in the request.
+	 */
+	REQUEST_TOOL_NAMES("spring.ai.model.request.tool.names"),
+	/**
 	 * The top_k sampling setting for the model request.
 	 */
 	REQUEST_TOP_K("gen_ai.request.top_k"),

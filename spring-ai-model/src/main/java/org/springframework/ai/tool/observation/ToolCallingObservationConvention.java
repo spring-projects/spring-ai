@@ -14,36 +14,22 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.definition;
+package org.springframework.ai.tool.observation;
+
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationConvention;
 
 /**
- * Definition used by the AI model to determine when and how to call the tool.
+ * Interface for an {@link ObservationConvention} for tool calling observations.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface ToolDefinition {
+public interface ToolCallingObservationConvention extends ObservationConvention<ToolCallingObservationContext> {
 
-	/**
-	 * The tool name. Unique within the tool set provided to a model.
-	 */
-	String name();
-
-	/**
-	 * The tool description, used by the AI model to determine what the tool does.
-	 */
-	String description();
-
-	/**
-	 * The schema of the parameters used to call the tool.
-	 */
-	String inputSchema();
-
-	/**
-	 * Create a default {@link ToolDefinition} builder.
-	 */
-	static DefaultToolDefinition.Builder builder() {
-		return DefaultToolDefinition.builder();
+	@Override
+	default boolean supportsContext(Observation.Context context) {
+		return context instanceof ToolCallingObservationContext;
 	}
 
 }

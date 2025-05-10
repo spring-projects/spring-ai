@@ -38,6 +38,11 @@ public enum SpringAiKind {
 	CHAT_CLIENT("chat_client"),
 
 	/**
+	 * Spring AI kind for tool calling.
+	 */
+	TOOL_CALL("tool_call"),
+
+	/**
 	 * Spring AI kind for vector store.
 	 */
 	VECTOR_STORE("vector_store");
