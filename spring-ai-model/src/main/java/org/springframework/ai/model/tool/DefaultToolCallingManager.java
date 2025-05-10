@@ -202,7 +202,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 			String toolResult;
 			try {
-				toolResult = toolCallback.call(toolInputArguments, toolContext);
+				toolResult = aroundToolCallingExecution(toolCallback, toolInputArguments, toolContext);
 			}
 			catch (ToolExecutionException ex) {
 				toolResult = this.toolExecutionExceptionProcessor.process(ex);
@@ -212,6 +212,14 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		}
 
 		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()), returnDirect);
+	}
+
+	/**
+	 * Been added to allow for custom behavior around tool execution.
+	 */
+	protected String aroundToolCallingExecution(ToolCallback toolCallback, String toolInputArguments,
+			ToolContext toolContext) {
+		return toolCallback.call(toolInputArguments, toolContext);
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
