@@ -136,16 +136,23 @@ public final class MethodToolCallback implements ToolCallback {
 				return toolContext;
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
-			return buildTypedArgument(rawArgument, parameter.getType());
+			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
 	}
 
 	@Nullable
-	private Object buildTypedArgument(@Nullable Object value, Class<?> type) {
+	private Object buildTypedArgument(@Nullable Object value, Type type) {
 		if (value == null) {
 			return null;
 		}
-		return JsonParser.toTypedObject(value, type);
+
+		if (type instanceof Class<?>) {
+			return JsonParser.toTypedObject(value, (Class<?>) type);
+		}
+
+		// For generic types, use the fromJson method that accepts Type
+		String json = JsonParser.toJson(value);
+		return JsonParser.fromJson(json, type);
 	}
 
 	@Nullable
