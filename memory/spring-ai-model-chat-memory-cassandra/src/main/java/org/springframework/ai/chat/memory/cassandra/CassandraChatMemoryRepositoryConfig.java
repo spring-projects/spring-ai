@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author Mick Semb Wever
  * @since 1.0.0
  */
-public final class CassandraChatMemoryConfig {
+public final class CassandraChatMemoryRepositoryConfig {
 
 	public static final String DEFAULT_KEYSPACE_NAME = "springframework";
 
@@ -65,7 +65,7 @@ public final class CassandraChatMemoryConfig {
 
 	public static final String DEFAULT_USER_COLUMN_NAME = "user";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryConfig.class);
+	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryRepositoryConfig.class);
 
 	final CqlSession session;
 
@@ -81,7 +81,7 @@ public final class CassandraChatMemoryConfig {
 
 	private final boolean disallowSchemaChanges;
 
-	private CassandraChatMemoryConfig(Builder builder) {
+	private CassandraChatMemoryRepositoryConfig(Builder builder) {
 		this.session = builder.session;
 		this.schema = new Schema(builder.keyspace, builder.table, builder.partitionKeys, builder.clusteringKeys);
 		this.assistantColumn = builder.assistantColumn;
@@ -316,7 +316,7 @@ public final class CassandraChatMemoryConfig {
 			return this;
 		}
 
-		public CassandraChatMemoryConfig build() {
+		public CassandraChatMemoryRepositoryConfig build() {
 
 			int primaryKeyColumns = this.partitionKeys.size() + this.clusteringKeys.size();
 			int primaryKeysToBind = this.primaryKeyTranslator.apply(UUID.randomUUID().toString()).size();
@@ -328,7 +328,7 @@ public final class CassandraChatMemoryConfig {
 					this.clusteringKeys.get(this.clusteringKeys.size() - 1).name().equals(DEFAULT_EXCHANGE_ID_NAME),
 					"last clustering key must be the exchangeIdColumn");
 
-			return new CassandraChatMemoryConfig(this);
+			return new CassandraChatMemoryRepositoryConfig(this);
 		}
 
 	}

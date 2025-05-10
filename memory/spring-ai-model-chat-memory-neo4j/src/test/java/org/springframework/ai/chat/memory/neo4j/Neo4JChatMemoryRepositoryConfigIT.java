@@ -14,7 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
-class Neo4jChatMemoryConfigIT {
+class Neo4JChatMemoryRepositoryConfigIT {
 
 	@Container
 	static final Neo4jContainer<?> neo4jContainer = new Neo4jContainer<>("neo4j:5").withoutAuthentication();
@@ -35,7 +35,7 @@ class Neo4jChatMemoryConfigIT {
 	@Test
 	void shouldCreateRequiredIndexes() {
 		// Given
-		Neo4jChatMemoryConfig config = Neo4jChatMemoryConfig.builder().withDriver(driver).build();
+		Neo4jChatMemoryRepositoryConfig config = Neo4jChatMemoryRepositoryConfig.builder().withDriver(driver).build();
 		// When
 		try (Session session = driver.session()) {
 			Result result = session.run("SHOW INDEXES");
@@ -59,7 +59,7 @@ class Neo4jChatMemoryConfigIT {
 	void builderShouldSetCustomLabels() {
 		String customSessionLabel = "ChatSession";
 		String customMessageLabel = "ChatMessage";
-		Neo4jChatMemoryConfig config = Neo4jChatMemoryConfig.builder()
+		Neo4jChatMemoryRepositoryConfig config = Neo4jChatMemoryRepositoryConfig.builder()
 			.withDriver(driver)
 			.withSessionLabel(customSessionLabel)
 			.withMessageLabel(customMessageLabel)
@@ -70,7 +70,7 @@ class Neo4jChatMemoryConfigIT {
 
 	@Test
 	void gettersShouldReturnConfiguredValues() {
-		Neo4jChatMemoryConfig config = Neo4jChatMemoryConfig.builder()
+		Neo4jChatMemoryRepositoryConfig config = Neo4jChatMemoryRepositoryConfig.builder()
 			.withDriver(driver)
 			.withSessionLabel("Session")
 			.withToolCallLabel("ToolCall")

@@ -21,7 +21,7 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryConfig;
+import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.lang.Nullable;
 
@@ -39,13 +39,13 @@ public class CassandraChatMemoryRepositoryProperties {
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryRepositoryProperties.class);
 
-	private String keyspace = CassandraChatMemoryConfig.DEFAULT_KEYSPACE_NAME;
+	private String keyspace = CassandraChatMemoryRepositoryConfig.DEFAULT_KEYSPACE_NAME;
 
-	private String table = CassandraChatMemoryConfig.DEFAULT_TABLE_NAME;
+	private String table = CassandraChatMemoryRepositoryConfig.DEFAULT_TABLE_NAME;
 
-	private String assistantColumn = CassandraChatMemoryConfig.DEFAULT_ASSISTANT_COLUMN_NAME;
+	private String assistantColumn = CassandraChatMemoryRepositoryConfig.DEFAULT_ASSISTANT_COLUMN_NAME;
 
-	private String userColumn = CassandraChatMemoryConfig.DEFAULT_USER_COLUMN_NAME;
+	private String userColumn = CassandraChatMemoryRepositoryConfig.DEFAULT_USER_COLUMN_NAME;
 
 	private boolean initializeSchema = true;
 

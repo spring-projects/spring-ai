@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Enrico Rampazzo
  */
-public final class Neo4jChatMemoryConfig {
+public final class Neo4jChatMemoryRepositoryConfig {
 
 	// todo – make configurable
 
@@ -41,7 +41,7 @@ public final class Neo4jChatMemoryConfig {
 
 	public static final String DEFAULT_MEDIA_LABEL = "Media";
 
-	private static final Logger logger = LoggerFactory.getLogger(Neo4jChatMemoryConfig.class);
+	private static final Logger logger = LoggerFactory.getLogger(Neo4jChatMemoryRepositoryConfig.class);
 
 	private final Driver driver;
 
@@ -85,7 +85,7 @@ public final class Neo4jChatMemoryConfig {
 		return this.driver;
 	}
 
-	private Neo4jChatMemoryConfig(Builder builder) {
+	private Neo4jChatMemoryRepositoryConfig(Builder builder) {
 		this.driver = builder.driver;
 		this.sessionLabel = builder.sessionLabel;
 		this.mediaLabel = builder.mediaLabel;
@@ -208,8 +208,8 @@ public final class Neo4jChatMemoryConfig {
 			return this;
 		}
 
-		public Neo4jChatMemoryConfig build() {
-			return new Neo4jChatMemoryConfig(this);
+		public Neo4jChatMemoryRepositoryConfig build() {
+			return new Neo4jChatMemoryRepositoryConfig(this);
 		}
 
 	}
