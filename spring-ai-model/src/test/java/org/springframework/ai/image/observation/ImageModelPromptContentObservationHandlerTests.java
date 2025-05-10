@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.observation;
+package org.springframework.ai.image.observation;
 
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.image.ImageMessage;
+import org.springframework.ai.image.ImageOptionsBuilder;
+import org.springframework.ai.image.ImagePrompt;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
@@ -32,15 +30,15 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {@link ChatModelCompletionObservationHandler}.
+ * Unit tests for {@link ImageModelPromptContentObservationHandler}.
  *
  * @author Thomas Vitale
  * @author Jonatan Ivanov
  */
 @ExtendWith(OutputCaptureExtension.class)
-class ChatModelCompletionObservationHandlerTests {
+class ImageModelPromptContentObservationHandlerTests {
 
-	private final ChatModelCompletionObservationHandler observationHandler = new ChatModelCompletionObservationHandler();
+	private final ImageModelPromptContentObservationHandler observationHandler = new ImageModelPromptContentObservationHandler();
 
 	@Test
 	void whenNotSupportedObservationContextThenReturnFalse() {
@@ -50,57 +48,54 @@ class ChatModelCompletionObservationHandlerTests {
 
 	@Test
 	void whenSupportedObservationContextThenReturnTrue() {
-		var context = ChatModelObservationContext.builder()
-			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+		var context = ImageModelObservationContext.builder()
+			.imagePrompt(new ImagePrompt("", ImageOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationHandler.supportsContext(context)).isTrue();
 	}
 
 	@Test
-	void whenEmptyResponseThenOutputNothing(CapturedOutput output) {
-		var context = ChatModelObservationContext.builder()
-			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+	void whenEmptyPromptThenOutputNothing(CapturedOutput output) {
+		var context = ImageModelObservationContext.builder()
+			.imagePrompt(new ImagePrompt("", ImageOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 		observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Completion:
-				[]
+				Image Model Prompt Content:
+				[""]
 				""");
 	}
 
 	@Test
-	void whenEmptyCompletionThenOutputNothing(CapturedOutput output) {
-		var context = ChatModelObservationContext.builder()
-			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+	void whenPromptWithTextThenOutputIt(CapturedOutput output) {
+		var context = ImageModelObservationContext.builder()
+			.imagePrompt(new ImagePrompt("supercalifragilisticexpialidocious",
+					ImageOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		context.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("")))));
 		observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Completion:
-				[]
+				Image Model Prompt Content:
+				["supercalifragilisticexpialidocious"]
 				""");
 	}
 
 	@Test
-	void whenCompletionWithTextThenOutputIt(CapturedOutput output) {
-		var context = ChatModelObservationContext.builder()
-			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+	void whenPromptWithMessagesThenOutputIt(CapturedOutput output) {
+		var context = ImageModelObservationContext.builder()
+			.imagePrompt(new ImagePrompt(
+					List.of(new ImageMessage("you're a chimney sweep"),
+							new ImageMessage("supercalifragilisticexpialidocious")),
+					ImageOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		context.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
-				new Generation(new AssistantMessage("seriously, say please")))));
 		observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Completion:
-				["say please", "seriously, say please"]
+				Image Model Prompt Content:
+				["you're a chimney sweep", "supercalifragilisticexpialidocious"]
 				""");
-	}
-
-	private Prompt generatePrompt(ChatOptions chatOptions) {
-		return new Prompt("supercalifragilisticexpialidocious", chatOptions);
 	}
 
 }

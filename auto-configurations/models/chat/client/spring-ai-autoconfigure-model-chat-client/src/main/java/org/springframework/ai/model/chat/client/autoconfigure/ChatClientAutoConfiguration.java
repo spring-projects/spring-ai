@@ -17,22 +17,23 @@
 package org.springframework.ai.model.chat.client.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
-import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationFilter;
+import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
 /**
@@ -47,9 +48,11 @@ import org.springframework.context.annotation.Scope;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration
+@AutoConfiguration(
+		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration" })
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -57,6 +60,11 @@ import org.springframework.context.annotation.Scope;
 public class ChatClientAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChatClientAutoConfiguration.class);
+
+	private static void logPromptContentWarning() {
+		logger.warn(
+				"You have enabled logging out the ChatClient prompt content with the risk of exposing sensitive or private information. Please, be careful!");
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -79,14 +87,37 @@ public class ChatClientAutoConfiguration {
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
-			name = "include-prompt", havingValue = "true")
-	ChatClientPromptContentObservationFilter chatClientPromptContentObservationFilter() {
-		logger.warn(
-				"You have enabled the inclusion of the ChatClient prompt content in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
-		return new ChatClientPromptContentObservationFilter();
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnClass(Tracer.class)
+	@ConditionalOnBean(Tracer.class)
+	static class TracerPresentObservationConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean(value = ChatClientPromptContentObservationHandler.class,
+				name = "chatClientPromptContentObservationHandler")
+		@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
+				name = "log-prompt", havingValue = "true")
+		TracingAwareLoggingObservationHandler<ChatClientObservationContext> chatClientPromptContentObservationHandler(
+				Tracer tracer) {
+			logPromptContentWarning();
+			return new TracingAwareLoggingObservationHandler<>(new ChatClientPromptContentObservationHandler(), tracer);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnMissingClass("io.micrometer.tracing.Tracer")
+	static class TracerNotPresentObservationConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
+				name = "log-prompt", havingValue = "true")
+		ChatClientPromptContentObservationHandler chatClientPromptContentObservationHandler() {
+			logPromptContentWarning();
+			return new ChatClientPromptContentObservationHandler();
+		}
+
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
-import org.springframework.ai.observation.conventions.AiObservationAttributes;
 
 /**
  * Documented conventions for chat client observations.
@@ -107,19 +106,7 @@ public enum ChatClientObservationDocumentation implements ObservationDocumentati
 			public String asString() {
 				return "spring.ai.chat.client.tool.names";
 			}
-		},
-
-		// Content
-
-		/**
-		 * The full prompt requested to be sent to the model.
-		 */
-		PROMPT {
-			@Override
-			public String asString() {
-				return AiObservationAttributes.PROMPT.value();
-			}
-		},
+		}
 
 	}
 

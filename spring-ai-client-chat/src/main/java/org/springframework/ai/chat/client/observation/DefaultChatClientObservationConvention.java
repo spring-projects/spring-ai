@@ -16,21 +16,20 @@
 
 package org.springframework.ai.chat.client.observation;
 
-import java.util.ArrayList;
-
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
-
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.ai.observation.conventions.SpringAiKind;
-import org.springframework.ai.observation.tracing.TracingHelper;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
 
 /**
  * Default conventions to populate observations for chat client workflows.
@@ -103,7 +102,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 		}
 		var advisorNames = context.getAdvisors().stream().map(Advisor::getName).toList();
 		return keyValues.and(ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_ADVISORS.asString(),
-				TracingHelper.concatenateStrings(advisorNames));
+				ObservabilityHelper.concatenateStrings(advisorNames));
 	}
 
 	protected KeyValues conversationId(KeyValues keyValues, ChatClientObservationContext context) {
@@ -143,7 +142,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 
 		return keyValues.and(
 				ChatClientObservationDocumentation.HighCardinalityKeyNames.CHAT_CLIENT_TOOL_NAMES.asString(),
-				TracingHelper.concatenateStrings(toolNames.stream().sorted().toList()));
+				ObservabilityHelper.concatenateStrings(toolNames.stream().sorted().toList()));
 	}
 
 }

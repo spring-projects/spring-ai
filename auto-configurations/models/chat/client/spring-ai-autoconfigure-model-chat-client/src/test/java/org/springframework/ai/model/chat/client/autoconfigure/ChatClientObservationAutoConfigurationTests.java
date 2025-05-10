@@ -16,10 +16,11 @@
 
 package org.springframework.ai.model.chat.client.autoconfigure;
 
+import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationFilter;
+import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
 class ChatClientObservationAutoConfigurationTests {
 
@@ -36,15 +38,16 @@ class ChatClientObservationAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(ChatClientAutoConfiguration.class));
 
 	@Test
-	void promptContentFilterDefault() {
+	void promptContentHandlerDefault() {
 		this.contextRunner
-			.run(context -> assertThat(context).doesNotHaveBean(ChatClientPromptContentObservationFilter.class));
+			.run(context -> assertThat(context).doesNotHaveBean(ChatClientPromptContentObservationHandler.class));
 	}
 
 	@Test
-	void promptContentFilterEnabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.client.observations.include-prompt=true")
-			.run(context -> assertThat(context).hasSingleBean(ChatClientPromptContentObservationFilter.class));
+	void promptContentHandlerEnabled() {
+		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
+			.withPropertyValues("spring.ai.chat.client.observations.log-prompt=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatClientPromptContentObservationHandler.class));
 	}
 
 }
