@@ -153,7 +153,7 @@ public class MistralAiApi {
 
 		// The input must not an empty string, and any array must be 1024 dimensions or
 		// less.
-		if (embeddingRequest.input() instanceof List list) {
+		if (embeddingRequest.input() instanceof List<?> list) {
 			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
 			Assert.isTrue(list.size() <= 1024, "The list must be 1024 dimensions or less");
 			Assert.isTrue(
@@ -269,12 +269,10 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral chat models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
 	 *
-	 * <p>
-	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
-	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
-	 * Medium, Mistral Large, and Mistral Embeddings).
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
@@ -282,15 +280,17 @@ public class MistralAiApi {
 		// Premier Models
 		CODESTRAL("codestral-latest"),
 		LARGE("mistral-large-latest"),
+		MEDIUM("mistral-medium-latest"),
+		MINISTRAL_3B("ministral-3b-latest"),
+		MINISTRAL_8B("ministral-8b-latest"),
 		PIXTRAL_LARGE("pixtral-large-latest"),
-		MINISTRAL_3B_LATEST("ministral-3b-latest"),
-		MINISTRAL_8B_LATEST("ministral-8b-latest"),
+		SABA("mistral-saba-latest"),
 		// Free Models
-		SMALL("mistral-small-latest"),
 		PIXTRAL("pixtral-12b-2409"),
+		SMALL("mistral-small-latest"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
-		OPEN_CODESTRAL_MAMBA("open-codestral-mamba");
+		OPEN_CODESTRAL_MAMBA("open-codestral-mamba"),
+		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
 		private final String value;
@@ -312,11 +312,15 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral embedding models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-embedding-model
+	 *
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum EmbeddingModel {
 
 		// @formatter:off
+		// Premier Models
 		EMBED("mistral-embed");
 		 // @formatter:on
 
@@ -820,8 +824,7 @@ public class MistralAiApi {
 		}
 
 		/**
-		 * The role of the author of this message.
-		 *
+		 * The role of the author of this message. <br/>
 		 * NOTE: Mistral expects the system message to be before the user message or will
 		 * fail with 400 error.
 		 */

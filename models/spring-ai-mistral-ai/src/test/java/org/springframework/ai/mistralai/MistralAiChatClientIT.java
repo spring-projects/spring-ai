@@ -16,17 +16,10 @@
 
 package org.springframework.ai.mistralai;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -43,6 +36,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
+import reactor.core.publisher.Flux;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,7 +53,7 @@ class MistralAiChatClientIT {
 	private static final Logger logger = LoggerFactory.getLogger(MistralAiChatClientIT.class);
 
 	@Autowired
-	MistralAiChatModel chatModel;
+	private MistralAiChatModel chatModel;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemTextResource;
@@ -290,9 +290,7 @@ class MistralAiChatClientIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		// String model = MistralAiApi.ChatModel.OPEN_MISTRAL_7B.getName();
-		String model = MistralAiApi.ChatModel.PIXTRAL.getName();
-		// String model = MistralAiApi.ChatModel.PIXTRAL_LARGE.getName();
+		String model = selectChatModelName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().model(model).build())
@@ -301,12 +299,22 @@ class MistralAiChatClientIT {
 				.chatResponse();
 		// @formatter:on
 
+		assertThat(response).isNotNull();
 		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	private static String selectChatModelName() {
+		var chatModels = Arrays.asList(MistralAiApi.ChatModel.values());
+		Collections.shuffle(chatModels);
+		var chatModelName = chatModels.get(0).getName();
+		logger.info("Selected chat model name: {}", chatModelName);
+
+		return chatModelName;
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

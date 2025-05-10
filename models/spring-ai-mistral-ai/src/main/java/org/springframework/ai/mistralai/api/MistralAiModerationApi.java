@@ -33,7 +33,7 @@ import org.springframework.web.client.RestClient;
  * MistralAI Moderation API.
  *
  * @author Ricken Bazolo
- * @see <a href= "https://docs.mistral.ai/capabilities/guardrailing/</a>
+ * @see <a href= "https://docs.mistral.ai/capabilities/guardrailing/">Moderation</a>
  */
 public class MistralAiModerationApi {
 
@@ -71,9 +71,17 @@ public class MistralAiModerationApi {
 			.toEntity(MistralAiModerationResponse.class);
 	}
 
+	/**
+	 * List of well-known Mistral moderation models.
+	 *
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
+	 */
 	public enum Model {
 
 		// @formatter:off
+		// Premier Models
 		MISTRAL_MODERATION("mistral-moderation-latest");
 		// @formatter:on
 
