@@ -126,11 +126,11 @@ public class PromptTemplateTest {
 		Map<String, Object> model = createTestMap();
 		model.put("key3", 100);
 
-		// Create a simple template with placeholders for keys in the generative
+		// Create a simple template with placeholders for keys in the variables
 		String template = "This is a {key1}, it is {key2}, and it costs {key3}";
 		PromptTemplate promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 
-		// The expected result after rendering the template with the generative
+		// The expected result after rendering the template with the variables
 		String expected = "This is a value1, it is true, and it costs 100";
 		String result = promptTemplate.render();
 
@@ -178,11 +178,11 @@ public class PromptTemplateTest {
 
 		model.put("key3", resource);
 
-		// Create a simple template with placeholders for keys in the generative
+		// Create a simple template with placeholders for keys in the variables
 		String template = "{key1}, {key2}, {key3}";
 		PromptTemplate promptTemplate = PromptTemplate.builder().resource(resource).variables(model).build();
 
-		// The expected result after rendering the template with the generative
+		// The expected result after rendering the template with the variables
 		String expected = "value1, true, it costs 100";
 		String result = promptTemplate.render();
 
@@ -192,12 +192,12 @@ public class PromptTemplateTest {
 
 	@Test
 	public void testRenderFailure() {
-		// Create a map with string keys and object values to serve as a generative for
+		// Create a map with string keys and object values to serve as a variables for
 		// testing
 		Map<String, Object> model = new HashMap<>();
 		model.put("key1", "value1");
 
-		// Create a simple template that includes a key not present in the generative
+		// Create a simple template that includes a key not present in the variables
 		String template = "This is a {key2}!";
 		PromptTemplate promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 
