@@ -951,12 +951,12 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		 * <p>
 		 * Knowledge cutoff: January 2025
 		 * <p>
-		 * Model ID: gemini-2.5-pro-preview-03-25
+		 * Model ID: gemini-2.5-pro-preview-05-06
 		 * <p>
 		 * See: <a href=
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-pro">gemini-2.5-pro</a>
 		 */
-		GEMINI_2_5_PRO("gemini-2.5-pro-preview-03-25"),
+		GEMINI_2_5_PRO("gemini-2.5-pro-preview-05-06"),
 
 		/**
 		 * <b>gemini-2.5-flash</b> is a thinking model that offers great, well-rounded
