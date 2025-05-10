@@ -53,7 +53,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
