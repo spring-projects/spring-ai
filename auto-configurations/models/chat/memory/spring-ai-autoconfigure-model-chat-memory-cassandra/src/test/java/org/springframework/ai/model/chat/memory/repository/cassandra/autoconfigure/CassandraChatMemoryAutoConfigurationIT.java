@@ -59,7 +59,7 @@ class CassandraChatMemoryAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
 			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
-			.withPropertyValues("spring.ai.chat.memory.cassandra.time-to-live=" + getTimeToLive())
+			.withPropertyValues("spring.ai.chat.memory.repository.cassandra.time-to-live=" + getTimeToLive())
 			.run(context -> {
 				CassandraChatMemoryRepository memory = context.getBean(CassandraChatMemoryRepository.class);
 
@@ -95,7 +95,7 @@ class CassandraChatMemoryAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.cassandra.contactPoints=" + getContactPointHost())
 			.withPropertyValues("spring.cassandra.port=" + getContactPointPort())
 			.withPropertyValues("spring.cassandra.localDatacenter=" + cassandraContainer.getLocalDatacenter())
-			.withPropertyValues("spring.ai.chat.memory.cassandra.time-to-live=" + getTimeToLiveString())
+			.withPropertyValues("spring.ai.chat.memory.repository.cassandra.time-to-live=" + getTimeToLiveString())
 			.run(context -> {
 				CassandraChatMemoryProperties properties = context.getBean(CassandraChatMemoryProperties.class);
 				assertThat(properties.getTimeToLive()).isEqualTo(Duration.parse(getTimeToLiveString()));
