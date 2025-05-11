@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ class FunctionCallWithFunctionBeanIT {
 				var userMessage = new UserMessage("""
 						What's the weather like in San Francisco, Paris and in Tokyo?
 						Return the temperature in Celsius.
-						Perform multiple funciton execution if necessary.
+						Perform multiple function execution if necessary.
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
@@ -105,7 +105,7 @@ class FunctionCallWithFunctionBeanIT {
 				var userMessage = new UserMessage("""
 						What's the weather like in San Francisco, Paris and in Tokyo?
 						Return the temperature in Celsius.
-						Perform multiple funciton execution if necessary.
+						Perform multiple function execution if necessary.
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
