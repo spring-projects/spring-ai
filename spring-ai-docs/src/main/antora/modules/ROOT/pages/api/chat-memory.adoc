@@ -175,9 +175,11 @@ ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
 
 === CassandraChatMemoryRepository
 
-`CassandraChatMemoryRepository` uses Apache Cassandra to store messages. It is suitable for applications that require persistent storage of chat memory, especially for availability, at scale, or when taking advantage of time-to-live (TTL) messages.
+`CassandraChatMemoryRepository` uses Apache Cassandra to store messages.  It is suitable for applications that require persistent storage of chat memory, especially for availability, durability, scale, and when taking advantage of time-to-live (TTL) feature.
 
-First, add the following dependency to your project:
+`CassandraChatMemoryRepository` has a time-series schema, keeping record of all past chat windows, valuable for governance and auditing.  Setting time-to-live to some value, for example three years, is recommended.
+
+To use `CassandraChatMemoryRepository` first, add the dependency to your project:
 
 [tabs]
 ======
@@ -235,10 +237,10 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 | `spring.cassandra.contactPoints` | Host(s) to initiate cluster discovery | `127.0.0.1`
 | `spring.cassandra.port` | Cassandra native protocol port to connect to | `9042`
 | `spring.cassandra.localDatacenter` | Cassandra datacenter to connect to | `datacenter1`
-| `spring.ai.chat.memory.repository.cassandra.time-to-live` | Time to live (TTL) for messages written in Cassandra |
-| `spring.ai.chat.memory.repository.cassandra.keyspace` | Cassandra keyspace | `springframework`
-| `spring.ai.chat.memory.repository.cassandra.table` | Cassandra table | `ai_chat_memory`
-| `spring.ai.chat.memory.repository.cassandra.initialize-schema` | Whether to initialize the schema on startup. | `true`
+| `spring.ai.chat.memory.cassandra.time-to-live` | Time to live (TTL) for messages written in Cassandra |
+| `spring.ai.chat.memory.cassandra.keyspace` | Cassandra keyspace | `springframework`
+| `spring.ai.chat.memory.cassandra.table` | Cassandra table | `ai_chat_memory`
+| `spring.ai.chat.memory.cassandra.initialize-schema` | Whether to initialize the schema on startup. | `true`
 |===
 
 ==== Schema Initialization

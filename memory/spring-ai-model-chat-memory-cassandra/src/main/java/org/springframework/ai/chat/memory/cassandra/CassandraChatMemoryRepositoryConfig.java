@@ -30,6 +30,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
@@ -61,9 +62,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 	// todo – make configurable
 	public static final String DEFAULT_EXCHANGE_ID_NAME = "message_timestamp";
 
-	public static final String DEFAULT_ASSISTANT_COLUMN_NAME = "assistant";
-
-	public static final String DEFAULT_USER_COLUMN_NAME = "user";
+	public static final String DEFAULT_MESSAGES_COLUMN_NAME = "messages";
 
 	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryRepositoryConfig.class);
 
@@ -71,9 +70,18 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 	final Schema schema;
 
-	final String assistantColumn;
+	final String messageUDT = "ai_chat_message";
 
-	final String userColumn;
+	final String messagesColumn;
+
+	// todo – make configurable
+	final String messageUdtTimestampColumn = "msg_timestamp";
+
+	// todo – make configurable
+	final String messageUdtTypeColumn = "msg_type";
+
+	// todo – make configurable
+	final String messageUdtContentColumn = "msg_content";
 
 	final SessionIdToPrimaryKeysTranslator primaryKeyTranslator;
 
@@ -84,8 +92,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 	private CassandraChatMemoryRepositoryConfig(Builder builder) {
 		this.session = builder.session;
 		this.schema = new Schema(builder.keyspace, builder.table, builder.partitionKeys, builder.clusteringKeys);
-		this.assistantColumn = builder.assistantColumn;
-		this.userColumn = builder.userColumn;
+		this.messagesColumn = builder.messagesColumn;
 		this.timeToLiveSeconds = builder.timeToLiveSeconds;
 		this.disallowSchemaChanges = builder.disallowSchemaChanges;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
@@ -109,6 +116,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 	void ensureSchemaExists() {
 		if (!this.disallowSchemaChanges) {
 			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
+			ensureMessageTypeExist();
 			ensureTableExists();
 			ensureTableColumnsExist();
 			SchemaUtil.checkSchemaAgreement(this.session);
@@ -129,17 +137,35 @@ public final class CassandraChatMemoryRepositoryConfig {
 			.getTable(this.schema.table)
 			.isPresent(), "table %s does not exist");
 
+		Preconditions.checkState(this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace())
+			.get()
+			.getUserDefinedType(messageUDT)
+			.isPresent(), "table %s does not exist");
+
+		UserDefinedType udt = this.session.getMetadata()
+			.getKeyspace(this.schema.keyspace())
+			.get()
+			.getUserDefinedType(messageUDT)
+			.get();
+
+		Preconditions.checkState(udt.contains(this.messageUdtTimestampColumn), "field %s does not exist",
+				this.messageUdtTimestampColumn);
+
+		Preconditions.checkState(udt.contains(this.messageUdtTypeColumn), "field %s does not exist",
+				this.messageUdtTypeColumn);
+
+		Preconditions.checkState(udt.contains(this.messageUdtContentColumn), "field %s does not exist",
+				this.messageUdtContentColumn);
+
 		TableMetadata tableMetadata = this.session.getMetadata()
 			.getKeyspace(this.schema.keyspace)
 			.get()
 			.getTable(this.schema.table)
 			.get();
 
-		Preconditions.checkState(tableMetadata.getColumn(this.assistantColumn).isPresent(), "column %s does not exist",
-				this.assistantColumn);
-
-		Preconditions.checkState(tableMetadata.getColumn(this.userColumn).isPresent(), "column %s does not exist",
-				this.userColumn);
+		Preconditions.checkState(tableMetadata.getColumn(this.messagesColumn).isPresent(), "column %s does not exist",
+				this.messagesColumn);
 	}
 
 	private void ensureTableExists() {
@@ -159,9 +185,11 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 			String lastClusteringColumn = this.schema.clusteringKeys.get(this.schema.clusteringKeys.size() - 1).name();
 
-			CreateTableWithOptions createTableWithOptions = createTable.withColumn(this.userColumn, DataTypes.TEXT)
+			CreateTableWithOptions createTableWithOptions = createTable
+				.withColumn(this.messagesColumn, DataTypes.frozenListOf(SchemaBuilder.udt(messageUDT, true)))
 				.withClusteringOrder(lastClusteringColumn, ClusteringOrder.DESC)
-				// TODO replace w/ SchemaBuilder.unifiedCompactionStrategy() is available
+				// TODO replace w/ SchemaBuilder.unifiedCompactionStrategy() when
+				// available
 				.withOption("compaction", Map.of("class", "UnifiedCompactionStrategy"));
 
 			if (null != this.timeToLiveSeconds) {
@@ -169,6 +197,18 @@ public final class CassandraChatMemoryRepositoryConfig {
 			}
 			this.session.execute(createTableWithOptions.build());
 		}
+	}
+
+	private void ensureMessageTypeExist() {
+
+		SimpleStatement stmt = SchemaBuilder.createType(messageUDT)
+			.ifNotExists()
+			.withField(messageUdtTimestampColumn, DataTypes.TIMESTAMP)
+			.withField(messageUdtTypeColumn, DataTypes.TEXT)
+			.withField(messageUdtContentColumn, DataTypes.TEXT)
+			.build();
+
+		this.session.execute(stmt.setKeyspace(this.schema.keyspace));
 	}
 
 	private void ensureTableColumnsExist() {
@@ -179,18 +219,12 @@ public final class CassandraChatMemoryRepositoryConfig {
 			.getTable(this.schema.table())
 			.get();
 
-		boolean addAssistantColumn = tableMetadata.getColumn(this.assistantColumn).isEmpty();
-		boolean addUserColumn = tableMetadata.getColumn(this.userColumn).isEmpty();
+		if (tableMetadata.getColumn(this.messagesColumn).isEmpty()) {
 
-		if (addAssistantColumn || addUserColumn) {
-			AlterTableAddColumn alterTable = SchemaBuilder.alterTable(this.schema.keyspace(), this.schema.table());
-			if (addAssistantColumn) {
-				alterTable = alterTable.addColumn(this.assistantColumn, DataTypes.TEXT);
-			}
-			if (addUserColumn) {
-				alterTable = alterTable.addColumn(this.userColumn, DataTypes.TEXT);
-			}
-			SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
+			SimpleStatement stmt = SchemaBuilder.alterTable(this.schema.keyspace(), this.schema.table())
+				.addColumn(this.messagesColumn, DataTypes.frozenListOf(SchemaBuilder.udt(messageUDT, true)))
+				.build();
+
 			logger.debug("Executing {}", stmt.getQuery());
 			this.session.execute(stmt);
 		}
@@ -228,9 +262,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 		private List<SchemaColumn> clusteringKeys = List
 			.of(new SchemaColumn(DEFAULT_EXCHANGE_ID_NAME, DataTypes.TIMESTAMP));
 
-		private String assistantColumn = DEFAULT_ASSISTANT_COLUMN_NAME;
-
-		private String userColumn = DEFAULT_USER_COLUMN_NAME;
+		private String messagesColumn = DEFAULT_MESSAGES_COLUMN_NAME;
 
 		private Integer timeToLiveSeconds = null;
 
@@ -289,13 +321,8 @@ public final class CassandraChatMemoryRepositoryConfig {
 			return this;
 		}
 
-		public Builder withAssistantColumnName(String name) {
-			this.assistantColumn = name;
-			return this;
-		}
-
-		public Builder withUserColumnName(String name) {
-			this.userColumn = name;
+		public Builder withMessagesColumnName(String name) {
+			this.messagesColumn = name;
 			return this;
 		}
 

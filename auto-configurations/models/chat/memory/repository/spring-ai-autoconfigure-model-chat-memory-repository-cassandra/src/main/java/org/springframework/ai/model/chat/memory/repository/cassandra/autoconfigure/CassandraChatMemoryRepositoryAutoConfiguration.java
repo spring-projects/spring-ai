@@ -49,8 +49,7 @@ public class CassandraChatMemoryRepositoryAutoConfiguration {
 
 		builder = builder.withKeyspaceName(properties.getKeyspace())
 			.withTableName(properties.getTable())
-			.withAssistantColumnName(properties.getAssistantColumn())
-			.withUserColumnName(properties.getUserColumn());
+			.withMessagesColumnName(properties.getMessagesColumn());
 
 		if (!properties.isInitializeSchema()) {
 			builder = builder.disallowSchemaChanges();
