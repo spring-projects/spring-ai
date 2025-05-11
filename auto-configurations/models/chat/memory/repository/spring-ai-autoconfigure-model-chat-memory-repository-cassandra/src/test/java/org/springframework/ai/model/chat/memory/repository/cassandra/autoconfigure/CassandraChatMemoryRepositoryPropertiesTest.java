@@ -20,7 +20,7 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.memory.cassandra.CassandraChatMemoryRepositoryConfig;
+import org.springframework.ai.chat.memory.repository.cassandra.CassandraChatMemoryRepositoryConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

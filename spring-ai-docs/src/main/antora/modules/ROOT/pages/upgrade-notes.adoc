@@ -60,9 +60,19 @@ Hopefully Watson will reappear in a future version of Spring AI
 In 1.0.0-RC1, the chat memory modules, starters, and autoconfiguration classes for Cassandra, JDBC, and Neo4j have been renamed to include the `repository` suffix for clarity. This impacts artifact IDs, Java package names, and class names. For example:
 
 - Artifact IDs:
+- `spring-ai-model-chat-memory-jdbc` -> `spring-ai-model-chat-memory-repository-jdbc`
 - `spring-ai-autoconfigure-model-chat-memory-jdbc` → `spring-ai-autoconfigure-model-chat-memory-repository-jdbc`
 - `spring-ai-starter-model-chat-memory-jdbc` → `spring-ai-starter-model-chat-memory-repository-jdbc`
-- Java packages now use `.repository.` (e.g., `org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure`).
+
+- `spring-ai-model-chat-memory-cassandra` -> `spring-ai-model-chat-memory-repository-cassandra`
+- `spring-ai-autoconfigure-model-chat-memory-cassandra` → `spring-ai-autoconfigure-model-chat-memory-repository-cassandra`
+- `spring-ai-starter-model-chat-memory-cassandra` → `spring-ai-starter-model-chat-memory-repository-cassandra`
+
+- `spring-ai-model-chat-memory-neo4j` -> `spring-ai-model-chat-memory-repository-neo4j`
+- `spring-ai-autoconfigure-model-chat-memory-neo4j` → `spring-ai-autoconfigure-model-chat-memory-repository-neo4j`
+- `spring-ai-starter-model-chat-memory-neo4j` → `spring-ai-starter-model-chat-memory-repository-neo4j`
+
+- Java packages now use `.repository.` (e.g., `org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository` and `org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure.JdbcChatMemoryRepositoryAutoConfiguration`).
 - Main autoconfiguration classes are now named `JdbcChatMemoryRepositoryAutoConfiguration`, `CassandraChatMemoryRepositoryAutoConfiguration`, etc.
 
 **Migration Required:**

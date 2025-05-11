@@ -30,7 +30,7 @@ public class JdbcChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc";
 
-	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql";
+	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql";
 
 	/**
 	 * Whether to initialize the schema on startup. Values: embedded, always, never.
@@ -40,7 +40,7 @@ public class JdbcChatMemoryRepositoryProperties {
 
 	/**
 	 * Locations of schema (DDL) scripts. Supports comma-separated list. Default is
-	 * classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql
+	 * classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql
 	 */
 	private String schema = DEFAULT_SCHEMA_LOCATION;
 
