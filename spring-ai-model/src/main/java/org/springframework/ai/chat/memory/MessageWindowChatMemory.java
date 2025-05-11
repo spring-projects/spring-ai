@@ -72,12 +72,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	}
 
 	@Override
-	@Deprecated // in favor of get(conversationId)
-	public List<Message> get(String conversationId, int lastN) {
-		return get(conversationId);
-	}
-
-	@Override
 	public void clear(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		this.chatMemoryRepository.deleteByConversationId(conversationId);

@@ -16,9 +16,12 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -27,6 +30,7 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -34,6 +38,13 @@ import org.springframework.util.Assert;
 
 /**
  * Abstract class that serves as a base for chat memory advisors.
+ * <p>
+ * <b>WARNING:</b> If you rely on the {@code defaultConversationId} (i.e., do not provide
+ * a conversation ID in the context), all chat memory will be shared across all users and
+ * sessions. This means you will <b>NOT</b> be able to support multiple independent user
+ * sessions or conversations. Always provide a unique conversation ID in the context to
+ * ensure proper session isolation.
+ * </p>
  *
  * @param <T> the type of the chat memory.
  * @author Christian Tzolov
@@ -49,16 +60,6 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAdvisor, Strea
 	public static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
 	/**
-	 * The key to retrieve the chat memory response size from the context.
-	 */
-	public static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat_memory_response_size";
-
-	/**
-	 * The default chat memory retrieve size to use when no retrieve size is provided.
-	 */
-	public static final int DEFAULT_CHAT_MEMORY_RESPONSE_SIZE = 100;
-
-	/**
 	 * The chat memory store.
 	 */
 	protected final T chatMemoryStore;
@@ -67,11 +68,6 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAdvisor, Strea
 	 * The default conversation id.
 	 */
 	protected final String defaultConversationId;
-
-	/**
-	 * The default chat memory retrieve size.
-	 */
-	protected final int defaultChatMemoryRetrieveSize;
 
 	/**
 	 * Whether to protect from blocking.
@@ -83,45 +79,40 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAdvisor, Strea
 	 */
 	private final int order;
 
+	private static final Logger logger = LoggerFactory.getLogger(AbstractChatMemoryAdvisor.class);
+
 	/**
 	 * Constructor to create a new {@link AbstractChatMemoryAdvisor} instance.
 	 * @param chatMemory the chat memory store
 	 */
 	protected AbstractChatMemoryAdvisor(T chatMemory) {
-		this(chatMemory, ChatMemory.DEFAULT_CONVERSATION_ID, DEFAULT_CHAT_MEMORY_RESPONSE_SIZE, true);
+		this(chatMemory, ChatMemory.DEFAULT_CONVERSATION_ID, true);
 	}
 
 	/**
 	 * Constructor to create a new {@link AbstractChatMemoryAdvisor} instance.
 	 * @param chatMemory the chat memory store
 	 * @param defaultConversationId the default conversation id
-	 * @param defaultChatMemoryRetrieveSize the default chat memory retrieve size
 	 * @param protectFromBlocking whether to protect from blocking
 	 */
-	protected AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize,
-			boolean protectFromBlocking) {
-		this(chatMemory, defaultConversationId, defaultChatMemoryRetrieveSize, protectFromBlocking,
-				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	protected AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, boolean protectFromBlocking) {
+		this(chatMemory, defaultConversationId, protectFromBlocking, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
 	/**
 	 * Constructor to create a new {@link AbstractChatMemoryAdvisor} instance.
 	 * @param chatMemory the chat memory store
 	 * @param defaultConversationId the default conversation id
-	 * @param defaultChatMemoryRetrieveSize the default chat memory retrieve size
 	 * @param protectFromBlocking whether to protect from blocking
 	 * @param order the order
 	 */
-	protected AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, int defaultChatMemoryRetrieveSize,
-			boolean protectFromBlocking, int order) {
+	protected AbstractChatMemoryAdvisor(T chatMemory, String defaultConversationId, boolean protectFromBlocking,
+			int order) {
 
 		Assert.notNull(chatMemory, "The chatMemory must not be null!");
 		Assert.hasText(defaultConversationId, "The conversationId must not be empty!");
-		Assert.isTrue(defaultChatMemoryRetrieveSize > 0, "The defaultChatMemoryRetrieveSize must be greater than 0!");
-
 		this.chatMemoryStore = chatMemory;
 		this.defaultConversationId = defaultConversationId;
-		this.defaultChatMemoryRetrieveSize = defaultChatMemoryRetrieveSize;
 		this.protectFromBlocking = protectFromBlocking;
 		this.order = order;
 	}
@@ -149,25 +140,17 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAdvisor, Strea
 	}
 
 	/**
-	 * Get the default conversation id.
+	 * Get the conversation id for the current context.
 	 * @param context the context
-	 * @return the default conversation id
+	 * @return the conversation id
 	 */
 	protected String doGetConversationId(Map<String, Object> context) {
-
-		return context.containsKey(CHAT_MEMORY_CONVERSATION_ID_KEY)
+		if (context == null || !context.containsKey(CHAT_MEMORY_CONVERSATION_ID_KEY)) {
+			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
+					this.defaultConversationId);
+		}
+		return context != null && context.containsKey(CHAT_MEMORY_CONVERSATION_ID_KEY)
 				? context.get(CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
-	}
-
-	/**
-	 * Get the default chat memory retrieve size.
-	 * @param context the context
-	 * @return the default chat memory retrieve size
-	 */
-	protected int doGetChatMemoryRetrieveSize(Map<String, Object> context) {
-		return context.containsKey(CHAT_MEMORY_RETRIEVE_SIZE_KEY)
-				? Integer.parseInt(context.get(CHAT_MEMORY_RETRIEVE_SIZE_KEY).toString())
-				: this.defaultChatMemoryRetrieveSize;
 	}
 
 	protected Flux<ChatClientResponse> doNextWithProtectFromBlockingBefore(ChatClientRequest chatClientRequest,
@@ -175,99 +158,108 @@ public abstract class AbstractChatMemoryAdvisor<T> implements CallAdvisor, Strea
 		// This can be executed by both blocking and non-blocking Threads
 		// E.g. a command line or Tomcat blocking Thread implementation
 		// or by a WebFlux dispatch in a non-blocking manner.
-		return (this.protectFromBlocking) ?
-		// @formatter:off
-				Mono.just(chatClientRequest)
-						.publishOn(Schedulers.boundedElastic())
-						.map(before)
-						.flatMapMany(streamAdvisorChain::nextStream)
+		return (this.protectFromBlocking)
+				? Mono.just(chatClientRequest)
+					.publishOn(Schedulers.boundedElastic())
+					.map(before)
+					.flatMapMany(streamAdvisorChain::nextStream)
 				: streamAdvisorChain.nextStream(before.apply(chatClientRequest));
+	}
+
+	@Override
+	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+		// Apply memory to the request
+		ChatClientRequest modifiedRequest = before(chatClientRequest);
+
+		// Call the next advisor in the chain
+		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(modifiedRequest);
+
+		// Process the response (save to memory, etc.)
+		after(chatClientResponse);
+
+		return chatClientResponse;
+	}
+
+	@Override
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
+		return this.doNextWithProtectFromBlockingBefore(chatClientRequest, streamAdvisorChain, this::before);
+	}
+
+	/**
+	 * Hook for subclasses to modify the request before passing to the chain. Default
+	 * implementation returns the request as-is.
+	 */
+	protected ChatClientRequest before(ChatClientRequest chatClientRequest) {
+		String conversationId = doGetConversationId(chatClientRequest.context());
+		return before(chatClientRequest, conversationId);
+	}
+
+	/**
+	 * Hook for subclasses to modify the request before passing to the chain.
+	 * @param chatClientRequest the request
+	 * @param conversationId the conversation id
+	 * @return the modified request
+	 */
+	protected abstract ChatClientRequest before(ChatClientRequest chatClientRequest, String conversationId);
+
+	/**
+	 * Utility to build the context options map for downstream advisor implementations.
+	 * Adds the request itself under the key "request".
+	 */
+	protected Map<String, Object> buildContextMap(ChatClientRequest request) {
+		Map<String, Object> options = new HashMap<>(request.context());
+		options.put("request", request);
+		return options;
+	}
+
+	/**
+	 * Hook for subclasses to handle the response after the chain. Default implementation
+	 * does nothing.
+	 */
+	protected void after(ChatClientResponse chatClientResponse) {
+		// No-op by default
 	}
 
 	/**
 	 * Abstract builder for {@link AbstractChatMemoryAdvisor}.
+	 *
 	 * @param <T> the type of the chat memory
+	 * @param <B> the type of the builder
 	 */
-	public static abstract class AbstractBuilder<T> {
+	public static abstract class AbstractBuilder<T, B extends AbstractBuilder<T, B>> {
 
-		/**
-		 * The conversation id.
-		 */
+		protected final T chatMemory;
+
 		protected String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
-		/**
-		 * The chat memory retrieve size.
-		 */
-		protected int chatMemoryRetrieveSize = DEFAULT_CHAT_MEMORY_RESPONSE_SIZE;
-
-		/**
-		 * Whether to protect from blocking.
-		 */
 		protected boolean protectFromBlocking = true;
 
-		/**
-		 * The order of the advisor.
-		 */
 		protected int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
-		/**
-		 * The chat memory.
-		 */
-		protected T chatMemory;
-
-		/**
-		 * Constructor to create a new {@link AbstractBuilder} instance.
-		 * @param chatMemory the chat memory
-		 */
 		protected AbstractBuilder(T chatMemory) {
 			this.chatMemory = chatMemory;
 		}
 
-		/**
-		 * Set the conversation id.
-		 * @param conversationId the conversation id
-		 * @return the builder
-		 */
-		public AbstractBuilder<T> conversationId(String conversationId) {
+		public B conversationId(String conversationId) {
 			this.conversationId = conversationId;
-			return this;
+			return self();
 		}
 
-		/**
-		 * Set the chat memory retrieve size.
-		 * @param chatMemoryRetrieveSize the chat memory retrieve size
-		 * @return the builder
-		 */
-		public AbstractBuilder<T> chatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
-			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
-			return this;
-		}
-
-		/**
-		 * Set whether to protect from blocking.
-		 * @param protectFromBlocking whether to protect from blocking
-		 * @return the builder
-		 */
-		public AbstractBuilder<T> protectFromBlocking(boolean protectFromBlocking) {
+		public B protectFromBlocking(boolean protectFromBlocking) {
 			this.protectFromBlocking = protectFromBlocking;
-			return this;
+			return self();
 		}
 
-		/**
-		 * Set the order.
-		 * @param order the order
-		 * @return the builder
-		 */
-		public AbstractBuilder<T> order(int order) {
+		public B order(int order) {
 			this.order = order;
-			return this;
+			return self();
 		}
 
-		/**
-		 * Build the advisor.
-		 * @return the advisor
-		 */
-		abstract public AbstractChatMemoryAdvisor<T> build();
+		protected abstract B self();
+
+		public abstract AbstractChatMemoryAdvisor<T> build();
+
 	}
 
 }

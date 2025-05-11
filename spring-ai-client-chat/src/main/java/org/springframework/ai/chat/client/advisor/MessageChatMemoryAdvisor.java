@@ -37,19 +37,18 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
+public class MessageChatMemoryAdvisor extends AbstractConversationHistoryAdvisor {
 
 	public MessageChatMemoryAdvisor(ChatMemory chatMemory) {
 		super(chatMemory);
 	}
 
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
-		this(chatMemory, defaultConversationId, chatHistoryWindowSize, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId) {
+		this(chatMemory, defaultConversationId, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			int order) {
-		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
+	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order) {
+		super(chatMemory, defaultConversationId, true, order);
 	}
 
 	public static Builder builder(ChatMemory chatMemory) {
@@ -76,31 +75,22 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		return new MessageAggregator().aggregateChatClientResponse(chatClientResponses, this::after);
 	}
 
-	private ChatClientRequest before(ChatClientRequest chatClientRequest) {
-		String conversationId = this.doGetConversationId(chatClientRequest.context());
-
-		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(chatClientRequest.context());
-
-		// 1. Retrieve the chat memory for the current conversation.
-		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
-
-		// 2. Advise the request messages list.
-		List<Message> processedMessages = new ArrayList<>(memoryMessages);
-		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
-
-		// 3. Create a new request with the advised messages.
-		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
-			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
-			.build();
-
-		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.getChatMemoryStore().add(conversationId, userMessage);
-
-		return processedChatClientRequest;
+	@Override
+	protected ChatClientRequest before(ChatClientRequest request) {
+		String conversationId = this.doGetConversationId(request.context());
+		
+		// Add the new user messages from the current prompt to memory
+		List<UserMessage> newUserMessages = request.prompt().getUserMessages();
+		for (UserMessage userMessage : newUserMessages) {
+			this.getChatMemoryStore().add(conversationId, userMessage);
+		}
+		
+		// Use the parent class implementation to handle retrieving and applying messages
+		return super.before(request);
 	}
 
-	private void after(ChatClientResponse chatClientResponse) {
+	@Override
+	protected void after(ChatClientResponse chatClientResponse) {
 		List<Message> assistantMessages = new ArrayList<>();
 		if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
@@ -112,15 +102,20 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
 	}
 
-	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory> {
+	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory, Builder> {
 
 		protected Builder(ChatMemory chatMemory) {
 			super(chatMemory);
 		}
 
+		@Override
+		protected Builder self() {
+			return this;
+		}
+
+		@Override
 		public MessageChatMemoryAdvisor build() {
-			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.order);
+			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order);
 		}
 
 	}
