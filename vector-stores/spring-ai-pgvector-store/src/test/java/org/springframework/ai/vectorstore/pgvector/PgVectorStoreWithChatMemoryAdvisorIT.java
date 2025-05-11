@@ -27,13 +27,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.postgresql.ds.PGSimpleDataSource;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -138,7 +138,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			.prompt()
 			.user("joke")
 			.advisors(a -> a.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
-				.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+				.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 
@@ -162,7 +162,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			.system("You are a helpful assistant.")
 			.user("joke")
 			.advisors(a -> a.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
-				.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+				.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 

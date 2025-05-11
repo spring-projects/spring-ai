@@ -128,6 +128,20 @@ public class Prompt implements ModelRequest<List<Message>> {
 		return new UserMessage("");
 	}
 
+	/**
+	 * Get all user messages in the prompt.
+	 * @return a list of all user messages in the prompt
+	 */
+	public List<UserMessage> getUserMessages() {
+		List<UserMessage> userMessages = new ArrayList<>();
+		for (Message message : this.messages) {
+			if (message instanceof UserMessage userMessage) {
+				userMessages.add(userMessage);
+			}
+		}
+		return userMessages;
+	}
+
 	@Override
 	public String toString() {
 		return "Prompt{" + "messages=" + this.messages + ", modelOptions=" + this.chatOptions + '}';
