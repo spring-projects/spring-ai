@@ -18,7 +18,7 @@ package org.springframework.ai.model.chat.memory.repository.neo4j.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryRepositoryConfig;
+import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepositoryConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

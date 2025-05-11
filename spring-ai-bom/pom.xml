@@ -206,19 +206,19 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-model-chat-memory-cassandra</artifactId>
+				<artifactId>spring-ai-model-chat-memory-repository-cassandra</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-model-chat-memory-jdbc</artifactId>
+				<artifactId>spring-ai-model-chat-memory-repository-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-model-chat-memory-neo4j</artifactId>
+				<artifactId>spring-ai-model-chat-memory-repository-neo4j</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

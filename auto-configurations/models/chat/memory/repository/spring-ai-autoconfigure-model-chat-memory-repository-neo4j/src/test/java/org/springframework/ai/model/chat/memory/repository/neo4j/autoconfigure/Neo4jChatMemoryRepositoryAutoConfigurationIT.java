@@ -25,13 +25,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryRepository;
+import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepository;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryRepositoryConfig;
+import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepositoryConfig;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;

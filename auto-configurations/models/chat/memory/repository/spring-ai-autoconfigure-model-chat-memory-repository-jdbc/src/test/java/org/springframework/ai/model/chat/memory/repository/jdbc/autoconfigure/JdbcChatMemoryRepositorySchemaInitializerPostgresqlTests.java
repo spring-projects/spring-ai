@@ -62,7 +62,7 @@ class JdbcChatMemoryRepositorySchemaInitializerPostgresqlTests {
 					new JdbcChatMemoryRepositoryProperties());
 
 			assertThat(settings.getSchemaLocations())
-				.containsOnly("classpath:org/springframework/ai/chat/memory/jdbc/schema-postgresql.sql");
+				.containsOnly("classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-postgresql.sql");
 		});
 	}
 
