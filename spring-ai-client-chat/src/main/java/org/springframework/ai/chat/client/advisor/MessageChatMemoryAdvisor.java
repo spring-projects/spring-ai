@@ -19,22 +19,19 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.MessageAggregator;
 
 /**
  * Memory is retrieved added as a collection of messages to the prompt
  *
  * @author Christian Tzolov
+ * @author Mark Pollack
  * @since 1.0.0
  */
 public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
@@ -43,13 +40,12 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		super(chatMemory);
 	}
 
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize) {
-		this(chatMemory, defaultConversationId, chatHistoryWindowSize, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
+	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId) {
+		this(chatMemory, defaultConversationId, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			int order) {
-		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
+	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order) {
+		super(chatMemory, defaultConversationId, true, order);
 	}
 
 	public static Builder builder(ChatMemory chatMemory) {
@@ -57,50 +53,36 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 	}
 
 	@Override
-	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
-		chatClientRequest = this.before(chatClientRequest);
+	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
+		String conversationId = doGetConversationId(request.context());
+		// Add the new user messages from the current prompt to memory
+		List<UserMessage> newUserMessages = request.prompt().getUserMessages();
+		for (UserMessage userMessage : newUserMessages) {
+			this.getChatMemoryStore().add(conversationId, userMessage);
+		}
+		List<Message> memoryMessages = chatMemoryStore.get(conversationId);
+		return applyMessagesToRequest(request, memoryMessages);
+	}
 
-		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
+	private ChatClientRequest applyMessagesToRequest(ChatClientRequest request, List<Message> memoryMessages) {
+		if (memoryMessages == null || memoryMessages.isEmpty()) {
+			return request;
+		}
+		// Combine memory messages with the instructions from the current prompt
+		List<Message> combinedMessages = new ArrayList<>(memoryMessages);
+		combinedMessages.addAll(request.prompt().getInstructions());
 
-		this.after(chatClientResponse);
+		// Mutate the prompt to use the combined messages
+		// insead of combiedMinessage from the logic above
+		// request.prompt().mutate().messages(chatMemoryStore.get(conversationId););
+		var promptBuilder = request.prompt().mutate().messages(combinedMessages);
 
-		return chatClientResponse;
+		// Return a new ChatClientRequest with the updated prompt
+		return request.mutate().prompt(promptBuilder.build()).build();
 	}
 
 	@Override
-	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
-			StreamAdvisorChain streamAdvisorChain) {
-		Flux<ChatClientResponse> chatClientResponses = this.doNextWithProtectFromBlockingBefore(chatClientRequest,
-				streamAdvisorChain, this::before);
-
-		return new MessageAggregator().aggregateChatClientResponse(chatClientResponses, this::after);
-	}
-
-	private ChatClientRequest before(ChatClientRequest chatClientRequest) {
-		String conversationId = this.doGetConversationId(chatClientRequest.context());
-
-		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(chatClientRequest.context());
-
-		// 1. Retrieve the chat memory for the current conversation.
-		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
-
-		// 2. Advise the request messages list.
-		List<Message> processedMessages = new ArrayList<>(memoryMessages);
-		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
-
-		// 3. Create a new request with the advised messages.
-		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
-			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
-			.build();
-
-		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.getChatMemoryStore().add(conversationId, userMessage);
-
-		return processedChatClientRequest;
-	}
-
-	private void after(ChatClientResponse chatClientResponse) {
+	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
 		if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
@@ -110,17 +92,22 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 				.toList();
 		}
 		this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+		return chatClientResponse;
 	}
 
-	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory> {
+	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory, Builder> {
 
 		protected Builder(ChatMemory chatMemory) {
 			super(chatMemory);
 		}
 
+		@Override
+		protected Builder self() {
+			return this;
+		}
+
 		public MessageChatMemoryAdvisor build() {
-			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.order);
+			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order);
 		}
 
 	}

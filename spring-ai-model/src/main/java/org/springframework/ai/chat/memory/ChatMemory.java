@@ -49,16 +49,7 @@ public interface ChatMemory {
 	/**
 	 * Get the messages in the chat memory for the specified conversation.
 	 */
-	default List<Message> get(String conversationId) {
-		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		return get(conversationId, Integer.MAX_VALUE);
-	}
-
-	/**
-	 * @deprecated in favor of using {@link MessageWindowChatMemory}.
-	 */
-	@Deprecated
-	List<Message> get(String conversationId, int lastN);
+	List<Message> get(String conversationId);
 
 	/**
 	 * Clear the chat memory for the specified conversation.

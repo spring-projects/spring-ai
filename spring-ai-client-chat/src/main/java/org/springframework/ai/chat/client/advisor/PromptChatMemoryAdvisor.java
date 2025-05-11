@@ -21,20 +21,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import reactor.core.publisher.Flux;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 
 /**
  * Memory is retrieved added into the prompt's system text.
@@ -42,9 +41,12 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * @author Christian Tzolov
  * @author Miloš Havránek
  * @author Thomas Vitale
+ * @author Mark Pollack
  * @since 1.0.0
  */
 public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
+
+	private static final Logger logger = LoggerFactory.getLogger(PromptChatMemoryAdvisor.class);
 
 	private static final PromptTemplate DEFAULT_SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
 			{instructions}
@@ -69,20 +71,19 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 		this.systemPromptTemplate = new PromptTemplate(systemPromptTemplate);
 	}
 
-	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			String systemPromptTemplate) {
-		this(chatMemory, defaultConversationId, chatHistoryWindowSize, new PromptTemplate(systemPromptTemplate),
+	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, String systemPromptTemplate) {
+		this(chatMemory, defaultConversationId, new PromptTemplate(systemPromptTemplate),
 				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
-	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
-			String systemPromptTemplate, int order) {
-		this(chatMemory, defaultConversationId, chatHistoryWindowSize, new PromptTemplate(systemPromptTemplate), order);
+	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, String systemPromptTemplate,
+			int order) {
+		this(chatMemory, defaultConversationId, new PromptTemplate(systemPromptTemplate), order);
 	}
 
-	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int chatHistoryWindowSize,
+	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId,
 			PromptTemplate systemPromptTemplate, int order) {
-		super(chatMemory, defaultConversationId, chatHistoryWindowSize, true, order);
+		super(chatMemory, defaultConversationId, true, order);
 		this.systemPromptTemplate = systemPromptTemplate;
 	}
 
@@ -91,56 +92,43 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 	}
 
 	@Override
-	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
-		chatClientRequest = this.before(chatClientRequest);
-
-		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
-
-		this.after(chatClientResponse);
-
-		return chatClientResponse;
-	}
-
-	@Override
-	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
-			StreamAdvisorChain streamAdvisorChain) {
-		Flux<ChatClientResponse> chatClientResponses = this.doNextWithProtectFromBlockingBefore(chatClientRequest,
-				streamAdvisorChain, this::before);
-
-		return new MessageAggregator().aggregateChatClientResponse(chatClientResponses, this::after);
-	}
-
-	private ChatClientRequest before(ChatClientRequest chatClientRequest) {
-		String conversationId = this.doGetConversationId(chatClientRequest.context());
-		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(chatClientRequest.context());
-
+	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+		String conversationId = doGetConversationId(chatClientRequest.context());
 		// 1. Retrieve the chat memory for the current conversation.
-		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
+		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId);
+		logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
+				conversationId, memoryMessages);
 
-		// 2. Processed memory messages as a string.
+		// 2. Process memory messages as a string.
 		String memory = memoryMessages.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(m -> m.getMessageType() + ":" + m.getText())
 			.collect(Collectors.joining(System.lineSeparator()));
 
-		// 2. Augment the system message.
+		// 3. Augment the system message.
 		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
 		String augmentedSystemText = this.systemPromptTemplate
 			.render(Map.of("instructions", systemMessage.getText(), "memory", memory));
 
-		// 3. Create a new request with the augmented system message.
+		// 4. Create a new request with the augmented system message.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().augmentSystemMessage(augmentedSystemText))
 			.build();
 
-		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.getChatMemoryStore().add(conversationId, userMessage);
+		// 5. Add all user messages from the current prompt to memory (after system
+		// message is generated)
+		List<UserMessage> userMessages = chatClientRequest.prompt().getUserMessages();
+		for (UserMessage userMessage : userMessages) {
+			this.getChatMemoryStore().add(conversationId, userMessage);
+			logger.debug("[PromptChatMemoryAdvisor.before] Added USER message to memory for conversationId={}: {}",
+					conversationId, userMessage.getText());
+		}
 
 		return processedChatClientRequest;
 	}
 
-	private void after(ChatClientResponse chatClientResponse) {
+	@Override
+	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
 		if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
@@ -150,9 +138,16 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 				.toList();
 		}
 		this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+		logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
+				this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+		List<Message> memoryMessages = this.getChatMemoryStore()
+			.get(this.doGetConversationId(chatClientResponse.context()));
+		logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
+				this.doGetConversationId(chatClientResponse.context()), memoryMessages);
+		return chatClientResponse;
 	}
 
-	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory> {
+	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory, Builder> {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
@@ -160,19 +155,24 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 			super(chatMemory);
 		}
 
+		@Override
+		protected Builder self() {
+			return this;
+		}
+
 		public Builder systemTextAdvise(String systemTextAdvise) {
 			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
-			return this;
+			return self();
 		}
 
 		public Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
 			this.systemPromptTemplate = systemPromptTemplate;
-			return this;
+			return self();
 		}
 
 		public PromptChatMemoryAdvisor build() {
-			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.systemPromptTemplate, this.order);
+			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.systemPromptTemplate,
+					this.order);
 		}
 
 	}
