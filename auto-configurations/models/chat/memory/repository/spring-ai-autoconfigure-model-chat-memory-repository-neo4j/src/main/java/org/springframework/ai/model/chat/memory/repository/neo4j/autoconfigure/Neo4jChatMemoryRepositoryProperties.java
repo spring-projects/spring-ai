@@ -16,7 +16,7 @@
 
 package org.springframework.ai.model.chat.memory.repository.neo4j.autoconfigure;
 
-import org.springframework.ai.chat.memory.neo4j.Neo4jChatMemoryRepositoryConfig;
+import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

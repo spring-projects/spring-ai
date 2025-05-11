@@ -56,7 +56,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-model-chat-memory-neo4j</artifactId>
+            <artifactId>spring-ai-model-chat-memory-repository-neo4j</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>

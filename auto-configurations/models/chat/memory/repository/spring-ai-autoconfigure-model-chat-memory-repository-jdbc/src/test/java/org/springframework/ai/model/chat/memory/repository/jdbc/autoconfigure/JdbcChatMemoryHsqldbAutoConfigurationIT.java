@@ -22,6 +22,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -130,7 +131,7 @@ public class JdbcChatMemoryHsqldbAutoConfigurationIT {
 		try {
 			java.util.Enumeration<java.net.URL> resources = Thread.currentThread()
 				.getContextClassLoader()
-				.getResources("org/springframework/ai/chat/memory/jdbc/schema-hsqldb.sql");
+				.getResources("org/springframework/ai/chat/memory/repository/jdbc/schema-hsqldb.sql");
 			System.out.println("--- schema-hsqldb.sql resources found on classpath ---");
 			while (resources.hasMoreElements()) {
 				System.out.println(resources.nextElement());
@@ -157,7 +158,7 @@ public class JdbcChatMemoryHsqldbAutoConfigurationIT {
 
 		// Now test the ChatMemory functionality
 		assertThat(context.getBean(org.springframework.ai.chat.memory.ChatMemory.class)).isNotNull();
-		assertThat(context.getBean(org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository.class)).isNotNull();
+		assertThat(context.getBean(JdbcChatMemoryRepository.class)).isNotNull();
 
 		var chatMemory = context.getBean(org.springframework.ai.chat.memory.ChatMemory.class);
 		var conversationId = java.util.UUID.randomUUID().toString();
