@@ -52,7 +52,7 @@ class CassandraChatMemoryRepositoryAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(CassandraChatMemoryRepositoryAutoConfiguration.class,
 				CassandraAutoConfiguration.class))
-		.withPropertyValues("spring.ai.chat.memory.cassandra.keyspace=test_autoconfigure");
+		.withPropertyValues("spring.ai.chat.memory.repository.cassandra.keyspace=test_autoconfigure");
 
 	@Test
 	void addAndGet() {

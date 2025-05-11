@@ -18,24 +18,26 @@ package org.springframework.ai.chat.memory.repository.cassandra;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Map;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.datastax.oss.driver.api.querybuilder.delete.Delete;
-import com.datastax.oss.driver.api.querybuilder.delete.DeleteSelection;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.Assert;
 
@@ -54,23 +56,17 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 
 	private final PreparedStatement allStmt;
 
-	private final PreparedStatement addUserStmt;
-
-	private final PreparedStatement addAssistantStmt;
+	private final PreparedStatement addStmt;
 
 	private final PreparedStatement getStmt;
-
-	private final PreparedStatement deleteStmt;
 
 	private CassandraChatMemoryRepository(CassandraChatMemoryRepositoryConfig conf) {
 		Assert.notNull(conf, "conf cannot be null");
 		this.conf = conf;
 		this.conf.ensureSchemaExists();
 		this.allStmt = prepareAllStatement();
-		this.addUserStmt = prepareAddStmt(this.conf.userColumn);
-		this.addAssistantStmt = prepareAddStmt(this.conf.assistantColumn);
+		this.addStmt = prepareAddStmt();
 		this.getStmt = prepareGetStatement();
-		this.deleteStmt = prepareDeleteStmt();
 	}
 
 	public static CassandraChatMemoryRepository create(CassandraChatMemoryRepositoryConfig conf) {
@@ -97,6 +93,10 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
+		return findByConversationIdWithLimit(conversationId, 1);
+	}
+
+	List<Message> findByConversationIdWithLimit(String conversationId, int limit) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 
 		List<Object> primaryKeys = this.conf.primaryKeyTranslator.apply(conversationId);
@@ -106,19 +106,14 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 			CassandraChatMemoryRepositoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
 			builder = builder.set(keyColumn.name(), primaryKeys.get(k), keyColumn.javaType());
 		}
+		builder = builder.setInt("legacy_limit", limit);
 
 		List<Message> messages = new ArrayList<>();
 		for (Row r : this.conf.session.execute(builder.build())) {
-			String assistant = r.getString(this.conf.assistantColumn);
-			String user = r.getString(this.conf.userColumn);
-			if (null != assistant) {
-				messages.add(new AssistantMessage(assistant));
-			}
-			if (null != user) {
-				messages.add(new UserMessage(user));
+			for (UdtValue udt : r.getList(this.conf.messagesColumn, UdtValue.class)) {
+				messages.add(getMessage(udt));
 			}
 		}
-		Collections.reverse(messages);
 		return messages;
 	}
 
@@ -128,58 +123,49 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
-		final AtomicLong instantSeq = new AtomicLong(Instant.now().toEpochMilli());
-		messages.forEach(msg -> {
-			if (msg.getMetadata().containsKey(CONVERSATION_TS)) {
-				msg.getMetadata().put(CONVERSATION_TS, Instant.ofEpochMilli(instantSeq.getAndIncrement()));
-			}
-			save(conversationId, msg);
-		});
-	}
-
-	void save(String conversationId, Message msg) {
-
-		Preconditions.checkArgument(
-				!msg.getMetadata().containsKey(CONVERSATION_TS)
-						|| msg.getMetadata().get(CONVERSATION_TS) instanceof Instant,
-				"messages only accept metadata '%s' entries of type Instant", CONVERSATION_TS);
-
-		msg.getMetadata().putIfAbsent(CONVERSATION_TS, Instant.now());
-
-		PreparedStatement stmt = getStatement(msg);
-
+		Instant instant = Instant.now();
 		List<Object> primaryKeys = this.conf.primaryKeyTranslator.apply(conversationId);
-		BoundStatementBuilder builder = stmt.boundStatementBuilder();
+		BoundStatementBuilder builder = addStmt.boundStatementBuilder();
 
 		for (int k = 0; k < primaryKeys.size(); ++k) {
 			CassandraChatMemoryRepositoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
 			builder = builder.set(keyColumn.name(), primaryKeys.get(k), keyColumn.javaType());
 		}
 
-		Instant instant = (Instant) msg.getMetadata().get(CONVERSATION_TS);
+		List<UdtValue> msgs = new ArrayList<>();
+		for (Message msg : messages) {
 
+			Preconditions.checkArgument(
+					!msg.getMetadata().containsKey(CONVERSATION_TS)
+							|| msg.getMetadata().get(CONVERSATION_TS) instanceof Instant,
+					"messages only accept metadata '%s' entries of type Instant", CONVERSATION_TS);
+
+			msg.getMetadata().putIfAbsent(CONVERSATION_TS, instant);
+
+			UdtValue udt = this.conf.session.getMetadata()
+				.getKeyspace(this.conf.schema.keyspace())
+				.get()
+				.getUserDefinedType(this.conf.messageUDT)
+				.get()
+				.newValue()
+				.setInstant(this.conf.messageUdtTimestampColumn, (Instant) msg.getMetadata().get(CONVERSATION_TS))
+				.setString(this.conf.messageUdtTypeColumn, msg.getMessageType().name())
+				.setString(this.conf.messageUdtContentColumn, msg.getText());
+
+			msgs.add(udt);
+		}
 		builder = builder.setInstant(CassandraChatMemoryRepositoryConfig.DEFAULT_EXCHANGE_ID_NAME, instant)
-			.setString("message", msg.getText());
+			.setList("msgs", msgs, UdtValue.class);
 
 		this.conf.session.execute(builder.build());
 	}
 
 	@Override
 	public void deleteByConversationId(String conversationId) {
-		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-
-		List<Object> primaryKeys = this.conf.primaryKeyTranslator.apply(conversationId);
-		BoundStatementBuilder builder = this.deleteStmt.boundStatementBuilder();
-
-		for (int k = 0; k < primaryKeys.size(); ++k) {
-			CassandraChatMemoryRepositoryConfig.SchemaColumn keyColumn = this.conf.getPrimaryKeyColumn(k);
-			builder = builder.set(keyColumn.name(), primaryKeys.get(k), keyColumn.javaType());
-		}
-
-		this.conf.session.execute(builder.build());
+		saveAll(conversationId, List.of());
 	}
 
-	private PreparedStatement prepareAddStmt(String column) {
+	private PreparedStatement prepareAddStmt() {
 		RegularInsert stmt = null;
 		InsertInto stmtStart = QueryBuilder.insertInto(this.conf.schema.keyspace(), this.conf.schema.table());
 		for (var c : this.conf.schema.partitionKeys()) {
@@ -188,7 +174,7 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 		for (var c : this.conf.schema.clusteringKeys()) {
 			stmt = stmt.value(c.name(), QueryBuilder.bindMarker(c.name()));
 		}
-		stmt = stmt.value(column, QueryBuilder.bindMarker("message"));
+		stmt = stmt.value(this.conf.messagesColumn, QueryBuilder.bindMarker("msgs"));
 		return this.conf.session.prepare(stmt.build());
 	}
 
@@ -214,28 +200,27 @@ public class CassandraChatMemoryRepository implements ChatMemoryRepository {
 			String columnName = this.conf.schema.clusteringKeys().get(i).name();
 			stmt = stmt.whereColumn(columnName).isEqualTo(QueryBuilder.bindMarker(columnName));
 		}
+		stmt = stmt.limit(QueryBuilder.bindMarker("legacy_limit"));
 		return this.conf.session.prepare(stmt.build());
 	}
 
-	private PreparedStatement prepareDeleteStmt() {
-		Delete stmt = null;
-		DeleteSelection stmtStart = QueryBuilder.deleteFrom(this.conf.schema.keyspace(), this.conf.schema.table());
-		for (var c : this.conf.schema.partitionKeys()) {
-			stmt = (null != stmt ? stmt : stmtStart).whereColumn(c.name()).isEqualTo(QueryBuilder.bindMarker(c.name()));
+	private Message getMessage(UdtValue udt) {
+		String content = udt.getString(this.conf.messageUdtContentColumn);
+		Map<String, Object> props = Map.of(CONVERSATION_TS, udt.getInstant(this.conf.messageUdtTimestampColumn));
+		switch (MessageType.valueOf(udt.getString(this.conf.messageUdtTypeColumn))) {
+			case ASSISTANT:
+				return new AssistantMessage(content, props);
+			case USER:
+				return UserMessage.builder().text(content).metadata(props).build();
+			case SYSTEM:
+				return SystemMessage.builder().text(content).metadata(props).build();
+			case TOOL:
+				// todo – persist ToolResponse somehow
+				return new ToolResponseMessage(List.of(), props);
+			default:
+				throw new IllegalStateException(
+						String.format("unknown message type %s", udt.getString(this.conf.messageUdtTypeColumn)));
 		}
-		for (int i = 0; i + 1 < this.conf.schema.clusteringKeys().size(); ++i) {
-			String columnName = this.conf.schema.clusteringKeys().get(i).name();
-			stmt = stmt.whereColumn(columnName).isEqualTo(QueryBuilder.bindMarker(columnName));
-		}
-		return this.conf.session.prepare(stmt.build());
-	}
-
-	private PreparedStatement getStatement(Message msg) {
-		return switch (msg.getMessageType()) {
-			case USER -> this.addUserStmt;
-			case ASSISTANT -> this.addAssistantStmt;
-			default -> throw new IllegalArgumentException("Cant add type " + msg);
-		};
 	}
 
 }

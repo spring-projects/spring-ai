@@ -43,9 +43,7 @@ public class CassandraChatMemoryRepositoryProperties {
 
 	private String table = CassandraChatMemoryRepositoryConfig.DEFAULT_TABLE_NAME;
 
-	private String assistantColumn = CassandraChatMemoryRepositoryConfig.DEFAULT_ASSISTANT_COLUMN_NAME;
-
-	private String userColumn = CassandraChatMemoryRepositoryConfig.DEFAULT_USER_COLUMN_NAME;
+	private String messagesColumn = CassandraChatMemoryRepositoryConfig.DEFAULT_MESSAGES_COLUMN_NAME;
 
 	private boolean initializeSchema = true;
 
@@ -75,20 +73,12 @@ public class CassandraChatMemoryRepositoryProperties {
 		this.table = table;
 	}
 
-	public String getAssistantColumn() {
-		return this.assistantColumn;
+	public String getMessagesColumn() {
+		return this.messagesColumn;
 	}
 
-	public void setAssistantColumn(String assistantColumn) {
-		this.assistantColumn = assistantColumn;
-	}
-
-	public String getUserColumn() {
-		return this.userColumn;
-	}
-
-	public void setUserColumn(String userColumn) {
-		this.userColumn = userColumn;
+	public void setMessagesColumn(String messagesColumn) {
+		this.messagesColumn = messagesColumn;
 	}
 
 	@Nullable
