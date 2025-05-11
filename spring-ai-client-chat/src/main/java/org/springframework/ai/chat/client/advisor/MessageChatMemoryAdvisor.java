@@ -78,13 +78,13 @@ public class MessageChatMemoryAdvisor extends AbstractConversationHistoryAdvisor
 	@Override
 	protected ChatClientRequest before(ChatClientRequest request) {
 		String conversationId = this.doGetConversationId(request.context());
-		
+
 		// Add the new user messages from the current prompt to memory
 		List<UserMessage> newUserMessages = request.prompt().getUserMessages();
 		for (UserMessage userMessage : newUserMessages) {
 			this.getChatMemoryStore().add(conversationId, userMessage);
 		}
-		
+
 		// Use the parent class implementation to handle retrieving and applying messages
 		return super.before(request);
 	}

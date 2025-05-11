@@ -10,6 +10,7 @@ import org.springframework.ai.chat.messages.Message;
 
 /**
  * Advisor for standard ChatMemory implementations
+ *
  * @author Mark Pollack
  * @since 1.0.0
  */
@@ -19,8 +20,8 @@ public abstract class AbstractConversationHistoryAdvisor extends AbstractChatMem
 		this(chatMemory, ChatMemory.DEFAULT_CONVERSATION_ID, true, DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
-	public AbstractConversationHistoryAdvisor(ChatMemory chatMemory, String defaultConversationId, boolean protectFromBlocking,
-											  int order) {
+	public AbstractConversationHistoryAdvisor(ChatMemory chatMemory, String defaultConversationId,
+			boolean protectFromBlocking, int order) {
 		super(chatMemory, defaultConversationId, protectFromBlocking, order);
 	}
 

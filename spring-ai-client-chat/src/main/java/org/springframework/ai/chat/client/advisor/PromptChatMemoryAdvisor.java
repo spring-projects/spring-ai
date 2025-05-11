@@ -118,7 +118,7 @@ public class PromptChatMemoryAdvisor extends AbstractConversationHistoryAdvisor 
 	@Override
 	protected ChatClientRequest before(ChatClientRequest chatClientRequest) {
 		String conversationId = this.doGetConversationId(chatClientRequest.context());
-		
+
 		// 1. Add all user messages from the current prompt to memory
 		List<UserMessage> userMessages = chatClientRequest.prompt().getUserMessages();
 		for (UserMessage userMessage : userMessages) {
@@ -126,7 +126,7 @@ public class PromptChatMemoryAdvisor extends AbstractConversationHistoryAdvisor 
 			logger.info("[PromptChatMemoryAdvisor.before] Added USER message to memory for conversationId={}: {}",
 					conversationId, userMessage.getText());
 		}
-		
+
 		// 2. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId);
 		logger.info("[PromptChatMemoryAdvisor.before] Memory after USER add for conversationId={}: {}", conversationId,
