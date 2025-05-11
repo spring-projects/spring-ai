@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  *
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Hyunsang Han
  * @since 1.0.0
  */
 public final class MessageWindowChatMemory implements ChatMemory {
@@ -69,12 +70,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	public List<Message> get(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		return this.chatMemoryRepository.findByConversationId(conversationId);
-	}
-
-	@Override
-	@Deprecated // in favor of get(conversationId)
-	public List<Message> get(String conversationId, int lastN) {
-		return get(conversationId);
 	}
 
 	@Override

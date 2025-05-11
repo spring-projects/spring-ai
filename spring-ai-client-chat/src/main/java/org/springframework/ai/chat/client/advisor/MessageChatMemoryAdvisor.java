@@ -35,6 +35,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * Memory is retrieved added as a collection of messages to the prompt
  *
  * @author Christian Tzolov
+ * @author Hyunsang Han
  * @since 1.0.0
  */
 public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
@@ -79,10 +80,8 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 	private ChatClientRequest before(ChatClientRequest chatClientRequest) {
 		String conversationId = this.doGetConversationId(chatClientRequest.context());
 
-		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(chatClientRequest.context());
-
 		// 1. Retrieve the chat memory for the current conversation.
-		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId, chatMemoryRetrieveSize);
+		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId);
 
 		// 2. Advise the request messages list.
 		List<Message> processedMessages = new ArrayList<>(memoryMessages);
