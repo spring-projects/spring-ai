@@ -20,24 +20,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
 /**
@@ -142,24 +134,6 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		}
 		this.getChatMemoryStore()
 			.write(toDocuments(assistantMessages, this.doGetConversationId(chatClientResponse.context())));
-	}
-
-	protected ChatClientRequest applyMessagesToRequest(ChatClientRequest request, List<Message> memoryMessages) {
-		if (memoryMessages == null || memoryMessages.isEmpty()) {
-			return request;
-		}
-		// Convert memory messages to a string for the system prompt
-		String longTermMemory = memoryMessages.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(m -> m.getMessageType() + ":" + m.getText())
-			.collect(Collectors.joining(System.lineSeparator()));
-
-		SystemMessage systemMessage = request.prompt().getSystemMessage();
-		String augmentedSystemText = this.systemPromptTemplate
-			.render(Map.of("instructions", systemMessage.getText(), "long_term_memory", longTermMemory));
-
-		// Create a new request with the augmented system message
-		return request.mutate().prompt(request.prompt().augmentSystemMessage(augmentedSystemText)).build();
 	}
 
 	private List<Document> toDocuments(List<Message> messages, String conversationId) {
