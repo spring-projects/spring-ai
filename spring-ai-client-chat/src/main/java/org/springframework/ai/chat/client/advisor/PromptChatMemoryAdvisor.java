@@ -123,13 +123,13 @@ public class PromptChatMemoryAdvisor extends AbstractConversationHistoryAdvisor 
 		List<UserMessage> userMessages = chatClientRequest.prompt().getUserMessages();
 		for (UserMessage userMessage : userMessages) {
 			this.getChatMemoryStore().add(conversationId, userMessage);
-			logger.info("[PromptChatMemoryAdvisor.before] Added USER message to memory for conversationId={}: {}",
+			logger.debug("[PromptChatMemoryAdvisor.before] Added USER message to memory for conversationId={}: {}",
 					conversationId, userMessage.getText());
 		}
 
 		// 2. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId);
-		logger.info("[PromptChatMemoryAdvisor.before] Memory after USER add for conversationId={}: {}", conversationId,
+		logger.debug("[PromptChatMemoryAdvisor.before] Memory after USER add for conversationId={}: {}", conversationId,
 				memoryMessages);
 
 		// 3. Process memory messages as a string.
@@ -162,11 +162,11 @@ public class PromptChatMemoryAdvisor extends AbstractConversationHistoryAdvisor 
 				.toList();
 		}
 		this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
-		logger.info("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
+		logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
 				this.doGetConversationId(chatClientResponse.context()), assistantMessages);
 		List<Message> memoryMessages = this.getChatMemoryStore()
 			.get(this.doGetConversationId(chatClientResponse.context()));
-		logger.info("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
+		logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
 				this.doGetConversationId(chatClientResponse.context()), memoryMessages);
 	}
 
