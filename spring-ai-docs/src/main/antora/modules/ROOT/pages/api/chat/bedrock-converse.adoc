@@ -10,12 +10,12 @@ The Bedrock Converse API has the following high-level features:
 * System Messages: Support for system-level instructions and context setting
 
 TIP: The Bedrock Converse API provides a unified interface across multiple model providers while handling AWS-specific authentication and infrastructure concerns.
-Currently, the Converse API link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported Models] inlcude: 
+Currently, the Converse API link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[Supported Models] include:
 `Amazon Titan`, `Amazon Nova`, `AI21 Labs`, `Anthropic Claude`, `Cohere Command`, `Meta Llama`, `Mistral AI`.
 
 [NOTE]
 ====
-Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all chat conversation implementations in Spring AI. 
+Following the Bedrock recommendations, Spring AI is transitioning to using Amazon Bedrock's Converse API for all chat conversation implementations in Spring AI.
 While the existing xref:api/bedrock-chat.adoc[InvokeModel API] supports conversation applications, we strongly recommend adopting the Converse API for all Chat conversation models.
 
 The Converse API does not support embedding operations, so these will remain in the current API and the embedding model functionality in the existing `InvokeModel API` will be maintained
@@ -135,7 +135,7 @@ String response = ChatClient.create(this.chatModel)
 
 == Tool Calling
 
-The Bedrock Converse API supports tool calling capabilities, allowing models to use tools during conversations. 
+The Bedrock Converse API supports tool calling capabilities, allowing models to use tools during conversations.
 Here's an example of how to define and use @Tool based tools:
 
 [source,java]
@@ -150,7 +150,7 @@ public class WeatherService {
 }
 
 String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")				
+        .prompt("What's the weather like in Boston?")
         .tools(new WeatherService())
         .call()
         .content();
@@ -167,7 +167,7 @@ public Function<Request, Response> weatherFunction() {
 }
 
 String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")				
+        .prompt("What's the weather like in Boston?")
         .tools("weatherFunction")
         .inputType(Request.class)
         .call()
@@ -178,7 +178,7 @@ Find more in xref:api/tools.adoc[Tools] documentation.
 
 == Multimodal
 
-Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, video, pdf, doc, html, md and more data formats. 
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, video, pdf, doc, html, md and more data formats.
 
 The Bedrock Converse API supports multimodal inputs, including text and image inputs, and can generate a text response based on the combined input.
 
@@ -248,13 +248,13 @@ image::test.video.jpeg[Multimodal Test Video, 200, 200, align="left"]
 along with the text message "Explain what do you see in this video?", and generates a response something like:
 
 ----
-The video shows a group of baby chickens, also known as chicks, huddled together on a surface 
+The video shows a group of baby chickens, also known as chicks, huddled together on a surface
 ...
 ----
 
 === Documents
 
-For some models, Bedrock allows you to include documents in the payload through Converse API document support, which can be provided in bytes. 
+For some models, Bedrock allows you to include documents in the payload through Converse API document support, which can be provided in bytes.
 The document support has two different variants as explained below:
 
 - **Text document types** (txt, csv, html, md, and so on), where the emphasis is on text understanding. These use case include answering based on textual elements of the document.

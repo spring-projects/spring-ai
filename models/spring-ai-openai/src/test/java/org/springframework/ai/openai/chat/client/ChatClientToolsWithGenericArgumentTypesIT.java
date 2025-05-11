@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ class ChatClientToolsWithGenericArgumentTypesIT {
 	void toolWithGenericArgumentTypes() {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.user("Turn light red in the living room and the kitchen. Please group the romms with the same color in a single tool call.")
+				.user("Turn light red in the living room and the kitchen. Please group the rooms with the same color in a single tool call.")
 				.tools(new TestToolProvider())
 				.call()
 				.content();
@@ -88,7 +88,7 @@ class ChatClientToolsWithGenericArgumentTypesIT {
 
 		@Tool(description = "Change the lamp color in a room.")
 		public void changeRoomLightColor(
-				@ToolParam(description = "List of rooms to change the ligth color for") List<Room> rooms,
+				@ToolParam(description = "List of rooms to change the light color for") List<Room> rooms,
 				@ToolParam(description = "light color to change to") LightColor color) {
 
 			logger.info("Change light color in rooms: {} to color: {}", rooms, color);
