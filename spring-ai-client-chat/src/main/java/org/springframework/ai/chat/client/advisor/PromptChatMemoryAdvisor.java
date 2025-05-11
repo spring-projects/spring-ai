@@ -35,7 +35,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 /**
@@ -111,42 +110,42 @@ public class PromptChatMemoryAdvisor extends AbstractConversationHistoryAdvisor 
 				streamAdvisorChain, this::before);
 
 		// Ensure memory is updated after each streamed response
-		return chatClientResponses.doOnNext(this::after)
-			.transform(responses -> new MessageAggregator().aggregateChatClientResponse(responses, null));
+		return chatClientResponses.doOnNext(this::after);
 	}
 
 	@Override
 	protected ChatClientRequest before(ChatClientRequest chatClientRequest) {
 		String conversationId = this.doGetConversationId(chatClientRequest.context());
 
-		// 1. Add all user messages from the current prompt to memory
+		// 1. Retrieve the chat memory for the current conversation.
+		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId);
+		logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
+				conversationId, memoryMessages);
+
+		// 2. Process memory messages as a string.
+		String memory = memoryMessages.stream()
+			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
+			.map(m -> m.getMessageType() + ":" + m.getText())
+			.collect(Collectors.joining(System.lineSeparator()));
+
+		// 3. Augment the system message.
+		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
+		String augmentedSystemText = this.systemPromptTemplate
+			.render(Map.of("instructions", systemMessage.getText(), "memory", memory));
+
+		// 4. Create a new request with the augmented system message.
+		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
+			.prompt(chatClientRequest.prompt().augmentSystemMessage(augmentedSystemText))
+			.build();
+
+		// 5. Add all user messages from the current prompt to memory (after system
+		// message is generated)
 		List<UserMessage> userMessages = chatClientRequest.prompt().getUserMessages();
 		for (UserMessage userMessage : userMessages) {
 			this.getChatMemoryStore().add(conversationId, userMessage);
 			logger.debug("[PromptChatMemoryAdvisor.before] Added USER message to memory for conversationId={}: {}",
 					conversationId, userMessage.getText());
 		}
-
-		// 2. Retrieve the chat memory for the current conversation.
-		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId);
-		logger.debug("[PromptChatMemoryAdvisor.before] Memory after USER add for conversationId={}: {}", conversationId,
-				memoryMessages);
-
-		// 3. Process memory messages as a string.
-		String memory = memoryMessages.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(m -> m.getMessageType() + ":" + m.getText())
-			.collect(Collectors.joining(System.lineSeparator()));
-
-		// 4. Augment the system message.
-		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
-		String augmentedSystemText = this.systemPromptTemplate
-			.render(Map.of("instructions", systemMessage.getText(), "memory", memory));
-
-		// 5. Create a new request with the augmented system message.
-		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
-			.prompt(chatClientRequest.prompt().augmentSystemMessage(augmentedSystemText))
-			.build();
 
 		return processedChatClientRequest;
 	}
