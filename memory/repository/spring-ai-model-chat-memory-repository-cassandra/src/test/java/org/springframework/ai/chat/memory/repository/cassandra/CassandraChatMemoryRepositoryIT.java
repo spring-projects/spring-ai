@@ -23,6 +23,7 @@ import java.util.UUID;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +33,7 @@ import org.testcontainers.cassandra.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -43,7 +45,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
 
 /**
  * Use `mvn failsafe:integration-test -Dit.test=CassandraChatMemoryRepositoryIT`
@@ -84,30 +85,26 @@ class CassandraChatMemoryRepositoryIT {
 			};
 
 			chatMemory.saveAll(sessionId, List.of(message));
+			assertThat(chatMemory.findConversationIds()).isNotEmpty();
 
 			var cqlSession = context.getBean(CqlSession.class);
+
 			var query = """
-					SELECT session_id, message_timestamp, a, u
+					SELECT session_id, message_timestamp, msgs
 					FROM test_springframework.ai_chat_memory
 					WHERE session_id = ?
 					""";
-			ResultSet resultSet = cqlSession.execute(query, sessionId);
-			var rows = resultSet.all();
 
-			assertThat(rows.size()).isEqualTo(1);
+			var result = cqlSession.execute(query, sessionId).one();
 
-			var firstRow = rows.get(0);
+			assertThat(result.getString("session_id")).isNotNull();
+			assertThat(result.getString("session_id")).isEqualTo(sessionId);
+			assertThat(result.getInstant("message_timestamp")).isNotNull();
+			List<UdtValue> msgUdts = result.getList("msgs", UdtValue.class);
+			assertThat(msgUdts.size()).isEqualTo(1);
 
-			assertThat(firstRow.getString("session_id")).isEqualTo(sessionId);
-			assertThat(firstRow.getInstant("message_timestamp")).isNotNull();
-			if (messageType == MessageType.ASSISTANT) {
-				assertThat(firstRow.getString("a")).isEqualTo(content);
-				assertThat(firstRow.getString("u")).isNull();
-			}
-			else if (messageType == MessageType.USER) {
-				assertThat(firstRow.getString("a")).isNull();
-				assertThat(firstRow.getString("u")).isEqualTo(content);
-			}
+			assertThat(msgUdts.get(0).getString("msg_type")).isEqualTo(messageType.name());
+			assertThat(msgUdts.get(0).getString("msg_content")).isEqualTo(content);
 		});
 	}
 
@@ -121,35 +118,31 @@ class CassandraChatMemoryRepositoryIT {
 					new UserMessage("Message from user"));
 
 			chatMemory.saveAll(sessionId, messages);
+			assertThat(chatMemory.findConversationIds()).isNotEmpty();
 
 			var cqlSession = context.getBean(CqlSession.class);
+
 			var query = """
-					SELECT session_id, message_timestamp, a, u
+					SELECT session_id, message_timestamp, msgs
 					FROM test_springframework.ai_chat_memory
 					WHERE session_id = ?
-					ORDER BY message_timestamp ASC
 					""";
-			ResultSet resultSet = cqlSession.execute(query, sessionId);
-			var rows = resultSet.all();
 
-			assertThat(rows.size()).isEqualTo(messages.size());
+			var result = cqlSession.execute(query, sessionId).one();
 
-			for (var i = 0; i < messages.size(); i++) {
-				var message = messages.get(i);
-				var result = rows.get(i);
+			assertThat(result.getString("session_id")).isNotNull();
+			assertThat(result.getString("session_id")).isEqualTo(sessionId);
+			assertThat(result.getInstant("message_timestamp")).isNotNull();
+			List<UdtValue> msgUdts = result.getList("msgs", UdtValue.class);
+			assertThat(msgUdts.size()).isEqualTo(2);
 
-				assertThat(result.getString("session_id")).isNotNull();
-				assertThat(result.getString("session_id")).isEqualTo(sessionId);
-				if (message.getMessageType() == MessageType.ASSISTANT) {
-					assertThat(result.getString("a")).isEqualTo(message.getText());
-					assertThat(result.getString("u")).isNull();
-				}
-				else if (message.getMessageType() == MessageType.USER) {
-					assertThat(result.getString("a")).isNull();
-					assertThat(result.getString("u")).isEqualTo(message.getText());
-				}
-				assertThat(result.getInstant("message_timestamp")).isNotNull();
-			}
+			assertThat(msgUdts.get(0).getInstant("msg_timestamp").toEpochMilli())
+				.isLessThanOrEqualTo(msgUdts.get(1).getInstant("msg_timestamp").toEpochMilli());
+
+			assertThat(msgUdts.get(0).getString("msg_type")).isEqualTo(MessageType.ASSISTANT.name());
+			assertThat(msgUdts.get(0).getString("msg_content")).isEqualTo("Message from assistant");
+			assertThat(msgUdts.get(1).getString("msg_type")).isEqualTo(MessageType.USER.name());
+			assertThat(msgUdts.get(1).getString("msg_content")).isEqualTo("Message from user");
 		});
 	}
 
@@ -159,16 +152,15 @@ class CassandraChatMemoryRepositoryIT {
 			var chatMemory = context.getBean(ChatMemoryRepository.class);
 			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
 			var sessionId = UUID.randomUUID().toString();
+
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + sessionId),
 					new AssistantMessage("Message from assistant 2 - " + sessionId),
 					new UserMessage("Message from user - " + sessionId));
 
 			chatMemory.saveAll(sessionId, messages);
-
 			assertThat(chatMemory.findConversationIds()).isNotEmpty();
 
 			var results = chatMemory.findByConversationId(sessionId);
-
 			assertThat(results.size()).isEqualTo(messages.size());
 
 			for (var i = 0; i < messages.size(); i++) {
@@ -191,11 +183,9 @@ class CassandraChatMemoryRepositoryIT {
 			var assistantMessage = new AssistantMessage("Message from assistant - " + sessionId);
 
 			chatMemory.saveAll(sessionId, List.of(userMessage, assistantMessage));
-
 			assertThat(chatMemory.findConversationIds()).isNotEmpty();
 
 			var results = chatMemory.findByConversationId(sessionId);
-
 			assertThat(results.size()).isEqualTo(2);
 
 			var messages = List.<Message>of(userMessage, assistantMessage);
@@ -215,23 +205,28 @@ class CassandraChatMemoryRepositoryIT {
 			var chatMemory = context.getBean(ChatMemoryRepository.class);
 			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
 			var sessionId = UUID.randomUUID().toString();
+
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + sessionId),
 					new UserMessage("Message from user - " + sessionId));
 
 			chatMemory.saveAll(sessionId, messages);
-
 			assertThat(chatMemory.findConversationIds()).isNotEmpty();
 
 			chatMemory.deleteByConversationId(sessionId);
+			var results = chatMemory.findByConversationId(sessionId);
+
+			assertThat(results.size()).isEqualTo(0);
 
 			var cqlSession = context.getBean(CqlSession.class);
+
 			var query = """
-					SELECT COUNT(*)
+					SELECT msgs
 					FROM test_springframework.ai_chat_memory
 					WHERE session_id = ?
 					""";
+
 			ResultSet resultSet = cqlSession.execute(query, sessionId);
-			var count = resultSet.all().get(0).getLong(0);
+			var count = resultSet.all().get(0).getList("msgs", UdtValue.class).size();
 
 			assertThat(count).isZero();
 		});
@@ -247,8 +242,7 @@ class CassandraChatMemoryRepositoryIT {
 			var conf = CassandraChatMemoryRepositoryConfig.builder()
 				.withCqlSession(cqlSession)
 				.withKeyspaceName("test_" + CassandraChatMemoryRepositoryConfig.DEFAULT_KEYSPACE_NAME)
-				.withAssistantColumnName("a")
-				.withUserColumnName("u")
+				.withMessagesColumnName("msgs")
 				.withTimeToLive(Duration.ofMinutes(1))
 				.build();
 
