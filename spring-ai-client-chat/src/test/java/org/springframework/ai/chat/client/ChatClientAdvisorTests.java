@@ -85,7 +85,7 @@ public class ChatClientAdvisorTests {
 		// Build a ChatClient with default system text and a memory advisor
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
-			.defaultAdvisors(new PromptChatMemoryAdvisor(chatMemory))
+			.defaultAdvisors(PromptChatMemoryAdvisor.builder(chatMemory).build())
 			.build();
 
 		// Simulate a user prompt and verify the response
@@ -164,7 +164,7 @@ public class ChatClientAdvisorTests {
 		// Build a ChatClient with default system text and a memory advisor
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
-			.defaultAdvisors(new PromptChatMemoryAdvisor(chatMemory))
+			.defaultAdvisors(PromptChatMemoryAdvisor.builder(chatMemory).build())
 			.build();
 
 		// Simulate a streaming user prompt and verify the response

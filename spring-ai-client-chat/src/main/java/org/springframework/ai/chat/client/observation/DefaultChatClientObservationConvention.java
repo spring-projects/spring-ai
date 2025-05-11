@@ -18,9 +18,10 @@ package org.springframework.ai.chat.client.observation;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
+
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.ObservabilityHelper;
@@ -110,9 +111,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 			return keyValues;
 		}
 
-		var conversationIdValue = context.getRequest()
-			.context()
-			.get(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY);
+		var conversationIdValue = context.getRequest().context().get(ChatMemory.CONVERSATION_ID);
 
 		if (!(conversationIdValue instanceof String conversationId) || !StringUtils.hasText(conversationId)) {
 			return keyValues;
