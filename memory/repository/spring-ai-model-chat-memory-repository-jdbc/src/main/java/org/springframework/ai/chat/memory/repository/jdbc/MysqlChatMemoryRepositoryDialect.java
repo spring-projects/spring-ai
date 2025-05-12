@@ -17,28 +17,31 @@
 package org.springframework.ai.chat.memory.repository.jdbc;
 
 /**
- * HSQLDB-specific SQL dialect for chat memory repository.
+ * Dialect for MySQL.
+ *
+ * @author Mark Pollack
+ * @since 1.0.0
  */
-public class HsqldbChatMemoryDialect implements JdbcChatMemoryDialect {
+public class MysqlChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY timestamp ASC";
+		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY `timestamp` DESC LIMIT ?";
 	}
 
 	@Override
 	public String getInsertMessageSql() {
-		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, timestamp) VALUES (?, ?, ?, ?)";
-	}
-
-	@Override
-	public String getDeleteMessagesSql() {
-		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, `timestamp`) VALUES (?, ?, ?, ?)";
 	}
 
 	@Override
 	public String getSelectConversationIdsSql() {
 		return "SELECT DISTINCT conversation_id FROM SPRING_AI_CHAT_MEMORY";
+	}
+
+	@Override
+	public String getDeleteMessagesSql() {
+		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
 	}
 
 }

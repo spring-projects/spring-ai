@@ -164,7 +164,7 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate, DataSource dataSource) {
 			return JdbcChatMemoryRepository.builder()
 				.jdbcTemplate(jdbcTemplate)
-				.dialect(JdbcChatMemoryDialect.from(dataSource))
+				.dialect(JdbcChatMemoryRepositoryDialect.from(dataSource))
 				.build();
 		}
 

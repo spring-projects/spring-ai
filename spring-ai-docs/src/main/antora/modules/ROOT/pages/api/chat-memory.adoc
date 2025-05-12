@@ -105,7 +105,7 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
-If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by providing a `JdbcTemplate` instance and optionally a custom `JdbcChatMemoryDialect`:
+If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by providing a `JdbcTemplate` instance and optionally a custom `JdbcChatMemoryRepositoryDialect`:
 
 [source,java]
 ----
@@ -129,7 +129,7 @@ Spring AI supports multiple relational databases via a dialect abstraction. The 
 - SQL Server
 - HSQLDB
 
-The correct dialect is auto-detected from the JDBC URL. You can extend support for other databases by implementing the `JdbcChatMemoryDialect` interface.
+The correct dialect is auto-detected from the JDBC URL. You can extend support for other databases by implementing the `JdbcChatMemoryRepositoryDialect` interface.
 
 ==== Configuration Properties
 
@@ -162,7 +162,7 @@ spring.ai.chat.memory.repository.jdbc.schema=classpath:/custom/path/schema-mysql
 
 ==== Extending Dialects
 
-To add support for a new database, implement the `JdbcChatMemoryDialect` interface and provide SQL for selecting, inserting, and deleting messages. You can then pass your custom dialect to the repository builder.
+To add support for a new database, implement the `JdbcChatMemoryRepositoryDialect` interface and provide SQL for selecting, inserting, and deleting messages. You can then pass your custom dialect to the repository builder.
 
 [source,java]
 ----

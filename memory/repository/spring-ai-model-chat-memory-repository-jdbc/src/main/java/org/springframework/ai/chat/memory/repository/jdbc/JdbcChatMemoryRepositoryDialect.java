@@ -21,7 +21,7 @@ import javax.sql.DataSource;
 /**
  * Abstraction for database-specific SQL for chat memory repository.
  */
-public interface JdbcChatMemoryDialect {
+public interface JdbcChatMemoryRepositoryDialect {
 
 	/**
 	 * Returns the SQL to fetch messages for a conversation, ordered by timestamp, with
@@ -51,25 +51,25 @@ public interface JdbcChatMemoryDialect {
 	/**
 	 * Detects the dialect from the DataSource or JDBC URL.
 	 */
-	static JdbcChatMemoryDialect from(DataSource dataSource) {
+	static JdbcChatMemoryRepositoryDialect from(DataSource dataSource) {
 		// Simple detection (could be improved)
 		try {
 			String url = dataSource.getConnection().getMetaData().getURL().toLowerCase();
 			if (url.contains("postgresql"))
-				return new PostgresChatMemoryDialect();
+				return new PostgresChatMemoryRepositoryDialect();
 			if (url.contains("mysql"))
-				return new MysqlChatMemoryDialect();
+				return new MysqlChatMemoryRepositoryDialect();
 			if (url.contains("mariadb"))
-				return new MysqlChatMemoryDialect();
+				return new MysqlChatMemoryRepositoryDialect();
 			if (url.contains("sqlserver"))
-				return new SqlServerChatMemoryDialect();
+				return new SqlServerChatMemoryRepositoryDialect();
 			if (url.contains("hsqldb"))
-				return new HsqldbChatMemoryDialect();
+				return new HsqldbChatMemoryRepositoryDialect();
 			// Add more as needed
 		}
 		catch (Exception ignored) {
 		}
-		return new PostgresChatMemoryDialect(); // default
+		return new PostgresChatMemoryRepositoryDialect(); // default
 	}
 
 }

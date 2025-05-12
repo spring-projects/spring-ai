@@ -17,21 +17,21 @@
 package org.springframework.ai.chat.memory.repository.jdbc;
 
 /**
- * Dialect for MySQL.
+ * Dialect for Postgres.
  *
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class MysqlChatMemoryDialect implements JdbcChatMemoryDialect {
+public class PostgresChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY `timestamp` DESC LIMIT ?";
+		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY \"timestamp\"";
 	}
 
 	@Override
 	public String getInsertMessageSql() {
-		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, `timestamp`) VALUES (?, ?, ?, ?)";
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, \"timestamp\") VALUES (?, ?, ?, ?)";
 	}
 
 	@Override

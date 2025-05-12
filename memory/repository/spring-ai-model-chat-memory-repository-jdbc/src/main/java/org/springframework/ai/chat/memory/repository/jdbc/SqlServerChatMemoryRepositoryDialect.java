@@ -22,7 +22,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class SqlServerChatMemoryDialect implements JdbcChatMemoryDialect {
+public class SqlServerChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override
 	public String getSelectMessagesSql() {

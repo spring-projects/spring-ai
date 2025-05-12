@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = JdbcChatMemoryHsqldbAutoConfigurationIT.TestConfig.class,
+@SpringBootTest(classes = JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT.TestConfig.class,
 		properties = { "spring.datasource.url=jdbc:hsqldb:mem:chat_memory_auto_configuration_test;DB_CLOSE_DELAY=-1",
 				"spring.datasource.username=sa", "spring.datasource.password=",
 				"spring.datasource.driver-class-name=org.hsqldb.jdbcDriver",
@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.fail;
 		org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration.class,
 		org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
 		SqlInitializationAutoConfiguration.class })
-public class JdbcChatMemoryHsqldbAutoConfigurationIT {
+public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 	@Autowired
 	private ApplicationContext context;

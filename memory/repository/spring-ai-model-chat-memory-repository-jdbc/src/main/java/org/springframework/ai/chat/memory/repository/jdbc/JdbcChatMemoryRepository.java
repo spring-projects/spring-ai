@@ -51,9 +51,9 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
-	private final JdbcChatMemoryDialect dialect;
+	private final JdbcChatMemoryRepositoryDialect dialect;
 
-	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryDialect dialect) {
+	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
@@ -146,7 +146,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcTemplate jdbcTemplate;
 
-		private JdbcChatMemoryDialect dialect;
+		private JdbcChatMemoryRepositoryDialect dialect;
 
 		private Builder() {
 		}
@@ -156,7 +156,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			return this;
 		}
 
-		public Builder dialect(JdbcChatMemoryDialect dialect) {
+		public Builder dialect(JdbcChatMemoryRepositoryDialect dialect) {
 			this.dialect = dialect;
 			return this;
 		}
