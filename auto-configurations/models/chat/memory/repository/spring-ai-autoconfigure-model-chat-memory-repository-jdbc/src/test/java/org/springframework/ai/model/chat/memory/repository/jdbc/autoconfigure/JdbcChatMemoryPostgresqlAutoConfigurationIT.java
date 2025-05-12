@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
  * @author Linar Abzaltdinov
+ * @author Yanming Zhou
  */
 class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 
@@ -49,14 +50,14 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldBeLoaded() {
 		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=always")
-			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue());
+			.run(context -> assertThat(context).hasBean("jdbcChatMemoryScriptDatabaseInitializer"));
 	}
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldNotRunSchemaInit() {
 		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=never")
 			.run(context -> {
-				assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue();
+				assertThat(context).doesNotHaveBean("jdbcChatMemoryScriptDatabaseInitializer");
 				// Optionally, check that the schema is not initialized (could check table
 				// absence if needed)
 			});
@@ -65,7 +66,7 @@ class JdbcChatMemoryPostgresqlAutoConfigurationIT {
 	@Test
 	void initializeSchemaEmbeddedDefault() {
 		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=embedded")
-			.run(context -> assertThat(context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue());
+			.run(context -> assertThat(context).hasBean("jdbcChatMemoryScriptDatabaseInitializer"));
 	}
 
 	@Test

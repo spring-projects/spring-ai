@@ -22,7 +22,6 @@ import javax.sql.DataSource;
 
 import org.springframework.boot.jdbc.init.DataSourceScriptDatabaseInitializer;
 import org.springframework.boot.jdbc.init.PlatformPlaceholderDatabaseDriverResolver;
-import org.springframework.boot.sql.init.DatabaseInitializationMode;
 import org.springframework.boot.sql.init.DatabaseInitializationSettings;
 import org.springframework.util.StringUtils;
 
@@ -30,11 +29,10 @@ import org.springframework.util.StringUtils;
  * Performs database initialization for the JDBC Chat Memory Repository.
  *
  * @author Mark Pollack
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 class JdbcChatMemoryRepositorySchemaInitializer extends DataSourceScriptDatabaseInitializer {
-
-	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql";
 
 	JdbcChatMemoryRepositorySchemaInitializer(DataSource dataSource, JdbcChatMemoryRepositoryProperties properties) {
 		super(dataSource, getSettings(dataSource, properties));
@@ -43,50 +41,19 @@ class JdbcChatMemoryRepositorySchemaInitializer extends DataSourceScriptDatabase
 	static DatabaseInitializationSettings getSettings(DataSource dataSource,
 			JdbcChatMemoryRepositoryProperties properties) {
 		var settings = new DatabaseInitializationSettings();
-
-		// Determine schema locations
-		String schemaProp = properties.getSchema();
-		List<String> schemaLocations;
-		PlatformPlaceholderDatabaseDriverResolver resolver = new PlatformPlaceholderDatabaseDriverResolver();
-		try {
-			String url = dataSource.getConnection().getMetaData().getURL().toLowerCase();
-			if (url.contains("hsqldb")) {
-				schemaLocations = List.of("classpath:org/springframework/ai/chat/memory/jdbc/schema-hsqldb.sql");
-			}
-			else if (StringUtils.hasText(schemaProp)) {
-				schemaLocations = resolver.resolveAll(dataSource, schemaProp);
-			}
-			else {
-				schemaLocations = resolver.resolveAll(dataSource, DEFAULT_SCHEMA_LOCATION);
-			}
-		}
-		catch (Exception e) {
-			// fallback to default
-			if (StringUtils.hasText(schemaProp)) {
-				schemaLocations = resolver.resolveAll(dataSource, schemaProp);
-			}
-			else {
-				schemaLocations = resolver.resolveAll(dataSource, DEFAULT_SCHEMA_LOCATION);
-			}
-		}
-		settings.setSchemaLocations(schemaLocations);
-
-		// Determine initialization mode
-		JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode init = properties.getInitializeSchema();
-		DatabaseInitializationMode mode;
-		if (JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.ALWAYS.equals(init)) {
-			mode = DatabaseInitializationMode.ALWAYS;
-		}
-		else if (JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.NEVER.equals(init)) {
-			mode = DatabaseInitializationMode.NEVER;
-		}
-		else {
-			// embedded or default
-			mode = DatabaseInitializationMode.EMBEDDED;
-		}
-		settings.setMode(mode);
+		settings.setSchemaLocations(resolveSchemaLocations(dataSource, properties));
+		settings.setMode(properties.getInitializeSchema());
 		settings.setContinueOnError(true);
 		return settings;
+	}
+
+	private static List<String> resolveSchemaLocations(DataSource dataSource,
+			JdbcChatMemoryRepositoryProperties properties) {
+		PlatformPlaceholderDatabaseDriverResolver platformResolver = new PlatformPlaceholderDatabaseDriverResolver();
+		if (StringUtils.hasText(properties.getPlatform())) {
+			return platformResolver.resolveAll(properties.getPlatform(), properties.getSchema());
+		}
+		return platformResolver.resolveAll(dataSource, properties.getSchema());
 	}
 
 }

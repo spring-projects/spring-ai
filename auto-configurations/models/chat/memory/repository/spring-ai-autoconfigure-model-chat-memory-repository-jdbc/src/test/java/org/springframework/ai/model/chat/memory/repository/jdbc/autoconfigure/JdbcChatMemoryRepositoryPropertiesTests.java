@@ -18,6 +18,8 @@ package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.boot.sql.init.DatabaseInitializationMode;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -28,16 +30,14 @@ class JdbcChatMemoryRepositoryPropertiesTests {
 	@Test
 	void defaultValues() {
 		var props = new JdbcChatMemoryRepositoryProperties();
-		assertThat(props.getInitializeSchema())
-			.isEqualTo(JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.EMBEDDED);
+		assertThat(props.getInitializeSchema()).isEqualTo(DatabaseInitializationMode.EMBEDDED);
 	}
 
 	@Test
 	void customValues() {
 		var props = new JdbcChatMemoryRepositoryProperties();
-		props.setInitializeSchema(JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.NEVER);
-		assertThat(props.getInitializeSchema())
-			.isEqualTo(JdbcChatMemoryRepositoryProperties.DatabaseInitializationMode.NEVER);
+		props.setInitializeSchema(DatabaseInitializationMode.NEVER);
+		assertThat(props.getInitializeSchema()).isEqualTo(DatabaseInitializationMode.NEVER);
 	}
 
 }
