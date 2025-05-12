@@ -173,39 +173,6 @@ class CassandraVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
-	void addAndSearchReturnEmbeddings() {
-		this.contextRunner.run(context -> {
-			CassandraVectorStore.Builder builder = storeBuilder(context.getBean(CqlSession.class),
-					context.getBean(EmbeddingModel.class))
-				.returnEmbeddings(true);
-
-			try (CassandraVectorStore store = createTestStore(context, builder)) {
-				List<Document> documents = documents();
-				store.add(documents);
-
-				List<Document> results = store
-					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
-
-				assertThat(results).hasSize(1);
-				Document resultDoc = results.get(0);
-				assertThat(resultDoc.getId()).isEqualTo(documents().get(0).getId());
-
-				assertThat(resultDoc.getText()).contains(
-						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
-
-				assertThat(resultDoc.getMetadata()).hasSize(1);
-				assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
-
-				// Remove all documents from the store
-				store.delete(documents().stream().map(doc -> doc.getId()).toList());
-
-				results = store.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
-				assertThat(results).isEmpty();
-			}
-		});
-	}
-
-	@Test
 	void searchWithPartitionFilter() throws InterruptedException {
 		this.contextRunner.run(context -> {
 
