@@ -92,7 +92,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		Prompt prompt = new Prompt(messages);
 
 		String answer = chatClient.prompt(prompt)
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 
@@ -108,7 +108,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Send a follow-up question
 		String followUpAnswer = chatClient.prompt()
 			.user("What is my name?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 
@@ -144,7 +144,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 
 		// Send the prompt to the chat client
 		String answer = chatClient.prompt(prompt)
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 
@@ -163,7 +163,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Act - Send a follow-up question
 		String followUpAnswer = chatClient.prompt()
 			.user("What is my name?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 
@@ -199,7 +199,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user(question)
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, customConversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, customConversationId))
 			.call()
 			.content();
 
@@ -236,7 +236,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Act - First conversation
 		String answer1 = chatClient.prompt()
 			.user("My name is Alice.")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId1))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId1))
 			.call()
 			.content();
 
@@ -245,7 +245,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Act - Second conversation
 		String answer2 = chatClient.prompt()
 			.user("My name is Bob.")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId2))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId2))
 			.call()
 			.content();
 
@@ -263,7 +263,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Act - Follow-up in first conversation
 		String followUpAnswer1 = chatClient.prompt()
 			.user("What is my name?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId1))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId1))
 			.call()
 			.content();
 
@@ -272,7 +272,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Act - Follow-up in second conversation
 		String followUpAnswer2 = chatClient.prompt()
 			.user("What is my name?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId2))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId2))
 			.call()
 			.content();
 
@@ -323,7 +323,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user(question)
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, nonExistentId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, nonExistentId))
 			.call()
 			.content();
 
@@ -380,7 +380,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		List<String> responseList = new ArrayList<>();
 		for (String message : List.of("My name is Charlie.", "I am 30 years old.", "I live in London.")) {
 			String response = chatClient.prompt()
-				.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+				.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 				.user(message)
 				.call()
 				.content();
@@ -398,7 +398,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		assertThat(memoryMessages.get(4).getText()).isEqualTo("I live in London.");
 
 		String followUpAnswer = chatClient.prompt()
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.user("What is my name and where do I live?")
 			.call()
 			.content();

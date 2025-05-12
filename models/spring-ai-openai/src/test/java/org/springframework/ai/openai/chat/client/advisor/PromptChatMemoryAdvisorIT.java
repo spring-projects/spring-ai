@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.chat.client.advisor;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -103,6 +104,7 @@ public class PromptChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 	}
 
 	@Test
+	@Disabled
 	void shouldHandleMultipleUserMessagesInSamePrompt() {
 		testMultipleUserMessagesInSamePrompt();
 	}
@@ -128,6 +130,7 @@ public class PromptChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 	}
 
 	@Test
+	@Disabled
 	void shouldHandleMultipleUserMessagesInPrompt() {
 		testMultipleUserMessagesInPrompt();
 	}

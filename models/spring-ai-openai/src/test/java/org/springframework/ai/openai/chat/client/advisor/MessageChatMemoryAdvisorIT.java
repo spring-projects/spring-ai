@@ -104,7 +104,7 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 
 		// Send the prompt to the chat client
 		String answer = chatClient.prompt(prompt)
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 
@@ -123,7 +123,7 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		// Send a follow-up question
 		String followUpAnswer = chatClient.prompt()
 			.user("What is my name?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 

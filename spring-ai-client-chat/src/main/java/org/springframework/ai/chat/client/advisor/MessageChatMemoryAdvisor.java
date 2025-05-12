@@ -74,7 +74,7 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-		String conversationId = doGetConversationId(chatClientRequest.context());
+		String conversationId = getConversationId(chatClientRequest.context());
 
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
@@ -95,32 +95,6 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		return processedChatClientRequest;
 	}
 
-	protected String doGetConversationId(Map<String, Object> context) {
-		if (context == null || !context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)) {
-			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
-					this.defaultConversationId);
-		}
-		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
-				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
-	}
-
-	private ChatClientRequest applyMessagesToRequest(ChatClientRequest request, List<Message> memoryMessages) {
-		if (memoryMessages == null || memoryMessages.isEmpty()) {
-			return request;
-		}
-		// Combine memory messages with the instructions from the current prompt
-		List<Message> combinedMessages = new ArrayList<>(memoryMessages);
-		combinedMessages.addAll(request.prompt().getInstructions());
-
-		// Mutate the prompt to use the combined messages
-		// insead of combiedMinessage from the logic above
-		// request.prompt().mutate().messages(chatMemoryStore.get(conversationId););
-		var promptBuilder = request.prompt().mutate().messages(combinedMessages);
-
-		// Return a new ChatClientRequest with the updated prompt
-		return request.mutate().prompt(promptBuilder.build()).build();
-	}
-
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
@@ -131,7 +105,7 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.chatMemory.add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+		this.chatMemory.add(this.getConversationId(chatClientResponse.context()), assistantMessages);
 		return chatClientResponse;
 	}
 
@@ -149,7 +123,7 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private ChatMemory chatMemory;
 
-		protected Builder(ChatMemory chatMemory) {
+		private Builder(ChatMemory chatMemory) {
 			this.chatMemory = chatMemory;
 		}
 

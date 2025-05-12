@@ -54,8 +54,6 @@ import org.springframework.ai.vectorstore.VectorStore;
  */
 public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
-	private static final Logger logger = LoggerFactory.getLogger(VectorStoreChatMemoryAdvisor.class);
-
 	public static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat_memory_response_size";
 
 	private static final String DOCUMENT_METADATA_CONVERSATION_ID = "conversationId";
@@ -65,7 +63,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	/**
 	 * The default chat memory retrieve size to use when no retrieve size is provided.
 	 */
-	public static final int DEFAULT_CHAT_MEMORY_RESPONSE_SIZE = 100;
+	public static final int DEFAULT_TOP_K = 20;
 
 	private static final PromptTemplate DEFAULT_SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
 			{instructions}
@@ -116,9 +114,9 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
-		String conversationId = doGetConversationId(request.context());
+		String conversationId = getConversationId(request.context());
 		String query = request.prompt().getUserMessage() != null ? request.prompt().getUserMessage().getText() : "";
-		int topK = doGetChatMemoryRetrieveSize(request.context());
+		int topK = getChatMemoryTopK(request.context());
 		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
 		var searchRequest = org.springframework.ai.vectorstore.SearchRequest.builder()
 			.query(query)
@@ -150,19 +148,10 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		return processedChatClientRequest;
 	}
 
-	protected int doGetChatMemoryRetrieveSize(Map<String, Object> context) {
+	private int getChatMemoryTopK(Map<String, Object> context) {
 		return context.containsKey(CHAT_MEMORY_RETRIEVE_SIZE_KEY)
 				? Integer.parseInt(context.get(CHAT_MEMORY_RETRIEVE_SIZE_KEY).toString())
 				: this.defaultChatMemoryRetrieveSize;
-	}
-
-	protected String doGetConversationId(Map<String, Object> context) {
-		if (context == null || !context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)) {
-			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
-					this.defaultConversationId);
-		}
-		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
-				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
 	}
 
 	@Override
@@ -175,7 +164,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.vectorStore.write(toDocuments(assistantMessages, this.doGetConversationId(chatClientResponse.context())));
+		this.vectorStore.write(toDocuments(assistantMessages, this.getConversationId(chatClientResponse.context())));
 		return chatClientResponse;
 	}
 
@@ -213,7 +202,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
-		private Integer chatMemoryRetrieveSize = DEFAULT_CHAT_MEMORY_RESPONSE_SIZE;
+		private Integer topK = DEFAULT_TOP_K;
 
 		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
@@ -242,22 +231,12 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		}
 
 		/**
-		 * Set the system text advice.
-		 * @param systemTextAdvise the system text advice
-		 * @return this builder
-		 */
-		public Builder systemTextAdvise(String systemTextAdvise) {
-			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
-			return this;
-		}
-
-		/**
 		 * Set the chat memory retrieve size.
-		 * @param chatMemoryRetrieveSize the chat memory retrieve size
+		 * @param topK the chat memory retrieve size
 		 * @return this builder
 		 */
-		public Builder chatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
-			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
+		public Builder topK(int topK) {
+			this.topK = topK;
 			return this;
 		}
 
@@ -301,8 +280,8 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 * @return the advisor
 		 */
 		public VectorStoreChatMemoryAdvisor build() {
-			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.chatMemoryRetrieveSize,
-					this.conversationId, this.order, this.scheduler, this.vectorStore);
+			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.topK, this.conversationId,
+					this.order, this.scheduler, this.vectorStore);
 		}
 
 	}

@@ -35,7 +35,7 @@ public interface ChatMemory {
 	/**
 	 * The key to retrieve the chat memory conversation id from the context.
 	 */
-	String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
+	String CONVERSATION_ID = "chat_memory_conversation_id";
 
 	/**
 	 * Save the specified message in the chat memory for the specified conversation.

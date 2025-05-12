@@ -111,7 +111,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 			return keyValues;
 		}
 
-		var conversationIdValue = context.getRequest().context().get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY);
+		var conversationIdValue = context.getRequest().context().get(ChatMemory.CONVERSATION_ID);
 
 		if (!(conversationIdValue instanceof String conversationId) || !StringUtils.hasText(conversationId)) {
 			return keyValues;

@@ -138,7 +138,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			.prompt()
 			.user("joke")
 			.advisors(a -> a.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
-				.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+				.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 
@@ -162,7 +162,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			.system("You are a helpful assistant.")
 			.user("joke")
 			.advisors(a -> a.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
-				.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+				.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 

@@ -103,7 +103,7 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-		String conversationId = doGetConversationId(chatClientRequest.context());
+		String conversationId = getConversationId(chatClientRequest.context());
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 		logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
@@ -127,28 +127,11 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		// 5. Add all user messages from the current prompt to memory (after system
 		// message is generated)
-		List<UserMessage> userMessages = chatClientRequest.prompt().getUserMessages();
-		for (UserMessage userMessage : userMessages) {
-			this.chatMemory.add(conversationId, userMessage);
-			logger.debug("[PromptChatMemoryAdvisor.before] Added USER message to memory for conversationId={}: {}",
-					conversationId, userMessage.getText());
-		}
+		// 4. Add the new user message to the conversation memory.
+		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+		this.chatMemory.add(conversationId, userMessage);
 
 		return processedChatClientRequest;
-	}
-
-	/**
-	 * Get the conversation id for the current context.
-	 * @param context the context
-	 * @return the conversation id
-	 */
-	protected String doGetConversationId(Map<String, Object> context) {
-		if (context == null || !context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)) {
-			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
-					this.defaultConversationId);
-		}
-		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
-				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
 	}
 
 	@Override
@@ -168,12 +151,12 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		}
 
 		if (!assistantMessages.isEmpty()) {
-			this.chatMemory.add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+			this.chatMemory.add(this.getConversationId(chatClientResponse.context()), assistantMessages);
 			logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-					this.doGetConversationId(chatClientResponse.context()), assistantMessages);
-			List<Message> memoryMessages = this.chatMemory.get(this.doGetConversationId(chatClientResponse.context()));
+					this.getConversationId(chatClientResponse.context()), assistantMessages);
+			List<Message> memoryMessages = this.chatMemory.get(this.getConversationId(chatClientResponse.context()));
 			logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-					this.doGetConversationId(chatClientResponse.context()), memoryMessages);
+					this.getConversationId(chatClientResponse.context()), memoryMessages);
 		}
 		return chatClientResponse;
 	}
@@ -208,18 +191,8 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private ChatMemory chatMemory;
 
-		protected Builder(ChatMemory chatMemory) {
+		private Builder(ChatMemory chatMemory) {
 			this.chatMemory = chatMemory;
-		}
-
-		/**
-		 * Set the system text advice.
-		 * @param systemTextAdvise the system text advice
-		 * @return the builder
-		 */
-		public Builder systemTextAdvise(String systemTextAdvise) {
-			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
-			return this;
 		}
 
 		/**

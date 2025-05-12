@@ -50,7 +50,6 @@ public class PromptChatMemoryAdvisorTests {
 			.conversationId(customConversationId) // From AbstractBuilder
 			.order(customOrder) // From AbstractBuilder
 			.protectFromBlocking(customProtectFromBlocking) // From AbstractBuilder
-			.systemTextAdvise(customSystemPrompt) // From PromptChatMemoryAdvisor.Builder
 			.build();
 
 		// Verify the advisor was built with the correct properties

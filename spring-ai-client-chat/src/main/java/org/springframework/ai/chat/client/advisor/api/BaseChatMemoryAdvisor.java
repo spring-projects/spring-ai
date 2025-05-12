@@ -34,9 +34,8 @@ public interface BaseChatMemoryAdvisor extends BaseAdvisor {
 	 * @return the conversation ID.
 	 */
 	default String getConversationId(Map<String, Object> context) {
-		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
-				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString()
-				: ChatMemory.DEFAULT_CONVERSATION_ID;
+		return context != null && context.containsKey(ChatMemory.CONVERSATION_ID)
+				? context.get(ChatMemory.CONVERSATION_ID).toString() : ChatMemory.DEFAULT_CONVERSATION_ID;
 	}
 
 }

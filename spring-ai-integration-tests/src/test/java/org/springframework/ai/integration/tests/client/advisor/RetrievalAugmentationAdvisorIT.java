@@ -152,7 +152,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		ChatResponse chatResponse1 = chatClient.prompt()
 			.user("Where does the adventure of Anacletus and Birba take place?")
-			.advisors(advisors -> advisors.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(advisors -> advisors.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 
@@ -162,7 +162,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		ChatResponse chatResponse2 = chatClient.prompt()
 			.user("Did they meet any cow?")
-			.advisors(advisors -> advisors.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(advisors -> advisors.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 

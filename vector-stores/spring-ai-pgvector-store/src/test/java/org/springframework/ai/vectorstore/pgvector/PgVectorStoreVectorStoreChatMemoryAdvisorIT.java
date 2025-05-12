@@ -86,7 +86,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		// Send a prompt
 		String answer = chatClient.prompt()
 			.user("Say hello")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 
@@ -118,13 +118,13 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Dogs are loyal pets.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).chatMemoryRetrieveSize(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
 			.build();
 
 		// Send a semantically related query
 		String answer = chatClient.prompt()
 			.user("Where is the Eiffel Tower located?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 
@@ -154,12 +154,12 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 			.of(new Document("Automobiles are fast.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).chatMemoryRetrieveSize(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()
 			.user("Tell me about cars.")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 		assertThat(answer).satisfiesAnyOf(a -> assertThat(a).containsIgnoringCase("automobile"),
@@ -186,12 +186,12 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Bananas are yellow.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).chatMemoryRetrieveSize(2).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(2).build())
 			.build();
 
 		String answer = chatClient.prompt()
 			.user("What is the capital of Italy?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 		assertThat(answer).containsIgnoringCase("rome");
@@ -220,12 +220,12 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Dogs are loyal pets.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).chatMemoryRetrieveSize(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()
 			.user("What can you tell me about cats?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 		assertThat(answer).containsIgnoringCase("cat");
@@ -251,12 +251,12 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).chatMemoryRetrieveSize(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()
 			.user("Tell me about a fast animal leaping over another.")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 		assertThat(answer).satisfiesAnyOf(a -> assertThat(a).containsIgnoringCase("fox"),
@@ -283,12 +283,12 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Bananas are yellow.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).chatMemoryRetrieveSize(2).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(2).build())
 			.build();
 
 		String answer = chatClient.prompt()
 			.user("What fruits are red?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 		assertThat(answer).containsIgnoringCase("apple");
@@ -315,12 +315,12 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 			.of(new Document("The sun is a star.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).chatMemoryRetrieveSize(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()
 			.user("What is the capital of Spain?")
-			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.content();
 		assertThat(answer).doesNotContain("sun");

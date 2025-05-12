@@ -150,7 +150,7 @@ class DefaultChatClientObservationConventionTests {
 						.toolNames("tool1", "tool2")
 						.toolCallbacks(dummyFunction("toolCallback1"), dummyFunction("toolCallback2"))
 						.build()))
-			.context(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, "007")
+			.context(ChatMemory.CONVERSATION_ID, "007")
 			.build();
 
 		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
