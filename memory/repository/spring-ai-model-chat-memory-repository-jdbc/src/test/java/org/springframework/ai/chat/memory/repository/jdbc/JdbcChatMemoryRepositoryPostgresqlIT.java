@@ -40,6 +40,8 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 
+import javax.sql.DataSource;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -77,7 +79,7 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 
 		chatMemoryRepository.saveAll(conversationId, List.of(message));
 
-		var query = "SELECT conversation_id, content, type, \"timestamp\" FROM ai_chat_memory WHERE conversation_id = ?";
+		var query = "SELECT conversation_id, content, type, \"timestamp\" FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
 		var result = jdbcTemplate.queryForMap(query, conversationId);
 
 		assertThat(result.size()).isEqualTo(4);
@@ -96,7 +98,7 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 
 		chatMemoryRepository.saveAll(conversationId, messages);
 
-		var query = "SELECT conversation_id, content, type, \"timestamp\" FROM ai_chat_memory WHERE conversation_id = ?";
+		var query = "SELECT conversation_id, content, type, \"timestamp\" FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
 		var results = jdbcTemplate.queryForList(query, conversationId);
 
 		assertThat(results.size()).isEqualTo(messages.size());
@@ -148,7 +150,7 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 
 		chatMemoryRepository.deleteByConversationId(conversationId);
 
-		var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM ai_chat_memory WHERE conversation_id = ?",
+		var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?",
 				Integer.class, conversationId);
 
 		assertThat(count).isZero();
@@ -159,8 +161,11 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 	static class TestConfiguration {
 
 		@Bean
-		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate) {
-			return JdbcChatMemoryRepository.builder().jdbcTemplate(jdbcTemplate).build();
+		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate, DataSource dataSource) {
+			return JdbcChatMemoryRepository.builder()
+				.jdbcTemplate(jdbcTemplate)
+				.dialect(JdbcChatMemoryDialect.from(dataSource))
+				.build();
 		}
 
 	}
