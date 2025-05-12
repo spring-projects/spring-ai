@@ -18,6 +18,10 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -36,6 +40,8 @@ import org.springframework.ai.chat.messages.UserMessage;
  */
 public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
+	private static final Logger logger = LoggerFactory.getLogger(MessageChatMemoryAdvisor.class);
+
 	private MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order) {
 		super(chatMemory, defaultConversationId, true, order);
 	}
@@ -50,6 +56,15 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		}
 		List<Message> memoryMessages = chatMemoryStore.get(conversationId);
 		return applyMessagesToRequest(request, memoryMessages);
+	}
+
+	protected String doGetConversationId(Map<String, Object> context) {
+		if (context == null || !context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)) {
+			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
+					this.defaultConversationId);
+		}
+		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
+				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
 	}
 
 	private ChatClientRequest applyMessagesToRequest(ChatClientRequest request, List<Message> memoryMessages) {

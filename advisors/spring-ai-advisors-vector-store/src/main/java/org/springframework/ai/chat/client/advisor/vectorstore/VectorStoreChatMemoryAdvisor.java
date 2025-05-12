@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
@@ -47,6 +50,8 @@ import org.springframework.ai.vectorstore.VectorStore;
  * @since 1.0.0
  */
 public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
+
+	private static final Logger logger = LoggerFactory.getLogger(VectorStoreChatMemoryAdvisor.class);
 
 	public static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat_memory_response_size";
 
@@ -126,6 +131,15 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		return context.containsKey(CHAT_MEMORY_RETRIEVE_SIZE_KEY)
 				? Integer.parseInt(context.get(CHAT_MEMORY_RETRIEVE_SIZE_KEY).toString())
 				: this.defaultChatMemoryRetrieveSize;
+	}
+
+	protected String doGetConversationId(Map<String, Object> context) {
+		if (context == null || !context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)) {
+			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
+					this.defaultConversationId);
+		}
+		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
+				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
 	}
 
 	@Override

@@ -114,6 +114,20 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 		return processedChatClientRequest;
 	}
 
+	/**
+	 * Get the conversation id for the current context.
+	 * @param context the context
+	 * @return the conversation id
+	 */
+	protected String doGetConversationId(Map<String, Object> context) {
+		if (context == null || !context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)) {
+			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
+					this.defaultConversationId);
+		}
+		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
+				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
+	}
+
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
