@@ -48,11 +48,6 @@ import org.springframework.util.Assert;
 public abstract class AbstractChatMemoryAdvisor<T> implements BaseAdvisor {
 
 	/**
-	 * The key to retrieve the chat memory conversation id from the context.
-	 */
-	public static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
-
-	/**
 	 * The chat memory store.
 	 */
 	protected final T chatMemoryStore;
@@ -129,12 +124,12 @@ public abstract class AbstractChatMemoryAdvisor<T> implements BaseAdvisor {
 	 * @return the conversation id
 	 */
 	protected String doGetConversationId(Map<String, Object> context) {
-		if (context == null || !context.containsKey(CHAT_MEMORY_CONVERSATION_ID_KEY)) {
+		if (context == null || !context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)) {
 			logger.warn("No conversation ID found in context; using defaultConversationId '{}'.",
 					this.defaultConversationId);
 		}
-		return context != null && context.containsKey(CHAT_MEMORY_CONVERSATION_ID_KEY)
-				? context.get(CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
+		return context != null && context.containsKey(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY)
+				? context.get(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY).toString() : this.defaultConversationId;
 	}
 
 	@Override

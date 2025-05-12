@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
@@ -152,8 +152,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		ChatResponse chatResponse1 = chatClient.prompt()
 			.user("Where does the adventure of Anacletus and Birba take place?")
-			.advisors(advisors -> advisors.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY,
-					conversationId))
+			.advisors(advisors -> advisors.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.chatResponse();
 
@@ -163,8 +162,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		ChatResponse chatResponse2 = chatClient.prompt()
 			.user("Did they meet any cow?")
-			.advisors(advisors -> advisors.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY,
-					conversationId))
+			.advisors(advisors -> advisors.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.chatResponse();
 

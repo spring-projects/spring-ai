@@ -28,11 +28,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -150,7 +150,7 @@ class DefaultChatClientObservationConventionTests {
 						.toolNames("tool1", "tool2")
 						.toolCallbacks(dummyFunction("toolCallback1"), dummyFunction("toolCallback2"))
 						.build()))
-			.context(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, "007")
+			.context(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, "007")
 			.build();
 
 		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()

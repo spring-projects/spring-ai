@@ -25,8 +25,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.ApiKey;
@@ -86,7 +86,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		// Send a prompt
 		String answer = chatClient.prompt()
 			.user("Say hello")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 
@@ -124,7 +124,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		// Send a semantically related query
 		String answer = chatClient.prompt()
 			.user("Where is the Eiffel Tower located?")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 
@@ -159,7 +159,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user("Tell me about cars.")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 		assertThat(answer).satisfiesAnyOf(a -> assertThat(a).containsIgnoringCase("automobile"),
@@ -191,7 +191,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user("What is the capital of Italy?")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 		assertThat(answer).containsIgnoringCase("rome");
@@ -225,7 +225,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user("What can you tell me about cats?")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 		assertThat(answer).containsIgnoringCase("cat");
@@ -256,7 +256,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user("Tell me about a fast animal leaping over another.")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 		assertThat(answer).satisfiesAnyOf(a -> assertThat(a).containsIgnoringCase("fox"),
@@ -288,7 +288,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user("What fruits are red?")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 		assertThat(answer).containsIgnoringCase("apple");
@@ -320,7 +320,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 
 		String answer = chatClient.prompt()
 			.user("What is the capital of Spain?")
-			.advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.advisors(a -> a.param(ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.content();
 		assertThat(answer).doesNotContain("sun");
