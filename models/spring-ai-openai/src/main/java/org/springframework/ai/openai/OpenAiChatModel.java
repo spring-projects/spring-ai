@@ -104,6 +104,7 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
  * @author Soby Chacko
+ * @author Jonghoon Park
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -304,15 +305,15 @@ public class OpenAiChatModel implements ChatModel {
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
 				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
 					try {
-						@SuppressWarnings("null")
-						String id = chatCompletion2.id();
+						// If an id is not provided, set to "NO_ID" (for compatible APIs).
+						String id = chatCompletion2.id() == null ? "NO_ID" : chatCompletion2.id();
 
 						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(id, choice.message().role().name());
 							}
 							Map<String, Object> metadata = Map.of(
-									"id", chatCompletion2.id(),
+									"id", id,
 									"role", roleMap.getOrDefault(id, ""),
 									"index", choice.index(),
 									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
