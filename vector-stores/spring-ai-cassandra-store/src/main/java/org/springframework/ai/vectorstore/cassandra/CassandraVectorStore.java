@@ -95,7 +95,7 @@ import org.springframework.util.Assert;
  *
  * A schema matching the configuration is automatically created if it doesn't exist.
  * Missing columns and indexes in existing tables will also be automatically created.
- * Disable this with the CassandraBuilder#disallowSchemaChanges().
+ * Disable this with the CassandraBuilder#initializeSchema(boolean) method().
  *
  * <p>
  * Basic usage example:
@@ -139,7 +139,7 @@ import org.springframework.util.Assert;
  *     .contentColumnName("text")
  *     .embeddingColumnName("vector")
  *     .fixedThreadPoolExecutorSize(32)
- *     .disallowSchemaChanges(false)
+ *     .initializeSchema(true)
  *     .batchingStrategy(new TokenCountBatchingStrategy())
  *     .build();
  * }</pre>
@@ -202,7 +202,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Schema schema;
 
-	private final boolean disallowSchemaChanges;
+	private final boolean initializeSchema;
 
 	private final FilterExpressionConverter filterExpressionConverter;
 
@@ -229,7 +229,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		this.session = builder.session;
 		this.schema = builder.buildSchema();
-		this.disallowSchemaChanges = builder.disallowSchemaChanges;
+		this.initializeSchema = builder.initializeSchema;
 		this.documentIdTranslator = builder.documentIdTranslator;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
 		this.executor = Executors.newFixedThreadPool(builder.fixedThreadPoolExecutorSize);
@@ -525,7 +525,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	void ensureSchemaExists(int vectorDimension) {
-		if (!this.disallowSchemaChanges) {
+		if (this.initializeSchema) {
 			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
 			ensureTableExists(vectorDimension);
 			ensureTableColumnsExist(vectorDimension);
@@ -805,7 +805,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		private Set<SchemaColumn> metadataColumns = new HashSet<>();
 
-		private boolean disallowSchemaChanges = false;
+		private boolean initializeSchema = true;
 
 		private int fixedThreadPoolExecutorSize = DEFAULT_ADD_CONCURRENCY;
 
@@ -820,8 +820,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			Preconditions.checkArgument(1 == primaryKeyColumns.size());
 			return (String) primaryKeyColumns.get(0);
 		};
-
-		private boolean returnEmbeddings = false;
 
 		private Builder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -938,12 +936,12 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		}
 
 		/**
-		 * Sets whether to disallow schema changes.
-		 * @param disallowSchemaChanges true to disallow schema changes
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public Builder disallowSchemaChanges(boolean disallowSchemaChanges) {
-			this.disallowSchemaChanges = disallowSchemaChanges;
+		public Builder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
 			return this;
 		}
 
@@ -1013,11 +1011,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		public Builder primaryKeyTranslator(PrimaryKeyTranslator translator) {
 			Assert.notNull(translator, "PrimaryKeyTranslator must not be null");
 			this.primaryKeyTranslator = translator;
-			return this;
-		}
-
-		public Builder returnEmbeddings(boolean returnEmbeddings) {
-			this.returnEmbeddings = true;
 			return this;
 		}
 

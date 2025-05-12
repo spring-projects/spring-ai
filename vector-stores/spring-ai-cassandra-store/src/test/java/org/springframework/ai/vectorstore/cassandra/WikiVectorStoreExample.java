@@ -102,7 +102,7 @@ class WikiVectorStoreExample {
 				.contentColumnName("body")
 				.embeddingColumnName("all_minilm_l6_v2_embedding")
 				.indexName("all_minilm_l6_v2_ann")
-				.disallowSchemaChanges(true)
+				.initializeSchema(false)
 				.addMetadataColumns(extraColumns)
 				.primaryKeyTranslator((List<Object> primaryKeys) -> {
 					// the deliminator used to join fields together into the document's id
