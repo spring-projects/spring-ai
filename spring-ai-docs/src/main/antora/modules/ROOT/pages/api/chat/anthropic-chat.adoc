@@ -93,6 +93,7 @@ The prefix `spring.ai.anthropic` is used as the property prefix that lets you co
 | Property | Description | Default
 
 | spring.ai.anthropic.base-url   | The URL to connect to |  https://api.anthropic.com
+| spring.ai.anthropic.base-url   | The path to append to the base URL. |  `/v1/chat/completions`
 | spring.ai.anthropic.version   | Anthropic API version |  2023-06-01
 | spring.ai.anthropic.api-key    | The API Key           |  -
 | spring.ai.anthropic.beta-version | Enables new/experimental features. If set to `max-tokens-3-5-sonnet-2024-07-15` 
