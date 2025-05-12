@@ -17,6 +17,8 @@
 package org.springframework.ai.minimax;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +31,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -38,7 +41,6 @@ import org.springframework.util.Assert;
  * MiniMax API. It provides methods to set and retrieve various options like model,
  * frequency penalty, max tokens, etc.
  *
- * @see FunctionCallingOptions
  * @see ChatOptions
  * @author Geng Rong
  * @author Thomas Vitale
@@ -46,7 +48,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
-public class MiniMaxChatOptions implements FunctionCallingOptions {
+public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	/**
@@ -128,25 +130,28 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> functionCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * List of functions, identified by their names, to configure for function calling in
 	 * the chat completion requests.
 	 * Functions with those names must exist in the functionCallbacks registry.
-	 * The {@link #functionCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
+	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
 	 *
 	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
 	@JsonIgnore
-	private Set<String> functions = new HashSet<>();
+	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Boolean proxyToolCalls;
+	private Map<String, Object> toolContext = new HashMap<>();
 
+	/**
+	 * Whether to enable the tool execution lifecycle internally in ChatModel.
+	 */
 	@JsonIgnore
-	private Map<String, Object> toolContext;
+	private Boolean internalToolExecutionEnabled;
 
 	// @formatter:on
 
@@ -168,9 +173,9 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 			.maskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
 			.tools(fromOptions.getTools())
 			.toolChoice(fromOptions.getToolChoice())
-			.functionCallbacks(fromOptions.getFunctionCallbacks())
-			.functions(fromOptions.getFunctions())
-			.proxyToolCalls(fromOptions.getProxyToolCalls())
+			.toolCallbacks(fromOptions.getToolCallbacks())
+			.toolNames(fromOptions.getToolNames())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -297,37 +302,51 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 	}
 
 	@Override
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.functionCallbacks;
-	}
-
-	@Override
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.functionCallbacks = functionCallbacks;
-	}
-
-	@Override
-	public Set<String> getFunctions() {
-		return this.functions;
-	}
-
-	public void setFunctions(Set<String> functionNames) {
-		this.functions = functionNames;
-	}
-
-	@Override
 	@JsonIgnore
 	public Integer getTopK() {
 		return null;
 	}
 
 	@Override
-	public Boolean getProxyToolCalls() {
-		return this.proxyToolCalls;
+	@JsonIgnore
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
 	}
 
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.proxyToolCalls = proxyToolCalls;
+	@Override
+	@JsonIgnore
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	@JsonIgnore
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
@@ -357,7 +376,10 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 		result = prime * result + ((this.maskSensitiveInfo == null) ? 0 : this.maskSensitiveInfo.hashCode());
 		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
 		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
-		result = prime * result + ((this.proxyToolCalls == null) ? 0 : this.proxyToolCalls.hashCode());
+		result = prime * result + ((this.toolCallbacks == null) ? 0 : this.toolCallbacks.hashCode());
+		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
+		result = prime * result
+				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
 		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
 		return result;
 	}
@@ -478,12 +500,30 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 		else if (!this.toolChoice.equals(other.toolChoice)) {
 			return false;
 		}
-		if (this.proxyToolCalls == null) {
-			if (other.proxyToolCalls != null) {
+		if (this.internalToolExecutionEnabled == null) {
+			if (other.internalToolExecutionEnabled != null) {
 				return false;
 			}
 		}
-		else if (!this.proxyToolCalls.equals(other.proxyToolCalls)) {
+		else if (!this.internalToolExecutionEnabled.equals(other.internalToolExecutionEnabled)) {
+			return false;
+		}
+
+		if (this.toolNames == null) {
+			if (other.toolNames != null) {
+				return false;
+			}
+		}
+		else if (!this.toolNames.equals(other.toolNames)) {
+			return false;
+		}
+
+		if (this.toolCallbacks == null) {
+			if (other.toolCallbacks != null) {
+				return false;
+			}
+		}
+		else if (!this.toolCallbacks.equals(other.toolCallbacks)) {
 			return false;
 		}
 
@@ -581,25 +621,31 @@ public class MiniMaxChatOptions implements FunctionCallingOptions {
 			return this;
 		}
 
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			this.options.functionCallbacks = functionCallbacks;
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
-		public Builder functions(Set<String> functionNames) {
-			Assert.notNull(functionNames, "Function names must not be null");
-			this.options.functions = functionNames;
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
 		}
 
-		public Builder function(String functionName) {
-			Assert.hasText(functionName, "Function name must not be empty");
-			this.options.functions.add(functionName);
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
 			return this;
 		}
 
-		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			this.options.proxyToolCalls = proxyToolCalls;
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
 			return this;
 		}
 

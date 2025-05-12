@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
+import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
@@ -46,8 +47,13 @@ import org.springframework.web.client.RestClient;
  *
  * @author Christian Tzolov
  * @author Eddú Meléndez
+ * @author Jonghoon Park
  */
 public class ChromaApi {
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	// Regular expression pattern that looks for a message inside the ValueError(...).
 	private static final Pattern VALUE_ERROR_PATTERN = Pattern.compile("ValueError\\('([^']*)'\\)");
@@ -61,14 +67,6 @@ public class ChromaApi {
 
 	@Nullable
 	private String keyToken;
-
-	public ChromaApi(String baseUrl) {
-		this(baseUrl, RestClient.builder().requestFactory(new SimpleClientHttpRequestFactory()), new ObjectMapper());
-	}
-
-	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder) {
-		this(baseUrl, restClientBuilder, new ObjectMapper());
-	}
 
 	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
 
@@ -115,11 +113,86 @@ public class ChromaApi {
 		return result;
 	}
 
+	public void createTenant(String tenantName) {
+
+		this.restClient.post()
+			.uri("/api/v2/tenants")
+			.headers(this::httpHeaders)
+			.body(new CreateTenantRequest(tenantName))
+			.retrieve()
+			.toBodilessEntity();
+	}
+
 	@Nullable
-	public Collection createCollection(CreateCollectionRequest createCollectionRequest) {
+	public Tenant getTenant(String tenantName) {
+
+		try {
+			return this.restClient.get()
+				.uri("/api/v2/tenants/{tenant_name}", tenantName)
+				.headers(this::httpHeaders)
+				.retrieve()
+				.toEntity(Tenant.class)
+				.getBody();
+		}
+		catch (HttpServerErrorException | HttpClientErrorException e) {
+			String msg = this.getErrorMessage(e);
+			if (String.format("Tenant [%s] not found", tenantName).equals(msg)) {
+				return null;
+			}
+			throw new RuntimeException(msg, e);
+		}
+	}
+
+	public void createDatabase(String tenantName, String databaseName) {
+
+		this.restClient.post()
+			.uri("/api/v2/tenants/{tenant_name}/databases", tenantName)
+			.headers(this::httpHeaders)
+			.body(new CreateDatabaseRequest(databaseName))
+			.retrieve()
+			.toBodilessEntity();
+	}
+
+	@Nullable
+	public Database getDatabase(String tenantName, String databaseName) {
+
+		try {
+			return this.restClient.get()
+				.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}", tenantName, databaseName)
+				.headers(this::httpHeaders)
+				.retrieve()
+				.toEntity(Database.class)
+				.getBody();
+		}
+		catch (HttpServerErrorException | HttpClientErrorException e) {
+			String msg = this.getErrorMessage(e);
+			if (msg.startsWith(String.format("Database [%s] not found.", databaseName))) {
+				return null;
+			}
+			throw new RuntimeException(msg, e);
+		}
+	}
+
+	/**
+	 * Delete a database with the given name.
+	 * @param tenantName the name of the tenant to delete.
+	 * @param databaseName the name of the database to delete.
+	 */
+	public void deleteDatabase(String tenantName, String databaseName) {
+
+		this.restClient.delete()
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}", tenantName, databaseName)
+			.headers(this::httpHeaders)
+			.retrieve()
+			.toBodilessEntity();
+	}
+
+	@Nullable
+	public Collection createCollection(String tenantName, String databaseName,
+			CreateCollectionRequest createCollectionRequest) {
 
 		return this.restClient.post()
-			.uri("/api/v1/collections")
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections", tenantName, databaseName)
 			.headers(this::httpHeaders)
 			.body(createCollectionRequest)
 			.retrieve()
@@ -132,21 +205,23 @@ public class ChromaApi {
 	 * @param collectionName the name of the collection to delete.
 	 *
 	 */
-	public void deleteCollection(String collectionName) {
+	public void deleteCollection(String tenantName, String databaseName, String collectionName) {
 
 		this.restClient.delete()
-			.uri("/api/v1/collections/{collection_name}", collectionName)
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_name}", tenantName,
+					databaseName, collectionName)
 			.headers(this::httpHeaders)
 			.retrieve()
 			.toBodilessEntity();
 	}
 
 	@Nullable
-	public Collection getCollection(String collectionName) {
+	public Collection getCollection(String tenantName, String databaseName, String collectionName) {
 
 		try {
 			return this.restClient.get()
-				.uri("/api/v1/collections/{collection_name}", collectionName)
+				.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_name}",
+						tenantName, databaseName, collectionName)
 				.headers(this::httpHeaders)
 				.retrieve()
 				.toEntity(Collection.class)
@@ -154,7 +229,7 @@ public class ChromaApi {
 		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			if (String.format("Collection %s does not exist.", collectionName).equals(msg)) {
+			if (String.format("Collection [%s] does not exists", collectionName).equals(msg)) {
 				return null;
 			}
 			throw new RuntimeException(msg, e);
@@ -162,29 +237,33 @@ public class ChromaApi {
 	}
 
 	@Nullable
-	public List<Collection> listCollections() {
+	public List<Collection> listCollections(String tenantName, String databaseName) {
 
 		return this.restClient.get()
-			.uri("/api/v1/collections")
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections", tenantName, databaseName)
 			.headers(this::httpHeaders)
 			.retrieve()
 			.toEntity(CollectionList.class)
 			.getBody();
 	}
 
-	public void upsertEmbeddings(@Nullable String collectionId, AddEmbeddingsRequest embedding) {
+	public void upsertEmbeddings(String tenantName, String databaseName, String collectionId,
+			AddEmbeddingsRequest embedding) {
 
 		this.restClient.post()
-			.uri("/api/v1/collections/{collection_id}/upsert", collectionId)
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_name}/upsert",
+					tenantName, databaseName, collectionId)
 			.headers(this::httpHeaders)
 			.body(embedding)
 			.retrieve()
 			.toBodilessEntity();
 	}
 
-	public int deleteEmbeddings(@Nullable String collectionId, DeleteEmbeddingsRequest deleteRequest) {
+	public int deleteEmbeddings(String tenantName, String databaseName, String collectionId,
+			DeleteEmbeddingsRequest deleteRequest) {
 		return this.restClient.post()
-			.uri("/api/v1/collections/{collection_id}/delete", collectionId)
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_name}/delete",
+					tenantName, databaseName, collectionId)
 			.headers(this::httpHeaders)
 			.body(deleteRequest)
 			.retrieve()
@@ -194,10 +273,11 @@ public class ChromaApi {
 	}
 
 	@Nullable
-	public Long countEmbeddings(String collectionId) {
+	public Long countEmbeddings(String tenantName, String databaseName, String collectionId) {
 
 		return this.restClient.get()
-			.uri("/api/v1/collections/{collection_id}/count", collectionId)
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_id}/count",
+					tenantName, databaseName, collectionId)
 			.headers(this::httpHeaders)
 			.retrieve()
 			.toEntity(Long.class)
@@ -205,10 +285,12 @@ public class ChromaApi {
 	}
 
 	@Nullable
-	public QueryResponse queryCollection(@Nullable String collectionId, QueryRequest queryRequest) {
+	public QueryResponse queryCollection(String tenantName, String databaseName, String collectionId,
+			QueryRequest queryRequest) {
 
 		return this.restClient.post()
-			.uri("/api/v1/collections/{collection_id}/query", collectionId)
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_id}/query",
+					tenantName, databaseName, collectionId)
 			.headers(this::httpHeaders)
 			.body(queryRequest)
 			.retrieve()
@@ -220,10 +302,12 @@ public class ChromaApi {
 	// Chroma Client API (https://docs.trychroma.com/js_reference/Client)
 	//
 	@Nullable
-	public GetEmbeddingResponse getEmbeddings(String collectionId, GetEmbeddingsRequest getEmbeddingsRequest) {
+	public GetEmbeddingResponse getEmbeddings(String tenantName, String databaseName, String collectionId,
+			GetEmbeddingsRequest getEmbeddingsRequest) {
 
 		return this.restClient.post()
-			.uri("/api/v1/collections/{collection_id}/get", collectionId)
+			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_id}/get", tenantName,
+					databaseName, collectionId)
 			.headers(this::httpHeaders)
 			.body(getEmbeddingsRequest)
 			.retrieve()
@@ -269,6 +353,42 @@ public class ChromaApi {
 
 		// If no pattern matches, return an empty string
 		return "";
+	}
+
+	/**
+	 * Request to create a new tenant
+	 *
+	 * @param name The name of the tenant to create.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record CreateTenantRequest(@JsonProperty("name") String name) {
+	}
+
+	/**
+	 * Chroma tenant.
+	 *
+	 * @param name The name of the tenant.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record Tenant(@JsonProperty("name") String name) {
+	}
+
+	/**
+	 * Request to create a new database
+	 *
+	 * @param name The name of the database to create.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record CreateDatabaseRequest(@JsonProperty("name") String name) {
+	}
+
+	/**
+	 * Chroma database.
+	 *
+	 * @param name The name of the database.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record Database(@JsonProperty("name") String name) {
 	}
 
 	/**
@@ -484,6 +604,38 @@ public class ChromaApi {
 	}
 
 	private static class CollectionList extends ArrayList<Collection> {
+
+	}
+
+	public static class Builder {
+
+		private String baseUrl = ChromaApiConstants.DEFAULT_BASE_URL;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private ObjectMapper objectMapper = new ObjectMapper();
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			Assert.notNull(objectMapper, "objectMapper cannot be null");
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		public ChromaApi build() {
+			return new ChromaApi(this.baseUrl, this.restClientBuilder, objectMapper);
+		}
 
 	}
 

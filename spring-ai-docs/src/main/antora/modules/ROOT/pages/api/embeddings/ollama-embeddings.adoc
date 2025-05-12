@@ -319,7 +319,7 @@ Next, create an `OllamaEmbeddingModel` instance and use it to compute the embedd
 
 [source,java]
 ----
-var ollamaApi = new OllamaApi();
+var ollamaApi = OllamaApi.builder().build();
 
 var embeddingModel = new OllamaEmbeddingModel(this.ollamaApi,
         OllamaOptions.builder()

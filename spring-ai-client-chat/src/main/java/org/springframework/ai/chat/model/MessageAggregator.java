@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -42,31 +42,28 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class MessageAggregator {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
 
-	public Flux<AdvisedResponse> aggregateAdvisedResponse(Flux<AdvisedResponse> advisedResponses,
-			Consumer<AdvisedResponse> aggregationHandler) {
+	public Flux<ChatClientResponse> aggregateChatClientResponse(Flux<ChatClientResponse> chatClientResponses,
+			Consumer<ChatClientResponse> aggregationHandler) {
 
-		AtomicReference<Map<String, Object>> adviseContext = new AtomicReference<>(new HashMap<>());
+		AtomicReference<Map<String, Object>> context = new AtomicReference<>(new HashMap<>());
 
-		return new MessageAggregator().aggregate(advisedResponses.map(ar -> {
-			adviseContext.get().putAll(ar.adviseContext());
-			return ar.response();
-
+		return new MessageAggregator().aggregate(chatClientResponses.mapNotNull(chatClientResponse -> {
+			context.get().putAll(chatClientResponse.context());
+			return chatClientResponse.chatResponse();
 		}), aggregatedChatResponse -> {
-
-			AdvisedResponse aggregatedAdvisedResponse = AdvisedResponse.builder()
-				.response(aggregatedChatResponse)
-				.adviseContext(adviseContext.get())
+			ChatClientResponse aggregatedChatClientResponse = ChatClientResponse.builder()
+				.chatResponse(aggregatedChatResponse)
+				.context(context.get())
 				.build();
-
-			aggregationHandler.accept(aggregatedAdvisedResponse);
-
-		}).map(cr -> new AdvisedResponse(cr, adviseContext.get()));
+			aggregationHandler.accept(aggregatedChatClientResponse);
+		}).map(chatResponse -> ChatClientResponse.builder().chatResponse(chatResponse).context(context.get()).build());
 	}
 
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,

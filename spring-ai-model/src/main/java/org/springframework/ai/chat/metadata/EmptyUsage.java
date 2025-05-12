@@ -19,7 +19,7 @@ package org.springframework.ai.chat.metadata;
 import java.util.Map;
 
 /**
- * A EmpytUsage implementation that returns zero for all property getters
+ * A EmptyUsage implementation that returns zero for all property getters
  *
  * @author John Blum
  * @author Ilayaperumal Gopinathan

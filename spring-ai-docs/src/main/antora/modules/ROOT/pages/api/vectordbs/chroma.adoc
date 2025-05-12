@@ -43,7 +43,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
@@ -274,7 +274,7 @@ If all goes well, you should retrieve the document containing the text "Spring A
 === Run Chroma Locally
 
 ```shell
-docker run -it --rm --name chroma -p 8000:8000 ghcr.io/chroma-core/chroma:0.5.20
+docker run -it --rm --name chroma -p 8000:8000 ghcr.io/chroma-core/chroma:1.0.0
 ```
 
 Starts a chroma store at <http://localhost:8000/api/v1>

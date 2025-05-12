@@ -32,25 +32,13 @@ import org.springframework.util.Assert;
  */
 public class ChatModelObservationContext extends ModelObservationContext<Prompt, ChatResponse> {
 
-	private final ChatOptions requestOptions;
-
-	ChatModelObservationContext(Prompt prompt, String provider, ChatOptions requestOptions) {
+	ChatModelObservationContext(Prompt prompt, String provider) {
 		super(prompt,
 				AiOperationMetadata.builder().operationType(AiOperationType.CHAT.value()).provider(provider).build());
-		Assert.notNull(requestOptions, "requestOptions cannot be null");
-		this.requestOptions = requestOptions;
 	}
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	/**
-	 * @deprecated Use {@link #getRequest().getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	public ChatOptions getRequestOptions() {
-		return this.requestOptions;
 	}
 
 	public static final class Builder {
@@ -58,8 +46,6 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 		private Prompt prompt;
 
 		private String provider;
-
-		private ChatOptions requestOptions;
 
 		private Builder() {
 		}
@@ -74,18 +60,8 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 			return this;
 		}
 
-		/**
-		 * @deprecated ChatOptions are passed in the Prompt object and should not be set
-		 * separately anymore.
-		 */
-		@Deprecated(forRemoval = true)
-		public Builder requestOptions(ChatOptions requestOptions) {
-			this.requestOptions = requestOptions;
-			return this;
-		}
-
 		public ChatModelObservationContext build() {
-			return new ChatModelObservationContext(this.prompt, this.provider, this.requestOptions);
+			return new ChatModelObservationContext(this.prompt, this.provider);
 		}
 
 	}

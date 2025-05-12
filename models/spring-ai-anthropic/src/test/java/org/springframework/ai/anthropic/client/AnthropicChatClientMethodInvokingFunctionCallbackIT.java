@@ -32,8 +32,8 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.method.MethodToolCallback;
+import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -67,8 +67,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod).build())
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod).build())
 					.toolMethod(toolMethod)
 					.build())
 				.call()
@@ -89,8 +89,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
@@ -116,8 +116,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(turnLightMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(turnLightMethod)
 						.description("Turn light on in the living room.")
 						.build())
 					.toolMethod(turnLightMethod)
@@ -144,8 +144,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
@@ -171,8 +171,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
@@ -202,8 +202,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
@@ -227,9 +227,9 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.tools(MethodToolCallback.builder()
+				.toolCallbacks(MethodToolCallback.builder()
 					.toolMethod(toolMethod)
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Can turn lights on in the Living Room")
 						.build())
 					.toolObject(targetObject)

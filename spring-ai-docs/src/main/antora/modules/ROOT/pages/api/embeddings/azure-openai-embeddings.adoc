@@ -46,14 +46,16 @@ export SPRING_AI_AZURE_OPENAI_OPENAI_API_KEY=<INSERT OPENAI KEY HERE>
 
 === Microsoft Entra ID
 
-To authenticate using Microsoft Entra ID (formerly Azure Active Directory), create a `TokenCredential` bean in your configuration.
-If this bean is available, an `OpenAIClient` instance will be created using the token credentials.
+For keyless authentication using Microsoft Entra ID (formerly Azure Active Directory), set _only_ the `spring.ai.azure.openai.endpoint` configuration property and _not_ the api-key property mentioned above.
 
+Finding only the endpoint property, your application will evaluate several different options for retrieving credentials and an `OpenAIClient` instance will be created using the token credentials.
+
+NOTE: It is no longer necessary to create a `TokenCredential` bean; it is configured for you automatically.
 
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -100,7 +102,7 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
 | spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
-With this configuraiton the `spring.ai.azure.openai.embedding.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+With this configuration the `spring.ai.azure.openai.embedding.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 |====
 
 

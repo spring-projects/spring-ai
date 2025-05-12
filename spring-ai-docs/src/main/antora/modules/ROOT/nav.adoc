@@ -11,7 +11,7 @@
 **** xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic Function Calling (Deprecated)]
 *** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling]
-*** xref:api/chat/deepseek-chat.adoc[DeepSeek AI]
+*** xref:api/chat/deepseek-chat.adoc[DeepSeek]
 *** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
 *** xref:api/chat/google-vertexai.adoc[Google VertexAI]
 **** xref:api/chat/vertexai-gemini-chat.adoc[VertexAI Gemini]
@@ -33,8 +33,6 @@
 **** xref:api/chat/functions/openai-chat-functions.adoc[OpenAI Function Calling (Deprecated)]
 *** xref:api/chat/qianfan-chat.adoc[QianFan]
 *** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]
-// **** xref:api/chat/functions/zhipuai-chat-functions.adoc[Function Calling]
-*** xref:api/chat/watsonx-ai-chat.adoc[watsonx.AI]
 ** xref:api/embeddings.adoc[Embedding Models]
 *** xref:api/bedrock.adoc[Amazon Bedrock]
 **** xref:api/embeddings/bedrock-cohere-embedding.adoc[Cohere]
@@ -51,7 +49,6 @@
 *** VertexAI
 **** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 **** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
-*** xref:api/embeddings/watsonx-ai-embeddings.adoc[watsonx.AI]
 *** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
 ** xref:api/imageclient.adoc[Image Models]
 *** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
@@ -94,6 +91,7 @@
 * xref:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation (RAG)]
 ** xref:api/etl-pipeline.adoc[]
 * xref:api/structured-output-converter.adoc[Structured Output]
+* xref:api/chat-memory.adoc[Chat Memory]
 * xref:api/tools.adoc[Tool Calling]
 ** xref:api/tools-migration.adoc[Migrating to ToolCallback API]
 * xref:api/mcp/mcp-overview.adoc[Model Context Protocol (MCP)]
@@ -102,11 +100,10 @@
 ** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
 * xref:api/multimodality.adoc[Multimodality]
 * xref:observability/index.adoc[]
-* Prompt Egineering
+* Prompt Engineering
 ** xref:api/prompt.adoc[]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 * xref:api/testing.adoc[AI Model Evaluation]
-* xref:api/functions.adoc[Function Calling (Deprecated)]
 
 
 * Service Connections

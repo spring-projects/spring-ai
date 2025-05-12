@@ -34,6 +34,7 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.image.ImageMessage;
+import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
@@ -250,7 +251,8 @@ public class OpenAiRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(expectedResponse)));
 
-		var result = this.imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message"))));
+		var result = this.imageModel
+			.call(new ImagePrompt(List.of(new ImageMessage("Image Message")), ImageOptionsBuilder.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getUrl()).isEqualTo("url678");
@@ -262,8 +264,8 @@ public class OpenAiRetryTests {
 	public void openAiImageNonTransientError() {
 		given(this.openAiImageApi.createImage(isA(OpenAiImageRequest.class)))
 			.willThrow(new RuntimeException("Transient Error 1"));
-		assertThrows(RuntimeException.class,
-				() -> this.imageModel.call(new ImagePrompt(List.of(new ImageMessage("Image Message")))));
+		assertThrows(RuntimeException.class, () -> this.imageModel
+			.call(new ImagePrompt(List.of(new ImageMessage("Image Message")), ImageOptionsBuilder.builder().build())));
 	}
 
 	private static class TestRetryListener implements RetryListener {

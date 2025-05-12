@@ -25,8 +25,7 @@ To use the `QuestionAnswerAdvisor` or `RetrievalAugmentationAdvisor`, you need t
 
 === QuestionAnswerAdvisor
 
-A vector database stores data that the AI model is unaware of.
-When a user question is sent to the AI model, a `QuestionAnswerAdvisor` queries the vector database for documents related to the user question.
+A vector database stores data that the AI model is unaware of. When a user question is sent to the AI model, a `QuestionAnswerAdvisor` queries the vector database for documents related to the user question.
 
 The response from the vector database is appended to the user text to provide context for the AI model to generate a response.
 
@@ -42,17 +41,17 @@ ChatResponse response = ChatClient.builder(chatModel)
         .chatResponse();
 ----
 
-In this example, the `QuestionAnswerAdvisor` will perform a similarity search over all documents in the Vector Database.
-To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
+In this example, the `QuestionAnswerAdvisor` will perform a similarity search over all documents in the Vector Database. To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
 
-This filter expression can be configured when creating the `QuestionAnswerAdvisor` and hence will always apply to all `ChatClient` requests or it can be provided at runtime per request.
+This filter expression can be configured when creating the `QuestionAnswerAdvisor` and hence will always apply to all `ChatClient` requests, or it can be provided at runtime per request.
 
-Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` reulsts.
+Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` results.
 
 [source,java]
 ----
-var qaAdvisor = new QuestionAnswerAdvisor(this.vectorStore,
-        SearchRequest.builder().similarityThreshold(0.8d).topK(6).build());
+var qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(SearchRequest.builder().similarityThreshold(0.8d).topK(6).build())
+        .build();
 ----
 
 ==== Dynamic Filter Expressions
@@ -62,7 +61,9 @@ Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRES
 [source,java]
 ----
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore, SearchRequest.builder().build()))
+    .defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(SearchRequest.builder().build())
+        .build())
     .build();
 
 // Update filter expression at runtime
@@ -75,7 +76,55 @@ String content = this.chatClient.prompt()
 
 The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search results based on the provided expression.
 
-=== RetrievalAugmentationAdvisor (Incubating)
+==== Custom Template
+
+The `QuestionAnswerAdvisor` uses a default template to augment the user question with the retrieved documents. You can customize this behavior by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method.
+
+NOTE: The `PromptTemplate` provided here customizes how the advisor merges retrieved context with the user query. This is distinct from configuring a `TemplateRenderer` on the `ChatClient` itself (using `.templateRenderer()`), which affects the rendering of the initial user/system prompt content *before* the advisor runs. See xref:api/chatclient.adoc#_prompt_templates[ChatClient Prompt Templates] for more details on client-level template rendering.
+
+The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain the following two placeholders:
+
+* a `query` placeholder to receive the user question.
+* a `question_answer_context` placeholder to receive the retrieved context.
+
+[source,java]
+----
+PromptTemplate customPromptTemplate = PromptTemplate.builder()
+    .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .template("""
+            <query>
+
+            Context information is below.
+
+			---------------------
+			<question_answer_context>
+			---------------------
+
+			Given the context information and no prior knowledge, answer the query.
+
+			Follow these rules:
+
+			1. If the answer is not in the context, just say that you don't know.
+			2. Avoid statements like "Based on the context..." or "The provided information...".
+            """)
+    .build();
+
+    String question = "Where does the adventure of Anacletus and Birba take place?";
+
+    QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .promptTemplate(customPromptTemplate)
+        .build();
+
+    String response = ChatClient.builder(chatModel).build()
+        .prompt(question)
+        .advisors(qaAdvisor)
+        .call()
+        .content();
+----
+
+NOTE: The `QuestionAnswerAdvisor.Builder.userTextAdvise()` method is deprecated in favor of using `.promptTemplate()` for more flexible customization.
+
+=== RetrievalAugmentationAdvisor
 
 Spring AI includes a xref:api/retrieval-augmented-generation.adoc#modules[library of RAG modules] that you can use to build your own RAG flows.
 The `RetrievalAugmentationAdvisor` is an `Advisor` providing an out-of-the-box implementation for the most common RAG flows,
@@ -166,6 +215,8 @@ String answer = chatClient.prompt()
         .call()
         .content();
 ----
+
+You can also use the `DocumentPostProcessor` API to post-process the retrieved documents before passing them to the model. For example, you can use such an interface to perform re-ranking of the retrieved documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
 
 [[modules]]
 == Modules
@@ -270,7 +321,7 @@ MultiQueryExpander queryExpander = MultiQueryExpander.builder()
     .chatClientBuilder(chatClientBuilder)
     .numberOfQueries(3)
     .build();
-List<Query> queries = expander.expand(new Query("How to run a Spring Boot app?"));
+List<Query> queries = queryExpander.expand(new Query("How to run a Spring Boot app?"));
 ----
 
 By default, the `MultiQueryExpander` includes the original query in the list of expanded queries. You can disable this behavior
@@ -361,31 +412,11 @@ List<Document> documents = documentJoiner.join(documentsForQuery);
 
 Post-Retrieval modules are responsible for processing the retrieved documents to achieve the best possible generation results.
 
-==== Document Ranking
+==== Document Post-Processing
 
-A component for ordering and ranking documents based on their relevance to a query to bring the most relevant documents
-to the top of the list, addressing challenges such as _lost-in-the-middle_.
+A component for post-processing retrieved documents based on a query, addressing challenges such as _lost-in-the-middle_, context length restrictions from the model, and the need to reduce noise and redundancy in the retrieved information.
 
-Unlike `DocumentSelector`, this component does not remove entire documents from the list, but rather changes
-the order/score of the documents in the list. Unlike `DocumentCompressor`, this component does not alter the content
-of the documents.
-
-==== Document Selection
-
-A component for removing irrelevant or redundant documents from a list of retrieved documents, addressing challenges
-such as _lost-in-the-middle_ and context length restrictions from the model.
-
-Unlike `DocumentRanker`, this component does not change the order/score of the documents in the list, but rather
-removes irrelevant or redundant documents. Unlike `DocumentCompressor`, this component does not alter the content
-of the documents, but rather removes entire documents.
-
-==== Document Compression
-
-A component for compressing the content of each document to reduce noise and redundancy in the retrieved information,
-addressing challenges such as _lost-in-the-middle_ and context length restrictions from the model.
-
-Unlike `DocumentSelector`, this component does not remove entire documents from the list, but rather alters the content
-of the documents. Unlike `DocumentRanker`, this component does not change the order/score of the documents in the list.
+For example, it could rank documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
 
 === Generation
 

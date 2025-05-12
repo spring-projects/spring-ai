@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.opensearch.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
@@ -38,6 +39,18 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	private String password;
 
 	private String mappingJson;
+
+	/**
+	 * SSL Bundle name ({@link org.springframework.boot.ssl.SslBundles}).
+	 */
+	private String sslBundle;
+
+	/**
+	 *
+	 */
+	private Duration connectionTimeout;
+
+	private Duration readTimeout;
 
 	private Aws aws = new Aws();
 
@@ -79,6 +92,30 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	public void setMappingJson(String mappingJson) {
 		this.mappingJson = mappingJson;
+	}
+
+	public String getSslBundle() {
+		return sslBundle;
+	}
+
+	public void setSslBundle(String sslBundle) {
+		this.sslBundle = sslBundle;
+	}
+
+	public Duration getConnectionTimeout() {
+		return connectionTimeout;
+	}
+
+	public void setConnectionTimeout(Duration connectionTimeout) {
+		this.connectionTimeout = connectionTimeout;
+	}
+
+	public Duration getReadTimeout() {
+		return readTimeout;
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.readTimeout = readTimeout;
 	}
 
 	public Aws getAws() {

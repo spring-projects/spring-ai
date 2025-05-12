@@ -209,11 +209,12 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 			if (this.distanceType != DistanceType.COSINE || (1 - r.getDistance()) >= request.getSimilarityThreshold()) {
 				DocumentChunk.Id id = r.getKey();
 				DocumentChunk chunk = r.getValue();
-				chunk.metadata().put(DocumentMetadata.DISTANCE.value(), r.getDistance());
+				Map<String, Object> mergedMetadata = new HashMap<>(chunk.metadata());
+				mergedMetadata.put(DocumentMetadata.DISTANCE.value(), r.getDistance());
 				documents.add(Document.builder()
 					.id(id.docId())
 					.text(chunk.text())
-					.metadata(chunk.metadata())
+					.metadata(mergedMetadata)
 					.score(1 - r.getDistance())
 					.build());
 			}

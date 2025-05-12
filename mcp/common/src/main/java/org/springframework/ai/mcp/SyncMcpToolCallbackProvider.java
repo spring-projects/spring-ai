@@ -16,7 +16,6 @@
 
 package org.springframework.ai.mcp;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiPredicate;
 
@@ -25,7 +24,7 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -51,7 +50,7 @@ import org.springframework.util.CollectionUtils;
  * // Get all available tools
  * ToolCallback[] tools = provider.getToolCallbacks();
  * }</pre>
- *
+ * <p>
  * Example usage with multiple clients:
  *
  * <pre>{@code
@@ -63,10 +62,10 @@ import org.springframework.util.CollectionUtils;
  * }</pre>
  *
  * @author Christian Tzolov
- * @since 1.0.0
  * @see ToolCallbackProvider
  * @see SyncMcpToolCallback
  * @see McpSyncClient
+ * @since 1.0.0
  */
 
 public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
@@ -130,17 +129,13 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 */
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-
-		var toolCallbacks = new ArrayList<>();
-
-		this.mcpClients.stream()
-			.forEach(mcpClient -> toolCallbacks.addAll(mcpClient.listTools()
+		var array = this.mcpClients.stream()
+			.flatMap(mcpClient -> mcpClient.listTools()
 				.tools()
 				.stream()
 				.filter(tool -> this.toolFilter.test(mcpClient, tool))
-				.map(tool -> new SyncMcpToolCallback(mcpClient, tool))
-				.toList()));
-		var array = toolCallbacks.toArray(new ToolCallback[0]);
+				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
+			.toArray(ToolCallback[]::new);
 		validateToolCallbacks(array);
 		return array;
 	}

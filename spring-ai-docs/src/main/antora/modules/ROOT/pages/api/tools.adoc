@@ -270,7 +270,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 ----
 ToolCallback[] dateTimeTools = ToolCallbacks.from(new DateTimeTools());
 ChatModel chatModel = OllamaChatModel.builder()
-    .ollamaApi(new OllamaApi())
+    .ollamaApi(OllamaApi.builder().build())
     .defaultOptions(ToolCallingChatOptions.builder()
             .toolCallbacks(dateTimeTools)
             .build())
@@ -438,7 +438,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 ----
 ToolCallback toolCallback = ...
 ChatModel chatModel = OllamaChatModel.builder()
-    .ollamaApi(new OllamaApi())
+    .ollamaApi(OllamaApi.builder().build())
     .defaultOptions(ToolCallingChatOptions.builder()
             .toolCallbacks(toolCallback)
             .build())
@@ -560,7 +560,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 ----
 ToolCallback toolCallback = ...
 ChatModel chatModel = OllamaChatModel.builder()
-    .ollamaApi(new OllamaApi())
+    .ollamaApi(OllamaApi.builder().build())
     .defaultOptions(ToolCallingChatOptions.builder()
             .toolCallbacks(toolCallback)
             .build())
@@ -667,7 +667,7 @@ WARNING: Default tools are shared across all the chat requests performed by that
 [source,java]
 ----
 ChatModel chatModel = OllamaChatModel.builder()
-    .ollamaApi(new OllamaApi())
+    .ollamaApi(OllamaApi.builder().build())
     .defaultOptions(ToolCallingChatOptions.builder()
             .toolNames("currentWeather")
             .build())
@@ -1088,11 +1088,8 @@ image::tools/framework-manager.jpg[Framework-controlled tool execution lifecycle
 
 WARNING: Currently, the internal messages exchanged with the model regarding the tool execution are not exposed to the user. If you need to access these messages, you should use the user-controlled tool execution approach.
 
-=== User-Controlled Tool Execution
+The logic determining whether a tool call is eligible for execution is handled by the `ToolExecutionEligibilityPredicate` interface. By default, the tool execution eligibility is determined by checking if the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` is set to `true` (the default value), and if the `ChatResponse` contains any tool calls.
 
-There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`. 
-Alternatevly you can implement your `ToolExecutionEligibilityPredicate` predicate to control the tool execution eligibility.
-The default predicate implementation looks like this:
 [source,java]
 ----
 public class DefaultToolExecutionEligibilityPredicate implements ToolExecutionEligibilityPredicate {
@@ -1102,8 +1099,15 @@ public class DefaultToolExecutionEligibilityPredicate implements ToolExecutionEl
 		return ToolCallingChatOptions.isInternalToolExecutionEnabled(promptOptions) && chatResponse != null
 				&& chatResponse.hasToolCalls();
 	}
+
 }
 ----
+
+You can provide your custom implementation of `ToolExecutionEligibilityPredicate` when creating the `ChatModel` bean.
+
+=== User-Controlled Tool Execution
+
+There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`.
 
 When you invoke a `ChatModel` with this option, the tool execution will be delegated to the caller, giving you full control over the tool execution lifecycle. It's your responsibility checking for tool calls in the `ChatResponse` and executing them using the `ToolCallingManager`.
 
@@ -1134,6 +1138,43 @@ System.out.println(chatResponse.getResult().getOutput().getText());
 ----
 
 NOTE: When choosing the user-controlled tool execution approach, we recommend using a `ToolCallingManager` to manage the tool calling operations. This way, you can benefit from the built-in support provided by Spring AI for tool execution. However, nothing prevents you from implementing your own tool execution logic.
+
+The next examples shows a minimal implementation of the user-controlled tool execution approach combined with the usage of the `ChatMemory` API:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+String conversationId = UUID.randomUUID().toString();
+
+ChatOptions chatOptions = ToolCallingChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new MathTools()))
+    .internalToolExecutionEnabled(false)
+    .build();
+Prompt prompt = new Prompt(
+        List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("What is 6 * 8?")),
+        chatOptions);
+chatMemory.add(conversationId, prompt.getInstructions());
+
+Prompt promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
+ChatResponse chatResponse = chatModel.call(promptWithMemory);
+chatMemory.add(conversationId, chatResponse.getResult().getOutput());
+
+while (chatResponse.hasToolCalls()) {
+    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(promptWithMemory,
+            chatResponse);
+    chatMemory.add(conversationId, toolExecutionResult.conversationHistory()
+        .get(toolExecutionResult.conversationHistory().size() - 1));
+    promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
+    chatResponse = chatModel.call(promptWithMemory);
+    chatMemory.add(conversationId, chatResponse.getResult().getOutput());
+}
+
+UserMessage newUserMessage = new UserMessage("What did I ask you earlier?");
+chatMemory.add(conversationId, newUserMessage);
+
+ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversationId)));
+----
 
 === Exception Handling
 

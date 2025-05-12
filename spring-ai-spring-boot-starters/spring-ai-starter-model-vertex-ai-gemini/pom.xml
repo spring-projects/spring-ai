@@ -59,6 +59,12 @@
 			<artifactId>spring-ai-autoconfigure-model-chat-client</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-chat-memory</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
     </dependencies>
 
 </project>

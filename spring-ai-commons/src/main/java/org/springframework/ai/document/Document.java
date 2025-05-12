@@ -247,12 +247,9 @@ public class Document {
 
 	/**
 	 * Returns the content formatter associated with this document.
-	 * @deprecated We are considering getting rid of this, please comment on
-	 * https://github.com/spring-projects/spring-ai/issues/1782
 	 * @return the current ContentFormatter instance used for formatting the document
 	 * content.
 	 */
-	@Deprecated(since = "1.0.0-M4")
 	public ContentFormatter getContentFormatter() {
 		return this.contentFormatter;
 	}

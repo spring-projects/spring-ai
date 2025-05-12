@@ -20,24 +20,29 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 /**
  * A chain of {@link StreamAdvisor} instances orchestrating the execution of a
  * {@link ChatClientRequest} on the next {@link StreamAdvisor} in the chain.
  *
+ * @author Christian Tzolov
+ * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface StreamAdvisorChain extends StreamAroundAdvisorChain {
+public interface StreamAdvisorChain extends AdvisorChain {
 
 	/**
-	 * @deprecated use {@link #nextStream(ChatClientRequest)}
+	 * Invokes the next {@link StreamAdvisor} in the {@link StreamAdvisorChain} with the
+	 * given request.
 	 */
-	@Deprecated
-	default Flux<AdvisedResponse> nextAroundStream(AdvisedRequest advisedRequest) {
-		Flux<ChatClientResponse> chatClientResponse = nextStream(advisedRequest.toChatClientRequest());
-		return chatClientResponse.map(AdvisedResponse::from);
-	}
-
 	Flux<ChatClientResponse> nextStream(ChatClientRequest chatClientRequest);
+
+	/**
+	 * Returns the list of all the {@link StreamAdvisor} instances included in this chain
+	 * at the time of its creation.
+	 */
+	List<StreamAdvisor> getStreamAdvisors();
 
 }

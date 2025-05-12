@@ -38,6 +38,7 @@
 			<plugin>
 				<groupId>org.antora</groupId>
 				<artifactId>antora-maven-plugin</artifactId>
+				<version>${antora-maven-plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
 					<options>
@@ -60,6 +61,7 @@
 			<plugin>
 				<groupId>io.spring.maven.antora</groupId>
 				<artifactId>antora-component-version-maven-plugin</artifactId>
+				<version>${antora-component-version-maven-plugin.version}</version>
 				<executions>
 					<execution>
 						<goals>

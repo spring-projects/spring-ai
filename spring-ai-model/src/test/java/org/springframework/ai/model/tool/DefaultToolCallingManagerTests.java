@@ -29,6 +29,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -323,12 +324,12 @@ class DefaultToolCallingManagerTests {
 		private final ToolMetadata toolMetadata;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 			this.toolMetadata = ToolMetadata.builder().build();
 		}
 
 		TestToolCallback(String name, boolean returnDirect) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
 		}
 
@@ -354,7 +355,7 @@ class DefaultToolCallingManagerTests {
 		private final ToolDefinition toolDefinition;
 
 		FailingToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override

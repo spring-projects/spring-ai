@@ -31,9 +31,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolDefinitions;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -44,6 +44,7 @@ import org.springframework.util.ReflectionUtils;
  * {@link Tool}-annotated methods.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public final class MethodToolCallbackProvider implements ToolCallbackProvider {
@@ -55,7 +56,26 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	private MethodToolCallbackProvider(List<Object> toolObjects) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
 		Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+		assertToolAnnotatedMethodsPresent(toolObjects);
 		this.toolObjects = toolObjects;
+		validateToolCallbacks(getToolCallbacks());
+	}
+
+	private void assertToolAnnotatedMethodsPresent(List<Object> toolObjects) {
+
+		for (Object toolObject : toolObjects) {
+			List<Method> toolMethods = Stream
+				.of(ReflectionUtils.getDeclaredMethods(
+						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
+				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
+				.filter(toolMethod -> !isFunctionalType(toolMethod))
+				.toList();
+
+			if (toolMethods.isEmpty()) {
+				throw new IllegalStateException("No @Tool annotated methods found in " + toolObject + "."
+						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, you have to use .toolCallbacks() instead of .tool()");
+			}
+		}
 	}
 
 	@Override
@@ -67,7 +87,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
 				.map(toolMethod -> MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.from(toolMethod))
+					.toolDefinition(ToolDefinitions.from(toolMethod))
 					.toolMetadata(ToolMetadata.from(toolMethod))
 					.toolMethod(toolMethod)
 					.toolObject(toolObject)

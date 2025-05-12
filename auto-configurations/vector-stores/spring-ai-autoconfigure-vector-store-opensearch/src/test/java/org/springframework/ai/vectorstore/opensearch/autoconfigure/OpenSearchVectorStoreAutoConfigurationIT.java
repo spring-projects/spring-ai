@@ -24,6 +24,7 @@ import java.util.Map;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -42,6 +43,8 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.opensearch.OpenSearchVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -65,7 +68,8 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 				SpringAiRetryAutoConfiguration.class))
 		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true",
+		.withPropertyValues("spring.ai.vectorstore.opensearch.aws.enabled=false",
+				"spring.ai.vectorstore.opensearch.initialize-schema=true",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".uris=" + opensearchContainer.getHttpHostAddress(),
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=" + DOCUMENT_INDEX,
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
@@ -164,6 +168,17 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	@Test
 	public void autoConfigurationEnabledWhenTypeIsOpensearch() {
 		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=opensearch").run(context -> {
+			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(OpenSearchVectorStore.class);
+		});
+	}
+
+	@Test
+	public void autoConfigurationWithSslBundles() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(SslAutoConfiguration.class)).run(context -> {
+			assertThat(context.getBeansOfType(SslBundles.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OpenSearchClient.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(OpenSearchVectorStore.class);

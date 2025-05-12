@@ -53,4 +53,12 @@ class McpWebFluxServerAutoConfigurationIT {
 			.run(context -> assertThat(context).doesNotHaveBean(WebFluxSseServerTransportProvider.class));
 	}
 
+	@Test
+	void serverDisableConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false").run(context -> {
+			assertThat(context).doesNotHaveBean(WebFluxSseServerTransportProvider.class);
+			assertThat(context).doesNotHaveBean(RouterFunction.class);
+		});
+	}
+
 }

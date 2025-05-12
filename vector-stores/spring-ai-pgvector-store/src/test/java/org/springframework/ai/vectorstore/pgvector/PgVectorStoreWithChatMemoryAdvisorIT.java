@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.pgvector;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -75,22 +77,20 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		return chatModel;
 	}
 
-	private static void initStore(PgVectorStore store) throws Exception {
+	private static void initStore(PgVectorStore store, String conversationId) {
 		store.afterPropertiesSet();
 		// fill the store
-		store.add(List.of(new Document("Tell me a good joke", Map.of("conversationId", "default")),
-				new Document("Tell me a bad joke", Map.of("conversationId", "default", "messageType", "USER"))));
+		store.add(List.of(new Document("Tell me a good joke", Map.of("conversationId", conversationId)),
+				new Document("Tell me a bad joke", Map.of("conversationId", conversationId, "messageType", "USER"))));
 	}
 
 	private static PgVectorStore createPgVectorStoreUsingTestcontainer(EmbeddingModel embeddingModel) throws Exception {
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		return PgVectorStore.builder(jdbcTemplate, embeddingModel)
 			.dimensions(3) // match
 			// embeddings
 			.initializeSchema(true)
 			.build();
-		initStore(vectorStore);
-		return vectorStore;
 	}
 
 	private static @NotNull JdbcTemplate createJdbcTemplateWithConnectionToTestcontainer() {
@@ -105,7 +105,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		verify(chatModel).call(promptCaptor.capture());
 		assertThat(promptCaptor.getValue().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
-		assertThat(promptCaptor.getValue().getInstructions().get(0).getText()).isEqualTo("""
+		assertThat(promptCaptor.getValue().getInstructions().get(0).getText()).isEqualToIgnoringWhitespace("""
 
 				Use the long term conversation memory from the LONG_TERM_MEMORY section to provide accurate answers.
 
@@ -129,17 +129,57 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 		// faked embedding model
 		EmbeddingModel embeddingModel = embeddingNModelShouldAlwaysReturnFakedEmbed();
 		PgVectorStore store = createPgVectorStoreUsingTestcontainer(embeddingModel);
+		String conversationId = UUID.randomUUID().toString();
+		initStore(store, conversationId);
 
 		// do the chat
 		ChatClient.builder(chatModel)
 			.build()
 			.prompt()
 			.user("joke")
-			.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
+			.advisors(a -> a.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
+				.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
 			.call()
 			.chatResponse();
 
 		verifyRequestHasBeenAdvisedWithMessagesFromVectorStore(chatModel);
+	}
+
+	@Test
+	void advisedChatShouldHaveSimilarMessagesFromVectorStoreWhenSystemMessageProvided() throws Exception {
+		// faked ChatModel
+		ChatModel chatModel = chatModelAlwaysReturnsTheSameReply();
+		// faked embedding model
+		EmbeddingModel embeddingModel = embeddingNModelShouldAlwaysReturnFakedEmbed();
+		PgVectorStore store = createPgVectorStoreUsingTestcontainer(embeddingModel);
+		String conversationId = UUID.randomUUID().toString();
+		initStore(store, conversationId);
+
+		// do the chat
+		ChatClient.builder(chatModel)
+			.build()
+			.prompt()
+			.system("You are a helpful assistant.")
+			.user("joke")
+			.advisors(a -> a.advisors(VectorStoreChatMemoryAdvisor.builder(store).build())
+				.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+			.call()
+			.chatResponse();
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(chatModel).call(promptCaptor.capture());
+		assertThat(promptCaptor.getValue().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
+		assertThat(promptCaptor.getValue().getInstructions().get(0).getText()).isEqualToIgnoringWhitespace("""
+				You are a helpful assistant.
+
+				Use the long term conversation memory from the LONG_TERM_MEMORY section to provide accurate answers.
+
+				---------------------
+				LONG_TERM_MEMORY:
+				Tell me a good joke
+				Tell me a bad joke
+				---------------------
+				""");
 	}
 
 	@SuppressWarnings("unchecked")

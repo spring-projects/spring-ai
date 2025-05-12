@@ -47,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author Andres da Silva Santos
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
@@ -199,6 +200,22 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	/**
+	 * Whether to include token usage information in streaming chat completion responses.
+	 * Only applies to streaming responses.
+	 */
+	@JsonIgnore
+	private Boolean enableStreamUsage;
+
+	/**
+	 * Constrains effort on reasoning for reasoning models. Currently supported values are
+	 * low, medium, and high. Reducing reasoning effort can result in faster responses and
+	 * fewer tokens used on reasoning in a response. Optional. Defaults to medium. Only
+	 * for reasoning models.
+	 */
+	@JsonProperty("reasoning_effort")
+	private String reasoningEffort;
+
 	@Override
 	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
@@ -259,6 +276,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.responseFormat(fromOptions.getResponseFormat())
+			.streamUsage(fromOptions.getStreamUsage())
+			.reasoningEffort(fromOptions.getReasoningEffort())
 			.seed(fromOptions.getSeed())
 			.logprobs(fromOptions.isLogprobs())
 			.topLogprobs(fromOptions.getTopLogProbs())
@@ -391,6 +410,22 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.responseFormat = responseFormat;
 	}
 
+	public Boolean getStreamUsage() {
+		return this.enableStreamUsage;
+	}
+
+	public void setStreamUsage(Boolean enableStreamUsage) {
+		this.enableStreamUsage = enableStreamUsage;
+	}
+
+	public String getReasoningEffort() {
+		return this.reasoningEffort;
+	}
+
+	public void setReasoningEffort(String reasoningEffort) {
+		this.reasoningEffort = reasoningEffort;
+	}
+
 	@Override
 	@JsonIgnore
 	public Integer getTopK() {
@@ -472,6 +507,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.topLogProbs, that.topLogProbs)
 				&& Objects.equals(this.enhancements, that.enhancements)
 				&& Objects.equals(this.streamOptions, that.streamOptions)
+				&& Objects.equals(this.enableStreamUsage, that.enableStreamUsage)
+				&& Objects.equals(this.reasoningEffort, that.reasoningEffort)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.maxTokens, that.maxTokens)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
@@ -482,8 +519,9 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.logitBias, this.user, this.n, this.stop, this.deploymentName, this.responseFormat,
 				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.seed, this.logprobs,
-				this.topLogProbs, this.enhancements, this.streamOptions, this.toolContext, this.maxTokens,
-				this.frequencyPenalty, this.presencePenalty, this.temperature, this.topP);
+				this.topLogProbs, this.enhancements, this.streamOptions, this.reasoningEffort, this.enableStreamUsage,
+				this.toolContext, this.maxTokens, this.frequencyPenalty, this.presencePenalty, this.temperature,
+				this.topP);
 	}
 
 	public static class Builder {
@@ -550,6 +588,16 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder responseFormat(AzureOpenAiResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder streamUsage(Boolean enableStreamUsage) {
+			this.options.enableStreamUsage = enableStreamUsage;
+			return this;
+		}
+
+		public Builder reasoningEffort(String reasoningEffort) {
+			this.options.reasoningEffort = reasoningEffort;
 			return this;
 		}
 

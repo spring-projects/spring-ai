@@ -37,12 +37,14 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 
 	private final ChatModel chatModel;
 
-	public ChatModelStreamAdvisor(ChatModel chatModel) {
+	private ChatModelStreamAdvisor(ChatModel chatModel) {
+		Assert.notNull(chatModel, "chatModel cannot be null");
 		this.chatModel = chatModel;
 	}
 
 	@Override
-	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest, StreamAroundAdvisorChain chain) {
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
 
 		return chatModel.stream(chatClientRequest.prompt())
@@ -61,6 +63,28 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 	@Override
 	public int getOrder() {
 		return Ordered.LOWEST_PRECEDENCE;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private ChatModel chatModel;
+
+		private Builder() {
+		}
+
+		public Builder chatModel(ChatModel chatModel) {
+			this.chatModel = chatModel;
+			return this;
+		}
+
+		public ChatModelStreamAdvisor build() {
+			return new ChatModelStreamAdvisor(this.chatModel);
+		}
+
 	}
 
 }

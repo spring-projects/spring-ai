@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.util.json.schema.SchemaType;
 import org.springframework.context.ApplicationContext;
@@ -88,18 +88,24 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 			return resolvedToolCallback;
 		}
 
-		ResolvableType toolType = TypeResolverHelper.resolveBeanType(this.applicationContext, toolName);
-		ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
-				? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(toolType, 0);
+		try {
+			ResolvableType toolType = TypeResolverHelper.resolveBeanType(this.applicationContext, toolName);
+			ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
+					? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(toolType, 0);
 
-		String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
-		Object bean = this.applicationContext.getBean(toolName);
+			String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
+			Object bean = this.applicationContext.getBean(toolName);
 
-		resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
+			resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
 
-		toolCallbacksCache.put(toolName, resolvedToolCallback);
+			toolCallbacksCache.put(toolName, resolvedToolCallback);
 
-		return resolvedToolCallback;
+			return resolvedToolCallback;
+		}
+		catch (Exception e) {
+			logger.debug("ToolCallback resolution failed from Spring application context", e);
+			return null;
+		}
 	}
 
 	public SchemaType getSchemaType() {

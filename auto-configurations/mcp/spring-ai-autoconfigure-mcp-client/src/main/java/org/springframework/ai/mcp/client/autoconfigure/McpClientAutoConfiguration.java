@@ -156,19 +156,19 @@ public class McpClientAutoConfiguration {
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
 
-				McpClient.SyncSpec syncSpec = McpClient.sync(namedTransport.transport())
+				McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
 
-				syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
+				spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
 
-				var syncClient = syncSpec.build();
+				var client = spec.build();
 
 				if (commonProperties.isInitialized()) {
-					syncClient.initialize();
+					client.initialize();
 				}
 
-				mcpSyncClients.add(syncClient);
+				mcpSyncClients.add(client);
 			}
 		}
 
@@ -212,7 +212,7 @@ public class McpClientAutoConfiguration {
 			McpClientCommonProperties commonProperties,
 			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
-		List<McpAsyncClient> mcpSyncClients = new ArrayList<>();
+		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
 		List<NamedClientMcpTransport> namedTransports = transportsProvider.stream().flatMap(List::stream).toList();
 
@@ -223,28 +223,28 @@ public class McpClientAutoConfiguration {
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
 
-				McpClient.AsyncSpec syncSpec = McpClient.async(namedTransport.transport())
+				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
 
-				syncSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), syncSpec);
+				spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
 
-				var syncClient = syncSpec.build();
+				var client = spec.build();
 
 				if (commonProperties.isInitialized()) {
-					syncClient.initialize().block();
+					client.initialize().block();
 				}
 
-				mcpSyncClients.add(syncClient);
+				mcpAsyncClients.add(client);
 			}
 		}
 
-		return mcpSyncClients;
+		return mcpAsyncClients;
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public CloseableMcpAsyncClients makeAsynClientsClosable(List<McpAsyncClient> clients) {
+	public CloseableMcpAsyncClients makeAsyncClientsClosable(List<McpAsyncClient> clients) {
 		return new CloseableMcpAsyncClients(clients);
 	}
 

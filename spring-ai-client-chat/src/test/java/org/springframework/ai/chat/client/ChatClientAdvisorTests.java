@@ -29,7 +29,8 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -37,13 +38,16 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
 /**
+ * Tests for the ChatClient with a focus on verifying the handling of conversation memory
+ * and the integration of PromptChatMemoryAdvisor to ensure accurate responses based on
+ * previous interactions.
+ *
  * @author Christian Tzolov
  * @author Alexandros Pappas
  */
@@ -63,32 +67,35 @@ public class ChatClientAdvisorTests {
 	@Test
 	public void promptChatMemory() {
 
-		var builder = ChatResponseMetadata.builder()
-			.id("124")
-			.usage(new MessageAggregator.DefaultUsage(1, 2, 3))
-			.model("gpt4o")
-			.keyValue("created", 0L)
-			.keyValue("system-fingerprint", "john doe");
-		ChatResponseMetadata chatResponseMetadata = builder.build();
+		// Create a ChatResponseMetadata instance with default values
+		ChatResponseMetadata chatResponseMetadata = ChatResponseMetadata.builder().build();
 
+		// Mock the chatModel to return predefined ChatResponse objects when called
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(
 					new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John"))), chatResponseMetadata))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your name is John"))),
 					chatResponseMetadata));
 
-		ChatMemory chatMemory = new InMemoryChatMemory();
+		// Initialize a message window chat memory to store conversation history
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
 
+		// Build a ChatClient with default system text and a memory advisor
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
 			.defaultAdvisors(new PromptChatMemoryAdvisor(chatMemory))
 			.build();
 
+		// Simulate a user prompt and verify the response
 		ChatResponse chatResponse = chatClient.prompt().user("my name is John").call().chatResponse();
 
+		// Assert that the response content matches the expected output
 		String content = chatResponse.getResult().getOutput().getText();
 		assertThat(content).isEqualTo("Hello John");
 
+		// Capture and verify the system message instructions
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
@@ -101,13 +108,17 @@ public class ChatClientAdvisorTests {
 				""");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
+		// Capture and verify the user message instructions
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("my name is John");
 
+		// Simulate another user prompt and verify the response
 		content = chatClient.prompt().user("What is my name?").call().content();
 
+		// Assert that the response content matches the expected output
 		assertThat(content).isEqualTo("Your name is John");
 
+		// Capture and verify the updated system message instructions
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
@@ -122,6 +133,7 @@ public class ChatClientAdvisorTests {
 				""");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
+		// Capture and verify the updated user message instructions
 		userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("What is my name?");
 	}
@@ -129,6 +141,7 @@ public class ChatClientAdvisorTests {
 	@Test
 	public void streamingPromptChatMemory() {
 
+		// Mock the chatModel to stream predefined ChatResponse objects
 		given(this.chatModel.stream(this.promptCaptor.capture())).willReturn(Flux.generate(
 				() -> new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))), (state, sink) -> {
 					sink.next(state);
@@ -143,17 +156,24 @@ public class ChatClientAdvisorTests {
 						return state;
 					}));
 
-		ChatMemory chatMemory = new InMemoryChatMemory();
+		// Initialize a message window chat memory to store conversation history
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
 
+		// Build a ChatClient with default system text and a memory advisor
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
 			.defaultAdvisors(new PromptChatMemoryAdvisor(chatMemory))
 			.build();
 
+		// Simulate a streaming user prompt and verify the response
 		var content = join(chatClient.prompt().user("my name is John").stream().content());
 
+		// Assert that the streamed content matches the expected output
 		assertThat(content).isEqualTo("Hello John");
 
+		// Capture and verify the system message instructions
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
@@ -166,13 +186,17 @@ public class ChatClientAdvisorTests {
 				""");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
+		// Capture and verify the user message instructions
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("my name is John");
 
+		// Simulate another streaming user prompt and verify the response
 		content = join(chatClient.prompt().user("What is my name?").stream().content());
 
+		// Assert that the streamed content matches the expected output
 		assertThat(content).isEqualTo("Your name is John");
 
+		// Capture and verify the updated system message instructions
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
@@ -187,6 +211,7 @@ public class ChatClientAdvisorTests {
 				""");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
+		// Capture and verify the updated user message instructions
 		userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualToIgnoringWhitespace("What is my name?");
 	}

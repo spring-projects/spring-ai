@@ -22,8 +22,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,13 +53,6 @@ class ToolCallingChatOptionsTests {
 	@Test
 	void whenToolCallingChatOptionsAndExecutionEnabledDefault() {
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
-	void whenFunctionCallingOptionsAndExecutionEnabledTrue() {
-		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
-		options.setProxyToolCalls(false);
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
 	}
 
@@ -102,7 +95,7 @@ class ToolCallingChatOptionsTests {
 		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
-		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
+		assertThat(mergedToolCallbacks.get(0).getToolDefinition().name()).isEqualTo("toolA");
 	}
 
 	@Test
@@ -112,7 +105,7 @@ class ToolCallingChatOptionsTests {
 		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
-		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
+		assertThat(mergedToolCallbacks.get(0).getToolDefinition().name()).isEqualTo("toolA");
 	}
 
 	@Test
@@ -122,7 +115,7 @@ class ToolCallingChatOptionsTests {
 		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
-		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolB");
+		assertThat(mergedToolCallbacks.get(0).getToolDefinition().name()).isEqualTo("toolB");
 	}
 
 	@Test
@@ -188,7 +181,7 @@ class ToolCallingChatOptionsTests {
 		private final ToolDefinition toolDefinition;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override

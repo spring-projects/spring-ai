@@ -46,7 +46,7 @@ NOTE: Couchbase Vector search is only available in starting version 7.6 and Java
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the configured bucket, scope, collection and search index for you, with default options, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor.
 

@@ -72,13 +72,37 @@ repositories {
 ----
 ======
 
+**NOTE:** When using Maven with Spring AI snapshots, pay attention to your Maven mirror configuration. If you have configured a mirror in your `settings.xml` like this:
+
+[source,xml]
+----
+<mirror>
+    <id>my-mirror</id>
+    <mirrorOf>*</mirrorOf>
+    <url>https://my-company-repository.com/maven</url>
+</mirror>
+----
+
+The wildcard `*` will redirect all repository requests to your mirror, preventing access to Spring snapshot repositories. To fix this, modify the `mirrorOf` configuration to exclude Spring repositories:
+
+[source,xml]
+----
+<mirror>
+    <id>my-mirror</id>
+    <mirrorOf>*,!spring-snapshots,!central-portal-snapshots</mirrorOf>
+    <url>https://my-company-repository.com/maven</url>
+</mirror>
+----
+
+This configuration allows Maven to access Spring snapshot repositories directly while still using your mirror for other dependencies.
+
+
 [[dependency-management]]
 == Dependency Management
 
 The Spring AI Bill of Materials (BOM) declares the recommended versions of all the dependencies used by a given release of Spring AI.
-Using the BOM from your application’s build script avoids the need for you to specify and maintain the dependency versions yourself.
-Instead, the version of the BOM you’re using determines the utilized dependency versions.
-It also ensures that you’re using supported and tested versions of the dependencies by default, unless you choose to override them.
+This is a BOM-only version and it just contains dependency management and no plugin declarations or direct references to Spring or Spring Boot.
+You can use the Spring Boot parent POM, or use the BOM from Spring Boot (`spring-boot-dependencies`) to manage Spring Boot versions.
 
 Add the BOM to your project:
 
@@ -111,9 +135,8 @@ dependencies {
   implementation 'org.springframework.ai:spring-ai-openai'
 }
 ----
-Gradle users can also use the Spring AI BOM by leveraging Gradle (5.0+) native support for declaring dependency constraints using a Maven BOM.
-This is implemented by adding a 'platform' dependency handler method to the dependencies section of your Gradle build script.
-As shown in the snippet below this can then be followed by version-less declarations of the Starter Dependencies for the one or more spring-ai modules you wish to use, e.g. spring-ai-openai.
++
+Gradle users can also use the Spring AI BOM by leveraging Gradle (5.0+) native support for declaring dependency constraints using a Maven BOM. This is implemented by adding a 'platform' dependency handler method to the dependencies section of your Gradle build script.
 ======
 
 [[add-dependencies]]

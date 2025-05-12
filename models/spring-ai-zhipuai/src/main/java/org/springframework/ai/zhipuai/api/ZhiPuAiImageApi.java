@@ -18,6 +18,7 @@ package org.springframework.ai.zhipuai.api;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -118,6 +119,7 @@ public class ZhiPuAiImageApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ZhiPuAiImageResponse(
 		@JsonProperty("created") Long created,
 		@JsonProperty("data") List<Data> data) {
@@ -125,6 +127,7 @@ public class ZhiPuAiImageApi {
 	// @formatter:onn
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Data(@JsonProperty("url") String url) {
 
 	}

@@ -130,6 +130,18 @@ Properties starting with `spring.ai.vectorstore.opensearch.*` are used to config
 |`spring.ai.vectorstore.opensearch.aws.region`| AWS region | -
 |===
 
+[NOTE]
+====
+You can control whether the AWS-specific OpenSearch auto-configuration is enabled using the `spring.ai.vectorstore.opensearch.aws.enabled` property.
+
+- If this property is set to `false`, the non-AWS OpenSearch configuration is activated, even if AWS SDK classes are present on the classpath. This allows you to use self-managed or third-party OpenSearch clusters in environments where AWS SDKs are present for other services.
+- If AWS SDK classes are not present, the non-AWS configuration is always used.
+- If AWS SDK classes are present and the property is not set or set to `true`, the AWS-specific configuration is used by default.
+
+This fallback logic ensures that users have explicit control over the type of OpenSearch integration, preventing accidental activation of AWS-specific logic when not desired.
+====
+
+
 The following similarity functions are available:
 
 * `cosinesimil` - Default, suitable for most use cases. Measures cosine similarity between vectors.

@@ -43,7 +43,7 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -103,6 +103,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author Soby Chacko
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
@@ -186,7 +187,6 @@ public class OpenAiChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(OpenAiApiConstants.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -217,7 +217,8 @@ public class OpenAiChatModel implements ChatModel {
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
 							"index", choice.index(),
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
+							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 				// @formatter:on
@@ -227,7 +228,8 @@ public class OpenAiChatModel implements ChatModel {
 				// Current usage
 				OpenAiApi.Usage usage = chatCompletion.usage();
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
+						previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(chatCompletion, rateLimit, accumulatedUsage));
 
@@ -289,7 +291,6 @@ public class OpenAiChatModel implements ChatModel {
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(OpenAiApiConstants.PROVIDER_NAME)
-				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -315,14 +316,14 @@ public class OpenAiChatModel implements ChatModel {
 									"role", roleMap.getOrDefault(id, ""),
 									"index", choice.index(),
 									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
-									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
-
+									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
 							return buildGeneration(choice, metadata, request);
 						}).toList();
 						// @formatter:on
 						OpenAiApi.Usage usage = chatCompletion2.usage();
 						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-						Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage,
+						Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 								previousChatResponse);
 						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
 					}
@@ -346,7 +347,7 @@ public class OpenAiChatModel implements ChatModel {
 								// This is the usage from the final Chat response for a
 								// given Chat request.
 								Usage usage = secondResponse.getMetadata().getUsage();
-								if (!UsageUtils.isEmpty(usage)) {
+								if (!UsageCalculator.isEmpty(usage)) {
 									// Store the usage from the final response to the
 									// penultimate response for accumulation.
 									return new ChatResponse(firstResponse.getResults(),
@@ -434,6 +435,10 @@ public class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
 		}
 
+		if (Boolean.TRUE.equals(request.logprobs())) {
+			generationMetadataBuilder.metadata("logprobs", choice.logprobs());
+		}
+
 		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
@@ -505,6 +510,10 @@ public class OpenAiChatModel implements ChatModel {
 		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
+			if (runtimeOptions.getTopK() != null) {
+				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
+			}
+
 			requestOptions.setHttpHeaders(
 					mergeHttpHeaders(runtimeOptions.getHttpHeaders(), this.defaultOptions.getHttpHeaders()));
 			requestOptions.setInternalToolExecutionEnabled(
@@ -575,7 +584,7 @@ public class OpenAiChatModel implements ChatModel {
 
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -585,7 +594,7 @@ public class OpenAiChatModel implements ChatModel {
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null, null))
+							tr.id(), null, null, null, null))
 					.toList();
 			}
 			else {
@@ -685,7 +694,29 @@ public class OpenAiChatModel implements ChatModel {
 		return new Builder();
 	}
 
+	/**
+	 * Returns a builder pre-populated with the current configuration for mutation.
+	 */
+	public Builder mutate() {
+		return new Builder(this);
+	}
+
+	@Override
+	public OpenAiChatModel clone() {
+		return this.mutate().build();
+	}
+
 	public static final class Builder {
+
+		// Copy constructor for mutate()
+		public Builder(OpenAiChatModel model) {
+			this.openAiApi = model.openAiApi;
+			this.defaultOptions = model.defaultOptions;
+			this.toolCallingManager = model.toolCallingManager;
+			this.toolExecutionEligibilityPredicate = model.toolExecutionEligibilityPredicate;
+			this.retryTemplate = model.retryTemplate;
+			this.observationRegistry = model.observationRegistry;
+		}
 
 		private OpenAiApi openAiApi;
 

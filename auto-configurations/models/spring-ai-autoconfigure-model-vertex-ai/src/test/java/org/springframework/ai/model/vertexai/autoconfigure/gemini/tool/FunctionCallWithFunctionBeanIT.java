@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
@@ -69,14 +69,14 @@ class FunctionCallWithFunctionBeanIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().function("weatherFunction").build()));
+						VertexAiGeminiChatOptions.builder().toolName("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().function("weatherFunction3").build()));
+						VertexAiGeminiChatOptions.builder().toolName("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 
@@ -109,14 +109,14 @@ class FunctionCallWithFunctionBeanIT {
 						""");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						FunctionCallingOptions.builder().function("weatherFunction").build()));
+						ToolCallingChatOptions.builder().toolNames("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						VertexAiGeminiChatOptions.builder().function("weatherFunction3").build()));
+						VertexAiGeminiChatOptions.builder().toolName("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 

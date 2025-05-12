@@ -26,14 +26,15 @@ import org.springframework.ai.tool.StaticToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -75,25 +76,58 @@ class ToolCallingAutoConfigurationTests {
 				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
 
 				assertThat(toolCallbackResolver.resolve("getForecast")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getForecast").getName()).isEqualTo("getForecast");
+				assertThat(toolCallbackResolver.resolve("getForecast").getToolDefinition().name())
+					.isEqualTo("getForecast");
 
 				assertThat(toolCallbackResolver.resolve("getAlert")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getAlert").getName()).isEqualTo("getAlert");
+				assertThat(toolCallbackResolver.resolve("getAlert").getToolDefinition().name()).isEqualTo("getAlert");
 
 				assertThat(toolCallbackResolver.resolve("weatherFunction1")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("weatherFunction1").getName()).isEqualTo("weatherFunction1");
+				assertThat(toolCallbackResolver.resolve("weatherFunction1").getToolDefinition().name())
+					.isEqualTo("weatherFunction1");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather3")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather3").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather3").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather3");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather4")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather4").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather4").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather4");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather5")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather5").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather5").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather5");
+			});
+	}
+
+	@Test
+	void resolveMissingToolCallbacks() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
+
+				assertThat(toolCallbackResolver.resolve("NonExisting")).isNull();
+			});
+	}
+
+	@Test
+	void observationFilterDefault() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				assertThat(context).doesNotHaveBean(ToolCallingContentObservationFilter.class);
+			});
+	}
+
+	@Test
+	void observationFilterEnabled() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.observations.include-content=true")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				assertThat(context).hasSingleBean(ToolCallingContentObservationFilter.class);
 			});
 	}
 
@@ -173,7 +207,7 @@ class ToolCallingAutoConfigurationTests {
 		public ToolCallback toolCallbacks6() {
 			var toolMethod = ReflectionUtils.findMethod(WeatherService.class, "getAlert", String.class);
 			return MethodToolCallback.builder()
-				.toolDefinition(ToolDefinition.builder(toolMethod).build())
+				.toolDefinition(ToolDefinitions.builder(toolMethod).build())
 				.toolMethod(toolMethod)
 				.toolObject(new WeatherService())
 				.build();

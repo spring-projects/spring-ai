@@ -61,6 +61,7 @@ import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -224,8 +225,7 @@ public class OllamaChatModel implements ChatModel {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
-			.provider(OllamaApi.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions())
+			.provider(OllamaApiConstants.PROVIDER_NAME)
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -295,8 +295,7 @@ public class OllamaChatModel implements ChatModel {
 
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
-				.provider(OllamaApi.PROVIDER_NAME)
-				.requestOptions(prompt.getOptions())
+				.provider(OllamaApiConstants.PROVIDER_NAME)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -345,8 +344,7 @@ public class OllamaChatModel implements ChatModel {
 							return Flux.just(ChatResponse.builder().from(response)
 									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 									.build());
-						}
-						else {
+						} else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									response);

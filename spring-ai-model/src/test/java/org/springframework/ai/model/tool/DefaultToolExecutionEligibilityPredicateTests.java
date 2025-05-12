@@ -25,7 +25,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -97,25 +96,8 @@ class DefaultToolExecutionEligibilityPredicateTests {
 	}
 
 	@Test
-	void whenFunctionCallingOptionsAndToolExecutionEnabled() {
-		// Create a FunctionCallingOptions with proxy tool calls disabled (which means
-		// internal tool execution is enabled)
-		FunctionCallingOptions options = FunctionCallingOptions.builder().proxyToolCalls(false).build();
-
-		// Create a ChatResponse with tool calls
-		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("id1", "function", "testTool", "{}");
-		AssistantMessage assistantMessage = new AssistantMessage("test", Map.of(), List.of(toolCall));
-		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
-
-		// Test the predicate
-		boolean result = this.predicate.test(options, chatResponse);
-		assertThat(result).isTrue();
-	}
-
-	@Test
 	void whenRegularChatOptionsAndHasToolCalls() {
-		// Create regular ChatOptions (not ToolCallingChatOptions or
-		// FunctionCallingOptions)
+		// Create regular ChatOptions (not ToolCallingChatOptions)
 		ChatOptions options = ChatOptions.builder().build();
 
 		// Create a ChatResponse with tool calls

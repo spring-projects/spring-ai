@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package org.springframework.ai.model.chat.client.autoconfigure;
 
+import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.ai.chat.client.observation.ChatClientInputContentObservationFilter;
+import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link ChatClientAutoConfiguration} observability support.
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
 class ChatClientObservationAutoConfigurationTests {
 
@@ -35,15 +38,16 @@ class ChatClientObservationAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(ChatClientAutoConfiguration.class));
 
 	@Test
-	void inputContentFilterDefault() {
+	void promptContentHandlerDefault() {
 		this.contextRunner
-			.run(context -> assertThat(context).doesNotHaveBean(ChatClientInputContentObservationFilter.class));
+			.run(context -> assertThat(context).doesNotHaveBean(ChatClientPromptContentObservationHandler.class));
 	}
 
 	@Test
-	void inputContentFilterEnabled() {
-		this.contextRunner.withPropertyValues("spring.ai.chat.client.observations.include-input=true")
-			.run(context -> assertThat(context).hasSingleBean(ChatClientInputContentObservationFilter.class));
+	void promptContentHandlerEnabled() {
+		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
+			.withPropertyValues("spring.ai.chat.client.observations.log-prompt=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatClientPromptContentObservationHandler.class));
 	}
 
 }

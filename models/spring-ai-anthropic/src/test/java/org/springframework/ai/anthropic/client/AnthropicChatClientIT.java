@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -213,7 +212,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
@@ -231,7 +230,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
@@ -248,7 +247,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -270,7 +269,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -301,14 +300,12 @@ class AnthropicChatClientIT {
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
-	@Disabled("Currently Anthropic API does not support external image URLs")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-latest", "claude-3-5-sonnet-latest", "claude-3-haiku-latest",
-			"claude-3-7-sonnet-latest" })
+	@ValueSource(strings = { "claude-3-opus-latest", "claude-3-5-sonnet-latest", "claude-3-7-sonnet-latest" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0.0-SNAPSHOT/_images/multimodal.test.png");
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()

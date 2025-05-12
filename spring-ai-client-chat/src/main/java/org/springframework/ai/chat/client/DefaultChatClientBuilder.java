@@ -33,9 +33,9 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationConve
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -66,7 +66,7 @@ public class DefaultChatClientBuilder implements Builder {
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), null, Map.of(), List.of(),
 				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
-				customObservationConvention, Map.of());
+				customObservationConvention, Map.of(), null);
 	}
 
 	public ChatClient build() {
@@ -150,20 +150,20 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	@Override
-	public Builder defaultTools(String... toolNames) {
-		this.defaultRequest.tools(toolNames);
+	public Builder defaultToolNames(String... toolNames) {
+		this.defaultRequest.toolNames(toolNames);
 		return this;
 	}
 
 	@Override
-	public Builder defaultTools(ToolCallback... toolCallbacks) {
-		this.defaultRequest.tools(toolCallbacks);
+	public Builder defaultToolCallbacks(ToolCallback... toolCallbacks) {
+		this.defaultRequest.toolCallbacks(toolCallbacks);
 		return this;
 	}
 
 	@Override
-	public Builder defaultTools(List<ToolCallback> toolCallbacks) {
-		this.defaultRequest.tools(toolCallbacks);
+	public Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks) {
+		this.defaultRequest.toolCallbacks(toolCallbacks);
 		return this;
 	}
 
@@ -174,14 +174,8 @@ public class DefaultChatClientBuilder implements Builder {
 	}
 
 	@Override
-	public Builder defaultTools(ToolCallbackProvider... toolCallbackProviders) {
-		this.defaultRequest.tools(toolCallbackProviders);
-		return this;
-	}
-
-	@Deprecated // Use defaultTools()
-	public <I, O> Builder defaultFunction(String name, String description, java.util.function.Function<I, O> function) {
-		this.defaultRequest.tools(FunctionToolCallback.builder(name, function).description(description).build());
+	public Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
+		this.defaultRequest.toolCallbacks(toolCallbackProviders);
 		return this;
 	}
 
@@ -190,17 +184,14 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	public Builder defaultTemplateRenderer(TemplateRenderer templateRenderer) {
+		Assert.notNull(templateRenderer, "templateRenderer cannot be null");
+		this.defaultRequest.templateRenderer(templateRenderer);
+		return this;
+	}
+
 	void addMessages(List<Message> messages) {
 		this.defaultRequest.messages(messages);
-	}
-
-	void addToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		this.defaultRequest.tools(toolCallbacks.toArray(ToolCallback[]::new));
-	}
-
-	void addToolContext(Map<String, Object> toolContext) {
-		this.defaultRequest.toolContext(toolContext);
 	}
 
 }

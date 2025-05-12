@@ -29,11 +29,12 @@ import org.springframework.ai.integration.tests.tool.domain.Author;
 import org.springframework.ai.integration.tests.tool.domain.Book;
 import org.springframework.ai.integration.tests.tool.domain.BookService;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = TestApplication.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MethodToolCallbackTests {
 
 	@Autowired
@@ -110,7 +112,7 @@ public class MethodToolCallbackTests {
 			.prompt()
 			.user("What authors wrote the books %s and %s available in the library?".formatted("The Hobbit",
 					"The Lion, the Witch and the Wardrobe"))
-			.tools(ToolCallbacks.from(this.tools))
+			.toolCallbacks(ToolCallbacks.from(this.tools))
 			.call()
 			.content();
 		assertThat(content).isNotEmpty().contains("J.R.R. Tolkien").contains("C.S. Lewis");

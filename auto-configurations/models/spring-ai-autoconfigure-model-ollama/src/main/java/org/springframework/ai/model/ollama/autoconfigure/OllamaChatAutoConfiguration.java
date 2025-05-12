@@ -21,8 +21,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -40,7 +38,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -75,8 +72,8 @@ public class OllamaChatAutoConfiguration {
 			.ollamaApi(ollamaApi)
 			.defaultOptions(properties.getOptions())
 			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(ollamaToolExecutionEligibilityPredicate
-				.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
+			.toolExecutionEligibilityPredicate(
+					ollamaToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.modelManagementOptions(
 					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),
@@ -86,14 +83,6 @@ public class OllamaChatAutoConfiguration {
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setApplicationContext(context);
-		return manager;
 	}
 
 }

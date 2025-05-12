@@ -47,6 +47,8 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String constraintName = Neo4jVectorStore.DEFAULT_CONSTRAINT_NAME;
 
+	private String textProperty = Neo4jVectorStore.DEFAULT_TEXT_PROPERTY;
+
 	public String getDatabaseName() {
 		return this.databaseName;
 	}
@@ -109,6 +111,14 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setConstraintName(String constraintName) {
 		this.constraintName = constraintName;
+	}
+
+	public String getTextProperty() {
+		return this.textProperty;
+	}
+
+	public void setTextProperty(String textProperty) {
+		this.textProperty = textProperty;
 	}
 
 }

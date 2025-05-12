@@ -19,6 +19,7 @@ package org.springframework.ai.openai.api;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -77,12 +78,13 @@ public class OpenAiAudioApi {
 			// h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(authHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(authHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(authHeaders).build();
 	}
 
 	public static Builder builder() {
@@ -684,6 +686,7 @@ public class OpenAiAudioApi {
 	 * details.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record StructuredResponse(
 	// @formatter:off
 		@JsonProperty("language") String language,
@@ -701,6 +704,7 @@ public class OpenAiAudioApi {
 		 * @param end The end time of the word in seconds.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Word(
 		// @formatter:off
 			@JsonProperty("word") String word,
@@ -727,6 +731,7 @@ public class OpenAiAudioApi {
 		 * higher than 1.0 and the avg_logprob is below -1, consider this segment silent.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Segment(
 		// @formatter:off
 			@JsonProperty("id") Integer id,

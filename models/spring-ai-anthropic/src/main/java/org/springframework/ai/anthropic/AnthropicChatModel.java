@@ -51,7 +51,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -88,6 +88,8 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Claudio Silva Junior
  * @author Alexandros Pappas
+ * @author Jonghoon Park
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class AnthropicChatModel implements ChatModel {
@@ -177,7 +179,6 @@ public class AnthropicChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(AnthropicApi.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -193,7 +194,8 @@ public class AnthropicChatModel implements ChatModel {
 
 				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(completionResponse.usage())
 						: new EmptyUsage();
-				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
+						previousChatResponse);
 
 				ChatResponse chatResponse = toChatResponse(completionEntity.getBody(), accumulatedUsage);
 				observationContext.setResponse(chatResponse);
@@ -240,7 +242,6 @@ public class AnthropicChatModel implements ChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AnthropicApi.PROVIDER_NAME)
-				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -253,10 +254,10 @@ public class AnthropicChatModel implements ChatModel {
 					this.getAdditionalHttpHeaders(prompt));
 
 			// @formatter:off
-			Flux<ChatResponse> chatResponseFlux = response.switchMap(chatCompletionResponse -> {
+			Flux<ChatResponse> chatResponseFlux = response.flatMap(chatCompletionResponse -> {
 				AnthropicApi.Usage usage = chatCompletionResponse.usage();
 				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
-				Usage accumulatedUsage = UsageUtils.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse) && chatResponse.hasFinishReasons(Set.of("tool_use"))) {
@@ -357,6 +358,18 @@ public class AnthropicChatModel implements ChatModel {
 			.build();
 	}
 
+	private Source getSourceByMedia(Media media) {
+		String data = this.fromMediaData(media.getData());
+
+		// http is not allowed and redirect not allowed
+		if (data.startsWith("https://")) {
+			return new Source(data);
+		}
+		else {
+			return new Source(media.getMimeType().toString(), data);
+		}
+	}
+
 	private String fromMediaData(Object mediaData) {
 		if (mediaData instanceof byte[] bytes) {
 			return Base64.getEncoder().encodeToString(bytes);
@@ -413,6 +426,12 @@ public class AnthropicChatModel implements ChatModel {
 		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
+			if (runtimeOptions.getFrequencyPenalty() != null) {
+				logger.warn("The frequencyPenalty option is not supported by Anthropic API. Ignoring.");
+			}
+			if (runtimeOptions.getPresencePenalty() != null) {
+				logger.warn("The presencePenalty option is not supported by Anthropic API. Ignoring.");
+			}
 			requestOptions.setHttpHeaders(
 					mergeHttpHeaders(runtimeOptions.getHttpHeaders(), this.defaultOptions.getHttpHeaders()));
 			requestOptions.setInternalToolExecutionEnabled(
@@ -457,8 +476,7 @@ public class AnthropicChatModel implements ChatModel {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
 								Type contentBlockType = getContentBlockTypeByMedia(media);
-								var source = new Source(media.getMimeType().toString(),
-										this.fromMediaData(media.getData()));
+								var source = getSourceByMedia(media);
 								return new ContentBlock(contentBlockType, source);
 							}).toList();
 							contents.addAll(mediaContent);

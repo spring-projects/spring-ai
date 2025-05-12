@@ -216,8 +216,8 @@ public class ChatClientTest {
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
-				.defaultTools("fun1", "fun2")
-				.defaultTools(FunctionToolCallback.builder("fun3", mockFunction)
+				.defaultToolNames("fun1", "fun2")
+				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
 						.inputType(String.class)
 						.build())
@@ -248,7 +248,7 @@ public class ChatClientTest {
 		var fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -270,13 +270,13 @@ public class ChatClientTest {
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// mutate builder
 		// @formatter:off
 		chatClient = chatClient.mutate()
 				.defaultSystem("Mutated default system text {param1}, {param2}")
-				.defaultTools("fun4")
+				.defaultToolNames("fun4")
 				.defaultUser("Mutated default user text {uparam1}, {uparam2}")
 				.build();
 		// @formatter:on
@@ -300,7 +300,7 @@ public class ChatClientTest {
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// Streaming
 		content = join(chatClient.prompt().stream().content());
@@ -322,7 +322,7 @@ public class ChatClientTest {
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(fco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun4");
-		assertThat(fco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(fco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 	}
 
@@ -346,8 +346,8 @@ public class ChatClientTest {
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
 						.param("param2", "value2"))
-				.defaultTools("fun1", "fun2")
-				.defaultTools(FunctionToolCallback.builder("fun3", mockFunction)
+				.defaultToolNames("fun1", "fun2")
+				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
 						.inputType(String.class)
 						.build())
@@ -363,7 +363,7 @@ public class ChatClientTest {
 					.system("New default system text {param1}, {param2}")
 					.user(u -> u.param("uparam1", "userValue1")
 						.param("uparam2", "userValue2"))
-					.tools("fun5")
+					.toolNames("fun5")
 				.mutate().build() // mutate and build new prompt
 				.prompt().call().content();
 		// @formatter:on
@@ -385,7 +385,7 @@ public class ChatClientTest {
 		var tco = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(tco.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
-		assertThat(tco.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(tco.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 
 		// Streaming
 		// @formatter:off
@@ -394,7 +394,7 @@ public class ChatClientTest {
 						.system("New default system text {param1}, {param2}")
 						.user(u -> u.param("uparam1", "userValue1")
 							.param("uparam2", "userValue2"))
-						.tools("fun5")
+						.toolNames("fun5")
 					.mutate().build() // mutate and build new prompt
 					.prompt().stream().content());
 		// @formatter:on
@@ -416,7 +416,7 @@ public class ChatClientTest {
 		var tcoptions = (ToolCallingChatOptions) prompt.getOptions();
 
 		assertThat(tcoptions.getToolNames()).containsExactlyInAnyOrder("fun1", "fun2", "fun5");
-		assertThat(tcoptions.getToolCallbacks().iterator().next().getName()).isEqualTo("fun3");
+		assertThat(tcoptions.getToolCallbacks().iterator().next().getToolDefinition().name()).isEqualTo("fun3");
 	}
 
 	@Test
@@ -478,7 +478,7 @@ public class ChatClientTest {
 		var media = new Media(MimeTypeUtils.IMAGE_JPEG,
 				new DefaultResourceLoader().getResource("classpath:/bikes.json"));
 
-		UserMessage message = new UserMessage("User prompt", List.of(media));
+		UserMessage message = UserMessage.builder().text("User prompt").media(List.of(media)).build();
 		Prompt prompt = new Prompt(message);
 		assertThat(ChatClient.builder(this.chatModel).build().prompt(prompt).call().content()).isEqualTo("response");
 
@@ -523,7 +523,7 @@ public class ChatClientTest {
 		// @formatter:off
 		ChatClient client = ChatClient.builder(this.chatModel)
 				.defaultSystem("System text")
-				.defaultTools("function1")
+				.defaultToolNames("function1")
 				.build();
 
 		String response = client.prompt()
@@ -605,7 +605,7 @@ public class ChatClientTest {
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
-		var prompt = new Prompt(new SystemMessage("instructions"), new UserMessage("my question"));
+		var prompt = new Prompt(new SystemMessage("instructions"), UserMessage.builder().text("my question").build());
 		var content = chatClient.prompt(prompt).call().content();
 
 		assertThat(content).isEqualTo("response");
@@ -713,7 +713,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}
@@ -747,7 +747,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("other instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}
@@ -769,7 +769,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}
@@ -808,7 +808,7 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(4);
-		var systemMessage = this.promptCaptor.getValue().getInstructions().get(2);
+		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("other instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 	}

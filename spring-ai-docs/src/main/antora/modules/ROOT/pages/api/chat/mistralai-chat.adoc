@@ -20,7 +20,7 @@ export SPRING_AI_MISTRALAI_API_KEY=<INSERT KEY HERE>
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -191,7 +191,7 @@ or the image URL equivalent:
 ----
 var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG,
-                "https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"));
+                URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png")));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
         ChatOptions.builder().model(MistralAiApi.ChatModel.PIXTRAL_LARGE.getValue()).build()));

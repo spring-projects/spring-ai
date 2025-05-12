@@ -75,7 +75,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 Alternatively you can opt-out the initialization and create the index manually using the Elasticsearch client, which can be useful if the index needs advanced mapping or additional configuration.

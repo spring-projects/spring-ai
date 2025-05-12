@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
 
@@ -44,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -79,12 +81,36 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
+	public void createRequestWithFrequencyAndPresencePenalty() {
+
+		var client = VertexAiGeminiChatModel.builder()
+			.vertexAI(this.vertexAI)
+			.defaultOptions(VertexAiGeminiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.frequencePenalty(.25)
+				.presencePenalty(.75)
+				.build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(client
+			.buildRequestPrompt(new Prompt("Test message content", VertexAiGeminiChatOptions.builder().build())));
+
+		assertThat(request.contents()).hasSize(1);
+
+		assertThat(request.model().getGenerationConfig().getFrequencyPenalty()).isEqualTo(.25F);
+		assertThat(request.model().getGenerationConfig().getPresencePenalty()).isEqualTo(.75F);
+	}
+
+	@Test
 	public void createRequestWithSystemMessage() throws MalformedURLException {
 
 		var systemMessage = new SystemMessage("System Message Text");
 
-		var userMessage = new UserMessage("User Message Text",
-				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new URL("http://example.com")).build()));
+		var userMessage = UserMessage.builder()
+			.text("User Message Text")
+			.media(List
+				.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(URI.create("http://example.com")).build()))
+			.build();
 
 		var client = VertexAiGeminiChatModel.builder()
 			.vertexAI(this.vertexAI)

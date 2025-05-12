@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -25,6 +24,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -34,14 +34,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.ollama.api.common.OllamaApiConstants;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.Assert;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -51,58 +50,48 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonghoon Park
  * @since 0.8.0
  */
 // @formatter:off
 public class OllamaApi {
 
-	public static final String PROVIDER_NAME = AiProvider.OLLAMA.value();
+	public static Builder builder() { return new Builder(); }
 
 	public static final String REQUEST_BODY_NULL_ERROR = "The request body can not be null.";
 
 	private static final Log logger = LogFactory.getLog(OllamaApi.class);
-
-	private static final String DEFAULT_BASE_URL = "http://localhost:11434";
-
-	private final ResponseErrorHandler responseErrorHandler;
 
 	private final RestClient restClient;
 
 	private final WebClient webClient;
 
 	/**
-	 * Default constructor that uses the default localhost url.
-	 */
-	public OllamaApi() {
-		this(DEFAULT_BASE_URL);
-	}
-
-	/**
-	 * Crate a new OllamaApi instance with the given base url.
-	 * @param baseUrl The base url of the Ollama server.
-	 */
-	public OllamaApi(String baseUrl) {
-		this(baseUrl, RestClient.builder(), WebClient.builder());
-	}
-
-	/**
-	 * Crate a new OllamaApi instance with the given base url and
-	 * {@link RestClient.Builder}.
+	 * Create a new OllamaApi instance
 	 * @param baseUrl The base url of the Ollama server.
 	 * @param restClientBuilder The {@link RestClient.Builder} to use.
+     * @param webClientBuilder The {@link WebClient.Builder} to use.
+	 * @param responseErrorHandler Response error handler.
 	 */
-	public OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder) {
-
-		this.responseErrorHandler = new OllamaResponseErrorHandler();
+	private OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> defaultHeaders = headers -> {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
+		this.restClient = restClientBuilder
+				.clone()
+				.baseUrl(baseUrl)
+				.defaultHeaders(defaultHeaders)
+				.defaultStatusHandler(responseErrorHandler)
+				.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(defaultHeaders).build();
+		this.webClient = webClientBuilder
+				.clone()
+				.baseUrl(baseUrl)
+				.defaultHeaders(defaultHeaders)
+				.build();
 	}
 
 	/**
@@ -121,7 +110,6 @@ public class OllamaApi {
 			.uri("/api/chat")
 			.body(chatRequest)
 			.retrieve()
-			.onStatus(this.responseErrorHandler)
 			.body(ChatResponse.class);
 	}
 
@@ -188,7 +176,6 @@ public class OllamaApi {
 			.uri("/api/embed")
 			.body(embeddingsRequest)
 			.retrieve()
-			.onStatus(this.responseErrorHandler)
 			.body(EmbeddingsResponse.class);
 	}
 
@@ -199,7 +186,6 @@ public class OllamaApi {
 		return this.restClient.get()
 				.uri("/api/tags")
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.body(ListModelResponse.class);
 	}
 
@@ -212,7 +198,6 @@ public class OllamaApi {
 				.uri("/api/show")
 				.body(showModelRequest)
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.body(ShowModelResponse.class);
 	}
 
@@ -225,7 +210,6 @@ public class OllamaApi {
 				.uri("/api/copy")
 				.body(copyModelRequest)
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.toBodilessEntity();
 	}
 
@@ -238,7 +222,6 @@ public class OllamaApi {
 				.uri("/api/delete")
 				.body(deleteModelRequest)
 				.retrieve()
-				.onStatus(this.responseErrorHandler)
 				.toBodilessEntity();
 	}
 
@@ -261,26 +244,6 @@ public class OllamaApi {
 				.bodyToFlux(ProgressResponse.class);
 	}
 
-	private static class OllamaResponseErrorHandler implements ResponseErrorHandler {
-
-		@Override
-		public boolean hasError(ClientHttpResponse response) throws IOException {
-			return response.getStatusCode().isError();
-		}
-
-		@Override
-		public void handleError(ClientHttpResponse response) throws IOException {
-			if (response.getStatusCode().isError()) {
-				int statusCode = response.getStatusCode().value();
-				String statusText = response.getStatusText();
-				String message = StreamUtils.copyToString(response.getBody(), java.nio.charset.StandardCharsets.UTF_8);
-				logger.warn(String.format("[%s] %s - %s", statusCode, statusText, message));
-				throw new RuntimeException(String.format("[%s] %s - %s", statusCode, statusText, message));
-			}
-		}
-
-	}
-
 	/**
 	 * Chat message object.
 	 *
@@ -291,6 +254,7 @@ public class OllamaApi {
 	 * @param toolCalls The relevant tool call.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
@@ -561,6 +525,7 @@ public class OllamaApi {
 	 * Types</a>
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatResponse(
 			@JsonProperty("model") String model,
 			@JsonProperty("created_at") Instant createdAt,
@@ -637,6 +602,7 @@ public class OllamaApi {
 	 * @param promptEvalCount The number of tokens in the prompt.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record EmbeddingsResponse(
 			@JsonProperty("model") String model,
 			@JsonProperty("embeddings") List<float[]> embeddings,
@@ -647,6 +613,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Model(
 			@JsonProperty("name") String name,
 			@JsonProperty("model") String model,
@@ -656,6 +623,7 @@ public class OllamaApi {
 			@JsonProperty("details") Details details
 	) {
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Details(
 				@JsonProperty("parent_model") String parentModel,
 				@JsonProperty("format") String format,
@@ -667,6 +635,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ListModelResponse(
 			@JsonProperty("models") List<Model> models
 	) { }
@@ -684,6 +653,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ShowModelResponse(
 			@JsonProperty("license") String license,
 			@JsonProperty("modelfile") String modelfile,
@@ -694,6 +664,7 @@ public class OllamaApi {
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("model_info") Map<String, Object> modelInfo,
 			@JsonProperty("projector_info") Map<String, Object> projectorInfo,
+			@JsonProperty("capabilities") List<String> capabilities,
 			@JsonProperty("modified_at") Instant modifiedAt
 	) { }
 
@@ -729,6 +700,7 @@ public class OllamaApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ProgressResponse(
 			@JsonProperty("status") String status,
 			@JsonProperty("digest") String digest,
@@ -736,5 +708,44 @@ public class OllamaApi {
 			@JsonProperty("completed") Long completed
 	) { }
 
+	public static class Builder {
+
+		private String baseUrl = OllamaApiConstants.DEFAULT_BASE_URL;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public OllamaApi build() {
+			return new OllamaApi(this.baseUrl, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+		}
+
+	}
 }
 // @formatter:on

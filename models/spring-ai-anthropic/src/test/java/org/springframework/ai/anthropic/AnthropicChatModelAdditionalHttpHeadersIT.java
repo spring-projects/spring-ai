@@ -64,7 +64,7 @@ public class AnthropicChatModelAdditionalHttpHeadersIT {
 
 		@Bean
 		public AnthropicApi anthropicApi() {
-			return new AnthropicApi("Invalid API Key");
+			return AnthropicApi.builder().apiKey("Invalid API Key").build();
 		}
 
 		@Bean

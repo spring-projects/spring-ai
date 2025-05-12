@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.chat;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -126,9 +127,11 @@ public class MessageTypeContentTests {
 		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
 			.willReturn(Mockito.mock(ResponseEntity.class));
 
-		URL mediaUrl = new URL("http://test");
-		this.chatModel.call(new Prompt(List.of(new UserMessage("test message",
-				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))));
+		URI mediaUri = URI.create("http://test");
+		this.chatModel.call(new Prompt(List.of(UserMessage.builder()
+			.text("test message")
+			.media(List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUri).build()))
+			.build())));
 
 		validateComplexContent(this.pomptCaptor.getValue());
 	}
@@ -139,10 +142,11 @@ public class MessageTypeContentTests {
 		given(this.openAiApi.chatCompletionStream(this.pomptCaptor.capture(), this.headersCaptor.capture()))
 			.willReturn(this.fluxResponse);
 
-		URL mediaUrl = new URL("http://test");
-		this.chatModel.stream(new Prompt(List.of(new UserMessage("test message",
-				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))))
-			.subscribe();
+		URI mediaUrl = URI.create("http://test");
+		this.chatModel.stream(new Prompt(List.of(UserMessage.builder()
+			.text("test message")
+			.media(List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build()))
+			.build()))).subscribe();
 
 		validateComplexContent(this.pomptCaptor.getValue());
 	}

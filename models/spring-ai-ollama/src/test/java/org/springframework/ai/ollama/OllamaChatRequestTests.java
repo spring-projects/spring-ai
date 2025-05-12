@@ -26,6 +26,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OllamaChatRequestTests {
 
 	OllamaChatModel chatModel = OllamaChatModel.builder()
-		.ollamaApi(new OllamaApi())
+		.ollamaApi(OllamaApi.builder().build())
 		.defaultOptions(OllamaOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
 		.build();
 
@@ -51,7 +52,7 @@ class OllamaChatRequestTests {
 			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
 			.build();
 		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(new OllamaApi())
+			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(defaultOptions)
 			.build();
 
@@ -143,7 +144,7 @@ class OllamaChatRequestTests {
 	@Test
 	public void createRequestWithDefaultOptionsModelOverride() {
 		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(new OllamaApi())
+			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(OllamaOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
 			.build();
 
@@ -167,7 +168,7 @@ class OllamaChatRequestTests {
 		private final ToolDefinition toolDefinition;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override

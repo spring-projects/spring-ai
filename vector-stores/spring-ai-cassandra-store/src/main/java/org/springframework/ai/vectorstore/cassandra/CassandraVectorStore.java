@@ -546,7 +546,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			.getKeyspace(this.schema.keyspace)
 			.get()
 			.getTable(this.schema.table)
-			.isPresent(), "table %s does not exist");
+			.isPresent(), "table %s does not exist", this.schema.table);
 
 		TableMetadata tableMetadata = this.session.getMetadata()
 			.getKeyspace(this.schema.keyspace)

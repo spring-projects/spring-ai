@@ -236,6 +236,101 @@ TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(
 );
 ----
 
+=== Working with Auto-Truncation
+
+Some embedding models, such as Vertex AI text embedding, support an `auto_truncate` feature. When enabled, the model silently truncates text inputs that exceed the maximum size and continues processing; when disabled, it throws an explicit error for inputs that are too large.
+
+When using auto-truncation with the batching strategy, you must configure your batching strategy with a much higher input token count than the model's actual maximum. This prevents the batching strategy from raising exceptions for large documents, allowing the embedding model to handle truncation internally.
+
+==== Configuration for Auto-Truncation
+
+When enabling auto-truncation, set your batching strategy's maximum input token count much higher than the model's actual limit. This prevents the batching strategy from raising exceptions for large documents, allowing the embedding model to handle truncation internally.
+
+Here's an example configuration for using Vertex AI with auto-truncation and custom `BatchingStrategy` and then using them in the PgVectorStore:
+
+[source,java]
+----
+@Configuration
+public class AutoTruncationEmbeddingConfig {
+
+    @Bean
+    public VertexAiTextEmbeddingModel vertexAiEmbeddingModel(
+            VertexAiEmbeddingConnectionDetails connectionDetails) {
+
+        VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
+                .model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
+                .autoTruncate(true)  // Enable auto-truncation
+                .build();
+
+        return new VertexAiTextEmbeddingModel(connectionDetails, options);
+    }
+
+    @Bean
+    public BatchingStrategy batchingStrategy() {
+        // Only use a high token limit if auto-truncation is enabled in your embedding model.
+        // Set a much higher token count than the model actually supports
+        // (e.g., 132,900 when Vertex AI supports only up to 20,000)
+        return new TokenCountBatchingStrategy(
+                EncodingType.CL100K_BASE,
+                132900,  // Artificially high limit
+                0.1      // 10% reserve
+        );
+    }
+
+    @Bean
+    public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
+        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+            // other properties omitted here
+            .build();
+    }
+}
+----
+
+In this configuration:
+
+1. The embedding model has auto-truncation enabled, allowing it to handle oversized inputs gracefully.
+2. The batching strategy uses an artificially high token limit (132,900) that's much larger than the actual model limit (20,000).
+3. The vector store uses the configured embedding model and the custom `BatchingStrategy` bean.
+
+==== Why This Works
+
+This approach works because:
+
+1. The `TokenCountBatchingStrategy` checks if any single document exceeds the configured maximum and throws an `IllegalArgumentException` if it does.
+2. By setting a very high limit in the batching strategy, we ensure that this check never fails.
+3. Documents or batches exceeding the model's limit are silently truncated and processed by the embedding model's auto-truncation feature.
+
+==== Best Practices
+
+When using auto-truncation:
+
+- Set the batching strategy's max input token count to be at least 5-10x larger than the model's actual limit to avoid premature exceptions from the batching strategy.
+- Monitor your logs for truncation warnings from the embedding model (note: not all models log truncation events).
+- Consider the implications of silent truncation on your embedding quality.
+- Test with sample documents to ensure truncated embeddings still meet your requirements.
+- Document this configuration for future maintainers, as it is non-standard.
+
+CAUTION: While auto-truncation prevents errors, it can result in incomplete embeddings. Important information at the end of long documents may be lost. If your application requires all content to be embedded, split documents into smaller chunks before embedding.
+
+==== Spring Boot Auto-Configuration
+
+If you're using Spring Boot auto-configuration, you must provide a custom `BatchingStrategy` bean to override the default one that comes with Spring AI:
+
+[source,java]
+----
+@Bean
+public BatchingStrategy customBatchingStrategy() {
+    // This bean will override the default BatchingStrategy
+    return new TokenCountBatchingStrategy(
+            EncodingType.CL100K_BASE,
+            132900,  // Much higher than model's actual limit
+            0.1
+    );
+}
+----
+
+The presence of this bean in your application context will automatically replace the default batching strategy used by all vector stores.
+
 === Custom Implementation
 
 While `TokenCountBatchingStrategy` provides a robust default implementation, you can customize the batching strategy to fit your specific needs.
