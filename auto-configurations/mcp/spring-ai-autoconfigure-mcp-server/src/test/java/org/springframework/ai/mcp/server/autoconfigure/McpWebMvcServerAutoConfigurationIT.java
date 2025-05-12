@@ -61,4 +61,11 @@ class McpWebMvcServerAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void serverBaseUrlConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.base-url=/test")
+			.run(context -> assertThat(context.getBean(WebMvcSseServerTransportProvider.class)).extracting("baseUrl")
+				.isEqualTo("/test"));
+	}
+
 }
