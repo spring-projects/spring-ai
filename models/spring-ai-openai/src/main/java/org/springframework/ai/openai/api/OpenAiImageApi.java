@@ -41,6 +41,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * OpenAI Image API.
  *
  * @see <a href= "https://platform.openai.com/docs/api-reference/images">Images</a>
+ * @author lambochen
  */
 public class OpenAiImageApi {
 
@@ -48,15 +49,18 @@ public class OpenAiImageApi {
 
 	private final RestClient restClient;
 
+	private final String imagesPath;
+
 	/**
 	 * Create a new OpenAI Image API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
 	 * @param apiKey OpenAI apiKey.
 	 * @param headers the http headers to use.
+	 * @param imagesPath the images path to use.
 	 * @param restClientBuilder the rest client builder to use.
 	 * @param responseErrorHandler the response error handler to use.
 	 */
-	public OpenAiImageApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
+	public OpenAiImageApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String imagesPath,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		// @formatter:off
@@ -70,6 +74,8 @@ public class OpenAiImageApi {
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 		// @formatter:on
+
+		this.imagesPath = imagesPath;
 	}
 
 	public ResponseEntity<OpenAiImageResponse> createImage(OpenAiImageRequest openAiImageRequest) {
@@ -77,7 +83,7 @@ public class OpenAiImageApi {
 		Assert.hasLength(openAiImageRequest.prompt(), "Prompt cannot be empty.");
 
 		return this.restClient.post()
-			.uri("v1/images/generations")
+			.uri(this.imagesPath)
 			.body(openAiImageRequest)
 			.contentType(MediaType.APPLICATION_JSON)
 			.retrieve()
@@ -233,9 +239,17 @@ public class OpenAiImageApi {
 
 		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
 
+		private String imagesPath = "v1/images/generations";
+
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder imagesPath(String imagesPath) {
+			Assert.hasText(imagesPath, "imagesPath cannot be null or empty");
+			this.imagesPath = imagesPath;
 			return this;
 		}
 
@@ -271,7 +285,7 @@ public class OpenAiImageApi {
 
 		public OpenAiImageApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiImageApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
+			return new OpenAiImageApi(this.baseUrl, this.apiKey, this.headers, this.imagesPath, this.restClientBuilder,
 					this.responseErrorHandler);
 		}
 
