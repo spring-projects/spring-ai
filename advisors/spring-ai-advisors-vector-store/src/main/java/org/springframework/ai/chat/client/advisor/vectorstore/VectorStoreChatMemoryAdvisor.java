@@ -23,12 +23,15 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -49,7 +52,7 @@ import org.springframework.ai.vectorstore.VectorStore;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
+public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(VectorStoreChatMemoryAdvisor.class);
 
@@ -79,16 +82,36 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	protected final int defaultChatMemoryRetrieveSize;
 
-	private VectorStoreChatMemoryAdvisor(VectorStore chatMemory, String defaultConversationId,
-			int defaultChatMemoryRetrieveSize, boolean protectFromBlocking, PromptTemplate systemPromptTemplate,
-			int order) {
-		super(chatMemory, defaultConversationId, protectFromBlocking, order);
+	private final String defaultConversationId;
+
+	private final int order;
+
+	private final Scheduler scheduler;
+
+	private VectorStore vectorStore;
+
+	public VectorStoreChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int defaultChatMemoryRetrieveSize,
+			String defaultConversationId, int order, Scheduler scheduler, VectorStore vectorStore) {
 		this.systemPromptTemplate = systemPromptTemplate;
 		this.defaultChatMemoryRetrieveSize = defaultChatMemoryRetrieveSize;
+		this.defaultConversationId = defaultConversationId;
+		this.order = order;
+		this.scheduler = scheduler;
+		this.vectorStore = vectorStore;
 	}
 
 	public static Builder builder(VectorStore chatMemory) {
 		return new Builder(chatMemory);
+	}
+
+	@Override
+	public int getOrder() {
+		return order;
+	}
+
+	@Override
+	public Scheduler getScheduler() {
+		return this.scheduler;
 	}
 
 	@Override
@@ -102,7 +125,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			.topK(topK)
 			.filterExpression(filter)
 			.build();
-		java.util.List<org.springframework.ai.document.Document> documents = this.getChatMemoryStore()
+		java.util.List<org.springframework.ai.document.Document> documents = this.vectorStore
 			.similaritySearch(searchRequest);
 
 		String longTermMemory = documents == null ? ""
@@ -121,7 +144,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		org.springframework.ai.chat.messages.UserMessage userMessage = processedChatClientRequest.prompt()
 			.getUserMessage();
 		if (userMessage != null) {
-			this.getChatMemoryStore().write(toDocuments(java.util.List.of(userMessage), conversationId));
+			this.vectorStore.write(toDocuments(java.util.List.of(userMessage), conversationId));
 		}
 
 		return processedChatClientRequest;
@@ -152,8 +175,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.getChatMemoryStore()
-			.write(toDocuments(assistantMessages, this.doGetConversationId(chatClientResponse.context())));
+		this.vectorStore.write(toDocuments(assistantMessages, this.doGetConversationId(chatClientResponse.context())));
 		return chatClientResponse;
 	}
 
@@ -195,18 +217,18 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
-		private boolean protectFromBlocking = true;
+		private Scheduler scheduler;
 
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
-		private VectorStore chatMemory;
+		private VectorStore vectorStore;
 
 		/**
 		 * Creates a new builder instance.
 		 * @param vectorStore the vector store to use
 		 */
 		protected Builder(VectorStore vectorStore) {
-			this.chatMemory = vectorStore;
+			this.vectorStore = vectorStore;
 		}
 
 		/**
@@ -255,7 +277,12 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		 * @return the builder
 		 */
 		public Builder protectFromBlocking(boolean protectFromBlocking) {
-			this.protectFromBlocking = protectFromBlocking;
+			this.scheduler = protectFromBlocking ? BaseAdvisor.DEFAULT_SCHEDULER : Schedulers.immediate();
+			return this;
+		}
+
+		public Builder scheduler(Scheduler scheduler) {
+			this.scheduler = scheduler;
 			return this;
 		}
 
@@ -274,8 +301,8 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		 * @return the advisor
 		 */
 		public VectorStoreChatMemoryAdvisor build() {
-			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.protectFromBlocking, this.systemPromptTemplate, this.order);
+			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.chatMemoryRetrieveSize,
+					this.conversationId, this.order, this.scheduler, this.vectorStore);
 		}
 
 	}

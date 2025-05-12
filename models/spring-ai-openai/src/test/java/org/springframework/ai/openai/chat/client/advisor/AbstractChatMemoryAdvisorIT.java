@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
@@ -55,7 +55,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 	 * @param chatMemory The chat memory to use
 	 * @return An instance of the advisor to test
 	 */
-	protected abstract AbstractChatMemoryAdvisor<?> createAdvisor(ChatMemory chatMemory);
+	protected abstract BaseChatMemoryAdvisor createAdvisor(ChatMemory chatMemory);
 
 	/**
 	 * Assert the follow-up response meets the expectations for this advisor type. Default
@@ -79,7 +79,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
 
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
+		var advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 
@@ -129,7 +129,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create advisor with the conversation ID
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
+		var advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 
@@ -191,7 +191,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create advisor without a default conversation ID
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
+		var advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 
@@ -229,7 +229,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create advisor without a default conversation ID
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
+		var advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 
@@ -314,7 +314,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create advisor without a default conversation ID
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
+		var advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 
@@ -373,7 +373,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.chatMemoryRepository(new InMemoryChatMemoryRepository())
 			.build();
 
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
+		var advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 

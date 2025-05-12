@@ -22,11 +22,15 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -38,24 +42,57 @@ import org.springframework.ai.chat.messages.UserMessage;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
+public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageChatMemoryAdvisor.class);
 
-	private MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order) {
-		super(chatMemory, defaultConversationId, true, order);
+	private final ChatMemory chatMemory;
+
+	private final String defaultConversationId;
+
+	private final int order;
+
+	private final Scheduler scheduler;
+
+	private MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order,
+			Scheduler scheduler) {
+		this.chatMemory = chatMemory;
+		this.defaultConversationId = defaultConversationId;
+		this.order = order;
+		this.scheduler = scheduler;
 	}
 
 	@Override
-	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
-		String conversationId = doGetConversationId(request.context());
-		// Add the new user messages from the current prompt to memory
-		List<UserMessage> newUserMessages = request.prompt().getUserMessages();
-		for (UserMessage userMessage : newUserMessages) {
-			this.getChatMemoryStore().add(conversationId, userMessage);
-		}
-		List<Message> memoryMessages = chatMemoryStore.get(conversationId);
-		return applyMessagesToRequest(request, memoryMessages);
+	public int getOrder() {
+		return order;
+	}
+
+	@Override
+	public Scheduler getScheduler() {
+		return this.scheduler;
+	}
+
+	@Override
+	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+		String conversationId = doGetConversationId(chatClientRequest.context());
+
+		// 1. Retrieve the chat memory for the current conversation.
+		List<Message> memoryMessages = this.chatMemory.get(conversationId);
+
+		// 2. Advise the request messages list.
+		List<Message> processedMessages = new ArrayList<>(memoryMessages);
+		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
+
+		// 3. Create a new request with the advised messages.
+		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
+			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
+			.build();
+
+		// 4. Add the new user message to the conversation memory.
+		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+		this.chatMemory.add(conversationId, userMessage);
+
+		return processedChatClientRequest;
 	}
 
 	protected String doGetConversationId(Map<String, Object> context) {
@@ -94,7 +131,7 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+		this.chatMemory.add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
 		return chatClientResponse;
 	}
 
@@ -106,9 +143,9 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 
 		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
-		private boolean protectFromBlocking = true;
-
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
+
+		private Scheduler scheduler;
 
 		private ChatMemory chatMemory;
 
@@ -132,7 +169,7 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		 * @return the builder
 		 */
 		public Builder protectFromBlocking(boolean protectFromBlocking) {
-			this.protectFromBlocking = protectFromBlocking;
+			this.scheduler = protectFromBlocking ? BaseAdvisor.DEFAULT_SCHEDULER : Schedulers.immediate();
 			return this;
 		}
 
@@ -146,12 +183,17 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 			return this;
 		}
 
+		public Builder scheduler(Scheduler scheduler) {
+			this.scheduler = scheduler;
+			return this;
+		}
+
 		/**
 		 * Build the advisor.
 		 * @return the advisor
 		 */
 		public MessageChatMemoryAdvisor build() {
-			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order);
+			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order, this.scheduler);
 		}
 
 	}

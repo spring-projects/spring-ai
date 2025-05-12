@@ -21,7 +21,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
@@ -43,7 +42,7 @@ public class PromptChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 	private org.springframework.ai.chat.model.ChatModel chatModel;
 
 	@Override
-	protected AbstractChatMemoryAdvisor<?> createAdvisor(ChatMemory chatMemory) {
+	protected PromptChatMemoryAdvisor createAdvisor(ChatMemory chatMemory) {
 		return PromptChatMemoryAdvisor.builder(chatMemory).build();
 	}
 

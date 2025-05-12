@@ -23,11 +23,17 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
@@ -36,10 +42,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 /**
  * Memory is retrieved added into the prompt's system text.
@@ -50,7 +52,7 @@ import reactor.core.scheduler.Scheduler;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
+public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(PromptChatMemoryAdvisor.class);
 
@@ -68,9 +70,20 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 	private final PromptTemplate systemPromptTemplate;
 
-	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, boolean protectFromBlocking,
-			PromptTemplate systemPromptTemplate, int order) {
-		super(chatMemory, defaultConversationId, protectFromBlocking, order);
+	private final String defaultConversationId;
+
+	private final int order;
+
+	private final Scheduler scheduler;
+
+	private final ChatMemory chatMemory;
+
+	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order, Scheduler scheduler,
+			PromptTemplate systemPromptTemplate) {
+		this.chatMemory = chatMemory;
+		this.defaultConversationId = defaultConversationId;
+		this.order = order;
+		this.scheduler = scheduler;
 		this.systemPromptTemplate = systemPromptTemplate;
 	}
 
@@ -79,10 +92,20 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 	}
 
 	@Override
+	public int getOrder() {
+		return order;
+	}
+
+	@Override
+	public Scheduler getScheduler() {
+		return this.scheduler;
+	}
+
+	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
 		String conversationId = doGetConversationId(chatClientRequest.context());
 		// 1. Retrieve the chat memory for the current conversation.
-		List<Message> memoryMessages = this.getChatMemoryStore().get(conversationId);
+		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 		logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
 				conversationId, memoryMessages);
 
@@ -106,7 +129,7 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 		// message is generated)
 		List<UserMessage> userMessages = chatClientRequest.prompt().getUserMessages();
 		for (UserMessage userMessage : userMessages) {
-			this.getChatMemoryStore().add(conversationId, userMessage);
+			this.chatMemory.add(conversationId, userMessage);
 			logger.debug("[PromptChatMemoryAdvisor.before] Added USER message to memory for conversationId={}: {}",
 					conversationId, userMessage.getText());
 		}
@@ -145,11 +168,10 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 		}
 
 		if (!assistantMessages.isEmpty()) {
-			this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+			this.chatMemory.add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
 			logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
 					this.doGetConversationId(chatClientResponse.context()), assistantMessages);
-			List<Message> memoryMessages = this.getChatMemoryStore()
-				.get(this.doGetConversationId(chatClientResponse.context()));
+			List<Message> memoryMessages = this.chatMemory.get(this.doGetConversationId(chatClientResponse.context()));
 			logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
 					this.doGetConversationId(chatClientResponse.context()), memoryMessages);
 		}
@@ -180,9 +202,9 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
-		private boolean protectFromBlocking = true;
-
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
+
+		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
 		private ChatMemory chatMemory;
 
@@ -226,7 +248,12 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 		 * @return the builder
 		 */
 		public Builder protectFromBlocking(boolean protectFromBlocking) {
-			this.protectFromBlocking = protectFromBlocking;
+			this.scheduler = protectFromBlocking ? BaseAdvisor.DEFAULT_SCHEDULER : Schedulers.immediate();
+			return this;
+		}
+
+		public Builder scheduler(Scheduler scheduler) {
+			this.scheduler = scheduler;
 			return this;
 		}
 
@@ -245,8 +272,8 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 		 * @return the advisor
 		 */
 		public PromptChatMemoryAdvisor build() {
-			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.protectFromBlocking,
-					this.systemPromptTemplate, this.order);
+			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order, this.scheduler,
+					this.systemPromptTemplate);
 		}
 
 	}

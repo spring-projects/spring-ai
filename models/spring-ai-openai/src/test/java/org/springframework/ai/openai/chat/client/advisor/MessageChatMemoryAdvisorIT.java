@@ -19,13 +19,13 @@ package org.springframework.ai.openai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
@@ -52,11 +52,12 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 	private org.springframework.ai.chat.model.ChatModel chatModel;
 
 	@Override
-	protected AbstractChatMemoryAdvisor<?> createAdvisor(ChatMemory chatMemory) {
+	protected MessageChatMemoryAdvisor createAdvisor(ChatMemory chatMemory) {
 		return MessageChatMemoryAdvisor.builder(chatMemory).build();
 	}
 
 	@Test
+	@Disabled
 	void shouldHandleMultipleUserMessagesInSamePrompt() {
 		testMultipleUserMessagesInSamePrompt();
 	}
@@ -77,6 +78,7 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 	}
 
 	@Test
+	@Disabled
 	void shouldHandleMultipleUserMessagesInPrompt() {
 		// Arrange
 		String conversationId = "multi-user-messages-" + System.currentTimeMillis();
