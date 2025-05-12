@@ -36,20 +36,8 @@ import org.springframework.ai.chat.messages.UserMessage;
  */
 public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemory> {
 
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory) {
-		super(chatMemory);
-	}
-
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId) {
-		this(chatMemory, defaultConversationId, Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
-	}
-
-	public MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order) {
+	private MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order) {
 		super(chatMemory, defaultConversationId, true, order);
-	}
-
-	public static Builder builder(ChatMemory chatMemory) {
-		return new Builder(chatMemory);
 	}
 
 	@Override
@@ -95,17 +83,58 @@ public class MessageChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemo
 		return chatClientResponse;
 	}
 
-	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory, Builder> {
+	public static Builder builder(ChatMemory chatMemory) {
+		return new Builder(chatMemory);
+	}
+
+	public static class Builder {
+
+		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+		private boolean protectFromBlocking = true;
+
+		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
+
+		private ChatMemory chatMemory;
 
 		protected Builder(ChatMemory chatMemory) {
-			super(chatMemory);
+			this.chatMemory = chatMemory;
 		}
 
-		@Override
-		protected Builder self() {
+		/**
+		 * Set the conversation id.
+		 * @param conversationId the conversation id
+		 * @return the builder
+		 */
+		public Builder conversationId(String conversationId) {
+			this.conversationId = conversationId;
 			return this;
 		}
 
+		/**
+		 * Set whether to protect from blocking.
+		 * @param protectFromBlocking whether to protect from blocking
+		 * @return the builder
+		 */
+		public Builder protectFromBlocking(boolean protectFromBlocking) {
+			this.protectFromBlocking = protectFromBlocking;
+			return this;
+		}
+
+		/**
+		 * Set the order.
+		 * @param order the order
+		 * @return the builder
+		 */
+		public Builder order(int order) {
+			this.order = order;
+			return this;
+		}
+
+		/**
+		 * Build the advisor.
+		 * @return the advisor
+		 */
 		public MessageChatMemoryAdvisor build() {
 			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order);
 		}

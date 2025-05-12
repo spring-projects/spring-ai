@@ -44,12 +44,7 @@ public class PromptChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 
 	@Override
 	protected AbstractChatMemoryAdvisor<?> createAdvisor(ChatMemory chatMemory) {
-		return new PromptChatMemoryAdvisor(chatMemory);
-	}
-
-	@Override
-	protected AbstractChatMemoryAdvisor<?> createAdvisorWithoutDefaultId(ChatMemory chatMemory) {
-		return new PromptChatMemoryAdvisor(chatMemory);
+		return PromptChatMemoryAdvisor.builder(chatMemory).build();
 	}
 
 	@Override

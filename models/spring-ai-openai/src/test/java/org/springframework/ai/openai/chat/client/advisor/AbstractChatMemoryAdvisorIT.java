@@ -58,14 +58,6 @@ public abstract class AbstractChatMemoryAdvisorIT {
 	protected abstract AbstractChatMemoryAdvisor<?> createAdvisor(ChatMemory chatMemory);
 
 	/**
-	 * Create an advisor without a default conversation ID. This is needed for testing
-	 * custom conversation IDs.
-	 * @param chatMemory The chat memory to use
-	 * @return An instance of the advisor without a default conversation ID
-	 */
-	protected abstract AbstractChatMemoryAdvisor<?> createAdvisorWithoutDefaultId(ChatMemory chatMemory);
-
-	/**
 	 * Assert the follow-up response meets the expectations for this advisor type. Default
 	 * implementation expects the model to remember "John" from the first message.
 	 * Subclasses can override this to implement advisor-specific assertions.
@@ -199,7 +191,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create advisor without a default conversation ID
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisorWithoutDefaultId(chatMemory);
+		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 
@@ -237,7 +229,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create advisor without a default conversation ID
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisorWithoutDefaultId(chatMemory);
+		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 
@@ -322,7 +314,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create advisor without a default conversation ID
-		AbstractChatMemoryAdvisor<?> advisor = createAdvisorWithoutDefaultId(chatMemory);
+		AbstractChatMemoryAdvisor<?> advisor = createAdvisor(chatMemory);
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 

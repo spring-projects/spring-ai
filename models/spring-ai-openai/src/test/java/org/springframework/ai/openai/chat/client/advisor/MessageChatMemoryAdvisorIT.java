@@ -53,12 +53,7 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 
 	@Override
 	protected AbstractChatMemoryAdvisor<?> createAdvisor(ChatMemory chatMemory) {
-		return new MessageChatMemoryAdvisor(chatMemory);
-	}
-
-	@Override
-	protected AbstractChatMemoryAdvisor<?> createAdvisorWithoutDefaultId(ChatMemory chatMemory) {
-		return new MessageChatMemoryAdvisor(chatMemory);
+		return MessageChatMemoryAdvisor.builder(chatMemory).build();
 	}
 
 	@Test
@@ -90,7 +85,9 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 			.build();
 
 		// Create MessageChatMemoryAdvisor with the conversation ID
-		MessageChatMemoryAdvisor advisor = new MessageChatMemoryAdvisor(chatMemory, conversationId);
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
+			.conversationId(conversationId)
+			.build();
 
 		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
 

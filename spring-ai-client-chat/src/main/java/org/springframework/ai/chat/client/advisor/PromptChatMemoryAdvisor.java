@@ -68,28 +68,9 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 
 	private final PromptTemplate systemPromptTemplate;
 
-	public PromptChatMemoryAdvisor(ChatMemory chatMemory) {
-		this(chatMemory, DEFAULT_SYSTEM_PROMPT_TEMPLATE.getTemplate());
-	}
-
-	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String systemPromptTemplate) {
-		super(chatMemory);
-		this.systemPromptTemplate = new PromptTemplate(systemPromptTemplate);
-	}
-
-	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, String systemPromptTemplate) {
-		this(chatMemory, defaultConversationId, new PromptTemplate(systemPromptTemplate),
-				Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
-	}
-
-	public PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, String systemPromptTemplate,
-			int order) {
-		this(chatMemory, defaultConversationId, new PromptTemplate(systemPromptTemplate), order);
-	}
-
-	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId,
+	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, boolean protectFromBlocking,
 			PromptTemplate systemPromptTemplate, int order) {
-		super(chatMemory, defaultConversationId, true, order);
+		super(chatMemory, defaultConversationId, protectFromBlocking, order);
 		this.systemPromptTemplate = systemPromptTemplate;
 	}
 
@@ -176,32 +157,82 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 					response -> this.after(response, streamAdvisorChain)));
 	}
 
-	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory, Builder> {
+	/**
+	 * Builder for PromptChatMemoryAdvisor.
+	 */
+	public static class Builder {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
+		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+		private boolean protectFromBlocking = true;
+
+		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
+
+		private ChatMemory chatMemory;
+
 		protected Builder(ChatMemory chatMemory) {
-			super(chatMemory);
+			this.chatMemory = chatMemory;
 		}
 
-		@Override
-		protected Builder self() {
+		/**
+		 * Set the system text advice.
+		 * @param systemTextAdvise the system text advice
+		 * @return the builder
+		 */
+		public Builder systemTextAdvise(String systemTextAdvise) {
+			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
 			return this;
 		}
 
-		public Builder systemTextAdvise(String systemTextAdvise) {
-			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
-			return self();
-		}
-
+		/**
+		 * Set the system prompt template.
+		 * @param systemPromptTemplate the system prompt template
+		 * @return the builder
+		 */
 		public Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
 			this.systemPromptTemplate = systemPromptTemplate;
-			return self();
+			return this;
 		}
 
+		/**
+		 * Set the conversation id.
+		 * @param conversationId the conversation id
+		 * @return the builder
+		 */
+		public Builder conversationId(String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
+		/**
+		 * Set whether to protect from blocking.
+		 * @param protectFromBlocking whether to protect from blocking
+		 * @return the builder
+		 */
+		public Builder protectFromBlocking(boolean protectFromBlocking) {
+			this.protectFromBlocking = protectFromBlocking;
+			return this;
+		}
+
+		/**
+		 * Set the order.
+		 * @param order the order
+		 * @return the builder
+		 */
+		public Builder order(int order) {
+			this.order = order;
+			return this;
+		}
+
+		/**
+		 * Build the advisor.
+		 * @return the advisor
+		 */
 		public PromptChatMemoryAdvisor build() {
-			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.systemPromptTemplate,
-					this.order);
+			return new PromptChatMemoryAdvisor(this.chatMemory, this.conversationId, this.protectFromBlocking,
+					this.systemPromptTemplate, this.order);
 		}
 
 	}

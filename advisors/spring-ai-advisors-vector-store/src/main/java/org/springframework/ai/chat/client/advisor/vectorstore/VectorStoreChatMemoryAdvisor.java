@@ -24,7 +24,9 @@ import java.util.Map;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -72,7 +74,7 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	protected final int defaultChatMemoryRetrieveSize;
 
-	public VectorStoreChatMemoryAdvisor(VectorStore chatMemory, String defaultConversationId,
+	private VectorStoreChatMemoryAdvisor(VectorStore chatMemory, String defaultConversationId,
 			int defaultChatMemoryRetrieveSize, boolean protectFromBlocking, PromptTemplate systemPromptTemplate,
 			int order) {
 		super(chatMemory, defaultConversationId, protectFromBlocking, order);
@@ -171,23 +173,26 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	/**
 	 * Builder for VectorStoreChatMemoryAdvisor.
 	 */
-	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<VectorStore, Builder> {
+	public static class Builder {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
 		private Integer chatMemoryRetrieveSize = DEFAULT_CHAT_MEMORY_RESPONSE_SIZE;
+
+		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+		private boolean protectFromBlocking = true;
+
+		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
+
+		private VectorStore chatMemory;
 
 		/**
 		 * Creates a new builder instance.
 		 * @param vectorStore the vector store to use
 		 */
 		protected Builder(VectorStore vectorStore) {
-			super(vectorStore);
-		}
-
-		@Override
-		protected Builder self() {
-			return this;
+			this.chatMemory = vectorStore;
 		}
 
 		/**
@@ -197,17 +202,17 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		 */
 		public Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
 			this.systemPromptTemplate = systemPromptTemplate;
-			return self();
+			return this;
 		}
 
 		/**
-		 * Set the system prompt template using a text template.
-		 * @param systemTextAdvise the system prompt text template
+		 * Set the system text advice.
+		 * @param systemTextAdvise the system text advice
 		 * @return this builder
 		 */
 		public Builder systemTextAdvise(String systemTextAdvise) {
 			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
-			return self();
+			return this;
 		}
 
 		/**
@@ -217,10 +222,43 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		 */
 		public Builder chatMemoryRetrieveSize(int chatMemoryRetrieveSize) {
 			this.chatMemoryRetrieveSize = chatMemoryRetrieveSize;
-			return self();
+			return this;
 		}
 
-		@Override
+		/**
+		 * Set the conversation id.
+		 * @param conversationId the conversation id
+		 * @return the builder
+		 */
+		public Builder conversationId(String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
+		/**
+		 * Set whether to protect from blocking.
+		 * @param protectFromBlocking whether to protect from blocking
+		 * @return the builder
+		 */
+		public Builder protectFromBlocking(boolean protectFromBlocking) {
+			this.protectFromBlocking = protectFromBlocking;
+			return this;
+		}
+
+		/**
+		 * Set the order.
+		 * @param order the order
+		 * @return the builder
+		 */
+		public Builder order(int order) {
+			this.order = order;
+			return this;
+		}
+
+		/**
+		 * Build the advisor.
+		 * @return the advisor
+		 */
 		public VectorStoreChatMemoryAdvisor build() {
 			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
 					this.protectFromBlocking, this.systemPromptTemplate, this.order);
