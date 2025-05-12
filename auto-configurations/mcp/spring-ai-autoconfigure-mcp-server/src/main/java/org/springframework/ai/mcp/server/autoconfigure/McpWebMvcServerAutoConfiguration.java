@@ -56,6 +56,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 1.0.0
  * @see McpServerProperties
  * @see WebMvcSseServerTransportProvider
@@ -71,8 +72,8 @@ public class McpWebMvcServerAutoConfiguration {
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
 			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerProperties serverProperties) {
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-		return new WebMvcSseServerTransportProvider(objectMapper, serverProperties.getSseMessageEndpoint(),
-				serverProperties.getSseEndpoint());
+		return new WebMvcSseServerTransportProvider(objectMapper, serverProperties.getBaseUrl(),
+				serverProperties.getSseMessageEndpoint(), serverProperties.getSseEndpoint());
 	}
 
 	@Bean
