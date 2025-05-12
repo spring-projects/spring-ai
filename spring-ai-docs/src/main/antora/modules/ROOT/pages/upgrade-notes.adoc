@@ -32,11 +32,13 @@ For details, refer to:
 === Chat ClientAnd Advisors
 
 * When building a `Prompt` from the ChatClient input, the `SystemMessage` built from `systemText()` is now placed first in the message list. Before, it was put last, resulting in errors with several model providers.
-*  In `AbstractChatMemoryAdvisor`, the `doNextWithProtectFromBlockingBefore()` protected method has been changed from accepting the old `AdvisedRequest` to the new `ChatClientRequest`. It’s a breaking change since the alternative was not part of M8.
+*  In `AbstractChatMemoryAdvisor`, the `doNextWithProtectFromBlockingBefore()` protected method has been changed from accepting the old `AdvisedRequest` to the new `ChatClientRequest`. It's a breaking change since the alternative was not part of M8.
 * `MessageAggregator` has a new method to aggregate messages from `ChatClientRequest`. The previous method aggregating messages from the old `AdvisedRequest` has been removed, since it was already marked as deprecated in M8.
-* In `SimpleLoggerAdvisor`, the `requestToString` input argument needs to be updated to use `ChatClientRequest`. It’s a breaking change since the alternative was not part of M8 yet. Same thing about the constructor.
-
-
+* In `SimpleLoggerAdvisor`, the `requestToString` input argument needs to be updated to use `ChatClientRequest`. It's a breaking change since the alternative was not part of M8 yet. Same thing about the constructor.
+* `AbstractChatMemoryAdvisor` has been replaced with a `BaseChatMemoryAdvisor` interface in the `api` package. This is a breaking change for any code that directly extended `AbstractChatMemoryAdvisor`.
+* Public constructors in `MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor`, and `VectorStoreChatMemoryAdvisor` have been made private. You must now use the builder pattern to create instances (e.g., `MessageChatMemoryAdvisor.builder(chatMemory).build()`).
+* The constant `CHAT_MEMORY_CONVERSATION_ID_KEY` has been moved from `AbstractChatMemoryAdvisor` to the `ChatMemory` interface. Update your imports to use `org.springframework.ai.chat.memory.ChatMemory.CHAT_MEMORY_CONVERSATION_ID_KEY`.
+* The `CHAT_MEMORY_RETRIEVE_SIZE_KEY` constant for vector store advisors is now available in `VectorStoreChatMemoryAdvisor`.
 
 ==== Self-contained Templates in Advisors
 
