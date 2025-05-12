@@ -28,12 +28,18 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 
 /**
  * Memory is retrieved added into the prompt's system text.
@@ -137,14 +143,37 @@ public class PromptChatMemoryAdvisor extends AbstractChatMemoryAdvisor<ChatMemor
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
-		logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-				this.doGetConversationId(chatClientResponse.context()), assistantMessages);
-		List<Message> memoryMessages = this.getChatMemoryStore()
-			.get(this.doGetConversationId(chatClientResponse.context()));
-		logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-				this.doGetConversationId(chatClientResponse.context()), memoryMessages);
+		// Handle streaming case where we have a single result
+		else if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
+				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
+			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
+		}
+
+		if (!assistantMessages.isEmpty()) {
+			this.getChatMemoryStore().add(this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+			logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
+					this.doGetConversationId(chatClientResponse.context()), assistantMessages);
+			List<Message> memoryMessages = this.getChatMemoryStore()
+				.get(this.doGetConversationId(chatClientResponse.context()));
+			logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
+					this.doGetConversationId(chatClientResponse.context()), memoryMessages);
+		}
 		return chatClientResponse;
+	}
+
+	@Override
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
+		// Get the scheduler from BaseAdvisor
+		Scheduler scheduler = this.getScheduler();
+
+		// Process the request with the before method
+		return Mono.just(chatClientRequest)
+			.publishOn(scheduler)
+			.map(request -> this.before(request, streamAdvisorChain))
+			.flatMapMany(streamAdvisorChain::nextStream)
+			.transform(flux -> new MessageAggregator().aggregateChatClientResponse(flux,
+					response -> this.after(response, streamAdvisorChain)));
 	}
 
 	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<ChatMemory, Builder> {
