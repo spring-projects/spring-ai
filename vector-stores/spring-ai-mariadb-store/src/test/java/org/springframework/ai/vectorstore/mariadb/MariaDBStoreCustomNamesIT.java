@@ -20,6 +20,7 @@ import javax.sql.DataSource;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Diego Dupin
  */
 @Testcontainers
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class MariaDBStoreCustomNamesIT {
 
 	private static String schemaName = "testdb";
