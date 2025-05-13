@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.ChatClientResponse;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -48,23 +47,6 @@ import org.springframework.util.StringUtils;
 public class MessageAggregator {
 
 	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
-
-	public Flux<ChatClientResponse> aggregateChatClientResponse(Flux<ChatClientResponse> chatClientResponses,
-			Consumer<ChatClientResponse> aggregationHandler) {
-
-		AtomicReference<Map<String, Object>> context = new AtomicReference<>(new HashMap<>());
-
-		return new MessageAggregator().aggregate(chatClientResponses.mapNotNull(chatClientResponse -> {
-			context.get().putAll(chatClientResponse.context());
-			return chatClientResponse.chatResponse();
-		}), aggregatedChatResponse -> {
-			ChatClientResponse aggregatedChatClientResponse = ChatClientResponse.builder()
-				.chatResponse(aggregatedChatResponse)
-				.context(context.get())
-				.build();
-			aggregationHandler.accept(aggregatedChatClientResponse);
-		}).map(chatResponse -> ChatClientResponse.builder().chatResponse(chatResponse).context(context.get()).build());
-	}
 
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
