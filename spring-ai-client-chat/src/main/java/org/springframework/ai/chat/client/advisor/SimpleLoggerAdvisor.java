@@ -18,10 +18,11 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.function.Function;
 
-import reactor.core.publisher.Flux;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
@@ -29,7 +30,6 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.lang.Nullable;
 
@@ -85,7 +85,7 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
 		Flux<ChatClientResponse> chatClientResponses = streamAdvisorChain.nextStream(chatClientRequest);
 
-		return new MessageAggregator().aggregateChatClientResponse(chatClientResponses, this::logResponse);
+		return new ChatClientMessageAggregator().aggregateChatClientResponse(chatClientResponses, this::logResponse);
 	}
 
 	private void logRequest(ChatClientRequest request) {
