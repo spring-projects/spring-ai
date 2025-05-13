@@ -105,8 +105,14 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties, Optional<SslBundles> sslBundles) {
-			HttpHost[] httpHosts = properties.getUris().stream().map(this::createHttpHost).toArray(HttpHost[]::new);
+		OpenSearchClient openSearchClient(OpenSearchVectorStoreProperties properties,
+				OpenSearchConnectionDetails connectionDetails, Optional<SslBundles> sslBundles) {
+
+			HttpHost[] httpHosts = connectionDetails.getUris()
+				.stream()
+				.map(s -> createHttpHost(s))
+				.toArray(HttpHost[]::new);
+
 			Optional<BasicCredentialsProvider> basicCredentialsProvider = Optional.ofNullable(properties.getUsername())
 				.map(username -> createBasicCredentialsProvider(httpHosts, username, properties.getPassword()));
 
