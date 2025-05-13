@@ -80,6 +80,11 @@ class BedrockTitanEmbeddingModelIT {
 	public static class TestConfiguration {
 
 		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
 			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
