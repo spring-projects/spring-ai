@@ -28,6 +28,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -40,7 +41,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 /**
@@ -172,7 +172,7 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.publishOn(scheduler)
 			.map(request -> this.before(request, streamAdvisorChain))
 			.flatMapMany(streamAdvisorChain::nextStream)
-			.transform(flux -> new MessageAggregator().aggregateChatClientResponse(flux,
+			.transform(flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux,
 					response -> this.after(response, streamAdvisorChain)));
 	}
 
