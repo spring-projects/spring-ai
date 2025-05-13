@@ -138,4 +138,56 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		testHandleNonExistentConversation();
 	}
 
+	@Test
+	void shouldStoreCompleteContentInStreamingMode() {
+		// Arrange
+		String conversationId = "streaming-test-" + System.currentTimeMillis();
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		// Create MessageChatMemoryAdvisor with the conversation ID
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
+			.conversationId(conversationId)
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+
+		// Act - Use streaming API
+		String userInput = "Tell me a short joke about programming";
+
+		// Collect the streaming responses
+		List<String> streamedResponses = new ArrayList<>();
+		chatClient.prompt()
+			.user(userInput)
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+			.stream()
+			.content()
+			.collectList()
+			.block();
+
+		// Wait a moment to ensure all processing is complete
+		try {
+			Thread.sleep(500);
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+
+		// Assert - Check that the memory contains the complete content
+		List<Message> memoryMessages = chatMemory.get(conversationId);
+
+		// Should have at least 2 messages (user + assistant)
+		assertThat(memoryMessages).hasSizeGreaterThanOrEqualTo(2);
+
+		// First message should be the user message
+		assertThat(memoryMessages.get(0).getText()).isEqualTo(userInput);
+
+		// Last message should be the assistant's response and should have content
+		Message assistantMessage = memoryMessages.get(memoryMessages.size() - 1);
+		assertThat(assistantMessage.getText()).isNotEmpty();
+
+		logger.info("Assistant response stored in memory: {}", assistantMessage.getText());
+	}
+
 }
