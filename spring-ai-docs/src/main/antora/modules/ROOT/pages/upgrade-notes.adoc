@@ -39,9 +39,10 @@ For details, refer to:
 * The constant `CHAT_MEMORY_CONVERSATION_ID_KEY` has been renamed to `CONVERSATION_ID` and moved from `AbstractChatMemoryAdvisor` to the `ChatMemory` interface. Update your imports to use `org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID`.
 * In `VectorStoreChatMemoryAdvisor`:
   ** The constant `DEFAULT_CHAT_MEMORY_RESPONSE_SIZE` (value: 100) has been renamed to `DEFAULT_TOP_K` with a new default value of 20.
-  ** The builder method `chatMemoryRetrieveSize(int)` has been renamed to `topK(int)`. Update your code to use the new method name: `VectorStoreChatMemoryAdvisor.builder(store).topK(1).build()`.
+  ** The builder method `chatMemoryRetrieveSize(int)` has been renamed to `defaultTopK(int)`. Update your code to use the new method name: `VectorStoreChatMemoryAdvisor.builder(vectorStore).defaultTopK(1).build()`.
   ** The `systemTextAdvise(String)` builder method has been removed. Use the `systemPromptTemplate(PromptTemplate)` method instead.
 * In `PromptChatMemoryAdvisor`, the `systemTextAdvise(String)` builder method has been removed. Use the `systemPromptTemplate(PromptTemplate)` method instead.
+* In `MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor`, and `VectorStoreChatMemoryAdvisor`, the `protectFromBlocking(boolean)` method has been removed. Use the `scheduler()` method instead. By default, the advisors protect from blocking, so you don't need to set this method unless you want to disable the protection or customize the Reactor Scheduler.
 
 ==== Self-contained Templates in Advisors
 
