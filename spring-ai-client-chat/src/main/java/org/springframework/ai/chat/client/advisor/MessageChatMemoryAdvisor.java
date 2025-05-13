@@ -18,12 +18,9 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -40,11 +37,10 @@ import org.springframework.ai.chat.messages.UserMessage;
  *
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
-
-	private static final Logger logger = LoggerFactory.getLogger(MessageChatMemoryAdvisor.class);
 
 	private final ChatMemory chatMemory;
 
@@ -56,6 +52,9 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order,
 			Scheduler scheduler) {
+		Assert.notNull(chatMemory, "chatMemory cannot be null");
+		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
+		Assert.notNull(scheduler, "scheduler cannot be null");
 		this.chatMemory = chatMemory;
 		this.defaultConversationId = defaultConversationId;
 		this.order = order;
@@ -74,7 +73,7 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-		String conversationId = getConversationId(chatClientRequest.context());
+		String conversationId = getConversationId(chatClientRequest.context(), this.defaultConversationId);
 
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
@@ -105,7 +104,8 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.chatMemory.add(this.getConversationId(chatClientResponse.context()), assistantMessages);
+		this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+				assistantMessages);
 		return chatClientResponse;
 	}
 
@@ -119,7 +119,7 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
-		private Scheduler scheduler;
+		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
 		private ChatMemory chatMemory;
 
@@ -134,16 +134,6 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 */
 		public Builder conversationId(String conversationId) {
 			this.conversationId = conversationId;
-			return this;
-		}
-
-		/**
-		 * Set whether to protect from blocking.
-		 * @param protectFromBlocking whether to protect from blocking
-		 * @return the builder
-		 */
-		public Builder protectFromBlocking(boolean protectFromBlocking) {
-			this.scheduler = protectFromBlocking ? BaseAdvisor.DEFAULT_SCHEDULER : Schedulers.immediate();
 			return this;
 		}
 

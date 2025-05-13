@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 - 2024 the original author or authors.
+ * Copyright 2024 - 2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@ package org.springframework.ai.chat.client.advisor.api;
 import java.util.Map;
 
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.util.Assert;
 
 /**
- * Base interface for {@link ChatMemory} backed advisors.
+ * Base interface for chat memory advisors.
  *
- * @author Codi
+ * @author Mark Pollack
+ * @author Thomas Vitale
  * @since 1.0
  */
 public interface BaseChatMemoryAdvisor extends BaseAdvisor {
@@ -30,12 +32,13 @@ public interface BaseChatMemoryAdvisor extends BaseAdvisor {
 	/**
 	 * Retrieve the conversation ID from the given context or return the default
 	 * conversation ID when not found.
-	 * @param context the context to retrieve the conversation ID from.
-	 * @return the conversation ID.
 	 */
-	default String getConversationId(Map<String, Object> context) {
-		return context != null && context.containsKey(ChatMemory.CONVERSATION_ID)
-				? context.get(ChatMemory.CONVERSATION_ID).toString() : ChatMemory.DEFAULT_CONVERSATION_ID;
+	default String getConversationId(Map<String, Object> context, String defaultConversationId) {
+		Assert.notNull(context, "context cannot be null");
+		Assert.noNullElements(context.keySet().toArray(), "context cannot contain null keys");
+		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
+		return context.containsKey(ChatMemory.CONVERSATION_ID) ? context.get(ChatMemory.CONVERSATION_ID).toString()
+				: defaultConversationId;
 	}
 
 }

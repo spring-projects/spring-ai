@@ -21,10 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -54,16 +52,13 @@ import org.springframework.ai.vectorstore.VectorStore;
  */
 public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
-	public static final String CHAT_MEMORY_RETRIEVE_SIZE_KEY = "chat_memory_response_size";
+	public static final String TOP_K = "chat_memory_vector_store_top_k";
 
 	private static final String DOCUMENT_METADATA_CONVERSATION_ID = "conversationId";
 
 	private static final String DOCUMENT_METADATA_MESSAGE_TYPE = "messageType";
 
-	/**
-	 * The default chat memory retrieve size to use when no retrieve size is provided.
-	 */
-	public static final int DEFAULT_TOP_K = 20;
+	private static final int DEFAULT_TOP_K = 20;
 
 	private static final PromptTemplate DEFAULT_SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
 			{instructions}
@@ -78,7 +73,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private final PromptTemplate systemPromptTemplate;
 
-	protected final int defaultChatMemoryRetrieveSize;
+	private final int defaultTopK;
 
 	private final String defaultConversationId;
 
@@ -86,12 +81,17 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private final Scheduler scheduler;
 
-	private VectorStore vectorStore;
+	private final VectorStore vectorStore;
 
-	public VectorStoreChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int defaultChatMemoryRetrieveSize,
+	private VectorStoreChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int defaultTopK,
 			String defaultConversationId, int order, Scheduler scheduler, VectorStore vectorStore) {
+		Assert.notNull(systemPromptTemplate, "systemPromptTemplate cannot be null");
+		Assert.isTrue(defaultTopK > 0, "topK must be greater than 0");
+		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
+		Assert.notNull(scheduler, "scheduler cannot be null");
+		Assert.notNull(vectorStore, "vectorStore cannot be null");
 		this.systemPromptTemplate = systemPromptTemplate;
-		this.defaultChatMemoryRetrieveSize = defaultChatMemoryRetrieveSize;
+		this.defaultTopK = defaultTopK;
 		this.defaultConversationId = defaultConversationId;
 		this.order = order;
 		this.scheduler = scheduler;
@@ -114,7 +114,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
-		String conversationId = getConversationId(request.context());
+		String conversationId = getConversationId(request.context(), this.defaultConversationId);
 		String query = request.prompt().getUserMessage() != null ? request.prompt().getUserMessage().getText() : "";
 		int topK = getChatMemoryTopK(request.context());
 		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
@@ -149,9 +149,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	}
 
 	private int getChatMemoryTopK(Map<String, Object> context) {
-		return context.containsKey(CHAT_MEMORY_RETRIEVE_SIZE_KEY)
-				? Integer.parseInt(context.get(CHAT_MEMORY_RETRIEVE_SIZE_KEY).toString())
-				: this.defaultChatMemoryRetrieveSize;
+		return context.containsKey(TOP_K) ? Integer.parseInt(context.get(TOP_K).toString()) : this.defaultTopK;
 	}
 
 	@Override
@@ -164,7 +162,8 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.vectorStore.write(toDocuments(assistantMessages, this.getConversationId(chatClientResponse.context())));
+		this.vectorStore.write(toDocuments(assistantMessages,
+				this.getConversationId(chatClientResponse.context(), this.defaultConversationId)));
 		return chatClientResponse;
 	}
 
@@ -202,11 +201,11 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
-		private Integer topK = DEFAULT_TOP_K;
+		private Integer defaultTopK = DEFAULT_TOP_K;
 
 		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
-		private Scheduler scheduler;
+		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
@@ -232,11 +231,11 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		/**
 		 * Set the chat memory retrieve size.
-		 * @param topK the chat memory retrieve size
+		 * @param defaultTopK the chat memory retrieve size
 		 * @return this builder
 		 */
-		public Builder topK(int topK) {
-			this.topK = topK;
+		public Builder defaultTopK(int defaultTopK) {
+			this.defaultTopK = defaultTopK;
 			return this;
 		}
 
@@ -247,16 +246,6 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 */
 		public Builder conversationId(String conversationId) {
 			this.conversationId = conversationId;
-			return this;
-		}
-
-		/**
-		 * Set whether to protect from blocking.
-		 * @param protectFromBlocking whether to protect from blocking
-		 * @return the builder
-		 */
-		public Builder protectFromBlocking(boolean protectFromBlocking) {
-			this.scheduler = protectFromBlocking ? BaseAdvisor.DEFAULT_SCHEDULER : Schedulers.immediate();
 			return this;
 		}
 
@@ -280,7 +269,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 * @return the advisor
 		 */
 		public VectorStoreChatMemoryAdvisor build() {
-			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.topK, this.conversationId,
+			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.defaultTopK, this.conversationId,
 					this.order, this.scheduler, this.vectorStore);
 		}
 
