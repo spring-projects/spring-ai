@@ -21,15 +21,52 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import reactor.core.scheduler.Schedulers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests for {@link MessageChatMemoryAdvisor} builder method chaining.
+ * Unit tests for {@link MessageChatMemoryAdvisor}.
  *
  * @author Mark Pollack
+ * @author Thomas Vitale
  */
 public class MessageChatMemoryAdvisorTests {
+
+	@Test
+	void whenChatMemoryIsNullThenThrow() {
+		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("chatMemory cannot be null");
+	}
+
+	@Test
+	void whenDefaultConversationIdIsNullThenThrow() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+
+		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(chatMemory).conversationId(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("defaultConversationId cannot be null or empty");
+	}
+
+	@Test
+	void whenDefaultConversationIdIsEmptyThenThrow() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+
+		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(chatMemory).conversationId(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("defaultConversationId cannot be null or empty");
+	}
+
+	@Test
+	void whenSchedulerIsNullThenThrow() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+
+		assertThatThrownBy(() -> MessageChatMemoryAdvisor.builder(chatMemory).scheduler(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("scheduler cannot be null");
+	}
 
 	@Test
 	void testBuilderMethodChaining() {
@@ -41,12 +78,11 @@ public class MessageChatMemoryAdvisorTests {
 		// Test builder method chaining with methods from AbstractBuilder
 		String customConversationId = "test-conversation-id";
 		int customOrder = 42;
-		boolean customProtectFromBlocking = false;
 
 		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
 			.conversationId(customConversationId)
 			.order(customOrder)
-			.protectFromBlocking(customProtectFromBlocking)
+			.scheduler(Schedulers.immediate())
 			.build();
 
 		// Verify the advisor was built with the correct properties

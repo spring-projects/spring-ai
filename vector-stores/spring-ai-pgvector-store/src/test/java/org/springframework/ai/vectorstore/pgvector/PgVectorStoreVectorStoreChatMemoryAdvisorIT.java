@@ -118,7 +118,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Dogs are loyal pets.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
 		// Send a semantically related query
@@ -154,7 +154,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 			.of(new Document("Automobiles are fast.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()
@@ -186,7 +186,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Bananas are yellow.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(2).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(2).build())
 			.build();
 
 		String answer = chatClient.prompt()
@@ -220,7 +220,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Dogs are loyal pets.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()
@@ -251,7 +251,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()
@@ -283,7 +283,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Bananas are yellow.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(2).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(2).build())
 			.build();
 
 		String answer = chatClient.prompt()
@@ -315,7 +315,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 			.of(new Document("The sun is a star.", java.util.Map.of("conversationId", conversationId))));
 
 		ChatClient chatClient = ChatClient.builder(chatModel)
-			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).topK(1).build())
+			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
 		String answer = chatClient.prompt()

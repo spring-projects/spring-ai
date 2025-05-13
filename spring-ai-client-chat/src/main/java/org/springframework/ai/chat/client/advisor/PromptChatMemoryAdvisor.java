@@ -23,10 +23,10 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -80,6 +80,10 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private PromptChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order, Scheduler scheduler,
 			PromptTemplate systemPromptTemplate) {
+		Assert.notNull(chatMemory, "chatMemory cannot be null");
+		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
+		Assert.notNull(scheduler, "scheduler cannot be null");
+		Assert.notNull(systemPromptTemplate, "systemPromptTemplate cannot be null");
 		this.chatMemory = chatMemory;
 		this.defaultConversationId = defaultConversationId;
 		this.order = order;
@@ -103,7 +107,7 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
-		String conversationId = getConversationId(chatClientRequest.context());
+		String conversationId = getConversationId(chatClientRequest.context(), this.defaultConversationId);
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 		logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
@@ -151,12 +155,15 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		}
 
 		if (!assistantMessages.isEmpty()) {
-			this.chatMemory.add(this.getConversationId(chatClientResponse.context()), assistantMessages);
+			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+					assistantMessages);
 			logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-					this.getConversationId(chatClientResponse.context()), assistantMessages);
-			List<Message> memoryMessages = this.chatMemory.get(this.getConversationId(chatClientResponse.context()));
+					this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+					assistantMessages);
+			List<Message> memoryMessages = this.chatMemory
+				.get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
 			logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-					this.getConversationId(chatClientResponse.context()), memoryMessages);
+					this.getConversationId(chatClientResponse.context(), this.defaultConversationId), memoryMessages);
 		}
 		return chatClientResponse;
 	}
@@ -212,16 +219,6 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		 */
 		public Builder conversationId(String conversationId) {
 			this.conversationId = conversationId;
-			return this;
-		}
-
-		/**
-		 * Set whether to protect from blocking.
-		 * @param protectFromBlocking whether to protect from blocking
-		 * @return the builder
-		 */
-		public Builder protectFromBlocking(boolean protectFromBlocking) {
-			this.scheduler = protectFromBlocking ? BaseAdvisor.DEFAULT_SCHEDULER : Schedulers.immediate();
 			return this;
 		}
 
