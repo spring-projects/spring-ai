@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(Neo4jChatMemoryRepositoryProperties.CONFIG_PREFIX)
 public class Neo4jChatMemoryRepositoryProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.neo4j";
+	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.neo4j";
 
 	private String sessionLabel = Neo4jChatMemoryRepositoryConfig.DEFAULT_SESSION_LABEL;
 
