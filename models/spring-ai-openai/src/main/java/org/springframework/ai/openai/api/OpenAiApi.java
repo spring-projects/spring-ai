@@ -1605,14 +1605,6 @@ public class OpenAiApi {
 	 * completion).
 	 * @param promptTokensDetails Breakdown of tokens used in the prompt.
 	 * @param completionTokenDetails Breakdown of tokens used in a completion.
-	 * @param promptCacheHitTokens Number of tokens in the prompt that were served from
-	 * (util for
-	 * <a href="https://api-docs.deepseek.com/api/create-chat-completion">DeepSeek</a>
-	 * support).
-	 * @param promptCacheMissTokens Number of tokens in the prompt that were not served
-	 * (util for
-	 * <a href="https://api-docs.deepseek.com/api/create-chat-completion">DeepSeek</a>
-	 * support).
 	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -1621,12 +1613,11 @@ public class OpenAiApi {
 		@JsonProperty("prompt_tokens") Integer promptTokens,
 		@JsonProperty("total_tokens") Integer totalTokens,
 		@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails,
-		@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails,
-		@JsonProperty("prompt_cache_hit_tokens") Integer promptCacheHitTokens,
-		@JsonProperty("prompt_cache_miss_tokens") Integer promptCacheMissTokens) { // @formatter:on
+		@JsonProperty("completion_tokens_details") CompletionTokenDetails completionTokenDetails
+		) { // @formatter:on
 
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
-			this(completionTokens, promptTokens, totalTokens, null, null, null, null);
+			this(completionTokens, promptTokens, totalTokens, null, null);
 		}
 
 		/**
