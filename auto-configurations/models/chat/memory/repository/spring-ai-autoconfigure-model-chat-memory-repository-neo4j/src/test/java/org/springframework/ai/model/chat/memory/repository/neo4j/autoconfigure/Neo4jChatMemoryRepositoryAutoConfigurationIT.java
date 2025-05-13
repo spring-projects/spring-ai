@@ -140,7 +140,7 @@ class Neo4jChatMemoryRepositoryAutoConfigurationIT {
 		final String toolResponseLabel = "LabelToolResponse";
 		final String mediaLabel = "LabelMedia";
 
-		final String propertyBase = "spring.ai.chat.memory.neo4j.%s=%s";
+		final String propertyBase = "spring.ai.chat.memory.repository.neo4j.%s=%s";
 		this.contextRunner
 			.withPropertyValues("spring.neo4j.uri=" + neo4jContainer.getBoltUrl(),
 					propertyBase.formatted("sessionlabel", sessionLabel),

@@ -29,7 +29,7 @@ For details, refer to:
 [[upgrading-to-1-0-0-RC1]]
 == Upgrading to 1.0.0-RC1
 
-=== Chat ClientAnd Advisors
+=== Chat Client and Advisors
 
 * When building a `Prompt` from the ChatClient input, the `SystemMessage` built from `systemText()` is now placed first in the message list. Before, it was put last, resulting in errors with several model providers.
 * `MessageAggregator` has a new method to aggregate messages from `ChatClientRequest`. The previous method aggregating messages from the old `AdvisedRequest` has been removed, since it was already marked as deprecated in M8.
@@ -60,6 +60,7 @@ If you were providing custom templates for the following advisors, you'll need t
 ** a `long_term_memory` placeholder to receive the retrieved conversation memory.
 
 === Breaking Changes
+
 The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
 Hopefully Watson will reappear in a future version of Spring AI
 
@@ -82,6 +83,7 @@ In 1.0.0-RC1, the chat memory modules, starters, and autoconfiguration classes f
 
 - Java packages now use `.repository.` (e.g., `org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository` and `org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure.JdbcChatMemoryRepositoryAutoConfiguration`).
 - Main autoconfiguration classes are now named `JdbcChatMemoryRepositoryAutoConfiguration`, `CassandraChatMemoryRepositoryAutoConfiguration`, etc.
+- Properties have also been renamed to reflect the new naming convention, from `spring.ai.chat.memory.<storage>...` to `spring.ai.chat.memory.repository.<storage>...`.
 
 **Migration Required:**
 - Update your Maven/Gradle dependencies to use the new artifact IDs.
