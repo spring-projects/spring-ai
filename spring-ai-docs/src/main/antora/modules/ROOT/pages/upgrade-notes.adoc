@@ -29,25 +29,50 @@ For details, refer to:
 [[upgrading-to-1-0-0-RC1]]
 == Upgrading to 1.0.0-RC1
 
-=== Chat Client and Advisors
+You can automate the upgrade process to 1.0.0-RC1 using an OpenRewrite recipe.
+This recipe helps apply many of the necessary code changes for this version.
+Find the recipe and usage instructions at https://github.com/arconia-io/arconia-migrations/blob/main/docs/spring-ai.md[Arconia Spring AI Migrations].
+
+
+=== Feature Enhancements
 
 * When building a `Prompt` from the ChatClient input, the `SystemMessage` built from `systemText()` is now placed first in the message list. Before, it was put last, resulting in errors with several model providers.
-* `MessageAggregator` has a new method to aggregate messages from `ChatClientRequest`. The previous method aggregating messages from the old `AdvisedRequest` has been removed, since it was already marked as deprecated in M8.
+
+=== Breaking Changes
+
+==== Watson
+The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
+Hopefully Watson will reappear in a future version of Spring AI
+
+==== MoonShot and QianFan
+
+Mooonshot and Qianfan have been removed since they are not accessible from outside China.  These have been moved to the Spring AI Community repository.
+
+==== Chat Client and Advisors
+
+The main changes that impact end user code are:
+* In `VectorStoreChatMemoryAdvisor`:
+** The constant `CHAT_MEMORY_RETRIEVE_SIZE_KEY` has been renamed to `TOP_K`.
+** The constant `DEFAULT_CHAT_MEMORY_RESPONSE_SIZE` (value: 100) has been renamed to `DEFAULT_TOP_K` with a new default value of 20.
+
+* The constant `CHAT_MEMORY_CONVERSATION_ID_KEY` has been renamed to `CONVERSATION_ID` and moved from `AbstractChatMemoryAdvisor` to the `ChatMemory` interface. Update your imports to use `org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID`.
+
+Other changes are:
+
 * In `SimpleLoggerAdvisor`, the `requestToString` input argument needs to be updated to use `ChatClientRequest`. It's a breaking change since the alternative was not part of M8 yet. Same thing about the constructor.
 * `AbstractChatMemoryAdvisor` has been replaced with a `BaseChatMemoryAdvisor` interface in the `api` package. This is a breaking change for any code that directly extended `AbstractChatMemoryAdvisor`.
 * Public constructors in `MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor`, and `VectorStoreChatMemoryAdvisor` have been made private. You must now use the builder pattern to create instances (e.g., `MessageChatMemoryAdvisor.builder(chatMemory).build()`).
-* The constant `CHAT_MEMORY_CONVERSATION_ID_KEY` has been renamed to `CONVERSATION_ID` and moved from `AbstractChatMemoryAdvisor` to the `ChatMemory` interface. Update your imports to use `org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID`.
 * In `VectorStoreChatMemoryAdvisor`:
-  ** The constant `DEFAULT_CHAT_MEMORY_RESPONSE_SIZE` (value: 100) has been renamed to `DEFAULT_TOP_K` with a new default value of 20.
   ** The builder method `chatMemoryRetrieveSize(int)` has been renamed to `defaultTopK(int)`. Update your code to use the new method name: `VectorStoreChatMemoryAdvisor.builder(vectorStore).defaultTopK(1).build()`.
   ** The `systemTextAdvise(String)` builder method has been removed. Use the `systemPromptTemplate(PromptTemplate)` method instead.
 * In `PromptChatMemoryAdvisor`, the `systemTextAdvise(String)` builder method has been removed. Use the `systemPromptTemplate(PromptTemplate)` method instead.
 * In `MessageChatMemoryAdvisor`, `PromptChatMemoryAdvisor`, and `VectorStoreChatMemoryAdvisor`, the `protectFromBlocking(boolean)` method has been removed. Use the `scheduler()` method instead. By default, the advisors protect from blocking, so you don't need to set this method unless you want to disable the protection or customize the Reactor Scheduler.
 
-==== Self-contained Templates in Advisors
+===== Self-contained Templates in Advisors
 
 The built-in advisors that perform prompt augmentation have been updated to use self-contained templates. The goal is for each advisor to be able to perform templating operations without affecting nor being affected by templating and prompt decisions in other advisors.
-If you were providing custom templates for the following advisors, you'll need to update them to ensure all expected placeholders are included.
+
+*If you were providing custom templates for the following advisors, you'll need to update them to ensure all expected placeholders are included.*
 
 * The `QuestionAnswerAdvisor` expects a template with the following placeholders (see xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[more details]):
 ** a `query` placeholder to receive the user question.
@@ -58,11 +83,6 @@ If you were providing custom templates for the following advisors, you'll need t
 * The `VectorStoreChatMemoryAdvisor` expects a template with the following placeholders (see xref:api/chat-memory.adoc#_vectorstorechatmemoryadvisor[more details]):
 ** an `instructions` placeholder to receive the original system message.
 ** a `long_term_memory` placeholder to receive the retrieved conversation memory.
-
-=== Breaking Changes
-
-The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
-Hopefully Watson will reappear in a future version of Spring AI
 
 ==== Chat Memory Repository Module and Autoconfiguration Renaming
 
@@ -89,6 +109,36 @@ In 1.0.0-RC1, the chat memory modules, starters, and autoconfiguration classes f
 - Update your Maven/Gradle dependencies to use the new artifact IDs.
 - Update any imports, class references, or configuration that used the old package or class names.
 
+=== Message Aggregator
+
+* `MessageAggregator` has a new method to aggregate messages from `ChatClientRequest`. The previous method aggregating messages from the old `AdvisedRequest` has been removed, since it was already marked as deprecated in M8.
+
+==== MessageAggregator Refactoring
+
+===== Changes
+
+* `MessageAggregator` class has been moved from `org.springframework.ai.chat.model` package in the `spring-ai-client-chat` module to the `spring-ai-model` module (same package name)
+* The `aggregateChatClientResponse` method has been removed from `MessageAggregator` and moved to a new class `ChatClientMessageAggregator` in the `org.springframework.ai.chat.client` package
+
+===== Migration Guide
+
+If you were directly using the `aggregateChatClientResponse` method from `MessageAggregator`, you need to use the new `ChatClientMessageAggregator` class instead:
+
+[source,java]
+----
+// Before
+new MessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+
+// After
+new ChatClientMessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+----
+
+Don't forget to add the appropriate import:
+
+[source,java]
+----
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
+----
 
 [[upgrading-to-1-0-0-m8]]
 == Upgrading to 1.0.0-M8
@@ -128,7 +178,7 @@ chatClient.prompt("What day is tomorrow?")
 
 ==== Why This Change Was Made
 
-The Spring AI team renamed the overloaded `tools()` methods to improve clarity and prevent ambiguity in method dispatching. The previous API design led to confusion when the Java compiler needed to select between multiple overloaded methods based on parameter types.
+The Spring AI team renamed the overloaded `tools()` methods to improve clarity and prevent ambiguity in method dispatching based on argument types.
 
 ==== Method Mapping from M7 to M8
 
