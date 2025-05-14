@@ -121,6 +121,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 * The format in which the generated images are returned. It is sent as part of the
 	 * accept header. Must be "application/json" or "image/png"
 	 */
+	@JsonProperty("response_format")
 	private String responseFormat;
 
 	/**
