@@ -16,13 +16,11 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -35,6 +33,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -83,9 +82,31 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
-		this.deleteByConversationId(conversationId);
-		this.jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
-				new AddBatchPreparedStatement(conversationId, messages));
+
+		Connection connection = null;
+		Assert.notNull(jdbcTemplate.getDataSource(), "jdbcTemplate.getDataSource() cannot be null");
+		try {
+			connection = DataSourceUtils.getConnection(jdbcTemplate.getDataSource());
+			connection.setAutoCommit(false);
+			this.deleteByConversationId(conversationId);
+			this.jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
+					new AddBatchPreparedStatement(conversationId, messages));
+			connection.commit();
+		}
+		catch (SQLException ex) {
+			try {
+				connection.rollback();
+			}
+			catch (SQLException e) {
+				throw new RuntimeException("Transaction rollback exception", e);
+			}
+			throw new RuntimeException("save messages failed", ex);
+		}
+		finally {
+			Optional.ofNullable(connection)
+				.ifPresent(conn -> DataSourceUtils.releaseConnection(conn, jdbcTemplate.getDataSource()));
+		}
+
 	}
 
 	@Override
