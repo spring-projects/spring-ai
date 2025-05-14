@@ -54,8 +54,14 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
 			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing-bridge-otel</artifactId>
+			<artifactId>micrometer-tracing</artifactId>
 			<optional>true</optional>
 		</dependency>
 

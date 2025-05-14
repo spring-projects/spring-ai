@@ -59,7 +59,7 @@ For example, to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI Embedd
 </dependency>
 ----
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 Now you can auto-wire the `MariaDBVectorStore` in your application:
 

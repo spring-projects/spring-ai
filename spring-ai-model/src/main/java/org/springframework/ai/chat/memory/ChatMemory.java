@@ -33,6 +33,11 @@ public interface ChatMemory {
 	String DEFAULT_CONVERSATION_ID = "default";
 
 	/**
+	 * The key to retrieve the chat memory conversation id from the context.
+	 */
+	String CONVERSATION_ID = "chat_memory_conversation_id";
+
+	/**
 	 * Save the specified message in the chat memory for the specified conversation.
 	 */
 	default void add(String conversationId, Message message) {
@@ -49,16 +54,7 @@ public interface ChatMemory {
 	/**
 	 * Get the messages in the chat memory for the specified conversation.
 	 */
-	default List<Message> get(String conversationId) {
-		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		return get(conversationId, Integer.MAX_VALUE);
-	}
-
-	/**
-	 * @deprecated in favor of using {@link MessageWindowChatMemory}.
-	 */
-	@Deprecated
-	List<Message> get(String conversationId, int lastN);
+	List<Message> get(String conversationId);
 
 	/**
 	 * Clear the chat memory for the specified conversation.

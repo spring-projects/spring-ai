@@ -87,7 +87,7 @@ The common properties are prefixed with `spring.ai.mcp.client`:
 
 |`toolcallback.enabled`
 |Enable/disable the MCP tool callback integration with Spring AI's tool execution framework
-|`false`
+|`true`
 |===
 
 === Stdio Transport Properties
@@ -319,7 +319,7 @@ The auto-configuration supports multiple transport types:
 
 === Integration with Spring AI
 
-The starter can configure tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions. This integration is opt-in and must be explicitly enabled with the `spring.ai.mcp.client.toolcallback.enabled=true` property.
+The starter can configure tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions. This integration is enabled by default and can be disabled by setting the `spring.ai.mcp.client.toolcallback.enabled=false` property.
 
 == Usage Example
 
@@ -368,25 +368,13 @@ private List<McpSyncClient> mcpSyncClients;  // For sync client
 private List<McpAsyncClient> mcpAsyncClients;  // For async client
 ----
 
-When tool callbacks are enabled, the registered MCP Tools with all MCP clients are provided as a ToolCallbackProvider instance:
+When tool callbacks are enabled (the default behavior), the registered MCP Tools with all MCP clients are provided as a `ToolCallbackProvider` instance:
 
 [source,java]
 ----
 @Autowired
 private SyncMcpToolCallbackProvider toolCallbackProvider;
 ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
-----
-
-Note that the tool callback functionality is disabled by default and must be explicitly enabled with:
-
-[source,yaml]
-----
-spring:
-  ai:
-    mcp:
-      client:
-        toolcallback:
-          enabled: true
 ----
 
 == Example Applications

@@ -16,19 +16,17 @@
 
 package org.springframework.ai.chat.observation;
 
-import io.micrometer.tracing.handler.TracingObservationHandler;
-import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.trace.ReadableSpan;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.conventions.AiObservationAttributes;
-import org.springframework.ai.observation.conventions.AiObservationEventNames;
-import org.springframework.ai.observation.tracing.TracingHelper;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,35 +34,68 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link ChatModelPromptContentObservationHandler}.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
+@ExtendWith(OutputCaptureExtension.class)
 class ChatModelPromptContentObservationHandlerTests {
 
+	private final ChatModelPromptContentObservationHandler observationHandler = new ChatModelPromptContentObservationHandler();
+
 	@Test
-	void whenPromptWithTextThenSpanEvent() {
-		var observationContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt("supercalifragilisticexpialidocious",
-					ChatOptions.builder().model("spoonful-of-sugar").build()))
-			.provider("mary-poppins")
+	void whenNotSupportedObservationContextThenReturnFalse() {
+		var context = new Observation.Context();
+		assertThat(observationHandler.supportsContext(context)).isFalse();
+	}
+
+	@Test
+	void whenSupportedObservationContextThenReturnTrue() {
+		var context = ChatModelObservationContext.builder()
+			.prompt(new Prompt(List.of(), ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
 			.build();
-		var sdkTracer = SdkTracerProvider.builder().build().get("test");
-		var otelTracer = new OtelTracer(sdkTracer, new OtelCurrentTraceContext(), null);
-		var span = otelTracer.nextSpan();
-		var tracingContext = new TracingObservationHandler.TracingContext();
-		tracingContext.setSpan(span);
-		observationContext.put(TracingObservationHandler.TracingContext.class, tracingContext);
+		assertThat(observationHandler.supportsContext(context)).isTrue();
+	}
 
-		new ChatModelPromptContentObservationHandler().onStop(observationContext);
+	@Test
+	void whenEmptyPromptThenOutputNothing(CapturedOutput output) {
+		var context = ChatModelObservationContext.builder()
+			.prompt(new Prompt(List.of(), ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Chat Model Prompt Content:
+				[]
+				""");
+	}
 
-		var otelSpan = TracingHelper.extractOtelSpan(tracingContext);
-		assertThat(otelSpan).isNotNull();
-		var spanData = ((ReadableSpan) otelSpan).toSpanData();
-		assertThat(spanData.getEvents().size()).isEqualTo(1);
-		assertThat(spanData.getEvents().get(0).getName()).isEqualTo(AiObservationEventNames.CONTENT_PROMPT.value());
-		assertThat(spanData.getEvents()
-			.get(0)
-			.getAttributes()
-			.get(AttributeKey.stringArrayKey(AiObservationAttributes.PROMPT.value())))
-			.containsOnly("supercalifragilisticexpialidocious");
+	@Test
+	void whenPromptWithTextThenOutputIt(CapturedOutput output) {
+		var context = ChatModelObservationContext.builder()
+			.prompt(new Prompt("supercalifragilisticexpialidocious", ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Chat Model Prompt Content:
+				["supercalifragilisticexpialidocious"]
+				""");
+	}
+
+	@Test
+	void whenPromptWithMessagesThenOutputIt(CapturedOutput output) {
+		var context = ChatModelObservationContext.builder()
+			.prompt(new Prompt(
+					List.of(new SystemMessage("you're a chimney sweep"),
+							new UserMessage("supercalifragilisticexpialidocious")),
+					ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Chat Model Prompt Content:
+				["you're a chimney sweep", "supercalifragilisticexpialidocious"]
+				""");
 	}
 
 }

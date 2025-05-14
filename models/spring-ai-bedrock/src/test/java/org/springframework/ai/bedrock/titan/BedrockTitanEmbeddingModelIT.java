@@ -40,12 +40,17 @@ import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
+
 @SpringBootTest
 @RequiresAwsCredentials
 class BedrockTitanEmbeddingModelIT {
 
 	@Autowired
 	private BedrockTitanEmbeddingModel embeddingModel;
+
+	@Autowired
+	TestObservationRegistry observationRegistry;
 
 	@Test
 	void singleEmbedding() {
@@ -75,6 +80,11 @@ class BedrockTitanEmbeddingModelIT {
 	public static class TestConfiguration {
 
 		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
 			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
@@ -82,8 +92,9 @@ class BedrockTitanEmbeddingModelIT {
 		}
 
 		@Bean
-		public BedrockTitanEmbeddingModel titanEmbedding(TitanEmbeddingBedrockApi titanEmbeddingApi) {
-			return new BedrockTitanEmbeddingModel(titanEmbeddingApi);
+		public BedrockTitanEmbeddingModel titanEmbedding(TitanEmbeddingBedrockApi titanEmbeddingApi,
+				TestObservationRegistry observationRegistry) {
+			return new BedrockTitanEmbeddingModel(titanEmbeddingApi, observationRegistry);
 		}
 
 	}

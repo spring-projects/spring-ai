@@ -22,6 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for chat model observations.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 @ConfigurationProperties(ChatObservationProperties.CONFIG_PREFIX)
@@ -35,9 +36,9 @@ public class ChatObservationProperties {
 	private boolean includeCompletion = false;
 
 	/**
-	 * Whether to include the prompt content in the observations.
+	 * Whether to log the prompt content in the observations.
 	 */
-	private boolean includePrompt = false;
+	private boolean logPrompt = false;
 
 	/**
 	 * Whether to include error logging in the observations.
@@ -52,12 +53,12 @@ public class ChatObservationProperties {
 		this.includeCompletion = includeCompletion;
 	}
 
-	public boolean isIncludePrompt() {
-		return this.includePrompt;
+	public boolean isLogPrompt() {
+		return this.logPrompt;
 	}
 
-	public void setIncludePrompt(boolean includePrompt) {
-		this.includePrompt = includePrompt;
+	public void setLogPrompt(boolean logPrompt) {
+		this.logPrompt = logPrompt;
 	}
 
 	public boolean isIncludeErrorLogging() {

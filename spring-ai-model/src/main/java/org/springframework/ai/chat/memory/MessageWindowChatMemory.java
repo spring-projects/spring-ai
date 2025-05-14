@@ -16,14 +16,14 @@
 
 package org.springframework.ai.chat.memory;
 
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.util.Assert;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.util.Assert;
 
 /**
  * A chat memory implementation that maintains a message window of a specified size,
@@ -36,13 +36,12 @@ import java.util.Set;
  * {@link SystemMessage} messages are preserved while evicting other types of messages.
  *
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public final class MessageWindowChatMemory implements ChatMemory {
 
 	private static final int DEFAULT_MAX_MESSAGES = 20;
-
-	private static final ChatMemoryRepository DEFAULT_CHAT_MEMORY_REPOSITORY = new InMemoryChatMemoryRepository();
 
 	private final ChatMemoryRepository chatMemoryRepository;
 
@@ -70,12 +69,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	public List<Message> get(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		return this.chatMemoryRepository.findByConversationId(conversationId);
-	}
-
-	@Override
-	@Deprecated // in favor of get(conversationId)
-	public List<Message> get(String conversationId, int lastN) {
-		return get(conversationId);
 	}
 
 	@Override
@@ -124,7 +117,7 @@ public final class MessageWindowChatMemory implements ChatMemory {
 
 	public static class Builder {
 
-		private ChatMemoryRepository chatMemoryRepository = DEFAULT_CHAT_MEMORY_REPOSITORY;
+		private ChatMemoryRepository chatMemoryRepository;
 
 		private int maxMessages = DEFAULT_MAX_MESSAGES;
 
@@ -142,7 +135,10 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		}
 
 		public MessageWindowChatMemory build() {
-			return new MessageWindowChatMemory(chatMemoryRepository, maxMessages);
+			if (this.chatMemoryRepository == null) {
+				this.chatMemoryRepository = new InMemoryChatMemoryRepository();
+			}
+			return new MessageWindowChatMemory(this.chatMemoryRepository, this.maxMessages);
 		}
 
 	}

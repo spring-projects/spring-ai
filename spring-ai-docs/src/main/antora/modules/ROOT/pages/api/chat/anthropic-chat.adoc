@@ -23,7 +23,7 @@ export SPRING_AI_ANTHROPIC_API_KEY=<INSERT KEY HERE>
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -93,6 +93,7 @@ The prefix `spring.ai.anthropic` is used as the property prefix that lets you co
 | Property | Description | Default
 
 | spring.ai.anthropic.base-url   | The URL to connect to |  https://api.anthropic.com
+| spring.ai.anthropic.completions-path   | The path to append to the base URL. |  `/v1/chat/completions`
 | spring.ai.anthropic.version   | Anthropic API version |  2023-06-01
 | spring.ai.anthropic.api-key    | The API Key           |  -
 | spring.ai.anthropic.beta-version | Enables new/experimental features. If set to `max-tokens-3-5-sonnet-2024-07-15` 

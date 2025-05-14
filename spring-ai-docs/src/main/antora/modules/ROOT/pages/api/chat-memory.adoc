@@ -5,7 +5,7 @@ Large language models (LLMs) are stateless, meaning they do not retain informati
 
 The `ChatMemory` abstraction allows you to implement various types of memory to support different use cases. The underlying storage of the messages is handled by the `ChatMemoryRepository`, whose sole responsibility is to store and retrieve messages. It's up to the `ChatMemory` implementation to decide which messages to keep and when to remove them. Examples of strategies could include keeping the last N messages, keeping messages for a certain time period, or keeping messages up to a certain token limit.
 
-Before choosing a memory type, it's important to understand the difference between chat memory and chat history.
+Before choosing a memory type, it's essential to understand the difference between chat memory and chat history.
 
 * *Chat Memory*. The information that a large-language model retains and uses to maintain contextual awareness throughout a conversation.
 * *Chat History*. The entire conversation history, including all messages exchanged between the user and the model.
@@ -66,7 +66,7 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 
 === JdbcChatMemoryRepository
 
-`JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It is suitable for applications that require persistent storage of chat memory.
+`JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory.
 
 First, add the following dependency to your project:
 
@@ -78,7 +78,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-model-chat-memory-jdbc</artifactId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
 </dependency>
 ----
 
@@ -87,7 +87,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-jdbc'
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
 }
 ----
 ======
@@ -105,13 +105,124 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .build();
 ----
 
-If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by providing a `JdbcTemplate` instance:
+If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by providing a `JdbcTemplate` instance and a `JdbcChatMemoryRepositoryDialect`:
 
 [source,java]
 ----
 ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
     .jdbcTemplate(jdbcTemplate)
+    .dialect(new PostgresChatMemoryDialect())
     .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Supported Databases and Dialect Abstraction
+
+Spring AI supports multiple relational databases via a dialect abstraction. The following databases are supported out-of-the-box:
+
+- PostgreSQL
+- MySQL / MariaDB
+- SQL Server
+- HSQLDB
+
+The correct dialect can be auto-detected from the JDBC URL when using `JdbcChatMemoryRepositoryDialect.from(DataSource)`. You can extend support for other databases by implementing the `JdbcChatMemoryRepositoryDialect` interface.
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.ai.chat.memory.repository.jdbc.initialize-schema` | Controls when to initialize the schema. Values: `embedded` (default), `always`, `never`. | `embedded`
+| `spring.ai.chat.memory.repository.jdbc.schema` | Location of the schema script to use for initialization. Supports `classpath:` URLs and platform placeholders. | `classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql`
+| `spring.ai.chat.memory.repository.jdbc.platform` | Platform to use in initialization scripts if the @@platform@@ placeholder is used. | _auto-detected_
+|===
+
+==== Schema Initialization
+
+The auto-configuration will automatically create the `SPRING_AI_CHAT_MEMORY` table on startup, using a vendor-specific SQL script for your database. By default, schema initialization runs only for embedded databases (H2, HSQL, Derby, etc.).
+
+You can control schema initialization using the `spring.ai.chat.memory.repository.jdbc.initialize-schema` property:
+
+[source,properties]
+----
+spring.ai.chat.memory.repository.jdbc.initialize-schema=embedded # Only for embedded DBs (default)
+spring.ai.chat.memory.repository.jdbc.initialize-schema=always   # Always initialize
+spring.ai.chat.memory.repository.jdbc.initialize-schema=never    # Never initialize (useful with Flyway/Liquibase)
+----
+
+To override the schema script location, use:
+
+[source,properties]
+----
+spring.ai.chat.memory.repository.jdbc.schema=classpath:/custom/path/schema-mysql.sql
+----
+
+==== Extending Dialects
+
+To add support for a new database, implement the `JdbcChatMemoryRepositoryDialect` interface and provide SQL for selecting, inserting, and deleting messages. You can then pass your custom dialect to the repository builder.
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
+    .jdbcTemplate(jdbcTemplate)
+    .dialect(new MyCustomDbDialect())
+    .build();
+----
+
+
+=== CassandraChatMemoryRepository
+
+`CassandraChatMemoryRepository` uses Apache Cassandra to store messages.  It is suitable for applications that require persistent storage of chat memory, especially for availability, durability, scale, and when taking advantage of time-to-live (TTL) feature.
+
+`CassandraChatMemoryRepository` has a time-series schema, keeping record of all past chat windows, valuable for governance and auditing.  Setting time-to-live to some value, for example three years, is recommended.
+
+To use `CassandraChatMemoryRepository` first, add the dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-cassandra</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-cassandra'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `CassandraChatMemoryRepository` that you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+CassandraChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `CassandraChatMemoryRepository` manually, you can do so by providing a `CassandraChatMemoryRepositoryConfig` instance:
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = CassandraChatMemoryRepository
+    .create(CassandraChatMemoryConfig.builder().withCqlSession(cqlSession));
 
 ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .chatMemoryRepository(chatMemoryRepository)
@@ -124,17 +235,21 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 [cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
-| `spring.ai.chat.memory.repository.jdbc.initialize-schema` | Whether to initialize the schema on startup. | `true`
+| `spring.cassandra.contactPoints` | Host(s) to initiate cluster discovery | `127.0.0.1`
+| `spring.cassandra.port` | Cassandra native protocol port to connect to | `9042`
+| `spring.cassandra.localDatacenter` | Cassandra datacenter to connect to | `datacenter1`
+| `spring.ai.chat.memory.cassandra.time-to-live` | Time to live (TTL) for messages written in Cassandra |
+| `spring.ai.chat.memory.cassandra.keyspace` | Cassandra keyspace | `springframework`
+| `spring.ai.chat.memory.cassandra.messages-column` | Cassandra column name for messages | `springframework`
+| `spring.ai.chat.memory.cassandra.table` | Cassandra table | `ai_chat_memory`
+| `spring.ai.chat.memory.cassandra.initialize-schema` | Whether to initialize the schema on startup. | `true`
 |===
-
 
 ==== Schema Initialization
 
-The auto-configuration will automatically create the `ai_chat_memory` table using the JDBC driver. Currently, only PostgreSQL and MariaDB are supported.
+The auto-configuration will automatically create the `ai_chat_memory` table.
 
-You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.jdbc.initialize-schema` to `false`.
-
-If your project uses a tool like Flyway or Liquibase to manage your database schemas, you can disable the schema initialization and refer to link:https://github.com/spring-projects/spring-ai/tree/main/memory/spring-ai-model-chat-memory-jdbc/src/main/resources/org/springframework/ai/chat/memory/jdbc[these SQL scripts] for configuring those tools to create the `ai_chat_memory` table.
+You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.cassandra.initialize-schema` to `false`.
 
 === Neo4j ChatMemoryRepository
 
@@ -150,7 +265,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-model-chat-memory-neo4j</artifactId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-neo4j</artifactId>
 </dependency>
 ----
 
@@ -159,7 +274,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-neo4j'
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-neo4j'
 }
 ----
 ======
@@ -196,12 +311,12 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 [cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
-| `spring.ai.chat.memory.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
-| `spring.ai.chat.memory.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
-| `spring.ai.chat.memory.neo4j.toolCallLabel` | The label for nodes that store tool calls (e.g. in Assistant Messages) | `ToolCall`
-| `spring.ai.chat.memory.neo4j.metadataLabel` | The label for nodes that store message metadata | `Metadata`
-| `spring.ai.chat.memory.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
-| `spring.ai.chat.memory.neo4j.mediaLabel` | The label for the nodes that store media associated with a message | `Media`
+| `spring.ai.chat.memory.repository.neo4j.sessionLabel` | The label for the nodes that store conversation sessions | `Session`
+| `spring.ai.chat.memory.repository.neo4j.messageLabel` | The label for the nodes that store messages | `Message`
+| `spring.ai.chat.memory.repository.neo4j.toolCallLabel` | The label for nodes that store tool calls (e.g. in Assistant Messages) | `ToolCall`
+| `spring.ai.chat.memory.repository.neo4j.metadataLabel` | The label for nodes that store message metadata | `Metadata`
+| `spring.ai.chat.memory.repository.neo4j.toolResponseLabel` | The label for the nodes that store tool responses | `ToolResponse`
+| `spring.ai.chat.memory.repository.neo4j.mediaLabel` | The label for the nodes that store media associated with a message | `Media`
 |===
 
 ==== Index Initialization
@@ -239,7 +354,7 @@ String conversationId = "007";
 
 chatClient.prompt()
     .user("Do I have license to code?")
-    .advisors(a -> a.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY, conversationId))
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
     .call()
     .content();
 ----

@@ -39,4 +39,11 @@ public interface ToolDefinition {
 	 */
 	String inputSchema();
 
+	/**
+	 * Create a default {@link ToolDefinition} builder.
+	 */
+	static DefaultToolDefinition.Builder builder() {
+		return DefaultToolDefinition.builder();
+	}
+
 }

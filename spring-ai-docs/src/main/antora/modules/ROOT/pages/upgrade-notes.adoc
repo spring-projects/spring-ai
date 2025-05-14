@@ -29,17 +29,28 @@ For details, refer to:
 [[upgrading-to-1-0-0-RC1]]
 == Upgrading to 1.0.0-RC1
 
-=== Chat Client And Advisors
+You can automate the upgrade process to 1.0.0-RC1 using an OpenRewrite recipe.
+This recipe helps apply many of the necessary code changes for this version.
+Find the recipe and usage instructions at https://github.com/arconia-io/arconia-migrations/blob/main/docs/spring-ai.md[Arconia Spring AI Migrations].
 
-* When building a `Prompt` from the ChatClient input, the `SystemMessage` built from `systemText()` is now placed first in the message list. Before, it was put last, resulting in errors with several model providers.
-*  In `AbstractChatMemoryAdvisor`, the `doNextWithProtectFromBlockingBefore()` protected method has been changed from accepting the old `AdvisedRequest` to the new `ChatClientRequest`. It’s a breaking change since the alternative was not part of M8.
-* `MessageAggregator` has a new method to aggregate messages from `ChatClientRequest`. The previous method aggregating messages from the old `AdvisedRequest` has been removed, since it was already marked as deprecated in M8.
-* In `SimpleLoggerAdvisor`, the `requestToString` input argument needs to be updated to use `ChatClientRequest`. It’s a breaking change since the alternative was not part of M8 yet. Same thing about the constructor.
+=== Breaking Changes
 
-==== Self-contained Templates in Advisors
+
+==== Chat Client and Advisors
+
+The main changes that impact end user code are:
+
+* In `VectorStoreChatMemoryAdvisor`:
+** The constant `CHAT_MEMORY_RETRIEVE_SIZE_KEY` has been renamed to `TOP_K`.
+** The constant `DEFAULT_CHAT_MEMORY_RESPONSE_SIZE` (value: 100) has been renamed to `DEFAULT_TOP_K` with a new default value of 20.
+
+* The constant `CHAT_MEMORY_CONVERSATION_ID_KEY` has been renamed to `CONVERSATION_ID` and moved from `AbstractChatMemoryAdvisor` to the `ChatMemory` interface. Update your imports to use `org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID`.
+
+===== Self-contained Templates in Advisors
 
 The built-in advisors that perform prompt augmentation have been updated to use self-contained templates. The goal is for each advisor to be able to perform templating operations without affecting nor being affected by templating and prompt decisions in other advisors.
-If you were providing custom templates for the following advisors, you'll need to update them to ensure all expected placeholders are included.
+
+*If you were providing custom templates for the following advisors, you'll need to update them to ensure all expected placeholders are included.*
 
 * The `QuestionAnswerAdvisor` expects a template with the following placeholders (see xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[more details]):
 ** a `query` placeholder to receive the user question.
@@ -51,11 +62,119 @@ If you were providing custom templates for the following advisors, you'll need t
 ** an `instructions` placeholder to receive the original system message.
 ** a `long_term_memory` placeholder to receive the retrieved conversation memory.
 
-=== Breaking Changes
+==== Observability
+* Refactored content observation to use logging instead of tracing (https://github.com/spring-projects/spring-ai/commit/ca843e85887aa1da6300c77550c379c103500897[ca843e8])
+  ** Replaced content observation filters with logging handlers
+  ** Renamed configuration properties to better reflect their purpose:
+    *** `include-prompt` → `log-prompt`
+    *** `include-completion` → `log-completion`
+    *** `include-query-response` → `log-query-response`
+  ** Added `TracingAwareLoggingObservationHandler` for trace-aware logging
+  ** Replaced `micrometer-tracing-bridge-otel` with `micrometer-tracing`
+  ** Removed event-based tracing in favor of direct logging
+  ** Removed direct dependency on the OTel SDK
+  ** Renamed `includePrompt` to `logPrompt` in observation properties (in `ChatClientBuilderProperties`, `ChatObservationProperties`, and `ImageObservationProperties`)
+
+==== Chat Memory Repository Module and Autoconfiguration Renaming
+
+We've standardized the naming pattern for chat memory components by adding the repository suffix throughout the codebase. This change affects Cassandra, JDBC, and Neo4j implementations, impacting artifact IDs, Java package names, and class names for clarity.
+
+==== Artifact IDs
+All memory-related artifacts now follow a consistent pattern:
+
+* `spring-ai-model-chat-memory-*` → `spring-ai-model-chat-memory-repository-*`
+* `spring-ai-autoconfigure-model-chat-memory-*` → `spring-ai-autoconfigure-model-chat-memory-repository-*`
+* `spring-ai-starter-model-chat-memory-*` → `spring-ai-starter-model-chat-memory-repository-*`
+
+==== Java Packages
+
+* Package paths now include `.repository.` segment
+* Example: `org.springframework.ai.chat.memory.jdbc` → `org.springframework.ai.chat.memory.repository.jdbc`
+
+==== Configuration Classes
+
+* Main autoconfiguration classes now use the `Repository` suffix
+* Example: `JdbcChatMemoryAutoConfiguration` → `JdbcChatMemoryRepositoryAutoConfiguration`
+
+==== Properties
+
+* Configuration properties renamed from `spring.ai.chat.memory.<storage>...` to `spring.ai.chat.memory.repository.<storage>...`
+
+
+**Migration Required:**
+- Update your Maven/Gradle dependencies to use the new artifact IDs.
+- Update any imports, class references, or configuration that used the old package or class names.
+
+==== Message Aggregator Refactoring
+
+===== Changes
+
+* `MessageAggregator` class has been moved from `org.springframework.ai.chat.model` package in the `spring-ai-client-chat` module to the `spring-ai-model` module (same package name)
+* The `aggregateChatClientResponse` method has been removed from `MessageAggregator` and moved to a new class `ChatClientMessageAggregator` in the `org.springframework.ai.chat.client` package
+
+===== Migration Guide
+
+If you were directly using the `aggregateChatClientResponse` method from `MessageAggregator`, you need to use the new `ChatClientMessageAggregator` class instead:
+
+[source,java]
+----
+// Before
+new MessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+
+// After
+new ChatClientMessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+----
+
+Don't forget to add the appropriate import:
+
+[source,java]
+----
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
+----
+
+==== Watson
 The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
 Hopefully Watson will reappear in a future version of Spring AI
 
+==== MoonShot and QianFan
 
+Mooonshot and Qianfan have been removed since they are not accessible from outside China.  These have been moved to the Spring AI Community repository.
+
+==== Removed Vector Store
+* Removed HanaDB vector store autoconfiguration (https://github.com/spring-projects/spring-ai/commit/f3b46244942c5072c2e2fa89e62cde71c61bbf25[f3b4624])
+
+==== Memory Management
+* Removed CassandraChatMemory implementation (https://github.com/spring-projects/spring-ai/commit/11e3c8f9a6636d77f203968b83625d3e5694c408[11e3c8f])
+* Simplified chat memory advisor hierarchy and removed deprecated API (https://github.com/spring-projects/spring-ai/commit/848a3fd31fadd07c9ba77f6dc30425389d095e9a[848a3fd])
+* Removed deprecations in JdbcChatMemory (https://github.com/spring-projects/spring-ai/commit/356a68f15eea07a040bd27c66442472fc55e6475[356a68f])
+* Refactored chat memory repository artifacts for clarity (https://github.com/spring-projects/spring-ai/commit/2d517eec5cd7ce5f88149b876ed57a06ad353e11[2d517ee])
+* Refactored chat memory repository autoconfigurations and Spring Boot starters for clarity (https://github.com/spring-projects/spring-ai/commit/f6dba1bf083d847cdc07888ba62746683e3d61bb[f6dba1b])
+
+==== Message and Template APIs
+* Removed deprecated UserMessage constructors (https://github.com/spring-projects/spring-ai/commit/06edee406978d172a1f87f4c7b255282f9d55e4c[06edee4])
+* Removed deprecated PromptTemplate constructors (https://github.com/spring-projects/spring-ai/commit/722c77e812f3f3ea40cf2258056fcf1578b15c62[722c77e])
+* Removed deprecated methods from Media (https://github.com/spring-projects/spring-ai/commit/228ef10bfbfe279d7d09f2a7ba166db873372118[228ef10])
+* Refactored StTemplateRenderer: renamed supportStFunctions to validateStFunctions (https://github.com/spring-projects/spring-ai/commit/0e15197298c0848b78a746f3d740191e6a6aee7a[0e15197])
+* Removed left over TemplateRender interface after moving it (https://github.com/spring-projects/spring-ai/commit/52675d854ccecbc702cec24c4f070520eca64938[52675d8])
+
+==== Additional Client API Changes
+* Removed deprecations in ChatClient and Advisors (https://github.com/spring-projects/spring-ai/commit/4fe74d886e26d52abf6f2f5545264d422a0be4b2[4fe74d8])
+* Removed deprecations from OllamaApi and AnthropicApi (https://github.com/spring-projects/spring-ai/commit/46be8987d6bc385bf74b9296aa4308c7a8658d2f[46be898])
+
+==== Package Structure Changes
+* Removed inter-package dependency cycles in spring-ai-model (https://github.com/spring-projects/spring-ai/commit/ebfa5b9b2cc2ab0d20e25dc6128c4b1c9c327f89[ebfa5b9])
+* Moved MessageAggregator to spring-ai-model module (https://github.com/spring-projects/spring-ai/commit/54e5c07428909ceec248e3bbd71e2df4b0812e49[54e5c07])
+
+==== Dependencies
+* Removed unused json-path dependency in spring-ai-openai (https://github.com/spring-projects/spring-ai/commit/9de13d1b2fdb67219dc7afbf319ade789784f2b9[9de13d1])
+
+=== Behavior Changes
+
+==== Azure OpenAI
+* Added Entra ID identity management for Azure OpenAI with clean autoconfiguration (https://github.com/spring-projects/spring-ai/commit/3dc86d33ce90ebd68ec3997a0eb4704ab7774e99[3dc86d3])
+
+=== General Cleanup
+* Removed all code deprecations (https://github.com/spring-projects/spring-ai/commit/76bee8ceb2854839f93a6c52876f50bb24219355[76bee8c]) and (https://github.com/spring-projects/spring-ai/commit/b6ce7f3e4a7aafe6b9031043f63813dde6e73605[b6ce7f3])
 
 [[upgrading-to-1-0-0-m8]]
 == Upgrading to 1.0.0-M8
@@ -65,6 +184,7 @@ This recipe helps apply many of the necessary code changes for this version.
 Find the recipe and usage instructions at https://github.com/arconia-io/arconia-migrations/blob/main/docs/spring-ai.md[Arconia Spring AI Migrations].
 
 === Breaking Changes
+
 When upgrading from Spring AI 1.0 M7 to 1.0 M8, users who previously registered tool callbacks are encountering breaking changes that cause tool calling functionality to silently fail. This is specifically impacting code that used the deprecated `tools()` method.
 
 ==== Example
@@ -73,251 +193,95 @@ Here's an example of code that worked in M7 but no longer functions as expected 
 
 [source,java]
 ----
-// Old code in M7 - no longer works correctly in M8
-chatClient.prompt("What day is tomorrow?")
-    .tools(toolCallback)
-    .call()
-    .content();
+// This worked in M7 but silently fails in M8
+ChatClient chatClient = new OpenAiChatClient(api)
+    .tools(List.of(
+        new Tool("get_current_weather", "Get the current weather in a given location", 
+            new ToolSpecification.ToolParameter("location", "The city and state, e.g. San Francisco, CA", true))
+    ))
+    .toolCallbacks(List.of(
+        new ToolCallback("get_current_weather", (toolName, params) -> {
+            // Weather retrieval logic
+            return Map.of("temperature", 72, "unit", "fahrenheit", "description", "Sunny");
+        })
+    ));
 ----
 
-==== How to Adapt Your Code
+==== Solution
 
-To fix this issue when upgrading to M8, you need to update your code to use the new `toolCallbacks()` method:
+The solution is to use the `toolSpecifications()` method instead of the deprecated `tools()` method:
 
 [source,java]
 ----
-// Updated code for M8
-chatClient.prompt("What day is tomorrow?")
-    .toolCallbacks(toolCallback)
-    .call()
-    .content();
+// This works in M8
+ChatClient chatClient = new OpenAiChatClient(api)
+    .toolSpecifications(List.of(
+        new Tool("get_current_weather", "Get the current weather in a given location", 
+            new ToolSpecification.ToolParameter("location", "The city and state, e.g. San Francisco, CA", true))
+    ))
+    .toolCallbacks(List.of(
+        new ToolCallback("get_current_weather", (toolName, params) -> {
+            // Weather retrieval logic
+            return Map.of("temperature", 72, "unit", "fahrenheit", "description", "Sunny");
+        })
+    ));
 ----
 
-==== Why This Change Was Made
-
-The Spring AI team renamed the overloaded `tools()` methods to improve clarity and prevent ambiguity in method dispatching. The previous API design led to confusion when the Java compiler needed to select between multiple overloaded methods based on parameter types.
-
-==== Method Mapping from M7 to M8
-
-Here's how the old methods map to their new counterparts:
-
-1. `tools(String... toolNames)` → `toolNames(String... toolNames)`
-- Use when referring to tools registered elsewhere (e.g., via `@Bean` with `@Description`)
-
-2. `tools(ToolCallback... toolCallbacks)` → `toolCallbacks(ToolCallback... toolCallbacks)`
-- Use for inline tool callback registration
-
-3. `tools(List<ToolCallback> toolCallbacks)` → `toolCallbacks(List<ToolCallback> toolCallbacks)`
-- Use when you have a collection of tool callbacks
-
-4. `tools(ToolCallbackProvider... toolCallbackProviders)` → `toolCallbacks(ToolCallbackProvider... toolCallbackProviders)`
-- Use for objects implementing the `ToolCallbackProvider` interface
-
-5. `tools(Object... toolObjects)` remains unchanged
-- Use only for objects with methods annotated with `@Tool`
-
-==== Improved Error Handling
-
-In the https://github.com/spring-projects/spring-ai/pull/2964[this PR now merged (spring-projects/spring-ai#2964)], the `tools(Object... toolObjects)` method will now throw an exception when no `@Tool` methods are found on the provided objects, rather than silently failing. This helps developers identify migration issues immediately.
-
-==== Migration Summary
-
-If you're upgrading from M7 to M8:
-
-1. Replace all calls to `.tools(toolCallback)` with `.toolCallbacks(toolCallback)`
-2. Replace all calls to `.tools(toolCallbackProvider)` with `.toolCallbacks(toolCallbackProvider)`
-3. Replace all calls to `.tools("toolName")` with `.toolNames("toolName")`
-
-These changes will ensure your tool calling functionality continues to work correctly after upgrading to Spring AI 1.0 M8.
-
-
-
-=== Chat Client
-
-* The `ChatClient` has been enhanced to solve some inconsistencies or unwanted behavior whenever user and system prompts were not rendered before using them in an advisor. The new behavior ensures that the user and system prompts are always rendered before executing the chain of advisors. As part of this enhancement, the `AdvisedRequest` and `AdvisedResponse` APIs have been deprecated, replaced by `ChatClientRequest` and `ChatClientResponse`. Advisors now act on a fully built `Prompt` object included in a `ChatClientRequest` instead of the destructured format used in `AdvisedRequest`, guaranteeing consistency and completeness.
-
-For example, if you had a custom advisor that modified the request prompt in the `before` method, you would refactor it as follows:
-
-[source,java,subs="verbatim,quotes"]
-----
-// --- Before (using AdvisedRequest) ---
-@Override
-public AdvisedRequest before(AdvisedRequest advisedRequest) {
-    // Access original user text and parameters directly from AdvisedRequest
-    String originalUserText = new PromptTemplate(advisedRequest.userText(), advisedRequest.userParams()).render();
-
-    // ... retrieve documents, create augmented prompt text ...
-    List<Document> retrievedDocuments = ...;
-    String augmentedPromptText = ...; // create augmented text from originalUserText and retrievedDocuments
-
-    // Copy existing context and add advisor-specific data
-    Map<String, Object> context = new HashMap<>(advisedRequest.adviseContext());
-    context.put("retrievedDocuments", retrievedDocuments); // Example key
-
-    // Use the AdvisedRequest builder pattern to return the modified request
-    return AdvisedRequest.from(advisedRequest)
-        .userText(augmentedPromptText) // Set the augmented user text
-        .adviseContext(context)        // Set the updated context
-        .build();
-}
-
-// --- After (using ChatClientRequest) ---
-@Override
-public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain chain) {
-    String originalUserText = chatClientRequest.prompt().getUserMessage().getText(); // Access prompt directly
-
-    // ... retrieve documents ...
-    List<Document> retrievedDocuments = ...;
-    String augmentedQueryText = ...; // create augmented text
-
-    // Initialize context with existing data and add advisor-specific data
-    Map<String, Object> context = new HashMap<>(chatClientRequest.context()); // <1>
-    context.put("retrievedDocuments", retrievedDocuments); // Example key
-    context.put("originalUserQuery", originalUserText);   // Example key
-
-    // Use immutable operations
-    return chatClientRequest.mutate()
-        .prompt(chatClientRequest.prompt()
-            .augmentUserMessage(augmentedQueryText) // <2>
-        )
-        .context(context) // <3>
-        .build();
-}
-----
-<1> Initialize the context map with data from the incoming request (`chatClientRequest.context()`) to preserve context from previous advisors, then add new data.
-<2> Use methods like `prompt.augmentUserMessage()` to modify the prompt content safely.
-<3> Pass the updated context map. This map becomes part of the `ChatClientRequest` and is accessible later via `ChatClientResponse.responseContext()` in the `after` method.
-
-* The chain of advisors can populate the execution context with useful data. For example, when performing retrieval augmented generation, the retrieved documents can be added to the context. It's now possible to return a `ChatClientResponse` object from a `ChatClient` call, which contains the execution context. So, besides the `content()` and `chatResponse()` methods, you can now terminate a `ChatClient` call with `chatClientResponse()` which gives you access to both the `ChatResponse` and the execution context.
-
-In addition to directly replacing the user message text with `augmentUserMessage(String)`, you can provide a function to modify the existing `UserMessage` more granularly:
-
-[source,java,subs="verbatim,quotes"]
-----
-Prompt originalPrompt = new Prompt(new UserMessage("Tell me about Large Language Models."));
-
-// Example: Append context or modify properties using a Function
-Prompt augmentedPrompt = originalPrompt.augmentUserMessage(userMessage ->
-    userMessage.mutate()
-        .text(userMessage.getText() + "\n\nFocus on their applications in software development.")
-        // .media(...) // Potentially add/modify media
-        // .metadata(...) // Potentially add/modify metadata
-        .build()
-);
-
-// 'augmentedPrompt' now contains the modified UserMessage
-----
-
-This approach offers more control when you need to conditionally change parts of the `UserMessage` or work with its media and metadata, rather than just replacing the text content.
-
-* The overloaded `tools` methods in the `ChatClient` prompt builder API have been renamed for clarity and to avoid ambiguity in method dispatching based on argument types.
-
-*   `ChatClient.PromptRequestSpec#tools(String... toolNames)` has been renamed to `ChatClient.PromptRequestSpec#toolNames(String... toolNames)`. Use this method to specify the names of tool functions (registered elsewhere, e.g., via `@Bean` definitions with `@Description`) that the model is allowed to call.
-*   `ChatClient.PromptRequestSpec#tools(ToolCallback... toolCallbacks)` has been renamed to `ChatClient.PromptRequestSpec#toolCallbacks(ToolCallback... toolCallbacks)`. Use this method to provide inline `ToolCallback` instances, which include the function implementation, name, description, and input type definition.
-
-This change addresses potential confusion where the Java compiler might not select the intended overload based on the provided arguments.
-
-=== Prompt Templating and Advisors
-
-Several classes and methods related to prompt creation and advisor customization have been deprecated in favor of more flexible approaches using the builder pattern and the `TemplateRenderer` interface. 
-See xref:api/prompt.adoc#_prompttemplate[PromptTemplate] for details on the new API.
-
-==== PromptTemplate Deprecations
-
-The `PromptTemplate` class has deprecated several constructors and methods related to the older `templateFormat` enum and direct variable injection:
-
-*   Constructors: `PromptTemplate(String template, Map<String, Object> variables)` and `PromptTemplate(Resource resource, Map<String, Object> variables)` are deprecated.
-*   Fields: `template` and `templateFormat` are deprecated.
-*   Methods: `getTemplateFormat()`, `getInputVariables()`, and `validate(Map<String, Object> model)` are deprecated.
-
-*Migration:* Use the `PromptTemplate.builder()` pattern to create instances. Provide the template string via `.template()` and optionally configure a custom `TemplateRenderer` via `.renderer()`. Pass variables using `.variables()`.
-
-[source,java]
-----
-// Before (Deprecated)
-PromptTemplate oldTemplate = new PromptTemplate("Hello {name}", Map.of("name", "World"));
-String oldRendered = oldTemplate.render(); // Variables passed at construction
-
-// After (Using Builder)
-PromptTemplate newTemplate = PromptTemplate.builder()
-    .template("Hello {name}")
-    .variables(Map.of("name", "World")) // Variables passed during builder configuration
-    .build();
-Prompt prompt = newTemplate.create(); // Create prompt using baked-in variables
-String newRendered = prompt.getContents(); // Or use newTemplate.render()
-----
-
-==== QuestionAnswerAdvisor Deprecations
-
-The `QuestionAnswerAdvisor` has deprecated constructors and builder methods that relied on a simple `userTextAdvise` string:
-
-*   Constructors taking a `userTextAdvise` String argument are deprecated.
-*   Builder method: `userTextAdvise(String userTextAdvise)` is deprecated.
-
-*Migration:* Use the `.promptTemplate(PromptTemplate promptTemplate)` builder method to provide a fully configured `PromptTemplate` object for customizing how retrieved context is merged.
-
-[source,java]
-----
-// Before (Deprecated)
-QuestionAnswerAdvisor oldAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
-    .userTextAdvise("Context: {question_answer_context} Question: {question}") // Simple string
-    .build();
-
-// After (Using PromptTemplate)
-PromptTemplate customTemplate = PromptTemplate.builder()
-    .template("Context: {question_answer_context} Question: {question}")
-    .build();
-
-QuestionAnswerAdvisor newAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
-    .promptTemplate(customTemplate) // Provide PromptTemplate object
-    .build();
-----
-
-=== Chat Memory
-
-* A `ChatMemory` bean is auto-configured for you whenever using one of the Spring AI Model starters. By default, it uses the `MessageWindowChatMemory` implementation and stores the conversation history in memory.
-* The `ChatMemory` API has been enhanced to support a more flexible and extensible way of managing conversation history. The storage mechanism has been decoupled from the `ChatMemory` interface and is now handled by a new `ChatMemoryRepository` interface. The `ChatMemory` API now can be used to implement different memory strategies without being tied to a specific storage mechanism. By default, Spring AI provides a `MessageWindowChatMemory` implementation that maintains a window of messages up to a specified maximum size.
-* The `get(String conversationId, int lastN)` method in `ChatMemory` has been deprecated in favour of using `MessageWindowChatMemory` when it's needed to keep messages in memory up to a certain limit. The `get(String conversationId)` method is now the preferred way to retrieve messages from the memory whereas the specific implementation of `ChatMemory` can decide the strategy for filtering, processing, and returning messages.
-* The `JdbcChatMemory` has been deprecated in favour of using `JdbcChatMemoryRepository` together with a `ChatMemory` implementation such `MessageWindowChatMemory`. If you were relying on an auto-configured `JdbcChatMemory` bean, you can replace that by auto-wiring a `ChatMemory` bean that is auto-configured to use the `JdbcChatMemoryRepository` internally for storing messages whenever the related dependency is in the classpath.
-* The `spring.ai.chat.memory.jdbc.initialize-schema` property has been deprecated in favor of `spring.ai.chat.memory.repository.jdbc.initialize-schema`.
-* Refer to the new xref:api/chat-memory.adoc[Chat Memory] documentation for more details on the new API and how to use it.
-* The `MessageWindowChatMemory.get(String conversationId, int lastN)` method is deprecated. The windowing size is now managed internally based on the configuration provided during instantiation, so only `get(String conversationId)` should be used.
-
-=== Prompt Templating
-
-* The `PromptTemplate` API has been redesigned to support a more flexible and extensible way of templating prompts, relying on a new `TemplateRenderer` API. As part of this change, the `getInputVariables()` and `validate()` methods have been deprecated and will throw an `UnsupportedOperationException` if called. Any logic specific to a template engine should be available through the `TemplateRenderer` API.
-
-=== Class Package Refactoring
-
-Several classes have been moved to different modules and packages for better organization:
-
-* Evaluation classes moved:
-** `org.springframework.ai.evaluation.FactCheckingEvaluator` moved to `org.springframework.ai.chat.evaluation` package within `spring-ai-client-chat`.
-** `org.springframework.ai.evaluation.RelevancyEvaluator` moved to `org.springframework.ai.chat.evaluation` package within `spring-ai-client-chat`.
-** `org.springframework.ai.evaluation.EvaluationRequest`, `EvaluationResponse`, and `Evaluator` moved from `spring-ai-client-chat` to `spring-ai-commons` under the `org.springframework.ai.evaluation` package.
-* Output converter classes moved:
-** Classes within `org.springframework.ai.converter` (e.g., `BeanOutputConverter`, `ListOutputConverter`, `MapOutputConverter`, `StructuredOutputConverter`, etc.) moved from `spring-ai-client-chat` to `spring-ai-model`.
-* Transformer classes moved:
-** `org.springframework.ai.chat.transformer.KeywordMetadataEnricher` moved to `org.springframework.ai.model.transformer.KeywordMetadataEnricher` in `spring-ai-model`.
-** `org.springframework.ai.chat.transformer.SummaryMetadataEnricher` moved to `org.springframework.ai.model.transformer.SummaryMetadataEnricher` in `spring-ai-model`.
-* Utility classes moved:
-** `org.springframework.ai.util.PromptAssert` moved from `spring-ai-client-chat` to `org.springframework.ai.rag.util.PromptAssert` in `spring-ai-rag`.
-
-Please update your imports accordingly.
-
-=== Observability
-
-* Changes to the `spring.ai.client` observation:
-** The `spring.ai.chat.client.tool.function.names` and `spring.ai.chat.client.tool.function.callbacks` attributes have been deprecated, replaced by a new `spring.ai.chat.client.tool.names` attribute that includes the names of all the tools passed to a ChatClient, regardless of the underlying mechanism used to define them.
-** The `spring.ai.chat.client.advisor.params` attribute has been deprecated and will not have a replacement. The reason is that there is a risk to expose sensitive information or break the instrumentation since the entries in the advisor context are used to pass arbitrary Java objects between advisors and are not necessarily serializable. The conversation ID that was previously exported here is now available via the dedicated `spring.ai.chat.client.conversation.id` attribute. If you need to export some of the other parameters in the advisor context to the observability system, you can do so by defining an `ObservationFilter` and making an explicit decision on which parameters to export. For inspiration, you can refer to the `ChatClientPromptContentObservationFilter`.
-** The content of a prompt as specified via a ChatClient API was included optionally in the `spring.ai.client` observation, broken down in a few attributes: `spring.ai.chat.client.user.text`, `spring.ai.chat.client.user.params`, `spring.ai.chat.client.system.text`, `spring.ai.chat.client.system.params`. All those attributes are now deprecated, replaced by a single `gen_ai.prompt` attribute that contains all the messages in the prompt, solving the problem affecting the deprecated attributes where part of the prompt was not included in the observation, and aligning with the observations used in the ChatModel API. This new attribute can be enabled via the `spring.ai.chat.observations.include-prompt` configuration property, whereas the previous `spring.ai.chat.observations.include-input` configuration property is deprecated.
-* Changes to the `spring.ai.advisor` observation:
-** The `spring.ai.advisor.type` attribute has been deprecated. In previous releases, the Advisor API was categorized based on the type of advisor (`before`, `after`, `around`). That distinction doesn't apply anymore meaning that all Advisors are now of the same type (`around`).
-
-=== Retrieval Augmented Generation
-
-* The `DocumentPostProcessor` API has been introduced to implement post-retrieval components in a Modular RAG architecture, superseding the `DocumentCompressor`, `DocumentRanker`, `DocumentSelector` APIs that are now deprecated.
-
+=== Removed Implementations and APIs
+
+==== Memory Management
+* Removed CassandraChatMemory implementation (https://github.com/spring-projects/spring-ai/commit/11e3c8f9a6636d77f203968b83625d3e5694c408[11e3c8f])
+* Simplified chat memory advisor hierarchy and removed deprecated API (https://github.com/spring-projects/spring-ai/commit/848a3fd31fadd07c9ba77f6dc30425389d095e9a[848a3fd])
+* Removed deprecations in JdbcChatMemory (https://github.com/spring-projects/spring-ai/commit/356a68f15eea07a040bd27c66442472fc55e6475[356a68f])
+* Refactored chat memory repository artifacts for clarity (https://github.com/spring-projects/spring-ai/commit/2d517eec5cd7ce5f88149b876ed57a06ad353e11[2d517ee])
+* Refactored chat memory repository autoconfigurations and Spring Boot starters for clarity (https://github.com/spring-projects/spring-ai/commit/f6dba1bf083d847cdc07888ba62746683e3d61bb[f6dba1b])
+
+==== Client APIs
+* Removed deprecations in ChatClient and Advisors (https://github.com/spring-projects/spring-ai/commit/4fe74d886e26d52abf6f2f5545264d422a0be4b2[4fe74d8])
+* Breaking changes to chatclient tool calling (https://github.com/spring-projects/spring-ai/commit/5b7849de088b3c93c7ec894fcaddc85a611a8572[5b7849d])
+* Removed deprecations from OllamaApi and AnthropicApi (https://github.com/spring-projects/spring-ai/commit/46be8987d6bc385bf74b9296aa4308c7a8658d2f[46be898])
+
+==== Message and Template APIs
+* Removed deprecated UserMessage constructors (https://github.com/spring-projects/spring-ai/commit/06edee406978d172a1f87f4c7b255282f9d55e4c[06edee4])
+* Removed deprecated PromptTemplate constructors (https://github.com/spring-projects/spring-ai/commit/722c77e812f3f3ea40cf2258056fcf1578b15c62[722c77e])
+* Removed deprecated methods from Media (https://github.com/spring-projects/spring-ai/commit/228ef10bfbfe279d7d09f2a7ba166db873372118[228ef10])
+* Refactored StTemplateRenderer: renamed supportStFunctions to validateStFunctions (https://github.com/spring-projects/spring-ai/commit/0e15197298c0848b78a746f3d740191e6a6aee7a[0e15197])
+* Removed left over TemplateRender interface after moving it (https://github.com/spring-projects/spring-ai/commit/52675d854ccecbc702cec24c4f070520eca64938[52675d8])
+
+==== Model Implementations
+* Removed Watson text generation model (https://github.com/spring-projects/spring-ai/commit/9e71b163e315199fe7b46495d87a0828a807b88f[9e71b16])
+* Removed Qianfan code (https://github.com/spring-projects/spring-ai/commit/bfcaad7b5495c5927a62b44169e8713e044c2497[bfcaad7])
+* Removed HanaDB vector store autoconfiguration (https://github.com/spring-projects/spring-ai/commit/f3b46244942c5072c2e2fa89e62cde71c61bbf25[f3b4624])
+* Removed deepseek options from OpenAiApi (https://github.com/spring-projects/spring-ai/commit/59b36d14dab72d76f2f3d49ce9385a69faaabbba[59b36d1])
+
+==== Package Structure Changes
+* Removed inter-package dependency cycles in spring-ai-model (https://github.com/spring-projects/spring-ai/commit/ebfa5b9b2cc2ab0d20e25dc6128c4b1c9c327f89[ebfa5b9])
+* Moved MessageAggregator to spring-ai-model module (https://github.com/spring-projects/spring-ai/commit/54e5c07428909ceec248e3bbd71e2df4b0812e49[54e5c07])
+
+==== Dependencies
+* Removed unused json-path dependency in spring-ai-openai (https://github.com/spring-projects/spring-ai/commit/9de13d1b2fdb67219dc7afbf319ade789784f2b9[9de13d1])
+
+=== Behavior Changes
+
+==== Observability
+* Refactored content observation to use logging instead of tracing (https://github.com/spring-projects/spring-ai/commit/ca843e85887aa1da6300c77550c379c103500897[ca843e8])
+  ** Replaced content observation filters with logging handlers
+  ** Renamed configuration properties to better reflect their purpose:
+    *** `include-prompt` → `log-prompt`
+    *** `include-completion` → `log-completion`
+    *** `include-query-response` → `log-query-response`
+  ** Added `TracingAwareLoggingObservationHandler` for trace-aware logging
+  ** Replaced `micrometer-tracing-bridge-otel` with `micrometer-tracing`
+  ** Removed event-based tracing in favor of direct logging
+  ** Removed direct dependency on the OTel SDK
+  ** Renamed `includePrompt` to `logPrompt` in observation properties (in `ChatClientBuilderProperties`, `ChatObservationProperties`, and `ImageObservationProperties`)
+
+==== Azure OpenAI
+* Added Entra ID identity management for Azure OpenAI with clean autoconfiguration (https://github.com/spring-projects/spring-ai/commit/3dc86d33ce90ebd68ec3997a0eb4704ab7774e99[3dc86d3])
+
+=== General Cleanup
+* Removed all deprecations from 1.0.0-M8 (https://github.com/spring-projects/spring-ai/commit/76bee8ceb2854839f93a6c52876f50bb24219355[76bee8c])
+* General deprecation cleanup (https://github.com/spring-projects/spring-ai/commit/b6ce7f3e4a7aafe6b9031043f63813dde6e73605[b6ce7f3])
 
 [[upgrading-to-1-0-0-m7]]
 == Upgrading to 1.0.0-M7
@@ -822,119 +786,9 @@ A major change was made that took the 'old' `ChatClient` and moved the functiona
 
 We renamed the 'old' `ModelClient` to `Model` and renamed implementing classes, for example `ImageClient` was renamed to `ImageModel`.  The `Model` implementation represents the portability layer that converts between the Spring AI API and the underlying AI Model API.
 
-### Adapting to the changes
+A new package `model` that contains interfaces and base classes to support creating AI Model Clients for any input/output data type combination. At the moment, the chat and image model packages implement this. We will be updating the embedding package to this new model soon.
 
-NOTE: The `ChatClient` class is now in the package `org.springframework.ai.chat.client`
-
-#### Approach 1
-
-Now, instead of getting an Autoconfigured `ChatClient` instance, you will get a `ChatModel` instance. The `call` method signatures after renaming remain the same.
-To adapt your code should refactor your code to change the use of the type `ChatClient` to `ChatModel`
-Here is an example of existing code before the change
-
-```java
-@RestController
-public class OldSimpleAiController {
-
-    private final ChatClient chatClient;
-
-    public OldSimpleAiController(ChatClient chatClient) {
-        this.chatClient = chatClient;
-    }
-
-    @GetMapping("/ai/simple")
-    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", this.chatClient.call(message));
-    }
-}
-```
-
-Now after the changes this will be
-
-```java
-@RestController
-public class SimpleAiController {
-
-    private final ChatModel chatModel;
-
-    public SimpleAiController(ChatModel chatModel) {
-        this.chatModel = chatModel;
-    }
-
-    @GetMapping("/ai/simple")
-    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", this.chatModel.call(message));
-    }
-}
-```
-
-NOTE: The renaming also applies to the classes
-* `StreamingChatClient` -> `StreamingChatModel`
-* `EmbeddingClient` -> `EmbeddingModel`
-* `ImageClient` -> `ImageModel`
-* `SpeechClient` -> `SpeechModel`
-* and similar for other `<XYZ>Client` classes
-
-#### Approach 2
-
-In this approach you will use the new fluent API available on the 'new' `ChatClient`
-
-Here is an example of existing code before the change
-
-```java
-@RestController
-class OldSimpleAiController {
-
-    ChatClient chatClient;
-
-    OldSimpleAiController(ChatClient chatClient) {
-        this.chatClient = chatClient;
-	}
-
-	@GetMapping("/ai/simple")
-	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-		return Map.of(
-                "generation",
-				this.chatClient.call(message)
-        );
-	}
-}
-```
-
-Now after the changes this will be
-
-```java
-@RestController
-class SimpleAiController {
-
-    private final ChatClient chatClient;
-
-    SimpleAiController(ChatClient.Builder builder) {
-      this.chatClient = builder.build();
-    }
-
-    @GetMapping("/ai/simple")
-    Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of(
-                "generation",
-				this.chatClient.prompt().user(message).call().content()
-        );
-    }
-}
-```
-
-NOTE: The `ChatModel` instance is made available to you through autoconfiguration.
-
-#### Approach 3
-
-There is a tag in the GitHub repository called [v1.0.0-SNAPSHOT-before-chatclient-changes](https://github.com/spring-projects/spring-ai/tree/v1.0.0-SNAPSHOT-before-chatclient-changes) that you can check out and do a local build to avoid updating any of your code until you are ready to migrate your code base.
-
-```bash
-git checkout tags/v1.0.0-SNAPSHOT-before-chatclient-changes
-
-./mvnw clean install -DskipTests
-```
-
+A new "portable options" design pattern. We wanted to provide as much portability in the `ModelCall` as possible across different chat based AI Models. There is a common set of generation options and then those that are specific to a model provider. A sort of "duck typing" approach is used. `ModelOptions` in the model package is a marker interface indicating implementations of this class will provide the options for a model. See `ImageOptions`, a subinterface that defines portable options across all text->image `ImageModel` implementations. Then `StabilityAiImageOptions` and `OpenAiImageOptions` provide the options specific to each model provider. All options classes are created via a fluent API builder, all can be passed into the portable `ImageModel` API. These option data types are used in autoconfiguration/configuration properties for the `ImageModel` implementations.
 
 === Artifact name changes
 

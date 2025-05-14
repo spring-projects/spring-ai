@@ -60,10 +60,9 @@
 
 		<dependency>
 			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-tracing-bridge-otel</artifactId>
+			<artifactId>micrometer-tracing</artifactId>
 			<optional>true</optional>
 		</dependency>
-
 
 		<dependency>
 			<groupId>org.springframework</groupId>

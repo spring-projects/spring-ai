@@ -27,6 +27,7 @@ import net.minidev.json.JSONArray;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -37,8 +38,11 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.opensearch.OpenSearchVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -135,6 +139,17 @@ class AwsOpenSearchVectorStoreAutoConfigurationIT {
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(1).similarityThreshold(0).build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void autoConfigurationWithSslBundles() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(SslAutoConfiguration.class)).run(context -> {
+			assertThat(context.getBeansOfType(SslBundles.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OpenSearchClient.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
+			assertThat(context.getBean(VectorStore.class)).isInstanceOf(OpenSearchVectorStore.class);
 		});
 	}
 

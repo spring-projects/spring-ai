@@ -293,7 +293,7 @@ public class CouchbaseSearchVectorStoreIT {
 			CouchbaseSearchVectorStore.Builder builder = CouchbaseSearchVectorStore.builder(cluster, embeddingModel)
 				.bucketName("springBucket")
 				.scopeName("springScope")
-				.collectionName("sprtingcollection");
+				.collectionName("springCollection");
 
 			return builder.initializeSchema(true).build();
 		}

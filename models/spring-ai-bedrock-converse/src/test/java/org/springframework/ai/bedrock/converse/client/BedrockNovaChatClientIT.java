@@ -19,19 +19,25 @@ package org.springframework.ai.bedrock.converse.client;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClient.StreamResponseSpec;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -169,6 +175,106 @@ public class BedrockNovaChatClientIT {
 	}
 
 	public record WeatherResponse(int temp, String unit) {
+	}
+
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@Test
+	void toolAnnotationWeatherForecast() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		String response = chatClient.prompt()
+			.tools(new DummyWeatherForecastTools())
+			.user("Get current weather in Amsterdam")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		assertThat(response).contains("20 degrees");
+	}
+
+	@Test
+	void toolAnnotationWeatherForecastStreaming() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.tools(new DummyWeatherForecastTools())
+			.user("Get current weather in Amsterdam")
+			.stream()
+			.chatResponse();
+
+		String content = responses.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		assertThat(content).contains("20 degrees");
+	}
+
+	public static class DummyWeatherForecastTools {
+
+		@Tool(description = "Get the current weather forecast in Amsterdam")
+		String getCurrentDateTime() {
+			return "Weather is hot and sunny with a temperature of 20 degrees";
+		}
+
+	}
+
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@Test
+	void supplierBasedToolCalling() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		WeatherService.Response response = chatClient.prompt()
+			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+				.description("Get the current weather")
+				.inputType(Void.class)
+				.build())
+			.user("Get current weather in Amsterdam")
+			.call()
+			.entity(WeatherService.Response.class);
+
+		assertThat(response).isNotNull();
+		assertThat(response.temp()).isEqualTo(30.0);
+	}
+
+	@Test
+	void supplierBasedToolCallingStreaming() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+				.description("Get the current weather")
+				.inputType(Void.class)
+				.build())
+			.user("Get current weather in Amsterdam")
+			.stream()
+			.chatResponse();
+
+		String content = responses.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		assertThat(content).contains("30.0");
+	}
+
+	public static class WeatherService implements Supplier<WeatherService.Response> {
+
+		public record Response(double temp) {
+		}
+
+		public Response get() {
+			return new Response(30.0);
+		}
+
 	}
 
 	@SpringBootConfiguration

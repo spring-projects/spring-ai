@@ -7,6 +7,19 @@ Spring AI provides metrics and tracing capabilities for its core components: `Ch
 
 NOTE: Low cardinality keys will be added to metrics and traces, while high cardinality keys will only be added to traces.
 
+[WARNING]
+====
+**1.0.0-RC1 Breaking Changes** 
+
+Following configuration properties have been renamed to better reflect their purpose:
+
+* `spring.ai.chat.client.observations.include-prompt` → `spring.ai.chat.client.observations.log-prompt`
+* `spring.ai.chat.observations.include-prompt` → `spring.ai.chat.observations.log-prompt`
+* `spring.ai.chat.observations.include-completion` → `spring.ai.chat.observations.log-completion`
+* `spring.ai.image.observations.include-prompt` → `spring.ai.image.observations.log-prompt`
+* `spring.ai.vectorstore.observations.include-query-response` → `spring.ai.vectorstore.observations.log-query-response`
+====
+
 == Chat Client
 
 The `spring.ai.chat.client` observations are recorded when a ChatClient `call()` or `stream()` operations are invoked. 
@@ -46,25 +59,25 @@ They measure the time spent performing the invocation and propagate the related 
 The `ChatClient` prompt content is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports exporting the prompt content as span attributes/events across all tracing backends.
+Spring AI supports logging the prompt content to help with debugging and troubleshooting.
 
 [cols="6,3,1", stripes=even]
 |====
 | Property | Description | Default
 
-| `spring.ai.chat.client.observations.include-prompt` |  Whether to include the chat client prompt content in the observations. | `false`
+| `spring.ai.chat.client.observations.log-prompt` |  Whether to log the chat client prompt content. | `false`
 |====
 
-WARNING: If you enable the inclusion of the chat client prompt content in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+WARNING: If you enable logging of the chat client prompt content, there's a risk of exposing sensitive or private information. Please, be careful!
 
 === Input Data (Deprecated)
 
-WARNING: The `spring.ai.chat.client.observations.include-input` property is deprecated, replaced by `spring.ai.chat.client.observations.include-prompt`. See xref:_prompt_content[Prompt Content].
+WARNING: The `spring.ai.chat.client.observations.include-input` property is deprecated, replaced by `spring.ai.chat.client.observations.log-prompt`. See xref:_prompt_content[Prompt Content].
 
 The `ChatClient` input data is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports exporting input data as span attributes/events across all tracing backends.
+Spring AI supports logging input data to help with debugging and troubleshooting.
 
 [cols="6,3,1", stripes=even]
 |====
@@ -142,40 +155,70 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |`gen_ai.prompt` | The full prompt sent to the model. Optional.
 |`gen_ai.completion` | The full response received from the model. Optional.
+|`spring.ai.model.request.tool.names` | List of tool definitions provided to the model in the request.
 |===
 
 NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
 Use the metric name `gen_ai.client.token.usage` that is provided by the `ChatModel`.
 
-.Events
-[cols="a,a", stripes=even]
-|===
-|Name | Description
-
-|`gen_ai.content.prompt` | Event including the content of the chat prompt. Optional.
-|`gen_ai.content.completion` | Event including the content of the chat completion. Optional.
-|===
 
 === Chat Prompt and Completion Data
 
 The chat prompt and completion data is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports exporting chat prompt and completion data as span events if you use an OpenTelemetry tracing backend,
-whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
-
-Furthermore, Spring AI supports logging chat prompt and completion data, useful for troubleshooting scenarios.
+Spring AI supports logging chat prompt and completion data, useful for troubleshooting scenarios. When tracing is available, the logs will include trace information for better correlation.
 
 [cols="6,3,1", stripes=even]
 |====
 | Property | Description | Default
 
-| `spring.ai.chat.observations.include-prompt` | Include the prompt content in observations. `true` or `false` | `false`
-| `spring.ai.chat.observations.include-completion` | Include the completion content in observations. `true` or `false` | `false`
+| `spring.ai.chat.observations.log-prompt` | Log the prompt content. `true` or `false` | `false`
+| `spring.ai.chat.observations.log-completion` | Log the completion content. `true` or `false` | `false`
 | `spring.ai.chat.observations.include-error-logging` | Include error logging in observations. `true` or `false` | `false`
 |====
 
-WARNING: If you enable the inclusion of the chat prompt and completion data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+WARNING: If you enable logging of the chat prompt and completion data, there's a risk of exposing sensitive or private information. Please, be careful!
+
+== Tool Calling
+
+The `spring.ai.tool` observations are recorded when performing tool calling in the context of a chat model interaction. They measure the time spent on toll call completion and propagate the related tracing information.
+
+.Low Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.operation.name` | The name of the operation being performed. It's always `framework`.
+|`gen_ai.system` | The provider responsible for the operation. It's always `spring_ai`.
+|`spring.ai.kind` | The kind of operation performed by Spring AI. It's always `tool_call`.
+|`spring.ai.tool.definition.name` | The name of the tool.
+|===
+
+.High Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+|`spring.ai.tool.definition.description` | Description of the tool.
+|`spring.ai.tool.definition.schema` | Schema of the parameters used to call the tool.
+|`spring.ai.tool.call.arguments` | The input arguments to the tool call. (Only when enabled)
+|`spring.ai.tool.call.result` | Schema of the parameters used to call the tool. (Only when enabled)
+|===
+
+=== Tool Call Arguments and Result Data
+
+The input arguments and result from the tool call are not exported by default, as they can be potentially sensitive.
+
+Spring AI supports exporting tool call arguments and result data as span attributes.
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+
+| `spring.ai.tools.observations.include-content` | Include the tool call content in observations. `true` or `false` | `false`
+|====
+
+WARNING: If you enable the inclusion of the tool call arguments and result in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
 
 == EmbeddingModel
 
@@ -252,30 +295,22 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
 Use the metric name `gen_ai.client.token.usage` that is provided by the `ImageModel`.
 
-.Events
-[cols="a,a", stripes=even]
-|===
-|Name | Description
-
-|`gen_ai.content.prompt` | Event including the content of the image prompt. Optional.
-|===
 
 === Image Prompt Data
 
 The image prompt data is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports exporting image prompt data as span events if you use an OpenTelemetry tracing backend,
-whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
+Spring AI supports logging image prompt data, useful for troubleshooting scenarios. When tracing is available, the logs will include trace information for better correlation.
 
 [cols="6,3,1", stripes=even]
 |===
 | Property | Description | Default
 
-| `spring.ai.image.observations.include-prompt` | `true` or `false` | `false`
+| `spring.ai.image.observations.log-prompt` | Log the image prompt content. `true` or `false` | `false`
 |===
 
-WARNING: If you enable the inclusion of the image prompt data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+WARNING: If you enable logging of the image prompt data, there's a risk of exposing sensitive or private information. Please, be careful!
 
 == Vector Stores
 
@@ -312,27 +347,19 @@ They measure the time spent on the `query`, `add` and `remove` operations and pr
 |`db.vector.query.top_k` | The top-k most similar vectors returned by a query.
 |===
 
-.Events
-[cols="a,a", stripes=even]
-|===
-|Name | Description
-
-|`db.vector.content.query.response` | Event including the vector search response data. Optional.
-|===
 
 === Response Data
 
 The vector search response data is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports exporting vector search response data as span events if you use an OpenTelemetry tracing backend,
-whereas data is exported as span attributes if you use an OpenZipkin tracing backend.
+Spring AI supports logging vector search response data, useful for troubleshooting scenarios. When tracing is available, the logs will include trace information for better correlation.
 
 [cols="6,3,1", stripes=even]
 |===
 | Property | Description | Default
 
-| `spring.ai.vectorstore.observations.include-query-response` | `true` or `false` | `false`
+| `spring.ai.vectorstore.observations.log-query-response` | Log the vector store query response content. `true` or `false` | `false`
 |===
 
-WARNING: If you enable the inclusion of the vector search response data in the observations, there's a risk of exposing sensitive or private information. Please, be careful!
+WARNING: If you enable logging of the vector search response data, there's a risk of exposing sensitive or private information. Please, be careful!

@@ -41,9 +41,9 @@
 		<module>spring-ai-rag</module>
 		<module>advisors/spring-ai-advisors-vector-store</module>
 
-		<module>memory/spring-ai-model-chat-memory-cassandra</module>
-		<module>memory/spring-ai-model-chat-memory-jdbc</module>
-		<module>memory/spring-ai-model-chat-memory-neo4j</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
 
 
 
@@ -87,9 +87,9 @@
 		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
 
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-cassandra</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-jdbc</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-neo4j</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
 
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 
@@ -169,7 +169,7 @@
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
-			<module>models/spring-ai-stability-ai</module>
+		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
@@ -180,9 +180,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-cassandra</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-jdbc</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-neo4j</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
@@ -196,6 +193,10 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
+
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
@@ -265,7 +266,7 @@
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
-		<com.google.cloud.version>26.59.0</com.google.cloud.version>
+		<com.google.cloud.version>26.60.0</com.google.cloud.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.37.0</jsonschema.version>
 		<swagger-annotations.version>2.2.25</swagger-annotations.version>
@@ -309,7 +310,7 @@
 		<okhttp3.version>4.12.0</okhttp3.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.10.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>0.10.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>

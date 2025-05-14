@@ -20,24 +20,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import reactor.core.publisher.Flux;
+import org.springframework.util.Assert;
+import reactor.core.scheduler.Scheduler;
 
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 
 /**
@@ -48,13 +47,18 @@ import org.springframework.ai.vectorstore.VectorStore;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Oganes Bozoyan
+ * @author Mark Pollack
  * @since 1.0.0
  */
-public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<VectorStore> {
+public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+
+	public static final String TOP_K = "chat_memory_vector_store_top_k";
 
 	private static final String DOCUMENT_METADATA_CONVERSATION_ID = "conversationId";
 
 	private static final String DOCUMENT_METADATA_MESSAGE_TYPE = "messageType";
+
+	private static final int DEFAULT_TOP_K = 20;
 
 	private static final PromptTemplate DEFAULT_SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
 			{instructions}
@@ -69,10 +73,29 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 
 	private final PromptTemplate systemPromptTemplate;
 
-	private VectorStoreChatMemoryAdvisor(VectorStore vectorStore, String defaultConversationId,
-			int chatHistoryWindowSize, PromptTemplate systemPromptTemplate, int order) {
-		super(vectorStore, defaultConversationId, chatHistoryWindowSize, true, order);
+	private final int defaultTopK;
+
+	private final String defaultConversationId;
+
+	private final int order;
+
+	private final Scheduler scheduler;
+
+	private final VectorStore vectorStore;
+
+	private VectorStoreChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int defaultTopK,
+			String defaultConversationId, int order, Scheduler scheduler, VectorStore vectorStore) {
+		Assert.notNull(systemPromptTemplate, "systemPromptTemplate cannot be null");
+		Assert.isTrue(defaultTopK > 0, "topK must be greater than 0");
+		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
+		Assert.notNull(scheduler, "scheduler cannot be null");
+		Assert.notNull(vectorStore, "vectorStore cannot be null");
 		this.systemPromptTemplate = systemPromptTemplate;
+		this.defaultTopK = defaultTopK;
+		this.defaultConversationId = defaultConversationId;
+		this.order = order;
+		this.scheduler = scheduler;
+		this.vectorStore = vectorStore;
 	}
 
 	public static Builder builder(VectorStore chatMemory) {
@@ -80,60 +103,57 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 	}
 
 	@Override
-	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
-		chatClientRequest = this.before(chatClientRequest);
-
-		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
-
-		this.after(chatClientResponse);
-
-		return chatClientResponse;
+	public int getOrder() {
+		return order;
 	}
 
 	@Override
-	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
-			StreamAdvisorChain streamAdvisorChain) {
-		Flux<ChatClientResponse> chatClientResponses = this.doNextWithProtectFromBlockingBefore(chatClientRequest,
-				streamAdvisorChain, this::before);
-
-		return new MessageAggregator().aggregateChatClientResponse(chatClientResponses, this::after);
+	public Scheduler getScheduler() {
+		return this.scheduler;
 	}
 
-	private ChatClientRequest before(ChatClientRequest chatClientRequest) {
-		String conversationId = this.doGetConversationId(chatClientRequest.context());
-		int chatMemoryRetrieveSize = this.doGetChatMemoryRetrieveSize(chatClientRequest.context());
-
-		// 1. Retrieve the chat memory for the current conversation.
-		var searchRequest = SearchRequest.builder()
-			.query(chatClientRequest.prompt().getUserMessage().getText())
-			.topK(chatMemoryRetrieveSize)
-			.filterExpression(DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'")
+	@Override
+	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
+		String conversationId = getConversationId(request.context(), this.defaultConversationId);
+		String query = request.prompt().getUserMessage() != null ? request.prompt().getUserMessage().getText() : "";
+		int topK = getChatMemoryTopK(request.context());
+		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
+		var searchRequest = org.springframework.ai.vectorstore.SearchRequest.builder()
+			.query(query)
+			.topK(topK)
+			.filterExpression(filter)
 			.build();
+		java.util.List<org.springframework.ai.document.Document> documents = this.vectorStore
+			.similaritySearch(searchRequest);
 
-		List<Document> documents = this.getChatMemoryStore().similaritySearch(searchRequest);
-
-		// 2. Processed memory messages as a string.
 		String longTermMemory = documents == null ? ""
-				: documents.stream().map(Document::getText).collect(Collectors.joining(System.lineSeparator()));
+				: documents.stream()
+					.map(org.springframework.ai.document.Document::getText)
+					.collect(java.util.stream.Collectors.joining(System.lineSeparator()));
 
-		// 2. Augment the system message.
-		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
+		org.springframework.ai.chat.messages.SystemMessage systemMessage = request.prompt().getSystemMessage();
 		String augmentedSystemText = this.systemPromptTemplate
-			.render(Map.of("instructions", systemMessage.getText(), "long_term_memory", longTermMemory));
+			.render(java.util.Map.of("instructions", systemMessage.getText(), "long_term_memory", longTermMemory));
 
-		// 3. Create a new request with the augmented system message.
-		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
-			.prompt(chatClientRequest.prompt().augmentSystemMessage(augmentedSystemText))
+		ChatClientRequest processedChatClientRequest = request.mutate()
+			.prompt(request.prompt().augmentSystemMessage(augmentedSystemText))
 			.build();
 
-		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.getChatMemoryStore().write(toDocuments(List.of(userMessage), conversationId));
+		org.springframework.ai.chat.messages.UserMessage userMessage = processedChatClientRequest.prompt()
+			.getUserMessage();
+		if (userMessage != null) {
+			this.vectorStore.write(toDocuments(java.util.List.of(userMessage), conversationId));
+		}
 
 		return processedChatClientRequest;
 	}
 
-	private void after(ChatClientResponse chatClientResponse) {
+	private int getChatMemoryTopK(Map<String, Object> context) {
+		return context.containsKey(TOP_K) ? Integer.parseInt(context.get(TOP_K).toString()) : this.defaultTopK;
+	}
+
+	@Override
+	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
 		if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
@@ -142,8 +162,9 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.getChatMemoryStore()
-			.write(toDocuments(assistantMessages, this.doGetConversationId(chatClientResponse.context())));
+		this.vectorStore.write(toDocuments(assistantMessages,
+				this.getConversationId(chatClientResponse.context(), this.defaultConversationId)));
+		return chatClientResponse;
 	}
 
 	private List<Document> toDocuments(List<Message> messages, String conversationId) {
@@ -173,28 +194,83 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 		return docs;
 	}
 
-	public static class Builder extends AbstractChatMemoryAdvisor.AbstractBuilder<VectorStore> {
+	/**
+	 * Builder for VectorStoreChatMemoryAdvisor.
+	 */
+	public static class Builder {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 
-		protected Builder(VectorStore chatMemory) {
-			super(chatMemory);
+		private Integer defaultTopK = DEFAULT_TOP_K;
+
+		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
+
+		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
+
+		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
+
+		private VectorStore vectorStore;
+
+		/**
+		 * Creates a new builder instance.
+		 * @param vectorStore the vector store to use
+		 */
+		protected Builder(VectorStore vectorStore) {
+			this.vectorStore = vectorStore;
 		}
 
-		public Builder systemTextAdvise(String systemTextAdvise) {
-			this.systemPromptTemplate = new PromptTemplate(systemTextAdvise);
-			return this;
-		}
-
+		/**
+		 * Set the system prompt template.
+		 * @param systemPromptTemplate the system prompt template
+		 * @return this builder
+		 */
 		public Builder systemPromptTemplate(PromptTemplate systemPromptTemplate) {
 			this.systemPromptTemplate = systemPromptTemplate;
 			return this;
 		}
 
-		@Override
+		/**
+		 * Set the chat memory retrieve size.
+		 * @param defaultTopK the chat memory retrieve size
+		 * @return this builder
+		 */
+		public Builder defaultTopK(int defaultTopK) {
+			this.defaultTopK = defaultTopK;
+			return this;
+		}
+
+		/**
+		 * Set the conversation id.
+		 * @param conversationId the conversation id
+		 * @return the builder
+		 */
+		public Builder conversationId(String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
+		public Builder scheduler(Scheduler scheduler) {
+			this.scheduler = scheduler;
+			return this;
+		}
+
+		/**
+		 * Set the order.
+		 * @param order the order
+		 * @return the builder
+		 */
+		public Builder order(int order) {
+			this.order = order;
+			return this;
+		}
+
+		/**
+		 * Build the advisor.
+		 * @return the advisor
+		 */
 		public VectorStoreChatMemoryAdvisor build() {
-			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,
-					this.systemPromptTemplate, this.order);
+			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.defaultTopK, this.conversationId,
+					this.order, this.scheduler, this.vectorStore);
 		}
 
 	}

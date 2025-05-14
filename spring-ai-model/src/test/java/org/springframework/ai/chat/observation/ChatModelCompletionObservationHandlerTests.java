@@ -16,24 +16,18 @@
 
 package org.springframework.ai.chat.observation;
 
-import java.util.List;
-
-import io.micrometer.tracing.handler.TracingObservationHandler;
-import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
-import io.micrometer.tracing.otel.bridge.OtelTracer;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.trace.ReadableSpan;
-import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.observation.conventions.AiObservationAttributes;
-import org.springframework.ai.observation.conventions.AiObservationEventNames;
-import org.springframework.ai.observation.tracing.TracingHelper;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -41,37 +35,72 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link ChatModelCompletionObservationHandler}.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
+@ExtendWith(OutputCaptureExtension.class)
 class ChatModelCompletionObservationHandlerTests {
 
+	private final ChatModelCompletionObservationHandler observationHandler = new ChatModelCompletionObservationHandler();
+
 	@Test
-	void whenCompletionWithTextThenSpanEvent() {
-		var observationContext = ChatModelObservationContext.builder()
-			.prompt(new Prompt("supercalifragilisticexpialidocious",
-					ChatOptions.builder().model("spoonful-of-sugar").build()))
-			.provider("mary-poppins")
+	void whenNotSupportedObservationContextThenReturnFalse() {
+		var context = new Observation.Context();
+		assertThat(this.observationHandler.supportsContext(context)).isFalse();
+	}
+
+	@Test
+	void whenSupportedObservationContextThenReturnTrue() {
+		var context = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
 			.build();
-		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
+		assertThat(this.observationHandler.supportsContext(context)).isTrue();
+	}
+
+	@Test
+	void whenEmptyResponseThenOutputNothing(CapturedOutput output) {
+		var context = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Chat Model Completion:
+				[]
+				""");
+	}
+
+	@Test
+	void whenEmptyCompletionThenOutputNothing(CapturedOutput output) {
+		var context = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		context.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("")))));
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Chat Model Completion:
+				[]
+				""");
+	}
+
+	@Test
+	void whenCompletionWithTextThenOutputIt(CapturedOutput output) {
+		var context = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		context.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));
-		var sdkTracer = SdkTracerProvider.builder().build().get("test");
-		var otelTracer = new OtelTracer(sdkTracer, new OtelCurrentTraceContext(), null);
-		var span = otelTracer.nextSpan();
-		var tracingContext = new TracingObservationHandler.TracingContext();
-		tracingContext.setSpan(span);
-		observationContext.put(TracingObservationHandler.TracingContext.class, tracingContext);
+		observationHandler.onStop(context);
+		assertThat(output).contains("""
+				Chat Model Completion:
+				["say please", "seriously, say please"]
+				""");
+	}
 
-		new ChatModelCompletionObservationHandler().onStop(observationContext);
-
-		var otelSpan = TracingHelper.extractOtelSpan(tracingContext);
-		assertThat(otelSpan).isNotNull();
-		var spanData = ((ReadableSpan) otelSpan).toSpanData();
-		assertThat(spanData.getEvents().size()).isEqualTo(1);
-		assertThat(spanData.getEvents().get(0).getName()).isEqualTo(AiObservationEventNames.CONTENT_COMPLETION.value());
-		assertThat(spanData.getEvents()
-			.get(0)
-			.getAttributes()
-			.get(AttributeKey.stringArrayKey(AiObservationAttributes.COMPLETION.value())))
-			.containsOnly("say please", "seriously, say please");
+	private Prompt generatePrompt(ChatOptions chatOptions) {
+		return new Prompt("supercalifragilisticexpialidocious", chatOptions);
 	}
 
 }

@@ -40,7 +40,7 @@ export SPRING_AI_OPENAI_CHAT_MODEL=llama-3.1-sonar-small-128k-online
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 

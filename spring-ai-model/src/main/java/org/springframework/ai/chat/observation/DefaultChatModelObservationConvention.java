@@ -16,13 +16,15 @@
 
 package org.springframework.ai.chat.observation;
 
-import java.util.Objects;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -100,6 +102,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		keyValues = requestPresencePenalty(keyValues, context);
 		keyValues = requestStopSequences(keyValues, context);
 		keyValues = requestTemperature(keyValues, context);
+		keyValues = requestTools(keyValues, context);
 		keyValues = requestTopK(keyValues, context);
 		keyValues = requestTopP(keyValues, context);
 		// Response
@@ -148,8 +151,6 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		if (!CollectionUtils.isEmpty(options.getStopSequences())) {
 			StringJoiner stopSequencesJoiner = new StringJoiner(", ", "[", "]");
 			options.getStopSequences().forEach(value -> stopSequencesJoiner.add("\"" + value + "\""));
-			KeyValue.of(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES,
-					options.getStopSequences(), Objects::nonNull);
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					stopSequencesJoiner.toString());
@@ -163,6 +164,24 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(),
 					String.valueOf(options.getTemperature()));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues requestTools(KeyValues keyValues, ChatModelObservationContext context) {
+		if (!(context.getRequest().getOptions() instanceof ToolCallingChatOptions options)) {
+			return keyValues;
+		}
+
+		Set<String> toolNames = new HashSet<>(options.getToolNames());
+		toolNames.addAll(options.getToolCallbacks().stream().map(tc -> tc.getToolDefinition().name()).toList());
+
+		if (!CollectionUtils.isEmpty(toolNames)) {
+			StringJoiner toolNamesJoiner = new StringJoiner(", ", "[", "]");
+			toolNames.forEach(value -> toolNamesJoiner.add("\"" + value + "\""));
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOOL_NAMES.asString(),
+					toolNamesJoiner.toString());
 		}
 		return keyValues;
 	}

@@ -17,6 +17,8 @@
 package org.springframework.ai.model.bedrock.titan.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.observation.ObservationRegistry;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
@@ -26,6 +28,7 @@ import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -40,6 +43,7 @@ import org.springframework.context.annotation.Import;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author SriVarshan P
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -56,6 +60,12 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockTitanEmbeddingProperties properties,
 			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
+
+		// Validate required properties
+		if (properties.getModel() == null || awsProperties.getTimeout() == null) {
+			throw new IllegalArgumentException("Required properties for TitanEmbeddingBedrockApi are missing.");
+		}
+
 		return new TitanEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
 				objectMapper, awsProperties.getTimeout());
 	}
@@ -64,8 +74,16 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(TitanEmbeddingBedrockApi.class)
 	public BedrockTitanEmbeddingModel titanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingApi,
-			BedrockTitanEmbeddingProperties properties) {
-		return new BedrockTitanEmbeddingModel(titanEmbeddingApi).withInputType(properties.getInputType());
+			BedrockTitanEmbeddingProperties properties, ObjectProvider<ObservationRegistry> observationRegistry) {
+
+		// Validate required properties
+		if (properties.getInputType() == null) {
+			throw new IllegalArgumentException("InputType property for BedrockTitanEmbeddingModel is missing.");
+		}
+
+		return new BedrockTitanEmbeddingModel(titanEmbeddingApi,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.withInputType(properties.getInputType());
 	}
 
 }
