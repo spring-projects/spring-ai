@@ -902,7 +902,7 @@ public class OpenAiApi {
 	}
 
 	/**
-	 * Creates a model response for the given chat conversation.
+	 * Creates a model request for the given chat conversation.
 	 *
 	 * @param messages A list of messages comprising the conversation so far.
 	 * @param model ID of the model to use.
