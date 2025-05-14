@@ -23,6 +23,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -52,6 +54,9 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	private final JdbcTemplate jdbcTemplate;
 
 	private final JdbcChatMemoryRepositoryDialect dialect;
+
+	public static final String JDBC_MESSAGE_TS = JdbcChatMemoryRepository.class.getSimpleName()
+			+ "_message_timestamp";
 
 	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
@@ -104,11 +109,14 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		@Override
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
 			var message = this.messages.get(i);
+			Long timestamp = Optional.ofNullable(message.getMetadata())
+					.map(metadata -> (long) metadata.getOrDefault(JDBC_MESSAGE_TS, instantSeq.get()))
+					.orElse(instantSeq.get());
 
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
-			ps.setTimestamp(4, new Timestamp(instantSeq.getAndIncrement()));
+			ps.setTimestamp(4, new Timestamp(timestamp));
 		}
 
 		@Override
@@ -124,15 +132,18 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		public Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
 			var type = MessageType.valueOf(rs.getString(2));
+			long timestamp = rs.getLong(3);
+
+			Map<String, Object> metadata = Map.of(JDBC_MESSAGE_TS, timestamp);
 
 			return switch (type) {
-				case USER -> new UserMessage(content);
-				case ASSISTANT -> new AssistantMessage(content);
-				case SYSTEM -> new SystemMessage(content);
+				case USER -> UserMessage.builder().text(content).metadata(metadata).build();
+				case ASSISTANT -> new AssistantMessage(content, metadata);
+				case SYSTEM -> SystemMessage.builder().text(content).metadata(metadata).build();
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
 				// AddBatchPreparedStatement to support it.
-				case TOOL -> new ToolResponseMessage(List.of());
+				case TOOL -> new ToolResponseMessage(List.of(), metadata);
 			};
 		}
 
