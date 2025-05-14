@@ -16,10 +16,7 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +32,10 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.lang.Nullable;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -51,13 +51,18 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
+	private final TransactionTemplate transactionTemplate;
+
 	private final JdbcChatMemoryRepositoryDialect dialect;
 
-	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect) {
+	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect,
+			PlatformTransactionManager txManager) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
+		this.transactionTemplate = new TransactionTemplate(
+				txManager != null ? txManager : new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 	}
 
 	@Override
@@ -83,9 +88,13 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
-		this.deleteByConversationId(conversationId);
-		this.jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
-				new AddBatchPreparedStatement(conversationId, messages));
+
+		transactionTemplate.execute(status -> {
+			deleteByConversationId(conversationId);
+			jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
+					new AddBatchPreparedStatement(conversationId, messages));
+			return null;
+		});
 	}
 
 	@Override
@@ -148,6 +157,8 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcChatMemoryRepositoryDialect dialect;
 
+		private PlatformTransactionManager platformTransactionManager;
+
 		private Builder() {
 		}
 
@@ -161,10 +172,15 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			return this;
 		}
 
+		public Builder transactionManager(PlatformTransactionManager txManager) {
+			this.platformTransactionManager = txManager;
+			return this;
+		}
+
 		public JdbcChatMemoryRepository build() {
 			if (this.dialect == null)
 				throw new IllegalStateException("Dialect must be set");
-			return new JdbcChatMemoryRepository(this.jdbcTemplate, this.dialect);
+			return new JdbcChatMemoryRepository(this.jdbcTemplate, this.dialect, this.platformTransactionManager);
 		}
 
 	}
