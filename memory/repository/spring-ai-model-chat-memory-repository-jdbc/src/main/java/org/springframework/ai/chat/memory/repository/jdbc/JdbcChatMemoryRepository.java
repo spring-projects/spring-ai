@@ -60,7 +60,8 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(jdbcTemplate.getDataSource(), "dataSource can not be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
-		this.transactionTemplate = new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
+		this.transactionTemplate = new TransactionTemplate(
+				new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 	}
 
 	@Override
