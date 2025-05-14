@@ -20,7 +20,6 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -33,8 +32,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.lang.Nullable;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -83,30 +83,22 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
-		Connection connection = null;
-		Assert.notNull(jdbcTemplate.getDataSource(), "jdbcTemplate.getDataSource() cannot be null");
-		try {
-			connection = DataSourceUtils.getConnection(jdbcTemplate.getDataSource());
-			connection.setAutoCommit(false);
-			this.deleteByConversationId(conversationId);
-			this.jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
-					new AddBatchPreparedStatement(conversationId, messages));
-			connection.commit();
-		}
-		catch (SQLException ex) {
-			try {
-				connection.rollback();
-			}
-			catch (SQLException e) {
-				throw new RuntimeException("Transaction rollback exception", e);
-			}
-			throw new RuntimeException("save messages failed", ex);
-		}
-		finally {
-			Optional.ofNullable(connection)
-				.ifPresent(conn -> DataSourceUtils.releaseConnection(conn, jdbcTemplate.getDataSource()));
-		}
+		Assert.notNull(jdbcTemplate.getDataSource(), "dataSource can not be null");
+		TransactionTemplate transactionTemplate = new TransactionTemplate(
+				new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 
+		transactionTemplate.execute(status -> {
+			try {
+				deleteByConversationId(conversationId);
+				jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
+						new AddBatchPreparedStatement(conversationId, messages));
+			}
+			catch (RuntimeException e) {
+				status.setRollbackOnly();
+				throw e;
+			}
+			return null;
+		});
 	}
 
 	@Override
