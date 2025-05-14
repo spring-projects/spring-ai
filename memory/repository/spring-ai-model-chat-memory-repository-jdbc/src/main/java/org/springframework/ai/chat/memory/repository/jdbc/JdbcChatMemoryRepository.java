@@ -55,8 +55,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private final JdbcChatMemoryRepositoryDialect dialect;
 
-	public static final String JDBC_MESSAGE_TS = JdbcChatMemoryRepository.class.getSimpleName()
-			+ "_message_timestamp";
+	public static final String JDBC_MESSAGE_TS = JdbcChatMemoryRepository.class.getSimpleName() + "_message_timestamp";
 
 	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
@@ -110,9 +109,8 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		public void setValues(PreparedStatement ps, int i) throws SQLException {
 			var message = this.messages.get(i);
 			Long timestamp = Optional.ofNullable(message.getMetadata())
-					.map(metadata -> (long) metadata.getOrDefault(JDBC_MESSAGE_TS, instantSeq.get()))
-					.orElse(instantSeq.get());
-
+				.map(metadata -> (long) metadata.getOrDefault(JDBC_MESSAGE_TS, instantSeq.get()))
+				.orElse(instantSeq.get());
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
