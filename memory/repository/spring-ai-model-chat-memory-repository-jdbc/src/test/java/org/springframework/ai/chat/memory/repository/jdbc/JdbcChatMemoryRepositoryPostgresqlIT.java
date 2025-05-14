@@ -16,13 +16,19 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.UUID;
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,14 +39,10 @@ import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
-
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.UUID;
-
-import javax.sql.DataSource;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -156,6 +158,34 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 		assertThat(count).isZero();
 	}
 
+	@Test
+	void repositoryWithExplicitTransactionManager() {
+		// Get the repository with explicit transaction manager
+		ChatMemoryRepository repositoryWithTxManager = TestConfiguration
+			.chatMemoryRepositoryWithTransactionManager(jdbcTemplate, jdbcTemplate.getDataSource());
+
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new AssistantMessage("Message with transaction manager - " + conversationId),
+				new UserMessage("User message with transaction manager - " + conversationId));
+
+		// Save messages using the repository with explicit transaction manager
+		repositoryWithTxManager.saveAll(conversationId, messages);
+
+		// Verify messages were saved correctly
+		var savedMessages = repositoryWithTxManager.findByConversationId(conversationId);
+		assertThat(savedMessages).hasSize(2);
+		assertThat(savedMessages).isEqualTo(messages);
+
+		// Verify transaction works by updating and checking atomicity
+		var newMessages = List.<Message>of(new SystemMessage("New system message - " + conversationId));
+		repositoryWithTxManager.saveAll(conversationId, newMessages);
+
+		// The old messages should be deleted and only the new one should exist
+		var updatedMessages = repositoryWithTxManager.findByConversationId(conversationId);
+		assertThat(updatedMessages).hasSize(1);
+		assertThat(updatedMessages).isEqualTo(newMessages);
+	}
+
 	@SpringBootConfiguration
 	@ImportAutoConfiguration({ DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class })
 	static class TestConfiguration {
@@ -165,6 +195,20 @@ class JdbcChatMemoryRepositoryPostgresqlIT {
 			return JdbcChatMemoryRepository.builder()
 				.jdbcTemplate(jdbcTemplate)
 				.dialect(JdbcChatMemoryRepositoryDialect.from(dataSource))
+				.build();
+		}
+
+		@Bean
+		ChatMemoryRepository chatMemoryRepositoryWithTxManager(JdbcTemplate jdbcTemplate, DataSource dataSource) {
+			return chatMemoryRepositoryWithTransactionManager(jdbcTemplate, dataSource);
+		}
+
+		static ChatMemoryRepository chatMemoryRepositoryWithTransactionManager(JdbcTemplate jdbcTemplate,
+				DataSource dataSource) {
+			return JdbcChatMemoryRepository.builder()
+				.jdbcTemplate(jdbcTemplate)
+				.dialect(JdbcChatMemoryRepositoryDialect.from(dataSource))
+				.transactionManager(new DataSourceTransactionManager(dataSource))
 				.build();
 		}
 
