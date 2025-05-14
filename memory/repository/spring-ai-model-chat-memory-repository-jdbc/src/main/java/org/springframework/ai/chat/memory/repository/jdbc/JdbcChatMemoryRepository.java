@@ -60,7 +60,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(jdbcTemplate.getDataSource(), "dataSource can not be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
-		transactionTemplate = new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
+		this.transactionTemplate = new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 	}
 
 	@Override
@@ -88,15 +88,9 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
 		transactionTemplate.execute(status -> {
-			try {
-				deleteByConversationId(conversationId);
-				jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
-						new AddBatchPreparedStatement(conversationId, messages));
-			}
-			catch (RuntimeException e) {
-				status.setRollbackOnly();
-				throw e;
-			}
+			deleteByConversationId(conversationId);
+			jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
+					new AddBatchPreparedStatement(conversationId, messages));
 			return null;
 		});
 	}
