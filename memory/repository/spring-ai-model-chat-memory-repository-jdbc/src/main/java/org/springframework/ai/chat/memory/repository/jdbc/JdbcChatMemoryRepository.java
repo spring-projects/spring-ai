@@ -50,13 +50,17 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
+	private final TransactionTemplate transactionTemplate;
+
 	private final JdbcChatMemoryRepositoryDialect dialect;
 
 	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
+		Assert.notNull(jdbcTemplate.getDataSource(), "dataSource can not be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
+		transactionTemplate = new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 	}
 
 	@Override
@@ -82,10 +86,6 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
-
-		Assert.notNull(jdbcTemplate.getDataSource(), "dataSource can not be null");
-		TransactionTemplate transactionTemplate = new TransactionTemplate(
-				new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 
 		transactionTemplate.execute(status -> {
 			try {
