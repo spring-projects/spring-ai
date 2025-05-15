@@ -17,6 +17,7 @@
 package org.springframework.ai.tool.observation;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;

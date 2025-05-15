@@ -16,9 +16,7 @@
 
 package org.springframework.ai.document;
 
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 

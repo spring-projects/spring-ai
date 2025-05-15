@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.observation.autoconfigure;
 import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.observation.VectorStoreQueryResponseObservationHandler;

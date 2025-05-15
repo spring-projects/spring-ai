@@ -124,11 +124,11 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 		}
 
 		public UserMessage build() {
-			if (StringUtils.hasText(textContent) && resource != null) {
+			if (StringUtils.hasText(this.textContent) && this.resource != null) {
 				throw new IllegalArgumentException("textContent and resource cannot be set at the same time");
 			}
-			else if (resource != null) {
-				this.textContent = MessageUtils.readResource(resource);
+			else if (this.resource != null) {
+				this.textContent = MessageUtils.readResource(this.resource);
 			}
 			return new UserMessage(this.textContent, this.media, this.metadata);
 		}

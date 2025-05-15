@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.util.Assert;
 import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -38,6 +37,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.util.Assert;
 
 /**
  * Memory is retrieved from a VectorStore added into the prompt's system text.
@@ -50,7 +50,7 @@ import org.springframework.ai.vectorstore.VectorStore;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	public static final String TOP_K = "chat_memory_vector_store_top_k";
 
@@ -104,7 +104,7 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public int getOrder() {
-		return order;
+		return this.order;
 	}
 
 	@Override

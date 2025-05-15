@@ -16,11 +16,11 @@
 
 package org.springframework.ai.chat.client;
 
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.util.Assert;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.util.Assert;
 
 /**
  * Represents a request processed by a {@link ChatClient} that ultimately is used to build
@@ -79,7 +79,7 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 		}
 
 		public ChatClientRequest build() {
-			return new ChatClientRequest(prompt, context);
+			return new ChatClientRequest(this.prompt, this.context);
 		}
 
 	}

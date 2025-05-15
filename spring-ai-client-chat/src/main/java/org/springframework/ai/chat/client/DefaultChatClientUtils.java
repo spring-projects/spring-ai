@@ -16,6 +16,13 @@
 
 package org.springframework.ai.chat.client;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -28,20 +35,17 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Utilities for supporting the {@link DefaultChatClient} implementation.
  *
  * @author Thomas Vitale
  * @since 1.0.0
  */
-class DefaultChatClientUtils {
+final class DefaultChatClientUtils {
+
+	private DefaultChatClientUtils() {
+		// prevents instantiation
+	}
 
 	static ChatClientRequest toChatClientRequest(DefaultChatClient.DefaultChatClientRequestSpec inputRequest) {
 		Assert.notNull(inputRequest, "inputRequest cannot be null");

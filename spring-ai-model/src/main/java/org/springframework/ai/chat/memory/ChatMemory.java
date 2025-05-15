@@ -16,10 +16,10 @@
 
 package org.springframework.ai.chat.memory;
 
+import java.util.List;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
-
-import java.util.List;
 
 /**
  * The contract for storing and managing the memory of chat conversations.

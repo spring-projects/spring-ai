@@ -16,16 +16,17 @@
 
 package org.springframework.ai.image.observation;
 
+import java.util.List;
+
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,7 +62,7 @@ class ImageModelPromptContentObservationHandlerTests {
 			.imagePrompt(new ImagePrompt("", ImageOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				Image Model Prompt Content:
 				[""]
@@ -75,7 +76,7 @@ class ImageModelPromptContentObservationHandlerTests {
 					ImageOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				Image Model Prompt Content:
 				["supercalifragilisticexpialidocious"]
@@ -91,7 +92,7 @@ class ImageModelPromptContentObservationHandlerTests {
 					ImageOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				Image Model Prompt Content:
 				["you're a chimney sweep", "supercalifragilisticexpialidocious"]

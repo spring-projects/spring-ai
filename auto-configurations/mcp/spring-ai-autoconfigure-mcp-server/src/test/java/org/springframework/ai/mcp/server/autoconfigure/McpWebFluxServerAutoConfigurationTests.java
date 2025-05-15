@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.mcp.server.autoconfigure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,8 +27,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class McpWebFluxServerAutoConfigurationTests {
 
@@ -36,7 +37,7 @@ class McpWebFluxServerAutoConfigurationTests {
 
 	@Test
 	void shouldConfigureWebFluxTransportWithCustomObjectMapper() {
-		this.contextRunner.run((context) -> {
+		this.contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(WebFluxSseServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 			assertThat(context).hasSingleBean(McpServerProperties.class);
@@ -48,6 +49,7 @@ class McpWebFluxServerAutoConfigurationTests {
 				.isEnabled(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
 
 			// Test with a JSON payload containing unknown fields
+			// CHECKSTYLE:OFF
 			String jsonWithUnknownField = """
 					{
 					    "tools": ["tool1", "tool2"],
@@ -55,6 +57,7 @@ class McpWebFluxServerAutoConfigurationTests {
 					    "unknownField": "value"
 					}
 					""";
+			// CHECKSTYLE:ON
 
 			// This should not throw an exception
 			TestMessage message = objectMapper.readValue(jsonWithUnknownField, TestMessage.class);
@@ -75,7 +78,7 @@ class McpWebFluxServerAutoConfigurationTests {
 		private String name;
 
 		public String getName() {
-			return name;
+			return this.name;
 		}
 
 		public void setName(String name) {

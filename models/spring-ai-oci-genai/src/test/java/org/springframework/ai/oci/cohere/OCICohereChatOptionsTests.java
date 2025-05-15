@@ -16,11 +16,11 @@
 
 package org.springframework.ai.oci.cohere;
 
-import com.oracle.bmc.generativeaiinference.model.CohereTool;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
+
+import com.oracle.bmc.generativeaiinference.model.CohereTool;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

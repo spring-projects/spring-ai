@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,20 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.deepseek;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import java.util.*;
 
 /**
  * Chat completions options for the DeepSeek chat API.
@@ -323,7 +332,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs,
 				this.maxTokens,  this.presencePenalty, this.responseFormat,
 				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
-				 this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 
@@ -349,6 +358,28 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.toolContext, other.toolContext)
 				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled);
+	}
+
+	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
+		return DeepSeekChatOptions.builder()
+				.model(fromOptions.getModel())
+				.frequencyPenalty(fromOptions.getFrequencyPenalty())
+				.logprobs(fromOptions.getLogprobs())
+				.topLogprobs(fromOptions.getTopLogprobs())
+				.maxTokens(fromOptions.getMaxTokens())
+				.presencePenalty(fromOptions.getPresencePenalty())
+				.responseFormat(fromOptions.getResponseFormat())
+				.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
+				.temperature(fromOptions.getTemperature())
+				.topP(fromOptions.getTopP())
+				.tools(fromOptions.getTools())
+				.toolChoice(fromOptions.getToolChoice())
+				.toolCallbacks(
+						fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
+				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+				.build();
 	}
 
 	public static class Builder {
@@ -470,28 +501,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			return this.options;
 		}
 
-	}
-
-	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
-		return DeepSeekChatOptions.builder()
-				.model(fromOptions.getModel())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.logprobs(fromOptions.getLogprobs())
-				.topLogprobs(fromOptions.getTopLogprobs())
-				.maxTokens(fromOptions.getMaxTokens())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.responseFormat(fromOptions.getResponseFormat())
-				.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
-				.temperature(fromOptions.getTemperature())
-				.topP(fromOptions.getTopP())
-				.tools(fromOptions.getTools())
-				.toolChoice(fromOptions.getToolChoice())
-				.toolCallbacks(
-						fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
-				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
-				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
-				.build();
 	}
 
 }

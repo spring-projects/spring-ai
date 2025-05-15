@@ -57,7 +57,7 @@ public class ReReadingAdvisor implements BaseAdvisor {
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
 		String augmentedUserText = PromptTemplate.builder()
-			.template(re2AdviseTemplate)
+			.template(this.re2AdviseTemplate)
 			.variables(Map.of("re2_input_query", chatClientRequest.prompt().getUserMessage().getText()))
 			.build()
 			.render();

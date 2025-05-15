@@ -17,6 +17,7 @@
 package org.springframework.ai.tool.observation;
 
 import io.micrometer.observation.Observation;
+
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -31,7 +32,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class ToolCallingObservationContext extends Observation.Context {
+public final class ToolCallingObservationContext extends Observation.Context {
 
 	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(AiOperationType.FRAMEWORK.value(),
 			AiProvider.SPRING_AI.value());
@@ -58,24 +59,24 @@ public class ToolCallingObservationContext extends Observation.Context {
 	}
 
 	public AiOperationMetadata getOperationMetadata() {
-		return operationMetadata;
+		return this.operationMetadata;
 	}
 
 	public ToolDefinition getToolDefinition() {
-		return toolDefinition;
+		return this.toolDefinition;
 	}
 
 	public ToolMetadata getToolMetadata() {
-		return toolMetadata;
+		return this.toolMetadata;
 	}
 
 	public String getToolCallArguments() {
-		return toolCallArguments;
+		return this.toolCallArguments;
 	}
 
 	@Nullable
 	public String getToolCallResult() {
-		return toolCallResult;
+		return this.toolCallResult;
 	}
 
 	public void setToolCallResult(@Nullable String toolCallResult) {
@@ -86,7 +87,7 @@ public class ToolCallingObservationContext extends Observation.Context {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ToolDefinition toolDefinition;
 
@@ -121,7 +122,8 @@ public class ToolCallingObservationContext extends Observation.Context {
 		}
 
 		public ToolCallingObservationContext build() {
-			return new ToolCallingObservationContext(toolDefinition, toolMetadata, toolCallArguments, toolCallResult);
+			return new ToolCallingObservationContext(this.toolDefinition, this.toolMetadata, this.toolCallArguments,
+					this.toolCallResult);
 		}
 
 	}

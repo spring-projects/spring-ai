@@ -16,13 +16,19 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -37,15 +43,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.AbstractPlatformTransactionManager;
-import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link ChatMemoryRepository} for JDBC.
@@ -56,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class JdbcChatMemoryRepository implements ChatMemoryRepository {
+public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -78,7 +77,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public List<String> findConversationIds() {
-		List<String> conversationIds = this.jdbcTemplate.query(dialect.getSelectConversationIdsSql(), rs -> {
+		List<String> conversationIds = this.jdbcTemplate.query(this.dialect.getSelectConversationIdsSql(), rs -> {
 			var ids = new ArrayList<String>();
 			while (rs.next()) {
 				ids.add(rs.getString(1));
@@ -91,7 +90,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		return this.jdbcTemplate.query(dialect.getSelectMessagesSql(), new MessageRowMapper(), conversationId);
+		return this.jdbcTemplate.query(this.dialect.getSelectMessagesSql(), new MessageRowMapper(), conversationId);
 	}
 
 	@Override
@@ -100,9 +99,9 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
-		transactionTemplate.execute(status -> {
+		this.transactionTemplate.execute(status -> {
 			deleteByConversationId(conversationId);
-			jdbcTemplate.batchUpdate(dialect.getInsertMessageSql(),
+			this.jdbcTemplate.batchUpdate(this.dialect.getInsertMessageSql(),
 					new AddBatchPreparedStatement(conversationId, messages));
 			return null;
 		});
@@ -111,7 +110,11 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	@Override
 	public void deleteByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
-		this.jdbcTemplate.update(dialect.getDeleteMessagesSql(), conversationId);
+		this.jdbcTemplate.update(this.dialect.getDeleteMessagesSql(), conversationId);
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
@@ -128,7 +131,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
-			ps.setTimestamp(4, new Timestamp(instantSeq.getAndIncrement()));
+			ps.setTimestamp(4, new Timestamp(this.instantSeq.getAndIncrement()));
 		}
 
 		@Override
@@ -158,11 +161,7 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
+	public static final class Builder {
 
 		private JdbcTemplate jdbcTemplate;
 

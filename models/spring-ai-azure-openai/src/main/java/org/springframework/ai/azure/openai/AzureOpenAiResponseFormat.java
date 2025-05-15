@@ -16,11 +16,13 @@
 
 package org.springframework.ai.azure.openai;
 
+import java.util.Map;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Map;
-import java.util.Objects;
+
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.StringUtils;
 

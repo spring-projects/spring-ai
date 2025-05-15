@@ -54,7 +54,7 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 	}
 
 	public String getImagesPath() {
-		return imagesPath;
+		return this.imagesPath;
 	}
 
 	public void setImagesPath(String imagesPath) {

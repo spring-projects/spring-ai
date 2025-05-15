@@ -38,6 +38,6 @@ public enum ValidationMode {
 	/**
 	 * No validation is performed.
 	 */
-	NONE;
+	NONE
 
 }
