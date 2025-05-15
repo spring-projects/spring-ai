@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
  * Utility methods for building io.qdrant.client.grpc.JsonWithInt.Value from Java objects.
  *
  * @author Anush Shetty
+ * @author Ilayaperumal Gopinathan
  * @since 0.8.1
  */
 final class QdrantValueFactory {
@@ -65,6 +66,10 @@ final class QdrantValueFactory {
 			return value((Map<String, Object>) value);
 		}
 
+		if (value instanceof List) {
+			return value((List<Object>) value);
+		}
+
 		switch (value.getClass().getSimpleName()) {
 			case "String":
 				return ValueFactory.value((String) value);
@@ -79,6 +84,16 @@ final class QdrantValueFactory {
 			default:
 				throw new IllegalArgumentException("Unsupported Qdrant value type: " + value.getClass());
 		}
+	}
+
+	private static Value value(List<Object> elements) {
+		List<Value> values = new ArrayList<Value>(elements.size());
+
+		for (Object element : elements) {
+			values.add(value(element));
+		}
+
+		return ValueFactory.list(values);
 	}
 
 	private static Value value(Object[] elements) {
