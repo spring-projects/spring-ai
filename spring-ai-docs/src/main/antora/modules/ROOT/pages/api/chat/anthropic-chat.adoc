@@ -165,7 +165,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 You can register custom Java Tools with the `AnthropicChatModel` and have the Anthropic Claude model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic Function Calling].
+Read more about xref:api/tools.adoc[Tool Calling].
 
 == Multimodal
 
