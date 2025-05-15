@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.sql.DataSource;
+
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -35,8 +37,15 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link ChatMemoryRepository} for JDBC.
@@ -55,14 +64,16 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private final JdbcChatMemoryRepositoryDialect dialect;
 
-	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect,
+	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepository.class);
+
+	private JdbcChatMemoryRepository(DataSource dataSource, JdbcChatMemoryRepositoryDialect dialect,
 			PlatformTransactionManager txManager) {
-		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
+		Assert.notNull(dataSource, "dataSource cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
-		this.jdbcTemplate = jdbcTemplate;
+		this.jdbcTemplate = new JdbcTemplate(dataSource);
 		this.dialect = dialect;
 		this.transactionTemplate = new TransactionTemplate(
-				txManager != null ? txManager : new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
+				txManager != null ? txManager : new DataSourceTransactionManager(dataSource));
 	}
 
 	@Override
@@ -157,7 +168,11 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcChatMemoryRepositoryDialect dialect;
 
+		private DataSource dataSource;
+
 		private PlatformTransactionManager platformTransactionManager;
+
+		private static final Logger logger = LoggerFactory.getLogger(Builder.class);
 
 		private Builder() {
 		}
@@ -172,15 +187,62 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			return this;
 		}
 
+		public Builder dataSource(DataSource dataSource) {
+			this.dataSource = dataSource;
+			return this;
+		}
+
 		public Builder transactionManager(PlatformTransactionManager txManager) {
 			this.platformTransactionManager = txManager;
 			return this;
 		}
 
 		public JdbcChatMemoryRepository build() {
-			if (this.dialect == null)
-				throw new IllegalStateException("Dialect must be set");
-			return new JdbcChatMemoryRepository(this.jdbcTemplate, this.dialect, this.platformTransactionManager);
+			DataSource effectiveDataSource = resolveDataSource();
+			JdbcChatMemoryRepositoryDialect effectiveDialect = resolveDialect(effectiveDataSource);
+			return new JdbcChatMemoryRepository(effectiveDataSource, effectiveDialect, this.platformTransactionManager);
+		}
+
+		private DataSource resolveDataSource() {
+			if (this.dataSource != null) {
+				return this.dataSource;
+			}
+			if (this.jdbcTemplate != null && this.jdbcTemplate.getDataSource() != null) {
+				return this.jdbcTemplate.getDataSource();
+			}
+			throw new IllegalArgumentException("DataSource must be set (either via dataSource() or jdbcTemplate())");
+		}
+
+		private JdbcChatMemoryRepositoryDialect resolveDialect(DataSource dataSource) {
+			if (this.dialect == null) {
+				try {
+					return JdbcChatMemoryRepositoryDialect.from(dataSource);
+				}
+				catch (Exception ex) {
+					throw new IllegalStateException("Could not detect dialect from datasource", ex);
+				}
+			}
+			else {
+				warnIfDialectMismatch(dataSource, this.dialect);
+				return this.dialect;
+			}
+		}
+
+		/**
+		 * Logs a warning if the explicitly set dialect differs from the dialect detected
+		 * from the DataSource.
+		 */
+		private void warnIfDialectMismatch(DataSource dataSource, JdbcChatMemoryRepositoryDialect explicitDialect) {
+			try {
+				JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
+				if (!detected.getClass().equals(explicitDialect.getClass())) {
+					logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
+							explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
+				}
+			}
+			catch (Exception ex) {
+				logger.debug("Could not detect dialect from datasource", ex);
+			}
 		}
 
 	}
