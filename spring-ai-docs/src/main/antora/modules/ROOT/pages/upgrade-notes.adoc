@@ -138,7 +138,7 @@ Hopefully Watson will reappear in a future version of Spring AI
 
 ==== MoonShot and QianFan
 
-Mooonshot and Qianfan have been removed since they are not accessible from outside China.  These have been moved to the Spring AI Community repository.
+Moonshot and Qianfan have been removed since they are not accessible from outside China.  These have been moved to the Spring AI Community repository.
 
 ==== Removed Vector Store
 * Removed HanaDB vector store autoconfiguration (https://github.com/spring-projects/spring-ai/commit/f3b46244942c5072c2e2fa89e62cde71c61bbf25[f3b4624])
