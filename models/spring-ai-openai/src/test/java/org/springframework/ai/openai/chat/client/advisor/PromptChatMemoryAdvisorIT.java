@@ -135,4 +135,9 @@ public class PromptChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		testMultipleUserMessagesInPrompt();
 	}
 
+	@Test
+	void shouldHandleStreamingWithChatMemory() {
+		testStreamingWithChatMemory();
+	}
+
 }
