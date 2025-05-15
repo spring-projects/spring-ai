@@ -522,6 +522,31 @@ class CassandraVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
+	@Test
+	void throwsExceptionOnInvalidIndexNameWithSchemaValidation() {
+		this.contextRunner.run(context -> {
+			// Create valid schema first, then close
+			try (CassandraVectorStore validStore = createTestStore(context, new SchemaColumn("meta1", DataTypes.TEXT),
+					new SchemaColumn("meta2", DataTypes.TEXT))) {
+				// Nothing to do here. This should not fail as the Schema now exists
+			}
+
+			// Now try with invalid index name but don't reinitialize schema
+			CassandraVectorStore.Builder invalidBuilder = storeBuilder(context.getBean(CqlSession.class),
+					context.getBean(EmbeddingModel.class))
+				.addMetadataColumns(new SchemaColumn("meta1", DataTypes.TEXT),
+						new SchemaColumn("meta2", DataTypes.TEXT))
+				.indexName("non_existent_index_name")
+				.initializeSchema(false);
+
+			IllegalStateException exception = Assertions.assertThrows(IllegalStateException.class,
+					invalidBuilder::build);
+
+			assertThat(exception.getMessage()).contains("non_existent_index_name");
+			assertThat(exception.getMessage()).contains("does not exist");
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
