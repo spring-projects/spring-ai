@@ -485,11 +485,6 @@ public class StabilityAiImageOptions implements ImageOptions {
 			return this;
 		}
 
-		public Builder samples(Integer samples) {
-			this.options.setN(samples);
-			return this;
-		}
-
 		public Builder stylePreset(String stylePreset) {
 			this.options.setStylePreset(stylePreset);
 			return this;
