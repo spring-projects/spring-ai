@@ -194,6 +194,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
 
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
