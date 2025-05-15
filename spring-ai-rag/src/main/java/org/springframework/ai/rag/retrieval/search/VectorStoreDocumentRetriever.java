@@ -45,6 +45,11 @@ import org.springframework.util.StringUtils;
  * List<Document> documents = retriever.retrieve(new Query("example query"));
  * }</pre>
  *
+ * <p>
+ * The {@link #FILTER_EXPRESSION} context key can be used to provide a filter expression
+ * for a specific query. This key accepts either a string representation of a filter
+ * expression or a {@link Filter.Expression} object directly.
+ *
  * @author Thomas Vitale
  * @since 1.0.0
  */
@@ -89,10 +94,27 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 		return this.vectorStore.similaritySearch(searchRequest);
 	}
 
+	/**
+	 * Computes the filter expression to use for the current request.
+	 * <p>
+	 * The filter expression can be provided in the query context using the
+	 * {@link #FILTER_EXPRESSION} key. This key accepts either a string representation of
+	 * a filter expression or a {@link Filter.Expression} object directly.
+	 * <p>
+	 * If no filter expression is provided in the context, the default filter expression
+	 * configured for this retriever is used.
+	 * @param query the query containing potential context with filter expression
+	 * @return the filter expression to use for the request
+	 */
 	private Filter.Expression computeRequestFilterExpression(Query query) {
 		var contextFilterExpression = query.context().get(FILTER_EXPRESSION);
-		if (contextFilterExpression != null && StringUtils.hasText(contextFilterExpression.toString())) {
-			return new FilterExpressionTextParser().parse(contextFilterExpression.toString());
+		if (contextFilterExpression != null) {
+			if (contextFilterExpression instanceof Filter.Expression) {
+				return (Filter.Expression) contextFilterExpression;
+			}
+			else if (StringUtils.hasText(contextFilterExpression.toString())) {
+				return new FilterExpressionTextParser().parse(contextFilterExpression.toString());
+			}
 		}
 		return this.filterExpression.get();
 	}
