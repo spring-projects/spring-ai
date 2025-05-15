@@ -43,6 +43,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -397,11 +398,16 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private Similarity getIndexSimilarity(TableMetadata metadata) {
 
-		return Similarity.valueOf(metadata.getIndex(this.schema.index())
-			.get()
-			.getOptions()
-			.getOrDefault("similarity_function", "COSINE")
-			.toUpperCase());
+		Optional<IndexMetadata> indexMetadata = metadata.getIndex(this.schema.index());
+
+		if (indexMetadata.isEmpty()) {
+			throw new IllegalStateException(
+					String.format("Index %s does not exist in table %s", this.schema.index(), this.schema.table));
+		}
+
+		return Similarity
+			.valueOf(indexMetadata.get().getOptions().getOrDefault("similarity_function", "COSINE").toUpperCase());
+
 	}
 
 	private PreparedStatement prepareDeleteStatement() {
@@ -553,6 +559,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			.get()
 			.getTable(this.schema.table)
 			.get();
+
+		Preconditions.checkState(tableMetadata.getIndex(this.schema.index()).isPresent(), "index %s does not exist",
+				this.schema.index());
 
 		Preconditions.checkState(tableMetadata.getColumn(this.schema.content).isPresent(), "column %s does not exist",
 				this.schema.content);
