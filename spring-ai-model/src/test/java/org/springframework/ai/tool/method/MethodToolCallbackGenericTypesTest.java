@@ -55,7 +55,7 @@ class MethodToolCallbackGenericTypesTest {
 		// Create a JSON input with a list of strings
 		String toolInput = """
 				{
-				    "strings": ["one", "two", "three"]
+					"strings": ["one", "two", "three"]
 				}
 				""";
 
@@ -89,7 +89,7 @@ class MethodToolCallbackGenericTypesTest {
 		// Create a JSON input with a map of string to integer
 		String toolInput = """
 				{
-				    "map": {"one": 1, "two": 2, "three": 3}
+					"map": {"one": 1, "two": 2, "three": 3}
 				}
 				""";
 
@@ -123,10 +123,10 @@ class MethodToolCallbackGenericTypesTest {
 		// Create a JSON input with a list of maps
 		String toolInput = """
 				{
-				    "listOfMaps": [
-				        {"a": 1, "b": 2},
-				        {"c": 3, "d": 4}
-				    ]
+					"listOfMaps": [
+						{"a": 1, "b": 2},
+						{"c": 3, "d": 4}
+					]
 				}
 				""";
 

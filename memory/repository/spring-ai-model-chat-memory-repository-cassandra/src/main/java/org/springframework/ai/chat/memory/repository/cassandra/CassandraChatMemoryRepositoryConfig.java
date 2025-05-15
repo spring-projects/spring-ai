@@ -34,8 +34,6 @@ import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumn;
-import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
@@ -140,13 +138,13 @@ public final class CassandraChatMemoryRepositoryConfig {
 		Preconditions.checkState(this.session.getMetadata()
 			.getKeyspace(this.schema.keyspace())
 			.get()
-			.getUserDefinedType(messageUDT)
+			.getUserDefinedType(this.messageUDT)
 			.isPresent(), "table %s does not exist");
 
 		UserDefinedType udt = this.session.getMetadata()
 			.getKeyspace(this.schema.keyspace())
 			.get()
-			.getUserDefinedType(messageUDT)
+			.getUserDefinedType(this.messageUDT)
 			.get();
 
 		Preconditions.checkState(udt.contains(this.messageUdtTimestampColumn), "field %s does not exist",
@@ -186,7 +184,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 			String lastClusteringColumn = this.schema.clusteringKeys.get(this.schema.clusteringKeys.size() - 1).name();
 
 			CreateTableWithOptions createTableWithOptions = createTable
-				.withColumn(this.messagesColumn, DataTypes.frozenListOf(SchemaBuilder.udt(messageUDT, true)))
+				.withColumn(this.messagesColumn, DataTypes.frozenListOf(SchemaBuilder.udt(this.messageUDT, true)))
 				.withClusteringOrder(lastClusteringColumn, ClusteringOrder.DESC)
 				// TODO replace w/ SchemaBuilder.unifiedCompactionStrategy() when
 				// available
@@ -201,11 +199,11 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 	private void ensureMessageTypeExist() {
 
-		SimpleStatement stmt = SchemaBuilder.createType(messageUDT)
+		SimpleStatement stmt = SchemaBuilder.createType(this.messageUDT)
 			.ifNotExists()
-			.withField(messageUdtTimestampColumn, DataTypes.TIMESTAMP)
-			.withField(messageUdtTypeColumn, DataTypes.TEXT)
-			.withField(messageUdtContentColumn, DataTypes.TEXT)
+			.withField(this.messageUdtTimestampColumn, DataTypes.TIMESTAMP)
+			.withField(this.messageUdtTypeColumn, DataTypes.TEXT)
+			.withField(this.messageUdtContentColumn, DataTypes.TEXT)
 			.build();
 
 		this.session.execute(stmt.setKeyspace(this.schema.keyspace));
@@ -222,7 +220,7 @@ public final class CassandraChatMemoryRepositoryConfig {
 		if (tableMetadata.getColumn(this.messagesColumn).isEmpty()) {
 
 			SimpleStatement stmt = SchemaBuilder.alterTable(this.schema.keyspace(), this.schema.table())
-				.addColumn(this.messagesColumn, DataTypes.frozenListOf(SchemaBuilder.udt(messageUDT, true)))
+				.addColumn(this.messagesColumn, DataTypes.frozenListOf(SchemaBuilder.udt(this.messageUDT, true)))
 				.build();
 
 			logger.debug("Executing {}", stmt.getQuery());

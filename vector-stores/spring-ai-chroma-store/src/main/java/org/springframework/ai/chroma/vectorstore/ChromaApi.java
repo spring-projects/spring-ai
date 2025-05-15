@@ -634,7 +634,7 @@ public class ChromaApi {
 		}
 
 		public ChromaApi build() {
-			return new ChromaApi(this.baseUrl, this.restClientBuilder, objectMapper);
+			return new ChromaApi(this.baseUrl, this.restClientBuilder, this.objectMapper);
 		}
 
 	}

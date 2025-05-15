@@ -16,7 +16,6 @@
 
 package org.springframework.ai.embedding.observation;
 
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;

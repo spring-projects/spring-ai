@@ -16,12 +16,12 @@
 
 package org.springframework.ai.chat.client;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Represents a response returned by a {@link ChatClient}.
@@ -50,7 +50,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ChatResponse chatResponse;
 

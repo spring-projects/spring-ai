@@ -22,7 +22,6 @@ import java.util.Map;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.metadata.Usage;

@@ -24,21 +24,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
-import org.springframework.ai.template.TemplateRenderer;
-import org.springframework.ai.template.st.StTemplateRenderer;
-import org.springframework.util.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
-import org.springframework.core.io.Resource;
+import org.springframework.ai.template.TemplateRenderer;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A template for creating prompts. It allows you to define a template string with
@@ -89,7 +87,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 		try (InputStream inputStream = resource.getInputStream()) {
 			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-			Assert.hasText(template, "template cannot be null or empty");
+			Assert.hasText(this.template, "template cannot be null or empty");
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
@@ -120,7 +118,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 				processedVariables.put(entry.getKey(), entry.getValue());
 			}
 		}
-		return this.renderer.apply(template, processedVariables);
+		return this.renderer.apply(this.template, processedVariables);
 	}
 
 	@Override
@@ -136,7 +134,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 			}
 		}
 
-		return this.renderer.apply(template, combinedVariables);
+		return this.renderer.apply(this.template, combinedVariables);
 	}
 
 	private String renderResource(Resource resource) {
@@ -211,7 +209,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String template;
 

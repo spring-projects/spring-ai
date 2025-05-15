@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.observation;
 
+import java.util.List;
+
 import io.micrometer.observation.Observation;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
@@ -27,8 +29,6 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 /**
  * Context used to store metadata for chat client workflows.
@@ -121,8 +121,8 @@ public class ChatClientObservationContext extends Observation.Context {
 		}
 
 		public ChatClientObservationContext build() {
-			if (StringUtils.hasText(format)) {
-				this.chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), format);
+			if (StringUtils.hasText(this.format)) {
+				this.chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), this.format);
 			}
 			return new ChatClientObservationContext(this.chatClientRequest, this.advisors, this.isStream);
 		}

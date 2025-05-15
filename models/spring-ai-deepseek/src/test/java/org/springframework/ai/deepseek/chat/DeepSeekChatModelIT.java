@@ -1,11 +1,11 @@
 /*
- * Copyright 2023 - 2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * https://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.deepseek.chat;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -32,20 +41,15 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.deepseek.DeepSeekTestConfiguration;
-import org.springframework.ai.deepseek.DeepSeekAssistantMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
-import org.springframework.ai.deepseek.api.MockWeatherService;
-import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,10 +75,10 @@ class DeepSeekChatModelIT {
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
-		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
@@ -118,7 +122,7 @@ class DeepSeekChatModelIT {
 					format))
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
 		assertThat(result.get("numbers")).isEqualTo(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
@@ -141,12 +145,9 @@ class DeepSeekChatModelIT {
 			.variables(Map.of("format", format))
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilms actorsFilms = outputConverter.convert(generation.getOutput().getText());
-	}
-
-	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 	@Test
@@ -165,7 +166,7 @@ class DeepSeekChatModelIT {
 			.variables(Map.of("format", format))
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
-		Generation generation = chatModel.call(prompt).getResult();
+		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
 		logger.info("" + actorsFilms);
@@ -190,7 +191,7 @@ class DeepSeekChatModelIT {
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
-		String generationTextFromStream = streamingChatModel.stream(prompt)
+		String generationTextFromStream = this.streamingChatModel.stream(prompt)
 			.collectList()
 			.block()
 			.stream()
@@ -225,7 +226,7 @@ class DeepSeekChatModelIT {
 		UserMessage userMessage = new UserMessage(userMessageContent);
 		Message assistantMessage = new DeepSeekAssistantMessage("{\"code\":200,\"result\":{\"total\":1,\"data\":[1");
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText().equals(",2,3]}}"));
 	}
 
@@ -239,7 +240,7 @@ class DeepSeekChatModelIT {
 			.model(DeepSeekApi.ChatModel.DEEPSEEK_REASONER.getValue())
 			.build();
 		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 
 		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
 		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
@@ -258,7 +259,7 @@ class DeepSeekChatModelIT {
 			.build();
 
 		Prompt prompt = new Prompt(messages, promptOptions);
-		ChatResponse response = chatModel.call(prompt);
+		ChatResponse response = this.chatModel.call(prompt);
 
 		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
 		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
@@ -267,12 +268,15 @@ class DeepSeekChatModelIT {
 		messages.add(new AssistantMessage(Objects.requireNonNull(deepSeekAssistantMessage.getText())));
 		messages.add(new UserMessage("How many Rs are there in the word 'strawberry'?"));
 		Prompt prompt2 = new Prompt(messages, promptOptions);
-		ChatResponse response2 = chatModel.call(prompt2);
+		ChatResponse response2 = this.chatModel.call(prompt2);
 
 		DeepSeekAssistantMessage deepSeekAssistantMessage2 = (DeepSeekAssistantMessage) response2.getResult()
 			.getOutput();
 		assertThat(deepSeekAssistantMessage2.getReasoningContent()).isNotEmpty();
 		assertThat(deepSeekAssistantMessage2.getText()).isNotEmpty();
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 
 }

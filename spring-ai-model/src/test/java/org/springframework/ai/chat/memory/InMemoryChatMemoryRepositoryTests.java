@@ -16,14 +16,15 @@
 
 package org.springframework.ai.chat.memory;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,14 +45,14 @@ public class InMemoryChatMemoryRepositoryTests {
 		List<Message> messages1 = List.of(new UserMessage("Hello"));
 		List<Message> messages2 = List.of(new AssistantMessage("Hi there"));
 
-		chatMemoryRepository.saveAll(conversationId1, messages1);
-		chatMemoryRepository.saveAll(conversationId2, messages2);
+		this.chatMemoryRepository.saveAll(conversationId1, messages1);
+		this.chatMemoryRepository.saveAll(conversationId2, messages2);
 
-		assertThat(chatMemoryRepository.findConversationIds()).containsExactlyInAnyOrder(conversationId1,
+		assertThat(this.chatMemoryRepository.findConversationIds()).containsExactlyInAnyOrder(conversationId1,
 				conversationId2);
 
-		chatMemoryRepository.deleteByConversationId(conversationId1);
-		assertThat(chatMemoryRepository.findConversationIds()).containsExactlyInAnyOrder(conversationId2);
+		this.chatMemoryRepository.deleteByConversationId(conversationId1);
+		assertThat(this.chatMemoryRepository.findConversationIds()).containsExactlyInAnyOrder(conversationId2);
 	}
 
 	@Test
@@ -59,13 +60,13 @@ public class InMemoryChatMemoryRepositoryTests {
 		String conversationId = UUID.randomUUID().toString();
 		List<Message> messages = List.of(new AssistantMessage("I, Robot"), new UserMessage("Hello"));
 
-		chatMemoryRepository.saveAll(conversationId, messages);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
 
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).containsAll(messages);
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).containsAll(messages);
 
-		chatMemoryRepository.deleteByConversationId(conversationId);
+		this.chatMemoryRepository.deleteByConversationId(conversationId);
 
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
 	}
 
 	@Test
@@ -74,20 +75,20 @@ public class InMemoryChatMemoryRepositoryTests {
 		Message message = new UserMessage("Hello");
 		List<Message> messages = List.of(message);
 
-		chatMemoryRepository.saveAll(conversationId, messages);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
 
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).contains(message);
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).contains(message);
 
-		chatMemoryRepository.deleteByConversationId(conversationId);
+		this.chatMemoryRepository.deleteByConversationId(conversationId);
 
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
 	}
 
 	@Test
 	void findNonExistingConversation() {
 		String conversationId = UUID.randomUUID().toString();
 
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
 	}
 
 	@Test
@@ -96,38 +97,39 @@ public class InMemoryChatMemoryRepositoryTests {
 		List<Message> firstMessages = List.of(new UserMessage("Hello"));
 		List<Message> secondMessages = List.of(new AssistantMessage("Hi there"));
 
-		chatMemoryRepository.saveAll(conversationId, firstMessages);
-		chatMemoryRepository.saveAll(conversationId, secondMessages);
+		this.chatMemoryRepository.saveAll(conversationId, firstMessages);
+		this.chatMemoryRepository.saveAll(conversationId, secondMessages);
 
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).containsExactlyElementsOf(secondMessages);
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId))
+			.containsExactlyElementsOf(secondMessages);
 	}
 
 	@Test
 	void nullConversationIdNotAllowed() {
-		assertThatThrownBy(() -> chatMemoryRepository.saveAll(null, List.of(new UserMessage("Hello"))))
+		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(null, List.of(new UserMessage("Hello"))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemoryRepository.findByConversationId(null))
+		assertThatThrownBy(() -> this.chatMemoryRepository.findByConversationId(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemoryRepository.deleteByConversationId(null))
+		assertThatThrownBy(() -> this.chatMemoryRepository.deleteByConversationId(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 	}
 
 	@Test
 	void emptyConversationIdNotAllowed() {
-		assertThatThrownBy(() -> chatMemoryRepository.saveAll("", List.of(new UserMessage("Hello"))))
+		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll("", List.of(new UserMessage("Hello"))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemoryRepository.findByConversationId(""))
+		assertThatThrownBy(() -> this.chatMemoryRepository.findByConversationId(""))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemoryRepository.deleteByConversationId(""))
+		assertThatThrownBy(() -> this.chatMemoryRepository.deleteByConversationId(""))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 	}
@@ -135,7 +137,7 @@ public class InMemoryChatMemoryRepositoryTests {
 	@Test
 	void nullMessagesNotAllowed() {
 		String conversationId = UUID.randomUUID().toString();
-		assertThatThrownBy(() -> chatMemoryRepository.saveAll(conversationId, null))
+		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("messages cannot be null");
 	}
@@ -146,7 +148,7 @@ public class InMemoryChatMemoryRepositoryTests {
 		List<Message> messagesWithNull = new ArrayList<>();
 		messagesWithNull.add(null);
 
-		assertThatThrownBy(() -> chatMemoryRepository.saveAll(conversationId, messagesWithNull))
+		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId, messagesWithNull))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("messages cannot contain null elements");
 	}

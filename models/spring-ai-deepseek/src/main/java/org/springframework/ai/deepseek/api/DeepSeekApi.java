@@ -47,10 +47,6 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import static org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_BASE_URL;
-import static org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_BETA_PATH;
-import static org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_COMPLETIONS_PATH;
-
 /**
  * Single class implementation of the DeepSeek Chat Completion API:
  * https://platform.deepseek.com/api-docs/api/create-chat-completion
@@ -196,6 +192,19 @@ public class DeepSeekApi {
 			.flatMap(mono -> mono);
 	}
 
+	private String getEndpoint(ChatCompletionRequest request) {
+		boolean isPrefix = request.messages.stream()
+			.map(ChatCompletionMessage::prefix)
+			.filter(Objects::nonNull)
+			.anyMatch(prefix -> prefix);
+		String endpointPrefix = isPrefix ? this.betaPrefixPath : "";
+		return endpointPrefix + this.completionsPath;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	/**
 	 * DeepSeek Chat Completion
 	 * <a href="https://api-docs.deepseek.com/quick_start/pricing">Models</a>
@@ -226,12 +235,12 @@ public class DeepSeekApi {
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
 		}
 
 		@Override
 		public String getName() {
-			return value;
+			return this.value;
 		}
 
 	}
@@ -506,10 +515,9 @@ public class DeepSeekApi {
 			@JsonProperty("temperature") Double temperature,
 			@JsonProperty("top_p") Double topP,
 			@JsonProperty("logprobs") Boolean logprobs,
-            @JsonProperty("top_logprobs") Integer topLogprobs,
+			@JsonProperty("top_logprobs") Integer topLogprobs,
 			@JsonProperty("tools") List<FunctionTool> tools,
-			@JsonProperty("tool_choice") Object toolChoice)
-	{
+			@JsonProperty("tool_choice") Object toolChoice) {
 
 
 		/**
@@ -520,8 +528,8 @@ public class DeepSeekApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-            this(messages, null, null, null, null, null,
-                    null, stream, null, null, null, null, null, null);
+			this(messages, null, null, null, null, null,
+					null, stream, null, null, null, null, null, null);
 		}
 
 		/**
@@ -532,9 +540,9 @@ public class DeepSeekApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-            this(messages, model, null,
-                    null, null, null, null,  false,  temperature, null,
-                    null, null, null,null);
+			this(messages, model, null,
+		null, null, null, null,  false,  temperature, null,
+			null, null, null, null);
 		}
 
 		/**
@@ -547,9 +555,9 @@ public class DeepSeekApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
-            this(messages, model, null,
-                    null, null, null, null,  stream,  temperature, null,
-                    null, null, null,null);
+			this(messages, model, null,
+					null, null, null, null,  stream,  temperature, null,
+				null, null, null, null);
 		}
 
 		/**
@@ -600,8 +608,7 @@ public class DeepSeekApi {
 			@JsonProperty("tool_calls")
 			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("prefix") Boolean prefix,
-			@JsonProperty("reasoning_content") String reasoningContent
-        ) { // @formatter:on
+			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -898,30 +905,17 @@ public class DeepSeekApi {
 
 	}
 
-	private String getEndpoint(ChatCompletionRequest request) {
-		boolean isPrefix = request.messages.stream()
-			.map(ChatCompletionMessage::prefix)
-			.filter(Objects::nonNull)
-			.anyMatch(prefix -> prefix);
-		String endpointPrefix = isPrefix ? betaPrefixPath : "";
-		return endpointPrefix + completionsPath;
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
 	public static class Builder {
 
-		private String baseUrl = DEFAULT_BASE_URL;
+		private String baseUrl = org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
 
 		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 
-		private String completionsPath = DEFAULT_COMPLETIONS_PATH;
+		private String completionsPath = org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_COMPLETIONS_PATH;
 
-		private String betaPrefixPath = DEFAULT_BETA_PATH;
+		private String betaPrefixPath = org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_BETA_PATH;
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 

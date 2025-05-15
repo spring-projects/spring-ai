@@ -17,7 +17,6 @@
 package org.springframework.ai.model.bedrock.titan.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.micrometer.observation.ObservationRegistry;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;

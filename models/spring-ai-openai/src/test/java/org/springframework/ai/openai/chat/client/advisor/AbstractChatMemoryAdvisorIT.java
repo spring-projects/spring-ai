@@ -81,7 +81,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 
 		var advisor = createAdvisor(chatMemory);
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		// Create a prompt with multiple user messages
 		List<Message> messages = new ArrayList<>();
@@ -131,7 +131,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Create advisor with the conversation ID
 		var advisor = createAdvisor(chatMemory);
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		// Act - Create a list of messages for the prompt
 		List<Message> messages = new ArrayList<>();
@@ -193,7 +193,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Create advisor without a default conversation ID
 		var advisor = createAdvisor(chatMemory);
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		String question = "What is the capital of Germany?";
 
@@ -231,7 +231,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Create advisor without a default conversation ID
 		var advisor = createAdvisor(chatMemory);
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		// Act - First conversation
 		String answer1 = chatClient.prompt()
@@ -316,7 +316,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		// Create advisor without a default conversation ID
 		var advisor = createAdvisor(chatMemory);
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		// Act - Send a question to a non-existent conversation
 		String question = "Do you remember our previous conversation?";
@@ -375,7 +375,7 @@ public abstract class AbstractChatMemoryAdvisorIT {
 
 		var advisor = createAdvisor(chatMemory);
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		List<String> responseList = new ArrayList<>();
 		for (String message : List.of("My name is Charlie.", "I am 30 years old.", "I live in London.")) {

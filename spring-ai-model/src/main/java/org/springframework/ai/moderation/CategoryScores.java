@@ -131,23 +131,23 @@ public final class CategoryScores {
 	}
 
 	public double getDangerousAndCriminalContent() {
-		return dangerousAndCriminalContent;
+		return this.dangerousAndCriminalContent;
 	}
 
 	public double getHealth() {
-		return health;
+		return this.health;
 	}
 
 	public double getFinancial() {
-		return financial;
+		return this.financial;
 	}
 
 	public double getLaw() {
-		return law;
+		return this.law;
 	}
 
 	public double getPii() {
-		return pii;
+		return this.pii;
 	}
 
 	@Override
@@ -189,8 +189,8 @@ public final class CategoryScores {
 				+ this.hateThreatening + ", violenceGraphic=" + this.violenceGraphic + ", selfHarmIntent="
 				+ this.selfHarmIntent + ", selfHarmInstructions=" + this.selfHarmInstructions
 				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence
-				+ ", dangerousAndCriminalContent=" + dangerousAndCriminalContent + ", health=" + health + ", financial="
-				+ financial + ", law=" + law + ", pii=" + pii + '}';
+				+ ", dangerousAndCriminalContent=" + this.dangerousAndCriminalContent + ", health=" + this.health
+				+ ", financial=" + this.financial + ", law=" + this.law + ", pii=" + this.pii + '}';
 	}
 
 	public static class Builder {

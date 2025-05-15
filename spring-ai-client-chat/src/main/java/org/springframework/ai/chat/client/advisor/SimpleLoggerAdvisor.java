@@ -115,7 +115,7 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private Function<ChatClientRequest, String> requestToString;
 
@@ -142,7 +142,7 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		public SimpleLoggerAdvisor build() {
-			return new SimpleLoggerAdvisor(requestToString, responseToString, order);
+			return new SimpleLoggerAdvisor(this.requestToString, this.responseToString, this.order);
 		}
 
 	}

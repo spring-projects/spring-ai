@@ -17,10 +17,11 @@
 package org.springframework.ai.model.deepseek.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
-import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;

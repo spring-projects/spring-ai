@@ -52,11 +52,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -455,17 +455,20 @@ public class DefaultChatClient implements ChatClient {
 
 			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 				.request(chatClientRequest)
-				.advisors(advisorChain.getCallAdvisors())
+				.advisors(this.advisorChain.getCallAdvisors())
 				.stream(false)
 				.format(outputFormat)
 				.build();
 
-			var observation = ChatClientObservationDocumentation.AI_CHAT_CLIENT.observation(observationConvention,
-					DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION, () -> observationContext, observationRegistry);
+			var observation = ChatClientObservationDocumentation.AI_CHAT_CLIENT.observation(this.observationConvention,
+					DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry);
+
+			// CHECKSTYLE:OFF
 			var chatClientResponse = observation.observe(() -> {
 				// Apply the advisor chain that terminates with the ChatModelCallAdvisor.
-				return advisorChain.nextCall(chatClientRequest);
+				return this.advisorChain.nextCall(chatClientRequest);
 			});
+			// CHECKSTYLE:ON
 			return chatClientResponse != null ? chatClientResponse : ChatClientResponse.builder().build();
 		}
 
@@ -508,20 +511,20 @@ public class DefaultChatClient implements ChatClient {
 
 				ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 					.request(chatClientRequest)
-					.advisors(advisorChain.getStreamAdvisors())
+					.advisors(this.advisorChain.getStreamAdvisors())
 					.stream(true)
 					.build();
 
 				Observation observation = ChatClientObservationDocumentation.AI_CHAT_CLIENT.observation(
-						observationConvention, DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION, () -> observationContext,
-						observationRegistry);
+						this.observationConvention, DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION,
+						() -> observationContext, this.observationRegistry);
 
 				observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null))
 					.start();
 
 				// @formatter:off
 				// Apply the advisor chain that terminates with the ChatModelStreamAdvisor.
-				return advisorChain.nextStream(chatClientRequest)
+				return this.advisorChain.nextStream(chatClientRequest)
 						.doOnError(observation::error)
 						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
@@ -900,13 +903,13 @@ public class DefaultChatClient implements ChatClient {
 		public CallResponseSpec call() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultCallResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
-					observationRegistry, observationConvention);
+					this.observationRegistry, this.observationConvention);
 		}
 
 		public StreamResponseSpec stream() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultStreamResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
-					observationRegistry, observationConvention);
+					this.observationRegistry, this.observationConvention);
 		}
 
 		private BaseAdvisorChain buildAdvisorChain() {

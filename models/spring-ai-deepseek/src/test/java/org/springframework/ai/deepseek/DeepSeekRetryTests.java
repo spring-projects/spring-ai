@@ -16,15 +16,22 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
-import org.springframework.ai.deepseek.api.DeepSeekApi.*;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionFinishReason;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Role;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.http.ResponseEntity;
@@ -32,9 +39,6 @@ import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
-
-import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,7 +69,6 @@ public class DeepSeekRetryTests {
 			.defaultOptions(DeepSeekChatOptions.builder().build())
 			.retryTemplate(retryTemplate)
 			.build();
-		;
 	}
 
 	@Test

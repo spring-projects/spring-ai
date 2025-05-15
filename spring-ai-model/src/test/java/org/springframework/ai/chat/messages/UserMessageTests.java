@@ -16,13 +16,14 @@
 
 package org.springframework.ai.chat.messages;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.content.Media;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,7 +40,6 @@ class UserMessageTests {
 	void userMessageWithNullText() {
 		assertThatThrownBy(() -> new UserMessage((String) null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Content must not be null for SYSTEM or USER messages");
-		;
 	}
 
 	@Test
@@ -55,7 +55,6 @@ class UserMessageTests {
 	void userMessageWithNullResource() {
 		assertThatThrownBy(() -> new UserMessage((Resource) null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("resource cannot be null");
-		;
 	}
 
 	@Test

@@ -37,7 +37,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = VertexAiTextEmbeddingModelIT.Config.class)
@@ -169,7 +168,7 @@ class VertexAiTextEmbeddingModelIT {
 					.stream()
 					.map(Value::getNumberValue)
 					.map(Double::floatValue)
-					.collect(toList());
+					.toList();
 
 				float[] floatArray = new float[floatList.size()];
 				for (int i = 0; i < floatList.size(); i++) {
