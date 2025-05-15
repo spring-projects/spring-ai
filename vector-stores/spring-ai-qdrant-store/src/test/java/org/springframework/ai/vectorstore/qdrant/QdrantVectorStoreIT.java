@@ -79,10 +79,11 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
 					Collections.singletonMap("meta1", "meta1")),
-			new Document("Hello World Hello World Hello World Hello World Hello World Hello World Hello World"),
+			new Document("Hello World Hello World Hello World Hello World Hello World Hello World Hello World",
+					Collections.singletonMap("meta1", List.of("meta-list"))),
 			new Document(
 					"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression",
-					Collections.singletonMap("meta2", "meta2")));
+					Collections.singletonMap("meta2", List.of("meta-list"))));
 
 	@BeforeAll
 	static void setup() throws InterruptedException, ExecutionException {
