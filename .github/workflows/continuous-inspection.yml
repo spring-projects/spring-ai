@@ -9,6 +9,7 @@ jobs:
   code-quality-analysis:
     name: code quality analysis report
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'spring-projects' }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
