@@ -49,10 +49,23 @@ import org.springframework.context.annotation.Scope;
  * @author Arjen Poutsma
  * @author Thomas Vitale
  * @author Jonatan Ivanov
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 @AutoConfiguration(
-		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration" })
+		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration",
+				"org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration",
+				"org.springframework.ai.model.azure.openai.autoconfigure.AzureOpenAiChatAutoConfiguration",
+				"org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyChatAutoConfiguration",
+				"org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration",
+				"org.springframework.ai.model.huggingface.autoconfigure.HuggingfaceChatAutoConfiguration",
+				"org.springframework.ai.model.minimax.autoconfigure.MiniMaxChatAutoConfiguration",
+				"org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration",
+				"org.springframework.ai.model.oci.genai.autoconfigure.OCIGenAiChatAutoConfiguration",
+				"org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration",
+				"org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration",
+				"org.springframework.ai.model.vertexai.autoconfigure.gemini.VertexAiGeminiChatAutoConfiguration",
+				"org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiChatAutoConfiguration" })
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -77,6 +90,7 @@ public class ChatClientAutoConfiguration {
 	@Bean
 	@Scope("prototype")
 	@ConditionalOnMissingBean
+	@ConditionalOnSingleCandidate(ChatModel.class)
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatClientObservationConvention> observationConvention) {
