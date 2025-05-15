@@ -98,7 +98,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public String getSslBundle() {
-		return sslBundle;
+		return this.sslBundle;
 	}
 
 	public void setSslBundle(String sslBundle) {
@@ -106,7 +106,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public Duration getConnectionTimeout() {
-		return connectionTimeout;
+		return this.connectionTimeout;
 	}
 
 	public void setConnectionTimeout(Duration connectionTimeout) {
@@ -114,7 +114,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public Duration getReadTimeout() {
-		return readTimeout;
+		return this.readTimeout;
 	}
 
 	public void setReadTimeout(Duration readTimeout) {

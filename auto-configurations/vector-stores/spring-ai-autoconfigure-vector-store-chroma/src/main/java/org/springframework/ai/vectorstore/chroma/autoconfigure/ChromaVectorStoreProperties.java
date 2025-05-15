@@ -39,7 +39,7 @@ public class ChromaVectorStoreProperties extends CommonVectorStoreProperties {
 	private String collectionName = ChromaApiConstants.DEFAULT_COLLECTION_NAME;
 
 	public String getTenantName() {
-		return tenantName;
+		return this.tenantName;
 	}
 
 	public void setTenantName(String tenantName) {
@@ -47,7 +47,7 @@ public class ChromaVectorStoreProperties extends CommonVectorStoreProperties {
 	}
 
 	public String getDatabaseName() {
-		return databaseName;
+		return this.databaseName;
 	}
 
 	public void setDatabaseName(String databaseName) {

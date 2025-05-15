@@ -19,6 +19,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;

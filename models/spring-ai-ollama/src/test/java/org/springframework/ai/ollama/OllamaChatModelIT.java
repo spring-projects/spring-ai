@@ -280,14 +280,14 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		UserMessage userMessage1 = new UserMessage("My name is James Bond");
 		memory.add(conversationId, userMessage1);
-		ChatResponse response1 = chatModel.call(new Prompt(memory.get(conversationId)));
+		ChatResponse response1 = this.chatModel.call(new Prompt(memory.get(conversationId)));
 
 		assertThat(response1).isNotNull();
 		memory.add(conversationId, response1.getResult().getOutput());
 
 		UserMessage userMessage2 = new UserMessage("What is my name?");
 		memory.add(conversationId, userMessage2);
-		ChatResponse response2 = chatModel.call(new Prompt(memory.get(conversationId)));
+		ChatResponse response2 = this.chatModel.call(new Prompt(memory.get(conversationId)));
 
 		assertThat(response2).isNotNull();
 		memory.add(conversationId, response2.getResult().getOutput());
@@ -312,7 +312,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		chatMemory.add(conversationId, prompt.getInstructions());
 
 		Prompt promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
-		ChatResponse chatResponse = chatModel.call(promptWithMemory);
+		ChatResponse chatResponse = this.chatModel.call(promptWithMemory);
 		chatMemory.add(conversationId, chatResponse.getResult().getOutput());
 
 		while (chatResponse.hasToolCalls()) {
@@ -321,7 +321,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 			chatMemory.add(conversationId, toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1));
 			promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
-			chatResponse = chatModel.call(promptWithMemory);
+			chatResponse = this.chatModel.call(promptWithMemory);
 			chatMemory.add(conversationId, chatResponse.getResult().getOutput());
 		}
 
@@ -331,7 +331,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		UserMessage newUserMessage = new UserMessage("What did I ask you earlier?");
 		chatMemory.add(conversationId, newUserMessage);
 
-		ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversationId)));
+		ChatResponse newResponse = this.chatModel.call(new Prompt(chatMemory.get(conversationId)));
 
 		assertThat(newResponse).isNotNull();
 		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");

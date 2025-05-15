@@ -16,6 +16,14 @@
 
 package org.springframework.ai.chat.memory.repository.neo4j;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +32,11 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+import org.testcontainers.containers.Neo4jContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -34,18 +47,6 @@ import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
-import org.testcontainers.containers.Neo4jContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -74,24 +75,24 @@ class Neo4jChatMemoryRepositoryIT {
 
 	@BeforeEach
 	void setUp() {
-		driver = Neo4jDriverFactory.create(neo4jContainer.getBoltUrl());
-		config = Neo4jChatMemoryRepositoryConfig.builder().withDriver(driver).build();
-		chatMemoryRepository = new Neo4jChatMemoryRepository(config);
+		this.driver = Neo4jDriverFactory.create(neo4jContainer.getBoltUrl());
+		this.config = Neo4jChatMemoryRepositoryConfig.builder().withDriver(this.driver).build();
+		this.chatMemoryRepository = new Neo4jChatMemoryRepository(this.config);
 	}
 
 	@AfterEach
 	void tearDown() {
 		// Clean up all data after each test
-		try (Session session = driver.session()) {
+		try (Session session = this.driver.session()) {
 			session.run("MATCH (n) DETACH DELETE n");
 		}
-		driver.close();
+		this.driver.close();
 	}
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
-		assertThat(chatMemoryRepository).isInstanceOf(Neo4jChatMemoryRepository.class);
+		assertThat(this.chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
+		assertThat(this.chatMemoryRepository).isInstanceOf(Neo4jChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -101,8 +102,8 @@ class Neo4jChatMemoryRepositoryIT {
 		var conversationId = UUID.randomUUID().toString();
 		Message message = createMessageByType(content + " - " + conversationId, messageType);
 
-		chatMemoryRepository.saveAll(conversationId, List.<Message>of(message));
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(message));
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(retrievedMessages).hasSize(1);
 
@@ -114,10 +115,10 @@ class Neo4jChatMemoryRepositoryIT {
 		}
 
 		// Verify directly in the database
-		try (Session session = driver.session()) {
+		try (Session session = this.driver.session()) {
 			var result = session.run(
 					"MATCH (s:%s {id:$conversationId})-[:HAS_MESSAGE]->(m:%s) RETURN count(m) as count"
-						.formatted(config.getSessionLabel(), config.getMessageLabel()),
+						.formatted(this.config.getSessionLabel(), this.config.getMessageLabel()),
 					Map.of("conversationId", conversationId));
 			assertThat(result.single().get("count").asLong()).isEqualTo(1);
 		}
@@ -131,8 +132,8 @@ class Neo4jChatMemoryRepositoryIT {
 				new SystemMessage("Message from system - " + conversationId),
 				new ToolResponseMessage(List.of(new ToolResponse("id", "name", "responseData"))));
 
-		chatMemoryRepository.saveAll(conversationId, messages);
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(retrievedMessages).hasSize(messages.size());
 
@@ -155,8 +156,8 @@ class Neo4jChatMemoryRepositoryIT {
 			messages.add(new UserMessage("Message " + i));
 		}
 
-		chatMemoryRepository.saveAll(conversationId, messages);
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(retrievedMessages).hasSize(messages.size());
 
@@ -173,11 +174,14 @@ class Neo4jChatMemoryRepositoryIT {
 		var conversationId2 = UUID.randomUUID().toString();
 		var conversationId3 = UUID.randomUUID().toString();
 
-		chatMemoryRepository.saveAll(conversationId1, List.<Message>of(new UserMessage("Message for conversation 1")));
-		chatMemoryRepository.saveAll(conversationId2, List.<Message>of(new UserMessage("Message for conversation 2")));
-		chatMemoryRepository.saveAll(conversationId3, List.<Message>of(new UserMessage("Message for conversation 3")));
+		this.chatMemoryRepository.saveAll(conversationId1,
+				List.<Message>of(new UserMessage("Message for conversation 1")));
+		this.chatMemoryRepository.saveAll(conversationId2,
+				List.<Message>of(new UserMessage("Message for conversation 2")));
+		this.chatMemoryRepository.saveAll(conversationId3,
+				List.<Message>of(new UserMessage("Message for conversation 3")));
 
-		List<String> conversationIds = chatMemoryRepository.findConversationIds();
+		List<String> conversationIds = this.chatMemoryRepository.findConversationIds();
 
 		assertThat(conversationIds).hasSize(3);
 		assertThat(conversationIds).contains(conversationId1, conversationId2, conversationId3);
@@ -189,22 +193,21 @@ class Neo4jChatMemoryRepositoryIT {
 		List<Message> messages = List.of(new AssistantMessage("Message from assistant"),
 				new UserMessage("Message from user"), new SystemMessage("Message from system"));
 
-		chatMemoryRepository.saveAll(conversationId, messages);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
 
 		// Verify messages were saved
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(3);
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(3);
 
 		// Delete the conversation
-		chatMemoryRepository.deleteByConversationId(conversationId);
+		this.chatMemoryRepository.deleteByConversationId(conversationId);
 
 		// Verify messages were deleted
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
 
 		// Verify directly in the database
-		try (Session session = driver.session()) {
-			var result = session.run(
-					"MATCH (s:%s {id:$conversationId}) RETURN count(s) as count".formatted(config.getSessionLabel()),
-					Map.of("conversationId", conversationId));
+		try (Session session = this.driver.session()) {
+			var result = session.run("MATCH (s:%s {id:$conversationId}) RETURN count(s) as count"
+				.formatted(this.config.getSessionLabel()), Map.of("conversationId", conversationId));
 			assertThat(result.single().get("count").asLong()).isZero();
 		}
 	}
@@ -216,17 +219,17 @@ class Neo4jChatMemoryRepositoryIT {
 		// Save initial messages
 		List<Message> initialMessages = List.of(new UserMessage("Initial message 1"),
 				new UserMessage("Initial message 2"), new UserMessage("Initial message 3"));
-		chatMemoryRepository.saveAll(conversationId, initialMessages);
+		this.chatMemoryRepository.saveAll(conversationId, initialMessages);
 
 		// Verify initial messages were saved
-		assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(3);
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(3);
 
 		// Replace with new messages
 		List<Message> newMessages = List.of(new UserMessage("New message 1"), new UserMessage("New message 2"));
-		chatMemoryRepository.saveAll(conversationId, newMessages);
+		this.chatMemoryRepository.saveAll(conversationId, newMessages);
 
 		// Verify only new messages exist
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(retrievedMessages).hasSize(2);
 		assertThat(retrievedMessages.get(0).getText()).isEqualTo("New message 1");
 		assertThat(retrievedMessages.get(1).getText()).isEqualTo("New message 2");
@@ -246,9 +249,9 @@ class Neo4jChatMemoryRepositoryIT {
 
 		UserMessage userMessageWithMedia = UserMessage.builder().text("Message with media").media(media).build();
 
-		chatMemoryRepository.saveAll(conversationId, List.<Message>of(userMessageWithMedia));
+		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(userMessageWithMedia));
 
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(retrievedMessages).hasSize(1);
 
 		UserMessage retrievedMessage = (UserMessage) retrievedMessages.get(0);
@@ -264,9 +267,9 @@ class Neo4jChatMemoryRepositoryIT {
 				List.of(new AssistantMessage.ToolCall("id1", "type1", "name1", "arguments1"),
 						new AssistantMessage.ToolCall("id2", "type2", "name2", "arguments2")));
 
-		chatMemoryRepository.saveAll(conversationId, List.<Message>of(assistantMessage));
+		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(assistantMessage));
 
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(retrievedMessages).hasSize(1);
 
 		AssistantMessage retrievedMessage = (AssistantMessage) retrievedMessages.get(0);
@@ -283,9 +286,9 @@ class Neo4jChatMemoryRepositoryIT {
 			.of(new ToolResponse("id1", "name1", "responseData1"), new ToolResponse("id2", "name2", "responseData2")),
 				Map.of("metadataKey", "metadataValue"));
 
-		chatMemoryRepository.saveAll(conversationId, List.<Message>of(toolResponseMessage));
+		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(toolResponseMessage));
 
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(retrievedMessages).hasSize(1);
 
 		ToolResponseMessage retrievedMessage = (ToolResponseMessage) retrievedMessages.get(0);
@@ -305,8 +308,8 @@ class Neo4jChatMemoryRepositoryIT {
 			.metadata(customMetadata)
 			.build();
 
-		chatMemoryRepository.saveAll(conversationId, List.of(systemMessage));
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		this.chatMemoryRepository.saveAll(conversationId, List.of(systemMessage));
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(retrievedMessages).hasSize(1);
 		Message retrievedMessage = retrievedMessages.get(0);
@@ -333,29 +336,29 @@ class Neo4jChatMemoryRepositoryIT {
 		// 1. Setup: Create a conversation with some initial messages
 		UserMessage initialMessage1 = new UserMessage("Initial message 1");
 		AssistantMessage initialMessage2 = new AssistantMessage("Initial response 1");
-		chatMemoryRepository.saveAll(conversationId, List.of(initialMessage1, initialMessage2));
+		this.chatMemoryRepository.saveAll(conversationId, List.of(initialMessage1, initialMessage2));
 
 		// Verify initial messages are there
-		List<Message> messagesAfterInitialSave = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> messagesAfterInitialSave = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(messagesAfterInitialSave).hasSize(2);
 
 		// 2. Action: Call saveAll with an empty list
-		chatMemoryRepository.saveAll(conversationId, Collections.emptyList());
+		this.chatMemoryRepository.saveAll(conversationId, Collections.emptyList());
 
 		// 3. Assertions:
 		// a) No messages should be found for the conversationId
-		List<Message> messagesAfterEmptySave = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> messagesAfterEmptySave = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(messagesAfterEmptySave).isEmpty();
 
 		// b) The conversationId itself should no longer be listed (because
 		// deleteByConversationId removes the session node)
-		List<String> conversationIds = chatMemoryRepository.findConversationIds();
+		List<String> conversationIds = this.chatMemoryRepository.findConversationIds();
 		assertThat(conversationIds).doesNotContain(conversationId);
 
 		// c) Verify directly in Neo4j that the conversation node is gone
-		try (Session session = driver.session()) {
+		try (Session session = this.driver.session()) {
 			Result result = session.run(
-					"MATCH (s:%s {id: $conversationId}) RETURN s".formatted(config.getSessionLabel()),
+					"MATCH (s:%s {id: $conversationId}) RETURN s".formatted(this.config.getSessionLabel()),
 					Map.of("conversationId", conversationId));
 			assertThat(result.hasNext()).isFalse(); // No conversation node should exist
 		}
@@ -372,9 +375,9 @@ class Neo4jChatMemoryRepositoryIT {
 			.build();
 
 		List<Message> messagesToSave = List.of(messageWithEmptyContent, messageWithEmptyMetadata);
-		chatMemoryRepository.saveAll(conversationId, messagesToSave);
+		this.chatMemoryRepository.saveAll(conversationId, messagesToSave);
 
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(retrievedMessages).hasSize(2);
 
 		// Verify first message (empty content)

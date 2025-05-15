@@ -62,7 +62,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Claudio Silva Junior
  * @since 1.0.0
  */
-public class AnthropicApi {
+public final class AnthropicApi {
 
 	public static Builder builder() {
 		return new Builder();

@@ -32,7 +32,6 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.ChatClient.StreamResponseSpec;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
@@ -171,12 +170,6 @@ public class BedrockNovaChatClientIT {
 		assertThat(response).contains("30", "10", "15");
 	}
 
-	public record WeatherRequest(String location, String unit) {
-	}
-
-	public record WeatherResponse(int temp, String unit) {
-	}
-
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@Test
 	void toolAnnotationWeatherForecast() {
@@ -212,15 +205,6 @@ public class BedrockNovaChatClientIT {
 			.collect(Collectors.joining());
 
 		assertThat(content).contains("20 degrees");
-	}
-
-	public static class DummyWeatherForecastTools {
-
-		@Tool(description = "Get the current weather forecast in Amsterdam")
-		String getCurrentDateTime() {
-			return "Weather is hot and sunny with a temperature of 20 degrees";
-		}
-
 	}
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
@@ -266,17 +250,6 @@ public class BedrockNovaChatClientIT {
 		assertThat(content).contains("30.0");
 	}
 
-	public static class WeatherService implements Supplier<WeatherService.Response> {
-
-		public record Response(double temp) {
-		}
-
-		public Response get() {
-			return new Response(30.0);
-		}
-
-	}
-
 	@SpringBootConfiguration
 	public static class Config {
 
@@ -291,6 +264,33 @@ public class BedrockNovaChatClientIT {
 				.timeout(Duration.ofSeconds(120))
 				.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
 				.build();
+		}
+
+	}
+
+	public record WeatherRequest(String location, String unit) {
+	}
+
+	public record WeatherResponse(int temp, String unit) {
+	}
+
+	public static class DummyWeatherForecastTools {
+
+		@Tool(description = "Get the current weather forecast in Amsterdam")
+		String getCurrentDateTime() {
+			return "Weather is hot and sunny with a temperature of 20 degrees";
+		}
+
+	}
+
+	public static class WeatherService implements Supplier<WeatherService.Response> {
+
+		public Response get() {
+			return new Response(30.0);
+		}
+
+		public record Response(double temp) {
+
 		}
 
 	}

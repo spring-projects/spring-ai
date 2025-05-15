@@ -18,6 +18,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
 
 import java.util.List;
 import java.util.UUID;
+
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class JdbcChatMemoryRepositoryPostgresqlIT extends AbstractJdbcChatMemoryReposit
 	void repositoryWithExplicitTransactionManager() {
 		// Get the repository with explicit transaction manager
 		ChatMemoryRepository repositoryWithTxManager = TestConfiguration
-			.chatMemoryRepositoryWithTransactionManager(jdbcTemplate, jdbcTemplate.getDataSource());
+			.chatMemoryRepositoryWithTransactionManager(this.jdbcTemplate, this.jdbcTemplate.getDataSource());
 
 		var conversationId = UUID.randomUUID().toString();
 		var messages = List.<Message>of(new AssistantMessage("Message with transaction manager - " + conversationId),

@@ -282,18 +282,6 @@ class PromptTemplateTests {
 		assertThat(promptTemplate.render()).isEqualTo("Hello Overwritten Day!");
 	}
 
-	// Helper Custom Renderer for testing
-	private static class CustomTestRenderer implements TemplateRenderer {
-
-		@Override
-		public String apply(String template, Map<String, Object> model) {
-			// Simple renderer that just appends a marker
-			// Note: This simple renderer ignores the model map for test purposes.
-			return template + " (Rendered by Custom)";
-		}
-
-	}
-
 	@Test
 	void customRenderer_Builder() {
 		String template = "This is a test.";
@@ -316,6 +304,18 @@ class PromptTemplateTests {
 		PromptTemplate promptTemplate = PromptTemplate.builder().resource(templateResource).variables(vars).build();
 
 		assertThat(promptTemplate.render()).isEqualTo("Hello Builder from Resource!");
+	}
+
+	// Helper Custom Renderer for testing
+	private static class CustomTestRenderer implements TemplateRenderer {
+
+		@Override
+		public String apply(String template, Map<String, Object> model) {
+			// Simple renderer that just appends a marker
+			// Note: This simple renderer ignores the model map for test purposes.
+			return template + " (Rendered by Custom)";
+		}
+
 	}
 
 }

@@ -16,15 +16,16 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.util.List;
+
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 /**
  * Handler for emitting the chat completion content to logs.

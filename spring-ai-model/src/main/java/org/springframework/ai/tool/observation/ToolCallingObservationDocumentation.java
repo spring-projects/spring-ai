@@ -20,6 +20,7 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
+
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 
 /**

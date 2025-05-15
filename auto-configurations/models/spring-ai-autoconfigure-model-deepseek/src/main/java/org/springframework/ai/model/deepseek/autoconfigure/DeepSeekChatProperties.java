@@ -71,7 +71,7 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 	}
 
 	public String getCompletionsPath() {
-		return completionsPath;
+		return this.completionsPath;
 	}
 
 	public void setCompletionsPath(String completionsPath) {
@@ -79,7 +79,7 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 	}
 
 	public String getBetaPrefixPath() {
-		return betaPrefixPath;
+		return this.betaPrefixPath;
 	}
 
 	public void setBetaPrefixPath(String betaPrefixPath) {

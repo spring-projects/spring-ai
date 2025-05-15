@@ -16,9 +16,10 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import reactor.core.publisher.Flux;
 
 /**
  * Advisor for execution flows ultimately resulting in a streaming call to an AI model.

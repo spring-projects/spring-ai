@@ -16,11 +16,11 @@
 
 package org.springframework.ai.deepseek.api;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Objects;
 
 /**
  * An object specifying the format that the model must output. Setting to { "type":
@@ -42,7 +42,7 @@ import java.util.Objects;
  */
 
 @JsonInclude(Include.NON_NULL)
-public class ResponseFormat {
+public final class ResponseFormat {
 
 	/**
 	 * Type Must be one of 'text', 'json_object'.

@@ -16,16 +16,17 @@
 
 package org.springframework.ai.vectorstore.observation;
 
+import java.util.List;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

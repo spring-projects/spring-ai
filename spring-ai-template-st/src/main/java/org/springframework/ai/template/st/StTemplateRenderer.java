@@ -16,20 +16,21 @@
 
 package org.springframework.ai.template.st;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.template.TemplateRenderer;
-import org.springframework.ai.template.ValidationMode;
-import org.springframework.util.Assert;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.Compiler;
 import org.stringtemplate.v4.compiler.STLexer;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import org.springframework.ai.template.TemplateRenderer;
+import org.springframework.ai.template.ValidationMode;
+import org.springframework.util.Assert;
 
 /**
  * Renders a template using the StringTemplate (ST) v4 library.
@@ -103,7 +104,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 		for (Map.Entry<String, Object> entry : variables.entrySet()) {
 			st.add(entry.getKey(), entry.getValue());
 		}
-		if (validationMode != ValidationMode.NONE) {
+		if (this.validationMode != ValidationMode.NONE) {
 			validate(st, variables);
 		}
 		return st.render();
@@ -111,7 +112,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private ST createST(String template) {
 		try {
-			return new ST(template, startDelimiterToken, endDelimiterToken);
+			return new ST(template, this.startDelimiterToken, this.endDelimiterToken);
 		}
 		catch (Exception ex) {
 			throw new IllegalArgumentException("The template string is not valid.", ex);
@@ -132,10 +133,10 @@ public class StTemplateRenderer implements TemplateRenderer {
 		missingVariables.removeAll(modelKeys);
 
 		if (!missingVariables.isEmpty()) {
-			if (validationMode == ValidationMode.WARN) {
+			if (this.validationMode == ValidationMode.WARN) {
 				logger.warn(VALIDATION_MESSAGE.formatted(missingVariables));
 			}
-			else if (validationMode == ValidationMode.THROW) {
+			else if (this.validationMode == ValidationMode.THROW) {
 				throw new IllegalStateException(VALIDATION_MESSAGE.formatted(missingVariables));
 			}
 		}
@@ -187,7 +188,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 	/**
 	 * Builder for configuring and creating {@link StTemplateRenderer} instances.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private char startDelimiterToken = DEFAULT_START_DELIMITER_TOKEN;
 
@@ -258,7 +259,8 @@ public class StTemplateRenderer implements TemplateRenderer {
 		 * @return A configured {@link StTemplateRenderer}.
 		 */
 		public StTemplateRenderer build() {
-			return new StTemplateRenderer(startDelimiterToken, endDelimiterToken, validationMode, validateStFunctions);
+			return new StTemplateRenderer(this.startDelimiterToken, this.endDelimiterToken, this.validationMode,
+					this.validateStFunctions);
 		}
 
 	}

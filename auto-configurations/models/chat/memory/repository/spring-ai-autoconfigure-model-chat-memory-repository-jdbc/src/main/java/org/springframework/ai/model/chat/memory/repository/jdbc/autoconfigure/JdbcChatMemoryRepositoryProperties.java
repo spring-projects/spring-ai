@@ -59,7 +59,7 @@ public class JdbcChatMemoryRepositoryProperties {
 	}
 
 	public String getPlatform() {
-		return platform;
+		return this.platform;
 	}
 
 	public void setPlatform(String platform) {

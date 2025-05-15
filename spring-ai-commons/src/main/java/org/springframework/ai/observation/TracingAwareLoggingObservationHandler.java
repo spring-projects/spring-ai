@@ -85,7 +85,8 @@ public class TracingAwareLoggingObservationHandler<T extends Observation.Context
 			.getRequired(TracingObservationHandler.TracingContext.class);
 		Span currentSpan = tracingContext.getSpan();
 		if (currentSpan != null) {
-			try (CurrentTraceContext.Scope ignored = tracer.currentTraceContext().maybeScope(currentSpan.context())) {
+			try (CurrentTraceContext.Scope ignored = this.tracer.currentTraceContext()
+				.maybeScope(currentSpan.context())) {
 				this.delegate.onStop(context);
 			}
 		}

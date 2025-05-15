@@ -16,10 +16,13 @@
 
 package org.springframework.ai.model.chat.observation.autoconfigure;
 
+import java.util.List;
+
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
@@ -34,8 +37,6 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

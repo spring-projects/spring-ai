@@ -116,9 +116,7 @@ class ToolCallingAutoConfigurationTests {
 	void observationFilterDefault() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
 			.withUserConfiguration(Config.class)
-			.run(context -> {
-				assertThat(context).doesNotHaveBean(ToolCallingContentObservationFilter.class);
-			});
+			.run(context -> assertThat(context).doesNotHaveBean(ToolCallingContentObservationFilter.class));
 	}
 
 	@Test
@@ -126,9 +124,7 @@ class ToolCallingAutoConfigurationTests {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.tools.observations.include-content=true")
 			.withUserConfiguration(Config.class)
-			.run(context -> {
-				assertThat(context).hasSingleBean(ToolCallingContentObservationFilter.class);
-			});
+			.run(context -> assertThat(context).hasSingleBean(ToolCallingContentObservationFilter.class));
 	}
 
 	static class WeatherService {

@@ -39,7 +39,7 @@ public class ToolCallingProperties {
 		private boolean includeContent = false;
 
 		public boolean isIncludeContent() {
-			return includeContent;
+			return this.includeContent;
 		}
 
 		public void setIncludeContent(boolean includeContent) {

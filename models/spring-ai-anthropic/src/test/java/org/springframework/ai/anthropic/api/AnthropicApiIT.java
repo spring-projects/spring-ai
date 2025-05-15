@@ -142,7 +142,7 @@ public class AnthropicApiIT {
 			.maxTokens(1500)
 			.stream(true)
 			.temperature(0.8)
-			.tools(tools)
+			.tools(this.tools)
 			.build();
 
 		List<ChatCompletionResponse> responses = this.anthropicApi.chatCompletionStream(chatCompletionRequest)
