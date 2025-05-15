@@ -22,6 +22,7 @@ import java.util.List;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
@@ -410,6 +411,76 @@ public abstract class AbstractChatMemoryAdvisorIT {
 		memoryMessages = chatMemory.get(conversationId);
 		assertThat(memoryMessages).hasSize(8); // 4 user messages + 4 assistant responses
 		assertThat(memoryMessages.get(6).getText()).isEqualTo("What is my name and where do I live?");
+	}
+
+	/**
+	 * Tests that the advisor correctly handles streaming responses and updates the
+	 * memory. This verifies that the adviseStream method in chat memory advisors is
+	 * working correctly.
+	 */
+	protected void testStreamingWithChatMemory() {
+		// Arrange
+		String conversationId = "streaming-conversation-" + System.currentTimeMillis();
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		// Create advisor with the conversation ID
+		var advisor = createAdvisor(chatMemory);
+
+		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+
+		// Act - Send a message using streaming
+		String initialQuestion = "My name is David and I live in Seattle.";
+
+		// Collect all streaming chunks
+		List<String> streamingChunks = new ArrayList<>();
+		Flux<String> responseStream = chatClient.prompt()
+			.user(initialQuestion)
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+			.stream()
+			.content();
+
+		// Block and collect all streaming chunks
+		responseStream.doOnNext(streamingChunks::add).blockLast();
+
+		// Join all chunks to get the complete response
+		String completeResponse = String.join("", streamingChunks);
+
+		logger.info("Streaming response: {}", completeResponse);
+
+		// Verify memory contains the initial question and the response
+		List<Message> memoryMessages = chatMemory.get(conversationId);
+		assertThat(memoryMessages).hasSize(2); // 1 user message + 1 assistant response
+		assertThat(memoryMessages.get(0).getText()).isEqualTo(initialQuestion);
+
+		// Send a follow-up question using streaming
+		String followUpQuestion = "Where do I live?";
+
+		// Collect all streaming chunks for the follow-up
+		List<String> followUpStreamingChunks = new ArrayList<>();
+		Flux<String> followUpResponseStream = chatClient.prompt()
+			.user(followUpQuestion)
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+			.stream()
+			.content();
+
+		// Block and collect all streaming chunks
+		followUpResponseStream.doOnNext(followUpStreamingChunks::add).blockLast();
+
+		// Join all chunks to get the complete follow-up response
+		String followUpCompleteResponse = String.join("", followUpStreamingChunks);
+
+		logger.info("Follow-up streaming response: {}", followUpCompleteResponse);
+
+		// Verify the follow-up response contains the location
+		assertThat(followUpCompleteResponse).containsIgnoringCase("Seattle");
+
+		// Verify memory now contains all messages
+		memoryMessages = chatMemory.get(conversationId);
+		assertThat(memoryMessages).hasSize(4); // 2 user messages + 2 assistant responses
+		assertThat(memoryMessages.get(0).getText()).isEqualTo(initialQuestion);
+		assertThat(memoryMessages.get(2).getText()).isEqualTo(followUpQuestion);
 	}
 
 }

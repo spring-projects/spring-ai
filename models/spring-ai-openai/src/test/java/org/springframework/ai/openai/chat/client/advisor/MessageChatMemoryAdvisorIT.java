@@ -190,4 +190,9 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		logger.info("Assistant response stored in memory: {}", assistantMessage.getText());
 	}
 
+	@Test
+	void shouldHandleStreamingWithChatMemory() {
+		testStreamingWithChatMemory();
+	}
+
 }

@@ -21,7 +21,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.util.Assert;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -30,10 +33,12 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -165,6 +170,20 @@ public class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		this.vectorStore.write(toDocuments(assistantMessages,
 				this.getConversationId(chatClientResponse.context(), this.defaultConversationId)));
 		return chatClientResponse;
+	}
+
+	@Override
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+			StreamAdvisorChain streamAdvisorChain) {
+		// Get the scheduler from BaseAdvisor
+		Scheduler scheduler = this.getScheduler();
+		// Process the request with the before method
+		return Mono.just(chatClientRequest)
+			.publishOn(scheduler)
+			.map(request -> this.before(request, streamAdvisorChain))
+			.flatMapMany(streamAdvisorChain::nextStream)
+			.transform(flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux,
+					response -> this.after(response, streamAdvisorChain)));
 	}
 
 	private List<Document> toDocuments(List<Message> messages, String conversationId) {
