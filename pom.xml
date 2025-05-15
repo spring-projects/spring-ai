@@ -41,9 +41,9 @@
 		<module>spring-ai-rag</module>
 		<module>advisors/spring-ai-advisors-vector-store</module>
 
-		<module>memory/spring-ai-model-chat-memory-cassandra</module>
-		<module>memory/spring-ai-model-chat-memory-jdbc</module>
-		<module>memory/spring-ai-model-chat-memory-neo4j</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
 
 
 
@@ -169,7 +169,7 @@
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
-			<module>models/spring-ai-stability-ai</module>
+		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
@@ -310,7 +310,7 @@
 		<okhttp3.version>4.12.0</okhttp3.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.10.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>0.10.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>

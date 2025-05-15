@@ -17,16 +17,20 @@
 package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.sql.init.DatabaseInitializationMode;
 
 /**
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 @ConfigurationProperties(JdbcChatMemoryRepositoryProperties.CONFIG_PREFIX)
 public class JdbcChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc";
+
+	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql";
 
 	/**
 	 * Whether to initialize the schema on startup. Values: embedded, always, never.
@@ -36,9 +40,15 @@ public class JdbcChatMemoryRepositoryProperties {
 
 	/**
 	 * Locations of schema (DDL) scripts. Supports comma-separated list. Default is
-	 * classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql
+	 * classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql
 	 */
-	private String schema = "classpath:org/springframework/ai/chat/memory/jdbc/schema-@@platform@@.sql";
+	private String schema = DEFAULT_SCHEMA_LOCATION;
+
+	/**
+	 * Platform to use in initialization scripts if the @@platform@@ placeholder is used.
+	 * Auto-detected by default.
+	 */
+	private String platform;
 
 	public DatabaseInitializationMode getInitializeSchema() {
 		return this.initializeSchema;
@@ -48,31 +58,20 @@ public class JdbcChatMemoryRepositoryProperties {
 		this.initializeSchema = initializeSchema;
 	}
 
+	public String getPlatform() {
+		return platform;
+	}
+
+	public void setPlatform(String platform) {
+		this.platform = platform;
+	}
+
 	public String getSchema() {
 		return this.schema;
 	}
 
 	public void setSchema(String schema) {
 		this.schema = schema;
-	}
-
-	public enum DatabaseInitializationMode {
-
-		/**
-		 * Always initialize the database.
-		 */
-		ALWAYS,
-
-		/**
-		 * Only initialize an embedded database.
-		 */
-		EMBEDDED,
-
-		/**
-		 * Never initialize the database.
-		 */
-		NEVER
-
 	}
 
 }

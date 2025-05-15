@@ -18,23 +18,23 @@ package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import javax.sql.DataSource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryDialect;
-import org.springframework.ai.chat.memory.jdbc.JdbcChatMemoryRepository;
+import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepositoryDialect;
+import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.autoconfigure.sql.init.OnDatabaseInitializationCondition;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 @AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
@@ -45,15 +45,25 @@ public class JdbcChatMemoryRepositoryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	JdbcChatMemoryRepository jdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, DataSource dataSource) {
-		JdbcChatMemoryDialect dialect = JdbcChatMemoryDialect.from(dataSource);
+		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect.from(dataSource);
 		return JdbcChatMemoryRepository.builder().jdbcTemplate(jdbcTemplate).dialect(dialect).build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
+	@Conditional(OnJdbcChatMemoryRepositoryDatasourceInitializationCondition.class)
 	JdbcChatMemoryRepositorySchemaInitializer jdbcChatMemoryScriptDatabaseInitializer(DataSource dataSource,
 			JdbcChatMemoryRepositoryProperties properties) {
 		return new JdbcChatMemoryRepositorySchemaInitializer(dataSource, properties);
+	}
+
+	static class OnJdbcChatMemoryRepositoryDatasourceInitializationCondition extends OnDatabaseInitializationCondition {
+
+		OnJdbcChatMemoryRepositoryDatasourceInitializationCondition() {
+			super("Jdbc Chat Memory Repository",
+					JdbcChatMemoryRepositoryProperties.CONFIG_PREFIX + ".initialize-schema");
+		}
+
 	}
 
 }

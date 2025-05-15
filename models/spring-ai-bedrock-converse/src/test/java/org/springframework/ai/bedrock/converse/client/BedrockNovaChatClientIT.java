@@ -184,7 +184,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		String response = chatClient.prompt()
-			.tools(new DummyWeatherForcastTools())
+			.tools(new DummyWeatherForecastTools())
 			.user("Get current weather in Amsterdam")
 			.call()
 			.content();
@@ -199,7 +199,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.tools(new DummyWeatherForcastTools())
+			.tools(new DummyWeatherForecastTools())
 			.user("Get current weather in Amsterdam")
 			.stream()
 			.chatResponse();
@@ -214,11 +214,11 @@ public class BedrockNovaChatClientIT {
 		assertThat(content).contains("20 degrees");
 	}
 
-	public static class DummyWeatherForcastTools {
+	public static class DummyWeatherForecastTools {
 
-		@Tool(description = "Get the current weather forcast in Amsterdam")
+		@Tool(description = "Get the current weather forecast in Amsterdam")
 		String getCurrentDateTime() {
-			return "Weahter is hot and sunny wiht a temperature of 20 degrees";
+			return "Weather is hot and sunny with a temperature of 20 degrees";
 		}
 
 	}

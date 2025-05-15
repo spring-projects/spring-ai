@@ -46,10 +46,13 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	private String sslBundle;
 
 	/**
-	 *
+	 * Time to wait until connection established. 0 - infinity.
 	 */
 	private Duration connectionTimeout;
 
+	/**
+	 * Time to wait for response from the opposite endpoint. 0 - infinity.
+	 */
 	private Duration readTimeout;
 
 	private Aws aws = new Aws();

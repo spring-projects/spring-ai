@@ -64,6 +64,7 @@
 **** xref:api/audio/speech/openai-speech.adoc[OpenAI]
 ** xref:api/moderation[Moderation Models]
 *** xref:api/moderation/openai-moderation.adoc[OpenAI]
+*** xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI]
 // ** xref:api/generic-model.adoc[]
 
 * xref:api/vectordbs.adoc[]

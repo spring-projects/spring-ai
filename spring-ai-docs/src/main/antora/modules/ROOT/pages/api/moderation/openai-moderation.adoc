@@ -19,7 +19,7 @@ There has been a significant change in the Spring AI auto-configuration, starter
 Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
 ====
 
-Spring AI provides Spring Boot auto-configuration for the OpenAI Text-to-Speech Client.
+Spring AI provides Spring Boot auto-configuration for the OpenAI Moderation Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
 
 [source,xml]
@@ -61,7 +61,7 @@ Usage from these API requests will count as usage for the specified organization
 
 [NOTE]
 ====
-Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.moderation`.
 
 To enable, spring.ai.model.moderation=openai (It is enabled by default)
 

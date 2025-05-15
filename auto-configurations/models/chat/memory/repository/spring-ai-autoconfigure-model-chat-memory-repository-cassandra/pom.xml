@@ -25,7 +25,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-model-chat-memory-cassandra</artifactId>
+			<artifactId>spring-ai-model-chat-memory-repository-cassandra</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
