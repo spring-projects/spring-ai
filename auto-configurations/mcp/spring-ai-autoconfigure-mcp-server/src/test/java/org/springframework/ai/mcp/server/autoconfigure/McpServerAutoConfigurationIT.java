@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpAsyncServer;
+import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
@@ -42,14 +43,24 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.mockito.Mockito.when;
 
 public class McpServerAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class));
+
+	String emptyJsonSchema = """
+			{
+				"$schema": "http://json-schema.org/draft-07/schema#",
+				"type": "object",
+				"properties": {}
+			}
+			""";
 
 	@Test
 	void defaultConfiguration() {
@@ -122,6 +133,72 @@ public class McpServerAutoConfigurationIT {
 			assertThat(context).doesNotHaveBean(McpSyncServer.class);
 			assertThat(context).doesNotHaveBean(McpAsyncServer.class);
 			assertThat(context).doesNotHaveBean(McpServerTransport.class);
+		});
+	}
+
+	@Test
+	void asyncNotificationDefaultConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.isToolChangeNotification()).isTrue();
+			assertThat(properties.isResourceChangeNotification()).isTrue();
+			assertThat(properties.isPromptChangeNotification()).isTrue();
+
+			McpAsyncServer mcpAsyncServer = context.getBean(McpAsyncServer.class);
+
+			McpSchema.Tool newTool = new McpSchema.Tool("new-tool", "New test tool", emptyJsonSchema);
+			StepVerifier
+				.create(mcpAsyncServer.addTool(new McpServerFeatures.AsyncToolSpecification(newTool,
+						(exchange, args) -> Mono.just(new McpSchema.CallToolResult(List.of(), false)))))
+				.verifyComplete();
+
+			McpSchema.Resource resource = new McpSchema.Resource("test://resource", "Test Resource",
+					"Test resource description", "text/plain", null);
+			StepVerifier.create(mcpAsyncServer.addResource(new McpServerFeatures.AsyncResourceSpecification(resource,
+					(exchange, req) -> Mono.just(new McpSchema.ReadResourceResult(List.of())))))
+				.verifyComplete();
+
+			McpSchema.Prompt prompt = new McpSchema.Prompt("test-prompt", "Test Prompt", List.of());
+
+			StepVerifier
+				.create(mcpAsyncServer.addPrompt(
+						new McpServerFeatures.AsyncPromptSpecification(prompt,
+								(exchange,
+										req) -> Mono.just(new McpSchema.GetPromptResult("Test prompt description",
+												List.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT,
+														new McpSchema.TextContent("Test content"))))))))
+				.verifyComplete();
+
+		});
+	}
+
+	@Test
+	void syncNotificationDefaultConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=SYNC").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.isToolChangeNotification()).isTrue();
+			assertThat(properties.isResourceChangeNotification()).isTrue();
+			assertThat(properties.isPromptChangeNotification()).isTrue();
+
+			McpSyncServer mcpSyncServer = context.getBean(McpSyncServer.class);
+
+			McpSchema.Tool newTool = new McpSchema.Tool("new-tool", "New test tool", emptyJsonSchema);
+			assertThatNoException()
+				.isThrownBy(() -> mcpSyncServer.addTool(new McpServerFeatures.SyncToolSpecification(newTool,
+						(exchange, args) -> new McpSchema.CallToolResult(List.of(), false))));
+
+			McpSchema.Resource resource = new McpSchema.Resource("test://resource", "Test Resource",
+					"Test resource description", "text/plain", null);
+			assertThatNoException()
+				.isThrownBy(() -> mcpSyncServer.addResource(new McpServerFeatures.SyncResourceSpecification(resource,
+						(exchange, req) -> new McpSchema.ReadResourceResult(List.of()))));
+
+			McpSchema.Prompt prompt = new McpSchema.Prompt("test-prompt", "Test Prompt", List.of());
+			assertThatNoException()
+				.isThrownBy(() -> mcpSyncServer.addPrompt(new McpServerFeatures.SyncPromptSpecification(prompt,
+						(exchange, req) -> new McpSchema.GetPromptResult("Test prompt description",
+								List.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT,
+										new McpSchema.TextContent("Test content")))))));
 		});
 	}
 

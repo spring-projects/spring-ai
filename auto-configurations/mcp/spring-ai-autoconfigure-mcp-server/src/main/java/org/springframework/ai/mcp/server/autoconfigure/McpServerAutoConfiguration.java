@@ -198,26 +198,26 @@ public class McpServerAutoConfiguration {
 
 		if (!CollectionUtils.isEmpty(toolSpecifications)) {
 			serverBuilder.tools(toolSpecifications);
-			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
 			logger.info("Registered tools: " + toolSpecifications.size() + ", notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
+		capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
 
 		List<SyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
 		if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 			serverBuilder.resources(resourceSpecifications);
-			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
 			logger.info("Registered resources: " + resourceSpecifications.size() + ", notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
+		capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
 
 		List<SyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
 		if (!CollectionUtils.isEmpty(promptSpecifications)) {
 			serverBuilder.prompts(promptSpecifications);
-			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
 			logger.info("Registered prompts: " + promptSpecifications.size() + ", notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
+		capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
 
 		List<SyncCompletionSpecification> completionSpecifications = completions.stream()
 			.flatMap(List::stream)
@@ -305,26 +305,26 @@ public class McpServerAutoConfiguration {
 
 		if (!CollectionUtils.isEmpty(toolSpecifications)) {
 			serverBuilder.tools(toolSpecifications);
-			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
 			logger.info("Registered tools: " + toolSpecifications.size() + ", notification: "
 					+ serverProperties.isToolChangeNotification());
 		}
+		capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
 
 		List<AsyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
 		if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 			serverBuilder.resources(resourceSpecifications);
-			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
 			logger.info("Registered resources: " + resourceSpecifications.size() + ", notification: "
 					+ serverProperties.isResourceChangeNotification());
 		}
+		capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
 
 		List<AsyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
 		if (!CollectionUtils.isEmpty(promptSpecifications)) {
 			serverBuilder.prompts(promptSpecifications);
-			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
 			logger.info("Registered prompts: " + promptSpecifications.size() + ", notification: "
 					+ serverProperties.isPromptChangeNotification());
 		}
+		capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
 
 		List<AsyncCompletionSpecification> completionSpecifications = completions.stream()
 			.flatMap(List::stream)
