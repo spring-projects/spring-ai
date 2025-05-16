@@ -18,8 +18,8 @@ package org.springframework.ai.model.chat.memory.repository.neo4j.autoconfigure;
 
 import org.neo4j.driver.Driver;
 
-import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepositoryConfig;
 import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepository;
+import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepositoryConfig;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

@@ -16,16 +16,22 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import io.micrometer.observation.ObservationRegistry;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.client.ChatClientRequest;
-import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.ai.chat.client.advisor.api.*;
-import org.springframework.ai.chat.prompt.Prompt;
-import reactor.core.publisher.Flux;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import io.micrometer.observation.ObservationRegistry;
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

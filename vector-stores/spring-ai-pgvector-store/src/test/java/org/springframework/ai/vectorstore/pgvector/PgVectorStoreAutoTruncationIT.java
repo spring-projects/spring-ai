@@ -51,7 +51,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
@@ -147,9 +147,8 @@ public class PgVectorStoreAutoTruncationIT {
 			Document massiveDocument = new Document(massiveContent);
 
 			// This should throw an exception as it exceeds our configured limit
-			assertThrows(IllegalArgumentException.class, () -> {
-				batchingStrategy.batch(List.of(massiveDocument));
-			});
+			assertThatThrownBy(() -> batchingStrategy.batch(List.of(massiveDocument)))
+				.isInstanceOf(IllegalArgumentException.class);
 
 			dropTable(context);
 		});

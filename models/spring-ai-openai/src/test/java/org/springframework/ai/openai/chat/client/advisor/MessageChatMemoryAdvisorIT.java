@@ -91,7 +91,7 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 			.conversationId(conversationId)
 			.build();
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		// Create a prompt with multiple user messages
 		List<Message> messages = new ArrayList<>();
@@ -151,7 +151,7 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 			.conversationId(conversationId)
 			.build();
 
-		ChatClient chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
 
 		// Act - Use streaming API
 		String userInput = "Tell me a short joke about programming";
@@ -188,6 +188,11 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		assertThat(assistantMessage.getText()).isNotEmpty();
 
 		logger.info("Assistant response stored in memory: {}", assistantMessage.getText());
+	}
+
+	@Test
+	void shouldHandleStreamingWithChatMemory() {
+		testStreamingWithChatMemory();
 	}
 
 }

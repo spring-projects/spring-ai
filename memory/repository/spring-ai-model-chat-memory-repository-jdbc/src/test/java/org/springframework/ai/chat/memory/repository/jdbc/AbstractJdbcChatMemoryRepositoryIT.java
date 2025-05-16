@@ -16,30 +16,29 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.sql.DataSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,7 +57,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
+		assertThat(this.chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
 	}
 
 	@ParameterizedTest
@@ -72,13 +71,14 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 			case TOOL -> throw new IllegalArgumentException("TOOL message type not supported in this test");
 		};
 
-		chatMemoryRepository.saveAll(conversationId, List.of(message));
+		this.chatMemoryRepository.saveAll(conversationId, List.of(message));
 
 		// Use dialect to get the appropriate SQL query
-		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect.from(jdbcTemplate.getDataSource());
+		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
+			.from(this.jdbcTemplate.getDataSource());
 		String selectSql = dialect.getSelectMessagesSql()
 			.replace("content, type", "conversation_id, content, type, timestamp");
-		var result = jdbcTemplate.queryForMap(selectSql, conversationId);
+		var result = this.jdbcTemplate.queryForMap(selectSql, conversationId);
 
 		assertThat(result.size()).isEqualTo(4);
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
@@ -94,13 +94,14 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 				new UserMessage("Message from user - " + conversationId),
 				new SystemMessage("Message from system - " + conversationId));
 
-		chatMemoryRepository.saveAll(conversationId, messages);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
 
 		// Use dialect to get the appropriate SQL query
-		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect.from(jdbcTemplate.getDataSource());
+		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
+			.from(this.jdbcTemplate.getDataSource());
 		String selectSql = dialect.getSelectMessagesSql()
 			.replace("content, type", "conversation_id, content, type, timestamp");
-		var results = jdbcTemplate.queryForList(selectSql, conversationId);
+		var results = this.jdbcTemplate.queryForList(selectSql, conversationId);
 
 		assertThat(results).hasSize(messages.size());
 
@@ -114,12 +115,12 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 			assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
 		}
 
-		var count = chatMemoryRepository.findByConversationId(conversationId).size();
+		var count = this.chatMemoryRepository.findByConversationId(conversationId).size();
 		assertThat(count).isEqualTo(messages.size());
 
-		chatMemoryRepository.saveAll(conversationId, List.of(new UserMessage("Hello")));
+		this.chatMemoryRepository.saveAll(conversationId, List.of(new UserMessage("Hello")));
 
-		count = chatMemoryRepository.findByConversationId(conversationId).size();
+		count = this.chatMemoryRepository.findByConversationId(conversationId).size();
 		assertThat(count).isEqualTo(1);
 	}
 
@@ -131,9 +132,9 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 				new UserMessage("Message from user - " + conversationId),
 				new SystemMessage("Message from system - " + conversationId));
 
-		chatMemoryRepository.saveAll(conversationId, messages);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
 
-		var results = chatMemoryRepository.findByConversationId(conversationId);
+		var results = this.chatMemoryRepository.findByConversationId(conversationId);
 
 		assertThat(results.size()).isEqualTo(messages.size());
 		assertThat(results).isEqualTo(messages);
@@ -146,12 +147,12 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 				new UserMessage("Message from user - " + conversationId),
 				new SystemMessage("Message from system - " + conversationId));
 
-		chatMemoryRepository.saveAll(conversationId, messages);
+		this.chatMemoryRepository.saveAll(conversationId, messages);
 
-		chatMemoryRepository.deleteByConversationId(conversationId);
+		this.chatMemoryRepository.deleteByConversationId(conversationId);
 
-		var count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?",
-				Integer.class, conversationId);
+		var count = this.jdbcTemplate.queryForObject(
+				"SELECT COUNT(*) FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?", Integer.class, conversationId);
 
 		assertThat(count).isZero();
 	}
@@ -160,8 +161,8 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 	void testMessageOrder() {
 		// Create a repository using the from method to detect the dialect
 		JdbcChatMemoryRepository repository = JdbcChatMemoryRepository.builder()
-			.jdbcTemplate(jdbcTemplate)
-			.dialect(JdbcChatMemoryRepositoryDialect.from(jdbcTemplate.getDataSource()))
+			.jdbcTemplate(this.jdbcTemplate)
+			.dialect(JdbcChatMemoryRepositoryDialect.from(this.jdbcTemplate.getDataSource()))
 			.build();
 
 		var conversationId = UUID.randomUUID().toString();

@@ -40,7 +40,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;

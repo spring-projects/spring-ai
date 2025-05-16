@@ -17,6 +17,7 @@
 package org.springframework.ai.model.deepseek.autoconfigure;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;

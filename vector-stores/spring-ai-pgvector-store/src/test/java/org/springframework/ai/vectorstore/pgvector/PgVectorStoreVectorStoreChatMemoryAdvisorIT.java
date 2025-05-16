@@ -79,7 +79,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 			.of(new Document("Hello from memory", java.util.Map.of("conversationId", conversationId))));
 
 		// Build ChatClient with VectorStoreChatMemoryAdvisor
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).build())
 			.build();
 
@@ -117,7 +117,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 						java.util.Map.of("conversationId", conversationId)),
 				new Document("Dogs are loyal pets.", java.util.Map.of("conversationId", conversationId))));
 
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
@@ -153,7 +153,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		store.add(java.util.List
 			.of(new Document("Automobiles are fast.", java.util.Map.of("conversationId", conversationId))));
 
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
@@ -185,7 +185,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("The capital of Italy is Rome.", java.util.Map.of("conversationId", conversationId)),
 				new Document("Bananas are yellow.", java.util.Map.of("conversationId", conversationId))));
 
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(2).build())
 			.build();
 
@@ -219,7 +219,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 						java.util.Map.of("conversationId", conversationId)),
 				new Document("Dogs are loyal pets.", java.util.Map.of("conversationId", conversationId))));
 
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
@@ -250,7 +250,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		store.add(java.util.List.of(new Document("The quick brown fox jumps over the lazy dog.",
 				java.util.Map.of("conversationId", conversationId))));
 
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 
@@ -282,7 +282,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				new Document("Strawberries are also red.", java.util.Map.of("conversationId", conversationId)),
 				new Document("Bananas are yellow.", java.util.Map.of("conversationId", conversationId))));
 
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(2).build())
 			.build();
 
@@ -314,7 +314,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		store.add(java.util.List
 			.of(new Document("The sun is a star.", java.util.Map.of("conversationId", conversationId))));
 
-		ChatClient chatClient = ChatClient.builder(chatModel)
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
 			.defaultAdvisors(VectorStoreChatMemoryAdvisor.builder(store).defaultTopK(1).build())
 			.build();
 

@@ -296,6 +296,31 @@ public class OpenAiApi {
 			});
 	}
 
+	// Package-private getters for mutate/copy
+	String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	ApiKey getApiKey() {
+		return this.apiKey;
+	}
+
+	MultiValueMap<String, String> getHeaders() {
+		return this.headers;
+	}
+
+	String getCompletionsPath() {
+		return this.completionsPath;
+	}
+
+	String getEmbeddingsPath() {
+		return this.embeddingsPath;
+	}
+
+	ResponseErrorHandler getResponseErrorHandler() {
+		return this.responseErrorHandler;
+	}
+
 	/**
 	 * OpenAI Chat Completion Models.
 	 * <p>
@@ -1193,7 +1218,7 @@ public class OpenAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record WebSearchOptions(@JsonProperty("search_context_size") SearchContextSize searchContextSize,
-									   @JsonProperty("user_location") UserLocation userLocation) {
+									@JsonProperty("user_location") UserLocation userLocation) {
 
 			/**
 			 * High level guidance for the amount of context window space to use for the
@@ -1229,11 +1254,11 @@ public class OpenAiApi {
 			 */
 			@JsonInclude(Include.NON_NULL)
 			public record UserLocation(@JsonProperty("type") String type,
-									   @JsonProperty("approximate") Approximate approximate) {
+									@JsonProperty("approximate") Approximate approximate) {
 
 				@JsonInclude(Include.NON_NULL)
 				public record Approximate(@JsonProperty("city") String city, @JsonProperty("country") String country,
-										  @JsonProperty("region") String region, @JsonProperty("timezone") String timezone) {
+										@JsonProperty("region") String region, @JsonProperty("timezone") String timezone) {
 				}
 			}
 
@@ -1889,31 +1914,6 @@ public class OpenAiApi {
 					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
 		}
 
-	}
-
-	// Package-private getters for mutate/copy
-	String getBaseUrl() {
-		return this.baseUrl;
-	}
-
-	ApiKey getApiKey() {
-		return this.apiKey;
-	}
-
-	MultiValueMap<String, String> getHeaders() {
-		return this.headers;
-	}
-
-	String getCompletionsPath() {
-		return this.completionsPath;
-	}
-
-	String getEmbeddingsPath() {
-		return this.embeddingsPath;
-	}
-
-	ResponseErrorHandler getResponseErrorHandler() {
-		return this.responseErrorHandler;
 	}
 
 }

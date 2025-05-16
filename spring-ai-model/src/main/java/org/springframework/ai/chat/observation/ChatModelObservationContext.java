@@ -17,12 +17,10 @@
 package org.springframework.ai.chat.observation;
 
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
-import org.springframework.util.Assert;
 
 /**
  * Context used to store metadata for chat model exchanges.

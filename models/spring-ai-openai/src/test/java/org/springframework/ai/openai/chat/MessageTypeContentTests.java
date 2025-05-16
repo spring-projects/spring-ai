@@ -18,7 +18,6 @@ package org.springframework.ai.openai.chat;
 
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 

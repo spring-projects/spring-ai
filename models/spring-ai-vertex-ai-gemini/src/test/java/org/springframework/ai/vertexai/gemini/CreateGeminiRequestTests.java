@@ -18,7 +18,6 @@ package org.springframework.ai.vertexai.gemini;
 
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.util.List;
 
 import com.google.cloud.vertexai.VertexAI;

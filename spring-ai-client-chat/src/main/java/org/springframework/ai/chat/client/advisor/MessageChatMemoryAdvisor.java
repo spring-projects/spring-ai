@@ -19,7 +19,6 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -35,6 +34,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.util.Assert;
 
 /**
  * Memory is retrieved added as a collection of messages to the prompt
@@ -44,7 +44,7 @@ import org.springframework.ai.chat.messages.UserMessage;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private final ChatMemory chatMemory;
 
@@ -67,7 +67,7 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public int getOrder() {
-		return order;
+		return this.order;
 	}
 
 	@Override
@@ -132,7 +132,7 @@ public class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		return new Builder(chatMemory);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 

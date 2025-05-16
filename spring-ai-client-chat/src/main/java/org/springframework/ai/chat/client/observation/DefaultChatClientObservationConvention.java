@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.observation;
 
+import java.util.ArrayList;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
@@ -29,8 +31,6 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import java.util.ArrayList;
 
 /**
  * Default conventions to populate observations for chat client workflows.

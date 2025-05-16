@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.advisor.observation;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.prompt.Prompt;
 

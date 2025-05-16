@@ -16,15 +16,16 @@
 
 package org.springframework.ai.chat.memory;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,13 +58,13 @@ public class MessageWindowChatMemoryTests {
 		String conversationId = UUID.randomUUID().toString();
 		List<Message> messages = List.of(new AssistantMessage("I, Robot"), new UserMessage("Hello"));
 
-		chatMemory.add(conversationId, messages);
+		this.chatMemory.add(conversationId, messages);
 
-		assertThat(chatMemory.get(conversationId)).containsAll(messages);
+		assertThat(this.chatMemory.get(conversationId)).containsAll(messages);
 
-		chatMemory.clear(conversationId);
+		this.chatMemory.clear(conversationId);
 
-		assertThat(chatMemory.get(conversationId)).isEmpty();
+		assertThat(this.chatMemory.get(conversationId)).isEmpty();
 	}
 
 	@Test
@@ -71,53 +72,53 @@ public class MessageWindowChatMemoryTests {
 		String conversationId = UUID.randomUUID().toString();
 		Message message = new UserMessage("Hello");
 
-		chatMemory.add(conversationId, message);
+		this.chatMemory.add(conversationId, message);
 
-		assertThat(chatMemory.get(conversationId)).contains(message);
+		assertThat(this.chatMemory.get(conversationId)).contains(message);
 
-		chatMemory.clear(conversationId);
+		this.chatMemory.clear(conversationId);
 
-		assertThat(chatMemory.get(conversationId)).isEmpty();
+		assertThat(this.chatMemory.get(conversationId)).isEmpty();
 	}
 
 	@Test
 	void nullConversationIdNotAllowed() {
-		assertThatThrownBy(() -> chatMemory.add(null, List.of(new UserMessage("Hello"))))
+		assertThatThrownBy(() -> this.chatMemory.add(null, List.of(new UserMessage("Hello"))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemory.add(null, new UserMessage("Hello")))
+		assertThatThrownBy(() -> this.chatMemory.add(null, new UserMessage("Hello")))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemory.get(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.chatMemory.get(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemory.clear(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.chatMemory.clear(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 	}
 
 	@Test
 	void emptyConversationIdNotAllowed() {
-		assertThatThrownBy(() -> chatMemory.add("", List.of(new UserMessage("Hello"))))
+		assertThatThrownBy(() -> this.chatMemory.add("", List.of(new UserMessage("Hello"))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemory.add(null, new UserMessage("Hello")))
+		assertThatThrownBy(() -> this.chatMemory.add(null, new UserMessage("Hello")))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemory.get("")).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.chatMemory.get("")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 
-		assertThatThrownBy(() -> chatMemory.clear("")).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.chatMemory.clear("")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("conversationId cannot be null or empty");
 	}
 
 	@Test
 	void nullMessagesNotAllowed() {
 		String conversationId = UUID.randomUUID().toString();
-		assertThatThrownBy(() -> chatMemory.add(conversationId, (List<Message>) null))
+		assertThatThrownBy(() -> this.chatMemory.add(conversationId, (List<Message>) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("messages cannot be null");
 	}
@@ -125,7 +126,7 @@ public class MessageWindowChatMemoryTests {
 	@Test
 	void nullMessageNotAllowed() {
 		String conversationId = UUID.randomUUID().toString();
-		assertThatThrownBy(() -> chatMemory.add(conversationId, (Message) null))
+		assertThatThrownBy(() -> this.chatMemory.add(conversationId, (Message) null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("message cannot be null");
 	}
@@ -136,7 +137,7 @@ public class MessageWindowChatMemoryTests {
 		List<Message> messagesWithNull = new ArrayList<>();
 		messagesWithNull.add(null);
 
-		assertThatThrownBy(() -> chatMemory.add(conversationId, messagesWithNull))
+		assertThatThrownBy(() -> this.chatMemory.add(conversationId, messagesWithNull))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("messages cannot contain null elements");
 	}

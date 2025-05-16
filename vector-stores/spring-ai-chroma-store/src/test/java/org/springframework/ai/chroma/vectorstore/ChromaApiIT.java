@@ -22,10 +22,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
 import org.testcontainers.chromadb.ChromaDBContainer;
-import org.testcontainers.containers.wait.strategy.AbstractWaitStrategy;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -34,6 +31,7 @@ import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.Collection;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.GetEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest;
+import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -72,24 +70,24 @@ public class ChromaApiIT {
 
 	@BeforeEach
 	public void beforeEach() {
-		var tenant = this.chromaApi.getTenant(defaultTenantName);
+		var tenant = this.chromaApi.getTenant(this.defaultTenantName);
 		if (tenant == null) {
-			this.chromaApi.createTenant(defaultTenantName);
+			this.chromaApi.createTenant(this.defaultTenantName);
 		}
 
-		var database = this.chromaApi.getDatabase(defaultTenantName, defaultDatabaseName);
+		var database = this.chromaApi.getDatabase(this.defaultTenantName, this.defaultDatabaseName);
 		if (database == null) {
-			this.chromaApi.createDatabase(defaultTenantName, defaultDatabaseName);
+			this.chromaApi.createDatabase(this.defaultTenantName, this.defaultDatabaseName);
 		}
 
-		this.chromaApi.listCollections(defaultTenantName, defaultDatabaseName)
-			.forEach(c -> this.chromaApi.deleteCollection(defaultTenantName, defaultDatabaseName, c.name()));
+		this.chromaApi.listCollections(this.defaultTenantName, this.defaultDatabaseName)
+			.forEach(c -> this.chromaApi.deleteCollection(this.defaultTenantName, this.defaultDatabaseName, c.name()));
 	}
 
 	@Test
 	public void testClientWithMetadata() {
 		Map<String, Object> metadata = Map.of("hnsw:space", "cosine", "hnsw:M", 5);
-		var newCollection = this.chromaApi.createCollection(defaultTenantName, defaultDatabaseName,
+		var newCollection = this.chromaApi.createCollection(this.defaultTenantName, this.defaultDatabaseName,
 				new ChromaApi.CreateCollectionRequest("TestCollection", metadata));
 		assertThat(newCollection).isNotNull();
 		assertThat(newCollection.name()).isEqualTo("TestCollection");
@@ -97,29 +95,30 @@ public class ChromaApiIT {
 
 	@Test
 	public void testClient() {
-		var newCollection = this.chromaApi.createCollection(defaultTenantName, defaultDatabaseName,
+		var newCollection = this.chromaApi.createCollection(this.defaultTenantName, this.defaultDatabaseName,
 				new ChromaApi.CreateCollectionRequest("TestCollection"));
 		assertThat(newCollection).isNotNull();
 		assertThat(newCollection.name()).isEqualTo("TestCollection");
 
-		var getCollection = this.chromaApi.getCollection(defaultTenantName, defaultDatabaseName, "TestCollection");
+		var getCollection = this.chromaApi.getCollection(this.defaultTenantName, this.defaultDatabaseName,
+				"TestCollection");
 		assertThat(getCollection).isNotNull();
 		assertThat(getCollection.name()).isEqualTo("TestCollection");
 		assertThat(getCollection.id()).isEqualTo(newCollection.id());
 
-		List<Collection> collections = this.chromaApi.listCollections(defaultTenantName, defaultDatabaseName);
+		List<Collection> collections = this.chromaApi.listCollections(this.defaultTenantName, this.defaultDatabaseName);
 		assertThat(collections).hasSize(1);
 		assertThat(collections.get(0).id()).isEqualTo(newCollection.id());
 
-		this.chromaApi.deleteCollection(defaultTenantName, defaultDatabaseName, newCollection.name());
-		assertThat(this.chromaApi.listCollections(defaultTenantName, defaultDatabaseName)).hasSize(0);
+		this.chromaApi.deleteCollection(this.defaultTenantName, this.defaultDatabaseName, newCollection.name());
+		assertThat(this.chromaApi.listCollections(this.defaultTenantName, this.defaultDatabaseName)).hasSize(0);
 	}
 
 	@Test
 	public void testCollection() {
-		var newCollection = this.chromaApi.createCollection(defaultTenantName, defaultDatabaseName,
+		var newCollection = this.chromaApi.createCollection(this.defaultTenantName, this.defaultDatabaseName,
 				new ChromaApi.CreateCollectionRequest("TestCollection"));
-		assertThat(this.chromaApi.countEmbeddings(defaultTenantName, defaultDatabaseName, newCollection.id()))
+		assertThat(this.chromaApi.countEmbeddings(this.defaultTenantName, this.defaultDatabaseName, newCollection.id()))
 			.isEqualTo(0);
 
 		var addEmbeddingRequest = new AddEmbeddingsRequest(List.of("id1", "id2"),
@@ -127,20 +126,20 @@ public class ChromaApiIT {
 				List.of(Map.of(), Map.of("key1", "value1", "key2", true, "key3", 23.4)),
 				List.of("Hello World", "Big World"));
 
-		this.chromaApi.upsertEmbeddings(defaultTenantName, defaultDatabaseName, newCollection.id(),
+		this.chromaApi.upsertEmbeddings(this.defaultTenantName, this.defaultDatabaseName, newCollection.id(),
 				addEmbeddingRequest);
 
 		var addEmbeddingRequest2 = new AddEmbeddingsRequest("id3", new float[] { 3f, 3f, 3f },
 				Map.of("key1", "value1", "key2", true, "key3", 23.4), "Big World");
 
-		this.chromaApi.upsertEmbeddings(defaultTenantName, defaultDatabaseName, newCollection.id(),
+		this.chromaApi.upsertEmbeddings(this.defaultTenantName, this.defaultDatabaseName, newCollection.id(),
 				addEmbeddingRequest2);
 
-		assertThat(this.chromaApi.countEmbeddings(defaultTenantName, defaultDatabaseName, newCollection.id()))
+		assertThat(this.chromaApi.countEmbeddings(this.defaultTenantName, this.defaultDatabaseName, newCollection.id()))
 			.isEqualTo(3);
 
-		var queryResult = this.chromaApi.queryCollection(defaultTenantName, defaultDatabaseName, newCollection.id(),
-				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, this.chromaApi.where("""
+		var queryResult = this.chromaApi.queryCollection(this.defaultTenantName, this.defaultDatabaseName,
+				newCollection.id(), new QueryRequest(new float[] { 1f, 1f, 1f }, 3, this.chromaApi.where("""
 						{
 							"key2" : { "$eq": true }
 						}
@@ -149,16 +148,16 @@ public class ChromaApiIT {
 		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id2", "id3");
 
 		// Update existing embedding.
-		this.chromaApi.upsertEmbeddings(defaultTenantName, defaultDatabaseName, newCollection.id(),
+		this.chromaApi.upsertEmbeddings(this.defaultTenantName, this.defaultDatabaseName, newCollection.id(),
 				new AddEmbeddingsRequest("id3", new float[] { 6f, 6f, 6f },
 						Map.of("key1", "value2", "key2", false, "key4", 23.4), "Small World"));
 
-		var result = this.chromaApi.getEmbeddings(defaultTenantName, defaultDatabaseName, newCollection.id(),
+		var result = this.chromaApi.getEmbeddings(this.defaultTenantName, this.defaultDatabaseName, newCollection.id(),
 				new GetEmbeddingsRequest(List.of("id2")));
 		assertThat(result.ids().get(0)).isEqualTo("id2");
 
-		queryResult = this.chromaApi.queryCollection(defaultTenantName, defaultDatabaseName, newCollection.id(),
-				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, this.chromaApi.where("""
+		queryResult = this.chromaApi.queryCollection(this.defaultTenantName, this.defaultDatabaseName,
+				newCollection.id(), new QueryRequest(new float[] { 1f, 1f, 1f }, 3, this.chromaApi.where("""
 						{
 							"key2" : { "$eq": true }
 						}
@@ -170,7 +169,7 @@ public class ChromaApiIT {
 	@Test
 	public void testQueryWhere() {
 
-		var collection = this.chromaApi.createCollection(defaultTenantName, defaultDatabaseName,
+		var collection = this.chromaApi.createCollection(this.defaultTenantName, this.defaultDatabaseName,
 				new ChromaApi.CreateCollectionRequest("TestCollection"));
 
 		var add1 = new AddEmbeddingsRequest("id1", new float[] { 1f, 1f, 1f },
@@ -184,15 +183,15 @@ public class ChromaApiIT {
 				Map.of("country", "BG", "active", false, "price", 40.1, "year", 2023),
 				"The World is Big and Salvation Lurks Around the Corner");
 
-		this.chromaApi.upsertEmbeddings(defaultTenantName, defaultDatabaseName, collection.id(), add1);
-		this.chromaApi.upsertEmbeddings(defaultTenantName, defaultDatabaseName, collection.id(), add2);
-		this.chromaApi.upsertEmbeddings(defaultTenantName, defaultDatabaseName, collection.id(), add3);
+		this.chromaApi.upsertEmbeddings(this.defaultTenantName, this.defaultDatabaseName, collection.id(), add1);
+		this.chromaApi.upsertEmbeddings(this.defaultTenantName, this.defaultDatabaseName, collection.id(), add2);
+		this.chromaApi.upsertEmbeddings(this.defaultTenantName, this.defaultDatabaseName, collection.id(), add3);
 
-		assertThat(this.chromaApi.countEmbeddings(defaultTenantName, defaultDatabaseName, collection.id()))
+		assertThat(this.chromaApi.countEmbeddings(this.defaultTenantName, this.defaultDatabaseName, collection.id()))
 			.isEqualTo(3);
 
-		var queryResult = this.chromaApi.queryCollection(defaultTenantName, defaultDatabaseName, collection.id(),
-				new QueryRequest(new float[] { 1f, 1f, 1f }, 3));
+		var queryResult = this.chromaApi.queryCollection(this.defaultTenantName, this.defaultDatabaseName,
+				collection.id(), new QueryRequest(new float[] { 1f, 1f, 1f }, 3));
 
 		assertThat(queryResult.ids().get(0)).hasSize(3);
 		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id1", "id2", "id3");
@@ -202,7 +201,7 @@ public class ChromaApiIT {
 		assertThat(chromaEmbeddings).hasSize(3);
 		assertThat(chromaEmbeddings).hasSize(3);
 
-		queryResult = this.chromaApi.queryCollection(defaultTenantName, defaultDatabaseName, collection.id(),
+		queryResult = this.chromaApi.queryCollection(this.defaultTenantName, this.defaultDatabaseName, collection.id(),
 				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, this.chromaApi.where("""
 						{
 							"$and" : [
@@ -214,7 +213,7 @@ public class ChromaApiIT {
 		assertThat(queryResult.ids().get(0)).hasSize(2);
 		assertThat(queryResult.ids().get(0)).containsExactlyInAnyOrder("id1", "id3");
 
-		queryResult = this.chromaApi.queryCollection(defaultTenantName, defaultDatabaseName, collection.id(),
+		queryResult = this.chromaApi.queryCollection(this.defaultTenantName, this.defaultDatabaseName, collection.id(),
 				new QueryRequest(new float[] { 1f, 1f, 1f }, 3, this.chromaApi.where("""
 						{
 							"$and" : [
@@ -232,7 +231,7 @@ public class ChromaApiIT {
 	void shouldUseExistingCollectionWhenSchemaInitializationDisabled() { // initializeSchema
 																			// is false by
 																			// default.
-		var collection = this.chromaApi.createCollection(defaultTenantName, defaultDatabaseName,
+		var collection = this.chromaApi.createCollection(this.defaultTenantName, this.defaultDatabaseName,
 				new ChromaApi.CreateCollectionRequest("test-collection"));
 		assertThat(collection).isNotNull();
 		assertThat(collection.name()).isEqualTo("test-collection");
@@ -254,7 +253,8 @@ public class ChromaApiIT {
 			.initializeImmediately(true)
 			.build();
 
-		var collection = this.chromaApi.getCollection(defaultTenantName, defaultDatabaseName, "new-collection");
+		var collection = this.chromaApi.getCollection(this.defaultTenantName, this.defaultDatabaseName,
+				"new-collection");
 		assertThat(collection).isNotNull();
 		assertThat(collection.name()).isEqualTo("new-collection");
 

@@ -16,19 +16,22 @@
 
 package org.springframework.ai.integration.tests.client.advisor;
 
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
-import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.reader.markdown.MarkdownDocumentReader;
@@ -39,8 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -183,9 +184,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(answer.content()).containsIgnoringCase("Highlands");
 	}
 
-	private record Answer(String content) {
-	}
-
 	private void evaluateRelevancy(String question, ChatResponse chatResponse) {
 		EvaluationRequest evaluationRequest = new EvaluationRequest(question,
 				chatResponse.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS),
@@ -193,6 +191,9 @@ public class QuestionAnswerAdvisorIT {
 		RelevancyEvaluator evaluator = new RelevancyEvaluator(ChatClient.builder(this.openAiChatModel));
 		EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 		assertThat(evaluationResponse.isPass()).isTrue();
+	}
+
+	private record Answer(String content) {
 	}
 
 }

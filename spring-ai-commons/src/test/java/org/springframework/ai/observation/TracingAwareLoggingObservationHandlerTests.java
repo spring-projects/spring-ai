@@ -29,7 +29,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link TracingAwareLoggingObservationHandler}.
@@ -53,30 +55,30 @@ class TracingAwareLoggingObservationHandlerTests {
 		Observation.Context context = new Observation.Context();
 		context.put(TracingObservationHandler.TracingContext.class, new TracingObservationHandler.TracingContext());
 
-		handler.onStart(context);
-		verify(delegate).onStart(context);
+		this.handler.onStart(context);
+		verify(this.delegate).onStart(context);
 
-		handler.onError(context);
-		verify(delegate).onError(context);
+		this.handler.onError(context);
+		verify(this.delegate).onError(context);
 
 		Observation.Event event = Observation.Event.of("test");
-		handler.onEvent(event, context);
-		verify(delegate).onEvent(event, context);
+		this.handler.onEvent(event, context);
+		verify(this.delegate).onEvent(event, context);
 
-		handler.onScopeOpened(context);
-		verify(delegate).onScopeOpened(context);
+		this.handler.onScopeOpened(context);
+		verify(this.delegate).onScopeOpened(context);
 
-		handler.onStop(context);
-		verify(delegate).onStop(context);
+		this.handler.onStop(context);
+		verify(this.delegate).onStop(context);
 
-		handler.onScopeClosed(context);
-		verify(delegate).onScopeClosed(context);
+		this.handler.onScopeClosed(context);
+		verify(this.delegate).onScopeClosed(context);
 
-		handler.onScopeReset(context);
-		verify(delegate).onScopeReset(context);
+		this.handler.onScopeReset(context);
+		verify(this.delegate).onScopeReset(context);
 
-		handler.supportsContext(context);
-		verify(delegate).supportsContext(context);
+		this.handler.supportsContext(context);
+		verify(this.delegate).supportsContext(context);
 	}
 
 	@Test
@@ -92,14 +94,14 @@ class TracingAwareLoggingObservationHandlerTests {
 		CurrentTraceContext.Scope scope = mock(CurrentTraceContext.Scope.class);
 
 		when(span.context()).thenReturn(traceContext);
-		when(tracer.currentTraceContext()).thenReturn(currentTraceContext);
+		when(this.tracer.currentTraceContext()).thenReturn(currentTraceContext);
 		when(currentTraceContext.maybeScope(traceContext)).thenReturn(scope);
 
-		handler.onStop(observationContext);
+		this.handler.onStop(observationContext);
 
 		verify(scope).close();
 		verify(currentTraceContext).maybeScope(traceContext);
-		verify(delegate).onStop(observationContext);
+		verify(this.delegate).onStop(observationContext);
 	}
 
 }
