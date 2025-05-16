@@ -29,7 +29,8 @@ import org.springframework.test.context.jdbc.Sql;
  * @author Mark Pollack
  */
 @SpringBootTest(classes = JdbcChatMemoryRepositoryMysqlIT.TestConfiguration.class)
-@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:mariadb:10.3.39:///" })
+@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:mariadb:10.3.39:///",
+		"spring.datasource.hikari.maximum-pool-size=20", "spring.datasource.hikari.minimum-idle=5" })
 @Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-mariadb.sql")
 class JdbcChatMemoryRepositoryMysqlIT extends AbstractJdbcChatMemoryRepositoryIT {
 

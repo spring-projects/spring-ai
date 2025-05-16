@@ -77,14 +77,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public List<String> findConversationIds() {
-		List<String> conversationIds = this.jdbcTemplate.query(this.dialect.getSelectConversationIdsSql(), rs -> {
-			var ids = new ArrayList<String>();
-			while (rs.next()) {
-				ids.add(rs.getString(1));
-			}
-			return ids;
-		});
-		return conversationIds != null ? conversationIds : List.of();
+		return this.jdbcTemplate.queryForList(dialect.getSelectConversationIdsSql(), String.class);
 	}
 
 	@Override

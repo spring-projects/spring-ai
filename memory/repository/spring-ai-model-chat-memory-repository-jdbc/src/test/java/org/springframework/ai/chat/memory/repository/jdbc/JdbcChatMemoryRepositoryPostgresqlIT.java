@@ -46,7 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Mark Pollack
  */
 @SpringBootTest(classes = JdbcChatMemoryRepositoryPostgresqlIT.TestConfiguration.class)
-@TestPropertySource(properties = "spring.datasource.url=jdbc:tc:postgresql:17:///")
+@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:postgresql:17:///",
+		"spring.datasource.hikari.maximum-pool-size=20", "spring.datasource.hikari.minimum-idle=5" })
 @Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-postgresql.sql")
 class JdbcChatMemoryRepositoryPostgresqlIT extends AbstractJdbcChatMemoryRepositoryIT {
 
