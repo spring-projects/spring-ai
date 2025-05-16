@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.SyntaxError;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -57,6 +59,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * Use `mvn failsafe:integration-test -Dit.test=CassandraVectorStoreIT`
@@ -519,6 +522,61 @@ class CassandraVectorStoreIT extends BaseVectorStoreTests {
 			CassandraVectorStore vectorStore = context.getBean(CassandraVectorStore.class);
 			Optional<CqlSession> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
+		});
+	}
+
+	@Test
+	void searchWithCollectionFilter() {
+		this.contextRunner.run(context -> {
+			try (CassandraVectorStore store = createTestStore(context,
+					new SchemaColumn("currencies", DataTypes.listOf(DataTypes.TEXT), SchemaColumnTags.INDEXED))) {
+
+				// Create test documents with different currency lists
+				var btcDocument = new Document("BTC_doc", "Bitcoin document", Map.of("currencies", List.of("BTC")));
+				var ethDocument = new Document("ETH_doc", "Ethereum document", Map.of("currencies", List.of("ETH")));
+				var multiCurrencyDocument = new Document("MULTI_doc", "Multi-currency document",
+						Map.of("currencies", List.of("BTC", "ETH", "SOL")));
+
+				store.add(List.of(btcDocument, ethDocument, multiCurrencyDocument));
+
+				// Verify initial state
+				List<Document> results = store
+					.similaritySearch(SearchRequest.builder().query("document").topK(5).build());
+				assertThat(results).hasSize(3);
+
+				try {
+					// Test filtering with IN operator on a collection field
+					Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.IN,
+							new Filter.Key("currencies"), new Filter.Value(List.of("BTC")));
+
+					// Search using programmatic filter
+					store.similaritySearch(SearchRequest.builder()
+						.query("document")
+						.topK(5)
+						.similarityThresholdAll()
+						.filterExpression(filterExpression)
+						.build());
+
+					// If we get here without an exception, it means Cassandra
+					// unexpectedly accepted the query,
+					// which is surprising since Cassandra doesn't support the IN operator
+					// on collection columns.
+					// This would indicate a potential change in Cassandra's behavior.
+					Assertions.fail("Expected InvalidQueryException from Cassandra");
+				}
+				catch (InvalidQueryException e) {
+					// This is the expected outcome: Cassandra rejects the query with a
+					// specific error
+					// indicating that collection columns cannot be used with IN
+					// operators, which is
+					// a documented limitation of Cassandra's query language. Support for
+					// collection
+					// filtering via CONTAINS would be needed for this type of query to
+					// work.
+					assertThat(e.getMessage()).contains("Collection column 'currencies'");
+					assertThat(e.getMessage()).contains("cannot be restricted by a 'IN' relation");
+				}
+			}
 		});
 	}
 
