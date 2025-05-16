@@ -20,6 +20,9 @@ import javax.sql.DataSource;
 
 /**
  * Abstraction for database-specific SQL for chat memory repository.
+ *
+ * @author Mark Pollack
+ * @author Yanming Zhou
  */
 public interface JdbcChatMemoryRepositoryDialect {
 
@@ -27,22 +30,39 @@ public interface JdbcChatMemoryRepositoryDialect {
 	 * Returns the SQL to fetch messages for a conversation, ordered by timestamp, with
 	 * limit.
 	 */
-	String getSelectMessagesSql();
+	default String getSelectMessagesSql() {
+		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY "
+				+ escape("timestamp") + " ASC";
+	}
 
 	/**
 	 * Returns the SQL to insert a message.
 	 */
-	String getInsertMessageSql();
+	default String getInsertMessageSql() {
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, " + escape("timestamp")
+				+ ") VALUES (?, ?, ?, ?)";
+	}
 
 	/**
 	 * Returns the SQL to fetch conversation IDs.
 	 */
-	String getSelectConversationIdsSql();
+	default String getSelectConversationIdsSql() {
+		return "SELECT DISTINCT conversation_id FROM SPRING_AI_CHAT_MEMORY";
+	}
 
 	/**
 	 * Returns the SQL to delete all messages for a conversation.
 	 */
-	String getDeleteMessagesSql();
+	default String getDeleteMessagesSql() {
+		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
+	}
+
+	/**
+	 * Escape keywords as column name.
+	 */
+	default String escape(String identifier) {
+		return identifier;
+	}
 
 	/**
 	 * Optionally, dialect can provide more advanced SQL as needed.
