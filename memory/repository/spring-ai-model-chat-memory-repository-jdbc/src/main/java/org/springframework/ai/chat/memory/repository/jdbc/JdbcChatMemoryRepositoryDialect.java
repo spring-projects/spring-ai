@@ -57,14 +57,14 @@ public interface JdbcChatMemoryRepositoryDialect {
 			String url = dataSource.getConnection().getMetaData().getURL().toLowerCase();
 			if (url.contains("postgresql"))
 				return new PostgresChatMemoryRepositoryDialect();
-			if (url.contains("mysql"))
-				return new MysqlChatMemoryRepositoryDialect();
-			if (url.contains("mariadb"))
+			if (url.contains("mysql") || url.contains("mariadb"))
 				return new MysqlChatMemoryRepositoryDialect();
 			if (url.contains("sqlserver"))
 				return new SqlServerChatMemoryRepositoryDialect();
 			if (url.contains("hsqldb"))
 				return new HsqldbChatMemoryRepositoryDialect();
+			if (url.contains("h2"))
+				return new H2ChatMemoryRepositoryDialect();
 			// Add more as needed
 		}
 		catch (Exception ignored) {
