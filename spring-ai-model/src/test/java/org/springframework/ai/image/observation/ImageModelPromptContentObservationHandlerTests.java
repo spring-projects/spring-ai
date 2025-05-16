@@ -64,7 +64,7 @@ class ImageModelPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Image Model Prompt Content:
+				INFO  o.s.a.i.o.ImageModelPromptContentObservationHandler -- Image Model Prompt Content:
 				[""]
 				""");
 	}
@@ -78,7 +78,7 @@ class ImageModelPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Image Model Prompt Content:
+				INFO  o.s.a.i.o.ImageModelPromptContentObservationHandler -- Image Model Prompt Content:
 				["supercalifragilisticexpialidocious"]
 				""");
 	}
@@ -94,7 +94,7 @@ class ImageModelPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Image Model Prompt Content:
+				INFO  o.s.a.i.o.ImageModelPromptContentObservationHandler -- Image Model Prompt Content:
 				["you're a chimney sweep", "supercalifragilisticexpialidocious"]
 				""");
 	}
