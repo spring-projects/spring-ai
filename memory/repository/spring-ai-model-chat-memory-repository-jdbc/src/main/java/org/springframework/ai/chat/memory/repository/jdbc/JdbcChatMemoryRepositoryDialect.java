@@ -58,10 +58,7 @@ public interface JdbcChatMemoryRepositoryDialect {
 			if (url.contains("postgresql")) {
 				return new PostgresChatMemoryRepositoryDialect();
 			}
-			if (url.contains("mysql")) {
-				return new MysqlChatMemoryRepositoryDialect();
-			}
-			if (url.contains("mariadb")) {
+			if (url.contains("mysql") || url.contains("mariadb")) {
 				return new MysqlChatMemoryRepositoryDialect();
 			}
 			if (url.contains("sqlserver")) {
@@ -69,6 +66,9 @@ public interface JdbcChatMemoryRepositoryDialect {
 			}
 			if (url.contains("hsqldb")) {
 				return new HsqldbChatMemoryRepositoryDialect();
+			}
+			if (url.contains("h2")) {
+				return new H2ChatMemoryRepositoryDialect();
 			}
 			// Add more as needed
 		}
