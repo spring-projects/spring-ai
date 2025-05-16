@@ -74,6 +74,8 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 		chatMemoryRepository.saveAll(conversationId, List.of(message));
 
+		assertThat(chatMemoryRepository.findConversationIds()).contains(conversationId);
+
 		// Use dialect to get the appropriate SQL query
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect.from(jdbcTemplate.getDataSource());
 		String selectSql = dialect.getSelectMessagesSql()
@@ -95,6 +97,8 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 				new SystemMessage("Message from system - " + conversationId));
 
 		chatMemoryRepository.saveAll(conversationId, messages);
+
+		assertThat(chatMemoryRepository.findConversationIds()).contains(conversationId);
 
 		// Use dialect to get the appropriate SQL query
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect.from(jdbcTemplate.getDataSource());
