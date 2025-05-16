@@ -57,7 +57,7 @@ class VectorStoreQueryResponseObservationHandlerTests {
 		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Vector Store Query Response:
+				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
 				[]
 				""");
 	}
@@ -68,7 +68,7 @@ class VectorStoreQueryResponseObservationHandlerTests {
 		context.setQueryResponse(List.of(new Document("doc1"), new Document("doc2")));
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Vector Store Query Response:
+				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
 				["doc1", "doc2"]
 				""");
 	}

@@ -40,7 +40,7 @@ public class VectorStoreQueryResponseObservationHandler implements ObservationHa
 
 	@Override
 	public void onStop(VectorStoreObservationContext context) {
-		logger.debug("Vector Store Query Response:\n{}", ObservabilityHelper.concatenateStrings(documents(context)));
+		logger.info("Vector Store Query Response:\n{}", ObservabilityHelper.concatenateStrings(documents(context)));
 	}
 
 	private List<String> documents(VectorStoreObservationContext context) {
