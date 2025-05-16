@@ -40,8 +40,10 @@ import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
@@ -145,7 +147,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	private final BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
-	private ToolCallingChatOptions defaultOptions;
+	private final ToolCallingChatOptions defaultOptions;
 
 	/**
 	 * Observation registry used for instrumentation.
@@ -324,8 +326,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.map(message -> {
 				if (message.getMessageType() == MessageType.USER) {
 					List<ContentBlock> contents = new ArrayList<>();
-					if (message instanceof UserMessage) {
-						var userMessage = (UserMessage) message;
+					if (message instanceof UserMessage userMessage) {
 						contents.add(ContentBlock.fromText(userMessage.getText()));
 
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
@@ -788,6 +789,12 @@ public class BedrockProxyChatModel implements ChatModel {
 		private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
+			try {
+				region = DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
+			}
 		}
 
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
