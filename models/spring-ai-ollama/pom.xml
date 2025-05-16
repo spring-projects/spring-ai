@@ -44,12 +44,12 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-client-chat</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
+        
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-model</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
@@ -73,6 +73,13 @@
 		</dependency>
 
         <!-- test dependencies -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-client-chat</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
