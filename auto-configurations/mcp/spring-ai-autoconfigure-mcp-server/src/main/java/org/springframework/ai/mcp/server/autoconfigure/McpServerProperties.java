@@ -134,52 +134,8 @@ public class McpServerProperties {
 
 	private Capabilities capabilities = new Capabilities();
 
-	public static class Capabilities {
-
-		private boolean resource = true;
-
-		private boolean tool = true;
-
-		private boolean prompt = true;
-
-		private boolean completion = true;
-
-		public boolean isResource() {
-			return resource;
-		}
-
-		public void setResource(boolean resource) {
-			this.resource = resource;
-		}
-
-		public boolean isTool() {
-			return tool;
-		}
-
-		public void setTool(boolean tool) {
-			this.tool = tool;
-		}
-
-		public boolean isPrompt() {
-			return prompt;
-		}
-
-		public void setPrompt(boolean prompt) {
-			this.prompt = prompt;
-		}
-
-		public boolean isCompletion() {
-			return completion;
-		}
-
-		public void setCompletion(boolean completion) {
-			this.completion = completion;
-		}
-
-	}
-
 	public Capabilities getCapabilities() {
-		return capabilities;
+		return this.capabilities;
 	}
 
 	/**
@@ -308,6 +264,50 @@ public class McpServerProperties {
 
 	public Map<String, String> getToolResponseMimeType() {
 		return this.toolResponseMimeType;
+	}
+
+	public static class Capabilities {
+
+		private boolean resource = true;
+
+		private boolean tool = true;
+
+		private boolean prompt = true;
+
+		private boolean completion = true;
+
+		public boolean isResource() {
+			return this.resource;
+		}
+
+		public void setResource(boolean resource) {
+			this.resource = resource;
+		}
+
+		public boolean isTool() {
+			return this.tool;
+		}
+
+		public void setTool(boolean tool) {
+			this.tool = tool;
+		}
+
+		public boolean isPrompt() {
+			return this.prompt;
+		}
+
+		public void setPrompt(boolean prompt) {
+			this.prompt = prompt;
+		}
+
+		public boolean isCompletion() {
+			return this.completion;
+		}
+
+		public void setCompletion(boolean completion) {
+			this.completion = completion;
+		}
+
 	}
 
 }

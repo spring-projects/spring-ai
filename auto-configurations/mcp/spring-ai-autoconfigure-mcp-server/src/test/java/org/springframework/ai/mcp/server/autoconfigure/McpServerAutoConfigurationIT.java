@@ -241,42 +241,6 @@ public class McpServerAutoConfigurationIT {
 			});
 	}
 
-	@Configuration
-	static class TestResourceConfiguration {
-
-		@Bean
-		List<SyncResourceSpecification> testResources() {
-			return List.of();
-		}
-
-	}
-
-	@Configuration
-	static class TestPromptConfiguration {
-
-		@Bean
-		List<SyncPromptSpecification> testPrompts() {
-			return List.of();
-		}
-
-	}
-
-	@Configuration
-	static class CustomCapabilitiesConfiguration {
-
-		@Bean
-		McpSchema.ServerCapabilities.Builder customCapabilitiesBuilder() {
-			return new CustomCapabilitiesBuilder();
-		}
-
-	}
-
-	static class CustomCapabilitiesBuilder extends McpSchema.ServerCapabilities.Builder {
-
-		// Custom implementation for testing
-
-	}
-
 	@Test
 	void capabilitiesConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.capabilities.tool=false",
@@ -329,9 +293,44 @@ public class McpServerAutoConfigurationIT {
 
 	@Test
 	void toolCallbackProviderConfiguration() {
-		this.contextRunner.withUserConfiguration(TestToolCallbackProviderConfiguration.class).run(context -> {
-			assertThat(context).hasSingleBean(ToolCallbackProvider.class);
-		});
+		this.contextRunner.withUserConfiguration(TestToolCallbackProviderConfiguration.class)
+			.run(context -> assertThat(context).hasSingleBean(ToolCallbackProvider.class));
+	}
+
+	@Configuration
+	static class TestResourceConfiguration {
+
+		@Bean
+		List<SyncResourceSpecification> testResources() {
+			return List.of();
+		}
+
+	}
+
+	@Configuration
+	static class TestPromptConfiguration {
+
+		@Bean
+		List<SyncPromptSpecification> testPrompts() {
+			return List.of();
+		}
+
+	}
+
+	@Configuration
+	static class CustomCapabilitiesConfiguration {
+
+		@Bean
+		McpSchema.ServerCapabilities.Builder customCapabilitiesBuilder() {
+			return new CustomCapabilitiesBuilder();
+		}
+
+	}
+
+	static class CustomCapabilitiesBuilder extends McpSchema.ServerCapabilities.Builder {
+
+		// Custom implementation for testing
+
 	}
 
 	@Configuration
@@ -379,11 +378,8 @@ public class McpServerAutoConfigurationIT {
 		List<SyncCompletionSpecification> testCompletions() {
 
 			BiFunction<McpSyncServerExchange, McpSchema.CompleteRequest, McpSchema.CompleteResult> completionHandler = (
-					exchange, request) -> {
-				// Test implementation
-				return new McpSchema.CompleteResult(
-						new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
-			};
+					exchange, request) -> new McpSchema.CompleteResult(
+							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
 
 			return List.of(new McpServerFeatures.SyncCompletionSpecification(
 					new McpSchema.PromptReference("ref/prompt", "code_review"), completionHandler));
@@ -397,11 +393,9 @@ public class McpServerAutoConfigurationIT {
 		@Bean
 		List<AsyncCompletionSpecification> testAsyncCompletions() {
 			BiFunction<McpAsyncServerExchange, McpSchema.CompleteRequest, Mono<McpSchema.CompleteResult>> completionHandler = (
-					exchange, request) -> {
-				// Test implementation
-				return Mono.just(new McpSchema.CompleteResult(
-						new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
-			};
+					exchange, request) -> Mono.just(new McpSchema.CompleteResult(
+							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
+
 			return List.of(new McpServerFeatures.AsyncCompletionSpecification(
 					new McpSchema.PromptReference("ref/prompt", "code_review"), completionHandler));
 		}
