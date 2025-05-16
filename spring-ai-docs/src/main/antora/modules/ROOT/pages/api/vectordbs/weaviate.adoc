@@ -44,7 +44,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 == Configuration
 
 To connect to Weaviate and use the `WeaviateVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's _application.properties_,
+Configuration can be provided via Spring Boot's _application.properties_:
 
 [source,properties]
 ----
@@ -55,20 +55,46 @@ spring.ai.vectorstore.weaviate.api-key=<your_api_key>
 spring.ai.openai.api-key=<api-key>
 ----
 
-environment variables,
+If you prefer to use environment variables for sensitive information like API keys, you have multiple options:
+
+=== Option 1: Using Spring Expression Language (SpEL)
+
+You can use custom environment variable names and reference them in your application configuration:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    vectorstore:
+      weaviate:
+        host: ${WEAVIATE_HOST}
+        scheme: ${WEAVIATE_SCHEME}
+        api-key: ${WEAVIATE_API_KEY}
+    openai:
+      api-key: ${OPENAI_API_KEY}
+----
 
 [source,bash]
 ----
-export SPRING_AI_VECTORSTORE_WEAVIATE_HOST=<host_of_your_weaviate_instance>
-export SPRING_AI_VECTORSTORE_WEAVIATE_SCHEME=<http_or_https>
-export SPRING_AI_VECTORSTORE_WEAVIATE_API_KEY=<your_api_key>
-# API key if needed, e.g. OpenAI
-export SPRING_AI_OPENAI_API_KEY=<api-key>
+# In your environment or .env file
+export WEAVIATE_HOST=<host_of_your_weaviate_instance>
+export WEAVIATE_SCHEME=<http_or_https>
+export WEAVIATE_API_KEY=<your_api_key>
+export OPENAI_API_KEY=<api-key>
 ----
 
-or can be a mix of those.
+=== Option 2: Accessing Environment Variables Programmatically
 
-NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
+Alternatively, you can access environment variables in your Java code:
+
+[source,java]
+----
+String weaviateApiKey = System.getenv("WEAVIATE_API_KEY");
+String openAiApiKey = System.getenv("OPENAI_API_KEY");
+----
+
+NOTE: If you choose to create a shell script to manage your environment variables, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
 
 == Auto-configuration
 
@@ -100,14 +126,17 @@ TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repos
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
-Here is an example of the needed bean:
+Here is an example of the required bean:
 
 [source,java]
 ----
 @Bean
 public EmbeddingModel embeddingModel() {
-    // Can be any other Embeddingmodel implementation.
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+    // Retrieve API key from a secure source or environment variable
+    String apiKey = System.getenv("OPENAI_API_KEY");
+
+    // Can be any other EmbeddingModel implementation
+    return new OpenAiEmbeddingModel(new OpenAiApi(apiKey));
 }
 ----
 

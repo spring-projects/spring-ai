@@ -18,21 +18,55 @@ for examples of using Groq with Spring AI.
 
 == Prerequisites
 
-* Create an API Key.
-Please visit https://console.groq.com/keys[here] to create an API Key.
+* **Create an API Key**:
+Visit https://console.groq.com/keys[here] to create an API Key.
 The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from groq.com.
-* Set the Groq URL. 
+
+* **Set the Groq URL**:
 You have to set the `spring.ai.openai.base-url` property to `https://api.groq.com/openai`.
-* Select a https://console.groq.com/docs/models[Groq Model].
-Use the `spring.ai.openai.chat.options.model=<model name>` property to set the Model.
 
-Exporting an environment variable is one way to set that configuration property:
+* **Select a Groq Model**:
+Use the `spring.ai.openai.chat.model=<model name>` property to select from the available https://console.groq.com/docs/models[Groq Models].
 
-[source,shell]
+You can set these configuration properties in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_OPENAI_API_KEY=<INSERT GROQ API KEY HERE>
-export SPRING_AI_OPENAI_BASE_URL=https://api.groq.com/openai
-export SPRING_AI_OPENAI_CHAT_MODEL=llama3-70b-8192
+spring.ai.openai.api-key=<your-groq-api-key>
+spring.ai.openai.base-url=https://api.groq.com/openai
+spring.ai.openai.chat.model=llama3-70b-8192
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference custom environment variables:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${GROQ_API_KEY}
+      base-url: ${GROQ_BASE_URL}
+      chat:
+        model: ${GROQ_MODEL}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export GROQ_API_KEY=<your-groq-api-key>
+export GROQ_BASE_URL=https://api.groq.com/openai
+export GROQ_MODEL=llama3-70b-8192
+----
+
+You can also set these configurations programmatically in your application code:
+
+[source,java]
+----
+// Retrieve configuration from secure sources or environment variables
+String apiKey = System.getenv("GROQ_API_KEY");
+String baseUrl = System.getenv("GROQ_BASE_URL");
+String model = System.getenv("GROQ_MODEL");
 ----
 
 === Add Repositories and BOM
