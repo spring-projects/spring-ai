@@ -112,10 +112,5 @@
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>mssqlserver</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>
