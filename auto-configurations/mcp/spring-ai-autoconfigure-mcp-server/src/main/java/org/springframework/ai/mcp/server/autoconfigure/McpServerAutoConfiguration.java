@@ -149,11 +149,11 @@ public class McpServerAutoConfiguration {
 
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
-		return tools.stream()
-			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), // Key:
-																				// tool
-																				// name
-					tool -> tool, // Value: the tool itself
+		return tools.stream() // Key: tool name
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool, // Value:
+																								// the
+																								// tool
+																								// itself
 					(existing, replacement) -> existing)) // On duplicate key, keep the
 															// existing tool
 			.values()
@@ -185,47 +185,66 @@ public class McpServerAutoConfiguration {
 		// Create the server with both tool and resource capabilities
 		SyncSpecification serverBuilder = McpServer.sync(transportProvider).serverInfo(serverInfo);
 
-		List<SyncToolSpecification> toolSpecifications = new ArrayList<>(tools.stream().flatMap(List::stream).toList());
-
-		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
-			.map(pr -> List.of(pr.getToolCallbacks()))
-			.flatMap(List::stream)
-			.filter(fc -> fc instanceof ToolCallback)
-			.map(fc -> (ToolCallback) fc)
-			.toList();
-
-		toolSpecifications.addAll(this.toSyncToolSpecifications(providerToolCallbacks, serverProperties));
-
-		if (!CollectionUtils.isEmpty(toolSpecifications)) {
-			serverBuilder.tools(toolSpecifications);
+		// Tools
+		if (serverProperties.getCapabilities().isTool()) {
+			logger.info("Enable tools capabilities, notification: " + serverProperties.isToolChangeNotification());
 			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools: " + toolSpecifications.size() + ", notification: "
-					+ serverProperties.isToolChangeNotification());
+
+			List<SyncToolSpecification> toolSpecifications = new ArrayList<>(
+					tools.stream().flatMap(List::stream).toList());
+
+			List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
+				.map(pr -> List.of(pr.getToolCallbacks()))
+				.flatMap(List::stream)
+				.filter(fc -> fc instanceof ToolCallback)
+				.map(fc -> (ToolCallback) fc)
+				.toList();
+
+			toolSpecifications.addAll(this.toSyncToolSpecifications(providerToolCallbacks, serverProperties));
+
+			if (!CollectionUtils.isEmpty(toolSpecifications)) {
+				serverBuilder.tools(toolSpecifications);
+				logger.info("Registered tools: " + toolSpecifications.size());
+			}
 		}
 
-		List<SyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(resourceSpecifications)) {
-			serverBuilder.resources(resourceSpecifications);
+		// Resources
+		if (serverProperties.getCapabilities().isResource()) {
+			logger.info(
+					"Enable resources capabilities, notification: " + serverProperties.isResourceChangeNotification());
 			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources: " + resourceSpecifications.size() + ", notification: "
-					+ serverProperties.isResourceChangeNotification());
+
+			List<SyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
+			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
+				serverBuilder.resources(resourceSpecifications);
+				logger.info("Registered resources: " + resourceSpecifications.size());
+			}
 		}
 
-		List<SyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
-		if (!CollectionUtils.isEmpty(promptSpecifications)) {
-			serverBuilder.prompts(promptSpecifications);
+		// Prompts
+		if (serverProperties.getCapabilities().isPrompt()) {
+			logger.info("Enable prompts capabilities, notification: " + serverProperties.isPromptChangeNotification());
 			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts: " + promptSpecifications.size() + ", notification: "
-					+ serverProperties.isPromptChangeNotification());
+
+			List<SyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
+			if (!CollectionUtils.isEmpty(promptSpecifications)) {
+				serverBuilder.prompts(promptSpecifications);
+				logger.info("Registered prompts: " + promptSpecifications.size());
+			}
 		}
 
-		List<SyncCompletionSpecification> completionSpecifications = completions.stream()
-			.flatMap(List::stream)
-			.toList();
-		if (!CollectionUtils.isEmpty(completionSpecifications)) {
-			serverBuilder.completions(completionSpecifications);
+		// Completions
+		if (serverProperties.getCapabilities().isCompletion()) {
+			logger.info("Enable completions capabilities");
 			capabilitiesBuilder.completions();
-			logger.info("Registered completions: " + completionSpecifications.size());
+
+			List<SyncCompletionSpecification> completionSpecifications = completions.stream()
+				.flatMap(List::stream)
+				.toList();
+			if (!CollectionUtils.isEmpty(completionSpecifications)) {
+				serverBuilder.completions(completionSpecifications);
+				logger.info("Registered completions: " + completionSpecifications.size());
+			}
 		}
 
 		rootsChangeConsumers.ifAvailable(consumer -> {
@@ -257,11 +276,11 @@ public class McpServerAutoConfiguration {
 			McpServerProperties serverProperties) {
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
-		return tools.stream()
-			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), // Key:
-																				// tool
-																				// name
-					tool -> tool, // Value: the tool itself
+		return tools.stream() // Key: tool name
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool, // Value:
+																								// the
+																								// tool
+																								// itself
 					(existing, replacement) -> existing)) // On duplicate key, keep the
 															// existing tool
 			.values()
@@ -303,35 +322,51 @@ public class McpServerAutoConfiguration {
 
 		toolSpecifications.addAll(this.toAsyncToolSpecification(providerToolCallbacks, serverProperties));
 
+		// Tools
+		if (serverProperties.getCapabilities().isTool()) {
+			logger.info("Enable tools capabilities, notification: " + serverProperties.isToolChangeNotification());
+			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
+		}
+
 		if (!CollectionUtils.isEmpty(toolSpecifications)) {
 			serverBuilder.tools(toolSpecifications);
-			capabilitiesBuilder.tools(serverProperties.isToolChangeNotification());
-			logger.info("Registered tools: " + toolSpecifications.size() + ", notification: "
-					+ serverProperties.isToolChangeNotification());
+			logger.info("Registered tools: " + toolSpecifications.size());
+		}
+
+		// Resources
+		if (serverProperties.getCapabilities().isResource()) {
+			logger.info(
+					"Enable resources capabilities, notification: " + serverProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
 		}
 
 		List<AsyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
 		if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 			serverBuilder.resources(resourceSpecifications);
-			capabilitiesBuilder.resources(false, serverProperties.isResourceChangeNotification());
-			logger.info("Registered resources: " + resourceSpecifications.size() + ", notification: "
-					+ serverProperties.isResourceChangeNotification());
+			logger.info("Registered resources: " + resourceSpecifications.size());
 		}
 
+		// Prompts
+		if (serverProperties.getCapabilities().isPrompt()) {
+			logger.info("Enable prompts capabilities, notification: " + serverProperties.isPromptChangeNotification());
+			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
+		}
 		List<AsyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
 		if (!CollectionUtils.isEmpty(promptSpecifications)) {
 			serverBuilder.prompts(promptSpecifications);
-			capabilitiesBuilder.prompts(serverProperties.isPromptChangeNotification());
-			logger.info("Registered prompts: " + promptSpecifications.size() + ", notification: "
-					+ serverProperties.isPromptChangeNotification());
+			logger.info("Registered prompts: " + promptSpecifications.size());
 		}
 
+		// Completions
+		if (serverProperties.getCapabilities().isCompletion()) {
+			logger.info("Enable completions capabilities");
+			capabilitiesBuilder.completions();
+		}
 		List<AsyncCompletionSpecification> completionSpecifications = completions.stream()
 			.flatMap(List::stream)
 			.toList();
 		if (!CollectionUtils.isEmpty(completionSpecifications)) {
 			serverBuilder.completions(completionSpecifications);
-			capabilitiesBuilder.completions();
 			logger.info("Registered completions: " + completionSpecifications.size());
 		}
 

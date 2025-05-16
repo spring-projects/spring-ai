@@ -91,7 +91,12 @@ All properties are prefixed with `spring.ai.mcp.server`:
 |`stdio` |Enable/disable stdio transport |`false`
 |`name` |Server name for identification |`mcp-server`
 |`version` |Server version |`1.0.0`
+|`instructions` |Optional instructions to provide guidance to the client on how to interact with this server |`null`
 |`type` |Server type (SYNC/ASYNC) |`SYNC`
+|`capabilities.resource` |Enable/disable resource capabilities |`true`
+|`capabilities.tool` |Enable/disable tool capabilities |`true`
+|`capabilities.prompt` |Enable/disable prompt capabilities |`true`
+|`capabilities.completion` |Enable/disable completion capabilities |`true`
 |`resource-change-notification` |Enable resource change notifications |`true`
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
@@ -111,6 +116,17 @@ When activated, it automatically handles the configuration of synchronous tool s
 * **Asynchronous Server** - The asynchronous server implementation uses `McpAsyncServer` and is optimized for non-blocking operations. 
 To enable this server type, configure your application with `spring.ai.mcp.server.type=ASYNC`. 
 This server type automatically sets up asynchronous tool specifications with built-in Project Reactor support.
+
+== Server Capabilities
+
+The MCP Server supports four main capability types that can be individually enabled or disabled:
+
+* **Tools** - Enable/disable tool capabilities with `spring.ai.mcp.server.capabilities.tool=true|false`
+* **Resources** - Enable/disable resource capabilities with `spring.ai.mcp.server.capabilities.resource=true|false`
+* **Prompts** - Enable/disable prompt capabilities with `spring.ai.mcp.server.capabilities.prompt=true|false`
+* **Completions** - Enable/disable completion capabilities with `spring.ai.mcp.server.capabilities.completion=true|false`
+
+All capabilities are enabled by default. Disabling a capability will prevent the server from registering and exposing the corresponding features to clients.
 
 == Transport Options
 
@@ -141,6 +157,17 @@ public ToolCallbackProvider myTools(...) {
 }
 ----
 
+or directly as individual tool callbacks:
+
+[source,java]
+----
+@Bean
+public ToolCallback myTool(...) {
+    // Create and return a single tool callback
+    return new ToolCallback(...);
+}
+----
+
 or using the low-level API:
 
 [source,java]
@@ -151,6 +178,13 @@ public List<McpServerFeatures.SyncToolSpecification> myTools(...) {
     return tools;
 }
 ----
+
+The auto-configuration will automatically detect and register all tool callbacks from:
+* Individual `ToolCallback` beans
+* Lists of `ToolCallback` beans
+* `ToolCallbackProvider` beans
+
+Tools are de-duplicated by name, with the first occurrence of each tool name being used.
 
 === link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/resources/[Resource Management]
 
@@ -210,6 +244,33 @@ public List<McpServerFeatures.SyncPromptSpecification> myPrompts() {
 }
 ----
 
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/completions/[Completion Management]
+
+Provides a standardized way for servers to expose completion capabilities to clients.
+
+* Support for both sync and async completion specifications
+* Automatic registration through Spring beans:
+
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncCompletionSpecification> myCompletions() {
+    var completion = new McpServerFeatures.SyncCompletionSpecification(
+        "code-completion", 
+        "Provides code completion suggestions",
+        (exchange, request) -> {
+            // Implementation that returns completion suggestions
+            return new McpSchema.CompletionResult(List.of(
+                new McpSchema.Completion("suggestion1", "First suggestion"),
+                new McpSchema.Completion("suggestion2", "Second suggestion")
+            ));
+        }
+    );
+    
+    return List.of(completion);
+}
+----
+
 === link:https://spec.modelcontextprotocol.io/specification/2024-11-05/client/roots/#root-list-changes[Root Change Consumers]
 
 When roots change, clients that support `listChanged` send a Root Change notification.
@@ -254,7 +315,13 @@ spring:
         name: webmvc-mcp-server
         version: 1.0.0
         type: SYNC
+        instructions: "This server provides weather information tools and resources"
         sse-message-endpoint: /mcp/messages
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
 ----
 
 === WebFlux Server Configuration
@@ -268,7 +335,13 @@ spring:
         name: webflux-mcp-server
         version: 1.0.0
         type: ASYNC  # Recommended for reactive applications
+        instructions: "This reactive server provides weather information tools and resources"
         sse-message-endpoint: /mcp/messages
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
 ----
 
 === Creating a Spring Boot Application with MCP Server
