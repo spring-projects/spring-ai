@@ -16,24 +16,17 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
+import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -55,6 +48,14 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
+import reactor.core.publisher.Flux;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -345,6 +346,39 @@ class BedrockProxyChatModelIT {
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
+	}
+
+	/**
+	 * @author Brave Lin
+	 * URL:https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html
+	 * @param modelName
+	 */
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	void cachePointTest(String modelName) {
+		String systemMessageStr= """
+				You are a helpful AI assistant. Your name is spring.
+				You are an AI assistant that helps people find information.
+				Your name is spring
+				You should reply to the user's request with your name and also in the style of a pirate.
+				""";
+		//Loop 50 times to make the token reach the minimum condition for using the cache
+		String newSystemMessage=systemMessageStr.repeat(50);
+
+		UserMessage userMessage = new UserMessage(
+				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+		Message systemMessage = new SystemMessage(newSystemMessage);
+		Prompt prompt = new Prompt(List.of(
+				systemMessage,
+				ConverseApiUtils.buildCachePointMesssage(),//add chache point
+				userMessage),
+				ToolCallingChatOptions.builder().model(modelName).build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResults()).hasSize(1);
+		Generation generation = response.getResults().get(0);
+		assertThat(generation.getOutput().getText()).contains("Blackbeard");
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
+		logger.info(response.toString());
 	}
 
 }
