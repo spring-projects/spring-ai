@@ -132,6 +132,56 @@ public class McpServerProperties {
 	 */
 	private ServerType type = ServerType.SYNC;
 
+	private Capabilities capabilities = new Capabilities();
+
+	public static class Capabilities {
+
+		private boolean resource = true;
+
+		private boolean tool = true;
+
+		private boolean prompt = true;
+
+		private boolean completion = true;
+
+		public boolean isResource() {
+			return resource;
+		}
+
+		public void setResource(boolean resource) {
+			this.resource = resource;
+		}
+
+		public boolean isTool() {
+			return tool;
+		}
+
+		public void setTool(boolean tool) {
+			this.tool = tool;
+		}
+
+		public boolean isPrompt() {
+			return prompt;
+		}
+
+		public void setPrompt(boolean prompt) {
+			this.prompt = prompt;
+		}
+
+		public boolean isCompletion() {
+			return completion;
+		}
+
+		public void setCompletion(boolean completion) {
+			this.completion = completion;
+		}
+
+	}
+
+	public Capabilities getCapabilities() {
+		return capabilities;
+	}
+
 	/**
 	 * Server types supported by the MCP server.
 	 */
