@@ -37,11 +37,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.AbstractPlatformTransactionManager;
-import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.slf4j.Logger;
@@ -54,6 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Vitale
  * @author Linar Abzaltdinov
  * @author Mark Pollack
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class JdbcChatMemoryRepository implements ChatMemoryRepository {
@@ -66,14 +62,14 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepository.class);
 
-	private JdbcChatMemoryRepository(DataSource dataSource, JdbcChatMemoryRepositoryDialect dialect,
+	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect,
 			PlatformTransactionManager txManager) {
-		Assert.notNull(dataSource, "dataSource cannot be null");
+		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
-		this.jdbcTemplate = new JdbcTemplate(dataSource);
+		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
 		this.transactionTemplate = new TransactionTemplate(
-				txManager != null ? txManager : new DataSourceTransactionManager(dataSource));
+				txManager != null ? txManager : new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 	}
 
 	@Override
@@ -200,7 +196,18 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		public JdbcChatMemoryRepository build() {
 			DataSource effectiveDataSource = resolveDataSource();
 			JdbcChatMemoryRepositoryDialect effectiveDialect = resolveDialect(effectiveDataSource);
-			return new JdbcChatMemoryRepository(effectiveDataSource, effectiveDialect, this.platformTransactionManager);
+			return new JdbcChatMemoryRepository(resolveJdbcTemplate(), effectiveDialect,
+					this.platformTransactionManager);
+		}
+
+		private JdbcTemplate resolveJdbcTemplate() {
+			if (this.jdbcTemplate != null) {
+				return this.jdbcTemplate;
+			}
+			if (this.dataSource != null) {
+				return new JdbcTemplate(this.dataSource);
+			}
+			throw new IllegalArgumentException("DataSource must be set (either via dataSource() or jdbcTemplate())");
 		}
 
 		private DataSource resolveDataSource() {
