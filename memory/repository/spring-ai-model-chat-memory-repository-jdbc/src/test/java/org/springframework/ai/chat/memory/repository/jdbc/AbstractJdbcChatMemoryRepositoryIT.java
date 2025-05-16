@@ -29,13 +29,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.sql.Timestamp;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,19 +46,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Base class for integration tests for {@link JdbcChatMemoryRepository}.
  *
  * @author Mark Pollack
+ * @author Yanming Zhou
  */
+@ContextConfiguration(classes = AbstractJdbcChatMemoryRepositoryIT.TestConfiguration.class)
 public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 	@Autowired
-	protected ChatMemoryRepository chatMemoryRepository;
+	protected JdbcChatMemoryRepository chatMemoryRepository;
 
 	@Autowired
 	protected JdbcTemplate jdbcTemplate;
-
-	@Test
-	void correctChatMemoryRepositoryInstance() {
-		assertThat(chatMemoryRepository).isInstanceOf(ChatMemoryRepository.class);
-	}
 
 	@ParameterizedTest
 	@CsvSource({ "Message from assistant,ASSISTANT", "Message from user,USER", "Message from system,SYSTEM" })
@@ -158,11 +154,6 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 	@Test
 	void testMessageOrder() {
-		// Create a repository using the from method to detect the dialect
-		JdbcChatMemoryRepository repository = JdbcChatMemoryRepository.builder()
-			.jdbcTemplate(jdbcTemplate)
-			.dialect(JdbcChatMemoryRepositoryDialect.from(jdbcTemplate.getDataSource()))
-			.build();
 
 		var conversationId = UUID.randomUUID().toString();
 
@@ -174,10 +165,10 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 		// Save messages in the expected order
 		List<Message> orderedMessages = List.of(firstMessage, secondMessage, thirdMessage, fourthMessage);
-		repository.saveAll(conversationId, orderedMessages);
+		chatMemoryRepository.saveAll(conversationId, orderedMessages);
 
 		// Retrieve messages using the repository
-		List<Message> retrievedMessages = repository.findByConversationId(conversationId);
+		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(retrievedMessages).hasSize(4);
 
 		// Get the actual order from the retrieved messages
@@ -192,14 +183,11 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 	 * Base configuration for all integration tests.
 	 */
 	@ImportAutoConfiguration({ DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class })
-	static abstract class BaseTestConfiguration {
+	static class TestConfiguration {
 
 		@Bean
-		ChatMemoryRepository chatMemoryRepository(JdbcTemplate jdbcTemplate, DataSource dataSource) {
-			return JdbcChatMemoryRepository.builder()
-				.jdbcTemplate(jdbcTemplate)
-				.dialect(JdbcChatMemoryRepositoryDialect.from(dataSource))
-				.build();
+		ChatMemoryRepository chatMemoryRepository(DataSource dataSource) {
+			return JdbcChatMemoryRepository.builder().dataSource(dataSource).build();
 		}
 
 	}

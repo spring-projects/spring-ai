@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
@@ -27,15 +26,11 @@ import org.springframework.test.context.jdbc.Sql;
  * @author Jonathan Leijendekker
  * @author Thomas Vitale
  * @author Mark Pollack
+ * @author Yanming Zhou
  */
-@SpringBootTest(classes = JdbcChatMemoryRepositoryMysqlIT.TestConfiguration.class)
+@SpringBootTest
 @TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:mariadb:10.3.39:///" })
 @Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-mariadb.sql")
 class JdbcChatMemoryRepositoryMysqlIT extends AbstractJdbcChatMemoryRepositoryIT {
-
-	@SpringBootConfiguration
-	static class TestConfiguration extends BaseTestConfiguration {
-
-	}
 
 }
