@@ -17,24 +17,63 @@ Check the https://github.com/spring-projects/spring-ai/blob/main/models/spring-a
 == Prerequisites
 
 * **Create an API Key**:
-Visit https://docs.perplexity.ai/guides/getting-started[here] to create an API Key. Configure it using the `spring.ai.openai.api-key` property in your Spring AI project.
+Visit https://docs.perplexity.ai/guides/getting-started[here] to create an API Key.
+Configure it using the `spring.ai.openai.api-key` property in your Spring AI project.
 
 * **Set the Perplexity Base URL**:
 Set the `spring.ai.openai.base-url` property to `https://api.perplexity.ai`.
 
 * **Select a Perplexity Model**:
-Use the `spring.ai.openai.chat.model=<model name>` property to specify the model. Refer to https://docs.perplexity.ai/guides/model-cards[Supported Models] for available options.
+Use the `spring.ai.openai.chat.model=<model name>` property to specify the model.
+Refer to https://docs.perplexity.ai/guides/model-cards[Supported Models] for available options.
 
 * **Set the chat completions path**:
-Set the `spring.ai.openai.chat.completions-path` to `/chat/completions` . Refer to https://docs.perplexity.ai/api-reference/chat-completions[chat completions api] for more details.
+Set the `spring.ai.openai.chat.completions-path` to `/chat/completions`.
+Refer to https://docs.perplexity.ai/api-reference/chat-completions[chat completions api] for more details.
 
-Example environment variables configuration:
+You can set these configuration properties in your `application.properties` file:
 
-[source,shell]
+[source,properties]
 ----
-export SPRING_AI_OPENAI_API_KEY=<INSERT PERPLEXITY API KEY HERE>
-export SPRING_AI_OPENAI_BASE_URL=https://api.perplexity.ai
-export SPRING_AI_OPENAI_CHAT_MODEL=llama-3.1-sonar-small-128k-online
+spring.ai.openai.api-key=<your-perplexity-api-key>
+spring.ai.openai.base-url=https://api.perplexity.ai
+spring.ai.openai.chat.model=llama-3.1-sonar-small-128k-online
+spring.ai.openai.chat.completions-path=/chat/completions
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference custom environment variables:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${PERPLEXITY_API_KEY}
+      base-url: ${PERPLEXITY_BASE_URL}
+      chat:
+        model: ${PERPLEXITY_MODEL}
+        completions-path: ${PERPLEXITY_COMPLETIONS_PATH}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export PERPLEXITY_API_KEY=<your-perplexity-api-key>
+export PERPLEXITY_BASE_URL=https://api.perplexity.ai
+export PERPLEXITY_MODEL=llama-3.1-sonar-small-128k-online
+export PERPLEXITY_COMPLETIONS_PATH=/chat/completions
+----
+
+You can also set these configurations programmatically in your application code:
+
+[source,java]
+----
+// Retrieve configuration from secure sources or environment variables
+String apiKey = System.getenv("PERPLEXITY_API_KEY");
+String baseUrl = System.getenv("PERPLEXITY_BASE_URL");
+String model = System.getenv("PERPLEXITY_MODEL");
+String completionsPath = System.getenv("PERPLEXITY_COMPLETIONS_PATH");
 ----
 
 === Add Repositories and BOM

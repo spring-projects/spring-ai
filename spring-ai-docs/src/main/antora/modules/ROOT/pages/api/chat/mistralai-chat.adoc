@@ -8,13 +8,41 @@ Check the xref:_openai_api_compatibility[OpenAI API compatibility] section to le
 == Prerequisites
 
 You will need to create an API with Mistral AI to access Mistral AI language models.
-Create an account at https://auth.mistral.ai/ui/registration[Mistral AI registration page] and generate the token on the https://console.mistral.ai/api-keys/[API Keys page].
-The Spring AI project defines a configuration property named `spring.ai.mistralai.api-key` that you should set to the value of the `API Key` obtained from console.mistral.ai.
-Exporting an environment variable is one way to set that configuration property:
 
-[source,shell]
+Create an account at https://auth.mistral.ai/ui/registration[Mistral AI registration page] and generate the token on the https://console.mistral.ai/api-keys/[API Keys page].
+
+The Spring AI project defines a configuration property named `spring.ai.mistralai.api-key` that you should set to the value of the `API Key` obtained from console.mistral.ai.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_MISTRALAI_API_KEY=<INSERT KEY HERE>
+spring.ai.mistralai.api-key=<your-mistralai-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference a custom environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    mistralai:
+      api-key: ${MISTRALAI_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export MISTRALAI_API_KEY=<your-mistralai-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("MISTRALAI_API_KEY");
 ----
 
 === Add Repositories and BOM
