@@ -20,6 +20,7 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
@@ -37,11 +38,6 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.AbstractPlatformTransactionManager;
-import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.slf4j.Logger;
@@ -54,6 +50,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Vitale
  * @author Linar Abzaltdinov
  * @author Mark Pollack
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class JdbcChatMemoryRepository implements ChatMemoryRepository {
@@ -64,16 +61,14 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private final JdbcChatMemoryRepositoryDialect dialect;
 
-	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepository.class);
-
 	private JdbcChatMemoryRepository(DataSource dataSource, JdbcChatMemoryRepositoryDialect dialect,
-			PlatformTransactionManager txManager) {
+			Optional<PlatformTransactionManager> txManager) {
 		Assert.notNull(dataSource, "dataSource cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 		this.dialect = dialect;
 		this.transactionTemplate = new TransactionTemplate(
-				txManager != null ? txManager : new DataSourceTransactionManager(dataSource));
+				txManager.orElseGet(() -> new DataSourceTransactionManager(dataSource)));
 	}
 
 	@Override
@@ -200,7 +195,8 @@ public class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		public JdbcChatMemoryRepository build() {
 			DataSource effectiveDataSource = resolveDataSource();
 			JdbcChatMemoryRepositoryDialect effectiveDialect = resolveDialect(effectiveDataSource);
-			return new JdbcChatMemoryRepository(effectiveDataSource, effectiveDialect, this.platformTransactionManager);
+			return new JdbcChatMemoryRepository(effectiveDataSource, effectiveDialect,
+					Optional.ofNullable(this.platformTransactionManager));
 		}
 
 		private DataSource resolveDataSource() {
