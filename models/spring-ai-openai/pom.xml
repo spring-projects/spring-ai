@@ -45,7 +45,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-client-chat</artifactId>
+			<artifactId>spring-ai-model</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
