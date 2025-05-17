@@ -35,6 +35,7 @@ public class BedrockCohereModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
+		.withPropertyValues("spring.ai.bedrock.aws.region=us-east-1")
 		.withBean(ObjectMapper.class, ObjectMapper::new);
 
 	@Test
