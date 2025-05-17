@@ -233,7 +233,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					toolCallResult != null ? toolCallResult : ""));
 		}
 
-		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()), returnDirect);
+		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
+				returnDirect);
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
