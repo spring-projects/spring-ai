@@ -146,7 +146,7 @@ It automatically converts custom capability handlers registered as Spring beans 
 Allows servers to expose tools that can be invoked by language models. The MCP Server Boot Starter provides:
 
 * Change notification support
-* Tools are automatically converted to sync/async specifications based on server type
+* xref:api/tools.adoc[Spring AI Tools] are automatically converted to sync/async specifications based on server type
 * Automatic tool specification through Spring beans:
 
 [source,java]
@@ -155,17 +155,6 @@ Allows servers to expose tools that can be invoked by language models. The MCP S
 public ToolCallbackProvider myTools(...) {
     List<ToolCallback> tools = ...
     return ToolCallbackProvider.from(tools);
-}
-----
-
-or directly as individual tool callbacks:
-
-[source,java]
-----
-@Bean
-public ToolCallback myTool(...) {
-    // Create and return a single tool callback
-    return new ToolCallback(...);
 }
 ----
 
@@ -186,6 +175,10 @@ The auto-configuration will automatically detect and register all tool callbacks
 * `ToolCallbackProvider` beans
 
 Tools are de-duplicated by name, with the first occurrence of each tool name being used.
+
+==== Tool Context Support
+
+The xref:api/tools.adoc#_tool_context[ToolContext] is supported, allowing contextual information to be passed to tool calls. It contains an `McpSyncServerExchange` instance under the `exchange` key, accessible via `McpToolUtils.getMcpExchange(toolContext)`. See this https://github.com/spring-projects/spring-ai-examples/blob/3fab8483b8deddc241b1e16b8b049616604b7767/model-context-protocol/sampling/mcp-weather-webmvc-server/src/main/java/org/springframework/ai/mcp/sample/server/WeatherService.java#L59-L126[example] demonstrating `exchange.loggingNotification(...)` and `exchange.createMessage(...)`.
 
 === link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/resources/[Resource Management]
 
