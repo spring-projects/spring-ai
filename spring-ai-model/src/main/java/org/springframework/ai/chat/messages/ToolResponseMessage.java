@@ -16,6 +16,10 @@
 
 package org.springframework.ai.chat.messages;
 
+import org.springframework.lang.Nullable;
+
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,6 +28,7 @@ import java.util.Objects;
  * The ToolResponseMessage class represents a message with a function content in a chat
  * application.
  *
+ * @author Jemin Huh
  * @author Christian Tzolov
  * @since 1.0.0
  */
@@ -35,7 +40,7 @@ public class ToolResponseMessage extends AbstractMessage {
 		this(responses, Map.of());
 	}
 
-	public ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
+	private ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
 		super(MessageType.TOOL, "", metadata);
 		this.responses = responses;
 	}
@@ -70,6 +75,47 @@ public class ToolResponseMessage extends AbstractMessage {
 	}
 
 	public record ToolResponse(String id, String name, String responseData) {
+
+	}
+
+	public ToolResponseMessage copy() {
+		return new ToolResponseMessage(getResponses(), Map.copyOf(this.metadata));
+	}
+
+	public ToolResponseMessage.Builder mutate() {
+		return new Builder().responses(getResponses()).metadata(Map.copyOf(this.metadata));
+	}
+
+	public static ToolResponseMessage.Builder builder() {
+		return new ToolResponseMessage.Builder();
+	}
+
+	public static class Builder {
+
+		private List<ToolResponse> responses;
+
+		private Map<String, Object> metadata = new HashMap<>();
+
+		public ToolResponseMessage.Builder responses(List<ToolResponse> responses) {
+			this.responses = responses;
+			return this;
+		}
+
+		public ToolResponseMessage.Builder media(@Nullable ToolResponse... responses) {
+			if (responses != null) {
+				this.responses = Arrays.asList(responses);
+			}
+			return this;
+		}
+
+		public ToolResponseMessage.Builder metadata(Map<String, Object> metadata) {
+			this.metadata = metadata;
+			return this;
+		}
+
+		public ToolResponseMessage build() {
+			return new ToolResponseMessage(this.responses, this.metadata);
+		}
 
 	}
 

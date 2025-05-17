@@ -50,6 +50,7 @@ import org.springframework.util.CollectionUtils;
 /**
  * Default implementation of {@link ToolCallingManager}.
  *
+ * @author Jemin Huh
  * @author Thomas Vitale
  * @since 1.0.0
  */
@@ -154,8 +155,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			toolContextMap = new HashMap<>(toolCallingChatOptions.getToolContext());
 
 			List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-			messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-					assistantMessage.getToolCalls()));
+			messageHistory.add(assistantMessage.copy());
 
 			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY,
 					buildConversationHistoryBeforeToolExecution(prompt, assistantMessage));
@@ -167,8 +167,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
 			AssistantMessage assistantMessage) {
 		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-		messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-				assistantMessage.getToolCalls()));
+		messageHistory.add(assistantMessage.copy());
 		return messageHistory;
 	}
 
@@ -234,7 +233,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					toolCallResult != null ? toolCallResult : ""));
 		}
 
-		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()), returnDirect);
+		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
+				returnDirect);
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
