@@ -73,8 +73,10 @@ class DefaultToolCallingManagerIT {
 			.build();
 
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("Answer", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("Answer")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))
+				.build())))
 			.build();
 
 		ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
