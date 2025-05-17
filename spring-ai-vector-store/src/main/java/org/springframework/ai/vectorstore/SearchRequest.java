@@ -24,6 +24,8 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 /**
  * Similarity search request. Use the {@link SearchRequest#builder()} to create the
@@ -283,8 +285,20 @@ public class SearchRequest {
 		 */
 		public Builder filterExpression(@Nullable String textExpression) {
 			this.searchRequest.filterExpression = (textExpression != null)
-					? new FilterExpressionTextParser().parse(textExpression) : null;
+					? new FilterExpressionTextParser().parse(escapeTextExpression(textExpression)) : null;
 			return this;
+		}
+
+		private String escapeTextExpression(String expression) {
+			Pattern pattern = Pattern.compile("'([^']*)'");
+			Matcher matcher = pattern.matcher(expression);
+			StringBuffer sb = new StringBuffer();
+			while (matcher.find()) {
+				String content = matcher.group(1).replace("\\", "\\\\").replace(".", "\\.");
+				matcher.appendReplacement(sb, "'" + content + "'");
+			}
+			matcher.appendTail(sb);
+			return sb.toString();
 		}
 
 		public SearchRequest build() {
