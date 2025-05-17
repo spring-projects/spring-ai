@@ -104,6 +104,7 @@ All properties are prefixed with `spring.ai.mcp.server`:
 |`sse-message-endpoint` | Custom SSE Message endpoint path for web transport to be used by the client to send messages|`/mcp/message`
 |`sse-endpoint` |Custom SSE endpoint path for web transport |`/sse`
 |`base-url` | Optional URL prefix. For example `base-url=/api/v1` means that the client should access the sse endpont at `/api/v1` + `sse-endpoint` and the message endpoint is `/api/v1` + `sse-message-endpoint` | -
+|`request-timeout` | Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations. | `20` seconds
 |===
 
 == Sync/Async Server Types
