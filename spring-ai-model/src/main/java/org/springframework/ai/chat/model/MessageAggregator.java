@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
  * Helper that for streaming chat responses, aggregate the chat response messages into a
  * single AssistantMessage. Job is performed in parallel to the chat response processing.
  *
+ * @author Jemin Huh
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Thomas Vitale
@@ -133,9 +134,10 @@ public class MessageAggregator {
 				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
-			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(
-					new AssistantMessage(messageTextContentRef.get().toString(), messageMetadataMapRef.get()),
-					generationMetadataRef.get())), chatResponseMetadata));
+			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(AssistantMessage.builder()
+				.text(messageTextContentRef.get().toString())
+				.metadata(messageMetadataMapRef.get())
+				.build(), generationMetadataRef.get())), chatResponseMetadata));
 
 			messageTextContentRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());

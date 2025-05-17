@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
  * The Prompt class represents a prompt used in AI model requests. A prompt consists of
  * one or more messages and additional chat options.
  *
+ * @author Jemin Huh
  * @author Mark Pollack
  * @author luocongqiu
  * @author Thomas Vitale
@@ -177,8 +178,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 				messagesCopy.add(systemMessage.copy());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
-				messagesCopy.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-						assistantMessage.getToolCalls()));
+				messagesCopy.add(assistantMessage.copy());
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
 				messagesCopy.add(new ToolResponseMessage(new ArrayList<>(toolResponseMessage.getResponses()),
