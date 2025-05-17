@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -133,6 +134,22 @@ public class McpServerProperties {
 	private ServerType type = ServerType.SYNC;
 
 	private Capabilities capabilities = new Capabilities();
+
+	/**
+	 * Sets the duration to wait for server responses before timing out requests. This
+	 * timeout applies to all requests made through the client, including tool calls,
+	 * resource access, and prompt operations.
+	 */
+	private Duration requestTimeout = Duration.ofSeconds(20);
+
+	public Duration getRequestTimeout() {
+		return this.requestTimeout;
+	}
+
+	public void setRequestTimeout(Duration requestTimeout) {
+		Assert.notNull(requestTimeout, "Request timeout must not be null");
+		this.requestTimeout = requestTimeout;
+	}
 
 	public Capabilities getCapabilities() {
 		return this.capabilities;
