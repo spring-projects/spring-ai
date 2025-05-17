@@ -19,15 +19,14 @@ package org.springframework.ai.model;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
  * @author Christian Tzolov
@@ -170,14 +169,6 @@ public class ModelOptionsUtilsTests {
 		// Person.class)).isInstanceOf(Exception.class);
 	}
 
-	public static class Person {
-
-		public String name;
-
-		public Integer age;
-
-	}
-
 	@Test
 	public void getJsonPropertyValues() {
 		record TestRecord(@JsonProperty("field1") String fieldA, @JsonProperty("field2") String fieldB) {
@@ -185,6 +176,14 @@ public class ModelOptionsUtilsTests {
 		}
 		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).hasSize(2);
 		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).containsExactly("field1", "field2");
+	}
+
+	public static class Person {
+
+		public String name;
+
+		public Integer age;
+
 	}
 
 	public interface TestPortableOptions extends ModelOptions {

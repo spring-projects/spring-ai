@@ -16,14 +16,15 @@
 
 package org.springframework.ai.vectorstore.observation;
 
+import java.util.List;
+
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.springframework.ai.document.Document;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,9 +55,9 @@ class VectorStoreQueryResponseObservationHandlerTests {
 	@Test
 	void whenEmptyQueryResponseThenOutputNothing(CapturedOutput output) {
 		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Vector Store Query Response:
+				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
 				[]
 				""");
 	}
@@ -65,9 +66,9 @@ class VectorStoreQueryResponseObservationHandlerTests {
 	void whenNonEmptyQueryResponseThenOutputIt(CapturedOutput output) {
 		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
 		context.setQueryResponse(List.of(new Document("doc1"), new Document("doc2")));
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Vector Store Query Response:
+				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
 				["doc1", "doc2"]
 				""");
 	}

@@ -6,14 +6,47 @@ Spring AI supports DALL-E, the Image generation model from Azure OpenAI.
 == Prerequisites
 
 Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
-Spring AI defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
-There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
-Exporting environment variables is one way to set these configuration properties:
 
-[source,shell]
+Spring AI defines two configuration properties:
+
+1. `spring.ai.azure.openai.api-key`: Set this to the value of the `API Key` obtained from Azure.
+2. `spring.ai.azure.openai.endpoint`: Set this to the endpoint URL obtained when provisioning your model in Azure.
+
+You can set these configuration properties in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
-export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
+spring.ai.azure.openai.api-key=<your-azure-openai-api-key>
+spring.ai.azure.openai.endpoint=<your-azure-openai-endpoint>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference custom environment variables:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    azure:
+      openai:
+        api-key: ${AZURE_OPENAI_API_KEY}
+        endpoint: ${AZURE_OPENAI_ENDPOINT}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AZURE_OPENAI_API_KEY=<your-azure-openai-api-key>
+export AZURE_OPENAI_ENDPOINT=<your-azure-openai-endpoint>
+----
+
+You can also set these configurations programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key and endpoint from secure sources or environment variables
+String apiKey = System.getenv("AZURE_OPENAI_API_KEY");
+String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
 ----
 
 === Deployment Name

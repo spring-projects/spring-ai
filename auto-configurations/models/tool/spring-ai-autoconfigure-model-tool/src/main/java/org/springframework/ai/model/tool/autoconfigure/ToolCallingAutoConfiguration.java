@@ -16,9 +16,13 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
@@ -39,9 +43,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Auto-configuration for common tool calling features of {@link ChatModel}.

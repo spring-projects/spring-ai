@@ -16,17 +16,18 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.util.List;
+
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +45,7 @@ class ChatModelPromptContentObservationHandlerTests {
 	@Test
 	void whenNotSupportedObservationContextThenReturnFalse() {
 		var context = new Observation.Context();
-		assertThat(observationHandler.supportsContext(context)).isFalse();
+		assertThat(this.observationHandler.supportsContext(context)).isFalse();
 	}
 
 	@Test
@@ -53,7 +54,7 @@ class ChatModelPromptContentObservationHandlerTests {
 			.prompt(new Prompt(List.of(), ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		assertThat(observationHandler.supportsContext(context)).isTrue();
+		assertThat(this.observationHandler.supportsContext(context)).isTrue();
 	}
 
 	@Test
@@ -62,9 +63,9 @@ class ChatModelPromptContentObservationHandlerTests {
 			.prompt(new Prompt(List.of(), ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
+				INFO  o.s.a.c.o.ChatModelPromptContentObservationHandler -- Chat Model Prompt Content:
 				[]
 				""");
 	}
@@ -75,9 +76,9 @@ class ChatModelPromptContentObservationHandlerTests {
 			.prompt(new Prompt("supercalifragilisticexpialidocious", ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
+				INFO  o.s.a.c.o.ChatModelPromptContentObservationHandler -- Chat Model Prompt Content:
 				["supercalifragilisticexpialidocious"]
 				""");
 	}
@@ -91,9 +92,9 @@ class ChatModelPromptContentObservationHandlerTests {
 					ChatOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
+				INFO  o.s.a.c.o.ChatModelPromptContentObservationHandler -- Chat Model Prompt Content:
 				["you're a chimney sweep", "supercalifragilisticexpialidocious"]
 				""");
 	}

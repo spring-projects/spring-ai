@@ -208,7 +208,7 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpSyncClientConfigurer,
+	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
 			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
@@ -227,7 +227,7 @@ public class McpClientAutoConfiguration {
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
 
-				spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
+				spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
 
 				var client = spec.build();
 

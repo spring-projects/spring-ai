@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -42,6 +41,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.util.Assert;
 
 /**
  * Memory is retrieved added into the prompt's system text.
@@ -52,7 +52,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(PromptChatMemoryAdvisor.class);
 
@@ -97,7 +97,7 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public int getOrder() {
-		return order;
+		return this.order;
 	}
 
 	@Override
@@ -186,7 +186,7 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	/**
 	 * Builder for PromptChatMemoryAdvisor.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 

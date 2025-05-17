@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.Map;
+
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -27,8 +29,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import java.util.Map;
 
 /**
  * A {@link CallAdvisor} that uses a {@link ChatModel} to generate a response.
@@ -51,7 +51,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 
 		ChatClientRequest formattedChatClientRequest = augmentWithFormatInstructions(chatClientRequest);
 
-		ChatResponse chatResponse = chatModel.call(formattedChatClientRequest.prompt());
+		ChatResponse chatResponse = this.chatModel.call(formattedChatClientRequest.prompt());
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponse)
 			.context(Map.copyOf(formattedChatClientRequest.context()))
@@ -90,7 +90,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ChatModel chatModel;
 

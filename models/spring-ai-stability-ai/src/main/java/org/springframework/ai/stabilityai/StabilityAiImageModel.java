@@ -130,14 +130,13 @@ public class StabilityAiImageModel implements ImageModel {
 					defaultOptions.getResponseFormat()))
 			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
 			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
-			.stylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStyle()))
 			// Always set the stability-specific defaults
 			.cfgScale(defaultOptions.getCfgScale())
 			.clipGuidancePreset(defaultOptions.getClipGuidancePreset())
 			.sampler(defaultOptions.getSampler())
 			.seed(defaultOptions.getSeed())
 			.steps(defaultOptions.getSteps())
-			.stylePreset(defaultOptions.getStylePreset());
+			.stylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStylePreset()));
 		if (runtimeOptions instanceof StabilityAiImageOptions) {
 			StabilityAiImageOptions stabilityOptions = (StabilityAiImageOptions) runtimeOptions;
 			// Handle Stability AI specific image options

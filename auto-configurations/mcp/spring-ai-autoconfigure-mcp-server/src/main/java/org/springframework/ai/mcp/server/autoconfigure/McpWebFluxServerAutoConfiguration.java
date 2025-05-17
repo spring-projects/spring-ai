@@ -61,6 +61,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 1.0.0
  * @see McpServerProperties
  * @see WebFluxSseServerTransportProvider
@@ -76,8 +77,8 @@ public class McpWebFluxServerAutoConfiguration {
 	public WebFluxSseServerTransportProvider webFluxTransport(ObjectProvider<ObjectMapper> objectMapperProvider,
 			McpServerProperties serverProperties) {
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-		return new WebFluxSseServerTransportProvider(objectMapper, serverProperties.getSseMessageEndpoint(),
-				serverProperties.getSseEndpoint());
+		return new WebFluxSseServerTransportProvider(objectMapper, serverProperties.getBaseUrl(),
+				serverProperties.getSseMessageEndpoint(), serverProperties.getSseEndpoint());
 	}
 
 	// Router function for SSE transport used by Spring WebFlux to start an HTTP server.

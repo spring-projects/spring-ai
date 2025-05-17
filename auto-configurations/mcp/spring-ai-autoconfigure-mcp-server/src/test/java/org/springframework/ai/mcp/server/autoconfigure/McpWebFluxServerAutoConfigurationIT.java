@@ -61,4 +61,11 @@ class McpWebFluxServerAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void serverBaseUrlConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.base-url=/test")
+			.run(context -> assertThat(context.getBean(WebFluxSseServerTransportProvider.class)).extracting("baseUrl")
+				.isEqualTo("/test"));
+	}
+
 }

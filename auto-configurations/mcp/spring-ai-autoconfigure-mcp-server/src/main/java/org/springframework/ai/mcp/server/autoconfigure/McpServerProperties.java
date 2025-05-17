@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -131,6 +132,28 @@ public class McpServerProperties {
 	 * </ul>
 	 */
 	private ServerType type = ServerType.SYNC;
+
+	private Capabilities capabilities = new Capabilities();
+
+	/**
+	 * Sets the duration to wait for server responses before timing out requests. This
+	 * timeout applies to all requests made through the client, including tool calls,
+	 * resource access, and prompt operations.
+	 */
+	private Duration requestTimeout = Duration.ofSeconds(20);
+
+	public Duration getRequestTimeout() {
+		return this.requestTimeout;
+	}
+
+	public void setRequestTimeout(Duration requestTimeout) {
+		Assert.notNull(requestTimeout, "Request timeout must not be null");
+		this.requestTimeout = requestTimeout;
+	}
+
+	public Capabilities getCapabilities() {
+		return this.capabilities;
+	}
 
 	/**
 	 * Server types supported by the MCP server.
@@ -258,6 +281,50 @@ public class McpServerProperties {
 
 	public Map<String, String> getToolResponseMimeType() {
 		return this.toolResponseMimeType;
+	}
+
+	public static class Capabilities {
+
+		private boolean resource = true;
+
+		private boolean tool = true;
+
+		private boolean prompt = true;
+
+		private boolean completion = true;
+
+		public boolean isResource() {
+			return this.resource;
+		}
+
+		public void setResource(boolean resource) {
+			this.resource = resource;
+		}
+
+		public boolean isTool() {
+			return this.tool;
+		}
+
+		public void setTool(boolean tool) {
+			this.tool = tool;
+		}
+
+		public boolean isPrompt() {
+			return this.prompt;
+		}
+
+		public void setPrompt(boolean prompt) {
+			this.prompt = prompt;
+		}
+
+		public boolean isCompletion() {
+			return this.completion;
+		}
+
+		public void setCompletion(boolean completion) {
+			this.completion = completion;
+		}
+
 	}
 
 }

@@ -16,11 +16,11 @@
 
 package org.springframework.ai.vectorstore.cosmosdb.autoconfigure;
 
-import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.util.Arrays;
 import java.util.List;
+
+import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for CosmosDB Vector Store.

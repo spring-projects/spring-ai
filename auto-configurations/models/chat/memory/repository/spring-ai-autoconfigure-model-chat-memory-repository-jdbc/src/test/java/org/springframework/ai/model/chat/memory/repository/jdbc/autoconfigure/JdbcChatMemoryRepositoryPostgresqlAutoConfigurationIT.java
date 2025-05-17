@@ -55,12 +55,14 @@ class JdbcChatMemoryRepositoryPostgresqlAutoConfigurationIT {
 
 	@Test
 	void jdbcChatMemoryScriptDatabaseInitializer_shouldNotRunSchemaInit() {
+		// CHECKSTYLE:OFF
 		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=never")
 			.run(context -> {
 				assertThat(context).doesNotHaveBean("jdbcChatMemoryScriptDatabaseInitializer");
 				// Optionally, check that the schema is not initialized (could check table
 				// absence if needed)
 			});
+		// CHECKSTYLE:ON
 	}
 
 	@Test

@@ -178,7 +178,7 @@ class CassandraRichSchemaVectorStoreIT {
 				IllegalStateException ise = Assertions.assertThrows(IllegalStateException.class,
 						() -> createStore(context, List.of(), false, false));
 
-				Assertions.assertEquals("column all_minilm_l6_v2_embedding does not exist", ise.getMessage());
+				Assertions.assertEquals("index all_minilm_l6_v2_ann does not exist", ise.getMessage());
 			}
 			finally {
 				CassandraVectorStore.dropKeyspace(builder);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.transport.Transport;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -50,6 +51,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -89,7 +91,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 			new Document("3", getText("classpath:/test/data/great.depression.txt"), Map.of("meta2", "meta2")));
 
 	@Test
-	public void addAndSearchTest() {
+	void addAndSearchTest() {
 
 		this.contextRunner.run(context -> {
 			OpenSearchVectorStore vectorStore = context.getBean(OpenSearchVectorStore.class);
@@ -148,7 +150,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	}
 
 	@Test
-	public void autoConfigurationDisabledWhenTypeIsNone() {
+	void autoConfigurationDisabledWhenTypeIsNone() {
 		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
 			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isEmpty();
 			assertThat(context.getBeansOfType(OpenSearchVectorStore.class)).isEmpty();
@@ -157,7 +159,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	}
 
 	@Test
-	public void autoConfigurationEnabledByDefault() {
+	void autoConfigurationEnabledByDefault() {
 		this.contextRunner.run(context -> {
 			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
@@ -166,7 +168,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	}
 
 	@Test
-	public void autoConfigurationEnabledWhenTypeIsOpensearch() {
+	void autoConfigurationEnabledWhenTypeIsOpensearch() {
 		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=opensearch").run(context -> {
 			assertThat(context.getBeansOfType(OpenSearchVectorStoreProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
@@ -175,7 +177,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	}
 
 	@Test
-	public void autoConfigurationWithSslBundles() {
+	void autoConfigurationWithSslBundles() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(SslAutoConfiguration.class)).run(context -> {
 			assertThat(context.getBeansOfType(SslBundles.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(OpenSearchClient.class)).isNotEmpty();
@@ -183,6 +185,27 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(OpenSearchVectorStore.class);
 		});
+	}
+
+	@Test
+	void testPathPrefixIsConfigured() {
+		this.contextRunner
+			.withPropertyValues(OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".pathPrefix=/custom-path",
+					"spring.ai.vectorstore.opensearch.initialize-schema=false" // Prevent
+																				// schema
+																				// initialization
+			)
+			.run(context -> {
+				// Verify the property is correctly set in the properties bean
+				OpenSearchVectorStoreProperties properties = context.getBean(OpenSearchVectorStoreProperties.class);
+				assertThat(properties.getPathPrefix()).isEqualTo("/custom-path");
+
+				// Verify the OpenSearchClient was configured with the correct pathPrefix
+				OpenSearchClient client = context.getBean(OpenSearchClient.class);
+				Transport transport = (Transport) ReflectionTestUtils.getField(client, "transport");
+				String configuredPathPrefix = (String) ReflectionTestUtils.getField(transport, "pathPrefix");
+				assertThat(configuredPathPrefix).isEqualTo("/custom-path");
+			});
 	}
 
 	private String getText(String uri) {

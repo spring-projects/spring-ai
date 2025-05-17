@@ -18,6 +18,7 @@ package org.springframework.ai.tool.observation;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;

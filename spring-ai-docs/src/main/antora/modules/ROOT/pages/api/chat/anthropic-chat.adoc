@@ -10,14 +10,42 @@ Spring AI provides dedicated xref:api/chat/bedrock-converse.adoc[Amazon Bedrock 
 
 == Prerequisites
 
-You will need to create an API key on Anthropic portal.
-Create an account at https://console.anthropic.com/dashboard[Anthropic API dashboard] and generate the api key on the https://console.anthropic.com/settings/keys[Get API Keys] page.
-The Spring AI project defines a configuration property named `spring.ai.anthropic.api-key` that you should set to the value of the `API Key` obtained from anthropic.com.
-Exporting an environment variable is one way to set that configuration property:
+You will need to create an API key on the Anthropic portal.
 
-[source,shell]
+Create an account at https://console.anthropic.com/dashboard[Anthropic API dashboard] and generate the API key on the https://console.anthropic.com/settings/keys[Get API Keys] page.
+
+The Spring AI project defines a configuration property named `spring.ai.anthropic.api-key` that you should set to the value of the `API Key` obtained from anthropic.com.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_ANTHROPIC_API_KEY=<INSERT KEY HERE>
+spring.ai.anthropic.api-key=<your-anthropic-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference a custom environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export ANTHROPIC_API_KEY=<your-anthropic-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("ANTHROPIC_API_KEY");
 ----
 
 === Add Repositories and BOM
@@ -165,7 +193,7 @@ TIP: In addition to the model specific https://github.com/spring-projects/spring
 
 You can register custom Java Tools with the `AnthropicChatModel` and have the Anthropic Claude model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/anthropic-chat-functions.adoc[Anthropic Function Calling].
+Read more about xref:api/tools.adoc[Tool Calling].
 
 == Multimodal
 

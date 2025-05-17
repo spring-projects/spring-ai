@@ -235,14 +235,16 @@ class VectorStoreDocumentRetrieverTests {
 	}
 
 	@Test
-	void retrieveWithQueryObjectAndRequestFilterExpressionBuilder() {
-		FilterExpressionBuilder b = new FilterExpressionBuilder();
+	void retrieveWithQueryObjectAndFilterExpressionObject() {
 		var mockVectorStore = mock(VectorStore.class);
 		var documentRetriever = VectorStoreDocumentRetriever.builder().vectorStore(mockVectorStore).build();
 
+		// Create a Filter.Expression object directly
+		var filterExpression = new Filter.Expression(EQ, new Filter.Key("location"), new Filter.Value("Rivendell"));
+
 		var query = Query.builder()
 			.text("test query")
-			.context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, b.eq("location", "Rivendell").build()))
+			.context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filterExpression))
 			.build();
 		documentRetriever.retrieve(query);
 
@@ -255,8 +257,7 @@ class VectorStoreDocumentRetrieverTests {
 		assertThat(searchRequest.getQuery()).isEqualTo("test query");
 		assertThat(searchRequest.getSimilarityThreshold()).isEqualTo(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
 		assertThat(searchRequest.getTopK()).isEqualTo(SearchRequest.DEFAULT_TOP_K);
-		assertThat(searchRequest.getFilterExpression())
-			.isEqualTo(new FilterExpressionBuilder().eq("location", "Rivendell").build());
+		assertThat(searchRequest.getFilterExpression()).isEqualTo(filterExpression);
 	}
 
 	static final class TenantContextHolder {

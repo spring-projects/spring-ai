@@ -267,16 +267,19 @@ public class OCICohereChatOptions implements ChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(model, maxTokens, compartment, servingMode, preambleOverride, temperature, topP, topK, stop,
-				frequencyPenalty, presencePenalty, documents, tools);
+		return Objects.hash(this.model, this.maxTokens, this.compartment, this.servingMode, this.preambleOverride,
+				this.temperature, this.topP, this.topK, this.stop, this.frequencyPenalty, this.presencePenalty,
+				this.documents, this.tools);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 
 		OCICohereChatOptions that = (OCICohereChatOptions) o;
 

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.image.observation;
 
-import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;

@@ -31,9 +31,9 @@ public class ChatObservationProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.chat.observations";
 
 	/**
-	 * Whether to include the completion content in the observations.
+	 * Whether to log the completion content in the observations.
 	 */
-	private boolean includeCompletion = false;
+	private boolean logCompletion = false;
 
 	/**
 	 * Whether to log the prompt content in the observations.
@@ -45,12 +45,12 @@ public class ChatObservationProperties {
 	 */
 	private boolean includeErrorLogging = false;
 
-	public boolean isIncludeCompletion() {
-		return this.includeCompletion;
+	public boolean isLogCompletion() {
+		return this.logCompletion;
 	}
 
-	public void setIncludeCompletion(boolean includeCompletion) {
-		this.includeCompletion = includeCompletion;
+	public void setLogCompletion(boolean logCompletion) {
+		this.logCompletion = logCompletion;
 	}
 
 	public boolean isLogPrompt() {

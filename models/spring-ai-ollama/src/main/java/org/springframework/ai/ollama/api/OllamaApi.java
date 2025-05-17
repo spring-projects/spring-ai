@@ -54,9 +54,11 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @since 0.8.0
  */
 // @formatter:off
-public class OllamaApi {
+public final class OllamaApi {
 
-	public static Builder builder() { return new Builder(); }
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static final String REQUEST_BODY_NULL_ERROR = "The request body can not be null.";
 
