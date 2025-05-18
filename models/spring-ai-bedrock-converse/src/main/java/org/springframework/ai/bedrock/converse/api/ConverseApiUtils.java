@@ -60,6 +60,7 @@ import org.springframework.util.StringUtils;
 /**
  * Amazon Bedrock Converse API utils.
  *
+ * @author Jemin Huh
  * @author Wei Jiang
  * @author Christian Tzolov
  * @author Alexandros Pappas
@@ -140,7 +141,7 @@ public final class ConverseApiUtils {
 					}
 				}
 
-				AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
+				AssistantMessage assistantMessage = AssistantMessage.builder().text("").toolCalls(toolCalls).build();
 				Generation toolCallGeneration = new Generation(assistantMessage,
 						ChatGenerationMetadata.builder().finishReason("tool_use").build());
 
@@ -175,8 +176,7 @@ public final class ConverseApiUtils {
 			else if (nextEvent instanceof ContentBlockDeltaEvent contentBlockDeltaEvent) {
 				if (contentBlockDeltaEvent.delta().type().equals(ContentBlockDelta.Type.TEXT)) {
 
-					var generation = new Generation(
-							new AssistantMessage(contentBlockDeltaEvent.delta().text(), Map.of()),
+					var generation = new Generation(new AssistantMessage(contentBlockDeltaEvent.delta().text()),
 							ChatGenerationMetadata.builder()
 								.finishReason(lastAggregation.metadataAggregation().stopReason())
 								.build());

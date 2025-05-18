@@ -53,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for {@link Neo4jChatMemoryRepository}.
  *
+ * @author Jemin Huh
  * @author Enrico Rampazzo
  * @since 1.0.0
  */
@@ -263,9 +264,11 @@ class Neo4jChatMemoryRepositoryIT {
 	void handleAssistantMessageWithToolCalls() {
 		var conversationId = UUID.randomUUID().toString();
 
-		AssistantMessage assistantMessage = new AssistantMessage("Message with tool calls", Map.of(),
-				List.of(new AssistantMessage.ToolCall("id1", "type1", "name1", "arguments1"),
-						new AssistantMessage.ToolCall("id2", "type2", "name2", "arguments2")));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.text("Message with tool calls")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("id1", "type1", "name1", "arguments1"),
+					new AssistantMessage.ToolCall("id2", "type2", "name2", "arguments2")))
+			.build();
 
 		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(assistantMessage));
 
@@ -282,9 +285,11 @@ class Neo4jChatMemoryRepositoryIT {
 	void handleToolResponseMessage() {
 		var conversationId = UUID.randomUUID().toString();
 
-		ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List
-			.of(new ToolResponse("id1", "name1", "responseData1"), new ToolResponse("id2", "name2", "responseData2")),
-				Map.of("metadataKey", "metadataValue"));
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("id1", "name1", "responseData1"),
+					new ToolResponse("id2", "name2", "responseData2")))
+			.metadata(Map.of("metadataKey", "metadataValue"))
+			.build();
 
 		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(toolResponseMessage));
 
