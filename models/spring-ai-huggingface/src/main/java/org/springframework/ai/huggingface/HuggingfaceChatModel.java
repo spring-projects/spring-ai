@@ -39,6 +39,7 @@ import org.springframework.ai.huggingface.model.GenerateResponse;
  * An implementation of {@link ChatModel} that interfaces with HuggingFace Inference
  * Endpoints for text generation.
  *
+ * @author Jemin Huh
  * @author Mark Pollack
  * @author Jihoon Kim
  */
@@ -104,7 +105,8 @@ public class HuggingfaceChatModel implements ChatModel {
 					new TypeReference<Map<String, Object>>() {
 
 					});
-			Generation generation = new Generation(new AssistantMessage(generatedText, detailsMap));
+			Generation generation = new Generation(
+					AssistantMessage.builder().text(generatedText).metadata(detailsMap).build());
 			generations.add(generation);
 		}
 		return new ChatResponse(generations);
