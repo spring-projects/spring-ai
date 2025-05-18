@@ -40,7 +40,7 @@ public class ToolResponseMessage extends AbstractMessage {
 		this(responses, Map.of());
 	}
 
-	private ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
+	protected ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
 		super(MessageType.TOOL, "", metadata);
 		this.responses = responses;
 	}
