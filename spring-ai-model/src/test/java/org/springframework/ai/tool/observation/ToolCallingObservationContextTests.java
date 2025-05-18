@@ -34,9 +34,28 @@ class ToolCallingObservationContextTests {
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.build();
+		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void whenToolArgumentsIsNullThenReturn() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallArguments(null)
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("{}");
+	}
+
+	@Test
+	void whenToolArgumentsIsNotNullThenReturn() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("lizard")
 			.build();
 		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("lizard");
 	}
 
 	@Test
@@ -53,24 +72,6 @@ class ToolCallingObservationContextTests {
 			.toolCallArguments("lizard")
 			.toolMetadata(null)
 			.build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("toolMetadata cannot be null");
-	}
-
-	@Test
-	void whenToolCallInputIsNullThenThrow() {
-		assertThatThrownBy(() -> ToolCallingObservationContext.builder()
-			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
-			.toolCallArguments(null)
-			.build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallArguments cannot be null or empty");
-	}
-
-	@Test
-	void whenToolCallInputIsEmptyThenThrow() {
-		assertThatThrownBy(() -> ToolCallingObservationContext.builder()
-			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
-			.toolCallArguments("")
-			.build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallArguments cannot be null or empty");
 	}
 
 }
