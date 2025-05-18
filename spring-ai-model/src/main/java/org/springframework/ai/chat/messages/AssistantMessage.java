@@ -44,7 +44,7 @@ import org.springframework.util.StringUtils;
  */
 public class AssistantMessage extends AbstractMessage implements MediaContent {
 
-	private final List<ToolCall> toolCalls;
+	protected final List<ToolCall> toolCalls;
 
 	protected final List<Media> media;
 
@@ -56,7 +56,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		this(MessageUtils.readResource(resource));
 	}
 
-	private AssistantMessage(String content, Map<String, Object> metadata, List<ToolCall> toolCalls,
+	protected AssistantMessage(String content, Map<String, Object> metadata, List<ToolCall> toolCalls,
 			List<Media> media) {
 		super(MessageType.ASSISTANT, content, metadata);
 		Assert.notNull(toolCalls, "Tool calls must not be null");
