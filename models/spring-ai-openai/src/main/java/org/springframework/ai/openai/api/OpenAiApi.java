@@ -1367,14 +1367,15 @@ public class OpenAiApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl,
-			@JsonProperty("input_audio") InputAudio inputAudio) { // @formatter:on
+			@JsonProperty("input_audio") InputAudio inputAudio,
+			@JsonProperty("file") InputFile inputFile) { // @formatter:on
 
 			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
-				this("text", text, null, null);
+				this("text", text, null, null, null);
 			}
 
 			/**
@@ -1382,7 +1383,7 @@ public class OpenAiApi {
 			 * @param imageUrl The image content of the message.
 			 */
 			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl, null);
+				this("image_url", null, imageUrl, null, null);
 			}
 
 			/**
@@ -1390,7 +1391,15 @@ public class OpenAiApi {
 			 * @param inputAudio The audio content of the message.
 			 */
 			public MediaContent(InputAudio inputAudio) {
-				this("input_audio", null, null, inputAudio);
+				this("input_audio", null, null, inputAudio, null);
+			}
+
+			/**
+			 * Shortcut constructor for a file content
+			 * @param inputFile The file content of the message.
+			 */
+			public MediaContent(InputFile inputFile) {
+				this("file", null, null, null, inputFile);
 			}
 
 			/**
@@ -1425,6 +1434,18 @@ public class OpenAiApi {
 				public ImageUrl(String url) {
 					this(url, null);
 				}
+
+			}
+
+			/**
+			 * Constructor for base64-encoded file
+			 *
+			 * @param filename name of the file
+			 * @param fileData file data with format
+			 * "data:{mimetype};base64,{base64-encoded-image-data}".
+			 */
+			public record InputFile(@JsonProperty("filename") String filename,
+					@JsonProperty("file_data") String fileData) {
 
 			}
 
