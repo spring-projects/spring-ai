@@ -36,6 +36,7 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -59,6 +60,7 @@ import org.springframework.util.MimeType;
  * </ul>
  *
  * @author Christian Tzolov
+ * @author Wenli Tian
  */
 public final class McpToolUtils {
 
@@ -71,7 +73,6 @@ public final class McpToolUtils {
 	}
 
 	public static String prefixedToolName(String prefix, String toolName) {
-
 		if (StringUtils.isEmpty(prefix) || StringUtils.isEmpty(toolName)) {
 			throw new IllegalArgumentException("Prefix or toolName cannot be null or empty");
 		}
@@ -160,7 +161,7 @@ public final class McpToolUtils {
 	 * specifications</li>
 	 * </ul>
 	 * @param toolCallback the Spring AI function callback to convert
-	 * @param mimeType the MIME type of the output content
+	 * @param mimeType     the MIME type of the output content
 	 * @return an MCP SyncToolSpecification that wraps the function callback
 	 * @throws RuntimeException if there's an error during the function execution
 	 */
@@ -176,12 +177,12 @@ public final class McpToolUtils {
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					return new McpSchema.CallToolResult(List
-						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
+							.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult,
+									mimeType.toString())),
 							false);
 				}
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
 			}
 		});
@@ -195,7 +196,7 @@ public final class McpToolUtils {
 	public static Optional<McpSyncServerExchange> getMcpExchange(ToolContext toolContext) {
 		if (toolContext != null && toolContext.getContext().containsKey(TOOL_CONTEXT_MCP_EXCHANGE_KEY)) {
 			return Optional
-				.ofNullable((McpSyncServerExchange) toolContext.getContext().get(TOOL_CONTEXT_MCP_EXCHANGE_KEY));
+					.ofNullable((McpSyncServerExchange) toolContext.getContext().get(TOOL_CONTEXT_MCP_EXCHANGE_KEY));
 		}
 		return Optional.empty();
 	}
@@ -277,7 +278,7 @@ public final class McpToolUtils {
 	 * <li>Provide backpressure through Project Reactor</li>
 	 * </ul>
 	 * @param toolCallback the Spring AI tool callback to convert
-	 * @param mimeType the MIME type of the output content
+	 * @param mimeType     the MIME type of the output content
 	 * @return an MCP asynchronous tool specificaiotn that wraps the tool callback
 	 * @see McpServerFeatures.AsyncToolSpecification
 	 * @see Schedulers#boundedElastic()
@@ -289,8 +290,9 @@ public final class McpToolUtils {
 
 		return new AsyncToolSpecification(syncToolSpecification.tool(),
 				(exchange, map) -> Mono
-					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
-					.subscribeOn(Schedulers.boundedElastic()));
+						.fromCallable(
+								() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
+						.subscribeOn(Schedulers.boundedElastic()));
 	}
 
 	/**
@@ -365,4 +367,19 @@ public final class McpToolUtils {
 			"base64", "b64", "imageData" }) @Nullable String data) {
 	}
 
+	/**
+	 * Validates that there are no duplicate tool names in the provided callbacks.
+	 * <p>
+	 * This method ensures that each tool has a unique name, which is required for proper
+	 * tool resolution and execution.
+	 * @param toolCallbacks the tool callbacks to validate
+	 * @throws IllegalStateException if duplicate tool names are found
+	 */
+	public static void validateToolCallbacks(ToolCallback[] toolCallbacks) {
+		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
+		if (!duplicateToolNames.isEmpty()) {
+			throw new IllegalStateException(
+					"Multiple tools with the same name (%s)".formatted(String.join(", ", duplicateToolNames)));
+		}
+	}
 }

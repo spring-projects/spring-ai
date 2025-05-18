@@ -24,10 +24,10 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import io.modelcontextprotocol.util.Assert;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -67,6 +67,7 @@ import org.springframework.util.CollectionUtils;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Wenli Tian
  * @since 1.0.0
  * @see ToolCallbackProvider
  * @see AsyncMcpToolCallback
@@ -96,7 +97,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * clients.
 	 * @param mcpClients the list of MCP clients to use for discovering tools. Each client
 	 * typically connects to a different MCP server, allowing tool discovery from multiple
-	 * sources.
+	 *                   sources.
 	 * @throws IllegalArgumentException if mcpClients is null
 	 */
 	public AsyncMcpToolCallbackProvider(List<McpAsyncClient> mcpClients) {
@@ -139,41 +140,44 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 */
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-
-		List<ToolCallback> toolCallbackList = new ArrayList<>();
-
-		for (McpAsyncClient mcpClient : this.mcpClients) {
-
-			ToolCallback[] toolCallbacks = mcpClient.listTools()
-				.map(response -> response.tools()
-					.stream()
-					.filter(tool -> this.toolFilter.test(mcpClient, tool))
-					.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
-					.toArray(ToolCallback[]::new))
-				.block();
-
-			validateToolCallbacks(toolCallbacks);
-
-			toolCallbackList.addAll(List.of(toolCallbacks));
-		}
-
-		return toolCallbackList.toArray(new ToolCallback[0]);
+		// Use the new non-blocking method, but block here to comply with interface
+		// requirements
+		return getToolCallbacksAsync().block();
 	}
 
 	/**
-	 * Validates that there are no duplicate tool names in the provided callbacks.
+	 * Asynchronously retrieves tool callbacks, returning a Mono containing all tool
+	 * callbacks.
 	 * <p>
-	 * This method ensures that each tool has a unique name, which is required for proper
-	 * tool resolution and execution.
-	 * @param toolCallbacks the tool callbacks to validate
-	 * @throws IllegalStateException if duplicate tool names are found
+	 * This method provides a fully non-blocking way to retrieve tool callbacks,
+	 * suitable for use in reactive applications.
+	 * 
+	 * @return a Mono containing all tool callbacks
 	 */
-	private void validateToolCallbacks(ToolCallback[] toolCallbacks) {
-		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
-		if (!duplicateToolNames.isEmpty()) {
-			throw new IllegalStateException(
-					"Multiple tools with the same name (%s)".formatted(String.join(", ", duplicateToolNames)));
+	public Mono<ToolCallback[]> getToolCallbacksAsync() {
+		List<Mono<ToolCallback[]>> clientToolCallbacks = new ArrayList<>();
+
+		for (McpAsyncClient mcpClient : this.mcpClients) {
+			Mono<ToolCallback[]> toolCallbacksMono = mcpClient.listTools()
+					.map(response -> response.tools()
+							.stream()
+							.filter(tool -> this.toolFilter.test(mcpClient, tool))
+							.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
+							.toArray(ToolCallback[]::new))
+					.doOnNext(McpToolUtils::validateToolCallbacks);
+
+			clientToolCallbacks.add(toolCallbacksMono);
 		}
+
+		return Flux.concat(clientToolCallbacks)
+				.collectList()
+				.map(lists -> {
+					List<ToolCallback> allCallbacks = new ArrayList<>();
+					for (ToolCallback[] callbacks : lists) {
+						allCallbacks.addAll(List.of(callbacks));
+					}
+					return allCallbacks.toArray(new ToolCallback[0]);
+				});
 	}
 
 	/**
@@ -200,7 +204,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			return Flux.empty();
 		}
 
-		return Flux.fromArray(new AsyncMcpToolCallbackProvider(mcpClients).getToolCallbacks());
+		return Flux.from(new AsyncMcpToolCallbackProvider(mcpClients).getToolCallbacksAsync())
+				.flatMap(Flux::fromArray);
 	}
-
 }

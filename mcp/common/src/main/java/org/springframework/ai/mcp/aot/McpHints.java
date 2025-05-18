@@ -16,9 +16,11 @@
 
 package org.springframework.ai.mcp.aot;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,7 @@ import org.springframework.lang.Nullable;
  * </ul>
  *
  * @author Josh Long
+ * @author Wenli Tian
  * @since 1.0.0
  * @see RuntimeHintsRegistrar
  * @see McpSchema
@@ -58,7 +61,7 @@ public class McpHints implements RuntimeHintsRegistrar {
 	 * <li>Registers each discovered class for reflection access</li>
 	 * <li>Enables all member categories for complete reflection support</li>
 	 * </ol>
-	 * @param hints the hints instance to register hints with
+	 * @param hints       the hints instance to register hints with
 	 * @param classLoader the classloader to use (may be null)
 	 */
 	@Override
@@ -73,37 +76,53 @@ public class McpHints implements RuntimeHintsRegistrar {
 	/**
 	 * Discovers all inner classes of a given class.
 	 * <p>
-	 * This method recursively finds all nested classes (both declared and inherited) of
+	 * This method iteratively finds all nested classes (both declared and inherited) of
 	 * the provided class and converts them to type references.
 	 * @param clazz the class to find inner classes for
 	 * @return a set of type references for all discovered inner classes
 	 */
 	private Set<TypeReference> innerClasses(Class<?> clazz) {
-		var indent = new HashSet<String>();
-		this.findNestedClasses(clazz, indent);
-		return indent.stream().map(TypeReference::of).collect(Collectors.toSet());
+		Set<String> classNames = new HashSet<>();
+		findNestedClassesIteratively(clazz, classNames);
+		return classNames.stream().map(TypeReference::of).collect(Collectors.toSet());
 	}
 
 	/**
-	 * Recursively finds all nested classes of a given class.
+	 * Iteratively finds all nested classes of a given class, avoiding potential
+	 * stack overflow from recursion.
 	 * <p>
 	 * This method:
 	 * <ol>
-	 * <li>Collects both declared and inherited nested classes</li>
-	 * <li>Recursively processes each nested class</li>
-	 * <li>Adds the class names to the provided set</li>
+	 * <li>Uses a queue to store classes to be processed</li>
+	 * <li>Iteratively processes each class in the queue, finding its declared and
+	 * inherited nested classes</li>
+	 * <li>Adds the found class names to the provided set</li>
 	 * </ol>
-	 * @param clazz the class to find nested classes for
-	 * @param indent the set to collect class names in
+	 * 
+	 * @param rootClass  the root class to find nested classes for
+	 * @param classNames the set to collect class names in
 	 */
-	private void findNestedClasses(Class<?> clazz, Set<String> indent) {
-		var classes = new ArrayList<Class<?>>();
-		classes.addAll(Arrays.asList(clazz.getDeclaredClasses()));
-		classes.addAll(Arrays.asList(clazz.getClasses()));
-		for (var nestedClass : classes) {
-			this.findNestedClasses(nestedClass, indent);
+	private void findNestedClassesIteratively(Class<?> rootClass, Set<String> classNames) {
+		Queue<Class<?>> queue = new ArrayDeque<>();
+		queue.add(rootClass);
+
+		// Use breadth-first search to process all nested classes
+		while (!queue.isEmpty()) {
+			Class<?> current = queue.poll();
+
+			// Skip the root class itself
+			if (current != rootClass) {
+				classNames.add(current.getName());
+			}
+
+			// Collect declared and inherited nested classes
+			ArrayList<Class<?>> nestedClasses = new ArrayList<>();
+			nestedClasses.addAll(Arrays.asList(current.getDeclaredClasses()));
+			nestedClasses.addAll(Arrays.asList(current.getClasses()));
+
+			// Add found nested classes to the queue for further processing
+			queue.addAll(nestedClasses);
 		}
-		indent.addAll(classes.stream().map(Class::getName).toList());
 	}
 
 }

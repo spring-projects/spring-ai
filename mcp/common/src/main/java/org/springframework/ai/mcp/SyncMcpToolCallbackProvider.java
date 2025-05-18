@@ -62,6 +62,7 @@ import org.springframework.util.CollectionUtils;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Wenli Tian
  * @see ToolCallbackProvider
  * @see SyncMcpToolCallback
  * @see McpSyncClient
@@ -130,31 +131,16 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 		var array = this.mcpClients.stream()
-			.flatMap(mcpClient -> mcpClient.listTools()
-				.tools()
-				.stream()
-				.filter(tool -> this.toolFilter.test(mcpClient, tool))
-				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
-			.toArray(ToolCallback[]::new);
-		validateToolCallbacks(array);
+				.flatMap(mcpClient -> mcpClient.listTools()
+						.tools()
+						.stream()
+						.filter(tool -> this.toolFilter.test(mcpClient, tool))
+						.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
+				.toArray(ToolCallback[]::new);
+		McpToolUtils.validateToolCallbacks(array);
 		return array;
 	}
-
-	/**
-	 * Validates that there are no duplicate tool names in the provided callbacks.
-	 * <p>
-	 * This method ensures that each tool has a unique name, which is required for proper
-	 * tool resolution and execution.
-	 * @param toolCallbacks the tool callbacks to validate
-	 * @throws IllegalStateException if duplicate tool names are found
-	 */
-	private void validateToolCallbacks(ToolCallback[] toolCallbacks) {
-		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
-		if (!duplicateToolNames.isEmpty()) {
-			throw new IllegalStateException(
-					"Multiple tools with the same name (%s)".formatted(String.join(", ", duplicateToolNames)));
-		}
-	}
+	
 
 	/**
 	 * Creates a consolidated list of tool callbacks from multiple MCP clients.

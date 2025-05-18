@@ -68,12 +68,11 @@ public class SyncMcpToolCallback implements ToolCallback {
 	/**
 	 * Creates a new {@code SyncMcpToolCallback} instance.
 	 * @param mcpClient the MCP client to use for tool execution
-	 * @param tool the MCP tool definition to adapt
+	 * @param tool      the MCP tool definition to adapt
 	 */
 	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
 		this.mcpClient = mcpClient;
 		this.tool = tool;
-
 	}
 
 	/**
@@ -90,10 +89,10 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return DefaultToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
-			.description(this.tool.description())
-			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
-			.build();
+				.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
+				.description(this.tool.description())
+				.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
+				.build();
 	}
 
 	/**
