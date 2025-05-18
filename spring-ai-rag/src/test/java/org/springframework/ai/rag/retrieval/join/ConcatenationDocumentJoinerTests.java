@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
@@ -90,6 +89,29 @@ class ConcatenationDocumentJoinerTests {
 		assertThat(result).hasSize(4);
 		assertThat(result).extracting(Document::getId).containsExactlyInAnyOrder("1", "2", "3", "4");
 		assertThat(result).extracting(Document::getText).containsOnlyOnce("Content 2");
+	}
+
+	@Test
+	void shouldSortDocumentsByDescendingScore() {
+		//@formatter:off
+		DocumentJoiner documentJoiner = new ConcatenationDocumentJoiner();
+		var documentsForQuery = new HashMap<Query, List<List<Document>>>();
+		documentsForQuery.put(new Query("query1"), List.of(
+				List.of(
+					Document.builder().id("1").text("Content 1").score(0.81).build(),
+					Document.builder().id("2").text("Content 2").score(0.83).build()),
+				List.of(
+					Document.builder().id("3").text("Content 3").score(null).build())));
+		documentsForQuery.put(new Query("query2"), List.of(
+				List.of(
+						Document.builder().id("4").text("Content 4").score(0.85).build(),
+						Document.builder().id("5").text("Content 5").score(0.77).build())));
+
+		List<Document> result = documentJoiner.join(documentsForQuery);
+
+		assertThat(result).hasSize(5);
+		assertThat(result).extracting(Document::getId).containsExactly("4", "2", "1", "5", "3");
+		//@formatter:on
 	}
 
 }
