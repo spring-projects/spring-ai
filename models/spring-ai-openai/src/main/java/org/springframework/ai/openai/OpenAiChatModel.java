@@ -635,6 +635,10 @@ public class OpenAiChatModel implements ChatModel {
 			return new MediaContent(
 					new MediaContent.InputAudio(fromAudioData(media.getData()), MediaContent.InputAudio.Format.WAV));
 		}
+		if (MimeTypeUtils.parseMimeType("application/pdf").equals(mimeType)) {
+			return new MediaContent(new MediaContent.InputFile(media.getName(),
+					this.fromMediaData(media.getMimeType(), media.getData())));
+		}
 		else {
 			return new MediaContent(
 					new MediaContent.ImageUrl(this.fromMediaData(media.getMimeType(), media.getData())));
