@@ -18,7 +18,6 @@ package org.springframework.ai.oci.cohere;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import com.oracle.bmc.generativeaiinference.GenerativeAiInference;
@@ -61,6 +60,7 @@ import org.springframework.util.StringUtils;
 /**
  * {@link ChatModel} implementation that uses the OCI GenAI Chat API.
  *
+ * @author Jemin Huh
  * @author Anders Swanson
  * @author Alexandros Pappas
  * @since 1.0.0
@@ -200,7 +200,7 @@ public class OCICohereChatModel implements ChatModel {
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
 				.finishReason(resp.getFinishReason().getValue())
 				.build();
-			AssistantMessage message = new AssistantMessage(resp.getText(), Map.of());
+			AssistantMessage message = new AssistantMessage(resp.getText());
 			generations.add(new Generation(message, metadata));
 			return generations;
 		}

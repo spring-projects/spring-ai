@@ -127,6 +127,7 @@ import org.springframework.util.StringUtils;
  * 		.build();
  * }</pre>
  *
+ * @author Jemin Huh
  * @author Christian Tzolov
  * @author Grogdunn
  * @author luocongqiu
@@ -602,7 +603,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				})
 				.toList();
 
-			AssistantMessage assistantMessage = new AssistantMessage("", messageMetadata, assistantToolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.text("")
+				.metadata(messageMetadata)
+				.toolCalls(assistantToolCalls)
+				.build();
 
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
@@ -610,7 +615,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			List<Generation> generations = candidate.getContent()
 				.getPartsList()
 				.stream()
-				.map(part -> new AssistantMessage(part.getText(), messageMetadata))
+				.map(part -> AssistantMessage.builder().text(part.getText()).metadata(messageMetadata).build())
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
 
