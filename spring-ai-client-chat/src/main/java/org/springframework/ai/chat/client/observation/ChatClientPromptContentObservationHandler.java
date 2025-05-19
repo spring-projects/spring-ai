@@ -40,7 +40,7 @@ public class ChatClientPromptContentObservationHandler implements ObservationHan
 
 	@Override
 	public void onStop(ChatClientObservationContext context) {
-		logger.debug("Chat Client Prompt Content:\n{}", ObservabilityHelper.concatenateEntries(processPrompt(context)));
+		logger.info("Chat Client Prompt Content:\n{}", ObservabilityHelper.concatenateEntries(processPrompt(context)));
 	}
 
 	private Map<String, Object> processPrompt(ChatClientObservationContext context) {

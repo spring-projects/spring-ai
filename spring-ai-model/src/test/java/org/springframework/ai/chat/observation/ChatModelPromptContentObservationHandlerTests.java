@@ -65,7 +65,7 @@ class ChatModelPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
+				INFO  o.s.a.c.o.ChatModelPromptContentObservationHandler -- Chat Model Prompt Content:
 				[]
 				""");
 	}
@@ -78,7 +78,7 @@ class ChatModelPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
+				INFO  o.s.a.c.o.ChatModelPromptContentObservationHandler -- Chat Model Prompt Content:
 				["supercalifragilisticexpialidocious"]
 				""");
 	}
@@ -94,7 +94,7 @@ class ChatModelPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Model Prompt Content:
+				INFO  o.s.a.c.o.ChatModelPromptContentObservationHandler -- Chat Model Prompt Content:
 				["you're a chimney sweep", "supercalifragilisticexpialidocious"]
 				""");
 	}

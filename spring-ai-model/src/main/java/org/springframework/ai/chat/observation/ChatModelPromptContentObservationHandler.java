@@ -40,7 +40,7 @@ public class ChatModelPromptContentObservationHandler implements ObservationHand
 
 	@Override
 	public void onStop(ChatModelObservationContext context) {
-		logger.debug("Chat Model Prompt Content:\n{}", ObservabilityHelper.concatenateStrings(prompt(context)));
+		logger.info("Chat Model Prompt Content:\n{}", ObservabilityHelper.concatenateStrings(prompt(context)));
 	}
 
 	private List<String> prompt(ChatModelObservationContext context) {

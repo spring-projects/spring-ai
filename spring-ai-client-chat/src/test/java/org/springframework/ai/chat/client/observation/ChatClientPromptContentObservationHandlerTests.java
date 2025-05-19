@@ -63,7 +63,7 @@ class ChatClientPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Client Prompt Content:
+				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				[]
 				""");
 	}
@@ -75,7 +75,7 @@ class ChatClientPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Client Prompt Content:
+				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				["user":"supercalifragilisticexpialidocious"]
 				""");
 	}
@@ -90,7 +90,7 @@ class ChatClientPromptContentObservationHandlerTests {
 			.build();
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Client Prompt Content:
+				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				["system":"you're a chimney sweep", "user":"supercalifragilisticexpialidocious"]
 				""");
 	}

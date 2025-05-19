@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Linar Abzaltdinov
  * @author Mark Pollack
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
@@ -65,26 +66,19 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepository.class);
 
-	private JdbcChatMemoryRepository(DataSource dataSource, JdbcChatMemoryRepositoryDialect dialect,
+	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect,
 			PlatformTransactionManager txManager) {
-		Assert.notNull(dataSource, "dataSource cannot be null");
+		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
-		this.jdbcTemplate = new JdbcTemplate(dataSource);
+		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
 		this.transactionTemplate = new TransactionTemplate(
-				txManager != null ? txManager : new DataSourceTransactionManager(dataSource));
+				txManager != null ? txManager : new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
 	}
 
 	@Override
 	public List<String> findConversationIds() {
-		List<String> conversationIds = this.jdbcTemplate.query(this.dialect.getSelectConversationIdsSql(), rs -> {
-			var ids = new ArrayList<String>();
-			while (rs.next()) {
-				ids.add(rs.getString(1));
-			}
-			return ids;
-		});
-		return conversationIds != null ? conversationIds : List.of();
+		return this.jdbcTemplate.queryForList(dialect.getSelectConversationIdsSql(), String.class);
 	}
 
 	@Override
@@ -199,7 +193,18 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		public JdbcChatMemoryRepository build() {
 			DataSource effectiveDataSource = resolveDataSource();
 			JdbcChatMemoryRepositoryDialect effectiveDialect = resolveDialect(effectiveDataSource);
-			return new JdbcChatMemoryRepository(effectiveDataSource, effectiveDialect, this.platformTransactionManager);
+			return new JdbcChatMemoryRepository(resolveJdbcTemplate(), effectiveDialect,
+					this.platformTransactionManager);
+		}
+
+		private JdbcTemplate resolveJdbcTemplate() {
+			if (this.jdbcTemplate != null) {
+				return this.jdbcTemplate;
+			}
+			if (this.dataSource != null) {
+				return new JdbcTemplate(this.dataSource);
+			}
+			throw new IllegalArgumentException("DataSource must be set (either via dataSource() or jdbcTemplate())");
 		}
 
 		private DataSource resolveDataSource() {

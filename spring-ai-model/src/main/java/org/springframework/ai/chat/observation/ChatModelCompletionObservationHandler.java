@@ -40,7 +40,7 @@ public class ChatModelCompletionObservationHandler implements ObservationHandler
 
 	@Override
 	public void onStop(ChatModelObservationContext context) {
-		logger.debug("Chat Model Completion:\n{}", ObservabilityHelper.concatenateStrings(completion(context)));
+		logger.info("Chat Model Completion:\n{}", ObservabilityHelper.concatenateStrings(completion(context)));
 	}
 
 	private List<String> completion(ChatModelObservationContext context) {

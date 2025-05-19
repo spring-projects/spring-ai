@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.when;
  * Tests for {@link JdbcChatMemoryRepository.Builder}.
  *
  * @author Mark Pollack
+ * @author Yanming Zhou
  */
 public class JdbcChatMemoryRepositoryBuilderTests {
 
@@ -222,6 +224,16 @@ public class JdbcChatMemoryRepositoryBuilderTests {
 		assertThat(repository).isNotNull();
 		// Verify warning was logged (would need to use a logging framework test utility
 		// for this)
+	}
+
+	@Test
+	void repositoryShouldUseProvidedJdbcTemplate() throws SQLException {
+		DataSource dataSource = mock(DataSource.class);
+		JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+
+		JdbcChatMemoryRepository repository = JdbcChatMemoryRepository.builder().jdbcTemplate(jdbcTemplate).build();
+
+		assertThat(repository).extracting("jdbcTemplate").isSameAs(jdbcTemplate);
 	}
 
 }

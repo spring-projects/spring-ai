@@ -21,6 +21,49 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.EmitFailureHandler;
+import reactor.core.scheduler.Schedulers;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseMetrics;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
+import software.amazon.awssdk.services.bedrockruntime.model.DocumentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
+import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
+import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
+import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
+import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
+import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.Tool;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolConfiguration;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolInputSchema;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolResultBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolResultContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolSpecification;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
+import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
+import software.amazon.awssdk.services.bedrockruntime.model.CachePointBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.CachePointType;
+
 import org.springframework.ai.bedrock.converse.api.BedrockMediaFormat;
 import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.bedrock.converse.api.URLValidator;
@@ -771,6 +814,12 @@ public class BedrockProxyChatModel implements ChatModel {
 		private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
+			try {
+				region = DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
+			}
 		}
 
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {

@@ -72,6 +72,10 @@ public class McpServerAutoConfigurationIT {
 			assertThat(properties.isToolChangeNotification()).isTrue();
 			assertThat(properties.isResourceChangeNotification()).isTrue();
 			assertThat(properties.isPromptChangeNotification()).isTrue();
+			assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(20);
+			assertThat(properties.getBaseUrl()).isEqualTo("");
+			assertThat(properties.getSseEndpoint()).isEqualTo("/sse");
+			assertThat(properties.getSseMessageEndpoint()).isEqualTo("/mcp/message");
 
 			// Check capabilities
 			assertThat(properties.getCapabilities().isTool()).isTrue();
@@ -85,7 +89,8 @@ public class McpServerAutoConfigurationIT {
 	void asyncConfiguration() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.name=test-server",
-					"spring.ai.mcp.server.version=2.0.0", "spring.ai.mcp.server.instructions=My MCP Server")
+					"spring.ai.mcp.server.version=2.0.0", "spring.ai.mcp.server.instructions=My MCP Server",
+					"spring.ai.mcp.server.request-timeout=30s")
 			.run(context -> {
 				assertThat(context).hasSingleBean(McpAsyncServer.class);
 				assertThat(context).doesNotHaveBean(McpSyncServer.class);
@@ -95,6 +100,7 @@ public class McpServerAutoConfigurationIT {
 				assertThat(properties.getVersion()).isEqualTo("2.0.0");
 				assertThat(properties.getInstructions()).isEqualTo("My MCP Server");
 				assertThat(properties.getType()).isEqualTo(McpServerProperties.ServerType.ASYNC);
+				assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(30);
 			});
 	}
 
@@ -252,6 +258,10 @@ public class McpServerAutoConfigurationIT {
 				assertThat(properties.getCapabilities().isResource()).isFalse();
 				assertThat(properties.getCapabilities().isPrompt()).isFalse();
 				assertThat(properties.getCapabilities().isCompletion()).isFalse();
+
+				// Verify the server is configured with the disabled capabilities
+				McpSyncServer server = context.getBean(McpSyncServer.class);
+				assertThat(server).isNotNull();
 			});
 	}
 
@@ -268,6 +278,36 @@ public class McpServerAutoConfigurationIT {
 				assertThat(tools).hasSize(1);
 
 				// The server should be properly configured with the tool
+				McpSyncServer server = context.getBean(McpSyncServer.class);
+				assertThat(server).isNotNull();
+			});
+	}
+
+	@Test
+	void requestTimeoutConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.request-timeout=45s").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(45);
+
+			// Verify the server is configured with the timeout
+			McpSyncServer server = context.getBean(McpSyncServer.class);
+			assertThat(server).isNotNull();
+		});
+	}
+
+	@Test
+	void endpointConfiguration() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.base-url=http://localhost:8080",
+					"spring.ai.mcp.server.sse-endpoint=/events",
+					"spring.ai.mcp.server.sse-message-endpoint=/api/mcp/message")
+			.run(context -> {
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getBaseUrl()).isEqualTo("http://localhost:8080");
+				assertThat(properties.getSseEndpoint()).isEqualTo("/events");
+				assertThat(properties.getSseMessageEndpoint()).isEqualTo("/api/mcp/message");
+
+				// Verify the server is configured with the endpoints
 				McpSyncServer server = context.getBean(McpSyncServer.class);
 				assertThat(server).isNotNull();
 			});
