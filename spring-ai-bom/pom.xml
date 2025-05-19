@@ -1014,6 +1014,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Spring Boot starter for Chat Memory (with the default in-memory Chat memory repository) -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-chat-memory</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Spring Boot starters for Chat Memory Repository -->
 
 			<dependency>
