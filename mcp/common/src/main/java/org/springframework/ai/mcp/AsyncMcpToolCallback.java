@@ -21,6 +21,7 @@ import java.util.Map;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -52,6 +53,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Wenli Tian
  * @see ToolCallback
  * @see McpAsyncClient
  * @see Tool
@@ -65,7 +67,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	/**
 	 * Creates a new {@code AsyncMcpToolCallback} instance.
 	 * @param mcpClient the MCP client to use for tool execution
-	 * @param tool the MCP tool definition to adapt
+	 * @param tool      the MCP tool definition to adapt
 	 */
 	public AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool) {
 		this.asyncMcpClient = mcpClient;
@@ -106,21 +108,49 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 */
 	@Override
 	public String call(String functionInput) {
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		// Note that we use the original tool name here, not the adapted one from
-		// getToolDefinition
-		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).map(response -> {
-			if (response.isError() != null && response.isError()) {
-				throw new IllegalStateException("Error calling tool: " + response.content());
-			}
-			return ModelOptionsUtils.toJsonString(response.content());
-		}).block();
+		// For backward compatibility, use blocking call but internally use reactive
+		// method
+		return callAsync(functionInput).block();
 	}
 
 	@Override
 	public String call(String toolArguments, ToolContext toolContext) {
 		// ToolContext is not supported by the MCP tools
-		return this.call(toolArguments);
+		return callAsync(toolArguments, toolContext).block();
 	}
 
+	/**
+	 * Asynchronously executes the tool call, returning a Mono containing the
+	 * result.
+	 * <p>
+	 * This method provides a fully non-blocking way to call tools, suitable for use
+	 * in reactive applications.
+	 *
+	 * @param functionInput the tool input as a JSON string
+	 * @return a Mono containing the tool response
+	 */
+	public Mono<String> callAsync(String functionInput) {
+		return callAsync(functionInput, null);
+	}
+
+	/**
+	 * Asynchronously executes the tool call with tool context support, returning a
+	 * Mono containing the result.
+	 *
+	 * @param toolArguments the tool arguments as a JSON string
+	 * @param toolContext   the tool execution context
+	 * @return a Mono containing the tool response
+	 */
+	public Mono<String> callAsync(String toolArguments, ToolContext toolContext) {
+		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolArguments);
+		// Note that we use the original tool name here, not the adapted one from
+		// getToolDefinition
+		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).handle((response, sink) -> {
+			if (response.isError() != null && response.isError()) {
+                sink.error(new IllegalStateException("Error calling tool: " + response.content()));
+                return;
+            }
+            sink.next(ModelOptionsUtils.toJsonString(response.content()));
+		});
+	}
 }
