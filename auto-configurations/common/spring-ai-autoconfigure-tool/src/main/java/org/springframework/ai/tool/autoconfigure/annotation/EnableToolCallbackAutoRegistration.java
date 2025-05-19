@@ -23,10 +23,10 @@ import java.lang.annotation.*;
  * </p>
  * <pre>
  * {@code
- * &#64;Configuration
+ * Configuration
  *
 
-&#64;EnableToolCallbackAutoRegistration(basePackages = "com.example.tools")
+EnableToolCallbackAutoRegistration(basePackages = "com.example.tools")
  * public class MyToolConfig {
  * }
  * }
