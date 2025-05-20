@@ -77,8 +77,8 @@ public class ToolCallingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
-		return new DefaultToolExecutionExceptionProcessor(false);
+	ToolExecutionExceptionProcessor toolExecutionExceptionProcessor(ToolCallingProperties properties) {
+		return new DefaultToolExecutionExceptionProcessor(properties.isThrowExceptionOnError());
 	}
 
 	@Bean
