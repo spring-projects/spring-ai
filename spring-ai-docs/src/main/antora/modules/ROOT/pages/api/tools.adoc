@@ -1180,7 +1180,8 @@ ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversation
 
 === Exception Handling
 
-When a tool call fails, the exception is propagated as a `ToolExecutionException` which can be caught to handle the error. A `ToolExecutionExceptionProcessor` can be used to handle a `ToolExecutionException` with two outcomes: either producing an error message to be sent back to the AI model or throwing an exception to be handled by the caller.
+When a tool call fails, the exception is propagated as a `ToolExecutionException` which can be caught to handle the error. 
+A `ToolExecutionExceptionProcessor` can be used to handle a `ToolExecutionException` with two outcomes: either producing an error message to be sent back to the AI model or throwing an exception to be handled by the caller.
 
 [source,java]
 ----
@@ -1197,6 +1198,16 @@ public interface ToolExecutionExceptionProcessor {
 ----
 
 If you're using any of the Spring AI Spring Boot Starters, `DefaultToolExecutionExceptionProcessor` is the autoconfigured implementation of the `ToolExecutionExceptionProcessor` interface. By default, the error message is sent back to the model. The `DefaultToolExecutionExceptionProcessor` constructor lets you set the `alwaysThrow` attribute to `true` or `false`. If `true`, an exception will be thrown instead of sending an error message back to the model.
+
+You can use the ``spring.ai.tools.throw-exception-on-error` property to control the behavior of the `DefaultToolExecutionExceptionProcessor` bean:
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+
+| `spring.ai.tools.throw-exception-on-error` | If `true`, tool calling errors are thrown as exceptions for the caller to handle. If `false`, errors are converted to messages and sent back to the AI model, allowing it to process and respond to the error.| `false`
+|====
+
 
 [source,java]
 ----
