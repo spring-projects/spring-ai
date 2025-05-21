@@ -37,9 +37,9 @@ class BedrockProxyChatModelTest {
 	@Test
 	void shouldIgnoreExceptionAndUseDefault() {
 		try (MockedStatic<DefaultAwsRegionProviderChain> mocked = mockStatic(DefaultAwsRegionProviderChain.class)) {
-			when(awsRegionProviderBuilder.build().getRegion())
+			when(this.awsRegionProviderBuilder.build().getRegion())
 				.thenThrow(SdkClientException.builder().message("failed load").build());
-			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(awsRegionProviderBuilder);
+			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
 			BedrockProxyChatModel.builder().build();
 		}
 	}

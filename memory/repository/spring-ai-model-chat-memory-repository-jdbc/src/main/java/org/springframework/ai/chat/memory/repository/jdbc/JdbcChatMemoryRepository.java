@@ -21,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -78,7 +77,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public List<String> findConversationIds() {
-		return this.jdbcTemplate.queryForList(dialect.getSelectConversationIdsSql(), String.class);
+		return this.jdbcTemplate.queryForList(this.dialect.getSelectConversationIdsSql(), String.class);
 	}
 
 	@Override
