@@ -144,7 +144,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 		this.aws = aws;
 	}
 
-	static class Aws {
+	public static class Aws {
 
 		private String domainName;
 
