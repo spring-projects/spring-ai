@@ -41,13 +41,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.sql.DataSource;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -78,7 +71,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 		this.chatMemoryRepository.saveAll(conversationId, List.of(message));
 
-		assertThat(chatMemoryRepository.findConversationIds()).contains(conversationId);
+		assertThat(this.chatMemoryRepository.findConversationIds()).contains(conversationId);
 
 		// Use dialect to get the appropriate SQL query
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
@@ -103,7 +96,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 		this.chatMemoryRepository.saveAll(conversationId, messages);
 
-		assertThat(chatMemoryRepository.findConversationIds()).contains(conversationId);
+		assertThat(this.chatMemoryRepository.findConversationIds()).contains(conversationId);
 
 		// Use dialect to get the appropriate SQL query
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
@@ -179,10 +172,10 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 
 		// Save messages in the expected order
 		List<Message> orderedMessages = List.of(firstMessage, secondMessage, thirdMessage, fourthMessage);
-		chatMemoryRepository.saveAll(conversationId, orderedMessages);
+		this.chatMemoryRepository.saveAll(conversationId, orderedMessages);
 
 		// Retrieve messages using the repository
-		List<Message> retrievedMessages = chatMemoryRepository.findByConversationId(conversationId);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 		assertThat(retrievedMessages).hasSize(4);
 
 		// Get the actual order from the retrieved messages

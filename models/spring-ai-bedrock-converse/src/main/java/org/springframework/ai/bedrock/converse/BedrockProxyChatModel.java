@@ -791,7 +791,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private Builder() {
 			try {
-				region = DefaultAwsRegionProviderChain.builder().build().getRegion();
+				this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
 			}
 			catch (SdkClientException e) {
 				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
