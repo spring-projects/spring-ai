@@ -129,7 +129,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public String getPathPrefix() {
-		return pathPrefix;
+		return this.pathPrefix;
 	}
 
 	public void setPathPrefix(String pathPrefix) {

@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.evaluation;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 
