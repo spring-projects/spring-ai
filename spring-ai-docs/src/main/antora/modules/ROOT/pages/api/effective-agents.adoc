@@ -1,3 +1,6 @@
+[[effective-agents]]
+= Building Effective Agents
+
 In a recent research publication, https://www.anthropic.com/research/building-effective-agents[Building Effective Agents], Anthropic shared valuable insights about building effective Large Language Model (LLM) agents. What makes this research particularly interesting is its emphasis on simplicity and composability over complex frameworks. Let's explore how these principles translate into practical implementations using https://docs.spring.io/spring-ai/reference/index.html[Spring AI].
 
 image::https://raw.githubusercontent.com/spring-io/spring-io-static/refs/heads/main/blog/tzolov/spring-ai-agentic-systems.jpg[Agent Systems, width=350]
