@@ -241,18 +241,23 @@ class PromptTests {
 
 	@Test
 	void augmentSystemMessageWhenNotFirst() {
-		Message[] messages = { new SystemMessage("Hello"), new SystemMessage("How are you?") };
+		Message[] messages = { new UserMessage("Hi"), new SystemMessage("Hello") };
 		Prompt prompt = Prompt.builder().messages(messages).build();
 
 		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getUserMessage()).isNotNull();
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("Hi");
 		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
 
-		Prompt copy = prompt.augmentSystemMessage(message -> message.mutate().text("What about you?").build());
+		Prompt copy = prompt.augmentSystemMessage(message -> message.mutate().text("How are you?").build());
 
 		assertThat(copy.getSystemMessage()).isNotNull();
 		assertThat(copy.getInstructions().size()).isEqualTo(messages.length);
-		assertThat(copy.getSystemMessage().getText()).isEqualTo("What about you?");
+		assertThat(copy.getSystemMessage().getText()).isEqualTo("How are you?");
+
 		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getUserMessage()).isNotNull();
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("Hi");
 		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
 	}
 
