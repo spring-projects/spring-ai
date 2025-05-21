@@ -107,7 +107,7 @@ String input = "My account was charged twice last week";
 String response = workflow.route(input, routes);
 ----
 
-=== 4. https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/orchestrator-workers-workflow[Orchestrator-Workers]
+=== 4. https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/orchestrator-workers[Orchestrator-Workers]
 
 image::https://www.anthropic.com/_next/image?url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2F8985fc683fae4780fb34eab1365ab78c7e51bc8e-2401x1000.png&w=3840&q=75[Orchestration Workflow]
 
@@ -147,7 +147,7 @@ System.out.println("Analysis: " + response.analysis());
 System.out.println("Worker Outputs: " + response.workerResponses());
 ----
 
-=== 5. https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/evaluator-optimizer-workflow[Evaluator-Optimizer]
+=== 5. https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns/evaluator-optimizer[Evaluator-Optimizer]
 
 image::https://www.anthropic.com/_next/image?url=https%3A%2F%2Fwww-cdn.anthropic.com%2Fimages%2F4zrzovbb%2Fwebsite%2F14f51e6406ccb29e695da48b17017e899a6119c7-2401x1000.png&w=3840&q=75[Evaluator-Optimizer Workflow]
 
