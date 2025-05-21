@@ -30,7 +30,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.ObjectUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
@@ -50,6 +49,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Abstract class for the Bedrock API. It provides the basic functionality to invoke the chat completion model and
@@ -322,6 +322,20 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		return eventSink.asFlux();
 	}
 
+	private Region getRegion(Region region) {
+		if (ObjectUtils.isEmpty(region)) {
+			try {
+				return DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				throw new IllegalArgumentException("Region is empty and cannot be loaded from DefaultAwsRegionProviderChain: " + e.getMessage(), e);
+			}
+		}
+		else {
+			return region;
+		}
+	}
+
 	/**
 	 * Encapsulates the metrics about the model invocation.
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
@@ -341,16 +355,5 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 			@JsonProperty("invocationLatency") Long invocationLatency) {
 	}
 
-	private Region getRegion(Region region) {
-		if (ObjectUtils.isEmpty(region)) {
-			try {
-				return DefaultAwsRegionProviderChain.builder().build().getRegion();
-			} catch (SdkClientException e) {
-				throw new IllegalArgumentException("Region is empty and cannot be loaded from DefaultAwsRegionProviderChain: " + e.getMessage(), e);
-			}
-		} else {
-			return region;
-		}
-	}
 }
 // @formatter:on
