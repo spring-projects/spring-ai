@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore;
 
 import java.util.Objects;
+import java.util.Map;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -24,8 +25,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 /**
  * Similarity search request. Use the {@link SearchRequest#builder()} to create the
@@ -60,6 +59,8 @@ public class SearchRequest {
 
 	@Nullable
 	private Filter.Expression filterExpression;
+
+	private static final Map<Character, String> ESCAPE_TEXT = Map.of('\\', "\\\\", '.', "\\.");
 
 	/**
 	 * Copy an existing {@link SearchRequest.Builder} instance.
@@ -193,7 +194,6 @@ public class SearchRequest {
 		/**
 		 * Retrieves documents by query embedding similarity and matching the filters.
 		 * Value of 'null' means that no metadata filters will be applied to the search.
-		 *
 		 * For example if the {@link Document#getMetadata()} schema is:
 		 *
 		 * <pre>{@code
@@ -290,14 +290,24 @@ public class SearchRequest {
 		}
 
 		private String escapeTextExpression(String expression) {
-			Pattern pattern = Pattern.compile("'([^']*)'");
-			Matcher matcher = pattern.matcher(expression);
-			StringBuffer sb = new StringBuffer();
-			while (matcher.find()) {
-				String content = matcher.group(1).replace("\\", "\\\\").replace(".", "\\.");
-				matcher.appendReplacement(sb, "'" + content + "'");
+			StringBuilder sb = new StringBuilder(expression.length() + 8);
+			boolean inQuote = false;
+
+			for (int i = 0; i < expression.length(); i++) {
+				char ch = expression.charAt(i);
+
+				if (ch == '\'') {
+					inQuote = !inQuote;
+					sb.append(ch);
+				}
+				else if (inQuote) {
+					sb.append(ESCAPE_TEXT.getOrDefault(ch, String.valueOf(ch)));
+				}
+				else {
+					sb.append(ch);
+				}
 			}
-			matcher.appendTail(sb);
+
 			return sb.toString();
 		}
 
