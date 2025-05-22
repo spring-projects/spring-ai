@@ -625,7 +625,7 @@ The tool will only be available for the specific chat request it's added to.
 ----
 ChatClient.create(chatModel)
     .prompt("What's the weather like in Copenhagen?")
-    .tools("currentWeather")
+    .toolNames("currentWeather")
     .call()
     .content();
 ----
@@ -654,7 +654,7 @@ When using the dynamic specification approach, you can pass the tool name to the
 ChatModel chatModel = ...
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolNames("currentWeather")
-    .build():
+    .build();
 Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions);
 chatModel.call(prompt);
 ----
