@@ -33,8 +33,8 @@ public final class OpenAIAutoConfigurationUtil {
 		// Avoids instantiation
 	}
 
-	public static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
-			OpenAiParentProperties commonProperties, OpenAiParentProperties modelProperties, String modelType) {
+	static @NotNull ResolvedConnectionProperties resolveConnectionProperties(OpenAiParentProperties commonProperties,
+			OpenAiParentProperties modelProperties, String modelType) {
 
 		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
 				: commonProperties.getBaseUrl();
