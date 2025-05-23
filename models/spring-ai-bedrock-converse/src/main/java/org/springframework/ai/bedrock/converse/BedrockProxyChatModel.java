@@ -16,18 +16,6 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -73,6 +61,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
+import software.amazon.awssdk.services.bedrockruntime.model.CachePointBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.CachePointType;
 
 import org.springframework.ai.bedrock.converse.api.BedrockMediaFormat;
 import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
@@ -96,17 +86,33 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.*;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.EmitFailureHandler;
+import reactor.core.scheduler.Schedulers;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.time.Duration;
+import java.util.*;
 
 /**
  * A {@link ChatModel} implementation that uses the Amazon Bedrock Converse API to
@@ -127,12 +133,15 @@ import org.springframework.util.StringUtils;
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html
  * <p>
  * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
+ * <p>
+ * https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html
  *
  * @author Christian Tzolov
  * @author Wei Jiang
  * @author Alexandros Pappas
  * @author Jihoon Kim
  * @author Soby Chacko
+ * @author Brave Lin canhui_lin@fzzixun.com
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -150,34 +159,34 @@ public class BedrockProxyChatModel implements ChatModel {
 	private ToolCallingChatOptions defaultOptions;
 
 	/**
-	 * Observation registry used for instrumentation.
-	 */
+     * Observation registry used for instrumentation.
+     */
 	private final ObservationRegistry observationRegistry;
 
 	private final ToolCallingManager toolCallingManager;
 
 	/**
-	 * The tool execution eligibility predicate used to determine if a tool can be
-	 * executed.
-	 */
+     * The tool execution eligibility predicate used to determine if a tool can be
+     * executed.
+     */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
 	/**
-	 * Conventions to use for generating observations.
-	 */
+     * Conventions to use for generating observations.
+     */
 	private ChatModelObservationConvention observationConvention;
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ToolCallingChatOptions defaultOptions,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
+								 BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ToolCallingChatOptions defaultOptions,
+								 ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
 		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
 				new DefaultToolExecutionEligibilityPredicate());
 	}
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ToolCallingChatOptions defaultOptions,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+								 BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, ToolCallingChatOptions defaultOptions,
+								 ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
+								 ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
 		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
 		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
@@ -203,13 +212,14 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	/**
-	 * Invoke the model and return the response.
-	 *
-	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
-	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
-	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeClient.html#converse
-	 * @return The model invocation response.
-	 */
+     * Invoke the model and return the response.
+     * <p>
+     * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
+     * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
+     * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeClient.html#converse
+     *
+     * @return The model invocation response.
+     */
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
@@ -384,7 +394,19 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<SystemContentBlock> systemMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(sysMessage -> SystemContentBlock.builder().text(sysMessage.getText()).build())
+			.map(sysMessage -> {
+				/**
+				 * add CachePointBlock support
+				 * url: https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html
+				 */
+				if(sysMessage.getMetadata()!=null&&sysMessage.getMetadata().get(ConverseApiUtils.CACHE_POINT)!=null){
+					return SystemContentBlock.fromCachePoint(CachePointBlock.builder()
+							.type(CachePointType.DEFAULT)
+							.build());
+				}else{
+					return SystemContentBlock.builder().text(sysMessage.getText()).build();
+				}
+			})
 			.toList();
 
 		ToolCallingChatOptions updatedRuntimeOptions = prompt.getOptions().copy();
@@ -551,12 +573,13 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	/**
-	 * Convert {@link ConverseResponse} to {@link ChatResponse} includes model output,
-	 * stopReason, usage, metrics etc.
-	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html#API_runtime_Converse_ResponseSyntax
-	 * @param response The Bedrock Converse response.
-	 * @return The ChatResponse entity.
-	 */
+     * Convert {@link ConverseResponse} to {@link ChatResponse} includes model output,
+     * stopReason, usage, metrics etc.
+     * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html#API_runtime_Converse_ResponseSyntax
+     *
+     * @param response The Bedrock Converse response.
+     * @return The ChatResponse entity.
+     */
 	private ChatResponse toChatResponse(ConverseResponse response, ChatResponse perviousChatResponse) {
 
 		Assert.notNull(response, "'response' must not be null.");
@@ -630,13 +653,14 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	/**
-	 * Invoke the model and return the response stream.
-	 *
-	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
-	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
-	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeAsyncClient.html#converseStream
-	 * @return The model invocation response stream.
-	 */
+     * Invoke the model and return the response stream.
+     * <p>
+     * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
+     * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
+     * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeAsyncClient.html#converseStream
+     *
+     * @return The model invocation response stream.
+     */
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
