@@ -16,13 +16,6 @@
 
 package org.springframework.ai.util.json.schema;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -38,14 +31,20 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.swagger.v3.oas.annotations.media.Schema;
-
-import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.annotation.IgnoredInToolInputSchema;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Utilities to generate JSON Schemas from Java types and method signatures. It's designed
@@ -129,9 +128,10 @@ public final class JsonSchemaGenerator {
 			String parameterName = method.getParameters()[i].getName();
 			Type parameterType = method.getGenericParameterTypes()[i];
 			if (parameterType instanceof Class<?> parameterClass
-					&& ClassUtils.isAssignable(parameterClass, ToolContext.class)) {
-				// A ToolContext method parameter is not included in the JSON Schema
-				// generation.
+					&& AnnotationUtils.findAnnotation(parameterClass, IgnoredInToolInputSchema.class) != null) {
+				// A ToolContext or any other method parameter which annotated with
+				// `IgnoredInToolInputSchema`
+				// is not included in the JSON Schema generation.
 				// It's a special type used by Spring AI to pass contextual data to tools
 				// outside the model interaction flow.
 				continue;
