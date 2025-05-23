@@ -27,6 +27,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
@@ -215,22 +216,25 @@ public class OpenAiAudioApi {
 	 * different model variates, tts-1 is optimized for real time text to speech use cases
 	 * and tts-1-hd is optimized for quality. These models can be used with the Speech
 	 * endpoint in the Audio API. Reference:
-	 * <a href="https://platform.openai.com/docs/models/tts">TTS</a>
+	 * <a href="https://platform.openai.com/docs/models#tts">TTS</a>
 	 */
 	public enum TtsModel {
 
-		// @formatter:off
 		/**
-		 * The latest text to speech model, optimized for speed.
+		 * Text-to-speech model optimized for speed
 		 */
 		@JsonProperty("tts-1")
 		TTS_1("tts-1"),
 		/**
-		 * The latest text to speech model, optimized for quality.
+		 * Text-to-speech model optimized for quality.
 		 */
 		@JsonProperty("tts-1-hd")
-		TTS_1_HD("tts-1-hd");
-		// @formatter:on
+		TTS_1_HD("tts-1-hd"),
+		/**
+		 * Text-to-speech model powered by GPT-4o mini
+		 */
+		@JsonProperty("gpt-4o-mini-tts")
+		GPT_4O_MINI_TTS("gpt-4o-mini-tts");
 
 		public final String value;
 
@@ -252,6 +256,7 @@ public class OpenAiAudioApi {
 	 * v2-large model is currently available through our API with the whisper-1 model
 	 * name.
 	 */
+	@Deprecated
 	public enum WhisperModel {
 
 		// @formatter:off
@@ -266,6 +271,45 @@ public class OpenAiAudioApi {
 		}
 
 		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	/**
+	 * The available models for the transcriptions API. Reference:
+	 * <a href="https://platform.openai.com/docs/models#transcription">
+	 */
+	public enum TranscriptionModels implements ChatModelDescription {
+
+		/**
+		 * Speech-to-text model powered by GPT-4o
+		 */
+		@JsonProperty("gpt-4o-transcribe")
+		GPT_4O_TRANSCRIBE("gpt-4o-transcribe"),
+		/**
+		 * Speech-to-text model powered by GPT-4o mini
+		 */
+		@JsonProperty("gpt-4o-mini-transcribe")
+		GPT_4O_MINI_TRANSCRIBE("gpt-4o-mini-transcribe"),
+		/**
+		 * General-purpose speech recognition model
+		 */
+		@JsonProperty("whisper-1")
+		WHISPER_1("whisper-1");
+
+		public final String value;
+
+		TranscriptionModels(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		@Override
+		public String getName() {
 			return this.value;
 		}
 
@@ -418,7 +462,7 @@ public class OpenAiAudioApi {
 		 */
 		public static class Builder {
 
-			private String model = TtsModel.TTS_1.getValue();
+			private String model = TtsModel.GPT_4O_MINI_TTS.getValue();
 
 			private String input;
 
@@ -533,7 +577,7 @@ public class OpenAiAudioApi {
 
 			private byte[] file;
 
-			private String model = WhisperModel.WHISPER_1.getValue();
+			private String model = TranscriptionModels.WHISPER_1.getValue();
 
 			private String language;
 
@@ -626,7 +670,7 @@ public class OpenAiAudioApi {
 
 			private byte[] file;
 
-			private String model = WhisperModel.WHISPER_1.getValue();
+			private String model = TranscriptionModels.WHISPER_1.getValue();
 
 			private String prompt;
 
