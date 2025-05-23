@@ -19,7 +19,6 @@ package org.springframework.ai.ollama;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -78,6 +77,7 @@ import org.springframework.util.StringUtils;
  * Hugging Face. Please refer to the <a href="https://ollama.ai/">official Ollama
  * website</a> for the most up-to-date information on available models.
  *
+ * @author Jemin Huh
  * @author Christian Tzolov
  * @author luocongqiu
  * @author Thomas Vitale
@@ -243,7 +243,10 @@ public class OllamaChatModel implements ChatModel {
 									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
 							.toList();
 
-				var assistantMessage = new AssistantMessage(ollamaResponse.message().content(), Map.of(), toolCalls);
+				var assistantMessage = AssistantMessage.builder()
+					.text(ollamaResponse.message().content())
+					.toolCalls(toolCalls)
+					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
@@ -321,7 +324,7 @@ public class OllamaChatModel implements ChatModel {
 						.toList();
 				}
 
-				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
+				var assistantMessage = AssistantMessage.builder().text(content).toolCalls(toolCalls).build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {

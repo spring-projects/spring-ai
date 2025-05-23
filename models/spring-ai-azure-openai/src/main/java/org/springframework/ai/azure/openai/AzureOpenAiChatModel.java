@@ -106,6 +106,7 @@ import org.springframework.util.StringUtils;
  * {@link ChatModel} implementation for {@literal Microsoft Azure AI} backed by
  * {@link OpenAIClient}.
  *
+ * @author Jemin Huh
  * @author Mark Pollack
  * @author Ueibin Kim
  * @author John Blum
@@ -485,7 +486,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 
 		var content = responseMessage == null ? "" : responseMessage.getContent();
-		var assistantMessage = new AssistantMessage(content, metadata, toolCalls);
+		var assistantMessage = AssistantMessage.builder().text(content).metadata(metadata).toolCalls(toolCalls).build();
 		var generationMetadata = generateChoiceMetadata(choice);
 
 		return new Generation(assistantMessage, generationMetadata);

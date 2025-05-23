@@ -82,6 +82,7 @@ import org.springframework.util.StringUtils;
 /**
  * The {@link ChatModel} implementation for the Anthropic service.
  *
+ * @author Jemin Huh
  * @author Christian Tzolov
  * @author luocongqiu
  * @author Mariusz Bernacki
@@ -302,19 +303,21 @@ public class AnthropicChatModel implements ChatModel {
 		for (ContentBlock content : chatCompletion.content()) {
 			switch (content.type()) {
 				case TEXT, TEXT_DELTA:
-					generations.add(new Generation(new AssistantMessage(content.text(), Map.of()),
+					generations.add(new Generation(new AssistantMessage(content.text()),
 							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
 					break;
 				case THINKING, THINKING_DELTA:
 					Map<String, Object> thinkingProperties = new HashMap<>();
 					thinkingProperties.put("signature", content.signature());
-					generations.add(new Generation(new AssistantMessage(content.thinking(), thinkingProperties),
+					generations.add(new Generation(
+							AssistantMessage.builder().text(content.thinking()).metadata(thinkingProperties).build(),
 							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
 					break;
 				case REDACTED_THINKING:
 					Map<String, Object> redactedProperties = new HashMap<>();
 					redactedProperties.put("data", content.data());
-					generations.add(new Generation(new AssistantMessage(null, redactedProperties),
+					generations.add(new Generation(
+							AssistantMessage.builder().text((String) null).metadata(redactedProperties).build(),
 							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
 					break;
 				case TOOL_USE:
@@ -328,13 +331,13 @@ public class AnthropicChatModel implements ChatModel {
 		}
 
 		if (chatCompletion.stopReason() != null && generations.isEmpty()) {
-			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
+			Generation generation = new Generation(new AssistantMessage((String) null),
 					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			generations.add(generation);
 		}
 
 		if (!CollectionUtils.isEmpty(toolCalls)) {
-			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder().text("").toolCalls(toolCalls).build();
 			Generation toolCallGeneration = new Generation(assistantMessage,
 					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			generations.add(toolCallGeneration);
