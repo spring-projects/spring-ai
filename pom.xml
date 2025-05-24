@@ -302,6 +302,7 @@
 		<opensearch-client.version>2.23.0</opensearch-client.version>
 		<postgresql.version>42.7.5</postgresql.version>
 		<mariadb.version>3.5.3</mariadb.version>
+		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
 
 		<couchbase.version>3.8.0</couchbase.version>
