@@ -16,9 +16,7 @@
 
 package org.springframework.ai.mcp.client.autoconfigure.properties;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -44,6 +42,10 @@ import org.springframework.core.io.Resource;
 public class McpStdioClientProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.client.stdio";
+
+	private static final List<String> WIN_COMMAND = List.of("npx");
+
+	private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
 
 	/**
 	 * Resource containing the MCP servers configuration.
@@ -128,6 +130,11 @@ public class McpStdioClientProperties {
 			@JsonProperty("env") Map<String, String> env) {
 
 		public ServerParameters toServerParameters() {
+			if (OS_NAME.contains("win") && WIN_COMMAND.contains(command)) {
+				List<String> winArgs = new LinkedList<>(Arrays.asList("/c", this.command()));
+				winArgs.addAll(this.args);
+				return ServerParameters.builder("cmd.exe").args(winArgs).env(this.env()).build();
+			}
 			return ServerParameters.builder(this.command()).args(this.args()).env(this.env()).build();
 		}
 
