@@ -77,49 +77,27 @@ public class VertexAiGeminiSafetySetting {
 
 	}
 
-	private HarmCategory category;
+	private final HarmCategory category;
 
-	private HarmBlockThreshold threshold;
+	private final HarmBlockThreshold threshold;
 
-	private HarmBlockMethod method;
+	private final HarmBlockMethod method;
 
-	// Default constructor
-	public VertexAiGeminiSafetySetting() {
-		this.category = HarmCategory.HARM_CATEGORY_UNSPECIFIED;
-		this.threshold = HarmBlockThreshold.HARM_BLOCK_THRESHOLD_UNSPECIFIED;
-		this.method = HarmBlockMethod.HARM_BLOCK_METHOD_UNSPECIFIED;
+
+	private VertexAiGeminiSafetySetting(Builder builder) {
+		this.category = builder.category;
+		this.threshold = builder.threshold;
+		this.method = builder.method;
 	}
 
-	// Constructor with all fields
-	public VertexAiGeminiSafetySetting(HarmCategory category, HarmBlockThreshold threshold, HarmBlockMethod method) {
-		this.category = category;
-		this.threshold = threshold;
-		this.method = method;
-	}
-
-	// Getters and setters
 	public HarmCategory getCategory() {
 		return this.category;
 	}
-
-	public void setCategory(HarmCategory category) {
-		this.category = category;
-	}
-
 	public HarmBlockThreshold getThreshold() {
 		return this.threshold;
 	}
-
-	public void setThreshold(HarmBlockThreshold threshold) {
-		this.threshold = threshold;
-	}
-
 	public HarmBlockMethod getMethod() {
 		return this.method;
-	}
-
-	public void setMethod(HarmBlockMethod method) {
-		this.method = method;
 	}
 
 	@Override
@@ -180,7 +158,7 @@ public class VertexAiGeminiSafetySetting {
 		}
 
 		public VertexAiGeminiSafetySetting build() {
-			return new VertexAiGeminiSafetySetting(this.category, this.threshold, this.method);
+			return new VertexAiGeminiSafetySetting(this);
 		}
 
 	}
