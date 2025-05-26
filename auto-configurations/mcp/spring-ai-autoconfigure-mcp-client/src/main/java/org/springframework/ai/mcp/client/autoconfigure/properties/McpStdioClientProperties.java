@@ -134,6 +134,7 @@ public class McpStdioClientProperties {
 				winArgs.addAll(this.args);
 				return ServerParameters.builder("cmd.exe").args(winArgs).env(this.env()).build();
 			}
+			
 			return ServerParameters.builder(this.command()).args(this.args()).env(this.env()).build();
 		}
 
