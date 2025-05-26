@@ -631,9 +631,12 @@ OpenAiApi openAiApi = OpenAiApi.builder()
     .apiKey(customApiKey)
     .build();
 
-// Create a chat client with the custom OpenAiApi instance
-OpenAiChatClient chatClient = new OpenAiChatClient(openAiApi);
-
+// Create a chat model with the custom OpenAiApi instance
+OpenAiChatmodel chatModel = OpenAiChatModel.builder()
+    .openAiApi(openAiApi)
+    .build();
+// Build the ChatClient using the custom chat model
+ChatClient openAiChatClient = ChatClient.builder(chatModel).build();
 ----
 
 This is useful when you need to:
