@@ -28,6 +28,13 @@ import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -67,6 +74,39 @@ public class ChromaVectorStoreAutoConfigurationIT {
 		.withPropertyValues("spring.ai.vectorstore.chroma.client.host=http://" + chroma.getHost(),
 				"spring.ai.vectorstore.chroma.client.port=" + chroma.getMappedPort(8000),
 				"spring.ai.vectorstore.chroma.collectionName=TestCollection");
+
+	@Test
+	public void verifyThatChromaCanHandleComplexMetadataValues() {
+		this.contextRunner.withPropertyValues("spring.ai.vectorstore.chroma.initializeSchema=true").run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+				.defaultTopK(5)
+				.build();
+
+			assertThat(advisor.getName()).isEqualTo("VectorStoreChatMemoryAdvisor");
+
+			var req = ChatClientRequest.builder().prompt(Prompt.builder().content("UserPrompt").build()).build();
+
+			ChatClientRequest req2 = advisor.before(req, null);
+			assertThat(req2).isNotNull();
+
+			var response = ChatClientResponse.builder()
+				.chatResponse(ChatResponse.builder()
+					.generations(List
+						.of(new Generation(new AssistantMessage("AssistantMessage", Map.of("annotations", List.of())))))
+					.build())
+				.build();
+			var res2 = advisor.after(response, null);
+			assertThat(res2).isNotNull();
+
+			// Remove all documents from the store
+			List<Document> docs = vectorStore.similaritySearch("UserPrompt, AssistantMessage");
+			vectorStore.delete(docs.stream().map(doc -> doc.getId()).toList());
+
+		});
+	}
 
 	@Test
 	public void addAndSearchWithFilters() {
