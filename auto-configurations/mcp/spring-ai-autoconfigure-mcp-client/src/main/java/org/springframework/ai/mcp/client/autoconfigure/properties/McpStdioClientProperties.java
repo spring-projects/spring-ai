@@ -16,17 +16,16 @@
 
 package org.springframework.ai.mcp.client.autoconfigure.properties;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.ServerParameters;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Configuration properties for the Model Context Protocol (MCP) stdio client.
