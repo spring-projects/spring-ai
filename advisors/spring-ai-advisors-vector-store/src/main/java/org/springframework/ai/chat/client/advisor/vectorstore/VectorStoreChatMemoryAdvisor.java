@@ -56,6 +56,8 @@ import org.springframework.util.Assert;
  */
 public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
+	public static final String SIMILARITY_THRESHOLD = "chat_memory_vector_store_similarity_threshold";
+
 	public static final String TOP_K = "chat_memory_vector_store_top_k";
 
 	private static final String DOCUMENT_METADATA_CONVERSATION_ID = "conversationId";
@@ -128,10 +130,12 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		String conversationId = getConversationId(request.context(), this.defaultConversationId);
 		String query = request.prompt().getUserMessage() != null ? request.prompt().getUserMessage().getText() : "";
 		int topK = getChatMemoryTopK(request.context());
+		double similarityThreshold = getChatMemorySimilarityThreshold(request.context());
 		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
 		var searchRequest = org.springframework.ai.vectorstore.SearchRequest.builder()
 			.query(query)
 			.topK(topK)
+			.similarityThreshold(similarityThreshold)
 			.filterExpression(filter)
 			.build();
 		java.util.List<org.springframework.ai.document.Document> documents = this.vectorStore
@@ -161,6 +165,11 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 	private int getChatMemoryTopK(Map<String, Object> context) {
 		return context.containsKey(TOP_K) ? Integer.parseInt(context.get(TOP_K).toString()) : this.defaultTopK;
+	}
+
+	private double getChatMemorySimilarityThreshold(Map<String, Object> context) {
+		return context.containsKey(SIMILARITY_THRESHOLD)
+				? Double.parseDouble(context.get(SIMILARITY_THRESHOLD).toString()) : this.defaultSimilarityThreshold;
 	}
 
 	@Override
