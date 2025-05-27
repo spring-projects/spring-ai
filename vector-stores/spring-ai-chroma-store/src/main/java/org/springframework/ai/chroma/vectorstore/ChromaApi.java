@@ -254,7 +254,7 @@ public class ChromaApi {
 		this.restClient.post()
 			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_name}/upsert",
 					tenantName, databaseName, collectionId)
-			// .headers(this::httpHeaders)
+			.headers(this::httpHeaders)
 			.body(embedding)
 			.retrieve()
 			.toBodilessEntity();
