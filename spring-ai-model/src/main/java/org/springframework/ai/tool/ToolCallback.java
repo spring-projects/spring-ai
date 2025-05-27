@@ -51,8 +51,8 @@ public interface ToolCallback {
 	 * Execute tool with the given input and context, and return the result to send back
 	 * to the AI model.
 	 */
-	default String call(String toolInput, @Nullable ToolContext tooContext) {
-		if (tooContext != null && !tooContext.getContext().isEmpty()) {
+	default String call(String toolInput, @Nullable ToolContext toolContext) {
+		if (toolContext != null && !toolContext.getContext().isEmpty()) {
 			throw new UnsupportedOperationException("Tool context is not supported!");
 		}
 		return call(toolInput);
