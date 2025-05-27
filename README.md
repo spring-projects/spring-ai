@@ -45,7 +45,7 @@ Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/ref
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [Issues](https://github.com/spring-projects/spring-ai/issues)
 <!-- * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback! -->
-* [Awesome Spring AI](https://github.com/danvega/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
+* [Awesome Spring AI](https://github.com/spring-ai-community/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
 * [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
 
 ## Breaking changes
