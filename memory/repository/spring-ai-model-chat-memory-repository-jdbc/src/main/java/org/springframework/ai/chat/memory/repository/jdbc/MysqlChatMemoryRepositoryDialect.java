@@ -20,18 +20,19 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  * MySQL dialect for chat memory repository.
  *
  * @author Mark Pollack
+ * @author DoHoon Kim
  * @since 1.0.0
  */
 public class MysqlChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY `timestamp`";
+		return "SELECT content, type, tool_calls FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY `timestamp`";
 	}
 
 	@Override
 	public String getInsertMessageSql() {
-		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, `timestamp`) VALUES (?, ?, ?, ?)";
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, tool_calls, `timestamp`) VALUES (?, ?, ?, ?, ?)";
 	}
 
 	@Override

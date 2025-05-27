@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
@@ -36,6 +37,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -53,6 +55,7 @@ import org.springframework.util.Assert;
  * @author Linar Abzaltdinov
  * @author Mark Pollack
  * @author Yanming Zhou
+ * @author DoHoon Kim
  * @since 1.0.0
  */
 public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
@@ -124,7 +127,15 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
-			ps.setTimestamp(4, new Timestamp(this.instantSeq.getAndIncrement()));
+
+			// Handle tool_calls column
+			String toolCallsJson = null;
+			if (message instanceof AssistantMessage assistantMessage && assistantMessage.hasToolCalls()) {
+				toolCallsJson = ModelOptionsUtils.toJsonString(assistantMessage.getToolCalls());
+			}
+			ps.setString(4, toolCallsJson);
+
+			ps.setTimestamp(5, new Timestamp(this.instantSeq.getAndIncrement()));
 		}
 
 		@Override
@@ -140,10 +151,24 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		public Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
 			var type = MessageType.valueOf(rs.getString(2));
+			var toolCallsJson = rs.getString(3);
 
 			return switch (type) {
 				case USER -> new UserMessage(content);
-				case ASSISTANT -> new AssistantMessage(content);
+				case ASSISTANT -> {
+					List<AssistantMessage.ToolCall> toolCalls = List.of();
+					if (toolCallsJson != null && !toolCallsJson.trim().isEmpty()) {
+						try {
+							toolCalls = ModelOptionsUtils.OBJECT_MAPPER.readValue(toolCallsJson,
+									ModelOptionsUtils.OBJECT_MAPPER.getTypeFactory()
+										.constructCollectionType(List.class, AssistantMessage.ToolCall.class));
+						}
+						catch (Exception e) {
+							logger.warn("Failed to deserialize tool calls JSON: {}", toolCallsJson, e);
+						}
+					}
+					yield new AssistantMessage(content, Map.of(), toolCalls);
+				}
 				case SYSTEM -> new SystemMessage(content);
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
