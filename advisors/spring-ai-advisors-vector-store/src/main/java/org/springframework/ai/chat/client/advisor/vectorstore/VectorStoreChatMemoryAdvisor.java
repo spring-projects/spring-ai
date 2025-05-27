@@ -64,6 +64,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 	private static final int DEFAULT_TOP_K = 20;
 
+	private static final double DEFAULT_SIMILARITY_THRESHOLD = 0;
+
 	private static final PromptTemplate DEFAULT_SYSTEM_PROMPT_TEMPLATE = new PromptTemplate("""
 			{instructions}
 
@@ -79,6 +81,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 	private final int defaultTopK;
 
+	private final double defaultSimilarityThreshold;
+
 	private final String defaultConversationId;
 
 	private final int order;
@@ -88,14 +92,17 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 	private final VectorStore vectorStore;
 
 	private VectorStoreChatMemoryAdvisor(PromptTemplate systemPromptTemplate, int defaultTopK,
-			String defaultConversationId, int order, Scheduler scheduler, VectorStore vectorStore) {
+			double defaultSimilarityThreshold, String defaultConversationId, int order, Scheduler scheduler,
+			VectorStore vectorStore) {
 		Assert.notNull(systemPromptTemplate, "systemPromptTemplate cannot be null");
 		Assert.isTrue(defaultTopK > 0, "topK must be greater than 0");
+		Assert.isTrue(defaultSimilarityThreshold >= 0, "similarityThreshold must be equal to or greater than 0");
 		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
 		Assert.notNull(scheduler, "scheduler cannot be null");
 		Assert.notNull(vectorStore, "vectorStore cannot be null");
 		this.systemPromptTemplate = systemPromptTemplate;
 		this.defaultTopK = defaultTopK;
+		this.defaultSimilarityThreshold = defaultSimilarityThreshold;
 		this.defaultConversationId = defaultConversationId;
 		this.order = order;
 		this.scheduler = scheduler;
@@ -221,6 +228,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 		private Integer defaultTopK = DEFAULT_TOP_K;
 
+		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
+
 		private String conversationId = ChatMemory.DEFAULT_CONVERSATION_ID;
 
 		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
@@ -258,6 +267,17 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		}
 
 		/**
+		 * Set the similarity threshold for retrieving relevant documents.
+		 * @param defaultSimilarityThreshold the required similarity for documents to
+		 * retrieve
+		 * @return this builder
+		 */
+		public Builder defaultSimilarityThreshold(Double defaultSimilarityThreshold) {
+			this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+			return this;
+		}
+
+		/**
 		 * Set the conversation id.
 		 * @param conversationId the conversation id
 		 * @return the builder
@@ -287,8 +307,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		 * @return the advisor
 		 */
 		public VectorStoreChatMemoryAdvisor build() {
-			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.defaultTopK, this.conversationId,
-					this.order, this.scheduler, this.vectorStore);
+			return new VectorStoreChatMemoryAdvisor(this.systemPromptTemplate, this.defaultTopK,
+					this.defaultSimilarityThreshold, this.conversationId, this.order, this.scheduler, this.vectorStore);
 		}
 
 	}
