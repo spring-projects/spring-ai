@@ -255,6 +255,13 @@ class JsonParserTests {
 		assertThat(value).isEqualTo(1_500_000_000_000L);
 	}
 
+	@Test
+	void doesNotDoubleSerializeValidJsonString() {
+	    String input = "[1,2,3]";
+	    String result = JsonParser.toJson(input);
+	    assertEquals(input, result);
+	}
+
 	record TestRecord(String name, Integer age) {
 	}
 
