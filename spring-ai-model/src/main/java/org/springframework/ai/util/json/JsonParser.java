@@ -100,16 +100,32 @@ public final class JsonParser {
 	}
 
 	/**
-	 * Converts a Java object to a JSON string.
+ 	 * Checks if a string is a valid JSON string.
+     */
+	private static boolean isValidJson(String input) {
+	    try {
+	        OBJECT_MAPPER.readTree(input);
+	        return true;
+	    } catch (JsonProcessingException e) {
+	        return false;
+	    }
+	}
+
+	/**
+	 * Converts a Java object to a JSON string if it's not already a valid JSON string.
 	 */
 	public static String toJson(@Nullable Object object) {
-		try {
-			return OBJECT_MAPPER.writeValueAsString(object);
-		}
-		catch (JsonProcessingException ex) {
-			throw new IllegalStateException("Conversion from Object to JSON failed", ex);
-		}
+	    if (object instanceof String && isValidJson((String) object)) {
+	        return (String) object;
+	    }
+	    try {
+	        return OBJECT_MAPPER.writeValueAsString(object);
+	    }
+	    catch (JsonProcessingException ex) {
+	        throw new IllegalStateException("Conversion from Object to JSON failed", ex);
+	    }
 	}
+
 
 	/**
 	 * Convert a Java Object to a typed Object. Based on the implementation in
