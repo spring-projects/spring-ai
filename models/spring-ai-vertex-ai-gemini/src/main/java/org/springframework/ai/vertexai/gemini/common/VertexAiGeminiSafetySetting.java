@@ -83,7 +83,6 @@ public class VertexAiGeminiSafetySetting {
 
 	private final HarmBlockMethod method;
 
-
 	private VertexAiGeminiSafetySetting(Builder builder) {
 		this.category = builder.category;
 		this.threshold = builder.threshold;
@@ -93,9 +92,11 @@ public class VertexAiGeminiSafetySetting {
 	public HarmCategory getCategory() {
 		return this.category;
 	}
+
 	public HarmBlockThreshold getThreshold() {
 		return this.threshold;
 	}
+
 	public HarmBlockMethod getMethod() {
 		return this.method;
 	}
