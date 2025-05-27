@@ -43,6 +43,8 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.json;
 
 /**
  * @author Christian Tzolov
@@ -288,6 +290,7 @@ public class ChromaApiIT {
 		assertThat(processed.get("doubleVal")).isInstanceOf(Number.class).isEqualTo(3.14);
 		assertThat(processed.get("listVal")).isInstanceOf(String.class).isEqualTo("[1,2,3]");
 		assertThat(processed.get("mapVal")).isInstanceOf(String.class);
+		assertThatJson(processed.get("mapVal")).isEqualTo("{a:1,b:2}");
 	}
 
 	@SpringBootConfiguration
