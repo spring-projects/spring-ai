@@ -63,7 +63,7 @@ class MethodToolCallbackGenericTypesTest {
 		String result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("\"3 strings processed: [one, two, three]\"");
+		assertThat(result).isEqualTo("3 strings processed: [one, two, three]");
 	}
 
 	@Test
@@ -97,7 +97,7 @@ class MethodToolCallbackGenericTypesTest {
 		String result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("\"3 entries processed: {one=1, two=2, three=3}\"");
+		assertThat(result).isEqualTo("3 entries processed: {one=1, two=2, three=3}");
 	}
 
 	@Test
@@ -134,7 +134,7 @@ class MethodToolCallbackGenericTypesTest {
 		String result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("\"2 maps processed: [{a=1, b=2}, {c=3, d=4}]\"");
+		assertThat(result).isEqualTo("2 maps processed: [{a=1, b=2}, {c=3, d=4}]");
 	}
 
 	/**
