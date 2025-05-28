@@ -27,6 +27,7 @@ import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -68,7 +69,7 @@ public class OpenAiImageApi {
 					h.setBearerAuth(apiKey.getValue());
 				}
 				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
+				h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			})
 			.defaultStatusHandler(responseErrorHandler)
 			.build();

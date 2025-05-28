@@ -162,7 +162,7 @@ public final class AnthropicApi {
 
 		return this.restClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletionResponse.class);
@@ -198,7 +198,7 @@ public final class AnthropicApi {
 
 		return this.webClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)

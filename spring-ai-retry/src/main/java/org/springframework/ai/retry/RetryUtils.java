@@ -17,12 +17,14 @@
 package org.springframework.ai.retry;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.RetryCallback;
@@ -49,7 +51,7 @@ public abstract class RetryUtils {
 		}
 
 		@Override
-		public void handleError(@NonNull ClientHttpResponse response) throws IOException {
+		public void handleError(URI uri, HttpMethod method, @NonNull ClientHttpResponse response) throws IOException {
 			if (response.getStatusCode().isError()) {
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
 				String message = String.format("%s - %s", response.getStatusCode().value(), error);

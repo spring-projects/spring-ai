@@ -133,7 +133,7 @@ public class OpenAiApi {
 			}
 
 			h.setContentType(MediaType.APPLICATION_JSON);
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 		};
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
@@ -181,7 +181,7 @@ public class OpenAiApi {
 
 		return this.restClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletion.class);
@@ -215,7 +215,7 @@ public class OpenAiApi {
 
 		return this.webClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)

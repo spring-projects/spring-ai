@@ -74,7 +74,7 @@ public class OpenAiAudioApi {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.setBearerAuth(apiKey.getValue());
 			}
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			// h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
