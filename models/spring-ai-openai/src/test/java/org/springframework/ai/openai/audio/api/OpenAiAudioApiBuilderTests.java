@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.api;
+package org.springframework.ai.openai.audio.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -22,17 +26,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,23 +43,22 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 
-public class OpenAiApiBuilderTests {
+/**
+ * @author Filip Hrisafov
+ */
+class OpenAiAudioApiBuilderTests {
 
 	private static final ApiKey TEST_API_KEY = new SimpleApiKey("test-api-key");
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
 
-	private static final String TEST_COMPLETIONS_PATH = "/test/completions";
-
-	private static final String TEST_EMBEDDINGS_PATH = "/test/embeddings";
-
 	@Test
 	void testMinimalBuilder() {
-		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).build();
+		OpenAiAudioApi api = OpenAiAudioApi.builder().apiKey(TEST_API_KEY).build();
 
 		assertThat(api).isNotNull();
 	}
@@ -72,12 +71,10 @@ public class OpenAiApiBuilderTests {
 		WebClient.Builder webClientBuilder = WebClient.builder();
 		ResponseErrorHandler errorHandler = mock(ResponseErrorHandler.class);
 
-		OpenAiApi api = OpenAiApi.builder()
-			.apiKey(TEST_API_KEY)
+		OpenAiAudioApi api = OpenAiAudioApi.builder()
 			.baseUrl(TEST_BASE_URL)
+			.apiKey(TEST_API_KEY)
 			.headers(headers)
-			.completionsPath(TEST_COMPLETIONS_PATH)
-			.embeddingsPath(TEST_EMBEDDINGS_PATH)
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(errorHandler)
@@ -87,74 +84,46 @@ public class OpenAiApiBuilderTests {
 	}
 
 	@Test
-	void testDefaultValues() {
-		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).build();
-
-		assertThat(api).isNotNull();
-		// We can't directly test the default values as they're private fields,
-		// but we know the builder succeeded with defaults
-	}
-
-	@Test
 	void testMissingApiKey() {
-		assertThatThrownBy(() -> OpenAiApi.builder().build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("apiKey must be set");
 	}
 
 	@Test
 	void testInvalidBaseUrl() {
-		assertThatThrownBy(() -> OpenAiApi.builder().baseUrl("").build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().baseUrl("").build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("baseUrl cannot be null or empty");
 
-		assertThatThrownBy(() -> OpenAiApi.builder().baseUrl(null).build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().baseUrl(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("baseUrl cannot be null or empty");
 	}
 
 	@Test
 	void testInvalidHeaders() {
-		assertThatThrownBy(() -> OpenAiApi.builder().headers(null).build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().headers(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("headers cannot be null");
 	}
 
 	@Test
-	void testInvalidCompletionsPath() {
-		assertThatThrownBy(() -> OpenAiApi.builder().completionsPath("").build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("completionsPath cannot be null or empty");
-
-		assertThatThrownBy(() -> OpenAiApi.builder().completionsPath(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("completionsPath cannot be null or empty");
-	}
-
-	@Test
-	void testInvalidEmbeddingsPath() {
-		assertThatThrownBy(() -> OpenAiApi.builder().embeddingsPath("").build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("embeddingsPath cannot be null or empty");
-
-		assertThatThrownBy(() -> OpenAiApi.builder().embeddingsPath(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("embeddingsPath cannot be null or empty");
-	}
-
-	@Test
 	void testInvalidRestClientBuilder() {
-		assertThatThrownBy(() -> OpenAiApi.builder().restClientBuilder(null).build())
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().restClientBuilder(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("restClientBuilder cannot be null");
 	}
 
 	@Test
 	void testInvalidWebClientBuilder() {
-		assertThatThrownBy(() -> OpenAiApi.builder().webClientBuilder(null).build())
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().webClientBuilder(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("webClientBuilder cannot be null");
 	}
 
 	@Test
 	void testInvalidResponseErrorHandler() {
-		assertThatThrownBy(() -> OpenAiApi.builder().responseErrorHandler(null).build())
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().responseErrorHandler(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("responseErrorHandler cannot be null");
 	}
@@ -178,49 +147,27 @@ public class OpenAiApiBuilderTests {
 		@Test
 		void dynamicApiKeyRestClient() throws InterruptedException {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
-			OpenAiApi api = OpenAiApi.builder()
+			OpenAiAudioApi api = OpenAiAudioApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
 				.baseUrl(mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
-				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-				.setBody("""
-						{
-							"id": "chatcmpl-12345",
-							"object": "chat.completion",
-							"created": 1677858242,
-							"model": "gpt-3.5-turbo",
-							"choices": [
-								{
-						    		"index": 0,
-									"message": {
-									"role": "assistant",
-									"content": "Hello world"
-									},
-									"finish_reason": "stop"
-								}
-							],
-							"usage": {
-								"prompt_tokens": 10,
-								"completion_tokens": 5,
-								"total_tokens": 15
-							}
-						}
-						""");
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+				.setBody("Audio bytes as string");
 			mockWebServer.enqueue(mockResponse);
 			mockWebServer.enqueue(mockResponse);
 
-			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
-					OpenAiApi.ChatCompletionMessage.Role.USER);
-			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
-					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, false);
-			ResponseEntity<OpenAiApi.ChatCompletion> response = api.chatCompletionEntity(request);
+			OpenAiAudioApi.SpeechRequest request = OpenAiAudioApi.SpeechRequest.builder()
+				.model(OpenAiAudioApi.TtsModel.TTS_1.value)
+				.input("Test input")
+				.build();
+			ResponseEntity<byte[]> response = api.createSpeech(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 			RecordedRequest recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
-			response = api.chatCompletionEntity(request);
+			response = api.createSpeech(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
 			recordedRequest = mockWebServer.takeRequest();
@@ -230,49 +177,27 @@ public class OpenAiApiBuilderTests {
 		@Test
 		void dynamicApiKeyWebClient() throws InterruptedException {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
-			OpenAiApi api = OpenAiApi.builder()
+			OpenAiAudioApi api = OpenAiAudioApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
 				.baseUrl(mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
-				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-				.setBody("""
-						{
-							"id": "chatcmpl-12345",
-							"object": "chat.completion",
-							"created": 1677858242,
-							"model": "gpt-3.5-turbo",
-							"choices": [
-								{
-						    		"index": 0,
-									"message": {
-									"role": "assistant",
-									"content": "Hello world"
-									},
-									"finish_reason": "stop"
-								}
-							],
-							"usage": {
-								"prompt_tokens": 10,
-								"completion_tokens": 5,
-								"total_tokens": 15
-							}
-						}
-						""".replace("\n", ""));
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+				.setBody("Audio bytes as string");
 			mockWebServer.enqueue(mockResponse);
 			mockWebServer.enqueue(mockResponse);
 
-			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
-					OpenAiApi.ChatCompletionMessage.Role.USER);
-			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
-					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, true);
-			List<OpenAiApi.ChatCompletionChunk> response = api.chatCompletionStream(request).collectList().block();
+			OpenAiAudioApi.SpeechRequest request = OpenAiAudioApi.SpeechRequest.builder()
+				.model(OpenAiAudioApi.TtsModel.TTS_1.value)
+				.input("Test input")
+				.build();
+			List<ResponseEntity<byte[]>> response = api.stream(request).collectList().block();
 			assertThat(response).hasSize(1);
 			RecordedRequest recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
-			response = api.chatCompletionStream(request).collectList().block();
+			response = api.stream(request).collectList().block();
 			assertThat(response).hasSize(1);
 
 			recordedRequest = mockWebServer.takeRequest();
