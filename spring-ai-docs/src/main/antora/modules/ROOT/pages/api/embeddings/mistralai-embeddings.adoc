@@ -132,7 +132,7 @@ The prefix `spring.ai.mistralai.embedding` is property prefix that configures th
 | Property | Description | Default
 
 | spring.ai.mistralai.embedding.enabled (Removed and no longer valid) | Enable OpenAI embedding model.  | true
-| spring.ai.model.embedding | Enable OpenAI embedding model.  | true
+| spring.ai.model.embedding | Enable OpenAI embedding model.  | mistral
 | spring.ai.mistralai.embedding.base-url   | Optional overrides the spring.ai.mistralai.base-url to provide embedding specific url | -
 | spring.ai.mistralai.embedding.api-key    | Optional overrides the spring.ai.mistralai.api-key to provide embedding specific api-key  | -
 | spring.ai.mistralai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
