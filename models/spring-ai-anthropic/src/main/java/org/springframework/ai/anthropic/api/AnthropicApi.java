@@ -34,8 +34,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
+import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -107,12 +109,11 @@ public final class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	private AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
+	private AnthropicApi(String baseUrl, String completionsPath, ApiKey anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.add(HEADER_X_API_KEY, anthropicApiKey);
 			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
 			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
@@ -124,6 +125,12 @@ public final class AnthropicApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
+			.defaultRequest(requestHeadersSpec -> {
+				String value = anthropicApiKey.getValue();
+				if (StringUtils.hasText(value)) {
+					requestHeadersSpec.header(HEADER_X_API_KEY, value);
+				}
+			})
 			.build();
 
 		this.webClient = webClientBuilder.clone()
@@ -133,6 +140,12 @@ public final class AnthropicApi {
 					resp -> resp.bodyToMono(String.class)
 						.flatMap(it -> Mono.error(new RuntimeException(
 								"Response exception, Status: [" + resp.statusCode() + "], Body:[" + it + "]"))))
+			.defaultRequest(requestHeadersSpec -> {
+				String value = anthropicApiKey.getValue();
+				if (StringUtils.hasText(value)) {
+					requestHeadersSpec.header(HEADER_X_API_KEY, value);
+				}
+			})
 			.build();
 	}
 
@@ -1339,7 +1352,7 @@ public final class AnthropicApi {
 
 		private String completionsPath = DEFAULT_MESSAGE_COMPLETIONS_PATH;
 
-		private String apiKey;
+		private ApiKey apiKey;
 
 		private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
 
@@ -1363,9 +1376,15 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public Builder apiKey(String apiKey) {
+		public Builder apiKey(ApiKey apiKey) {
 			Assert.notNull(apiKey, "apiKey cannot be null");
 			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
 
