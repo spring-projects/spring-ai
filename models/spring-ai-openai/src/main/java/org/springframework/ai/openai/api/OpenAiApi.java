@@ -128,10 +128,6 @@ public class OpenAiApi {
 
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			if (!(apiKey instanceof NoopApiKey)) {
-				h.setBearerAuth(apiKey.getValue());
-			}
-
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
@@ -139,11 +135,21 @@ public class OpenAiApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.defaultStatusHandler(responseErrorHandler)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
 			.build();
 
 		this.webClient = webClientBuilder.clone()
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
 			.build(); // @formatter:on
 	}
 
