@@ -35,10 +35,13 @@ import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
+import org.springframework.ai.anthropic.api.tool.search.WebSearchTool;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.test.CurlyBracketEscaper;
@@ -337,6 +340,37 @@ class AnthropicChatClientIT {
 
 		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@Test
+	void webSearchToolCallTest() {
+
+		// @formatter:off
+		ChatResponse chatResponse = ChatClient.builder(this.chatModel)
+				.defaultOptions(AnthropicChatOptions.builder()
+						.maxTokens(1024)
+						.serverTools(List.of(WebSearchTool.builder().maxUses(1).build()))
+						.build())
+				.defaultUser(u -> u.text("What's the weather like in San Francisco? Show the temperature in Celsius."))
+				.build()
+				.prompt()
+				.call()
+				.chatResponse();
+
+		AnthropicApi.Usage nativeUsage = (AnthropicApi.Usage) chatResponse.getMetadata().getUsage().getNativeUsage();
+		// @formatter:on
+
+		logger.info("nativeUsage: {}", nativeUsage);
+		logger.info("Response: {}",
+				chatResponse.getResults()
+					.stream()
+					.map(Generation::getOutput)
+					.map(AbstractMessage::getText)
+					.map(text -> text.replace("\n", "").trim())
+					.collect(Collectors.joining(", ")));
+
+		assertThat(nativeUsage.serverToolUse()).isNotNull();
+		assertThat(nativeUsage.serverToolUse().webSearchRequests()).isGreaterThan(0);
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {
