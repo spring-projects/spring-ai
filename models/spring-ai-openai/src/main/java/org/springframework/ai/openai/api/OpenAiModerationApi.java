@@ -27,6 +27,7 @@ import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -40,6 +41,7 @@ import org.springframework.web.client.RestClient;
  *
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
+ * @author Filip Hrisafov
  * @see <a href=
  * "https://platform.openai.com/docs/api-reference/moderations">https://platform.openai.com/docs/api-reference/moderations</a>
  */
@@ -64,13 +66,20 @@ public class OpenAiModerationApi {
 
 		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> {
-			if (!(apiKey instanceof NoopApiKey)) {
-				h.setBearerAuth(apiKey.getValue());
-			}
-			h.setContentType(MediaType.APPLICATION_JSON);
-			h.addAll(headers);
-		}).defaultStatusHandler(responseErrorHandler).build();
+		// @formatter:off
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
+			.defaultHeaders(h -> {
+				h.setContentType(MediaType.APPLICATION_JSON);
+				h.addAll(headers);
+			})
+			.defaultStatusHandler(responseErrorHandler)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
+			.build(); // @formatter:on
 	}
 
 	public ResponseEntity<OpenAiModerationResponse> createModeration(OpenAiModerationRequest openAiModerationRequest) {
