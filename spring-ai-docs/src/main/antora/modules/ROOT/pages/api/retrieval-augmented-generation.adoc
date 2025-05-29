@@ -13,7 +13,7 @@ NOTE: Learn more about Retrieval Augmented Generation in the xref:concepts.adoc#
 
 Spring AI provides out-of-the-box support for common RAG flows using the `Advisor` API.
 
-To use the `QuestionAnswerAdvisor` or `RetrievalAugmentationAdvisor`, you need to add the `spring-ai-advisors-vector-store` dependency to your project:
+To use the `QuestionAnswerAdvisor` or `VectorStoreChatMemoryAdvisor`, you need to add the `spring-ai-advisors-vector-store` dependency to your project:
 
 [source,xml]
 ----
@@ -129,6 +129,16 @@ NOTE: The `QuestionAnswerAdvisor.Builder.userTextAdvise()` method is deprecated 
 Spring AI includes a xref:api/retrieval-augmented-generation.adoc#modules[library of RAG modules] that you can use to build your own RAG flows.
 The `RetrievalAugmentationAdvisor` is an `Advisor` providing an out-of-the-box implementation for the most common RAG flows,
 based on a modular architecture.
+
+To use the `RetrievalAugmentationAdvisor`, you need to add the `spring-ai-rag` dependency to your project:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-rag</artifactId>
+</dependency>
+----
 
 ==== Sequential RAG Flows
 
