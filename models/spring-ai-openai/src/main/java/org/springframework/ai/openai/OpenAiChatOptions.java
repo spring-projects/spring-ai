@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
