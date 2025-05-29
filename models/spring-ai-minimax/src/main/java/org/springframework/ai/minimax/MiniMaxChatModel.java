@@ -245,34 +245,34 @@ public class MiniMaxChatModel implements ChatModel {
 		ChatCompletionRequest request = createRequest(requestPrompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(requestPrompt)
-				.provider(MiniMaxApiConstants.PROVIDER_NAME)
-				.build();
+			.prompt(requestPrompt)
+			.provider(MiniMaxApiConstants.PROVIDER_NAME)
+			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
 
-					ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-							.execute(ctx -> this.miniMaxApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+					.execute(ctx -> this.miniMaxApi.chatCompletionEntity(request));
 
-					var chatCompletion = completionEntity.getBody();
+				var chatCompletion = completionEntity.getBody();
 
-					if (chatCompletion == null) {
-						logger.warn("No chat completion returned for prompt: {}", requestPrompt);
-						return new ChatResponse(List.of());
-					}
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", requestPrompt);
+					return new ChatResponse(List.of());
+				}
 
-					List<Choice> choices = chatCompletion.choices();
-					if (choices == null) {
-						logger.warn("No choices returned for prompt: {}, because: {}}", requestPrompt,
-								chatCompletion.baseResponse().message());
-						return new ChatResponse(List.of());
-					}
+				List<Choice> choices = chatCompletion.choices();
+				if (choices == null) {
+					logger.warn("No choices returned for prompt: {}, because: {}}", requestPrompt,
+							chatCompletion.baseResponse().message());
+					return new ChatResponse(List.of());
+				}
 
-					List<Generation> generations = choices.stream().map(choice -> {
-						// @formatter:off
+				List<Generation> generations = choices.stream().map(choice -> {
+			// @formatter:off
 						// if the choice is a web search tool call, return last message of choice.messages
 						ChatCompletionMessage message = null;
 						if (choice.message() != null) {
@@ -288,28 +288,31 @@ public class MiniMaxChatModel implements ChatModel {
 								"role", message != null && message.role() != null ? message.role().name() : "",
 								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 						// @formatter:on
-						return buildGeneration(message, choice.finishReason(), metadata);
-					}).toList();
+					return buildGeneration(message, choice.finishReason(), metadata);
+				}).toList();
 
-					ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
+				ChatResponse chatResponse = new ChatResponse(generations, from(completionEntity.getBody()));
 
-					observationContext.setResponse(chatResponse);
+				observationContext.setResponse(chatResponse);
 
-					return chatResponse;
-				});
+				return chatResponse;
+			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response, attempts)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response,
+				attempts)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
 				return ChatResponse.builder()
-						.from(response)
-						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-						.build();
+					.from(response)
+					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					.build();
 			}
 			else {
 				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()), attempts + 1);
+				return this.internalCall(
+						new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()),
+						attempts + 1);
 			}
 		}
 
@@ -334,16 +337,16 @@ public class MiniMaxChatModel implements ChatModel {
 			ChatCompletionRequest request = createRequest(requestPrompt, true);
 
 			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-					.execute(ctx -> this.miniMaxApi.chatCompletionStream(request));
+				.execute(ctx -> this.miniMaxApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-					.prompt(requestPrompt)
-					.provider(MiniMaxApiConstants.PROVIDER_NAME)
-					.build();
+				.prompt(requestPrompt)
+				.provider(MiniMaxApiConstants.PROVIDER_NAME)
+				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -354,12 +357,12 @@ public class MiniMaxChatModel implements ChatModel {
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-					.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
-						try {
-							@SuppressWarnings("null")
-							String id = chatCompletion2.id();
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
+					try {
+						@SuppressWarnings("null")
+						String id = chatCompletion2.id();
 
-							// @formatter:off
+				// @formatter:off
 							List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
 								if (choice.message().role() != null) {
 									roleMap.putIfAbsent(id, choice.message().role().name());
@@ -483,8 +486,8 @@ public class MiniMaxChatModel implements ChatModel {
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
 			requestOptions.setInternalToolExecutionMaxAttempts(
-						ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
-								this.defaultOptions.getInternalToolExecutionMaxAttempts()));
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
+							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -494,7 +497,8 @@ public class MiniMaxChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
-			requestOptions.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
+			requestOptions
+				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());

@@ -378,7 +378,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 			});
 
 			return chatResponseFlux.flatMap(chatResponse -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse, attempts)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse,
+						attempts)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
 					return Flux.defer(() -> {
@@ -394,8 +395,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 							// Send the tool execution result back to the model.
 							return this.internalStream(
 									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse,
-									attempts + 1);
+									chatResponse, attempts + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
@@ -669,11 +669,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
 			runtimeOptions.setInternalToolExecutionMaxAttempts(
-					ModelOptionsUtils.mergeOption(
-							runtimeOptions.getInternalToolExecutionMaxAttempts(),
-							this.defaultOptions.getInternalToolExecutionMaxAttempts()
-					)
-			);
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
+							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
 			requestOptions.setStreamUsage(ModelOptionsUtils.mergeOption(runtimeOptions.getStreamUsage(),
 					this.defaultOptions.getStreamUsage()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
@@ -685,7 +682,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
-			requestOptions.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
+			requestOptions
+				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
 			requestOptions.setStreamUsage(this.defaultOptions.getStreamUsage());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());

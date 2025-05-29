@@ -152,7 +152,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
+			.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
