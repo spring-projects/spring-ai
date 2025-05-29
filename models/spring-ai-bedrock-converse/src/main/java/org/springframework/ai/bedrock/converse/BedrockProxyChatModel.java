@@ -214,7 +214,11 @@ public class BedrockProxyChatModel implements ChatModel {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return this.internalCall(requestPrompt, null, 1);
+		return this.internalCall(requestPrompt, null);
+	}
+
+	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse) {
+		return this.internalCall(prompt, perviousChatResponse, 1);
 	}
 
 	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse, int attempts) {
@@ -644,7 +648,11 @@ public class BedrockProxyChatModel implements ChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return this.internalStream(requestPrompt, null, 1);
+		return this.internalStream(requestPrompt, null);
+	}
+
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse) {
+		return this.internalStream(prompt, perviousChatResponse, 1);
 	}
 
 	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse, int attempts) {

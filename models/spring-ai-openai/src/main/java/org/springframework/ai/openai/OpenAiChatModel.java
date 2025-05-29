@@ -180,7 +180,11 @@ public class OpenAiChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return this.internalCall(requestPrompt, null, 1);
+		return this.internalCall(requestPrompt, null);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalCall(prompt, previousChatResponse, 1);
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
@@ -266,7 +270,11 @@ public class OpenAiChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return internalStream(requestPrompt, null, 1);
+		return internalStream(requestPrompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalStream(prompt, previousChatResponse, 1);
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int attempts) {

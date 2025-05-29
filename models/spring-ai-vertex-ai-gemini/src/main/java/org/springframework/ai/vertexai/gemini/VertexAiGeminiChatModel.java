@@ -391,7 +391,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		var requestPrompt = this.buildRequestPrompt(prompt);
-		return this.internalCall(requestPrompt, null, 1);
+		return this.internalCall(requestPrompt, null);
+	}
+
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalCall(prompt, previousChatResponse, 1);
 	}
 
 	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
@@ -506,7 +510,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		var requestPrompt = this.buildRequestPrompt(prompt);
-		return this.internalStream(requestPrompt, null, 1);
+		return this.internalStream(requestPrompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalStream(prompt, previousChatResponse, 1);
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
