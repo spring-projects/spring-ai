@@ -27,6 +27,7 @@ import org.springframework.util.Assert;
  * responses.
  *
  * @author Christian Tzolov
+ * @author lambochen
  */
 public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, Boolean> {
 
@@ -41,6 +42,19 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		Assert.notNull(promptOptions, "promptOptions cannot be null");
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 		return this.isInternalToolExecutionEnabled(promptOptions) && this.isToolCallResponse(chatResponse);
+	}
+
+	/**
+	 * Determines if tool execution should be performed based on the prompt options and chat response and attempts.
+	 * @param promptOptions The options from the prompt
+	 * @param chatResponse The response from the chat model
+	 * @param attempts The number of attempts to execute the tool
+	 * @return true if tool execution should be performed, false otherwise
+	 */
+	default boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse, int attempts) {
+		Assert.notNull(promptOptions, "promptOptions cannot be null");
+		Assert.notNull(chatResponse, "chatResponse cannot be null");
+		return this.isInternalToolExecutionEnabled(promptOptions, attempts) && this.isToolCallResponse(chatResponse);
 	}
 
 	/**
