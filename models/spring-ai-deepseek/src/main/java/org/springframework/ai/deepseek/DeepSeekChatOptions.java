@@ -123,6 +123,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Integer internalToolExecutionMaxAttempts;
+
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
@@ -292,14 +295,14 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Integer getInternalToolExecutionMaxIterations() {
-    	return 0;
+	public Integer getInternalToolExecutionMaxAttempts() {
+    	return this.internalToolExecutionMaxAttempts;
     }
 
 	@Override
 	@JsonIgnore
-	public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
-
+	public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
     }
 
 	public Boolean getLogprobs() {
@@ -370,7 +373,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.toolContext, other.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled);
+				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
+				&& Objects.equals(this.internalToolExecutionMaxAttempts, other.internalToolExecutionMaxAttempts)
+				;
 	}
 
 	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
@@ -391,6 +396,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 						fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
 				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 				.build();
 	}
@@ -497,6 +503,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder internalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
 			return this;
 		}
 

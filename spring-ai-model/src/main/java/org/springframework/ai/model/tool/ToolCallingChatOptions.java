@@ -45,6 +45,12 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	boolean DEFAULT_TOOL_EXECUTION_ENABLED = true;
 
 	/**
+	 * No limit for tool execution attempts.
+	 */
+	int TOOL_EXECUTION_NO_LIMIT = Integer.MAX_VALUE;
+	int DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS = TOOL_EXECUTION_NO_LIMIT;
+
+	/**
 	 * ToolCallbacks to be registered with the ChatModel.
 	 */
 	List<ToolCallback> getToolCallbacks();
@@ -78,18 +84,18 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 	/**
-	 * Get the maximum number of iterations for tool execution. 0 or null means no limit.
-	 * @return the maximum number of iterations.
+	 * Get the maximum number of attempts for tool execution.
+	 * @return the maximum number of attempts.
 	 * @see #getInternalToolExecutionEnabled()
 	 */
 	@Nullable
-	Integer getInternalToolExecutionMaxIterations();
+	Integer getInternalToolExecutionMaxAttempts();
 
 	/**
-	 * Set the maximum number of iterations for tool execution. 0 or null means no limit.
-	 * @param internalToolExecutionMaxIterations the maximum number of iterations.
+	 * Set the maximum number of attempts for tool execution.
+	 * @param internalToolExecutionMaxAttempts the maximum number of attempts.
 	 */
-	void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations);
+	void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts);
 
 	/**
 	 * Get the configured tool context.
@@ -192,6 +198,13 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * by the model or if the tools should be executed directly by the caller.
 		 */
 		Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
+
+		/**
+		 * the maximum number of attempts for tool execution.
+		 * @param internalToolExecutionMaxAttempts the maximum number of attempts.
+		 * @return the {@link ToolCallingChatOptions} Builder.
+		 */
+		Builder internalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.

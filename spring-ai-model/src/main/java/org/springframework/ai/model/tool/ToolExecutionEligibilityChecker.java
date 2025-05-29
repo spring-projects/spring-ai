@@ -74,4 +74,26 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		return internalToolExecutionEnabled;
 	}
 
+	/**
+	 * Determines if tool execution should be performed by the Spring AI or by the client.
+	 * @param chatOptions The options from the chat
+	 * @param attempts The number of attempts to execute the tool
+	 * @return true if tool execution should be performed by Spring AI, false if it should
+	 * be performed by the client
+	 */
+	default boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int attempts) {
+		boolean internalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
+		if (!internalToolExecutionEnabled) {
+			return false;
+		}
+
+		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			return toolCallingChatOptions.getInternalToolExecutionMaxAttempts() == null
+					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
+		} else {
+			internalToolExecutionEnabled = true;
+		}
+		return internalToolExecutionEnabled;
+	}
+
 }
