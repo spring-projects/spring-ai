@@ -48,6 +48,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * No limit for tool execution attempts.
 	 */
 	int TOOL_EXECUTION_NO_LIMIT = Integer.MAX_VALUE;
+
 	int DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS = TOOL_EXECUTION_NO_LIMIT;
 
 	/**

@@ -45,7 +45,8 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 	}
 
 	/**
-	 * Determines if tool execution should be performed based on the prompt options and chat response and attempts.
+	 * Determines if tool execution should be performed based on the prompt options and
+	 * chat response and attempts.
 	 * @param promptOptions The options from the prompt
 	 * @param chatResponse The response from the chat model
 	 * @param attempts The number of attempts to execute the tool
@@ -104,7 +105,8 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			return toolCallingChatOptions.getInternalToolExecutionMaxAttempts() == null
 					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
-		} else {
+		}
+		else {
 			internalToolExecutionEnabled = true;
 		}
 		return internalToolExecutionEnabled;

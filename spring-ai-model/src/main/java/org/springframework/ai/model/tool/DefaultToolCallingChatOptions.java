@@ -293,7 +293,8 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder internalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+		public ToolCallingChatOptions.Builder internalToolExecutionMaxAttempts(
+				Integer internalToolExecutionMaxAttempts) {
 			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
 			return this;
 		}

@@ -180,7 +180,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
+			.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -395,8 +395,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
 		result = prime * result
 				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
-		result = prime * result
-				+ ((this.internalToolExecutionMaxAttempts == null) ? 0 : this.internalToolExecutionMaxAttempts.hashCode());
+		result = prime * result + ((this.internalToolExecutionMaxAttempts == null) ? 0
+				: this.internalToolExecutionMaxAttempts.hashCode());
 		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
 		return result;
 	}

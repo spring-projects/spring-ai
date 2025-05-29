@@ -43,4 +43,20 @@ public interface ToolExecutionEligibilityPredicate extends BiPredicate<ChatOptio
 		return test(promptOptions, chatResponse);
 	}
 
+	default boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse, int attempts) {
+		boolean isToolExecutionRequired = isToolExecutionRequired(promptOptions, chatResponse);
+		if (!isToolExecutionRequired) {
+			return true;
+		}
+
+		if (promptOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			return toolCallingChatOptions.getInternalToolExecutionMaxAttempts() == null
+					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
+		}
+		else {
+			isToolExecutionRequired = true;
+		}
+		return isToolExecutionRequired;
+	}
+
 }

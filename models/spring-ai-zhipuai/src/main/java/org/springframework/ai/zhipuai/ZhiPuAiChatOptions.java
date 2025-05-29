@@ -492,10 +492,10 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			builder.internalToolExecutionEnabled(toolCallingChatOptions.getInternalToolExecutionEnabled() != null
 					? (toolCallingChatOptions).getInternalToolExecutionEnabled()
 					: this.getInternalToolExecutionEnabled());
-			builder.internalToolExecutionMaxAttempts(
-					toolCallingChatOptions.getInternalToolExecutionMaxAttempts() != null
-							? toolCallingChatOptions.getInternalToolExecutionMaxAttempts()
-							: this.getInternalToolExecutionMaxAttempts());
+			builder
+				.internalToolExecutionMaxAttempts(toolCallingChatOptions.getInternalToolExecutionMaxAttempts() != null
+						? toolCallingChatOptions.getInternalToolExecutionMaxAttempts()
+						: this.getInternalToolExecutionMaxAttempts());
 
 			Set<String> toolNames = new HashSet<>();
 			if (this.toolNames != null) {

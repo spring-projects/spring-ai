@@ -105,9 +105,11 @@ import org.springframework.util.StringUtils;
  * @author Alexandros Pappas
  * @author Soby Chacko
  * @author Jonghoon Park
+ * @author lambochen
  * @see ChatModel
  * @see StreamingChatModel
  * @see OpenAiApi
+ * @see ToolCallingChatOptions
  */
 public class OpenAiChatModel implements ChatModel {
 
@@ -178,10 +180,10 @@ public class OpenAiChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return this.internalCall(requestPrompt, null);
+		return this.internalCall(requestPrompt, null, 0);
 	}
 
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
@@ -240,7 +242,8 @@ public class OpenAiChatModel implements ChatModel {
 
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		attempts++;
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -252,7 +255,7 @@ public class OpenAiChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, attempts);
 			}
 		}
 
@@ -520,6 +523,9 @@ public class OpenAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setInternalToolExecutionMaxAttempts(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
+							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -530,6 +536,8 @@ public class OpenAiChatModel implements ChatModel {
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions
+				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
