@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -152,6 +153,12 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 */
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
+
+	/**
+	 * The maximum number of iterations for tool execution.
+	 */
+	@JsonIgnore
+	private Integer internalToolExecutionMaxIterations;
 
 	// @formatter:on
 
@@ -347,6 +354,16 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	public Integer getInternalToolExecutionMaxIterations() {
+		return 0;
+	}
+
+	@Override
+	public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
+
 	}
 
 	@Override

@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -218,6 +219,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Integer internalToolExecutionMaxIterations;
+
 	/**
 	 * Optional HTTP headers to be added to the chat completion request.
 	 */
@@ -262,6 +266,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.internalToolExecutionMaxIterations(fromOptions.getInternalToolExecutionMaxIterations())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.store(fromOptions.getStore())
 			.metadata(fromOptions.getMetadata())
@@ -504,6 +509,16 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
+	@Override
+	public Integer getInternalToolExecutionMaxIterations() {
+		return this.internalToolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
+		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
+	}
+
 	public Map<String, String> getHttpHeaders() {
 		return this.httpHeaders;
 	}
@@ -573,8 +588,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.maxTokens, this.maxCompletionTokens, this.n, this.presencePenalty, this.responseFormat,
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
-				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions);
+				this.internalToolExecutionEnabled, this.internalToolExecutionMaxIterations, this.toolContext,
+				this.outputModalities, this.outputAudio, this.store, this.metadata, this.reasoningEffort,
+				this.webSearchOptions);
 	}
 
 	@Override
@@ -603,6 +619,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.httpHeaders, other.httpHeaders)
 				&& Objects.equals(this.toolContext, other.toolContext)
 				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
+				&& Objects.equals(this.internalToolExecutionMaxIterations, other.internalToolExecutionMaxIterations)
 				&& Objects.equals(this.outputModalities, other.outputModalities)
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
 				&& Objects.equals(this.metadata, other.metadata)
@@ -762,6 +779,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+			this.options.setInternalToolExecutionMaxIterations(internalToolExecutionMaxIterations);
 			return this;
 		}
 

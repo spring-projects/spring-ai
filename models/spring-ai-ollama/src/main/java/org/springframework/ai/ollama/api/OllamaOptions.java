@@ -44,6 +44,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -320,6 +321,8 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
+	@JsonIgnore
+	private Integer internalToolExecutionMaxIterations;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -397,6 +400,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.stop(fromOptions.getStop())
 				.toolNames(fromOptions.getToolNames())
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.internalToolExecutionMaxIterations(fromOptions.getInternalToolExecutionMaxIterations())
 				.toolCallbacks(fromOptions.getToolCallbacks())
 				.toolContext(fromOptions.getToolContext()).build();
 	}
@@ -747,6 +751,16 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	@Override
+    public Integer getInternalToolExecutionMaxIterations() {
+        return this.internalToolExecutionMaxIterations;
+    }
+
+	@Override
+    public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
+		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
+    }
+
+	@Override
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
@@ -809,6 +823,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.internalToolExecutionMaxIterations, that.internalToolExecutionMaxIterations)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
 	}
 
@@ -820,7 +835,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
 				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
 				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext);
+				this.internalToolExecutionMaxIterations, this.toolContext);
 	}
 
 	public static class Builder {
@@ -1026,6 +1041,11 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+			this.options.setInternalToolExecutionMaxIterations(internalToolExecutionMaxIterations);
 			return this;
 		}
 

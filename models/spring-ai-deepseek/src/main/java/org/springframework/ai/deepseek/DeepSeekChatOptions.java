@@ -43,6 +43,7 @@ import org.springframework.util.Assert;
  * chat completion</a>
  *
  * @author Geng Rong
+ * @author lambochen
  */
 @JsonInclude(Include.NON_NULL)
 public class DeepSeekChatOptions implements ToolCallingChatOptions {
@@ -288,6 +289,18 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
+
+	@Override
+	@JsonIgnore
+	public Integer getInternalToolExecutionMaxIterations() {
+    	return 0;
+    }
+
+	@Override
+	@JsonIgnore
+	public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
+
+    }
 
 	public Boolean getLogprobs() {
 		return this.logprobs;

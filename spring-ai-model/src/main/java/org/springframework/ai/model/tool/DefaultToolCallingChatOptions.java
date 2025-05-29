@@ -33,6 +33,7 @@ import org.springframework.util.Assert;
  * Default implementation of {@link ToolCallingChatOptions}.
  *
  * @author Thomas Vitale
+ * @author lambochen
  * @since 1.0.0
  */
 public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
@@ -116,6 +117,16 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	@Override
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	public Integer getInternalToolExecutionMaxIterations() {
+		return 0;
+	}
+
+	@Override
+	public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
+
 	}
 
 	@Override

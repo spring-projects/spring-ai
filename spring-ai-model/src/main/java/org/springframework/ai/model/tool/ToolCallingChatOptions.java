@@ -37,6 +37,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 1.0.0
  */
 public interface ToolCallingChatOptions extends ChatOptions {
@@ -75,6 +76,20 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * by the model or if the tools should be executed directly by the caller.
 	 */
 	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
+
+	/**
+	 * Get the maximum number of iterations for tool execution. 0 or null means no limit.
+	 * @return the maximum number of iterations.
+	 * @see #getInternalToolExecutionEnabled()
+	 */
+	@Nullable
+	Integer getInternalToolExecutionMaxIterations();
+
+	/**
+	 * Set the maximum number of iterations for tool execution. 0 or null means no limit.
+	 * @param internalToolExecutionMaxIterations the maximum number of iterations.
+	 */
+	void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations);
 
 	/**
 	 * Get the configured tool context.

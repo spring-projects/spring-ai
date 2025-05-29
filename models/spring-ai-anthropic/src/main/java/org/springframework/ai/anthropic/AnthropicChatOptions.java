@@ -44,6 +44,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -78,6 +79,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	 */
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
+
+	@JsonIgnore
+	private Integer internalToolExecutionMaxIterations;
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
@@ -224,6 +228,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	public Integer getInternalToolExecutionMaxIterations() {
+		return this.internalToolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
+		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
 	}
 
 	@Override
