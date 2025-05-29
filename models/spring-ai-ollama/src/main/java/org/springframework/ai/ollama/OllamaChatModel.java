@@ -84,6 +84,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public class OllamaChatModel implements ChatModel {
@@ -170,18 +171,21 @@ public class OllamaChatModel implements ChatModel {
 		Duration totalDuration = response.getTotalDuration();
 
 		if (previousChatResponse != null && previousChatResponse.getMetadata() != null) {
-			if (previousChatResponse.getMetadata().get(METADATA_EVAL_DURATION) != null) {
-				evalDuration = evalDuration.plus(previousChatResponse.getMetadata().get(METADATA_EVAL_DURATION));
+			Object metadataEvalDuration = previousChatResponse.getMetadata().get(METADATA_EVAL_DURATION);
+			if (metadataEvalDuration != null && evalDuration != null) {
+				evalDuration = evalDuration.plus((Duration) metadataEvalDuration);
 			}
-			if (previousChatResponse.getMetadata().get(METADATA_PROMPT_EVAL_DURATION) != null) {
-				promptEvalDuration = promptEvalDuration
-					.plus(previousChatResponse.getMetadata().get(METADATA_PROMPT_EVAL_DURATION));
+			Object metadataPromptEvalDuration = previousChatResponse.getMetadata().get(METADATA_PROMPT_EVAL_DURATION);
+			if (metadataPromptEvalDuration != null && promptEvalDuration != null) {
+				promptEvalDuration = promptEvalDuration.plus((Duration) metadataPromptEvalDuration);
 			}
-			if (previousChatResponse.getMetadata().get(METADATA_LOAD_DURATION) != null) {
-				loadDuration = loadDuration.plus(previousChatResponse.getMetadata().get(METADATA_LOAD_DURATION));
+			Object metadataLoadDuration = previousChatResponse.getMetadata().get(METADATA_LOAD_DURATION);
+			if (metadataLoadDuration != null && loadDuration != null) {
+				loadDuration = loadDuration.plus((Duration) metadataLoadDuration);
 			}
-			if (previousChatResponse.getMetadata().get(METADATA_TOTAL_DURATION) != null) {
-				totalDuration = totalDuration.plus(previousChatResponse.getMetadata().get(METADATA_TOTAL_DURATION));
+			Object metadataTotalDuration = previousChatResponse.getMetadata().get(METADATA_TOTAL_DURATION);
+			if (metadataTotalDuration != null && totalDuration != null) {
+				totalDuration = totalDuration.plus((Duration) metadataTotalDuration);
 			}
 			if (previousChatResponse.getMetadata().getUsage() != null) {
 				promptTokens += previousChatResponse.getMetadata().getUsage().getPromptTokens();
