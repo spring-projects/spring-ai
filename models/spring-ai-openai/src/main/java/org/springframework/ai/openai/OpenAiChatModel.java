@@ -180,7 +180,7 @@ public class OpenAiChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return this.internalCall(requestPrompt, null, 0);
+		return this.internalCall(requestPrompt, null, 1);
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
@@ -242,7 +242,6 @@ public class OpenAiChatModel implements ChatModel {
 
 			});
 
-		attempts++;
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
@@ -255,7 +254,7 @@ public class OpenAiChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response, attempts);
+						response, attempts + 1);
 			}
 		}
 
@@ -267,10 +266,10 @@ public class OpenAiChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return internalStream(requestPrompt, null);
+		return internalStream(requestPrompt, null, 1);
 	}
 
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -365,7 +364,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
 					return Flux.defer(() -> {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
@@ -379,7 +378,7 @@ public class OpenAiChatModel implements ChatModel {
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
+									response, attempts + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
