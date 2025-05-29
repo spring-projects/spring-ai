@@ -48,7 +48,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@Nullable
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	@Nullable
 	private String model;

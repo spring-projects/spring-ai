@@ -128,7 +128,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
@@ -291,7 +291,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
 		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
 	}
 

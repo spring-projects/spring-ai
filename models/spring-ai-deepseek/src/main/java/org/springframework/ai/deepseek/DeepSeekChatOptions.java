@@ -124,7 +124,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -301,7 +301,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@JsonIgnore
-	public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
 		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
     }
 
@@ -506,7 +506,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder internalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+		public Builder internalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
 			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
 			return this;
 		}

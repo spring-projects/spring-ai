@@ -202,7 +202,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	/**
 	 * Whether to include token usage information in streaming chat completion responses.
@@ -679,7 +679,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder InternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+		public Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
 			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxIterations);
 			return this;
 		}

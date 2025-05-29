@@ -323,7 +323,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -757,7 +757,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
     }
 
 	@Override
-    public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+    public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
 		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
     }
 

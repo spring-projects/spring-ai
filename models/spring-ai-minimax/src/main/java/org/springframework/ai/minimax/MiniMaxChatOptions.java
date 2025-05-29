@@ -155,7 +155,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	// @formatter:on
 
@@ -395,7 +395,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
 		result = prime * result
 				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
-		result = prime * result + ((this.internalToolExecutionMaxAttempts == null) ? 0
+		result = prime * result + ((this.internalToolExecutionMaxAttempts == null)
+				? ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS
 				: this.internalToolExecutionMaxAttempts.hashCode());
 		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
 		return result;

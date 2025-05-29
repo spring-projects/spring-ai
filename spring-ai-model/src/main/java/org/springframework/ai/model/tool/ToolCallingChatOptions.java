@@ -96,7 +96,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * Set the maximum number of attempts for tool execution.
 	 * @param internalToolExecutionMaxAttempts the maximum number of attempts.
 	 */
-	void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts);
+	void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts);
 
 	/**
 	 * Get the configured tool context.

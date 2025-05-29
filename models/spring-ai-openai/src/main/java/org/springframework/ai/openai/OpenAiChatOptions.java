@@ -220,7 +220,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	/**
 	 * Optional HTTP headers to be added to the chat completion request.
@@ -515,7 +515,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
 		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
 	}
 

@@ -127,7 +127,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts;
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
@@ -152,6 +152,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -317,7 +318,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
 		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
 	}
 
