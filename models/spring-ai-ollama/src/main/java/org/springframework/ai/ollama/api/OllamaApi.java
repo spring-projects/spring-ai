@@ -459,7 +459,7 @@ public final class OllamaApi {
 			private String keepAlive;
 			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
-			private boolean think;
+			private Boolean think;
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -504,7 +504,7 @@ public final class OllamaApi {
 				return this;
 			}
 
-			public Builder think(boolean think) {
+			public Builder think(Boolean think) {
 				this.think = think;
 				return this;
 			}
