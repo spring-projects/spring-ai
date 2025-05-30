@@ -242,6 +242,16 @@ public final class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-opus-4-0 model.
+		 */
+		CLAUDE_OPUS_4("claude-opus-4-0"),
+
+		/**
+		 * The claude-sonnet-4-0 model.
+		 */
+		CLAUDE_SONNET_4("claude-sonnet-4-0"),
+
+		/**
 		 * The claude-3-7-sonnet-latest model.
 		 */
 		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
