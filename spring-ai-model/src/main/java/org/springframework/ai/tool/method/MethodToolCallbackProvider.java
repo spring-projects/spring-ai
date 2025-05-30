@@ -80,7 +80,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	@Override
 	public ToolCallback[] getToolCallbacks() {
-		var toolCallbacks = this.toolObjects.stream()
+		return this.toolObjects.stream()
 			.map(toolObject -> Stream
 				.of(ReflectionUtils.getDeclaredMethods(
 						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
@@ -96,10 +96,6 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				.toArray(ToolCallback[]::new))
 			.flatMap(Stream::of)
 			.toArray(ToolCallback[]::new);
-
-		validateToolCallbacks(toolCallbacks);
-
-		return toolCallbacks;
 	}
 
 	private boolean isFunctionalType(Method toolMethod) {
