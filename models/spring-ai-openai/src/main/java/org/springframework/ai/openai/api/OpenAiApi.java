@@ -135,21 +135,11 @@ public class OpenAiApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.defaultStatusHandler(responseErrorHandler)
-			.defaultRequest(requestHeadersSpec -> {
-				if (!(apiKey instanceof NoopApiKey)) {
-					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-				}
-			})
 			.build();
 
 		this.webClient = webClientBuilder.clone()
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
-			.defaultRequest(requestHeadersSpec -> {
-				if (!(apiKey instanceof NoopApiKey)) {
-					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-				}
-			})
 			.build(); // @formatter:on
 	}
 
@@ -185,12 +175,12 @@ public class OpenAiApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
-		return this.restClient.post()
-			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
-			.body(chatRequest)
-			.retrieve()
-			.toEntity(ChatCompletion.class);
+		return this.restClient.post().uri(this.completionsPath).headers(headers -> {
+			headers.addAll(additionalHttpHeader);
+			if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+				headers.setBearerAuth(this.apiKey.getValue());
+			}
+		}).body(chatRequest).retrieve().toEntity(ChatCompletion.class);
 	}
 
 	/**
@@ -219,9 +209,12 @@ public class OpenAiApi {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
-		return this.webClient.post()
-			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+		return this.webClient.post().uri(this.completionsPath).headers(headers -> {
+			headers.addAll(additionalHttpHeader);
+			if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+				headers.setBearerAuth(this.apiKey.getValue());
+			}
+		})
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)

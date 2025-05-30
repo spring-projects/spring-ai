@@ -25,11 +25,11 @@ import java.util.Queue;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.SimpleApiKey;
@@ -228,6 +228,52 @@ public class OpenAiApiBuilderTests {
 		}
 
 		@Test
+		void dynamicApiKeyRestClientWithAdditionalAuthorizationHeader() throws InterruptedException {
+			OpenAiApi api = OpenAiApi.builder().apiKey(() -> {
+				throw new AssertionFailedError("Should not be called, API key is provided in headers");
+			}).baseUrl(mockWebServer.url("/").toString()).build();
+
+			MockResponse mockResponse = new MockResponse().setResponseCode(200)
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.setBody("""
+						{
+							"id": "chatcmpl-12345",
+							"object": "chat.completion",
+							"created": 1677858242,
+							"model": "gpt-3.5-turbo",
+							"choices": [
+								{
+						    		"index": 0,
+									"message": {
+									"role": "assistant",
+									"content": "Hello world"
+									},
+									"finish_reason": "stop"
+								}
+							],
+							"usage": {
+								"prompt_tokens": 10,
+								"completion_tokens": 5,
+								"total_tokens": 15
+							}
+						}
+						""");
+			mockWebServer.enqueue(mockResponse);
+
+			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
+					OpenAiApi.ChatCompletionMessage.Role.USER);
+			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
+					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, false);
+
+			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			additionalHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer additional-key");
+			ResponseEntity<OpenAiApi.ChatCompletion> response = api.chatCompletionEntity(request, additionalHeaders);
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer additional-key");
+		}
+
+		@Test
 		void dynamicApiKeyWebClient() throws InterruptedException {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			OpenAiApi api = OpenAiApi.builder()
@@ -277,6 +323,53 @@ public class OpenAiApiBuilderTests {
 
 			recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
+		}
+
+		@Test
+		void dynamicApiKeyWebClientWithAdditionalAuthorizationHeader() throws InterruptedException {
+			OpenAiApi api = OpenAiApi.builder().apiKey(() -> {
+				throw new AssertionFailedError("Should not be called, API key is provided in headers");
+			}).baseUrl(mockWebServer.url("/").toString()).build();
+
+			MockResponse mockResponse = new MockResponse().setResponseCode(200)
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.setBody("""
+						{
+							"id": "chatcmpl-12345",
+							"object": "chat.completion",
+							"created": 1677858242,
+							"model": "gpt-3.5-turbo",
+							"choices": [
+								{
+						    		"index": 0,
+									"message": {
+									"role": "assistant",
+									"content": "Hello world"
+									},
+									"finish_reason": "stop"
+								}
+							],
+							"usage": {
+								"prompt_tokens": 10,
+								"completion_tokens": 5,
+								"total_tokens": 15
+							}
+						}
+						""".replace("\n", ""));
+			mockWebServer.enqueue(mockResponse);
+
+			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
+					OpenAiApi.ChatCompletionMessage.Role.USER);
+			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
+					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, true);
+			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			additionalHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer additional-key");
+			List<OpenAiApi.ChatCompletionChunk> response = api.chatCompletionStream(request, additionalHeaders)
+				.collectList()
+				.block();
+			assertThat(response).hasSize(1);
+			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer additional-key");
 		}
 
 	}
