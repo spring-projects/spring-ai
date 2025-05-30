@@ -140,7 +140,7 @@ public class ParagraphManager {
 			return -1;
 		}
 		PDPage currentPage = current.findDestinationPage(this.document);
-		if(currentPage != null){
+		if (currentPage != null) {
 			PDPageTree pages = this.document.getDocumentCatalog().getPages();
 			for (int i = 0; i < pages.getCount(); i++) {
 				var page = pages.get(i);
