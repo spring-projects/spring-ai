@@ -141,17 +141,17 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
-		if (chatClientResponse.chatResponse() != null) {
+		// Handle streaming case where we have a single result
+		if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
+				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
+			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
+		}
+		else if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
 				.getResults()
 				.stream()
 				.map(g -> (Message) g.getOutput())
 				.toList();
-		}
-		// Handle streaming case where we have a single result
-		else if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
-				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
-			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
 		}
 
 		if (!assistantMessages.isEmpty()) {
