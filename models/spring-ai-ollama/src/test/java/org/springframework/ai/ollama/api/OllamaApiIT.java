@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Sun Yuhan
  */
 public class OllamaApiIT extends BaseOllamaIT {
 
@@ -168,6 +169,62 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.filter(r -> r.message() != null)
 			.map(r -> r.message().thinking())
 			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
+	}
+
+	@Test
+	public void streamChatWithThinking() {
+		var request = ChatRequest.builder(THINKING_MODEL)
+			.stream(true)
+			.think(true)
+			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
+			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().thinking())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("solar");
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
+	}
+
+	@Test
+	public void streamChatWithoutThinking() {
+		var request = ChatRequest.builder(THINKING_MODEL)
+			.stream(true)
+			.think(false)
+			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
+			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().content())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Earth");
+
+		assertThat(responses.stream().filter(r -> r.message() != null).allMatch(r -> r.message().thinking() == null))
+			.isTrue();
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();

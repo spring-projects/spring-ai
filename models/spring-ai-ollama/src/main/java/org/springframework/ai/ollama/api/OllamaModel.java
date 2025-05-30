@@ -44,6 +44,7 @@ public enum OllamaModel implements ChatModelDescription {
 	/**
 	 * Qwen3 is the latest generation of large language models in Qwen series, offering a
 	 * comprehensive suite of dense and mixture-of-experts (MoE) models.
+	 * Qwen3 1.7b
 	 */
 	QWEN3_7B("qwen3:7b"),
 
@@ -51,6 +52,16 @@ public enum OllamaModel implements ChatModelDescription {
 	 * Qwen3 4B
 	 */
 	QWEN3_4B("qwen3:4b"),
+
+	/**
+	 * Qwen3 1.7b
+	 */
+	QWEN_3_1_7_B("qwen3:1.7b"),
+
+	/**
+	 * Qwen3 0.6b
+	 */
+	QWEN_3_06B("qwen3:0.6b"),
 
 	/**
 	 * QwQ is the reasoning model of the Qwen series.
