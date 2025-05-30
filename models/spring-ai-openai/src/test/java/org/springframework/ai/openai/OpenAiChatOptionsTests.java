@@ -263,13 +263,10 @@ class OpenAiChatOptionsTests {
 	@Test
 	void testFromOptions_webSearchOptions() {
 		var chatOptions = OpenAiChatOptions.builder()
-				.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(
-						MEDIUM,
-						new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation(
-								"type",
-								new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation.Approximate("beijing", "china", "region", "UTC+8")
-						)
-				))
+			.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(MEDIUM,
+					new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation("type",
+							new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation.Approximate("beijing",
+									"china", "region", "UTC+8"))))
 			.build();
 		var target = OpenAiChatOptions.fromOptions(chatOptions);
 		assertThat(target.getWebSearchOptions()).isNotNull();
