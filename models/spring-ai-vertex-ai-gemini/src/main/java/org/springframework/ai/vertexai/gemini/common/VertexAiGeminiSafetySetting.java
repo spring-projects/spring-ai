@@ -18,6 +18,10 @@ package org.springframework.ai.vertexai.gemini.common;
 
 public class VertexAiGeminiSafetySetting {
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	/**
 	 * Enum representing different threshold levels for blocking harmful content.
 	 */
@@ -83,10 +87,10 @@ public class VertexAiGeminiSafetySetting {
 
 	private final HarmBlockMethod method;
 
-	private VertexAiGeminiSafetySetting(Builder builder) {
-		this.category = builder.category;
-		this.threshold = builder.threshold;
-		this.method = builder.method;
+	private VertexAiGeminiSafetySetting(HarmCategory category, HarmBlockThreshold threshold, HarmBlockMethod method) {
+		this.category = category;
+		this.threshold = threshold;
+		this.method = method;
 	}
 
 	public HarmCategory getCategory() {
@@ -159,7 +163,7 @@ public class VertexAiGeminiSafetySetting {
 		}
 
 		public VertexAiGeminiSafetySetting build() {
-			return new VertexAiGeminiSafetySetting(this);
+			return new VertexAiGeminiSafetySetting(this.category, this.threshold, this.method);
 		}
 
 	}
