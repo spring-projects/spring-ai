@@ -33,14 +33,16 @@ import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Sun Yuhan
  */
 public class OllamaApiIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
+	private static final String MODEL = OllamaModel.QWEN_3_1_7_B.getName();
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
@@ -107,11 +109,67 @@ public class OllamaApiIT extends BaseOllamaIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.embeddings()).hasSize(1);
-		assertThat(response.embeddings().get(0)).hasSize(3072);
+		assertThat(response.embeddings().get(0)).hasSize(2048);
 		assertThat(response.model()).isEqualTo(MODEL);
 		assertThat(response.promptEvalCount()).isEqualTo(5);
 		assertThat(response.loadDuration()).isGreaterThan(1);
 		assertThat(response.totalDuration()).isGreaterThan(1);
+	}
+
+	@Test
+	public void streamChatWithThinking() {
+		var request = ChatRequest.builder(MODEL)
+			.stream(true)
+			.think(true)
+			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
+			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().thinking())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("solar");
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
+	}
+
+	@Test
+	public void streamChatWithoutThinking() {
+		var request = ChatRequest.builder(MODEL)
+			.stream(true)
+			.think(false)
+			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
+			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().content())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Earth");
+
+		assertThat(responses.stream().filter(r -> r.message() != null).allMatch(r -> r.message().thinking() == null))
+			.isTrue();
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
 	}
 
 }
