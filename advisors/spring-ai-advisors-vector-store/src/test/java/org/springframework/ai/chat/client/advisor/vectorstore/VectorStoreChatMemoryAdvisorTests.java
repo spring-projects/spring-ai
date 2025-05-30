@@ -91,4 +91,14 @@ class VectorStoreChatMemoryAdvisorTests {
 			.hasMessageContaining("topK must be greater than 0");
 	}
 
+	@Test
+	void whenDefaultSimilarityThresholdIsLessThanZeroThenThrow() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		assertThatThrownBy(
+				() -> VectorStoreChatMemoryAdvisor.builder(vectorStore).defaultSimilarityThreshold(-0.1).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("similarityThreshold must be equal to or greater than 0");
+	}
+
 }
