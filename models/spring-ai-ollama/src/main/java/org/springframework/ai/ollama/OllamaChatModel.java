@@ -460,7 +460,8 @@ public class OllamaChatModel implements ChatModel {
 		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(requestOptions.getModel())
 			.stream(stream)
 			.messages(ollamaMessages)
-			.options(requestOptions);
+			.options(requestOptions)
+			.think(requestOptions.getThink());
 
 		if (requestOptions.getFormat() != null) {
 			requestBuilder.format(requestOptions.getFormat());

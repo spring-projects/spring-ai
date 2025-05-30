@@ -51,6 +51,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Jonghoon Park
+ * @author Sun Yuhan
  * @since 0.8.0
  */
 // @formatter:off
@@ -251,6 +252,7 @@ public final class OllamaApi {
 	 *
 	 * @param role The role of the message of type {@link Role}.
 	 * @param content The content of the message.
+	 * @param thinking The thinking of the model.
 	 * @param images The list of base64-encoded images to send with the message.
 	 * 				 Requires multimodal models such as llava or bakllava.
 	 * @param toolCalls The relevant tool call.
@@ -260,6 +262,7 @@ public final class OllamaApi {
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
+			@JsonProperty("thinking") String thinking,
 			@JsonProperty("images") List<String> images,
 			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
 
@@ -321,6 +324,7 @@ public final class OllamaApi {
 
 			private final Role role;
 			private String content;
+			private String thinking;
 			private List<String> images;
 			private List<ToolCall> toolCalls;
 
@@ -330,6 +334,11 @@ public final class OllamaApi {
 
 			public Builder content(String content) {
 				this.content = content;
+				return this;
+			}
+
+			public Builder thinking(String thinking) {
+				this.thinking = thinking;
 				return this;
 			}
 
@@ -344,7 +353,7 @@ public final class OllamaApi {
 			}
 
 			public Message build() {
-				return new Message(this.role, this.content, this.images, this.toolCalls);
+				return new Message(this.role, this.content, this.thinking, this.images, this.toolCalls);
 			}
 		}
 	}
@@ -359,6 +368,7 @@ public final class OllamaApi {
 	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
 	 * @param tools List of tools the model has access to.
 	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
+	 * @param think The model should think before responding, if the model supports it.
 	 * You can use the {@link OllamaOptions} builder to create the options then {@link OllamaOptions#toMap()} to convert the options into a map.
 	 *
 	 * @see <a href=
@@ -375,7 +385,8 @@ public final class OllamaApi {
 			@JsonProperty("format") Object format,
 			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("tools") List<Tool> tools,
-			@JsonProperty("options") Map<String, Object> options
+			@JsonProperty("options") Map<String, Object> options,
+			@JsonProperty("think") Boolean think
 	) {
 
 		public static Builder builder(String model) {
@@ -448,6 +459,7 @@ public final class OllamaApi {
 			private String keepAlive;
 			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
+			private boolean think;
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -492,8 +504,13 @@ public final class OllamaApi {
 				return this;
 			}
 
+			public Builder think(boolean think) {
+				this.think = think;
+				return this;
+			}
+
 			public ChatRequest build() {
-				return new ChatRequest(this.model, this.messages, this.stream, this.format, this.keepAlive, this.tools, this.options);
+				return new ChatRequest(this.model, this.messages, this.stream, this.format, this.keepAlive, this.tools, this.options, this.think);
 			}
 		}
 	}

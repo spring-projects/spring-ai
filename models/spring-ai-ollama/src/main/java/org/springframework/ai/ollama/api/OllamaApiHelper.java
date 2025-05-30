@@ -25,6 +25,7 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public final class OllamaApiHelper {
@@ -81,12 +82,18 @@ public final class OllamaApiHelper {
 	private static OllamaApi.Message merge(OllamaApi.Message previous, OllamaApi.Message current) {
 
 		String content = mergeContent(previous, current);
+		String thinking = mergeThinking(previous, current);
 		OllamaApi.Message.Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : OllamaApi.Message.Role.ASSISTANT);
 		List<String> images = mergeImages(previous, current);
 		List<OllamaApi.Message.ToolCall> toolCalls = mergeToolCall(previous, current);
 
-		return OllamaApi.Message.builder(role).content(content).images(images).toolCalls(toolCalls).build();
+		return OllamaApi.Message.builder(role)
+			.content(content)
+			.thinking(thinking)
+			.images(images)
+			.toolCalls(toolCalls)
+			.build();
 	}
 
 	private static Instant merge(Instant previous, Instant current) {
@@ -132,6 +139,17 @@ public final class OllamaApiHelper {
 		}
 
 		return previous.content() + current.content();
+	}
+
+	private static String mergeThinking(OllamaApi.Message previous, OllamaApi.Message current) {
+		if (previous == null || previous.thinking() == null) {
+			return (current != null ? current.thinking() : null);
+		}
+		if (current == null || current.thinking() == null) {
+			return (previous != null ? previous.thinking() : null);
+		}
+
+		return previous.thinking() + current.thinking();
 	}
 
 	private static List<OllamaApi.Message.ToolCall> mergeToolCall(OllamaApi.Message previous,
