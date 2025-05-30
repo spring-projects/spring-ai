@@ -45,4 +45,3 @@ shell.log
 
 **/.claude/settings.local.json
 .devcontainer
-/models/spring-ai-openai/nbproject/
