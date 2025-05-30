@@ -33,6 +33,7 @@ import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author Christian Tzolov
@@ -144,6 +145,34 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.message().role()).isEqualTo(Role.ASSISTANT);
 		assertThat(response.message().content()).contains("Sofia");
 		assertThat(response.message().thinking()).isNotEmpty();
+	}
+
+	@Test
+	public void chatWithThinking() {
+		var request = ChatRequest.builder(THINKING_MODEL)
+			.stream(true)
+			.think(true)
+			.messages(List.of(Message.builder(Role.USER)
+				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
+				.build()))
+			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().thinking())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
 	}
 
 }
