@@ -25,7 +25,6 @@ import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -43,7 +42,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  * @see <a href= "https://platform.openai.com/docs/api-reference/images">Images</a>
  * @author lambochen
- * @author Filip Hrisafov
  */
 public class OpenAiImageApi {
 
@@ -66,18 +64,15 @@ public class OpenAiImageApi {
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		// @formatter:off
-		this.restClient = restClientBuilder.clone()
-			.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(h -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					h.setBearerAuth(apiKey.getValue());
+				}
 				h.setContentType(MediaType.APPLICATION_JSON);
 				h.addAll(headers);
 			})
 			.defaultStatusHandler(responseErrorHandler)
-			.defaultRequest(requestHeadersSpec -> {
-				if (!(apiKey instanceof NoopApiKey)) {
-					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-				}
-			})
 			.build();
 		// @formatter:on
 

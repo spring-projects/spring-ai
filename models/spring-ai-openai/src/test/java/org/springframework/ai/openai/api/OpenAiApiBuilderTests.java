@@ -16,27 +16,10 @@
 
 package org.springframework.ai.openai.api;
 
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Queue;
-
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -157,128 +140,6 @@ public class OpenAiApiBuilderTests {
 		assertThatThrownBy(() -> OpenAiApi.builder().responseErrorHandler(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("responseErrorHandler cannot be null");
-	}
-
-	@Nested
-	class MockRequests {
-
-		MockWebServer mockWebServer;
-
-		@BeforeEach
-		void setUp() throws IOException {
-			mockWebServer = new MockWebServer();
-			mockWebServer.start();
-		}
-
-		@AfterEach
-		void tearDown() throws IOException {
-			mockWebServer.shutdown();
-		}
-
-		@Test
-		void dynamicApiKeyRestClient() throws InterruptedException {
-			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
-			OpenAiApi api = OpenAiApi.builder()
-				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
-				.build();
-
-			MockResponse mockResponse = new MockResponse().setResponseCode(200)
-				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-				.setBody("""
-						{
-							"id": "chatcmpl-12345",
-							"object": "chat.completion",
-							"created": 1677858242,
-							"model": "gpt-3.5-turbo",
-							"choices": [
-								{
-						    		"index": 0,
-									"message": {
-									"role": "assistant",
-									"content": "Hello world"
-									},
-									"finish_reason": "stop"
-								}
-							],
-							"usage": {
-								"prompt_tokens": 10,
-								"completion_tokens": 5,
-								"total_tokens": 15
-							}
-						}
-						""");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
-
-			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
-					OpenAiApi.ChatCompletionMessage.Role.USER);
-			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
-					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, false);
-			ResponseEntity<OpenAiApi.ChatCompletion> response = api.chatCompletionEntity(request);
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
-			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
-
-			response = api.chatCompletionEntity(request);
-			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-
-			recordedRequest = mockWebServer.takeRequest();
-			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
-		}
-
-		@Test
-		void dynamicApiKeyWebClient() throws InterruptedException {
-			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
-			OpenAiApi api = OpenAiApi.builder()
-				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
-				.build();
-
-			MockResponse mockResponse = new MockResponse().setResponseCode(200)
-				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-				.setBody("""
-						{
-							"id": "chatcmpl-12345",
-							"object": "chat.completion",
-							"created": 1677858242,
-							"model": "gpt-3.5-turbo",
-							"choices": [
-								{
-						    		"index": 0,
-									"message": {
-									"role": "assistant",
-									"content": "Hello world"
-									},
-									"finish_reason": "stop"
-								}
-							],
-							"usage": {
-								"prompt_tokens": 10,
-								"completion_tokens": 5,
-								"total_tokens": 15
-							}
-						}
-						""".replace("\n", ""));
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
-
-			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
-					OpenAiApi.ChatCompletionMessage.Role.USER);
-			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
-					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, true);
-			List<OpenAiApi.ChatCompletionChunk> response = api.chatCompletionStream(request).collectList().block();
-			assertThat(response).hasSize(1);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
-			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
-
-			response = api.chatCompletionStream(request).collectList().block();
-			assertThat(response).hasSize(1);
-
-			recordedRequest = mockWebServer.takeRequest();
-			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
-		}
-
 	}
 
 }
