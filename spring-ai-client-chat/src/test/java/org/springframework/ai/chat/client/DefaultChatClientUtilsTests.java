@@ -323,6 +323,60 @@ class DefaultChatClientUtilsTests {
 	}
 
 	@Test
+	void whenToolNamesWithoutChatOptionsAreProvidedThenToolCallingChatOptionsAreSet() {
+		List<String> toolNames = List.of("tool1", "tool2");
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.toolNames(toolNames.toArray(new String[0]));
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolNames()).containsExactlyInAnyOrderElementsOf(toolNames);
+	}
+
+	@Test
+	void whenToolCallbacksWithoutChatOptionsAreProvidedThenToolCallingChatOptionsAreSet() {
+		ToolCallback toolCallback = new TestToolCallback("tool1");
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.toolCallbacks(toolCallback);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolCallbacks()).contains(toolCallback);
+	}
+
+	@Test
+	void whenToolContextWithoutChatOptionsIsProvidedThenToolCallingChatOptionsAreSet() {
+		Map<String, Object> toolContext = Map.of("key", "value");
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.toolContext(toolContext);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext);
+	}
+
+	@Test
 	void whenAdvisorParamsAreProvidedThenTheyAreAddedToContext() {
 		Map<String, Object> advisorParams = Map.of("key1", "value1", "key2", "value2");
 		ChatModel chatModel = mock(ChatModel.class);
