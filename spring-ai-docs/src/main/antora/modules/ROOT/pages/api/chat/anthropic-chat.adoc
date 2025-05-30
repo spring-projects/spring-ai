@@ -124,7 +124,7 @@ The prefix `spring.ai.anthropic` is used as the property prefix that lets you co
 | spring.ai.anthropic.completions-path   | The path to append to the base URL. |  `/v1/chat/completions`
 | spring.ai.anthropic.version   | Anthropic API version |  2023-06-01
 | spring.ai.anthropic.api-key    | The API Key           |  -
-| spring.ai.anthropic.beta-version | Enables new/experimental features. If set to `max-tokens-3-5-sonnet-2024-07-15` 
+| spring.ai.anthropic.beta-version | Enables new/experimental features. If set to `max-tokens-3-5-sonnet-2024-07-15`
 the output tokens limit is increased from `4096` to `8192` tokens (for claude-3-5-sonnet only). | `tools-2024-04-04`
 |====
 
@@ -163,6 +163,8 @@ The prefix `spring.ai.anthropic.chat` is the property prefix that lets you confi
 | (**deprecated** - replaced by a negated `internal-tool-execution-enabled`) spring.ai.anthropic.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 | spring.ai.anthropic.chat.options.http-headers | Optional HTTP headers to be added to the chat completion request. | -
 |====
+
+TIP: For the latest list of model aliases and their descriptions, see the link:https://docs.anthropic.com/en/docs/about-claude/models/overview#model-aliases[official Anthropic model aliases documentation].
 
 TIP: All properties prefixed with `spring.ai.anthropic.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
 
@@ -262,7 +264,7 @@ spring.ai.anthropic.chat.options.temperature=0.7
 spring.ai.anthropic.chat.options.max-tokens=450
 ----
 
-TIP: replace the `api-key` with your Anthropic credentials.
+TIP: Replace the `api-key` with your Anthropic credentials.
 
 This will create a `AnthropicChatModel` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the chat model for text generations.
