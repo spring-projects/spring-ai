@@ -939,7 +939,7 @@ class CustomerTools {
 
     @Tool(description = "Retrieve customer information")
     Customer getCustomerInfo(Long id, ToolContext toolContext) {
-        return customerRepository.findById(id, toolContext.get("tenantId"));
+        return customerRepository.findById(id, toolContext.getContext().get("tenantId"));
     }
 
 }
