@@ -49,7 +49,6 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
- * @author Filip Hrisafov
  * @since 0.8.1
  */
 public class OpenAiAudioApi {
@@ -72,30 +71,20 @@ public class OpenAiAudioApi {
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> authHeaders = h -> {
+			if (!(apiKey instanceof NoopApiKey)) {
+				h.setBearerAuth(apiKey.getValue());
+			}
 			h.addAll(headers);
+			// h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		// @formatter:off
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
 			.defaultHeaders(authHeaders)
 			.defaultStatusHandler(responseErrorHandler)
-			.defaultRequest(requestHeadersSpec -> {
-				if (!(apiKey instanceof NoopApiKey)) {
-					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-				}
-			})
 			.build();
 
-		this.webClient = webClientBuilder.clone()
-			.baseUrl(baseUrl)
-			.defaultHeaders(authHeaders)
-			.defaultRequest(requestHeadersSpec -> {
-				if (!(apiKey instanceof NoopApiKey)) {
-					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-				}
-			})
-			.build(); // @formatter:on
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(authHeaders).build();
 	}
 
 	public static Builder builder() {
