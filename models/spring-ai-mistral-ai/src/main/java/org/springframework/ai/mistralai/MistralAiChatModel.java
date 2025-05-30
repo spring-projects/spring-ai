@@ -354,7 +354,11 @@ public class MistralAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		var assistantMessage = AssistantMessage.builder()
+			.text(choice.message().content())
+			.metadata(metadata)
+			.toolCalls(toolCalls)
+			.build();
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);

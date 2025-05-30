@@ -44,7 +44,11 @@ class DefaultToolExecutionEligibilityPredicateTests {
 
 		// Create a ChatResponse with tool calls
 		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("id1", "function", "testTool", "{}");
-		AssistantMessage assistantMessage = new AssistantMessage("test", Map.of(), List.of(toolCall));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.text("test")
+			.metadata(Map.of())
+			.toolCalls(List.of(toolCall))
+			.build();
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
@@ -73,7 +77,11 @@ class DefaultToolExecutionEligibilityPredicateTests {
 
 		// Create a ChatResponse with tool calls
 		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("id1", "function", "testTool", "{}");
-		AssistantMessage assistantMessage = new AssistantMessage("test", Map.of(), List.of(toolCall));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.text("test")
+			.metadata(Map.of())
+			.toolCalls(List.of(toolCall))
+			.build();
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate
@@ -102,7 +110,11 @@ class DefaultToolExecutionEligibilityPredicateTests {
 
 		// Create a ChatResponse with tool calls
 		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("id1", "function", "testTool", "{}");
-		AssistantMessage assistantMessage = new AssistantMessage("test", Map.of(), List.of(toolCall));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.text("test")
+			.metadata(Map.of())
+			.toolCalls(List.of(toolCall))
+			.build();
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 
 		// Test the predicate - should use default value (true) for internal tool
