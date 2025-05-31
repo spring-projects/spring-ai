@@ -310,6 +310,30 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
+	@Test
+	void shouldHandleObjectIdInSearchResults() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			Document doc1 = new Document("Test content for ObjectId handling");
+			Document doc2 = new Document("Another test content for ObjectId handling");
+			vectorStore.add(List.of(doc1, doc2));
+			Thread.sleep(5000);
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Test content").topK(5).build());
+
+			assertThat(results).hasSize(2);
+			results.forEach(result -> {
+				String id = result.getId();
+				assertThat(id).isNotNull();
+				assertThat(id).matches("^[0-9a-fA-F]{24}$");
+				assertThat(result.getText()).contains("Test content");
+				assertThat(result.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
+			});
+		});
+	}
+
 	public static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);
 		try {

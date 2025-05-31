@@ -240,7 +240,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	 * @return the Spring AI Document
 	 */
 	private Document mapMongoDocument(org.bson.Document mongoDocument, float[] queryEmbedding) {
-		String id = mongoDocument.getString(ID_FIELD_NAME);
+		String id = mongoDocument.getObjectId(ID_FIELD_NAME).toHexString();
 		String content = mongoDocument.getString(CONTENT_FIELD_NAME);
 		double score = mongoDocument.getDouble(SCORE_FIELD_NAME);
 		Map<String, Object> metadata = mongoDocument.get(METADATA_FIELD_NAME, org.bson.Document.class);
