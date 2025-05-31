@@ -94,22 +94,40 @@ final class DefaultChatClientUtils {
 		 */
 
 		ChatOptions processedChatOptions = inputRequest.getChatOptions();
-		if (processedChatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			if (!inputRequest.getToolNames().isEmpty()) {
-				Set<String> toolNames = ToolCallingChatOptions
-					.mergeToolNames(new HashSet<>(inputRequest.getToolNames()), toolCallingChatOptions.getToolNames());
-				toolCallingChatOptions.setToolNames(toolNames);
+		if (inputRequest.hasToolConfiguration()) {
+			if (processedChatOptions == null) {
+				ToolCallingChatOptions.Builder builder = ToolCallingChatOptions.builder();
+				if (!inputRequest.getToolNames().isEmpty()) {
+					builder.toolNames(inputRequest.getToolNames());
+				}
+				if (!inputRequest.getToolCallbacks().isEmpty()) {
+					List<ToolCallback> toolCallbacks = inputRequest.getToolCallbacks();
+					ToolCallingChatOptions.validateToolCallbacks(toolCallbacks);
+					builder.toolCallbacks(inputRequest.getToolCallbacks());
+				}
+				if (!CollectionUtils.isEmpty(inputRequest.getToolContext())) {
+					builder.toolContext(inputRequest.getToolContext());
+				}
+
+				processedChatOptions = builder.build();
 			}
-			if (!inputRequest.getToolCallbacks().isEmpty()) {
-				List<ToolCallback> toolCallbacks = ToolCallingChatOptions
-					.mergeToolCallbacks(inputRequest.getToolCallbacks(), toolCallingChatOptions.getToolCallbacks());
-				ToolCallingChatOptions.validateToolCallbacks(toolCallbacks);
-				toolCallingChatOptions.setToolCallbacks(toolCallbacks);
-			}
-			if (!CollectionUtils.isEmpty(inputRequest.getToolContext())) {
-				Map<String, Object> toolContext = ToolCallingChatOptions.mergeToolContext(inputRequest.getToolContext(),
-						toolCallingChatOptions.getToolContext());
-				toolCallingChatOptions.setToolContext(toolContext);
+			else if (processedChatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				if (!inputRequest.getToolNames().isEmpty()) {
+					Set<String> toolNames = ToolCallingChatOptions.mergeToolNames(
+							new HashSet<>(inputRequest.getToolNames()), toolCallingChatOptions.getToolNames());
+					toolCallingChatOptions.setToolNames(toolNames);
+				}
+				if (!inputRequest.getToolCallbacks().isEmpty()) {
+					List<ToolCallback> toolCallbacks = ToolCallingChatOptions
+						.mergeToolCallbacks(inputRequest.getToolCallbacks(), toolCallingChatOptions.getToolCallbacks());
+					ToolCallingChatOptions.validateToolCallbacks(toolCallbacks);
+					toolCallingChatOptions.setToolCallbacks(toolCallbacks);
+				}
+				if (!CollectionUtils.isEmpty(inputRequest.getToolContext())) {
+					Map<String, Object> toolContext = ToolCallingChatOptions
+						.mergeToolContext(inputRequest.getToolContext(), toolCallingChatOptions.getToolContext());
+					toolCallingChatOptions.setToolContext(toolContext);
+				}
 			}
 		}
 
