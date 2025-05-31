@@ -24,6 +24,7 @@ import com.azure.ai.openai.models.AzureChatGroundingEnhancementConfiguration;
 import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
 import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link AzureOpenAiChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author lambochen
  */
 class AzureOpenAiChatOptionsTests {
 
@@ -65,15 +67,17 @@ class AzureOpenAiChatOptionsTests {
 			.topLogprobs(5)
 			.enhancements(enhancements)
 			.streamOptions(streamOptions)
+			.internalToolExecutionMaxAttempts(3)
 			.build();
 
 		assertThat(options)
 			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "n", "presencePenalty", "stop",
 					"temperature", "topP", "user", "responseFormat", "streamUsage", "reasoningEffort", "seed",
-					"logprobs", "topLogProbs", "enhancements", "streamOptions")
+					"logprobs", "topLogProbs", "enhancements", "streamOptions",
+					"internalToolExecutionMaxAttempts")
 			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), 200, 2, 0.8,
 					List.of("stop1", "stop2"), 0.7, 0.9, "test-user", responseFormat, true, "low", 12345L, true, 5,
-					enhancements, streamOptions);
+					enhancements, streamOptions, 3);
 	}
 
 	@Test
@@ -107,6 +111,7 @@ class AzureOpenAiChatOptionsTests {
 			.topLogprobs(5)
 			.enhancements(enhancements)
 			.streamOptions(streamOptions)
+			.internalToolExecutionMaxAttempts(3)
 			.build();
 
 		AzureOpenAiChatOptions copiedOptions = originalOptions.copy();
@@ -115,6 +120,8 @@ class AzureOpenAiChatOptionsTests {
 		// Ensure deep copy
 		assertThat(copiedOptions.getStop()).isNotSameAs(originalOptions.getStop());
 		assertThat(copiedOptions.getToolContext()).isNotSameAs(originalOptions.getToolContext());
+
+		assertThat(copiedOptions.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
 	}
 
 	@Test
@@ -145,6 +152,7 @@ class AzureOpenAiChatOptionsTests {
 		options.setTopLogProbs(5);
 		options.setEnhancements(enhancements);
 		options.setStreamOptions(streamOptions);
+		options.setInternalToolExecutionMaxAttempts(3);
 
 		assertThat(options.getDeploymentName()).isEqualTo("test-deployment");
 		options.setModel("test-model");
@@ -168,6 +176,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getEnhancements()).isEqualTo(enhancements);
 		assertThat(options.getStreamOptions()).isEqualTo(streamOptions);
 		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
 	}
 
 	@Test
@@ -193,6 +202,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getEnhancements()).isNull();
 		assertThat(options.getStreamOptions()).isNull();
 		assertThat(options.getModel()).isNull();
+		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 	}
 
 }

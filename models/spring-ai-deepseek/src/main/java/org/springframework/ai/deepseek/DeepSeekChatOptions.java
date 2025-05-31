@@ -348,7 +348,9 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs,
 				this.maxTokens,  this.presencePenalty, this.responseFormat,
 				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
-				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.internalToolExecutionMaxAttempts,
+				this.toolContext);
 	}
 
 
