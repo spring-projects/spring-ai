@@ -1,6 +1,7 @@
 name: PR Check
 
 on:
+  push:
   pull_request:
     branches:
       - main
@@ -9,7 +10,6 @@ jobs:
   build:
     name: Build branch
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'spring-projects' }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
