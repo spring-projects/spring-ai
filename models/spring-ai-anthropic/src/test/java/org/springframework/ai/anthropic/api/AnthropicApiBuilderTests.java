@@ -36,6 +36,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -43,6 +45,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.opentest4j.AssertionFailedError;
 
 public class AnthropicApiBuilderTests {
 
@@ -192,6 +195,50 @@ public class AnthropicApiBuilderTests {
 		}
 
 		@Test
+		void dynamicApiKeyRestClientWithAdditionalApiKeyHeader() throws InterruptedException {
+			AnthropicApi api = AnthropicApi.builder()
+					.apiKey(() -> {
+						throw new AssertionFailedError("Should not be called, API key is provided in headers");
+					})
+				.baseUrl(mockWebServer.url("/").toString())
+				.build();
+
+			MockResponse mockResponse = new MockResponse().setResponseCode(200)
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.setBody("""
+						{
+							"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY",
+						 	"type": "message",
+						 	"role": "assistant",
+						 	"content": [],
+						 	"model": "claude-opus-3-latest",
+						 	"stop_reason": null,
+						 	"stop_sequence": null,
+							 "usage": {
+						     	"input_tokens": 25,
+						     	"output_tokens": 1
+							}
+						}
+						""");
+			mockWebServer.enqueue(mockResponse);
+
+			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
+					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
+			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
+				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.temperature(0.8)
+				.messages(List.of(chatCompletionMessage))
+				.build();
+			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			additionalHeaders.add("x-api-key", "additional-key");
+			ResponseEntity<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionEntity(request, additionalHeaders);
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
+			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("additional-key");
+		}
+
+		@Test
 		void dynamicApiKeyWebClient() throws InterruptedException {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			AnthropicApi api = AnthropicApi.builder()
@@ -203,8 +250,23 @@ public class AnthropicApiBuilderTests {
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
 				.setBody(
 						"""
-									 {"type": "message_start", "message": {"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY", "type": "message", "role": "assistant", "content": [], "model": "claude-opus-4-20250514", "stop_reason": null, "stop_sequence": null, "usage": {"input_tokens": 25, "output_tokens": 1}}}
-								""");
+						{
+							"type": "message_start",
+							"message": {
+								"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY",
+								"type": "message",
+								"role": "assistant",
+								"content": [],
+								"model": "claude-opus-4-20250514",
+								"stop_reason": null,
+								"stop_sequence": null,
+								"usage": {
+									"input_tokens": 25,
+									"output_tokens": 1
+								}
+							}
+						}
+						""".replace("\n", ""));
 			mockWebServer.enqueue(mockResponse);
 			mockWebServer.enqueue(mockResponse);
 
@@ -216,18 +278,68 @@ public class AnthropicApiBuilderTests {
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)
 				.build();
-			List<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionStream(request)
+			api.chatCompletionStream(request)
 				.collectList()
 				.block();
 			RecordedRequest recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("key1");
 
-			response = api.chatCompletionStream(request).collectList().block();
+			api.chatCompletionStream(request).collectList().block();
 
 			recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("key2");
+		}
+
+		@Test
+		void dynamicApiKeyWebClientWithAdditionalApiKey() throws InterruptedException {
+			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
+			AnthropicApi api = AnthropicApi.builder()
+				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
+				.baseUrl(mockWebServer.url("/").toString())
+				.build();
+
+			MockResponse mockResponse = new MockResponse().setResponseCode(200)
+					.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
+					.setBody(
+							"""
+							{
+								"type": "message_start",
+								"message": {
+									"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY",
+									"type": "message",
+									"role": "assistant",
+									"content": [],
+									"model": "claude-opus-4-20250514",
+									"stop_reason": null,
+									"stop_sequence": null,
+									"usage": {
+										"input_tokens": 25,
+										"output_tokens": 1
+									}
+								}
+							}
+							""".replace("\n", ""));
+			mockWebServer.enqueue(mockResponse);
+
+			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
+					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
+			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
+				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.temperature(0.8)
+				.messages(List.of(chatCompletionMessage))
+				.stream(true)
+				.build();
+			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			additionalHeaders.add("x-api-key", "additional-key");
+
+			api.chatCompletionStream(request, additionalHeaders)
+				.collectList()
+				.block();
+			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
+			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("additional-key");
 		}
 
 	}

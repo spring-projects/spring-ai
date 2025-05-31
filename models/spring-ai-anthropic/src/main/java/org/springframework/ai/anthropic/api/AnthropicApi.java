@@ -98,6 +98,8 @@ public final class AnthropicApi {
 
 	private final WebClient webClient;
 
+	private final ApiKey apiKey;
+
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
@@ -120,17 +122,12 @@ public final class AnthropicApi {
 		};
 
 		this.completionsPath = completionsPath;
+		this.apiKey = anthropicApiKey;
 
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
-			.defaultRequest(requestHeadersSpec -> {
-				String value = anthropicApiKey.getValue();
-				if (StringUtils.hasText(value)) {
-					requestHeadersSpec.header(HEADER_X_API_KEY, value);
-				}
-			})
 			.build();
 
 		this.webClient = webClientBuilder.clone()
@@ -140,12 +137,6 @@ public final class AnthropicApi {
 					resp -> resp.bodyToMono(String.class)
 						.flatMap(it -> Mono.error(new RuntimeException(
 								"Response exception, Status: [" + resp.statusCode() + "], Body:[" + it + "]"))))
-			.defaultRequest(requestHeadersSpec -> {
-				String value = anthropicApiKey.getValue();
-				if (StringUtils.hasText(value)) {
-					requestHeadersSpec.header(HEADER_X_API_KEY, value);
-				}
-			})
 			.build();
 	}
 
@@ -175,7 +166,15 @@ public final class AnthropicApi {
 
 		return this.restClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				if (!headers.containsKey(HEADER_X_API_KEY)) {
+					String apiKeyValue = this.apiKey.getValue();
+					if (StringUtils.hasText(apiKeyValue)) {
+						headers.add(HEADER_X_API_KEY, apiKeyValue);
+					}
+				}
+			})
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletionResponse.class);
@@ -211,7 +210,15 @@ public final class AnthropicApi {
 
 		return this.webClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				if (!headers.containsKey(HEADER_X_API_KEY)) {
+					String apiKeyValue = this.apiKey.getValue();
+					if (StringUtils.hasText(apiKeyValue)) {
+						headers.add(HEADER_X_API_KEY, apiKeyValue);
+					}
+				}
+			})
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
