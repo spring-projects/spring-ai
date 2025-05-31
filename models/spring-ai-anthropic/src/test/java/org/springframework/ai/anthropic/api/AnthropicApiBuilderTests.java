@@ -196,12 +196,9 @@ public class AnthropicApiBuilderTests {
 
 		@Test
 		void dynamicApiKeyRestClientWithAdditionalApiKeyHeader() throws InterruptedException {
-			AnthropicApi api = AnthropicApi.builder()
-					.apiKey(() -> {
-						throw new AssertionFailedError("Should not be called, API key is provided in headers");
-					})
-				.baseUrl(mockWebServer.url("/").toString())
-				.build();
+			AnthropicApi api = AnthropicApi.builder().apiKey(() -> {
+				throw new AssertionFailedError("Should not be called, API key is provided in headers");
+			}).baseUrl(mockWebServer.url("/").toString()).build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -231,7 +228,8 @@ public class AnthropicApiBuilderTests {
 				.build();
 			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
 			additionalHeaders.add("x-api-key", "additional-key");
-			ResponseEntity<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionEntity(request, additionalHeaders);
+			ResponseEntity<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionEntity(request,
+					additionalHeaders);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 			RecordedRequest recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
@@ -248,8 +246,7 @@ public class AnthropicApiBuilderTests {
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-				.setBody(
-						"""
+				.setBody("""
 						{
 							"type": "message_start",
 							"message": {
@@ -278,9 +275,7 @@ public class AnthropicApiBuilderTests {
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)
 				.build();
-			api.chatCompletionStream(request)
-				.collectList()
-				.block();
+			api.chatCompletionStream(request).collectList().block();
 			RecordedRequest recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("key1");
@@ -301,26 +296,25 @@ public class AnthropicApiBuilderTests {
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
-					.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-					.setBody(
-							"""
-							{
-								"type": "message_start",
-								"message": {
-									"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY",
-									"type": "message",
-									"role": "assistant",
-									"content": [],
-									"model": "claude-opus-4-20250514",
-									"stop_reason": null,
-									"stop_sequence": null,
-									"usage": {
-										"input_tokens": 25,
-										"output_tokens": 1
-									}
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
+				.setBody("""
+						{
+							"type": "message_start",
+							"message": {
+								"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY",
+								"type": "message",
+								"role": "assistant",
+								"content": [],
+								"model": "claude-opus-4-20250514",
+								"stop_reason": null,
+								"stop_sequence": null,
+								"usage": {
+									"input_tokens": 25,
+									"output_tokens": 1
 								}
 							}
-							""".replace("\n", ""));
+						}
+						""".replace("\n", ""));
 			mockWebServer.enqueue(mockResponse);
 
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
@@ -334,9 +328,7 @@ public class AnthropicApiBuilderTests {
 			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
 			additionalHeaders.add("x-api-key", "additional-key");
 
-			api.chatCompletionStream(request, additionalHeaders)
-				.collectList()
-				.block();
+			api.chatCompletionStream(request, additionalHeaders).collectList().block();
 			RecordedRequest recordedRequest = mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("additional-key");

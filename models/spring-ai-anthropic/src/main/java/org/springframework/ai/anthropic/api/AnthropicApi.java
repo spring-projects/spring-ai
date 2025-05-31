@@ -164,20 +164,17 @@ public final class AnthropicApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
+		// @formatter:off
 		return this.restClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
 				headers.addAll(additionalHttpHeader);
-				if (!headers.containsKey(HEADER_X_API_KEY)) {
-					String apiKeyValue = this.apiKey.getValue();
-					if (StringUtils.hasText(apiKeyValue)) {
-						headers.add(HEADER_X_API_KEY, apiKeyValue);
-					}
-				}
+				addDefaultHeadersIfMissing(headers);
 			})
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletionResponse.class);
+		// @formatter:on
 	}
 
 	/**
@@ -208,17 +205,13 @@ public final class AnthropicApi {
 
 		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
 
+		// @formatter:off
 		return this.webClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
 				headers.addAll(additionalHttpHeader);
-				if (!headers.containsKey(HEADER_X_API_KEY)) {
-					String apiKeyValue = this.apiKey.getValue();
-					if (StringUtils.hasText(apiKeyValue)) {
-						headers.add(HEADER_X_API_KEY, apiKeyValue);
-					}
-				}
-			})
+				addDefaultHeadersIfMissing(headers);
+			}) // @formatter:off
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -250,6 +243,15 @@ public final class AnthropicApi {
 			.flatMap(mono -> mono)
 			.map(event -> this.streamHelper.eventToChatCompletionResponse(event, chatCompletionReference))
 			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
+	}
+
+	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
+		if (!headers.containsKey(HEADER_X_API_KEY)) {
+			String apiKeyValue = this.apiKey.getValue();
+			if (StringUtils.hasText(apiKeyValue)) {
+				headers.add(HEADER_X_API_KEY, apiKeyValue);
+			}
+		}
 	}
 
 	/**
