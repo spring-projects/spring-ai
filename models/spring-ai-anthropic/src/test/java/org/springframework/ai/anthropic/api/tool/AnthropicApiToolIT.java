@@ -33,7 +33,6 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.anthropic.api.AnthropicApi.Tool;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;

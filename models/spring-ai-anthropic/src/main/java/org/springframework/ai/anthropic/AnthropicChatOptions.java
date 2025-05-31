@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.anthropic.api.tool.Tool;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -44,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -82,6 +84,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+	@JsonIgnore
+	private List<Tool> serverTools = new ArrayList<>();
 
 	/**
 	 * Optional HTTP headers to be added to the chat completion request.
@@ -110,6 +114,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+			.serverTools(fromOptions.getServerTools() != null ? new ArrayList<>(fromOptions.getServerTools()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.build();
 	}
@@ -251,6 +256,17 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	}
 
 	@JsonIgnore
+	public List<Tool> getServerTools() {
+		return this.serverTools;
+	}
+
+	public void setServerTools(List<Tool> serverTools) {
+		Assert.notNull(serverTools, "serverTools cannot be null");
+		Assert.noNullElements(serverTools, "serverTools cannot contain null elements");
+		this.serverTools = serverTools;
+	}
+
+	@JsonIgnore
 	public Map<String, String> getHttpHeaders() {
 		return this.httpHeaders;
 	}
@@ -282,6 +298,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.serverTools, that.serverTools)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders);
 	}
 
@@ -289,7 +306,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext, this.httpHeaders);
+				this.toolContext, this.serverTools, this.httpHeaders);
 	}
 
 	public static class Builder {
@@ -380,6 +397,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			}
 			else {
 				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		public Builder serverTools(List<Tool> serverTools) {
+			if (this.options.serverTools == null) {
+				this.options.serverTools = serverTools;
+			}
+			else {
+				this.options.serverTools.addAll(serverTools);
 			}
 			return this;
 		}

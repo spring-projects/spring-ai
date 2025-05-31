@@ -42,6 +42,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
+import org.springframework.ai.anthropic.api.tool.Tool;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -443,6 +444,8 @@ public class AnthropicChatModel implements ChatModel {
 					this.defaultOptions.getToolCallbacks()));
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.defaultOptions.getToolContext()));
+			requestOptions.setServerTools(
+					mergeServerTools(runtimeOptions.getServerTools(), this.defaultOptions.getServerTools()));
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -450,11 +453,21 @@ public class AnthropicChatModel implements ChatModel {
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+			requestOptions.setServerTools(this.defaultOptions.getServerTools());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
 		return new Prompt(prompt.getInstructions(), requestOptions);
+	}
+
+	static List<Tool> mergeServerTools(List<Tool> runtimeServerTools, List<Tool> defaultToolNames) {
+		Assert.notNull(runtimeServerTools, "runtimeServerTools cannot be null");
+		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
+		if (CollectionUtils.isEmpty(runtimeServerTools)) {
+			return new ArrayList<>(defaultToolNames);
+		}
+		return new ArrayList<>(runtimeServerTools);
 	}
 
 	private Map<String, String> mergeHttpHeaders(Map<String, String> runtimeHttpHeaders,
@@ -531,15 +544,19 @@ public class AnthropicChatModel implements ChatModel {
 			request = ChatCompletionRequest.from(request).tools(getFunctionTools(toolDefinitions)).build();
 		}
 
+		if (!CollectionUtils.isEmpty(requestOptions.getServerTools())) {
+			request = ChatCompletionRequest.from(request).tools(requestOptions.getServerTools()).build();
+		}
+
 		return request;
 	}
 
-	private List<AnthropicApi.Tool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
+	private List<Tool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			var name = toolDefinition.name();
 			var description = toolDefinition.description();
 			String inputSchema = toolDefinition.inputSchema();
-			return new AnthropicApi.Tool(name, description, JsonParser.fromJson(inputSchema, new TypeReference<>() {
+			return new Tool(name, description, JsonParser.fromJson(inputSchema, new TypeReference<>() {
 			}));
 		}).toList();
 	}
