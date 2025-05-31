@@ -11,21 +11,21 @@ class VertexAiGeminiChatOptionsTest {
 	void optionsDefault() {
 		var options = new VertexAiGeminiChatOptions();
 
-		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS, options.getInternalToolExecutionMaxAttempts());
+		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS,
+				options.getInternalToolExecutionMaxAttempts());
 	}
 
 	@Test
 	void builderDefault() {
 		var options = VertexAiGeminiChatOptions.builder().build();
 
-		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS, options.getInternalToolExecutionMaxAttempts());
+		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS,
+				options.getInternalToolExecutionMaxAttempts());
 	}
 
 	@Test
 	void testBuilder() {
-		var options = VertexAiGeminiChatOptions.builder()
-				.internalToolExecutionMaxAttempts(3)
-				.build();
+		var options = VertexAiGeminiChatOptions.builder().internalToolExecutionMaxAttempts(3).build();
 
 		assertEquals(3, options.getInternalToolExecutionMaxAttempts());
 	}
@@ -39,4 +39,5 @@ class VertexAiGeminiChatOptionsTest {
 
 		assertEquals(original.getInternalToolExecutionMaxAttempts(), copied.getInternalToolExecutionMaxAttempts());
 	}
+
 }

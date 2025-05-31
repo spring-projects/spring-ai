@@ -304,9 +304,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
-				this.topK, this.thinking, this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.internalToolExecutionMaxAttempts,
-				this.toolContext, this.httpHeaders);
+				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
+				this.internalToolExecutionMaxAttempts, this.toolContext, this.httpHeaders);
 	}
 
 	public static class Builder {

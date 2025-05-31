@@ -15,7 +15,8 @@ class ZhiPuAiChatOptionsTests {
 	void testDefaultValue() {
 		var options = new ZhiPuAiChatOptions();
 
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxAttempts())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 	}
 
 	@Test
@@ -27,10 +28,9 @@ class ZhiPuAiChatOptionsTests {
 
 	@Test
 	void testBuilder() {
-		var options = ZhiPuAiChatOptions.builder()
-			.internalToolExecutionMaxAttempts(3)
-			.build();
+		var options = ZhiPuAiChatOptions.builder().internalToolExecutionMaxAttempts(3).build();
 
 		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
 	}
+
 }

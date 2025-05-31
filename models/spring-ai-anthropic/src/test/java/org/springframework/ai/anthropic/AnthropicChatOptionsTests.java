@@ -47,8 +47,9 @@ class AnthropicChatOptionsTests {
 			.internalToolExecutionMaxAttempts(3)
 			.build();
 
-		assertThat(options).extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata",
-						"internalToolExecutionMaxAttempts")
+		assertThat(options)
+			.extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata",
+					"internalToolExecutionMaxAttempts")
 			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"), 3);
 	}
 
@@ -108,7 +109,8 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getMetadata()).isNull();
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxAttempts())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 	}
 
 }

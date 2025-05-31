@@ -73,8 +73,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options)
 			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "n", "presencePenalty", "stop",
 					"temperature", "topP", "user", "responseFormat", "streamUsage", "reasoningEffort", "seed",
-					"logprobs", "topLogProbs", "enhancements", "streamOptions",
-					"internalToolExecutionMaxAttempts")
+					"logprobs", "topLogProbs", "enhancements", "streamOptions", "internalToolExecutionMaxAttempts")
 			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), 200, 2, 0.8,
 					List.of("stop1", "stop2"), 0.7, 0.9, "test-user", responseFormat, true, "low", 12345L, true, 5,
 					enhancements, streamOptions, 3);
@@ -202,7 +201,8 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getEnhancements()).isNull();
 		assertThat(options.getStreamOptions()).isNull();
 		assertThat(options.getModel()).isNull();
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxAttempts())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 	}
 
 }

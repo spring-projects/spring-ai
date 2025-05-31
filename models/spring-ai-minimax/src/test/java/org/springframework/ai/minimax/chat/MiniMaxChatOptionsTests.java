@@ -121,7 +121,8 @@ public class MiniMaxChatOptionsTests {
 	void testOptionsDefaultValue() {
 		var options = new MiniMaxChatOptions();
 
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxAttempts())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 	}
 
 	@Test
@@ -133,9 +134,7 @@ public class MiniMaxChatOptionsTests {
 
 	@Test
 	void testOptionsBuilder() {
-		var options = MiniMaxChatOptions.builder()
-				.internalToolExecutionMaxAttempts(3)
-				.build();
+		var options = MiniMaxChatOptions.builder().internalToolExecutionMaxAttempts(3).build();
 
 		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
 	}

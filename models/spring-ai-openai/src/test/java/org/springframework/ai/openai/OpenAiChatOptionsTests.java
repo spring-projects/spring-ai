@@ -90,9 +90,8 @@ class OpenAiChatOptionsTests {
 			.extracting("model", "frequencyPenalty", "logitBias", "logprobs", "topLogprobs", "maxTokens",
 					"maxCompletionTokens", "n", "outputModalities", "outputAudio", "presencePenalty", "responseFormat",
 					"streamOptions", "seed", "stop", "temperature", "topP", "tools", "toolChoice", "user",
-					"parallelToolCalls", "store", "metadata", "reasoningEffort",
-					"internalToolExecutionEnabled", "internalToolExecutionMaxAttempts",
-					"httpHeaders", "toolContext")
+					"parallelToolCalls", "store", "metadata", "reasoningEffort", "internalToolExecutionEnabled",
+					"internalToolExecutionMaxAttempts", "httpHeaders", "toolContext")
 			.containsExactly("test-model", 0.5, logitBias, true, 5, 100, 50, 2, outputModalities, outputAudio, 0.8,
 					responseFormat, streamOptions, 12345, stopSequences, 0.7, 0.9, tools, toolChoice, "test-user", true,
 					false, metadata, "medium", false, 10, Map.of("header1", "value1"), toolContext);
@@ -259,7 +258,8 @@ class OpenAiChatOptionsTests {
 		assertThat(options.getReasoningEffort()).isNull();
 		assertThat(options.getToolCallbacks()).isNotNull().isEmpty();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxAttempts())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 		assertThat(options.getHttpHeaders()).isNotNull().isEmpty();
 		assertThat(options.getToolContext()).isEqualTo(new HashMap<>());
 		assertThat(options.getStreamUsage()).isFalse();

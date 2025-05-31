@@ -24,15 +24,15 @@ class DeepSeekChatOptionsTest {
 	void optionsDefault() {
 		var options = new DeepSeekChatOptions();
 
-		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS, options.getInternalToolExecutionMaxAttempts());
+		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS,
+				options.getInternalToolExecutionMaxAttempts());
 	}
 
 	@Test
 	void optionsBuilder() {
-		var options = DeepSeekChatOptions.builder()
-				.internalToolExecutionMaxAttempts(3)
-				.build();
+		var options = DeepSeekChatOptions.builder().internalToolExecutionMaxAttempts(3).build();
 
 		assertEquals(3, options.getInternalToolExecutionMaxAttempts());
 	}
+
 }

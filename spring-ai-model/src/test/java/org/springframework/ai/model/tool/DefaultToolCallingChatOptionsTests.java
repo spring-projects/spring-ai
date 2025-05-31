@@ -152,7 +152,8 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(c.getToolNames()).isEqualTo(original.getToolNames());
 			assertThat(c.getToolContext()).isEqualTo(original.getToolContext());
 			assertThat(c.getInternalToolExecutionEnabled()).isEqualTo(original.getInternalToolExecutionEnabled());
-			assertThat(c.getInternalToolExecutionMaxAttempts()).isEqualTo(original.getInternalToolExecutionMaxAttempts());
+			assertThat(c.getInternalToolExecutionMaxAttempts())
+				.isEqualTo(original.getInternalToolExecutionMaxAttempts());
 			assertThat(c.getModel()).isEqualTo(original.getModel());
 			assertThat(c.getTemperature()).isEqualTo(original.getTemperature());
 		});
@@ -241,7 +242,7 @@ class DefaultToolCallingChatOptionsTests {
 
 		// default value check
 		assertThat(options.getInternalToolExecutionMaxAttempts())
-				.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 
 		options.setInternalToolExecutionMaxAttempts(3);
 		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
