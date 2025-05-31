@@ -99,15 +99,12 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 	default boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int attempts) {
 		boolean internalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
 		if (!internalToolExecutionEnabled) {
-			return false;
+			return internalToolExecutionEnabled;
 		}
 
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			return toolCallingChatOptions.getInternalToolExecutionMaxAttempts() == null
 					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
-		}
-		else {
-			internalToolExecutionEnabled = true;
 		}
 		return internalToolExecutionEnabled;
 	}
