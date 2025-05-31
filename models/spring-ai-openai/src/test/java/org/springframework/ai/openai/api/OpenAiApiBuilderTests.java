@@ -372,6 +372,57 @@ public class OpenAiApiBuilderTests {
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer additional-key");
 		}
 
+		@Test
+		void dynamicApiKeyRestClientEmbeddings() throws InterruptedException {
+			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
+			OpenAiApi api = OpenAiApi.builder()
+				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
+				.baseUrl(mockWebServer.url("/").toString())
+				.build();
+
+			MockResponse mockResponse = new MockResponse().setResponseCode(200)
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.setBody("""
+						{
+							"object": "list",
+							"data": [
+						    	{
+						    		"object": "embedding",
+								"index": 0,
+						       "embedding": [
+						         -0.005540426,
+						         0.0047363234,
+						         -0.015009919,
+						         -0.027093535,
+						         -0.015173893,
+						         0.015173893,
+						         -0.017608276
+						         ]
+						     }
+						   ],
+						   "model": "text-embedding-ada-002-v2",
+						   "usage": {
+						     "prompt_tokens": 2,
+						     "total_tokens": 2
+						   }
+						}
+						""");
+			mockWebServer.enqueue(mockResponse);
+			mockWebServer.enqueue(mockResponse);
+
+			OpenAiApi.EmbeddingRequest<String> request = new OpenAiApi.EmbeddingRequest<>("Hello world");
+			ResponseEntity<OpenAiApi.EmbeddingList<OpenAiApi.Embedding>> response = api.embeddings(request);
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
+
+			response = api.embeddings(request);
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+			recordedRequest = mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
+		}
+
 	}
 
 }
