@@ -71,20 +71,30 @@ public class OpenAiAudioApi {
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> authHeaders = h -> {
-			if (!(apiKey instanceof NoopApiKey)) {
-				h.setBearerAuth(apiKey.getValue());
-			}
 			h.addAll(headers);
-			// h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
+		// @formatter:off
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
 			.defaultHeaders(authHeaders)
 			.defaultStatusHandler(responseErrorHandler)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
 			.build();
 
-		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(authHeaders).build();
+		this.webClient = webClientBuilder.clone()
+			.baseUrl(baseUrl)
+			.defaultHeaders(authHeaders)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
+			.build(); // @formatter:on
 	}
 
 	public static Builder builder() {
