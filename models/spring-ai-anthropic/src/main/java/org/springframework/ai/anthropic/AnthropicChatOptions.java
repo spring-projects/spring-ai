@@ -113,6 +113,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.build();
@@ -236,7 +237,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
 		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
 	}
 
@@ -295,6 +296,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.internalToolExecutionMaxAttempts, that.internalToolExecutionMaxAttempts)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders);
 	}
@@ -302,7 +304,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
-				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
+				this.topK, this.thinking, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.internalToolExecutionMaxAttempts,
 				this.toolContext, this.httpHeaders);
 	}
 
@@ -385,6 +388,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder internalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
+			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
 			return this;
 		}
 

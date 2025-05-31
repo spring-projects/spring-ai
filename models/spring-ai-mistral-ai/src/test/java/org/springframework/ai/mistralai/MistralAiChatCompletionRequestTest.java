@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ricken Bazolo
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author lambochen
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
@@ -73,6 +74,7 @@ public class MistralAiChatCompletionRequestTest {
 		MistralAiChatOptions defaultOptions = MistralAiChatOptions.builder()
 			.model("DEFAULT_MODEL")
 			.internalToolExecutionEnabled(true)
+			.internalToolExecutionMaxAttempts(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS)
 			.toolCallbacks(new TestToolCallback("tool1"), new TestToolCallback("tool2"))
 			.toolNames("tool1", "tool2")
 			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
@@ -85,6 +87,7 @@ public class MistralAiChatCompletionRequestTest {
 
 		MistralAiChatOptions runtimeOptions = MistralAiChatOptions.builder()
 			.internalToolExecutionEnabled(false)
+			.internalToolExecutionMaxAttempts(3)
 			.toolCallbacks(new TestToolCallback("tool3"), new TestToolCallback("tool4"))
 			.toolNames("tool3")
 			.toolContext(Map.of("key2", "valueB"))
@@ -93,6 +96,7 @@ public class MistralAiChatCompletionRequestTest {
 
 		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionMaxAttempts()).isEqualTo(3);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()

@@ -298,6 +298,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.enhancements(fromOptions.getEnhancements())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
 			.streamOptions(fromOptions.getStreamOptions())
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
@@ -679,8 +680,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
-			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxIterations);
+		public Builder internalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
+			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
 			return this;
 		}
 

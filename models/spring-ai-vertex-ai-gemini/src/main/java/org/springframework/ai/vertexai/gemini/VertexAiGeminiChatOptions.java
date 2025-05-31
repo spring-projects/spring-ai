@@ -165,6 +165,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
+		options.setInternalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
 	}

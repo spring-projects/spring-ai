@@ -131,6 +131,21 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		return internalToolExecutionEnabled;
 	}
 
+	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int attempts) {
+		boolean isInternalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
+		if (!isInternalToolExecutionEnabled) {
+			return false;
+		}
+
+		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
+				&& toolCallingChatOptions.getInternalToolExecutionMaxAttempts() != null) {
+			int maxAttempts = toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
+			return attempts <= maxAttempts;
+		}
+
+		return DEFAULT_TOOL_EXECUTION_ENABLED;
+	}
+
 	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
 		Assert.notNull(runtimeToolNames, "runtimeToolNames cannot be null");
 		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");

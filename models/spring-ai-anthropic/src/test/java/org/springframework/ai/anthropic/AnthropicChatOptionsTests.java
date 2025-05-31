@@ -22,6 +22,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link AnthropicChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author lambochen
  */
 class AnthropicChatOptionsTests {
 
@@ -59,6 +61,7 @@ class AnthropicChatOptionsTests {
 			.topK(50)
 			.metadata(new Metadata("userId_123"))
 			.toolContext(Map.of("key1", "value1"))
+			.internalToolExecutionMaxAttempts(3)
 			.build();
 
 		AnthropicChatOptions copied = original.copy();
@@ -67,6 +70,8 @@ class AnthropicChatOptionsTests {
 		// Ensure deep copy
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
+
+		assertThat(copied.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
 	}
 
 	@Test
@@ -99,6 +104,7 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getMetadata()).isNull();
+		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
 	}
 
 }
