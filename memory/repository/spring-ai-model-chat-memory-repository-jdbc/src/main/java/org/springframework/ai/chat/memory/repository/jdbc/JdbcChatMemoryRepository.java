@@ -157,7 +157,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 				case USER -> new UserMessage(content);
 				case ASSISTANT -> {
 					List<AssistantMessage.ToolCall> toolCalls = List.of();
-					if (toolCallsJson != null && !toolCallsJson.trim().isEmpty()) {
+					if (toolCallsJson != null && !toolCallsJson.isBlank()) {
 						try {
 							toolCalls = ModelOptionsUtils.OBJECT_MAPPER.readValue(toolCallsJson,
 									ModelOptionsUtils.OBJECT_MAPPER.getTypeFactory()
