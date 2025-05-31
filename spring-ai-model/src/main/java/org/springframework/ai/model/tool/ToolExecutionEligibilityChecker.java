@@ -27,6 +27,7 @@ import org.springframework.util.Assert;
  * responses.
  *
  * @author Christian Tzolov
+ * @author lambochen
  */
 public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, Boolean> {
 
@@ -41,6 +42,20 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		Assert.notNull(promptOptions, "promptOptions cannot be null");
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 		return this.isInternalToolExecutionEnabled(promptOptions) && this.isToolCallResponse(chatResponse);
+	}
+
+	/**
+	 * Determines if tool execution should be performed based on the prompt options and
+	 * chat response and attempts.
+	 * @param promptOptions The options from the prompt
+	 * @param chatResponse The response from the chat model
+	 * @param attempts The number of attempts to execute the tool
+	 * @return true if tool execution should be performed, false otherwise
+	 */
+	default boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse, int attempts) {
+		Assert.notNull(promptOptions, "promptOptions cannot be null");
+		Assert.notNull(chatResponse, "chatResponse cannot be null");
+		return this.isInternalToolExecutionEnabled(promptOptions, attempts) && this.isToolCallResponse(chatResponse);
 	}
 
 	/**
@@ -70,6 +85,26 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		}
 		else {
 			internalToolExecutionEnabled = true;
+		}
+		return internalToolExecutionEnabled;
+	}
+
+	/**
+	 * Determines if tool execution should be performed by the Spring AI or by the client.
+	 * @param chatOptions The options from the chat
+	 * @param attempts The number of attempts to execute the tool
+	 * @return true if tool execution should be performed by Spring AI, false if it should
+	 * be performed by the client
+	 */
+	default boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int attempts) {
+		boolean internalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
+		if (!internalToolExecutionEnabled) {
+			return internalToolExecutionEnabled;
+		}
+
+		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			return toolCallingChatOptions.getInternalToolExecutionMaxAttempts() == null
+					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
 		}
 		return internalToolExecutionEnabled;
 	}

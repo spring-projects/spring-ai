@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -153,6 +154,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -176,6 +180,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -350,6 +355,16 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public Integer getInternalToolExecutionMaxAttempts() {
+		return this.internalToolExecutionMaxAttempts;
+	}
+
+	@Override
+	public void setInternalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
+	}
+
+	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -380,6 +395,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
 		result = prime * result
 				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
+		result = prime * result + ((this.internalToolExecutionMaxAttempts == null)
+				? ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS
+				: this.internalToolExecutionMaxAttempts.hashCode());
 		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
 		return result;
 	}
@@ -506,6 +524,15 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			}
 		}
 		else if (!this.internalToolExecutionEnabled.equals(other.internalToolExecutionEnabled)) {
+			return false;
+		}
+
+		if (this.internalToolExecutionMaxAttempts == null) {
+			if (other.internalToolExecutionMaxAttempts != null) {
+				return false;
+			}
+		}
+		else if (!this.internalToolExecutionMaxAttempts.equals(other.internalToolExecutionMaxAttempts)) {
 			return false;
 		}
 
@@ -646,6 +673,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder internalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
+			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
 			return this;
 		}
 

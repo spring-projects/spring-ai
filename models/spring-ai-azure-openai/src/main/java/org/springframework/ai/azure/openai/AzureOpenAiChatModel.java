@@ -122,8 +122,10 @@ import org.springframework.util.StringUtils;
  * @author Berjan Jonker
  * @author Andres da Silva Santos
  * @author Bart Veenstra
+ * @author lambochen
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
+ * @see ToolCallingChatOptions
  * @since 1.0.0
  */
 public class AzureOpenAiChatModel implements ChatModel {
@@ -251,6 +253,10 @@ public class AzureOpenAiChatModel implements ChatModel {
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalCall(prompt, previousChatResponse, 1);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -270,7 +276,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -282,7 +288,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, attempts + 1);
 			}
 		}
 
@@ -298,6 +304,10 @@ public class AzureOpenAiChatModel implements ChatModel {
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalStream(prompt, previousChatResponse, 1);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
 
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
@@ -377,7 +387,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 			});
 
 			return chatResponseFlux.flatMap(chatResponse -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse,
+						attempts)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
 					return Flux.defer(() -> {
@@ -393,7 +404,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 							// Send the tool execution result back to the model.
 							return this.internalStream(
 									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse);
+									chatResponse, attempts + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
@@ -666,6 +677,9 @@ public class AzureOpenAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			runtimeOptions.setInternalToolExecutionMaxAttempts(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
+							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
 			requestOptions.setStreamUsage(ModelOptionsUtils.mergeOption(runtimeOptions.getStreamUsage(),
 					this.defaultOptions.getStreamUsage()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
@@ -677,6 +691,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions
+				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
 			requestOptions.setStreamUsage(this.defaultOptions.getStreamUsage());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());

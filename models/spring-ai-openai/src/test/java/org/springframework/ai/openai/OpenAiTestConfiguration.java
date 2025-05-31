@@ -32,22 +32,48 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiApi openAiApi() {
-		return OpenAiApi.builder().apiKey(getApiKey()).build();
+		var builder = OpenAiApi.builder().apiKey(getApiKey());
+
+		String baseUrl = getBaseUrl();
+		if (StringUtils.hasText(baseUrl)) {
+			builder.baseUrl(baseUrl);
+		}
+		String completionsPath = getCompletionsPath();
+		if (StringUtils.hasText(completionsPath)) {
+			builder.completionsPath(completionsPath);
+		}
+
+		return builder.build();
 	}
 
 	@Bean
 	public OpenAiImageApi openAiImageApi() {
-		return OpenAiImageApi.builder().apiKey(getApiKey()).build();
+		var builder = OpenAiImageApi.builder().apiKey(getApiKey());
+		String baseUrl = getBaseUrl();
+		if (StringUtils.hasText(baseUrl)) {
+			builder.baseUrl(baseUrl);
+		}
+		return builder.build();
 	}
 
 	@Bean
 	public OpenAiAudioApi openAiAudioApi() {
-		return OpenAiAudioApi.builder().apiKey(getApiKey()).build();
+		var builder = OpenAiAudioApi.builder().apiKey(getApiKey());
+		String baseUrl = getBaseUrl();
+		if (StringUtils.hasText(baseUrl)) {
+			builder.baseUrl(baseUrl);
+		}
+		return builder.build();
 	}
 
 	@Bean
 	public OpenAiModerationApi openAiModerationApi() {
-		return OpenAiModerationApi.builder().apiKey(getApiKey()).build();
+		var builder = OpenAiModerationApi.builder().apiKey(getApiKey());
+		String baseUrl = getBaseUrl();
+		if (StringUtils.hasText(baseUrl)) {
+			builder.baseUrl(baseUrl);
+		}
+		return builder.build();
 	}
 
 	private ApiKey getApiKey() {
@@ -57,6 +83,22 @@ public class OpenAiTestConfiguration {
 					"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 		}
 		return new SimpleApiKey(apiKey);
+	}
+
+	private String getBaseUrl() {
+		String baseUrl = System.getenv("OPENAI_BASE_URL");
+		if (StringUtils.hasText(baseUrl)) {
+			return baseUrl;
+		}
+		return null;
+	}
+
+	private String getCompletionsPath() {
+		String path = System.getenv("OPENAI_COMPLETIONS_PATH");
+		if (StringUtils.hasText(path)) {
+			return path;
+		}
+		return null;
 	}
 
 	@Bean

@@ -79,9 +79,11 @@ import org.springframework.util.CollectionUtils;
  * @author Geng Rong
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @see ChatModel
  * @see StreamingChatModel
  * @see MiniMaxApi
+ * @see ToolCallingChatOptions
  * @since 1.0.0 M1
  */
 public class MiniMaxChatModel implements ChatModel {
@@ -236,6 +238,10 @@ public class MiniMaxChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return internalCall(requestPrompt, 1);
+	}
+
+	private ChatResponse internalCall(Prompt requestPrompt, int attempts) {
 		ChatCompletionRequest request = createRequest(requestPrompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -292,7 +298,8 @@ public class MiniMaxChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response,
+				attempts)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -303,7 +310,9 @@ public class MiniMaxChatModel implements ChatModel {
 			}
 			else {
 				// Send the tool execution result back to the model.
-				return this.call(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
+				return this.internalCall(
+						new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()),
+						attempts + 1);
 			}
 		}
 
@@ -320,6 +329,10 @@ public class MiniMaxChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return internalStream(requestPrompt, 1);
+	}
+
+	private Flux<ChatResponse> internalStream(Prompt requestPrompt, int attempts) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(requestPrompt, true);
 
@@ -361,15 +374,15 @@ public class MiniMaxChatModel implements ChatModel {
 								return buildGeneration(choice, metadata);
 							}).toList();
 							return new ChatResponse(generations, from(chatCompletion2));
-					}
-					catch (Exception e) {
+						}
+						catch (Exception e) {
 							logger.error("Error processing chat completion", e);
 							return new ChatResponse(List.of());
 						}
 					}));
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
+						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response, attempts)) {
 							return Flux.defer(() -> {
 								// FIXME: bounded elastic needs to be used since tool calling
 								//  is currently only synchronous
@@ -382,7 +395,7 @@ public class MiniMaxChatModel implements ChatModel {
 								}
 								else {
 									// Send the tool execution result back to the model.
-									return this.stream(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
+									return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()), attempts + 1);
 								}
 							}).subscribeOn(Schedulers.boundedElastic());
 						}
@@ -472,6 +485,9 @@ public class MiniMaxChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setInternalToolExecutionMaxAttempts(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
+							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -481,6 +497,8 @@ public class MiniMaxChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions
+				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
