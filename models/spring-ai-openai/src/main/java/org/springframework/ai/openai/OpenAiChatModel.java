@@ -187,7 +187,7 @@ public class OpenAiChatModel implements ChatModel {
 		return internalCall(prompt, previousChatResponse, 1);
 	}
 
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
@@ -246,7 +246,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -258,7 +258,7 @@ public class OpenAiChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response, attempts + 1);
+						response, iterations + 1);
 			}
 		}
 
@@ -277,7 +277,7 @@ public class OpenAiChatModel implements ChatModel {
 		return internalStream(prompt, previousChatResponse, 1);
 	}
 
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -372,7 +372,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 					return Flux.defer(() -> {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
@@ -386,7 +386,7 @@ public class OpenAiChatModel implements ChatModel {
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response, attempts + 1);
+									response, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
@@ -530,9 +530,9 @@ public class OpenAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
-			requestOptions.setInternalToolExecutionMaxAttempts(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
-							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
+			requestOptions.setInternalToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxIterations(),
+							this.defaultOptions.getInternalToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -544,7 +544,7 @@ public class OpenAiChatModel implements ChatModel {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
 			requestOptions
-				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
+				.setInternalToolExecutionMaxIterations(this.defaultOptions.getInternalToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());

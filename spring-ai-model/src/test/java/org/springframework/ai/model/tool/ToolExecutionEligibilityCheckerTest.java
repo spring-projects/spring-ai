@@ -8,7 +8,6 @@ import org.springframework.ai.chat.model.Generation;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 class ToolExecutionEligibilityCheckerTest {
 
@@ -18,7 +17,7 @@ class ToolExecutionEligibilityCheckerTest {
 
 		ToolCallingChatOptions promptOptions = ToolCallingChatOptions.builder().build();
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("test"))));
-		promptOptions.setInternalToolExecutionMaxAttempts(2);
+		promptOptions.setInternalToolExecutionMaxIterations(2);
 
 		assertThat(checker.isToolExecutionRequired(promptOptions, chatResponse, 1)).isTrue();
 		assertThat(checker.isToolExecutionRequired(promptOptions, chatResponse, 2)).isTrue();
@@ -33,7 +32,7 @@ class ToolExecutionEligibilityCheckerTest {
 		ToolExecutionEligibilityChecker checker = new TestToolExecutionEligibilityChecker();
 
 		ToolCallingChatOptions promptOptions = ToolCallingChatOptions.builder().build();
-		promptOptions.setInternalToolExecutionMaxAttempts(2);
+		promptOptions.setInternalToolExecutionMaxIterations(2);
 
 		assertThat(checker.isInternalToolExecutionEnabled(promptOptions, 1)).isTrue();
 		assertThat(checker.isInternalToolExecutionEnabled(promptOptions, 2)).isTrue();

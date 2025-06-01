@@ -124,7 +124,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
+	private Integer internalToolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -295,14 +295,14 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@JsonIgnore
-	public Integer getInternalToolExecutionMaxAttempts() {
-    	return this.internalToolExecutionMaxAttempts;
+	public Integer getInternalToolExecutionMaxIterations() {
+    	return this.internalToolExecutionMaxIterations;
     }
 
 	@Override
 	@JsonIgnore
-	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
-		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
+	public void setInternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
     }
 
 	public Boolean getLogprobs() {
@@ -349,7 +349,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				this.maxTokens,  this.presencePenalty, this.responseFormat,
 				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.internalToolExecutionMaxAttempts,
+				this.internalToolExecutionEnabled, this.internalToolExecutionMaxIterations,
 				this.toolContext);
 	}
 
@@ -376,7 +376,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.toolContext, other.toolContext)
 				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
-				&& Objects.equals(this.internalToolExecutionMaxAttempts, other.internalToolExecutionMaxAttempts)
+				&& Objects.equals(this.internalToolExecutionMaxIterations, other.internalToolExecutionMaxIterations)
 				;
 	}
 
@@ -398,7 +398,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 						fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
+				.internalToolExecutionMaxIterations(fromOptions.getInternalToolExecutionMaxIterations())
 				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 				.build();
 	}
@@ -508,8 +508,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder internalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
-			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
+		public Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+			this.options.setInternalToolExecutionMaxIterations(internalToolExecutionMaxIterations);
 			return this;
 		}
 

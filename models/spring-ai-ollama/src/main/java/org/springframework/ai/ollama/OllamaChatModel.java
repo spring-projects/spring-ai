@@ -225,7 +225,7 @@ public class OllamaChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null, 1);
 	}
 
-	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		OllamaApi.ChatRequest request = ollamaChatRequest(prompt, false);
 
@@ -268,7 +268,7 @@ public class OllamaChatModel implements ChatModel {
 
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -280,7 +280,7 @@ public class OllamaChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response, attempts + 1);
+						response, iterations + 1);
 			}
 		}
 
@@ -295,7 +295,7 @@ public class OllamaChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null, 1);
 	}
 
-	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int attempts) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		return Flux.deferContextual(contextView -> {
 			OllamaApi.ChatRequest request = ollamaChatRequest(prompt, true);
 
@@ -340,7 +340,7 @@ public class OllamaChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, attempts)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.defer(() -> {
@@ -354,7 +354,7 @@ public class OllamaChatModel implements ChatModel {
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response, attempts + 1);
+									response, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
@@ -396,9 +396,9 @@ public class OllamaChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
-			requestOptions.setInternalToolExecutionMaxAttempts(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
-							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
+			requestOptions.setInternalToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxIterations(),
+							this.defaultOptions.getInternalToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -409,7 +409,7 @@ public class OllamaChatModel implements ChatModel {
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
 			requestOptions
-				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
+				.setInternalToolExecutionMaxIterations(this.defaultOptions.getInternalToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());

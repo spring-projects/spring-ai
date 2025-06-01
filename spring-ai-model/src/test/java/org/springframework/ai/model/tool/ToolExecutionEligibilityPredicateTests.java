@@ -50,7 +50,7 @@ class ToolExecutionEligibilityPredicateTests {
 		ToolExecutionEligibilityPredicate predicate = new TestToolExecutionEligibilityPredicate();
 		ToolCallingChatOptions promptOptions = ToolCallingChatOptions.builder().build();
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("test"))));
-		promptOptions.setInternalToolExecutionMaxAttempts(2);
+		promptOptions.setInternalToolExecutionMaxIterations(2);
 
 		assertThat(predicate.isToolExecutionRequired(promptOptions, chatResponse, 1)).isTrue();
 		assertThat(predicate.isToolExecutionRequired(promptOptions, chatResponse, 2)).isTrue();

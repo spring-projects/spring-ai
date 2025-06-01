@@ -128,7 +128,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
+	private Integer internalToolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
@@ -165,7 +165,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
-		options.setInternalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts());
+		options.setInternalToolExecutionMaxIterations(fromOptions.getInternalToolExecutionMaxIterations());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
 	}
@@ -287,13 +287,13 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Integer getInternalToolExecutionMaxAttempts() {
-		return this.internalToolExecutionMaxAttempts;
+	public Integer getInternalToolExecutionMaxIterations() {
+		return this.internalToolExecutionMaxIterations;
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
-		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
+	public void setInternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
 	}
 
 	@Override
@@ -361,7 +361,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.internalToolExecutionMaxAttempts, that.internalToolExecutionMaxAttempts)
+				&& Objects.equals(this.internalToolExecutionMaxIterations, that.internalToolExecutionMaxIterations)
 				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
@@ -370,7 +370,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
 				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.internalToolExecutionMaxAttempts, this.toolContext);
+				this.internalToolExecutionEnabled, this.internalToolExecutionMaxIterations, this.toolContext);
 	}
 
 	@Override
@@ -494,8 +494,8 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder internalToolExecutionMaxAttempts(Integer internalToolExecutionMaxAttempts) {
-			this.options.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
+		public Builder internalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
+			this.options.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
 			return this;
 		}
 

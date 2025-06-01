@@ -67,13 +67,13 @@ class AzureOpenAiChatOptionsTests {
 			.topLogprobs(5)
 			.enhancements(enhancements)
 			.streamOptions(streamOptions)
-			.internalToolExecutionMaxAttempts(3)
+			.internalToolExecutionMaxIterations(3)
 			.build();
 
 		assertThat(options)
 			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "n", "presencePenalty", "stop",
 					"temperature", "topP", "user", "responseFormat", "streamUsage", "reasoningEffort", "seed",
-					"logprobs", "topLogProbs", "enhancements", "streamOptions", "internalToolExecutionMaxAttempts")
+					"logprobs", "topLogProbs", "enhancements", "streamOptions", "internalToolExecutionMaxIterations")
 			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), 200, 2, 0.8,
 					List.of("stop1", "stop2"), 0.7, 0.9, "test-user", responseFormat, true, "low", 12345L, true, 5,
 					enhancements, streamOptions, 3);
@@ -110,7 +110,7 @@ class AzureOpenAiChatOptionsTests {
 			.topLogprobs(5)
 			.enhancements(enhancements)
 			.streamOptions(streamOptions)
-			.internalToolExecutionMaxAttempts(3)
+			.internalToolExecutionMaxIterations(3)
 			.build();
 
 		AzureOpenAiChatOptions copiedOptions = originalOptions.copy();
@@ -120,7 +120,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(copiedOptions.getStop()).isNotSameAs(originalOptions.getStop());
 		assertThat(copiedOptions.getToolContext()).isNotSameAs(originalOptions.getToolContext());
 
-		assertThat(copiedOptions.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
+		assertThat(copiedOptions.getInternalToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
@@ -151,7 +151,7 @@ class AzureOpenAiChatOptionsTests {
 		options.setTopLogProbs(5);
 		options.setEnhancements(enhancements);
 		options.setStreamOptions(streamOptions);
-		options.setInternalToolExecutionMaxAttempts(3);
+		options.setInternalToolExecutionMaxIterations(3);
 
 		assertThat(options.getDeploymentName()).isEqualTo("test-deployment");
 		options.setModel("test-model");
@@ -175,7 +175,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getEnhancements()).isEqualTo(enhancements);
 		assertThat(options.getStreamOptions()).isEqualTo(streamOptions);
 		assertThat(options.getModel()).isEqualTo("test-model");
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
+		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
@@ -201,8 +201,8 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getEnhancements()).isNull();
 		assertThat(options.getStreamOptions()).isNull();
 		assertThat(options.getModel()).isNull();
-		assertThat(options.getInternalToolExecutionMaxAttempts())
-			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxIterations())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 	}
 
 }

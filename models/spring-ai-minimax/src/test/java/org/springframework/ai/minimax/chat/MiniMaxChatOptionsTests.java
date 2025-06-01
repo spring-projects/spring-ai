@@ -121,22 +121,22 @@ public class MiniMaxChatOptionsTests {
 	void testOptionsDefaultValue() {
 		var options = new MiniMaxChatOptions();
 
-		assertThat(options.getInternalToolExecutionMaxAttempts())
-			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxIterations())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 	}
 
 	@Test
 	void testOptionsSetter() {
 		var options = new MiniMaxChatOptions();
-		options.setInternalToolExecutionMaxAttempts(3);
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
+		options.setInternalToolExecutionMaxIterations(3);
+		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
 	void testOptionsBuilder() {
-		var options = MiniMaxChatOptions.builder().internalToolExecutionMaxAttempts(3).build();
+		var options = MiniMaxChatOptions.builder().internalToolExecutionMaxIterations(3).build();
 
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
+		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 }

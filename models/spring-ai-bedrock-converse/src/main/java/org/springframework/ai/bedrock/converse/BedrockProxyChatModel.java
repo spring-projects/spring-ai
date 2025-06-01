@@ -221,7 +221,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.internalCall(prompt, perviousChatResponse, 1);
 	}
 
-	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse, int attempts) {
+	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse, int iterations) {
 
 		ConverseRequest converseRequest = this.createRequest(prompt);
 
@@ -246,8 +246,8 @@ public class BedrockProxyChatModel implements ChatModel {
 				return response;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse, attempts)
-				&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse,
+				iterations) && chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -259,7 +259,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						chatResponse, attempts + 1);
+						chatResponse, iterations + 1);
 			}
 		}
 		return chatResponse;
@@ -315,9 +315,9 @@ public class BedrockProxyChatModel implements ChatModel {
 				.internalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
 						? runtimeOptions.getInternalToolExecutionEnabled()
 						: this.defaultOptions.getInternalToolExecutionEnabled())
-				.internalToolExecutionMaxAttempts(
-						ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
-								this.defaultOptions.getInternalToolExecutionMaxAttempts()))
+				.internalToolExecutionMaxIterations(
+						ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxIterations(),
+								this.defaultOptions.getInternalToolExecutionMaxIterations()))
 				.build();
 		}
 
@@ -655,7 +655,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.internalStream(prompt, perviousChatResponse, 1);
 	}
 
-	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse, int attempts) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse, int iterations) {
 		Assert.notNull(prompt, "'prompt' must not be null");
 
 		return Flux.deferContextual(contextView -> {
@@ -689,7 +689,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse,
-						attempts) && chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
+						iterations) && chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
@@ -707,7 +707,7 @@ public class BedrockProxyChatModel implements ChatModel {
 							// Send the tool execution result back to the model.
 							return this.internalStream(
 									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse, attempts + 1);
+									chatResponse, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}

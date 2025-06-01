@@ -52,15 +52,15 @@ class ToolCallingChatOptionsTests {
 	}
 
 	@Test
-	void whenToolCallingChatOptionsAndMaxAttemptsOver() {
+	void whenToolCallingChatOptionsAndMaxIterationsOver() {
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		options.setInternalToolExecutionMaxAttempts(1);
+		options.setInternalToolExecutionMaxIterations(1);
 		// 3 > 1
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options, 3)).isFalse();
 	}
 
 	@Test
-	void whenToolCallingChatOptionsAndMaxAttemptsDefault() {
+	void whenToolCallingChatOptionsAndMaxIterationsDefault() {
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options, 1)).isTrue();
 	}

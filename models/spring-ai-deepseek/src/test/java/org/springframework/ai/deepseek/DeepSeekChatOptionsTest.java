@@ -13,26 +13,26 @@ class DeepSeekChatOptionsTest {
 	@Test
 	void fromOptions() {
 		var original = new DeepSeekChatOptions();
-		original.setInternalToolExecutionMaxAttempts(3);
+		original.setInternalToolExecutionMaxIterations(3);
 
 		var copy = DeepSeekChatOptions.fromOptions(original);
 		assertNotSame(original, copy);
-		assertSame(original.getInternalToolExecutionMaxAttempts(), copy.getInternalToolExecutionMaxAttempts());
+		assertSame(original.getInternalToolExecutionMaxIterations(), copy.getInternalToolExecutionMaxIterations());
 	}
 
 	@Test
 	void optionsDefault() {
 		var options = new DeepSeekChatOptions();
 
-		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS,
-				options.getInternalToolExecutionMaxAttempts());
+		assertEquals(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS,
+				options.getInternalToolExecutionMaxIterations());
 	}
 
 	@Test
 	void optionsBuilder() {
-		var options = DeepSeekChatOptions.builder().internalToolExecutionMaxAttempts(3).build();
+		var options = DeepSeekChatOptions.builder().internalToolExecutionMaxIterations(3).build();
 
-		assertEquals(3, options.getInternalToolExecutionMaxAttempts());
+		assertEquals(3, options.getInternalToolExecutionMaxIterations());
 	}
 
 }

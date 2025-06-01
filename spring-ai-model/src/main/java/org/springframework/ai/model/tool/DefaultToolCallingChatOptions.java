@@ -48,7 +48,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@Nullable
-	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
+	private Integer internalToolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
 
 	@Nullable
 	private String model;
@@ -123,13 +123,13 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Integer getInternalToolExecutionMaxAttempts() {
-		return this.internalToolExecutionMaxAttempts;
+	public Integer getInternalToolExecutionMaxIterations() {
+		return this.internalToolExecutionMaxIterations;
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
-		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
+	public void setInternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
 	}
 
 	@Override
@@ -220,7 +220,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		options.setToolNames(getToolNames());
 		options.setToolContext(getToolContext());
 		options.setInternalToolExecutionEnabled(getInternalToolExecutionEnabled());
-		options.setInternalToolExecutionMaxAttempts(getInternalToolExecutionMaxAttempts());
+		options.setInternalToolExecutionMaxIterations(getInternalToolExecutionMaxIterations());
 		options.setModel(getModel());
 		options.setFrequencyPenalty(getFrequencyPenalty());
 		options.setMaxTokens(getMaxTokens());
@@ -293,9 +293,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder internalToolExecutionMaxAttempts(
-				@Nullable Integer internalToolExecutionMaxAttempts) {
-			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
+		public ToolCallingChatOptions.Builder internalToolExecutionMaxIterations(
+				@Nullable Integer internalToolExecutionMaxIterations) {
+			this.options.setInternalToolExecutionMaxIterations(internalToolExecutionMaxIterations);
 			return this;
 		}
 

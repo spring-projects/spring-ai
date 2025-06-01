@@ -103,8 +103,8 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		}
 
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			return toolCallingChatOptions.getInternalToolExecutionMaxAttempts() == null
-					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
+			return toolCallingChatOptions.getInternalToolExecutionMaxIterations() == null
+					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxIterations();
 		}
 		return internalToolExecutionEnabled;
 	}

@@ -50,7 +50,7 @@ public interface ToolExecutionEligibilityPredicate extends BiPredicate<ChatOptio
 	 * @param chatResponse The response from the chat model
 	 * @param attempts The number of attempts
 	 * @return true if tool execution should be performed, false otherwise
-	 * @see ToolCallingChatOptions#getInternalToolExecutionMaxAttempts()
+	 * @see ToolCallingChatOptions#getInternalToolExecutionMaxIterations()
 	 * @see #isToolExecutionRequired(ChatOptions, ChatResponse)
 	 */
 	default boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse, int attempts) {
@@ -60,8 +60,8 @@ public interface ToolExecutionEligibilityPredicate extends BiPredicate<ChatOptio
 		}
 
 		if (promptOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			return toolCallingChatOptions.getInternalToolExecutionMaxAttempts() == null
-					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
+			return toolCallingChatOptions.getInternalToolExecutionMaxIterations() == null
+					|| attempts <= toolCallingChatOptions.getInternalToolExecutionMaxIterations();
 		}
 		return isToolExecutionRequired;
 	}

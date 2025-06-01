@@ -127,7 +127,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxAttempts = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS;
+	private Integer internalToolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
@@ -152,7 +152,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.internalToolExecutionMaxAttempts(fromOptions.getInternalToolExecutionMaxAttempts())
+			.internalToolExecutionMaxIterations(fromOptions.getInternalToolExecutionMaxIterations())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -313,13 +313,13 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Integer getInternalToolExecutionMaxAttempts() {
-		return this.internalToolExecutionMaxAttempts;
+	public Integer getInternalToolExecutionMaxIterations() {
+		return this.internalToolExecutionMaxIterations;
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
-		this.internalToolExecutionMaxAttempts = internalToolExecutionMaxAttempts;
+	public void setInternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
 	}
 
 	@Override
@@ -346,8 +346,8 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
 		result = prime * result
 				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
-		result = prime * result + ((this.internalToolExecutionMaxAttempts == null) ? 0
-				: this.internalToolExecutionMaxAttempts.hashCode());
+		result = prime * result + ((this.internalToolExecutionMaxIterations == null) ? 0
+				: this.internalToolExecutionMaxIterations.hashCode());
 		result = prime * result + ((this.toolCallbacks == null) ? 0 : this.toolCallbacks.hashCode());
 		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
 		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
@@ -454,12 +454,12 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		else if (!this.internalToolExecutionEnabled.equals(other.internalToolExecutionEnabled)) {
 			return false;
 		}
-		if (this.internalToolExecutionMaxAttempts == null) {
-			if (other.internalToolExecutionMaxAttempts != null) {
+		if (this.internalToolExecutionMaxIterations == null) {
+			if (other.internalToolExecutionMaxIterations != null) {
 				return false;
 			}
 		}
-		else if (!this.internalToolExecutionMaxAttempts.equals(other.internalToolExecutionMaxAttempts)) {
+		else if (!this.internalToolExecutionMaxIterations.equals(other.internalToolExecutionMaxIterations)) {
 			return false;
 		}
 		if (this.toolContext == null) {
@@ -493,10 +493,10 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			builder.internalToolExecutionEnabled(toolCallingChatOptions.getInternalToolExecutionEnabled() != null
 					? (toolCallingChatOptions).getInternalToolExecutionEnabled()
 					: this.getInternalToolExecutionEnabled());
-			builder
-				.internalToolExecutionMaxAttempts(toolCallingChatOptions.getInternalToolExecutionMaxAttempts() != null
-						? toolCallingChatOptions.getInternalToolExecutionMaxAttempts()
-						: this.getInternalToolExecutionMaxAttempts());
+			builder.internalToolExecutionMaxIterations(
+					toolCallingChatOptions.getInternalToolExecutionMaxIterations() != null
+							? toolCallingChatOptions.getInternalToolExecutionMaxIterations()
+							: this.getInternalToolExecutionMaxIterations());
 
 			Set<String> toolNames = new HashSet<>();
 			if (this.toolNames != null) {
@@ -527,7 +527,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		}
 		else {
 			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-			builder.internalToolExecutionMaxAttempts(this.internalToolExecutionMaxAttempts);
+			builder.internalToolExecutionMaxIterations(this.internalToolExecutionMaxIterations);
 			builder.toolNames(this.toolNames != null ? new HashSet<>(this.toolNames) : null);
 			builder.toolCallbacks(this.toolCallbacks != null ? new ArrayList<>(this.toolCallbacks) : null);
 			builder.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null);
@@ -633,8 +633,8 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder internalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts) {
-			this.options.setInternalToolExecutionMaxAttempts(internalToolExecutionMaxAttempts);
+		public Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
+			this.options.setInternalToolExecutionMaxIterations(internalToolExecutionMaxIterations);
 			return this;
 		}
 

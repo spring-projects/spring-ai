@@ -242,7 +242,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 		return internalCall(requestPrompt, 1);
 	}
 
-	private ChatResponse internalCall(Prompt requestPrompt, int attempts) {
+	private ChatResponse internalCall(Prompt requestPrompt, int iterations) {
 		ChatCompletionRequest request = createRequest(requestPrompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -285,7 +285,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 				return chatResponse;
 			});
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response,
-				attempts)) {
+				iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -298,7 +298,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 				// Send the tool execution result back to the model.
 				return this.internalCall(
 						new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()),
-						attempts + 1);
+						iterations + 1);
 			}
 		}
 		return response;
@@ -314,7 +314,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 		return internalStream(prompt, 1);
 	}
 
-	private Flux<ChatResponse> internalStream(Prompt prompt, int attempts) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, int iterations) {
 		return Flux.deferContextual(contextView -> {
 			// Before moving any further, build the final request Prompt,
 			// merging runtime and default options.
@@ -369,7 +369,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response, attempts)) {
+						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response, iterations)) {
 							return Flux.defer(() -> {
 								// FIXME: bounded elastic needs to be used since tool calling
 								//  is currently only synchronous
@@ -384,7 +384,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 									// Send the tool execution result back to the model.
 									return this.internalStream(
 											new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()),
-											attempts + 1);
+											iterations + 1);
 								}
 							}).subscribeOn(Schedulers.boundedElastic());
 						}
@@ -464,9 +464,9 @@ public class ZhiPuAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
-			requestOptions.setInternalToolExecutionMaxAttempts(
-					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxAttempts(),
-							this.defaultOptions.getInternalToolExecutionMaxAttempts()));
+			requestOptions.setInternalToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxIterations(),
+							this.defaultOptions.getInternalToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -477,7 +477,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
 			requestOptions
-				.setInternalToolExecutionMaxAttempts(this.defaultOptions.getInternalToolExecutionMaxAttempts());
+				.setInternalToolExecutionMaxIterations(this.defaultOptions.getInternalToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());

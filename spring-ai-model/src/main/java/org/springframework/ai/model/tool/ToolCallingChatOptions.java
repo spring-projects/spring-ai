@@ -49,7 +49,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 */
 	int TOOL_EXECUTION_NO_LIMIT = Integer.MAX_VALUE;
 
-	int DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS = TOOL_EXECUTION_NO_LIMIT;
+	int DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS = TOOL_EXECUTION_NO_LIMIT;
 
 	/**
 	 * ToolCallbacks to be registered with the ChatModel.
@@ -85,18 +85,18 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 	/**
-	 * Get the maximum number of attempts for tool execution.
-	 * @return the maximum number of attempts.
+	 * Get the maximum number of iteration for tool execution.
+	 * @return the maximum number of iteration.
 	 * @see #getInternalToolExecutionEnabled()
 	 */
 	@Nullable
-	Integer getInternalToolExecutionMaxAttempts();
+	Integer getInternalToolExecutionMaxIterations();
 
 	/**
-	 * Set the maximum number of attempts for tool execution.
-	 * @param internalToolExecutionMaxAttempts the maximum number of attempts.
+	 * Set the maximum number of iteration for tool execution.
+	 * @param internalToolExecutionMaxIterations the maximum number of iteration.
 	 */
-	void setInternalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts);
+	void setInternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations);
 
 	/**
 	 * Get the configured tool context.
@@ -131,16 +131,16 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		return internalToolExecutionEnabled;
 	}
 
-	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int attempts) {
+	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int iterations) {
 		boolean isInternalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
 		if (!isInternalToolExecutionEnabled) {
 			return false;
 		}
 
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
-				&& toolCallingChatOptions.getInternalToolExecutionMaxAttempts() != null) {
-			int maxAttempts = toolCallingChatOptions.getInternalToolExecutionMaxAttempts();
-			return attempts <= maxAttempts;
+				&& toolCallingChatOptions.getInternalToolExecutionMaxIterations() != null) {
+			int maxIterations = toolCallingChatOptions.getInternalToolExecutionMaxIterations();
+			return iterations <= maxIterations;
 		}
 
 		return DEFAULT_TOOL_EXECUTION_ENABLED;
@@ -217,10 +217,10 @@ public interface ToolCallingChatOptions extends ChatOptions {
 
 		/**
 		 * the maximum number of attempts for tool execution.
-		 * @param internalToolExecutionMaxAttempts the maximum number of attempts.
+		 * @param internalToolExecutionMaxIterations the maximum number of iteration.
 		 * @return the {@link ToolCallingChatOptions} Builder.
 		 */
-		Builder internalToolExecutionMaxAttempts(@Nullable Integer internalToolExecutionMaxAttempts);
+		Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.

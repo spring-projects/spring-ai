@@ -14,24 +14,24 @@ class MistralAiChatOptionsTests {
 	void testOptionsDefault() {
 		var options = new MistralAiChatOptions();
 
-		assertThat(options.getInternalToolExecutionMaxAttempts())
-			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ATTEMPTS);
+		assertThat(options.getInternalToolExecutionMaxIterations())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 	}
 
 	@Test
 	void testOptionsCustom() {
 		var options = new MistralAiChatOptions();
 
-		options.setInternalToolExecutionMaxAttempts(3);
+		options.setInternalToolExecutionMaxIterations(3);
 
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
+		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
 	void testBuilder() {
-		var options = MistralAiChatOptions.builder().internalToolExecutionMaxAttempts(3).build();
+		var options = MistralAiChatOptions.builder().internalToolExecutionMaxIterations(3).build();
 
-		assertThat(options.getInternalToolExecutionMaxAttempts()).isEqualTo(3);
+		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 }
