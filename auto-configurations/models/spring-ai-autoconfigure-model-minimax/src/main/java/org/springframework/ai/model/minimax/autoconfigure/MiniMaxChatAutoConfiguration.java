@@ -49,8 +49,10 @@ import org.springframework.web.client.RestClient;
  * @author Geng Rong
  * @author Ilayaperumal Gopinathan
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class })
+@AutoConfiguration(
+		after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class },
+		beforeName = { "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration" })
 @ConditionalOnClass(MiniMaxApi.class)
 @EnableConfigurationProperties({ MiniMaxConnectionProperties.class, MiniMaxChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MINIMAX,

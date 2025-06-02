@@ -51,7 +51,8 @@ import org.springframework.context.annotation.Import;
  * @author Christian Tzolov
  * @author Wei Jiang
  */
-@AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = { ToolCallingAutoConfiguration.class },
+		beforeName = { "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration" })
 @EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
 @ConditionalOnClass({ BedrockProxyChatModel.class, BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.BEDROCK_CONVERSE,
