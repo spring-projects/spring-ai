@@ -131,7 +131,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		return internalToolExecutionEnabled;
 	}
 
-	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int iterations) {
+	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int toolExecutionIterations) {
 		boolean isInternalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
 		if (!isInternalToolExecutionEnabled) {
 			return false;
@@ -140,7 +140,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
 				&& toolCallingChatOptions.getInternalToolExecutionMaxIterations() != null) {
 			int maxIterations = toolCallingChatOptions.getInternalToolExecutionMaxIterations();
-			return iterations <= maxIterations;
+			return toolExecutionIterations <= maxIterations;
 		}
 
 		return DEFAULT_TOOL_EXECUTION_ENABLED;
