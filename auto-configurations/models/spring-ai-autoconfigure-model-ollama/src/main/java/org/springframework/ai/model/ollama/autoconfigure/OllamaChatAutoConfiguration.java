@@ -48,7 +48,8 @@ import org.springframework.retry.support.RetryTemplate;
  * @author Jonghoon Park
  * @since 0.8.0
  */
-@AutoConfiguration(after = { OllamaApiAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = { OllamaApiAutoConfiguration.class, ToolCallingAutoConfiguration.class },
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass(OllamaChatModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OLLAMA,
 		matchIfMissing = true)

@@ -50,8 +50,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Geng Rong
  * @author Ilayaperumal Gopinathan
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class })
+@AutoConfiguration(
+		after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class },
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass(ZhiPuAiApi.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.ZHIPUAI,
 		matchIfMissing = true)
