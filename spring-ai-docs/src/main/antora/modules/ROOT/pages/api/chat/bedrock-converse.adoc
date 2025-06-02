@@ -222,9 +222,9 @@ The image shows a close-up view of a wire fruit basket containing several pieces
 
 The link:https://docs.aws.amazon.com/nova/latest/userguide/modalities-video.html[Amazon Nova models] allow you to include a single video in the payload, which can be provided either in base64 format or through an Amazon S3 URI.
 
-Currently, Bedrock Nova supports the images of `video/x-matros`, `video/quicktime`, `video/mp4`, `video/video/webm`, `video/x-flv`, `video/mpeg`, `video/x-ms-wmv` and `image/3gpp` mime types.
+Currently, Bedrock Nova supports the videos of `video/x-matroska`, `video/quicktime`, `video/mp4`, `video/webm`, `video/x-flv`, `video/mpeg`, `video/x-ms-wmv` and `video/3gpp` mime types.
 
-Spring AI's `Message` interface supports multimodal AI models by introducing the `Media`` type.
+Spring AI's `Message` interface supports multimodal AI models by introducing the `Media` type.
 It contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
 Below is a simple code example, demonstrating the combination of user text with a video.
