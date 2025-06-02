@@ -1180,6 +1180,12 @@ public class OpenAiApi {
 			public enum Voice {
 				/** Alloy voice */
 				@JsonProperty("alloy") ALLOY,
+				/** Ash voice */
+				@JsonProperty("ash") ASH,
+				/** Ballad voice */
+				@JsonProperty("ballad") BALLAD,
+				/** Coral voice */
+				@JsonProperty("coral") CORAL,
 				/** Echo voice */
 				@JsonProperty("echo") ECHO,
 				/** Fable voice */
@@ -1188,6 +1194,8 @@ public class OpenAiApi {
 				@JsonProperty("onyx") ONYX,
 				/** Nova voice */
 				@JsonProperty("nova") NOVA,
+				/** Sage voice */
+				@JsonProperty("sage") SAGE,
 				/** Shimmer voice */
 				@JsonProperty("shimmer") SHIMMER
 			}
