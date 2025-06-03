@@ -2,7 +2,9 @@ name: CI/CD build
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - '*.x'
 
 jobs:
   build:
