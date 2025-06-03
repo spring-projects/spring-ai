@@ -570,7 +570,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void multiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech1.mp3");
+		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
 			.text("What is this recording about?")
 			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
@@ -587,7 +587,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void streamingMultiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech1.mp3");
+		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
 			.text("What is this recording about?")
 			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
