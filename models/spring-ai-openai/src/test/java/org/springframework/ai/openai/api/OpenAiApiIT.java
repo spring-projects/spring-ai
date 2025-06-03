@@ -100,7 +100,7 @@ public class OpenAiApiIT {
 
 	@Test
 	void inputAudio() throws IOException {
-		var audioData = new ClassPathResource("speech1.mp3").getContentAsByteArray();
+		var audioData = new ClassPathResource("speech/speech1.mp3").getContentAsByteArray();
 		List<ChatCompletionMessage.MediaContent> content = List
 			.of(new ChatCompletionMessage.MediaContent("What is this recording about?"),
 					new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.InputAudio(
