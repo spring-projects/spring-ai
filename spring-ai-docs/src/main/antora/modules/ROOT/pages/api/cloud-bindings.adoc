@@ -33,7 +33,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 == Available Cloud Bindings
 
-The following are the components for which the cloud binding support is currently available in the  `spring-ai-spring-clou-bindings` module:
+The following are the components for which the cloud binding support is currently available in the  `spring-ai-spring-cloud-bindings` module:
 
 [cols="|,|"]
 |====
