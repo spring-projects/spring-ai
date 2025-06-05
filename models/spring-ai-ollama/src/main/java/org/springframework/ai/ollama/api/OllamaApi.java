@@ -685,6 +685,10 @@ public final class OllamaApi {
 		public ShowModelRequest(String model) {
 			this(model, null, null, null);
 		}
+
+		public ShowModelRequest(String model, Boolean verbose) {
+			this(model, null, verbose, null);
+		}
 	}
 
 	@JsonInclude(Include.NON_NULL)

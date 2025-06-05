@@ -223,6 +223,18 @@ public class OllamaChatModel implements ChatModel {
 				Optional.ofNullable(response.evalCount()).orElse(0));
 	}
 
+	public record ModelInformation(OllamaApi.Model model, Map<String, Object> modelInfo) {
+	}
+
+	private ModelInformation getModelInformation(OllamaApi.Model model) {
+		var modelInfo = this.chatApi.showModel(new OllamaApi.ShowModelRequest(model.name(), false)).modelInfo();
+		return new ModelInformation(model, modelInfo);
+	}
+
+	public List<ModelInformation> collectModelInformation() {
+		return this.chatApi.listModels().models().stream().map(this::getModelInformation).toList();
+	}
+
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		// Before moving any further, build the final request Prompt,
