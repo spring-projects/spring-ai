@@ -113,7 +113,7 @@ The prefix `spring.ai.huggingface` is the property prefix that lets you configur
 | spring.ai.huggingface.chat.api-key    | API Key to authenticate with the Inference Endpoint.  |  -
 | spring.ai.huggingface.chat.url        | URL of the Inference Endpoint to connect to           |  -
 | spring.ai.huggingface.chat.enabled (Removed and no longer valid)   | Enable Hugging Face chat model.                       | true
-| spring.ai.model.chat (Removed and no longer valid)   | Enable Hugging Face chat model.                       | huggingface
+| spring.ai.model.chat                  | Enable Hugging Face chat model.                       | huggingface
 |====
 
 == Sample Controller (Auto-configuration)
@@ -186,5 +186,5 @@ HuggingfaceChatModel chatModel = new HuggingfaceChatModel(apiKey, url);
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
-System.out.println(response.getGeneration().getResult().getOutput().getContent());
+System.out.println(response.getResult().getOutput().getText());
 ----
