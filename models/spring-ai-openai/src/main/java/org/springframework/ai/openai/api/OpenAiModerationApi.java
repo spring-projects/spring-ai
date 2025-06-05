@@ -25,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.moderation.Categories;
+import org.springframework.ai.moderation.CategoryScores;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -42,6 +44,7 @@ import org.springframework.web.client.RestClient;
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
  * @author Filip Hrisafov
+ * @author lambochen
  * @see <a href=
  * "https://platform.openai.com/docs/api-reference/moderations">https://platform.openai.com/docs/api-reference/moderations</a>
  */
@@ -55,6 +58,8 @@ public class OpenAiModerationApi {
 
 	private final ObjectMapper objectMapper;
 
+	private final String moderationPath;
+
 	/**
 	 * Create a new OpenAI Moderation API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
@@ -63,23 +68,39 @@ public class OpenAiModerationApi {
 	 */
 	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, OpenAiApiConstants.DEFAULT_MODERATION_PATH, apiKey, headers, restClientBuilder,
+				responseErrorHandler);
+	}
 
+	/**
+	 * Create a new OpenAI Moderation API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param apiKey OpenAI apiKey.
+	 * @param restClientBuilder the rest client builder to use.
+	 * @param moderationPath the moderation path to use.
+	 */
+	public OpenAiModerationApi(String baseUrl, String moderationPath, ApiKey apiKey,
+			MultiValueMap<String, String> headers, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
+		Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
+
+		this.moderationPath = moderationPath;
 		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()
-			.baseUrl(baseUrl)
-			.defaultHeaders(h -> {
-				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
-			})
-			.defaultStatusHandler(responseErrorHandler)
-			.defaultRequest(requestHeadersSpec -> {
-				if (!(apiKey instanceof NoopApiKey)) {
-					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-				}
-			})
-			.build(); // @formatter:on
+				.baseUrl(baseUrl)
+				.defaultHeaders(h -> {
+					h.setContentType(MediaType.APPLICATION_JSON);
+					h.addAll(headers);
+				})
+				.defaultStatusHandler(responseErrorHandler)
+				.defaultRequest(requestHeadersSpec -> {
+					if (!(apiKey instanceof NoopApiKey)) {
+						requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+					}
+				})
+				.build(); // @formatter:on
 	}
 
 	public ResponseEntity<OpenAiModerationResponse> createModeration(OpenAiModerationRequest openAiModerationRequest) {
@@ -87,7 +108,7 @@ public class OpenAiModerationApi {
 		Assert.hasLength(openAiModerationRequest.prompt(), "Prompt cannot be empty.");
 
 		return this.restClient.post()
-			.uri("v1/moderations")
+			.uri(this.moderationPath)
 			.body(openAiModerationRequest)
 			.retrieve()
 			.toEntity(OpenAiModerationResponse.class);
@@ -176,6 +197,8 @@ public class OpenAiModerationApi {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
+		private String moderationPath = OpenAiApiConstants.DEFAULT_MODERATION_PATH;
+
 		private ApiKey apiKey;
 
 		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
@@ -187,6 +210,12 @@ public class OpenAiModerationApi {
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder moderationPath(String moderationPath) {
+			Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
+			this.moderationPath = moderationPath;
 			return this;
 		}
 
@@ -222,8 +251,8 @@ public class OpenAiModerationApi {
 
 		public OpenAiModerationApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
-					this.responseErrorHandler);
+			return new OpenAiModerationApi(this.baseUrl, this.moderationPath, this.apiKey, this.headers,
+					this.restClientBuilder, this.responseErrorHandler);
 		}
 
 	}
