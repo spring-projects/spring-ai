@@ -61,9 +61,9 @@ public class OpenAiAudioApi {
 
 	private final String audioSpeechPath;
 
-	private final String audioTranscriptionsPath;
+	private final String audioTranscriptionPath;
 
-	private final String audioTranslationsPath;
+	private final String audioTranslationPath;
 
 	/**
 	 * Create a new audio api.
@@ -78,9 +78,8 @@ public class OpenAiAudioApi {
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 		this(baseUrl, apiKey, headers, OpenAiApiConstants.DEFAULT_AUDIO_SPEECH_PATH,
-				OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTIONS_PATH,
-				OpenAiApiConstants.DEFAULT_AUDIO_TRANSLATIONS_PATH, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+				OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTION_PATH, OpenAiApiConstants.DEFAULT_AUDIO_TRANSLATION_PATH,
+				restClientBuilder, webClientBuilder, responseErrorHandler);
 	}
 
 	/**
@@ -92,15 +91,15 @@ public class OpenAiAudioApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 * @param audioSpeechPath Audio speech path.
-	 * @param audioTranscriptionsPath Audio transcriptions path.
-	 * @param audioTranslationsPath Audio translations path.
+	 * @param audioTranscriptionPath Audio transcriptions path.
+	 * @param audioTranslationPath Audio translations path.
 	 */
 	public OpenAiAudioApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String audioSpeechPath,
-			String audioTranscriptionsPath, String audioTranslationsPath, RestClient.Builder restClientBuilder,
+			String audioTranscriptionPath, String audioTranslationPath, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		this.audioSpeechPath = audioSpeechPath;
-		this.audioTranscriptionsPath = audioTranscriptionsPath;
-		this.audioTranslationsPath = audioTranslationsPath;
+		this.audioTranscriptionPath = audioTranscriptionPath;
+		this.audioTranslationPath = audioTranslationPath;
 
 		Consumer<HttpHeaders> authHeaders = h -> {
 			h.addAll(headers);
@@ -206,7 +205,7 @@ public class OpenAiAudioApi {
 		}
 
 		return this.restClient.post()
-			.uri(this.audioTranscriptionsPath)
+			.uri(this.audioTranscriptionPath)
 			.body(multipartBody)
 			.retrieve()
 			.toEntity(responseType);
@@ -246,7 +245,7 @@ public class OpenAiAudioApi {
 		multipartBody.add("temperature", requestBody.temperature());
 
 		return this.restClient.post()
-			.uri(this.audioTranslationsPath)
+			.uri(this.audioTranslationPath)
 			.body(multipartBody)
 			.retrieve()
 			.toEntity(responseType);
@@ -810,9 +809,9 @@ public class OpenAiAudioApi {
 
 		private String audioSpeechPath = OpenAiApiConstants.DEFAULT_AUDIO_SPEECH_PATH;
 
-		private String audioTranscriptionsPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTIONS_PATH;
+		private String audioTranscriptionPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTION_PATH;
 
-		private String audioTranslationsPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSLATIONS_PATH;
+		private String audioTranslationPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSLATION_PATH;
 
 		private ApiKey apiKey;
 
@@ -836,15 +835,15 @@ public class OpenAiAudioApi {
 			return this;
 		}
 
-		public Builder audioTranscriptionsPath(String audioTranscriptionsPath) {
+		public Builder audioTranscriptionPath(String audioTranscriptionsPath) {
 			Assert.hasText(audioTranscriptionsPath, "audioTranscriptionsPath cannot be null or empty");
-			this.audioTranscriptionsPath = audioTranscriptionsPath;
+			this.audioTranscriptionPath = audioTranscriptionsPath;
 			return this;
 		}
 
 		public Builder audioTranslationsPath(String audioTranslationsPath) {
 			Assert.hasText(audioTranslationsPath, "audioTranslationsPath cannot be null or empty");
-			this.audioTranslationsPath = audioTranslationsPath;
+			this.audioTranslationPath = audioTranslationsPath;
 			return this;
 		}
 
@@ -887,7 +886,7 @@ public class OpenAiAudioApi {
 		public OpenAiAudioApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
 			return new OpenAiAudioApi(this.baseUrl, this.apiKey, this.headers, this.audioSpeechPath,
-					this.audioTranscriptionsPath, this.audioTranslationsPath, this.restClientBuilder,
+					this.audioTranscriptionPath, this.audioTranslationPath, this.restClientBuilder,
 					this.webClientBuilder, this.responseErrorHandler);
 		}
 

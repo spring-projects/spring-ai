@@ -18,6 +18,7 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -32,6 +33,8 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
 
+	private String audioTranscriptionPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTION_PATH;
+
 	@NestedConfigurationProperty
 	private OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 		.model(DEFAULT_TRANSCRIPTION_MODEL)
@@ -45,6 +48,14 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiAudioTranscriptionOptions options) {
 		this.options = options;
+	}
+
+	public String getAudioTranscriptionPath() {
+		return audioTranscriptionPath;
+	}
+
+	public void setAudioTranscriptionPath(String audioTranscriptionPath) {
+		this.audioTranscriptionPath = audioTranscriptionPath;
 	}
 
 }

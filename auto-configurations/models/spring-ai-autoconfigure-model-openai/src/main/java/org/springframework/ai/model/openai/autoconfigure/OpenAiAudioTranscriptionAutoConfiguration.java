@@ -71,6 +71,7 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 		var openAiAudioApi = OpenAiAudioApi.builder()
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.audioTranscriptionPath(transcriptionProperties.getAudioTranscriptionPath())
 			.headers(resolved.headers())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
