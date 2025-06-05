@@ -97,6 +97,11 @@ public class OpenAiAudioApi {
 	public OpenAiAudioApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String audioSpeechPath,
 			String audioTranscriptionPath, String audioTranslationPath, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+		Assert.hasText(audioSpeechPath, "audioSpeechPath cannot be null or empty");
+		Assert.hasText(audioTranscriptionPath, "audioTranscriptionPath cannot be null or empty");
+		Assert.hasText(audioTranslationPath, "audioTranslationPath cannot be null or empty");
+
 		this.audioSpeechPath = audioSpeechPath;
 		this.audioTranscriptionPath = audioTranscriptionPath;
 		this.audioTranslationPath = audioTranslationPath;
@@ -835,15 +840,15 @@ public class OpenAiAudioApi {
 			return this;
 		}
 
-		public Builder audioTranscriptionPath(String audioTranscriptionsPath) {
-			Assert.hasText(audioTranscriptionsPath, "audioTranscriptionsPath cannot be null or empty");
-			this.audioTranscriptionPath = audioTranscriptionsPath;
+		public Builder audioTranscriptionPath(String audioTranscriptionPath) {
+			Assert.hasText(audioTranscriptionPath, "audioTranscriptionPath cannot be null or empty");
+			this.audioTranscriptionPath = audioTranscriptionPath;
 			return this;
 		}
 
-		public Builder audioTranslationsPath(String audioTranslationsPath) {
-			Assert.hasText(audioTranslationsPath, "audioTranslationsPath cannot be null or empty");
-			this.audioTranslationPath = audioTranslationsPath;
+		public Builder audioTranslationPath(String audioTranslationPath) {
+			Assert.hasText(audioTranslationPath, "audioTranslationPath cannot be null or empty");
+			this.audioTranslationPath = audioTranslationPath;
 			return this;
 		}
 

@@ -31,6 +31,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ahmed Yousri
  * @author Stefan Vassilev
  * @author Jonghoon Park
+ * @author lambochen
  */
 @ConfigurationProperties(OpenAiAudioSpeechProperties.CONFIG_PREFIX)
 public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
