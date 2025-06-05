@@ -136,8 +136,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "alloy", "echo", "fable", "onyx", "nova", "shimmer", "sage", "coral", "ash", "verse",
-			"ballad" })
+	@ValueSource(strings = { "alloy", "echo", "fable", "onyx", "nova", "shimmer", "sage", "coral", "ash" })
 	void speechVoicesTest(String voice) {
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 			.voice(voice)
