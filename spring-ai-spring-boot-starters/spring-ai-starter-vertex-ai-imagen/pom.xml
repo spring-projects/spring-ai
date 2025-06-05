@@ -30,7 +30,6 @@
 	<packaging>jar</packaging>
     <name>Spring AI Starter - VertexAI Imagen</name>
     <description>Spring AI Vertex Imagen AI Spring Boot Starter</description>
-	<description>Spring AI Vertex Imagen AI Auto Configuration</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
