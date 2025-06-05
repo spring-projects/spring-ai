@@ -62,6 +62,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author David Frizelle
  * @author Alexandros Pappas
+ * @author Filip Hrisafov
  */
 public class OpenAiApi {
 
@@ -128,10 +129,6 @@ public class OpenAiApi {
 
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			if (!(apiKey instanceof NoopApiKey)) {
-				h.setBearerAuth(apiKey.getValue());
-			}
-
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
@@ -179,12 +176,17 @@ public class OpenAiApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
+		// @formatter:off
 		return this.restClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			})
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletion.class);
+		// @formatter:on
 	}
 
 	/**
@@ -213,9 +215,13 @@ public class OpenAiApi {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
+		// @formatter:off
 		return this.webClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			}) // @formatter:on
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -289,11 +295,18 @@ public class OpenAiApi {
 
 		return this.restClient.post()
 			.uri(this.embeddingsPath)
+			.headers(this::addDefaultHeadersIfMissing)
 			.body(embeddingRequest)
 			.retrieve()
 			.toEntity(new ParameterizedTypeReference<>() {
 
 			});
+	}
+
+	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
+		if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+			headers.setBearerAuth(this.apiKey.getValue());
+		}
 	}
 
 	// Package-private getters for mutate/copy
@@ -1167,6 +1180,12 @@ public class OpenAiApi {
 			public enum Voice {
 				/** Alloy voice */
 				@JsonProperty("alloy") ALLOY,
+				/** Ash voice */
+				@JsonProperty("ash") ASH,
+				/** Ballad voice */
+				@JsonProperty("ballad") BALLAD,
+				/** Coral voice */
+				@JsonProperty("coral") CORAL,
 				/** Echo voice */
 				@JsonProperty("echo") ECHO,
 				/** Fable voice */
@@ -1175,6 +1194,8 @@ public class OpenAiApi {
 				@JsonProperty("onyx") ONYX,
 				/** Nova voice */
 				@JsonProperty("nova") NOVA,
+				/** Sage voice */
+				@JsonProperty("sage") SAGE,
 				/** Shimmer voice */
 				@JsonProperty("shimmer") SHIMMER
 			}
@@ -1367,14 +1388,15 @@ public class OpenAiApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl,
-			@JsonProperty("input_audio") InputAudio inputAudio) { // @formatter:on
+			@JsonProperty("input_audio") InputAudio inputAudio,
+			@JsonProperty("file") InputFile inputFile) { // @formatter:on
 
 			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
-				this("text", text, null, null);
+				this("text", text, null, null, null);
 			}
 
 			/**
@@ -1382,7 +1404,7 @@ public class OpenAiApi {
 			 * @param imageUrl The image content of the message.
 			 */
 			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl, null);
+				this("image_url", null, imageUrl, null, null);
 			}
 
 			/**
@@ -1390,7 +1412,15 @@ public class OpenAiApi {
 			 * @param inputAudio The audio content of the message.
 			 */
 			public MediaContent(InputAudio inputAudio) {
-				this("input_audio", null, null, inputAudio);
+				this("input_audio", null, null, inputAudio, null);
+			}
+
+			/**
+			 * Shortcut constructor for a file content
+			 * @param inputFile The file content of the message.
+			 */
+			public MediaContent(InputFile inputFile) {
+				this("file", null, null, null, inputFile);
 			}
 
 			/**
@@ -1425,6 +1455,18 @@ public class OpenAiApi {
 				public ImageUrl(String url) {
 					this(url, null);
 				}
+
+			}
+
+			/**
+			 * Constructor for base64-encoded file
+			 *
+			 * @param filename name of the file
+			 * @param fileData file data with format
+			 * "data:{mimetype};base64,{base64-encoded-image-data}".
+			 */
+			public record InputFile(@JsonProperty("filename") String filename,
+					@JsonProperty("file_data") String fileData) {
 
 			}
 

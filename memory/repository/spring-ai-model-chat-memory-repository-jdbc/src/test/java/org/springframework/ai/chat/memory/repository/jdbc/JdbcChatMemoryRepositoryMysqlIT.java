@@ -27,10 +27,11 @@ import org.springframework.test.context.jdbc.Sql;
  * @author Thomas Vitale
  * @author Mark Pollack
  * @author Yanming Zhou
+ * @author Henning Pöttker
  */
 @SpringBootTest
-@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:mariadb:10.3.39:///" })
-@Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-mariadb.sql")
+@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:mysql:8.0.42:///" })
+@Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-mysql.sql")
 class JdbcChatMemoryRepositoryMysqlIT extends AbstractJdbcChatMemoryRepositoryIT {
 
 }

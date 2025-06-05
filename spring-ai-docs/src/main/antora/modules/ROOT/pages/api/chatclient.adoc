@@ -2,7 +2,12 @@
 = Chat Client API
 
 The `ChatClient` offers a fluent API for communicating with an AI Model.
-It supports both a synchronous and streaming programming model.
+It supports both a synchronous and streaming programming model.  
+
+[NOTE]
+====
+See the xref:api/chatclient.adoc#_implementation_notes[Implementation Notes] at the bottom of this document related to the combined use of imperative and reactive programming models in `ChatClient`
+====
 
 The fluent API has methods for building up the constituent parts of a xref:api/prompt.adoc#_prompt[Prompt] that is passed to the AI model as input.
 The `Prompt` contains the instructional text to guide the AI model's output and behavior. From the API point of view, prompts consist of a collection of messages.
@@ -331,8 +336,6 @@ By default, Spring AI uses the `StTemplateRenderer` implementation, which is bas
 
 Spring AI also provides a `NoOpTemplateRenderer` for cases where no template processing is desired.
 
-Spring AI also provides a `NoOpTemplateRenderer`.
-
 NOTE: The `TemplateRenderer` configured directly on the `ChatClient` (via `.templateRenderer()`) applies only to the prompt content defined directly in the `ChatClient` builder chain (e.g., via `.user()`, `.system()`).
 It does *not* affect templates used internally by xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Advisors] like `QuestionAnswerAdvisor`, which have their own template customization mechanisms (see xref:api/retrieval-augmented-generation.adoc#_custom_template[Custom Advisor Templates]).
 
@@ -620,3 +623,21 @@ There is currently one built-in implementation: `MessageWindowChatMemory`.
 The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation memory. There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository` and `Neo4jChatMemoryRepository`.
 
 For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] documentation.
+
+== Implementation Notes
+
+The combined use of imperative and reactive programming models in `ChatClient` is a unique aspect of the API.
+Often an application will be either reactive or imperative, but not both.
+
+
+* When customizing the HTTP client interactions of a Model implementation, both the RestClient and the WebClient must be configured. 
+
+[IMPORTANT]
+====
+Due to a bug in Spring Boot 3.4, the "spring.http.client.factory=jdk" property must be set. Otherwise, it's set to "reactor" by default, which breaks certain AI workflows like the ImageModel.
+====
+
+* Streaming is only supported via the Reactive stack. Imperative applications must include the Reactive stack for this reason (e.g. spring-boot-starter-webflux).
+* Non-streaming is only supportive via the Servlet stack. Reactive applications must include the Servlet stack for this reason (e.g. spring-boot-starter-web) and expect some calls to be blocking.
+* Tool calling is imperative, leading to blocking workflows. This also results in partial/interrupted Micrometer observations (e.g. the ChatClient spans and the tool calling spans are not connected, with the first one remaining incomplete for that reason).
+* The built-in advisors perform blocking operations for standards calls, and non-blocking operations for streaming calls. The Reactor Scheduler used for the advisor streaming calls can be configured via the Builder on each Advisor class.

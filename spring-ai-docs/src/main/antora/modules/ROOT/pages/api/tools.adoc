@@ -14,6 +14,8 @@ Spring AI provides convenient APIs to define tools, resolve tool call requests f
 
 NOTE: Check the xref:api/chat/comparison.adoc[Chat Model Comparisons] to see which AI models support tool calling invocation.
 
+TIP: Follow the guide to migrate from the deprecated xref:api/tools-migration.adoc[FunctionCallback to ToolCallback API].
+
 == Quick Start
 
 Let's see how to start using tool calling in Spring AI. We'll implement two simple tools: one for information retrieval and one for taking action. The information retrieval tool will be used to get the current date and time in the user's time zone. The action tool will be used to set an alarm for a specified time.
@@ -314,7 +316,7 @@ The `ToolMetadata.Builder` allows you to build a `ToolMetadata` instance and def
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
 ToolCallback toolCallback = MethodToolCallback.builder()
-    .toolDefinition(ToolDefinition.builder(method)
+    .toolDefinition(ToolDefinitions.builder(method)
             .description("Get the current date and time in the user's timezone")
             .build())
     .toolMethod(method)
@@ -347,7 +349,7 @@ class DateTimeTools {
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
 ToolCallback toolCallback = MethodToolCallback.builder()
-    .toolDefinition(ToolDefinition.builder(method)
+    .toolDefinition(ToolDefinitions.builder(method)
             .description("Get the current date and time in the user's timezone")
             .build())
     .toolMethod(method)
@@ -623,7 +625,7 @@ The tool will only be available for the specific chat request it's added to.
 ----
 ChatClient.create(chatModel)
     .prompt("What's the weather like in Copenhagen?")
-    .tools("currentWeather")
+    .toolNames("currentWeather")
     .call()
     .content();
 ----
@@ -652,7 +654,7 @@ When using the dynamic specification approach, you can pass the tool name to the
 ChatModel chatModel = ...
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolNames("currentWeather")
-    .build():
+    .build();
 Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions);
 chatModel.call(prompt);
 ----
@@ -799,7 +801,7 @@ If you'd rather provide some or all of the attributes explicitly, you can use th
 [source,java]
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
-ToolDefinition toolDefinition = ToolDefinition.builder(method)
+ToolDefinition toolDefinition = ToolDefinitions.builder(method)
     .name("currentDateTime")
     .description("Get the current date and time in the user's timezone")
     .inputSchema(JsonSchemaGenerator.generateForMethodInput(method))
@@ -937,7 +939,7 @@ class CustomerTools {
 
     @Tool(description = "Retrieve customer information")
     Customer getCustomerInfo(Long id, ToolContext toolContext) {
-        return customerRepository.findById(id, toolContext.get("tenantId"));
+        return customerRepository.findById(id, toolContext.getContext().get("tenantId"));
     }
 
 }
@@ -1178,7 +1180,8 @@ ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversation
 
 === Exception Handling
 
-When a tool call fails, the exception is propagated as a `ToolExecutionException` which can be caught to handle the error. A `ToolExecutionExceptionProcessor` can be used to handle a `ToolExecutionException` with two outcomes: either producing an error message to be sent back to the AI model or throwing an exception to be handled by the caller.
+When a tool call fails, the exception is propagated as a `ToolExecutionException` which can be caught to handle the error. 
+A `ToolExecutionExceptionProcessor` can be used to handle a `ToolExecutionException` with two outcomes: either producing an error message to be sent back to the AI model or throwing an exception to be handled by the caller.
 
 [source,java]
 ----
@@ -1195,6 +1198,16 @@ public interface ToolExecutionExceptionProcessor {
 ----
 
 If you're using any of the Spring AI Spring Boot Starters, `DefaultToolExecutionExceptionProcessor` is the autoconfigured implementation of the `ToolExecutionExceptionProcessor` interface. By default, the error message is sent back to the model. The `DefaultToolExecutionExceptionProcessor` constructor lets you set the `alwaysThrow` attribute to `true` or `false`. If `true`, an exception will be thrown instead of sending an error message back to the model.
+
+You can use the ``spring.ai.tools.throw-exception-on-error` property to control the behavior of the `DefaultToolExecutionExceptionProcessor` bean:
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+
+| `spring.ai.tools.throw-exception-on-error` | If `true`, tool calling errors are thrown as exceptions for the caller to handle. If `false`, errors are converted to messages and sent back to the AI model, allowing it to process and respond to the error.| `false`
+|====
+
 
 [source,java]
 ----
@@ -1253,7 +1266,9 @@ The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to res
 
 == Observability
 
-Instrumentation for the tool calling is on its way. For now, you can use the logging feature to track the tool calling operations.
+Tool calling includes observability support with spring.ai.tool observations that measure completion time and propagate tracing information. See xref:observability/index.adoc#_tool_calling[Tool Calling Observability].
+
+Optionally, Spring AI can export tool call arguments and results as span attributes, disabled by default for sensitivity reasons. Details: xref:observability/index.adoc#_tool_call_arguments_and_result_data[Tool Call Arguments and Result Data].
 
 === Logging
 

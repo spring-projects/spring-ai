@@ -28,7 +28,7 @@ Full MCP Server features support with `STDIO` server transport.
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-mcp-server-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-mcp-server</artifactId>
 </dependency>
 ----
 
@@ -103,19 +103,19 @@ All properties are prefixed with `spring.ai.mcp.server`:
 |`tool-response-mime-type` |(optional) response MIME type per tool name. For example `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will associate the `image/png` mime type with the `generateImage()` tool name |`-`
 |`sse-message-endpoint` | Custom SSE Message endpoint path for web transport to be used by the client to send messages|`/mcp/message`
 |`sse-endpoint` |Custom SSE endpoint path for web transport |`/sse`
-|`base-url` | Optional URL prefix. For example `base-url=/api/v1` means that the client should access the sse endpont at `/api/v1` + `sse-endpoint` and the message endpoint is `/api/v1` + `sse-message-endpoint` | -
+|`base-url` | Optional URL prefix. For example `base-url=/api/v1` means that the client should access the sse endpoint at `/api/v1` + `sse-endpoint` and the message endpoint is `/api/v1` + `sse-message-endpoint` | -
 |`request-timeout` | Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations. | `20` seconds
 |===
 
 == Sync/Async Server Types
 
-* **Synchronous Server** - The default server type implemented using `McpSyncServer`. 
-It is designed for straightforward request-response patterns in your applications. 
-To enable this server type, set `spring.ai.mcp.server.type=SYNC` in your configuration. 
+* **Synchronous Server** - The default server type implemented using `McpSyncServer`.
+It is designed for straightforward request-response patterns in your applications.
+To enable this server type, set `spring.ai.mcp.server.type=SYNC` in your configuration.
 When activated, it automatically handles the configuration of synchronous tool specifications.
 
-* **Asynchronous Server** - The asynchronous server implementation uses `McpAsyncServer` and is optimized for non-blocking operations. 
-To enable this server type, configure your application with `spring.ai.mcp.server.type=ASYNC`. 
+* **Asynchronous Server** - The asynchronous server implementation uses `McpAsyncServer` and is optimized for non-blocking operations.
+To enable this server type, configure your application with `spring.ai.mcp.server.type=ASYNC`.
 This server type automatically sets up asynchronous tool specifications with built-in Project Reactor support.
 
 == Server Capabilities
@@ -250,7 +250,7 @@ Provides a standardized way for servers to expose completion capabilities to cli
 @Bean
 public List<McpServerFeatures.SyncCompletionSpecification> myCompletions() {
     var completion = new McpServerFeatures.SyncCompletionSpecification(
-        "code-completion", 
+        "code-completion",
         "Provides code completion suggestions",
         (exchange, request) -> {
             // Implementation that returns completion suggestions
@@ -260,7 +260,7 @@ public List<McpServerFeatures.SyncCompletionSpecification> myCompletions() {
             ));
         }
     );
-    
+
     return List.of(completion);
 }
 ----

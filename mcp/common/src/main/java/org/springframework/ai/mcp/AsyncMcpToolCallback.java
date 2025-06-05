@@ -28,6 +28,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -42,7 +43,9 @@ import org.springframework.ai.tool.definition.ToolDefinition;
  * <li>Manages JSON serialization/deserialization of tool inputs and outputs</li>
  * </ul>
  * <p>
- * Example usage: <pre>{@code
+ * Example usage:
+ *
+ * <pre>{@code
  * McpAsyncClient mcpClient = // obtain MCP client
  * Tool mcpTool = // obtain MCP tool definition
  * ToolCallback callback = new AsyncMcpToolCallback(mcpClient, mcpTool);
