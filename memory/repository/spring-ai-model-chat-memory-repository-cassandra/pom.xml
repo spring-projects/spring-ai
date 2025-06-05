@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.springframework.ai</groupId>
         <artifactId>spring-ai-parent</artifactId>
-        <version>1.1.0-M1</version>
+        <version>${revision}</version>
         <relativePath>../../../pom.xml</relativePath>
     </parent>
 
