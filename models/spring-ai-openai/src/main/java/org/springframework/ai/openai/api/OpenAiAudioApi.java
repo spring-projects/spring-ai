@@ -240,7 +240,12 @@ public class OpenAiAudioApi {
 		 * The latest text to speech model, optimized for quality.
 		 */
 		@JsonProperty("tts-1-hd")
-		TTS_1_HD("tts-1-hd");
+		TTS_1_HD("tts-1-hd"),
+		/**
+		 * Text-to-speech model powered by GPT-4o mini
+		 */
+		@JsonProperty("gpt-4o-mini-tts")
+		GPT_4_O_MINI_TTS("gpt-4o-mini-tts");
 		// @formatter:on
 
 		public final String value;
@@ -330,14 +335,15 @@ public class OpenAiAudioApi {
 	 * Speech</a>
 	 *
 	 * @param model The model to use for generating the audio. One of the available TTS
-	 * models: tts-1 or tts-1-hd.
+	 * models: tts-1, tts-1-hd, or gpt-4o-mini-tts.
 	 * @param input The input text to synthesize. Must be at most 4096 tokens long.
 	 * @param voice The voice to use for synthesis. One of the available voices for the
-	 * chosen model: 'alloy', 'echo', 'fable', 'onyx', 'nova', and 'shimmer'.
+	 * chosen model: 'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova',
+	 * 'sage', 'shimmer', and 'verse'.
 	 * @param responseFormat The format to audio in. Supported formats are mp3, opus, aac,
-	 * and flac. Defaults to mp3.
+	 * flac, wav, and pcm. Defaults to mp3.
 	 * @param speed The speed of the voice synthesis. The acceptable range is from 0.25
-	 * (slowest) to 4.0 (fastest).
+	 * (slowest) to 4.0 (fastest). Does not work with gpt-4o-mini-tts.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record SpeechRequest(
@@ -361,6 +367,8 @@ public class OpenAiAudioApi {
 			// @formatter:off
 			@JsonProperty("alloy")
 			ALLOY("alloy"),
+			@JsonProperty("ballad")
+			BALLAD("ballad"),
 			@JsonProperty("echo")
 			ECHO("echo"),
 			@JsonProperty("fable")
@@ -376,7 +384,9 @@ public class OpenAiAudioApi {
 			@JsonProperty("coral")
 			CORAL("coral"),
 			@JsonProperty("ash")
-			ASH("ash");
+			ASH("ash"),
+			@JsonProperty("verse")
+			VERSE("verse");
 			// @formatter:on
 
 			public final String value;
