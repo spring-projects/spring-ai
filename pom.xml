@@ -21,7 +21,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai-parent</artifactId>
-	<version>1.1.0-SNAPSHOT</version>
+	<version>${revision}</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
@@ -237,12 +237,15 @@
 		<url>https://github.com/spring-projects/spring-ai/actions</url>
 	</ciManagement>
 	<distributionManagement>
+		<repository>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/explyt/spring-ai</url>
+		</repository>
 		<snapshotRepository>
-			<id>spring-snapshots</id>
-			<url>https://repo.spring.io/libs-snapshot-local</url>
-			<releases>
-				<enabled>false</enabled>
-			</releases>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/explyt/spring-ai</url>
 		</snapshotRepository>
 	</distributionManagement>
 	<licenses>
@@ -852,67 +855,6 @@
 				</plugins>
 			</build>
 		</profile>
-		<profile>
-			<id>artifactory-staging</id>
-			<distributionManagement>
-				<repository>
-					<id>spring-staging</id>
-					<url>https://repo.spring.io/libs-staging-local</url>
-					<snapshots>
-						<enabled>false</enabled>
-					</snapshots>
-				</repository>
-			</distributionManagement>
-		</profile>
-		<profile>
-			<id>artifactory-milestone</id>
-			<distributionManagement>
-				<repository>
-					<id>spring-milestones</id>
-					<url>https://repo.spring.io/libs-milestone-local</url>
-					<snapshots>
-						<enabled>false</enabled>
-					</snapshots>
-				</repository>
-			</distributionManagement>
-		</profile>
-		<profile>
-	    <id>sonatype</id>
-	    <properties>
-	        <maven.test.skip>true</maven.test.skip>
-	    </properties>
-	    <build>
-	        <plugins>
-						<plugin>
-								<groupId>org.apache.maven.plugins</groupId>
-								<artifactId>maven-gpg-plugin</artifactId>
-								<executions>
-										<execution>
-												<id>sign-artifacts</id>
-												<phase>verify</phase>
-												<goals>
-														<goal>sign</goal>
-												</goals>
-										</execution>
-								</executions>
-								<configuration>
-										<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-								</configuration>
-						</plugin>
-	            <plugin>
-	                <groupId>org.sonatype.central</groupId>
-	                <artifactId>central-publishing-maven-plugin</artifactId>
-	                <extensions>true</extensions>
-	                <configuration>
-	                    <publishingServerId>central</publishingServerId>
-	                    <autoPublish>true</autoPublish>
-	                </configuration>
-	            </plugin>
-	        </plugins>
-	    </build>
-	</profile>
-
-
 	</profiles>
 
 	<dependencyManagement>

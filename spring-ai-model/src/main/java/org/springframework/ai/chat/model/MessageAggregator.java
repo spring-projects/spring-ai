@@ -51,8 +51,6 @@ import static org.springframework.ai.chat.messages.AssistantMessage.*;
  */
 public class MessageAggregator {
 
-	private static final Logger logger = LoggerFactory.getLogger(MessageAggregator.class);
-
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {
 
@@ -179,7 +177,7 @@ public class MessageAggregator {
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
-		}).doOnError(e -> logger.error("Aggregation Error", e));
+		});
 	}
 
 	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) implements Usage {
