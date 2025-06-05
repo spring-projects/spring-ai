@@ -23,11 +23,18 @@ import org.springframework.ai.observation.conventions.AiProvider;
  *
  * @author Piotr Olaszewski
  * @author Thomas Vitale
+ * @author lambochen
  * @since 1.0.0 M2
  */
 public final class OpenAiApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://api.openai.com";
+
+	public static final String DEFAULT_AUDIO_SPEECH_PATH = "/v1/audio/speech";
+
+	public static final String DEFAULT_AUDIO_TRANSCRIPTIONS_PATH = "/v1/audio/transcriptions";
+
+	public static final String DEFAULT_AUDIO_TRANSLATIONS_PATH = "/v1/audio/translations";
 
 	public static final String PROVIDER_NAME = AiProvider.OPENAI.value();
 
