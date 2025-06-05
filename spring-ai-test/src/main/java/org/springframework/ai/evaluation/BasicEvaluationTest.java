@@ -19,9 +19,6 @@ package org.springframework.ai.evaluation;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -30,13 +27,14 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public class BasicEvaluationTest {
 
-	private static final Logger logger = LoggerFactory.getLogger(BasicEvaluationTest.class);
+	private static final LogAccessor logger = new LogAccessor(BasicEvaluationTest.class);
 
 	@Autowired
 	protected ChatModel openAiChatModel;

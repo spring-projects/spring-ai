@@ -27,8 +27,6 @@ import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.ai.openai.models.ChatCompletionStreamOptions;
 import com.azure.core.credential.AzureKeyCredential;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
@@ -45,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAzureCredentials
 class AzureOpenAiChatModelFunctionCallIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(AzureOpenAiChatModelFunctionCallIT.class);
+	private static final LogAccessor logger = new LogAccessor(AzureOpenAiChatModelFunctionCallIT.class);
 
 	@Autowired
 	private String selectedModel;
@@ -79,7 +78,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput()).isNotNull();
@@ -108,7 +107,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -140,7 +139,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(counter.get()).isGreaterThan(30).as("The response should be chunked in more than 30 messages");
 
@@ -170,7 +169,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
 
 		ChatResponse chatResponse = response.last().block();
-		logger.info("Response: {}", chatResponse);
+		logger.info("Response: " + chatResponse);
 
 		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(600).isLessThan(800);
 
@@ -207,7 +206,7 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(content).contains("30", "10", "15");
 	}

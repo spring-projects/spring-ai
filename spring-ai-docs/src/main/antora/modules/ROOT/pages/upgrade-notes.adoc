@@ -1,6 +1,40 @@
 [[upgrade-notes]]
 = Upgrading Notes
 
+== Upgrading to 1.0.0.M6
+
+=== Changes to Usage Interface and DefaultUsage Implementation
+
+* In the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/Usage.java[Usage] interface, changed the method name from `getGenerationTokens` to `getCompletionTokens` as that is more common terminology in the industry.
+* In link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], changed parameter types from `Long` to `Integer` for all token-related fields:
+** `promptTokens`
+** `completionTokens` (formerly `generationTokens`)
+** `totalTokens`
+* Constructor changes in link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage]:
+** Changed parameter types from `Long` to `Integer`
+** Renamed `generationTokens` parameter to `completionTokens`
+** Removed constructors that used `Long` parameters
+
+=== JSON Serialization Changes
+
+* The JSON format now uses `completionTokens` instead of `generationTokens`
+* For backward compatibility, JSON deserialization still supports the old format with `generationTokens`
+* Example of new JSON format:
+[source,json]
+----
+{
+  "promptTokens": 100,
+  "completionTokens": 50,
+  "totalTokens": 150
+}
+----
+
+=== Migration Guide
+
+1. Update your code to use `getCompletionTokens()` instead of `getGenerationTokens()`
+2. When creating new instances of link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], use `Integer` instead of `Long` for token counts. This is a breaking change and requires updating all constructor calls.
+3. When constructing link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/metadata/DefaultUsage.java[DefaultUsage], use the parameter name `completionTokens` instead of `generationTokens`
+4. If you're serializing `DefaultUsage` objects to JSON, update your code to use the new field names
 
 == Upgrading to 1.0.0.M5
 
@@ -313,4 +347,3 @@ You can access `0.7.1-SNAPSHOT` artifacts as before and still access https://mar
 * PaLM API support removal
 
 As a follow up to the announcement to https://ai.google.dev/palm_docs/deprecation[deprecate PaLM API], the PaLM API support is removed.
-

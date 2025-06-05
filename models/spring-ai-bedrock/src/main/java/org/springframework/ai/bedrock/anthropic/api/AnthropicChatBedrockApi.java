@@ -246,60 +246,6 @@ public class AnthropicChatBedrockApi extends
 				return this;
 			}
 
-			/**
-			 * @deprecated use {@link #temperature( Double)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withTemperature(Double temperature) {
-				this.temperature = temperature;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #maxTokensToSample( Integer)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withMaxTokensToSample(Integer maxTokensToSample) {
-				this.maxTokensToSample = maxTokensToSample;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #topK( Integer)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withTopK(Integer topK) {
-				this.topK = topK;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #topP( Double)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withTopP(Double tpoP) {
-				this.topP = tpoP;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #stopSequences( List)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withStopSequences(List<String> stopSequences) {
-				this.stopSequences = stopSequences;
-				return this;
-			}
-
-			/**
-			 * @deprecated use {@link #anthropicVersion( String)} instead.
-			 */
-			@Deprecated(forRemoval = true, since = "1.0.0-M5")
-			public Builder withAnthropicVersion(String anthropicVersion) {
-				this.anthropicVersion = anthropicVersion;
-				return this;
-			}
-
 			public AnthropicChatRequest build() {
 				return new AnthropicChatRequest(
 						this.prompt,

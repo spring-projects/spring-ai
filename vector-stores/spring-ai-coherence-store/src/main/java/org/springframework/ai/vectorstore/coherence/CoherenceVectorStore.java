@@ -140,18 +140,6 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	private IndexType indexType;
 
 	/**
-	 * Creates a new CoherenceVectorStore with minimal configuration.
-	 * @param embeddingModel the embedding model to use
-	 * @param session the Coherence session
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore(EmbeddingModel embeddingModel, Session session) {
-		this(builder(session, embeddingModel));
-	}
-
-	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
 	 * create new CoherenceVectorStore instances.
 	 * @param builder the configured builder instance
@@ -175,46 +163,6 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	 */
 	public static Builder builder(Session session, EmbeddingModel embeddingModel) {
 		return new Builder(session, embeddingModel);
-	}
-
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setMapName(String mapName) {
-		this.mapName = mapName;
-		return this;
-	}
-
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setDistanceType(DistanceType distanceType) {
-		this.distanceType = distanceType;
-		return this;
-	}
-
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setIndexType(IndexType indexType) {
-		this.indexType = indexType;
-		return this;
-	}
-
-	/**
-	 * @deprecated Since 1.0.0-M5, use {@link #builder(Session, EmbeddingModel)} ()}
-	 * instead
-	 */
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public CoherenceVectorStore setForcedNormalization(boolean forcedNormalization) {
-		this.forcedNormalization = forcedNormalization;
-		return this;
 	}
 
 	@Override

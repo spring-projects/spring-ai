@@ -26,15 +26,16 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.document.DocumentMetadata;
-import org.testcontainers.containers.GenericContainer;
+
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.typesense.TypesenseContainer;
 import org.typesense.api.Client;
 import org.typesense.api.Configuration;
 import org.typesense.resources.Node;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -58,9 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TypesenseVectorStoreIT {
 
 	@Container
-	private static GenericContainer<?> typesenseContainer = new GenericContainer<>(TypesenseImage.DEFAULT_IMAGE)
-		.withExposedPorts(8108)
-		.withCommand("--data-dir", "/tmp", "--api-key=xyz", "--enable-cors");
+	private static TypesenseContainer typesense = new TypesenseContainer(TypesenseImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -97,7 +96,7 @@ public class TypesenseVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("Spring AI rocks!!");
+			assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
 			assertThat(resultDoc.getMetadata()).containsKey("meta1");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -115,7 +114,7 @@ public class TypesenseVectorStoreIT {
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
-			assertThat(resultDoc.getContent()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
+			assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(resultDoc.getMetadata()).containsKey("meta2");
 			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 
@@ -235,7 +234,7 @@ public class TypesenseVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-			assertThat(resultDoc.getContent()).contains(
+			assertThat(resultDoc.getText()).contains(
 					"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
@@ -262,10 +261,9 @@ public class TypesenseVectorStoreIT {
 		@Bean
 		public Client typesenseClient() {
 			List<Node> nodes = new ArrayList<>();
-			nodes
-				.add(new Node("http", typesenseContainer.getHost(), typesenseContainer.getMappedPort(8108).toString()));
+			nodes.add(new Node("http", typesense.getHost(), typesense.getMappedPort(8108).toString()));
 
-			Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), "xyz");
+			Configuration configuration = new Configuration(nodes, Duration.ofSeconds(5), typesense.getApiKey());
 			return new Client(configuration);
 		}
 

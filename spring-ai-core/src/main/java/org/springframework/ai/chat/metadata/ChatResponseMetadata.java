@@ -19,11 +19,9 @@ package org.springframework.ai.chat.metadata;
 import java.util.Map;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
+import org.springframework.core.log.LogAccessor;
 
 /**
  * Models common AI provider metadata returned in an AI response.
@@ -36,7 +34,7 @@ import org.springframework.ai.model.ResponseMetadata;
  */
 public class ChatResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	private final static Logger logger = LoggerFactory.getLogger(ChatResponseMetadata.class);
+	private static final LogAccessor logger = new LogAccessor(ChatResponseMetadata.class);
 
 	private String id = ""; // Set to blank to preserve backward compat with previous
 
@@ -140,7 +138,7 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 				this.chatResponseMetadata.map.put(key, value);
 			}
 			else {
-				logger.debug("Ignore null value for key [{}]", key);
+				logger.debug("Ignore null value for key [" + key + "]");
 			}
 			return this;
 		}
@@ -168,62 +166,6 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 		public Builder promptMetadata(PromptMetadata promptMetadata) {
 			this.chatResponseMetadata.promptMetadata = promptMetadata;
 			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #metadata(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder wihtMetadata(Map<String, Object> mapToCopy) {
-			return metadata(mapToCopy);
-		}
-
-		/**
-		 * @deprecated use {@link #keyValue(String, Object)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withKeyValue(String key, Object value) {
-			return keyValue(key, value);
-		}
-
-		/**
-		 * @deprecated use {@link #id(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withId(String id) {
-			return id(id);
-		}
-
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			return model(model);
-		}
-
-		/**
-		 * @deprecated use {@link #rateLimit(RateLimit)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withRateLimit(RateLimit rateLimit) {
-			return rateLimit(rateLimit);
-		}
-
-		/**
-		 * @deprecated use {@link #usage(Usage)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUsage(Usage usage) {
-			return usage(usage);
-		}
-
-		/**
-		 * @deprecated use {@link #promptMetadata(PromptMetadata)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPromptMetadata(PromptMetadata promptMetadata) {
-			return promptMetadata(promptMetadata);
 		}
 
 		public ChatResponseMetadata build() {

@@ -16,6 +16,16 @@
 
 package org.springframework.ai.vectorstore.mariadb;
 
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.Group;
+import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.ai.vectorstore.filter.Filter.Value;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
@@ -25,15 +35,6 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
-
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.vectorstore.filter.Filter.Expression;
-import org.springframework.ai.vectorstore.filter.Filter.Group;
-import org.springframework.ai.vectorstore.filter.Filter.Key;
-import org.springframework.ai.vectorstore.filter.Filter.Value;
-import org.springframework.ai.vectorstore.mariadb.MariaDBFilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 
 /**
  * @author Diego Dupin

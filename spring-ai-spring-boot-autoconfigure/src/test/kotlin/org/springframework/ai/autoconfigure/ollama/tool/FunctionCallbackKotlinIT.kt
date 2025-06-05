@@ -19,8 +19,6 @@ package org.springframework.ai.autoconfigure.ollama.tool
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
-
 import org.springframework.ai.autoconfigure.ollama.BaseOllamaIT
 import org.springframework.ai.autoconfigure.ollama.OllamaAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
@@ -28,18 +26,18 @@ import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.ai.model.function.FunctionCallback
 import org.springframework.ai.model.function.FunctionCallingOptions
 import org.springframework.ai.ollama.OllamaChatModel
-import org.springframework.ai.ollama.api.OllamaModel
 import org.springframework.ai.ollama.api.OllamaOptions
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.log.LogAccessor
 
 class FunctionCallbackKotlinIT : BaseOllamaIT() {
 
 	companion object {
 
-		private val MODEL_NAME = OllamaModel.LLAMA3_2.getName();
+		private val MODEL_NAME = "qwen2.5:3b";
 
 		@JvmStatic
 		@BeforeAll
@@ -48,7 +46,7 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 		}
 	}
 
-	private val logger = LoggerFactory.getLogger(FunctionCallbackKotlinIT::class.java)
+	private val logger = LogAccessor(FunctionCallbackKotlinIT::class.java)
 
 	private val contextRunner = ApplicationContextRunner()
 		.withPropertyValues(
@@ -72,7 +70,7 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 			val response = chatModel
 					.call(Prompt(listOf(userMessage), OllamaOptions.builder().function("WeatherInfo").build()))
 
-			logger.info("Response: " + response)
+			logger.info("Response: $response")
 
 			assertThat(response.getResult().output.text).contains("30", "10", "15")
 		}
@@ -93,10 +91,10 @@ class FunctionCallbackKotlinIT : BaseOllamaIT() {
 				.build()
 
 			val response = chatModel.call(Prompt(listOf(userMessage), functionOptions));
+			val output = response.getResult().output.text
+			logger.info("Response: $output");
 
-			logger.info("Response: " + response.getResult().getOutput().getText());
-
-			assertThat(response.getResult().output.text).contains("30", "10", "15");
+			assertThat(output).contains("30", "10", "15");
 		}
 	}
 

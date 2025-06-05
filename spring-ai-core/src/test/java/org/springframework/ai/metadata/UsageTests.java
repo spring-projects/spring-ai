@@ -36,10 +36,10 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
  */
 public class UsageTests {
 
-	private Usage mockUsage(Long promptTokens, Long generationTokens) {
+	private Usage mockUsage(Integer promptTokens, Integer generationTokens) {
 		Usage mockUsage = mock(Usage.class);
 		doReturn(promptTokens).when(mockUsage).getPromptTokens();
-		doReturn(generationTokens).when(mockUsage).getGenerationTokens();
+		doReturn(generationTokens).when(mockUsage).getCompletionTokens();
 		doCallRealMethod().when(mockUsage).getTotalTokens();
 		return mockUsage;
 	}
@@ -47,7 +47,7 @@ public class UsageTests {
 	private void verifyUsage(Usage usage) {
 		verify(usage, times(1)).getTotalTokens();
 		verify(usage, times(1)).getPromptTokens();
-		verify(usage, times(1)).getGenerationTokens();
+		verify(usage, times(1)).getCompletionTokens();
 		verifyNoMoreInteractions(usage);
 	}
 
@@ -63,27 +63,27 @@ public class UsageTests {
 	@Test
 	void totalTokensEqualsPromptTokens() {
 
-		Usage usage = mockUsage(10L, null);
+		Usage usage = mockUsage(10, null);
 
-		assertThat(usage.getTotalTokens()).isEqualTo(10L);
+		assertThat(usage.getTotalTokens()).isEqualTo(10);
 		verifyUsage(usage);
 	}
 
 	@Test
 	void totalTokensEqualsGenerationTokens() {
 
-		Usage usage = mockUsage(null, 15L);
+		Usage usage = mockUsage(null, 15);
 
-		assertThat(usage.getTotalTokens()).isEqualTo(15L);
+		assertThat(usage.getTotalTokens()).isEqualTo(15);
 		verifyUsage(usage);
 	}
 
 	@Test
 	void totalTokensEqualsPromptTokensPlusGenerationTokens() {
 
-		Usage usage = mockUsage(10L, 15L);
+		Usage usage = mockUsage(10, 15);
 
-		assertThat(usage.getTotalTokens()).isEqualTo(25L);
+		assertThat(usage.getTotalTokens()).isEqualTo(25);
 		verifyUsage(usage);
 	}
 

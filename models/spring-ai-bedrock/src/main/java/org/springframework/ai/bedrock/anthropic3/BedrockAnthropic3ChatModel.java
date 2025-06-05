@@ -132,8 +132,7 @@ public class BedrockAnthropic3ChatModel implements ChatModel, StreamingChatModel
 	}
 
 	protected Usage extractUsage(AnthropicChatResponse response) {
-		return new DefaultUsage(response.usage().inputTokens().longValue(),
-				response.usage().outputTokens().longValue());
+		return new DefaultUsage(response.usage().inputTokens(), response.usage().outputTokens());
 	}
 
 	/**

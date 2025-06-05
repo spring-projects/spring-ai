@@ -42,7 +42,7 @@ public class SimpleVectorStoreSimilarityTests {
 		Document document = storeContent.toDocument(0.6);
 		assertThat(document).isNotNull();
 		assertThat(document.getId()).isEqualTo("1");
-		assertThat(document.getContent()).isEqualTo("hello, how are you?");
+		assertThat(document.getText()).isEqualTo("hello, how are you?");
 		assertThat(document.getMetadata().get("foo")).isEqualTo("bar");
 	}
 

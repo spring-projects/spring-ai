@@ -20,8 +20,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.autoconfigure.vertexai.gemini.VertexAiGeminiAutoConfiguration;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -35,6 +33,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 public class FunctionCallWithFunctionWrapperIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionWrapperIT.class);
+	private static final LogAccessor logger = new LogAccessor(FunctionCallWithFunctionWrapperIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
@@ -67,7 +66,7 @@ public class FunctionCallWithFunctionWrapperIT {
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
 						VertexAiGeminiChatOptions.builder().function("WeatherInfo").build()));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});

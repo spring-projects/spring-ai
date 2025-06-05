@@ -16,8 +16,6 @@
 
 package org.springframework.ai.moderation;
 
-import java.util.List;
-
 /**
  * A builder class for creating instances of ModerationOptions. Use the builder() method
  * to obtain a new instance of ModerationOptionsBuilder. Use the withModel() method to set
@@ -40,15 +38,6 @@ public final class ModerationOptionsBuilder {
 	}
 
 	public ModerationOptionsBuilder model(String model) {
-		this.options.setModel(model);
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link #model(String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public ModerationOptionsBuilder withModel(String model) {
 		this.options.setModel(model);
 		return this;
 	}

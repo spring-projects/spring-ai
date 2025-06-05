@@ -88,7 +88,7 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 
 		assertThat(usage).isNotNull();
 		assertThat(usage.getPromptTokens()).isEqualTo(9L);
-		assertThat(usage.getGenerationTokens()).isEqualTo(12L);
+		assertThat(usage.getCompletionTokens()).isEqualTo(12L);
 		assertThat(usage.getTotalTokens()).isEqualTo(21L);
 
 		RateLimit rateLimit = chatResponseMetadata.getRateLimit();

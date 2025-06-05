@@ -36,14 +36,6 @@ public interface Content {
 	String getText();
 
 	/**
-	 * Get the content of the message.
-	 * @return the content of the message
-	 * @deprecated Use getText
-	 */
-	@Deprecated(since = "1.0.0.M5")
-	String getContent();
-
-	/**
 	 * Get the metadata associated with the content.
 	 * @return the metadata associated with the content
 	 */

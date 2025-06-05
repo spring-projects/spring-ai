@@ -58,60 +58,6 @@ public final class ImageOptionsBuilder {
 		return this;
 	}
 
-	/**
-	 * @deprecated use {@link #N(Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public ImageOptionsBuilder withN(Integer n) {
-		this.options.setN(n);
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link #model(String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public ImageOptionsBuilder withModel(String model) {
-		this.options.setModel(model);
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link #responseFormat(String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public ImageOptionsBuilder withResponseFormat(String responseFormat) {
-		this.options.setResponseFormat(responseFormat);
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link #width(Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public ImageOptionsBuilder withWidth(Integer width) {
-		this.options.setWidth(width);
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link #height(Integer)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public ImageOptionsBuilder withHeight(Integer height) {
-		this.options.setHeight(height);
-		return this;
-	}
-
-	/**
-	 * @deprecated use {@link #style(String)} instead.
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M5")
-	public ImageOptionsBuilder withStyle(String style) {
-		this.options.setStyle(style);
-		return this;
-	}
-
 	public ImageOptions build() {
 		return this.options;
 	}

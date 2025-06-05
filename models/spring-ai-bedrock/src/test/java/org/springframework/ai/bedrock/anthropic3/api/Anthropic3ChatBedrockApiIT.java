@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -36,6 +34,7 @@ import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.An
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.ChatCompletionMessage.Role;
 import org.springframework.ai.bedrock.anthropic3.api.Anthropic3ChatBedrockApi.MediaContent;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 public class Anthropic3ChatBedrockApiIT {
 
-	private final Logger logger = LoggerFactory.getLogger(Anthropic3ChatBedrockApiIT.class);
+	private static final LogAccessor logger = new LogAccessor(Anthropic3ChatBedrockApiIT.class);
 
 	private Anthropic3ChatBedrockApi anthropicChatApi = new Anthropic3ChatBedrockApi(
 			AnthropicChatModel.CLAUDE_INSTANT_V1.id(), EnvironmentVariableCredentialsProvider.create(),

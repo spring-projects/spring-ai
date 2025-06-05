@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
@@ -41,10 +42,10 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -79,35 +80,11 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private final boolean initializeSchema;
 
-	private final BatchingStrategy batchingStrategy;
-
 	private final ObjectMapper objectMapper;
 
 	private boolean initialized = false;
 
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, boolean initializeSchema) {
-		this(embeddingModel, chromaApi, DEFAULT_COLLECTION_NAME, initializeSchema);
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
-			boolean initializeSchema) {
-		this(embeddingModel, chromaApi, collectionName, initializeSchema, ObservationRegistry.NOOP, null,
-				new TokenCountBatchingStrategy());
-	}
-
-	@Deprecated(since = "1.0.0-M5", forRemoval = true)
-	public ChromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi, String collectionName,
-			boolean initializeSchema, ObservationRegistry observationRegistry,
-			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
-
-		this(builder(chromaApi, embeddingModel).collectionName(collectionName)
-			.initializeSchema(initializeSchema)
-			.observationRegistry(observationRegistry)
-			.customObservationConvention(customObservationConvention)
-			.batchingStrategy(batchingStrategy));
-	}
+	private static final Logger logger = LoggerFactory.getLogger(ChromaVectorStore.class);
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
@@ -119,7 +96,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
-		this.batchingStrategy = builder.batchingStrategy;
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		if (builder.initializeImmediately) {
@@ -191,7 +167,29 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public @NonNull List<Document> doSimilaritySearch(@NonNull SearchRequest request) {
+	protected void doDelete(Filter.Expression expression) {
+		Assert.notNull(expression, "Filter expression must not be null");
+
+		try {
+			ChromaFilterExpressionConverter converter = new ChromaFilterExpressionConverter();
+			String whereClauseStr = converter.convertExpression(expression);
+
+			Map<String, Object> whereClause = this.chromaApi.where(whereClauseStr);
+
+			logger.debug("Deleting with where clause: {}", whereClause);
+
+			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
+			this.chromaApi.deleteEmbeddings(this.collectionId, deleteRequest);
+		}
+		catch (Exception e) {
+			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			throw new IllegalStateException("Failed to delete documents by filter", e);
+		}
+	}
+
+	@Override
+	@NonNull
+	public List<Document> doSimilaritySearch(@NonNull SearchRequest request) {
 
 		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");
@@ -241,32 +239,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		}
 	}
 
-	/**
-	 * @deprecated not used currently anywhere
-	 */
-	@Deprecated(forRemoval = true)
-	public String getCollectionName() {
-		return this.collectionName;
-	}
-
-	/**
-	 * @deprecated only used in tests
-	 */
-	@Deprecated(forRemoval = true)
-	@Nullable
-	public String getCollectionId() {
-		return this.collectionId;
-	}
-
-	/**
-	 * @deprecated in favor the builder method
-	 */
-	@Deprecated(forRemoval = true)
-	public void setFilterExpressionConverter(FilterExpressionConverter filterExpressionConverter) {
-		Assert.notNull(filterExpressionConverter, "FilterExpressionConverter should not be null.");
-		this.filterExpressionConverter = filterExpressionConverter;
-	}
-
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
@@ -281,8 +253,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
 		private boolean initializeSchema = false;
-
-		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
 
 		private FilterExpressionConverter filterExpressionConverter = new ChromaFilterExpressionConverter();
 
@@ -313,18 +283,6 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
-			return this;
-		}
-
-		/**
-		 * Sets the batching strategy.
-		 * @param batchingStrategy the batching strategy to use
-		 * @return the builder instance
-		 * @throws IllegalArgumentException if batchingStrategy is null
-		 */
-		public Builder batchingStrategy(BatchingStrategy batchingStrategy) {
-			Assert.notNull(batchingStrategy, "batchingStrategy must not be null");
-			this.batchingStrategy = batchingStrategy;
 			return this;
 		}
 

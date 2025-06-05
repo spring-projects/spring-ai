@@ -338,7 +338,7 @@ public class ChromaApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record DeleteEmbeddingsRequest(// @formatter:off
-		@JsonProperty("ids") List<String> ids,
+		@Nullable @JsonProperty("ids") List<String> ids,
 		@Nullable @JsonProperty("where") Map<String, Object> where) { // @formatter:on
 
 		public DeleteEmbeddingsRequest(List<String> ids) {

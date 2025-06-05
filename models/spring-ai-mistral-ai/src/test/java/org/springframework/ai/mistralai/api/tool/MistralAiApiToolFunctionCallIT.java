@@ -21,11 +21,8 @@ import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -36,20 +33,22 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool.Type;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.ObjectUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Ricken Bazolo
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-@Disabled
 public class MistralAiApiToolFunctionCallIT {
 
 	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.LARGE.getValue();
 
-	private final Logger logger = LoggerFactory.getLogger(MistralAiApiToolFunctionCallIT.class);
+	private final LogAccessor logger = new LogAccessor(MistralAiApiToolFunctionCallIT.class);
 
 	MockWeatherService weatherService = new MockWeatherService();
 
@@ -121,7 +120,7 @@ public class MistralAiApiToolFunctionCallIT {
 		assertThat(responseMessage.toolCalls()).isNotNull();
 
 		// Check if the model wanted to call a function
-		if (responseMessage.toolCalls() != null) {
+		if (!ObjectUtils.isEmpty(responseMessage.toolCalls())) {
 
 			// extend conversation with assistant's reply.
 			messages.add(responseMessage);
@@ -137,7 +136,7 @@ public class MistralAiApiToolFunctionCallIT {
 
 					// extend conversation with function response.
 					messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(),
-							Role.TOOL, functionName, null));
+							Role.TOOL, functionName, null, toolCall.id()));
 				}
 			}
 

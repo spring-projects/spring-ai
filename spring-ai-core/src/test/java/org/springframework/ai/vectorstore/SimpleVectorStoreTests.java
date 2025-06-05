@@ -69,7 +69,7 @@ class SimpleVectorStoreTests {
 		List<Document> results = this.vectorStore.similaritySearch("test content");
 		assertThat(results).hasSize(1).first().satisfies(result -> {
 			assertThat(result.getId()).isEqualTo("1");
-			assertThat(result.getContent()).isEqualTo("test content");
+			assertThat(result.getText()).isEqualTo("test content");
 			assertThat(result.getMetadata()).containsEntry("key", "value");
 		});
 	}
@@ -150,7 +150,7 @@ class SimpleVectorStoreTests {
 		List<Document> results = loadedStore.similaritySearch("test content");
 		assertThat(results).hasSize(1).first().satisfies(result -> {
 			assertThat(result.getId()).isEqualTo("1");
-			assertThat(result.getContent()).isEqualTo("test content");
+			assertThat(result.getText()).isEqualTo("test content");
 			assertThat(result.getMetadata()).containsEntry("key", "value");
 		});
 	}
@@ -208,7 +208,7 @@ class SimpleVectorStoreTests {
 		assertThat(resultIds).containsExactlyInAnyOrderElementsOf(expectedIds);
 
 		// Verify content integrity
-		results.forEach(doc -> assertThat(doc.getContent()).isEqualTo("content " + doc.getId()));
+		results.forEach(doc -> assertThat(doc.getText()).isEqualTo("content " + doc.getId()));
 	}
 
 	@Test

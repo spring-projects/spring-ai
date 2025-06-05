@@ -50,7 +50,7 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(prefix = "spring.ai.vectorstore.azure", value = { "url", "api-key", "index-name" })
 public class AzureVectorStoreAutoConfiguration {
 
-	private final static String APPLICATION_ID = "spring-ai";
+	private static final String APPLICATION_ID = "spring-ai";
 
 	@Bean
 	@ConditionalOnMissingBean

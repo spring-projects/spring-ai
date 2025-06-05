@@ -16,7 +16,9 @@
 
 package org.springframework.ai.bedrock.llama;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
@@ -100,13 +102,22 @@ public class BedrockLlamaChatModel implements ChatModel, StreamingChatModel {
 		return new Usage() {
 
 			@Override
-			public Long getPromptTokens() {
-				return response.promptTokenCount().longValue();
+			public Integer getPromptTokens() {
+				return response.promptTokenCount();
 			}
 
 			@Override
-			public Long getGenerationTokens() {
-				return response.generationTokenCount().longValue();
+			public Integer getCompletionTokens() {
+				return response.generationTokenCount();
+			}
+
+			@Override
+			public Map<String, Integer> getNativeUsage() {
+				Map<String, Integer> usage = new HashMap<>();
+				usage.put("promptTokens", getPromptTokens());
+				usage.put("completionTokens", getCompletionTokens());
+				usage.put("totalTokens", getTotalTokens());
+				return usage;
 			}
 		};
 	}

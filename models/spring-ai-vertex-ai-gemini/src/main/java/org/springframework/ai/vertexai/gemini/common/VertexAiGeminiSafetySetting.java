@@ -1,3 +1,19 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.vertexai.gemini.common;
 
 public class VertexAiGeminiSafetySetting {
@@ -17,7 +33,7 @@ public class VertexAiGeminiSafetySetting {
 		}
 
 		public int getValue() {
-			return value;
+			return this.value;
 		}
 
 	}
@@ -36,7 +52,7 @@ public class VertexAiGeminiSafetySetting {
 		}
 
 		public int getValue() {
-			return value;
+			return this.value;
 		}
 
 	}
@@ -56,7 +72,7 @@ public class VertexAiGeminiSafetySetting {
 		}
 
 		public int getValue() {
-			return value;
+			return this.value;
 		}
 
 	}
@@ -83,7 +99,7 @@ public class VertexAiGeminiSafetySetting {
 
 	// Getters and setters
 	public HarmCategory getCategory() {
-		return category;
+		return this.category;
 	}
 
 	public void setCategory(HarmCategory category) {
@@ -91,7 +107,7 @@ public class VertexAiGeminiSafetySetting {
 	}
 
 	public HarmBlockThreshold getThreshold() {
-		return threshold;
+		return this.threshold;
 	}
 
 	public void setThreshold(HarmBlockThreshold threshold) {
@@ -99,7 +115,7 @@ public class VertexAiGeminiSafetySetting {
 	}
 
 	public HarmBlockMethod getMethod() {
-		return method;
+		return this.method;
 	}
 
 	public void setMethod(HarmBlockMethod method) {
@@ -108,30 +124,35 @@ public class VertexAiGeminiSafetySetting {
 
 	@Override
 	public String toString() {
-		return "SafetySetting{" + "category=" + category + ", threshold=" + threshold + ", method=" + method + '}';
+		return "SafetySetting{" + "category=" + this.category + ", threshold=" + this.threshold + ", method="
+				+ this.method + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 
 		VertexAiGeminiSafetySetting that = (VertexAiGeminiSafetySetting) o;
 
-		if (category != that.category)
+		if (this.category != that.category) {
 			return false;
-		if (threshold != that.threshold)
+		}
+		if (this.threshold != that.threshold) {
 			return false;
-		return method == that.method;
+		}
+		return this.method == that.method;
 	}
 
 	@Override
 	public int hashCode() {
-		int result = category != null ? category.hashCode() : 0;
-		result = 31 * result + (threshold != null ? threshold.hashCode() : 0);
-		result = 31 * result + (method != null ? method.hashCode() : 0);
+		int result = this.category != null ? this.category.hashCode() : 0;
+		result = 31 * result + (this.threshold != null ? this.threshold.hashCode() : 0);
+		result = 31 * result + (this.method != null ? this.method.hashCode() : 0);
 		return result;
 	}
 
@@ -159,7 +180,7 @@ public class VertexAiGeminiSafetySetting {
 		}
 
 		public VertexAiGeminiSafetySetting build() {
-			return new VertexAiGeminiSafetySetting(category, threshold, method);
+			return new VertexAiGeminiSafetySetting(this.category, this.threshold, this.method);
 		}
 
 	}

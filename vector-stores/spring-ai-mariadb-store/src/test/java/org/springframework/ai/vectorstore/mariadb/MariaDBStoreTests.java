@@ -26,8 +26,6 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.mariadb.MariaDBSchemaValidator;
-import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 

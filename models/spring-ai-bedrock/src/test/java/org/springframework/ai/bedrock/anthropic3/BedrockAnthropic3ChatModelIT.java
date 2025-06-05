@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -53,6 +51,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +60,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 class BedrockAnthropic3ChatModelIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockAnthropic3ChatModelIT.class);
+	private static final LogAccessor logger = new LogAccessor(BedrockAnthropic3ChatModelIT.class);
 
 	@Autowired
 	private BedrockAnthropic3ChatModel chatModel;

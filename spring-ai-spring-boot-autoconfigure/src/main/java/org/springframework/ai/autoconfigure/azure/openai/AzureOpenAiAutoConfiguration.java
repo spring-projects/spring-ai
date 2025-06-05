@@ -62,7 +62,7 @@ import org.springframework.util.StringUtils;
 		AzureOpenAiAudioTranscriptionProperties.class })
 public class AzureOpenAiAutoConfiguration {
 
-	private final static String APPLICATION_ID = "spring-ai";
+	private static final String APPLICATION_ID = "spring-ai";
 
 	@Bean
 	@ConditionalOnMissingBean // ({ OpenAIClient.class, TokenCredential.class })

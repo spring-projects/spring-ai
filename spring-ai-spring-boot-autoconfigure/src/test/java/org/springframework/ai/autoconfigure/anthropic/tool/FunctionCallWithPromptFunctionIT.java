@@ -20,8 +20,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -33,13 +31,14 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".*")
 public class FunctionCallWithPromptFunctionIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithPromptFunctionIT.class);
+	private static final LogAccessor logger = new LogAccessor(FunctionCallWithPromptFunctionIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
@@ -67,7 +66,7 @@ public class FunctionCallWithPromptFunctionIT {
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-				logger.info("Response: {}", response);
+				logger.info("Response: " + response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});

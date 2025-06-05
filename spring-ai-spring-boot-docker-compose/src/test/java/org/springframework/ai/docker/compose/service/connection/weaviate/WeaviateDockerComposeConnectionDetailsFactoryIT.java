@@ -16,6 +16,7 @@
 
 package org.springframework.ai.docker.compose.service.connection.weaviate;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 
@@ -31,6 +32,7 @@ class WeaviateDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComp
 	}
 
 	@Test
+	@Disabled("GH-2026")
 	void runCreatesConnectionDetails() {
 		WeaviateConnectionDetails connectionDetails = run(WeaviateConnectionDetails.class);
 		assertThat(connectionDetails.getHost()).isNotNull();

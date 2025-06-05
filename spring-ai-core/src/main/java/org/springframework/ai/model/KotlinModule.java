@@ -1,16 +1,40 @@
-package org.springframework.ai.model;
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import com.github.victools.jsonschema.generator.*;
-import com.github.victools.jsonschema.generator.Module;
-import kotlin.jvm.JvmClassMappingKt;
-import kotlin.reflect.*;
-import kotlin.reflect.full.KClasses;
-import kotlin.reflect.jvm.ReflectJvmMapping;
-import org.springframework.core.KotlinDetector;
+package org.springframework.ai.model;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
+
+import com.github.victools.jsonschema.generator.FieldScope;
+import com.github.victools.jsonschema.generator.MemberScope;
+import com.github.victools.jsonschema.generator.Module;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigPart;
+import kotlin.jvm.JvmClassMappingKt;
+import kotlin.reflect.KClass;
+import kotlin.reflect.KFunction;
+import kotlin.reflect.KParameter;
+import kotlin.reflect.KProperty;
+import kotlin.reflect.KType;
+import kotlin.reflect.full.KClasses;
+import kotlin.reflect.jvm.ReflectJvmMapping;
+
+import org.springframework.core.KotlinDetector;
 
 public class KotlinModule implements Module {
 

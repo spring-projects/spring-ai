@@ -177,42 +177,6 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #user(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUser(String user) {
-			this.options.setUser(user);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #deploymentName(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withDeploymentName(String model) {
-			this.options.setDeploymentName(model);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #inputType(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withInputType(String inputType) {
-			this.options.inputType = inputType;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #dimensions(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withDimensions(Integer dimensions) {
-			this.options.dimensions = dimensions;
-			return this;
-		}
-
 		public AzureOpenAiEmbeddingOptions build() {
 			return this.options;
 		}

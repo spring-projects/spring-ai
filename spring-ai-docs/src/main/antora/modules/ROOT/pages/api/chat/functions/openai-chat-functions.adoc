@@ -122,11 +122,11 @@ static class Config {
 	@Bean
 	public FunctionCallback weatherFunctionInfo() {
 
-    return FunctionCallback.builder()
-        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
-        .description("Get the weather in location") // (2) function description
-        .inputType(MockWeatherService.Request.class) // (3) function input type
-        .build();
+	    return FunctionCallback.builder()
+	        .function("CurrentWeather", new MockWeatherService()) // (1) function name and instance
+	        .description("Get the weather in location") // (2) function description
+	        .inputType(MockWeatherService.Request.class) // (3) function input type
+	        .build();
 	}
 
 }

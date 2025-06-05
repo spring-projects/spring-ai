@@ -100,7 +100,7 @@ public class OllamaChatModelTests {
 		ChatResponse previousChatResponse = ChatResponse.builder()
 			.generations(List.of())
 			.metadata(ChatResponseMetadata.builder()
-				.usage(new DefaultUsage(66L, 99L))
+				.usage(new DefaultUsage(66, 99))
 				.keyValue("eval-duration", Duration.ofSeconds(2))
 				.keyValue("prompt-eval-duration", Duration.ofSeconds(2))
 				.build())
@@ -108,7 +108,7 @@ public class OllamaChatModelTests {
 
 		ChatResponseMetadata metadata = OllamaChatModel.from(response, previousChatResponse);
 
-		assertThat(metadata.getUsage()).isEqualTo(new DefaultUsage(808L + 66L, 101L + 99L));
+		assertThat(metadata.getUsage()).isEqualTo(new DefaultUsage(808 + 66, 101 + 99));
 
 		assertEquals(Duration.ofNanos(evalDuration).plus(Duration.ofSeconds(2)), metadata.get("eval-duration"));
 		assertEquals((evalCount + 99), (Integer) metadata.get("eval-count"));

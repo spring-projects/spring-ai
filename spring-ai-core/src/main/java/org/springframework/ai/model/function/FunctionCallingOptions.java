@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 /**
  * FunctionCallingOptions is a set of options that can be used to configure the function
@@ -28,7 +29,9 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @deprecated in favor of {@link ToolCallingChatOptions}.
  */
+@Deprecated
 public interface FunctionCallingOptions extends ChatOptions {
 
 	/**
@@ -171,86 +174,6 @@ public interface FunctionCallingOptions extends ChatOptions {
 
 		@Override
 		Builder topP(Double topP);
-
-		/**
-		 * @deprecated Use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withModel(String model) {
-			return model(model);
-		}
-
-		/**
-		 * @deprecated Use {@link #frequencyPenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withFrequencyPenalty(Double frequencyPenalty) {
-			return frequencyPenalty(frequencyPenalty);
-		}
-
-		/**
-		 * @deprecated Use {@link #maxTokens(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withMaxTokens(Integer maxTokens) {
-			return maxTokens(maxTokens);
-		}
-
-		/**
-		 * @deprecated Use {@link #presencePenalty(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withPresencePenalty(Double presencePenalty) {
-			return presencePenalty(presencePenalty);
-		}
-
-		/**
-		 * @deprecated Use {@link #stopSequences(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withStopSequences(List<String> stopSequences) {
-			return stopSequences(stopSequences);
-		}
-
-		/**
-		 * @deprecated Use {@link #temperature(Double)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withTemperature(Double temperature) {
-			return temperature(temperature);
-		}
-
-		/**
-		 * @deprecated Use {@link #functionCallbacks(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return functionCallbacks(functionCallbacks);
-		}
-
-		/**
-		 * @deprecated Use {@link #functionCallbacks(FunctionCallback...)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withFunctionCallbacks(FunctionCallback... functionCallbacks) {
-			return functionCallbacks(functionCallbacks);
-		}
-
-		/**
-		 * @deprecated Use {@link #functions(Set)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withFunctions(Set<String> functions) {
-			return functions(functions);
-		}
-
-		/**
-		 * @deprecated Use {@link #function(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		default Builder withFunction(String function) {
-			return function(function);
-		}
 
 	}
 

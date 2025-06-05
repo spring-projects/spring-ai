@@ -222,10 +222,10 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	protected KeyValues usageOutputTokens(KeyValues keyValues, ChatModelObservationContext context) {
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& context.getResponse().getMetadata().getUsage() != null
-				&& context.getResponse().getMetadata().getUsage().getGenerationTokens() != null) {
+				&& context.getResponse().getMetadata().getUsage().getCompletionTokens() != null) {
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
-					String.valueOf(context.getResponse().getMetadata().getUsage().getGenerationTokens()));
+					String.valueOf(context.getResponse().getMetadata().getUsage().getCompletionTokens()));
 		}
 		return keyValues;
 	}

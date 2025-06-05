@@ -16,7 +16,9 @@
 
 package org.springframework.ai.bedrock.titan;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import reactor.core.publisher.Flux;
 
@@ -140,13 +142,22 @@ public class BedrockTitanChatModel implements ChatModel, StreamingChatModel {
 		return new Usage() {
 
 			@Override
-			public Long getPromptTokens() {
-				return response.inputTextTokenCount().longValue();
+			public Integer getPromptTokens() {
+				return response.inputTextTokenCount();
 			}
 
 			@Override
-			public Long getGenerationTokens() {
-				return response.totalOutputTextTokenCount().longValue();
+			public Integer getCompletionTokens() {
+				return response.totalOutputTextTokenCount();
+			}
+
+			@Override
+			public Map<String, Integer> getNativeUsage() {
+				Map<String, Integer> usage = new HashMap<>();
+				usage.put("promptTokens", getPromptTokens());
+				usage.put("completionTokens", getCompletionTokens());
+				usage.put("totalTokens", getTotalTokens());
+				return usage;
 			}
 		};
 	}

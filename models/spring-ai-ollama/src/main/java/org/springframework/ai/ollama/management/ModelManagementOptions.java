@@ -71,42 +71,6 @@ public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<S
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #pullModelStrategy(PullModelStrategy)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withPullModelStrategy(PullModelStrategy pullModelStrategy) {
-			this.pullModelStrategy = pullModelStrategy;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #additionalModels(List)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdditionalModels(List<String> additionalModels) {
-			this.additionalModels = additionalModels;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #timeout(Duration)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTimeout(Duration timeout) {
-			this.timeout = timeout;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #maxRetries(Integer)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withMaxRetries(Integer maxRetries) {
-			this.maxRetries = maxRetries;
-			return this;
-		}
-
 		public ModelManagementOptions build() {
 			return new ModelManagementOptions(this.pullModelStrategy, this.additionalModels, this.timeout,
 					this.maxRetries);

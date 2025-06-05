@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.model.Content;
 
 /**
  * Represents an evaluation request, which includes the user's text, a list of content

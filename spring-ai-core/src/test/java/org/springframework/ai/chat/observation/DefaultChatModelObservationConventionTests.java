@@ -16,7 +16,9 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
@@ -30,6 +32,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
@@ -183,13 +186,22 @@ class DefaultChatModelObservationConventionTests {
 	static class TestUsage implements Usage {
 
 		@Override
-		public Long getPromptTokens() {
-			return 1000L;
+		public Integer getPromptTokens() {
+			return 1000;
 		}
 
 		@Override
-		public Long getGenerationTokens() {
-			return 500L;
+		public Integer getCompletionTokens() {
+			return 500;
+		}
+
+		@Override
+		public Map<String, Integer> getNativeUsage() {
+			Map<String, Integer> usage = new HashMap<>();
+			usage.put("promptTokens", getPromptTokens());
+			usage.put("completionTokens", getCompletionTokens());
+			usage.put("totalTokens", getTotalTokens());
+			return usage;
 		}
 
 	}

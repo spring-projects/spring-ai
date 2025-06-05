@@ -105,7 +105,7 @@ class MarkdownDocumentReaderTest {
 
 		Document documentsFirst = documents.get(0);
 		assertThat(documentsFirst.getMetadata()).isEmpty();
-		assertThat(documentsFirst.getContent()).startsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit")
+		assertThat(documentsFirst.getText()).startsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit")
 			.endsWith("Phasellus eget tellus sed nibh ornare interdum eu eu mi.");
 	}
 
@@ -119,7 +119,7 @@ class MarkdownDocumentReaderTest {
 
 		Document documentsFirst = documents.get(0);
 		assertThat(documentsFirst.getMetadata()).isEmpty();
-		assertThat(documentsFirst.getContent()).isEqualTo(
+		assertThat(documentsFirst.getText()).isEqualTo(
 				"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec tincidunt velit non bibendum gravida. Cras accumsan tincidunt ornare. Donec hendrerit consequat tellus blandit accumsan. Aenean aliquam metus at arcu elementum dignissim.Nullam nisi dui, egestas nec sem nec, interdum lobortis enim. Pellentesque odio orci, faucibus eu luctus nec, venenatis et magna. Vestibulum nec eros non felis fermentum posuere eget ac risus.Aenean eu leo eu nibh tristique posuere quis quis massa. Nullam lacinia luctus sem ut vehicula.");
 	}
 
@@ -135,22 +135,22 @@ class MarkdownDocumentReaderTest {
 
 		assertThat(documents).satisfiesExactly(document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of());
-			assertThat(document.getContent()).isEqualTo("This is a Java sample application:");
+			assertThat(document.getText()).isEqualTo("This is a Java sample application:");
 		}, document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "category", "code_block"));
-			assertThat(document.getContent()).startsWith("package com.example.demo;")
+			assertThat(document.getText()).startsWith("package com.example.demo;")
 				.contains("SpringApplication.run(DemoApplication.class, args);");
 		}, document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of("category", "code_inline"));
-			assertThat(document.getContent()).isEqualTo(
+			assertThat(document.getText()).isEqualTo(
 					"Markdown also provides the possibility to use inline code formatting throughout the entire sentence.");
 		}, document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of());
-			assertThat(document.getContent())
+			assertThat(document.getText())
 				.isEqualTo("Another possibility is to set block code without specific highlighting:");
 		}, document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "category", "code_block"));
-			assertThat(document.getContent()).isEqualTo("./mvnw spring-javaformat:apply\n");
+			assertThat(document.getText()).isEqualTo("./mvnw spring-javaformat:apply\n");
 		});
 	}
 
@@ -167,15 +167,15 @@ class MarkdownDocumentReaderTest {
 
 		assertThat(documents).satisfiesExactly(document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "java", "category", "code_block"));
-			assertThat(document.getContent()).startsWith("This is a Java sample application: package com.example.demo")
+			assertThat(document.getText()).startsWith("This is a Java sample application: package com.example.demo")
 				.contains("SpringApplication.run(DemoApplication.class, args);");
 		}, document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of("category", "code_inline"));
-			assertThat(document.getContent()).isEqualTo(
+			assertThat(document.getText()).isEqualTo(
 					"Markdown also provides the possibility to use inline code formatting throughout the entire sentence.");
 		}, document -> {
 			assertThat(document.getMetadata()).isEqualTo(Map.of("lang", "", "category", "code_block"));
-			assertThat(document.getContent()).isEqualTo(
+			assertThat(document.getText()).isEqualTo(
 					"Another possibility is to set block code without specific highlighting: ./mvnw spring-javaformat:apply\n");
 		});
 	}
@@ -208,7 +208,7 @@ class MarkdownDocumentReaderTest {
 
 		Document documentsFirst = documents.get(0);
 		assertThat(documentsFirst.getMetadata()).isEqualTo(Map.of("category", "blockquote"));
-		assertThat(documentsFirst.getContent()).isEqualTo(
+		assertThat(documentsFirst.getText()).isEqualTo(
 				"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur diam eros, laoreet sit amet cursus vitae, varius sed nisi. Cras sit amet quam quis velit commodo porta consectetur id nisi. Phasellus tincidunt pulvinar augue. Proin vel laoreet leo, sed luctus augue. Sed et ligula commodo, commodo lacus at, consequat turpis. Maecenas eget sapien odio. Maecenas urna lectus, pellentesque in accumsan aliquam, congue eu libero. Ut rhoncus nec justo a porttitor. Pellentesque auctor pharetra eros, viverra sodales lorem aliquet id. Curabitur semper nisi vel sem interdum suscipit.");
 	}
 
@@ -241,7 +241,7 @@ class MarkdownDocumentReaderTest {
 
 		Document documentsFirst = documents.get(0);
 		assertThat(documentsFirst.getMetadata()).isEqualTo(Map.of("service", "some-service-name", "env", "prod"));
-		assertThat(documentsFirst.getContent()).startsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
+		assertThat(documentsFirst.getText()).startsWith("Lorem ipsum dolor sit amet, consectetur adipiscing elit.");
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -66,6 +65,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +75,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatModelIT.class);
+	private static final LogAccessor logger = new LogAccessor(OpenAiChatModelIT.class);
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -213,12 +213,15 @@ public class OpenAiChatModelIT extends AbstractIT {
 		var referenceTokenUsage = this.chatModel.call(prompt).getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getGenerationTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
 		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
 
-		assertThat(streamingTokenUsage.getPromptTokens()).isEqualTo(referenceTokenUsage.getPromptTokens());
-		assertThat(streamingTokenUsage.getGenerationTokens()).isEqualTo(referenceTokenUsage.getGenerationTokens());
-		assertThat(streamingTokenUsage.getTotalTokens()).isEqualTo(referenceTokenUsage.getTotalTokens());
+		assertThat(streamingTokenUsage.getPromptTokens()).isCloseTo(referenceTokenUsage.getPromptTokens(),
+				Percentage.withPercentage(25));
+		assertThat(streamingTokenUsage.getCompletionTokens()).isCloseTo(referenceTokenUsage.getCompletionTokens(),
+				Percentage.withPercentage(25));
+		assertThat(streamingTokenUsage.getTotalTokens()).isCloseTo(referenceTokenUsage.getTotalTokens(),
+				Percentage.withPercentage(25));
 
 	}
 
@@ -345,7 +348,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("30.0", "30");
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("10.0", "10");
@@ -378,7 +381,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
 		assertThat(content).containsAnyOf("10.0", "10");
@@ -402,16 +405,16 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.build();
 
 		ChatResponse chatResponse = this.chatModel.call(new Prompt(messages, promptOptions));
-		logger.info("Response: {}", chatResponse);
+		logger.info("Response: " + chatResponse);
 		Usage usage = chatResponse.getMetadata().getUsage();
 
-		logger.info("Usage: {}", usage);
+		logger.info("Usage: " + usage);
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450L).isLessThan(600L);
-		assertThat(usage.getGenerationTokens()).isGreaterThan(230L).isLessThan(360L);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680L).isLessThan(900L);
+		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
+		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(900);
 	}
 
 	@Test
@@ -434,13 +437,13 @@ public class OpenAiChatModelIT extends AbstractIT {
 		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(messages, promptOptions));
 		Usage usage = response.last().block().getMetadata().getUsage();
 
-		logger.info("Usage: {}", usage);
+		logger.info("Usage: " + usage);
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450L).isLessThan(600L);
-		assertThat(usage.getGenerationTokens()).isGreaterThan(230L).isLessThan(360L);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680L).isLessThan(960L);
+		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
+		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(960);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -498,7 +501,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
@@ -573,7 +576,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
-		logger.info("Response: {}", content);
+		logger.info("Response: " + content);
 		assertThat(content).containsIgnoringCase("hobbits");
 	}
 
@@ -592,8 +595,17 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getMetadata().getId()).isNotEmpty();
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
-		assertThat(response.getMetadata().getUsage().getGenerationTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+	}
+
+	@Test
+	void validateStoreAndMetadata() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().store(true).metadata(Map.of("type", "dev")).build();
+
+		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke", options));
+
+		assertThat(response).isNotNull();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

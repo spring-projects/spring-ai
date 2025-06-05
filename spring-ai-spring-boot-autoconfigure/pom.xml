@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai</artifactId>
-		<version>1.0.0-M5</version>
+		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>spring-ai-spring-boot-autoconfigure</artifactId>
 	<packaging>jar</packaging>
@@ -258,6 +258,14 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-vertex-ai-gemini</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Vertex AI Imagen -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-vertex-ai-imagen</artifactId>
 			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
@@ -547,6 +555,13 @@
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
+			<artifactId>typesense</artifactId>
+			<version>1.20.4</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
 			<artifactId>weaviate</artifactId>
 			<scope>test</scope>
 		</dependency>
@@ -575,6 +590,12 @@
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-observation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-kotlin</artifactId>
 			<scope>test</scope>
 		</dependency>
 

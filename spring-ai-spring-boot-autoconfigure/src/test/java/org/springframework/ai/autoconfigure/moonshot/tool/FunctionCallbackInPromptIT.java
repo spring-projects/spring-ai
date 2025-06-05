@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.autoconfigure.moonshot.MoonshotAutoConfiguration;
@@ -38,6 +36,7 @@ import org.springframework.ai.moonshot.MoonshotChatOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MOONSHOT_API_KEY", matches = ".*")
 public class FunctionCallbackInPromptIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
+	private static final LogAccessor logger = new LogAccessor(FunctionCallbackInPromptIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.moonshot.apiKey=" + System.getenv("MOONSHOT_API_KEY"))
@@ -74,7 +73,7 @@ public class FunctionCallbackInPromptIT {
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-			logger.info("Response: {}", response);
+			logger.info("Response: " + response);
 
 			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 		});
@@ -108,7 +107,7 @@ public class FunctionCallbackInPromptIT {
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
-			logger.info("Response: {}", content);
+			logger.info("Response: " + content);
 
 			assertThat(content).containsAnyOf("30.0", "30");
 			assertThat(content).containsAnyOf("10.0", "10");

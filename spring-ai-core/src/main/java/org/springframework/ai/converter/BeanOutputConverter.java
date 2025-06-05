@@ -34,11 +34,10 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.lang.NonNull;
 
 /**
@@ -59,7 +58,7 @@ import org.springframework.lang.NonNull;
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
-	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+	private static final LogAccessor logger = new LogAccessor(BeanOutputConverter.class);
 
 	/**
 	 * The target class type reference to which the output will be converted.
@@ -227,7 +226,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			return this.objectMapper.readValue(this.jsonSchema, Map.class);
 		}
 		catch (JsonProcessingException ex) {
-			logger.error("Could not parse the JSON Schema to a Map object", ex);
+			logger.error(ex, "Could not parse the JSON Schema to a Map object");
 			throw new IllegalStateException(ex);
 		}
 	}

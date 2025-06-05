@@ -219,15 +219,6 @@ public class VectorStoreChatMemoryAdvisor extends AbstractChatMemoryAdvisor<Vect
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #systemTextAdvise(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withSystemTextAdvise(String systemTextAdvise) {
-			this.systemTextAdvise = systemTextAdvise;
-			return this;
-		}
-
 		@Override
 		public VectorStoreChatMemoryAdvisor build() {
 			return new VectorStoreChatMemoryAdvisor(this.chatMemory, this.conversationId, this.chatMemoryRetrieveSize,

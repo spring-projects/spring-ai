@@ -81,7 +81,7 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 		assertThat(results).hasSize(1);
 		Document resultDoc = results.get(0);
 		assertThat(resultDoc.getId()).isEqualTo(documents.get(2).getId());
-		assertThat(resultDoc.getContent()).isEqualTo(
+		assertThat(resultDoc.getText()).isEqualTo(
 				"Great Depression Great Depression Great Depression Great Depression Great Depression Great Depression");
 		assertThat(resultDoc.getMetadata()).containsEntry("meta2", "meta2");
 

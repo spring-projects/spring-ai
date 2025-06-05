@@ -95,7 +95,7 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(0).getId());
-				assertThat(resultDoc.getContent()).contains(
+				assertThat(resultDoc.getText()).contains(
 						"Spring AI provides abstractions that serve as the foundation for developing AI applications.");
 
 				assertObservationRegistry(observationRegistry, VectorStoreProvider.NEO4J,

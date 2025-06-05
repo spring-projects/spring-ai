@@ -48,9 +48,9 @@ public class OpenAiAudioApiIT {
 
 		byte[] speech = this.audioApi
 			.createSpeech(SpeechRequest.builder()
-				.withModel(TtsModel.TTS_1_HD.getValue())
-				.withInput("Hello, my name is Chris and I love Spring A.I.")
-				.withVoice(Voice.ONYX)
+				.model(TtsModel.TTS_1_HD.getValue())
+				.input("Hello, my name is Chris and I love Spring A.I.")
+				.voice(Voice.ONYX)
 				.build())
 			.getBody();
 
@@ -60,22 +60,23 @@ public class OpenAiAudioApiIT {
 
 		StructuredResponse translation = this.audioApi
 			.createTranslation(
-					TranslationRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
+					TranslationRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
 					StructuredResponse.class)
 			.getBody();
 
 		assertThat(translation.text().replaceAll(",", "")).isEqualTo("Hello my name is Chris and I love Spring AI.");
 
-		StructuredResponse transcriptionEnglish = this.audioApi.createTranscription(
-				TranscriptionRequest.builder().withModel(WhisperModel.WHISPER_1.getValue()).withFile(speech).build(),
-				StructuredResponse.class)
+		StructuredResponse transcriptionEnglish = this.audioApi
+			.createTranscription(
+					TranscriptionRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
+					StructuredResponse.class)
 			.getBody();
 
 		assertThat(transcriptionEnglish.text().replaceAll(",", ""))
 			.isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionDutch = this.audioApi
-			.createTranscription(TranscriptionRequest.builder().withFile(speech).withLanguage("nl").build(),
+			.createTranscription(TranscriptionRequest.builder().file(speech).language("nl").build(),
 					StructuredResponse.class)
 			.getBody();
 

@@ -19,9 +19,6 @@ package org.springframework.ai.openai;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
@@ -34,6 +31,7 @@ import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.api.OpenAiModerationApi;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -47,7 +45,7 @@ import org.springframework.util.Assert;
  */
 public class OpenAiModerationModel implements ModerationModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final LogAccessor logger = new LogAccessor(getClass());
 
 	private final OpenAiModerationApi openAiModerationApi;
 
@@ -106,7 +104,7 @@ public class OpenAiModerationModel implements ModerationModel {
 			OpenAiModerationApi.OpenAiModerationRequest openAiModerationRequest) {
 		OpenAiModerationApi.OpenAiModerationResponse moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
-			logger.warn("No moderation response returned for request: {}", openAiModerationRequest);
+			logger.warn("No moderation response returned for request: " + openAiModerationRequest);
 			return new ModerationResponse(new Generation());
 		}
 

@@ -32,7 +32,7 @@ public class ContentFormatterTests {
 
 	@Test
 	public void noExplicitlySetFormatter() {
-		assertThat(this.document.getContent()).isEqualTo("""
+		assertThat(this.document.getText()).isEqualTo("""
 				The World is Big and Salvation Lurks Around the Corner""");
 
 		assertThat(this.document.getFormattedContent()).isEqualTo(this.document.getFormattedContent(MetadataMode.ALL));

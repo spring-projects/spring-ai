@@ -21,9 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.commons.logging.LogFactory;
 import org.mariadb.jdbc.Driver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.springframework.core.log.LogAccessor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -33,7 +35,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  */
 public class MariaDBSchemaValidator {
 
-	private static final Logger logger = LoggerFactory.getLogger(MariaDBSchemaValidator.class);
+	private static final LogAccessor logger = new LogAccessor(LogFactory.getLog(MariaDBSchemaValidator.class));
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -77,7 +79,7 @@ public class MariaDBSchemaValidator {
 		}
 
 		try {
-			logger.info("Validating MariaDBStore schema for table: {} in schema: {}", tableName, schemaName);
+			logger.info(() -> "Validating MariaDBStore schema for table: " + tableName + " in schema: " + schemaName);
 
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add(idFieldName);
@@ -151,8 +153,9 @@ public class MariaDBSchemaValidator {
 		try {
 			String quotedId = Driver.enquoteIdentifier(identifier, alwaysQuote);
 			// force use of simple table name
-			if (Pattern.compile("`?[\\p{Alnum}_]*`?").matcher(identifier).matches())
+			if (Pattern.compile("`?[\\p{Alnum}_]*`?").matcher(identifier).matches()) {
 				return quotedId;
+			}
 			throw new IllegalArgumentException(String
 				.format("Identifier '%s' should only contain alphanumeric characters and underscores", quotedId));
 		}

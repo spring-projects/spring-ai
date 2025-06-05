@@ -102,11 +102,6 @@ public abstract class AbstractMessage implements Message {
 		return this.textContent;
 	}
 
-	@Override
-	public String getContent() {
-		return this.textContent;
-	}
-
 	/**
 	 * Get the metadata of the message.
 	 * @return the metadata of the message

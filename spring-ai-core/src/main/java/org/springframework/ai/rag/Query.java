@@ -16,11 +16,11 @@
 
 package org.springframework.ai.rag;
 
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.util.Assert;
-
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.util.Assert;
 
 /**
  * Represents a query in the context of a Retrieval Augmented Generation (RAG) flow.
@@ -53,7 +53,7 @@ public record Query(String text, List<Message> history, Map<String, Object> cont
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String text;
 
@@ -85,7 +85,7 @@ public record Query(String text, List<Message> history, Map<String, Object> cont
 		}
 
 		public Query build() {
-			return new Query(text, history, context);
+			return new Query(this.text, this.history, this.context);
 		}
 
 	}

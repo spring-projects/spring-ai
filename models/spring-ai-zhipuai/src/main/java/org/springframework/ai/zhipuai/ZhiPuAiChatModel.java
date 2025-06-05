@@ -27,8 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -38,6 +36,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.model.AbstractToolCallSupport;
 import org.springframework.ai.chat.model.ChatModel;
@@ -68,7 +67,7 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
-import org.springframework.ai.zhipuai.metadata.ZhiPuAiUsage;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -88,7 +87,7 @@ import org.springframework.util.MimeType;
  */
 public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatModel, StreamingChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(ZhiPuAiChatModel.class);
+	private static final LogAccessor logger = new LogAccessor(ZhiPuAiChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -212,7 +211,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: " + prompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -297,7 +296,7 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 						return new ChatResponse(generations, from(chatCompletion2));
 					}
 					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
+						logger.error(e, "Error processing chat completion");
 						return new ChatResponse(List.of());
 					}
 
@@ -326,11 +325,15 @@ public class ZhiPuAiChatModel extends AbstractToolCallSupport implements ChatMod
 		Assert.notNull(result, "ZhiPuAI ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id() != null ? result.id() : "")
-			.usage(result.usage() != null ? ZhiPuAiUsage.from(result.usage()) : new EmptyUsage())
+			.usage(result.usage() != null ? getDefaultUsage(result.usage()) : new EmptyUsage())
 			.model(result.model() != null ? result.model() : "")
 			.keyValue("created", result.created() != null ? result.created() : 0L)
 			.keyValue("system-fingerprint", result.systemFingerprint() != null ? result.systemFingerprint() : "")
 			.build();
+	}
+
+	private DefaultUsage getDefaultUsage(ZhiPuAiApi.Usage usage) {
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
 
 	/**

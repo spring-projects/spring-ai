@@ -61,19 +61,16 @@ enum class Unit(val unitName: String) {
 @JsonInclude(Include.NON_NULL)
 @JsonClassDescription("Weather API request")
 data class KotlinRequest(
-	@get:JsonProperty(required = true, value = "location")
+
 	@get:JsonPropertyDescription("The city and state e.g. San Francisco, CA")
-	val location: String = "",
+	val location: String,
 
-	@get:JsonProperty(required = true, value = "lat")
 	@get:JsonPropertyDescription("The city latitude")
-	val lat: Double = 0.0,
+	val lat: Double,
 
-	@get:JsonProperty(required = true, value = "lon")
 	@get:JsonPropertyDescription("The city longitude")
-	val lon: Double = 0.0,
+	val lon: Double,
 
-	@get:JsonProperty(required = true, value = "unit")
 	@get:JsonPropertyDescription("Temperature unit")
 	val unit: Unit = Unit.C
 )

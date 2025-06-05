@@ -30,6 +30,7 @@ import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.Value;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -45,7 +46,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
-import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUsage;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextParametersBuilder;
@@ -222,9 +222,13 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens) {
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
 		metadata.setModel(model);
-		Usage usage = new VertexAiEmbeddingUsage(totalTokens);
+		Usage usage = getDefaultUsage(totalTokens);
 		metadata.setUsage(usage);
 		return metadata;
+	}
+
+	private DefaultUsage getDefaultUsage(Integer totalTokens) {
+		return new DefaultUsage(0, 0, totalTokens);
 	}
 
 	@Override

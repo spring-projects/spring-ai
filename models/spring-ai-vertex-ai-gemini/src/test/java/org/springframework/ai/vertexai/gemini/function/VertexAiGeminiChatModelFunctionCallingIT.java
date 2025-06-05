@@ -25,8 +25,6 @@ import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -43,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
 public class VertexAiGeminiChatModelFunctionCallingIT {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final LogAccessor logger = new LogAccessor(getClass());
 
 	@Autowired
 	private VertexAiGeminiChatModel chatModel;
@@ -93,7 +92,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
@@ -125,14 +124,14 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("15.0", "15");
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
 
-		logger.info("Response: {}", response2);
+		logger.info("Response: " + response2);
 
 		assertThat(response2.getResult().getOutput().getText()).containsIgnoringCase("transaction 696 is PAYED");
 
@@ -166,14 +165,14 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
 
-		logger.info("Response: {}", response);
+		logger.info("Response: " + response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
 
-		logger.info("Response: {}", response2);
+		logger.info("Response: " + response2);
 
 		assertThat(response2.getResult().getOutput().getText()).containsIgnoringCase("transaction 696 is PAYED");
 
@@ -208,7 +207,7 @@ public class VertexAiGeminiChatModelFunctionCallingIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
-		logger.info("Response: {}", responseString);
+		logger.info("Response: " + responseString);
 
 		assertThat(responseString).contains("30", "10", "15");
 

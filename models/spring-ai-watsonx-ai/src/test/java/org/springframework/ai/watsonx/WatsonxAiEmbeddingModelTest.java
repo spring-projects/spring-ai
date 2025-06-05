@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.watsonx.api.WatsonxAiApi;

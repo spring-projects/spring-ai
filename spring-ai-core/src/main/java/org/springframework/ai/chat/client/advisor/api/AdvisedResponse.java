@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -107,24 +106,6 @@ public record AdvisedResponse(@Nullable ChatResponse response, Map<String, Objec
 		 * @return the builder
 		 */
 		public Builder adviseContext(Map<String, Object> adviseContext) {
-			this.adviseContext = adviseContext;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #response(ChatResponse)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withResponse(@Nullable ChatResponse response) {
-			this.response = response;
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #adviseContext(Map)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withAdviseContext(Map<String, Object> adviseContext) {
 			this.adviseContext = adviseContext;
 			return this;
 		}

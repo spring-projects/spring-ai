@@ -139,7 +139,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		assertThat(usage).isNotNull();
 		assertThat(usage.getPromptTokens()).isPositive();
-		assertThat(usage.getGenerationTokens()).isPositive();
+		assertThat(usage.getCompletionTokens()).isPositive();
 		assertThat(usage.getTotalTokens()).isPositive();
 	}
 

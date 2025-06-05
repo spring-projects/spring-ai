@@ -25,11 +25,10 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.log.LogAccessor;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.core.type.filter.TypeFilter;
 
@@ -43,7 +42,7 @@ import org.springframework.core.type.filter.TypeFilter;
  */
 public abstract class AiRuntimeHints {
 
-	private static final Logger log = LoggerFactory.getLogger(AiRuntimeHints.class);
+	private static final LogAccessor logger = new LogAccessor(AiRuntimeHints.class);
 
 	/**
 	 * Finds classes in a package that are annotated with JsonInclude or have Jackson
@@ -91,8 +90,8 @@ public abstract class AiRuntimeHints {
 			.stream()//
 			.map(bd -> TypeReference.of(Objects.requireNonNull(bd.getBeanClassName())))//
 			.peek(tr -> {
-				if (log.isDebugEnabled()) {
-					log.debug("registering [" + tr.getName() + ']');
+				if (logger.isDebugEnabled()) {
+					logger.debug("registering [" + tr.getName() + ']');
 				}
 			})
 			.collect(Collectors.toUnmodifiableSet());

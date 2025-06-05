@@ -108,42 +108,6 @@ public class OCIEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #compartment(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withCompartment(String compartment) {
-			this.options.setCompartment(compartment);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #servingMode(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withServingMode(String servingMode) {
-			this.options.setServingMode(servingMode);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #truncate(EmbedTextDetails.Truncate)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withTruncate(EmbedTextDetails.Truncate truncate) {
-			this.options.truncate = truncate;
-			return this;
-		}
-
 		public OCIEmbeddingOptions build() {
 			return this.options;
 		}

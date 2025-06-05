@@ -153,24 +153,6 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated use {@link #model(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		/**
-		 * @deprecated use {@link #user(String)} instead.
-		 */
-		@Deprecated(forRemoval = true, since = "1.0.0-M5")
-		public Builder withUser(String user) {
-			this.options.setUser(user);
-			return this;
-		}
-
 		public ZhiPuAiImageOptions build() {
 			return this.options;
 		}
