@@ -26,7 +26,7 @@
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 
-	<artifactId>spring-ai-vertex-ai-imagen-spring-boot-starter</artifactId>
+	<artifactId>spring-ai-starter-model-vertex-ai-imagen</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Starter - VertexAI Imagen</name>
 	<description>Spring AI Vertex Imagen AI Auto Configuration</description>
