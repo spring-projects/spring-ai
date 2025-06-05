@@ -33,7 +33,7 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String databaseName;
 
-	private int embeddingDimension = Neo4jVectorStore.DEFAULT_EMBEDDING_DIMENSION;
+	private Integer embeddingDimension;
 
 	private Neo4jVectorStore.Neo4jDistanceType distanceType = Neo4jVectorStore.Neo4jDistanceType.COSINE;
 
@@ -57,7 +57,7 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 		this.databaseName = databaseName;
 	}
 
-	public int getEmbeddingDimension() {
+	public Integer getEmbeddingDimension() {
 		return this.embeddingDimension;
 	}
 
