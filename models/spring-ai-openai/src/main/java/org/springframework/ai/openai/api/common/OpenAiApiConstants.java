@@ -38,6 +38,10 @@ public final class OpenAiApiConstants {
 
 	public static final String DEFAULT_MODERATION_PATH = "v1/moderations";
 
+	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
+
+	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
+
 	public static final String PROVIDER_NAME = AiProvider.OPENAI.value();
 
 	private OpenAiApiConstants() {
