@@ -42,9 +42,9 @@ class QdrantFilterExpressionConverter {
 
 	protected Filter convertOperand(Operand operand) {
 		var context = Filter.newBuilder();
-		List<Condition> mustClauses = new ArrayList<Condition>();
-		List<Condition> shouldClauses = new ArrayList<Condition>();
-		List<Condition> mustNotClauses = new ArrayList<Condition>();
+		List<Condition> mustClauses = new ArrayList<>();
+		List<Condition> shouldClauses = new ArrayList<>();
+		List<Condition> mustNotClauses = new ArrayList<>();
 
 		if (operand instanceof Expression expression) {
 			if (expression.type() == ExpressionType.NOT && expression.left() instanceof Group group) {
@@ -173,7 +173,7 @@ class QdrantFilterExpressionConverter {
 
 			if (firstValue instanceof String) {
 				// If the first value is a string, then all values should be strings
-				List<String> stringValues = new ArrayList<String>();
+				List<String> stringValues = new ArrayList<>();
 				for (Object valueObj : valueList) {
 					stringValues.add(valueObj.toString());
 				}
@@ -181,7 +181,7 @@ class QdrantFilterExpressionConverter {
 			}
 			else if (firstValue instanceof Number) {
 				// If the first value is a number, then all values should be numbers
-				List<Long> longValues = new ArrayList<Long>();
+				List<Long> longValues = new ArrayList<>();
 				for (Object valueObj : valueList) {
 					Long longValue = Long.parseLong(valueObj.toString());
 					longValues.add(longValue);
@@ -204,7 +204,7 @@ class QdrantFilterExpressionConverter {
 
 			if (firstValue instanceof String) {
 				// If the first value is a string, then all values should be strings
-				List<String> stringValues = new ArrayList<String>();
+				List<String> stringValues = new ArrayList<>();
 				for (Object valueObj : valueList) {
 					stringValues.add(valueObj.toString());
 				}
@@ -212,7 +212,7 @@ class QdrantFilterExpressionConverter {
 			}
 			else if (firstValue instanceof Number) {
 				// If the first value is a number, then all values should be numbers
-				List<Long> longValues = new ArrayList<Long>();
+				List<Long> longValues = new ArrayList<>();
 				for (Object valueObj : valueList) {
 					Long longValue = Long.parseLong(valueObj.toString());
 					longValues.add(longValue);

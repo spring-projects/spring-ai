@@ -72,7 +72,7 @@ public final class EmbeddingUtils {
 
 	public static List<Float> toList(float[] floats) {
 
-		List<Float> output = new ArrayList<Float>();
+		List<Float> output = new ArrayList<>();
 		for (float value : floats) {
 			output.add(value);
 		}

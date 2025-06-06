@@ -87,7 +87,7 @@ final class QdrantValueFactory {
 	}
 
 	private static Value value(List<Object> elements) {
-		List<Value> values = new ArrayList<Value>(elements.size());
+		List<Value> values = new ArrayList<>(elements.size());
 
 		for (Object element : elements) {
 			values.add(value(element));
@@ -97,7 +97,7 @@ final class QdrantValueFactory {
 	}
 
 	private static Value value(Object[] elements) {
-		List<Value> values = new ArrayList<Value>(elements.length);
+		List<Value> values = new ArrayList<>(elements.length);
 
 		for (Object element : elements) {
 			values.add(value(element));
