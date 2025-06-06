@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.micrometer.observation.Observation;
@@ -42,6 +43,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
+import org.springframework.ai.anthropic.api.tool.Tool;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -342,11 +344,11 @@ public class AnthropicChatModel implements ChatModel {
 		return new ChatResponse(generations, this.from(chatCompletion, usage));
 	}
 
-	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
+	private ChatResponseMetadata from(ChatCompletionResponse result) {
 		return from(result, this.getDefaultUsage(result.usage()));
 	}
 
-	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result, Usage usage) {
+	private ChatResponseMetadata from(ChatCompletionResponse result, Usage usage) {
 		Assert.notNull(result, "Anthropic ChatCompletionResult must not be null");
 		return ChatResponseMetadata.builder()
 			.id(result.id())
@@ -443,6 +445,8 @@ public class AnthropicChatModel implements ChatModel {
 					this.defaultOptions.getToolCallbacks()));
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.defaultOptions.getToolContext()));
+			requestOptions.setServerTools(
+					mergeServerTools(runtimeOptions.getServerTools(), this.defaultOptions.getServerTools()));
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -450,11 +454,21 @@ public class AnthropicChatModel implements ChatModel {
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+			requestOptions.setServerTools(this.defaultOptions.getServerTools());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
 		return new Prompt(prompt.getInstructions(), requestOptions);
+	}
+
+	static List<Tool> mergeServerTools(List<Tool> runtimeServerTools, List<Tool> defaultToolNames) {
+		Assert.notNull(runtimeServerTools, "runtimeServerTools cannot be null");
+		Assert.notNull(defaultToolNames, "defaultToolNames cannot be null");
+		if (CollectionUtils.isEmpty(runtimeServerTools)) {
+			return new ArrayList<>(defaultToolNames);
+		}
+		return new ArrayList<>(runtimeServerTools);
 	}
 
 	private Map<String, String> mergeHttpHeaders(Map<String, String> runtimeHttpHeaders,
@@ -526,22 +540,31 @@ public class AnthropicChatModel implements ChatModel {
 
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
+		Stream<Tool> toolStream = Stream.empty();
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
-			request = ChatCompletionRequest.from(request).tools(getFunctionTools(toolDefinitions)).build();
+			toolStream = getFunctionToolStream(toolDefinitions);
+		}
+		if (!CollectionUtils.isEmpty(requestOptions.getServerTools())) {
+			toolStream = Stream.concat(toolStream, requestOptions.getServerTools().stream());
+		}
+
+		List<Tool> tools = toolStream.toList();
+		if (!tools.isEmpty()) {
+			request = ChatCompletionRequest.from(request).tools(tools).build();
 		}
 
 		return request;
 	}
 
-	private List<AnthropicApi.Tool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
+	private Stream<Tool> getFunctionToolStream(List<ToolDefinition> toolDefinitions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			var name = toolDefinition.name();
 			var description = toolDefinition.description();
 			String inputSchema = toolDefinition.inputSchema();
-			return new AnthropicApi.Tool(name, description, JsonParser.fromJson(inputSchema, new TypeReference<>() {
+			return new Tool(name, description, JsonParser.fromJson(inputSchema, new TypeReference<>() {
 			}));
-		}).toList();
+		});
 	}
 
 	@Override
