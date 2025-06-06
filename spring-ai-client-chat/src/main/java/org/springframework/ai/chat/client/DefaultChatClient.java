@@ -61,6 +61,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
@@ -705,6 +706,7 @@ public class DefaultChatClient implements ChatClient {
 		 * Return a {@code ChatClient2Builder} to create a new {@code ChatClient2} whose
 		 * settings are replicated from this {@code ChatClientRequest}.
 		 */
+		@Override
 		public Builder mutate() {
 			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
 				.builder(this.chatModel, this.observationRegistry, this.observationConvention)
@@ -712,6 +714,10 @@ public class DefaultChatClient implements ChatClient {
 				.defaultToolCallbacks(this.toolCallbacks)
 				.defaultToolContext(this.toolContext)
 				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
+
+			if (!CollectionUtils.isEmpty(this.advisors)) {
+				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
+			}
 
 			if (StringUtils.hasText(this.userText)) {
 				builder.defaultUser(
