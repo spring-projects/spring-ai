@@ -43,8 +43,4 @@ public class DeepSeekParentProperties {
 		this.baseUrl = baseUrl;
 	}
 
-	public static Consumer<HttpHeaders> getJsonContentHeaders() {
-		return (headers) -> headers.setContentType(MediaType.APPLICATION_JSON);
-	}
-
 }
