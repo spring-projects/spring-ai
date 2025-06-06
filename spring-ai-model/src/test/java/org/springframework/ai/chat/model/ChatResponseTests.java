@@ -38,8 +38,10 @@ class ChatResponseTests {
 	@Test
 	void whenToolCallsArePresentThenReturnTrue() {
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))
+				.build())))
 			.build();
 		assertThat(chatResponse.hasToolCalls()).isTrue();
 	}
