@@ -125,4 +125,44 @@ class DefaultAroundAdvisorChainTests {
 		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new StreamAdvisor[0]));
 	}
 
+	@Test
+	void testOrder() {
+		TestOrderAdvisor advisor1 = new TestOrderAdvisor("advisor1", 1);
+		TestOrderAdvisor advisor21 = new TestOrderAdvisor("advisor2_1", 2);
+		TestOrderAdvisor advisor22 = new TestOrderAdvisor("advisor2_2", 2);
+		TestOrderAdvisor advisor3 = new TestOrderAdvisor("advisor3", 3);
+
+		var advisors = List.of(advisor3, advisor1, advisor21, advisor22);
+
+		DefaultAroundAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(advisors)
+			.build();
+
+		assertThat(chain.getStreamAdvisors()).containsExactly(advisor1, advisor21, advisor22, advisor3);
+		assertThat(chain.getCallAdvisors()).containsExactly(advisor1, advisor21, advisor22, advisor3);
+	}
+
+	private record TestOrderAdvisor(String name, int order) implements CallAdvisor, StreamAdvisor {
+		@Override
+		public String getName() {
+			return name;
+		}
+
+		@Override
+		public int getOrder() {
+			return order;
+		}
+
+		@Override
+		public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+			return null;
+		}
+
+		@Override
+		public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+				StreamAdvisorChain streamAdvisorChain) {
+			return null;
+		}
+	}
+
 }
