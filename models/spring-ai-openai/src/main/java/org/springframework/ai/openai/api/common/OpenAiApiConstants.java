@@ -42,6 +42,8 @@ public final class OpenAiApiConstants {
 
 	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
 
+	public static final String DEFAULT_IMAGES_PATH = "/v1/images/generations";
+
 	public static final String PROVIDER_NAME = AiProvider.OPENAI.value();
 
 	private OpenAiApiConstants() {
