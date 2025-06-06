@@ -60,9 +60,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author jasonparallel
  * @since 1.0.0
  */
 public class MistralAiApi {
+	
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
 
@@ -1074,4 +1079,42 @@ public class MistralAiApi {
 
 	}
 
+	public static class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public MistralAiApi build() {
+			return new MistralAiApi(this.baseUrl, this.baseUrl, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+		}
+	}
 }
