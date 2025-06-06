@@ -22,9 +22,24 @@ import org.springframework.boot.autoconfigure.service.connection.ConnectionDetai
  * Connection details for an Ollama service.
  *
  * @author Eddú Meléndez
+ * @author lambochen
  */
 public interface OllamaConnectionDetails extends ConnectionDetails {
 
 	String getBaseUrl();
+
+	String getChatPath();
+
+	String getEmbedPath();
+
+	String getListModelsPath();
+
+	String getShowModelPath();
+
+	String getCopyModelPath();
+
+	String getDeleteModelPath();
+
+	String getPullModelPath();
 
 }

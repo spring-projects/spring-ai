@@ -68,14 +68,47 @@ public final class OllamaApi {
 
 	private final WebClient webClient;
 
+	private final String chatPath;
+
+	private final String embedPath;
+
+	private final String listModelsPath;
+
+	private final String showModelPath;
+
+	private final String copyModelPath;
+
+	private final String deleteModelPath;
+
+	private final String pullModelPath;
+
 	/**
 	 * Create a new OllamaApi instance
 	 * @param baseUrl The base url of the Ollama server.
+	 * @param chatPath The path of the chat endpoint.
+	 * @param copyModelPath The path of the copy model endpoint.
+	 * @param deleteModelPath The path of the delete model endpoint.
+	 * @param embedPath The path of the embed endpoint.
+	 * @param listModelsPath The path of the list models endpoint.
+	 * @param pullModelPath The path of the pull model endpoint.
+	 * @param showModelPath The path of the show model endpoint.
 	 * @param restClientBuilder The {@link RestClient.Builder} to use.
      * @param webClientBuilder The {@link WebClient.Builder} to use.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	private OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	private OllamaApi(String baseUrl,
+					  String chatPath, String copyModelPath, String deleteModelPath, String embedPath,
+					  String listModelsPath, String pullModelPath, String showModelPath,
+					  RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+					  ResponseErrorHandler responseErrorHandler) {
+
+		this.chatPath = chatPath;
+		this.copyModelPath = copyModelPath;
+		this.deleteModelPath = deleteModelPath;
+		this.embedPath = embedPath;
+		this.listModelsPath = listModelsPath;
+		this.pullModelPath = pullModelPath;
+		this.showModelPath = showModelPath;
 
 		Consumer<HttpHeaders> defaultHeaders = headers -> {
 			headers.setContentType(MediaType.APPLICATION_JSON);
@@ -109,7 +142,7 @@ public final class OllamaApi {
 		Assert.isTrue(!chatRequest.stream(), "Stream mode must be disabled.");
 
 		return this.restClient.post()
-			.uri("/api/chat")
+			.uri(this.chatPath)
 			.body(chatRequest)
 			.retrieve()
 			.body(ChatResponse.class);
@@ -127,7 +160,7 @@ public final class OllamaApi {
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
 		return this.webClient.post()
-			.uri("/api/chat")
+			.uri(this.chatPath)
 			.body(Mono.just(chatRequest), ChatRequest.class)
 			.retrieve()
 			.bodyToFlux(ChatResponse.class)
@@ -175,7 +208,7 @@ public final class OllamaApi {
 		Assert.notNull(embeddingsRequest, REQUEST_BODY_NULL_ERROR);
 
 		return this.restClient.post()
-			.uri("/api/embed")
+			.uri(this.embedPath)
 			.body(embeddingsRequest)
 			.retrieve()
 			.body(EmbeddingsResponse.class);
@@ -186,7 +219,7 @@ public final class OllamaApi {
 	 */
 	public ListModelResponse listModels() {
 		return this.restClient.get()
-				.uri("/api/tags")
+				.uri(this.listModelsPath)
 				.retrieve()
 				.body(ListModelResponse.class);
 	}
@@ -197,7 +230,7 @@ public final class OllamaApi {
 	public ShowModelResponse showModel(ShowModelRequest showModelRequest) {
 		Assert.notNull(showModelRequest, "showModelRequest must not be null");
 		return this.restClient.post()
-				.uri("/api/show")
+				.uri(this.showModelPath)
 				.body(showModelRequest)
 				.retrieve()
 				.body(ShowModelResponse.class);
@@ -209,7 +242,7 @@ public final class OllamaApi {
 	public ResponseEntity<Void> copyModel(CopyModelRequest copyModelRequest) {
 		Assert.notNull(copyModelRequest, "copyModelRequest must not be null");
 		return this.restClient.post()
-				.uri("/api/copy")
+				.uri(this.copyModelPath)
 				.body(copyModelRequest)
 				.retrieve()
 				.toBodilessEntity();
@@ -221,7 +254,7 @@ public final class OllamaApi {
 	public ResponseEntity<Void> deleteModel(DeleteModelRequest deleteModelRequest) {
 		Assert.notNull(deleteModelRequest, "deleteModelRequest must not be null");
 		return this.restClient.method(HttpMethod.DELETE)
-				.uri("/api/delete")
+				.uri(this.deleteModelPath)
 				.body(deleteModelRequest)
 				.retrieve()
 				.toBodilessEntity();
@@ -240,7 +273,7 @@ public final class OllamaApi {
 		Assert.isTrue(pullModelRequest.stream(), "Request must set the stream property to true.");
 
 		return this.webClient.post()
-				.uri("/api/pull")
+				.uri(this.pullModelPath)
 				.bodyValue(pullModelRequest)
 				.retrieve()
 				.bodyToFlux(ProgressResponse.class);
@@ -714,6 +747,20 @@ public final class OllamaApi {
 
 		private String baseUrl = OllamaApiConstants.DEFAULT_BASE_URL;
 
+		private String chatPath = OllamaApiConstants.DEFAULT_CHAT_PATH;
+
+		private String embedPath = OllamaApiConstants.DEFAULT_EMBED_PATH;
+
+		private String listModelsPath = OllamaApiConstants.DEFAULT_LIST_MODELS_PATH;
+
+		private String showModelPath = OllamaApiConstants.DEFAULT_SHOW_MODEL_PATH;
+
+		private String copyModelPath = OllamaApiConstants.DEFAULT_COPY_MODEL_PATH;
+
+		private String deleteModelPath = OllamaApiConstants.DEFAULT_DELETE_MODEL_PATH;
+
+		private String pullModelPath = OllamaApiConstants.DEFAULT_PULL_MODEL_PATH;
+
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
 		private WebClient.Builder webClientBuilder = WebClient.builder();
@@ -723,6 +770,48 @@ public final class OllamaApi {
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder chatPath(String chatPath) {
+			Assert.hasText(chatPath, "chatPath cannot be null or empty");
+			this.chatPath = chatPath;
+			return this;
+		}
+
+		public Builder embedPath(String embedPath) {
+			Assert.hasText(embedPath, "embedPath cannot be null or empty");
+			this.embedPath = embedPath;
+			return this;
+		}
+
+		public Builder listModelsPath(String listModelsPath) {
+			Assert.hasText(listModelsPath, "listModelsPath cannot be null or empty");
+			this.listModelsPath = listModelsPath;
+			return this;
+		}
+
+		public Builder showModelPath(String showModelPath) {
+			Assert.hasText(showModelPath, "showModelPath cannot be null or empty");
+			this.showModelPath = showModelPath;
+			return this;
+		}
+
+		public Builder copyModelPath(String copyModelPath) {
+			Assert.hasText(copyModelPath, "copyModelPath cannot be null or empty");
+			this.copyModelPath = copyModelPath;
+			return this;
+		}
+
+		public Builder deleteModelPath(String deleteModelPath) {
+			Assert.hasText(deleteModelPath, "deleteModelPath cannot be null or empty");
+			this.deleteModelPath = deleteModelPath;
+			return this;
+		}
+
+		public Builder pullModelPath(String pullModelPath) {
+			Assert.hasText(pullModelPath, "pullModelPath cannot be null or empty");
+			this.pullModelPath = pullModelPath;
 			return this;
 		}
 
@@ -745,7 +834,10 @@ public final class OllamaApi {
 		}
 
 		public OllamaApi build() {
-			return new OllamaApi(this.baseUrl, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+			return new OllamaApi(this.baseUrl,
+					this.chatPath, this.copyModelPath, this.deleteModelPath, this.embedPath, this.listModelsPath,
+					this.pullModelPath, this.showModelPath,
+					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
 		}
 
 	}

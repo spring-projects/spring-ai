@@ -22,12 +22,27 @@ import org.springframework.ai.observation.conventions.AiProvider;
  * Common value constants for Ollama api.
  *
  * @author Jonghoon Park
+ * @author lambochen
  */
 public final class OllamaApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "http://localhost:11434";
 
 	public static final String PROVIDER_NAME = AiProvider.OLLAMA.value();
+
+	public static final String DEFAULT_CHAT_PATH = "/api/chat";
+
+	public static final String DEFAULT_EMBED_PATH = "/api/embed";
+
+	public static final String DEFAULT_LIST_MODELS_PATH = "/api/tags";
+
+	public static final String DEFAULT_SHOW_MODEL_PATH = "/api/show";
+
+	public static final String DEFAULT_COPY_MODEL_PATH = "/api/copy";
+
+	public static final String DEFAULT_DELETE_MODEL_PATH = "/api/delete";
+
+	public static final String DEFAULT_PULL_MODEL_PATH = "/api/pull";
 
 	private OllamaApiConstants() {
 
