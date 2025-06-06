@@ -48,6 +48,8 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
+		Assert.isTrue(!callAdvisorChain.hasNextCallAdvisor(),
+				"ChatModelCallAdvisor should be the last CallAdvisor in the chain");
 
 		ChatClientRequest formattedChatClientRequest = augmentWithFormatInstructions(chatClientRequest);
 

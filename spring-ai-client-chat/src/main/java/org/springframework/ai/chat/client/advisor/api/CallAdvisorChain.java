@@ -28,6 +28,7 @@ import org.springframework.ai.chat.client.ChatClientResponse;
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
+ * @author YunKui Lu
  * @since 1.0.0
  */
 public interface CallAdvisorChain extends AdvisorChain {
@@ -43,5 +44,12 @@ public interface CallAdvisorChain extends AdvisorChain {
 	 * the time of its creation.
 	 */
 	List<CallAdvisor> getCallAdvisors();
+
+	/**
+	 * Returns true if there is a next {@link CallAdvisor} in the chain.
+	 */
+	default boolean hasNextCallAdvisor() {
+		throw new UnsupportedOperationException("This CallAdvisorChain does not support hasNextCallAdvisor()");
+	}
 
 }
