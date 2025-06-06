@@ -37,12 +37,12 @@ Advisors also participate in the Observability stack, so you can view metrics an
 
 == Core Components
 
-The API consists of `CallAroundAdvisor` and `CallAroundAdvisorChain` for non-streaming scenarios, and `StreamAroundAdvisor` and `StreamAroundAdvisorChain` for streaming scenarios. 
-It also includes `AdvisedRequest` to represent the unsealed Prompt request, `AdvisedResponse` for the Chat Completion response. Both hold an `advise-context` to share state across the advisor chain.
+The API consists of `CallAdvisor` and `CallAdvisorChain` for non-streaming scenarios, and `StreamAdvisor` and `StreamAdvisorChain` for streaming scenarios. 
+It also includes `ChatClientRequest` to represent the unsealed Prompt request, `ChatClientResponse` for the Chat Completion response. Both hold an `advise-context` to share state across the advisor chain.
 
 image::advisors-api-classes.jpg[Advisors API Classes, width=600, align="center"]
 
-The `nextAroundCall()` and the `nextAroundStream()` are the key advisor methods, typically performing actions such as examining the unsealed Prompt data, customizing and augmenting the Prompt data, invoking the next entity in the advisor chain, optionally blocking the request, examining the chat completion response, and throwing exceptions to indicate processing errors.
+The `nextCall()` and the `nextStream()` are the key advisor methods, typically performing actions such as examining the unsealed Prompt data, customizing and augmenting the Prompt data, invoking the next entity in the advisor chain, optionally blocking the request, examining the chat completion response, and throwing exceptions to indicate processing errors.
 
 In addition the `getOrder()` method determines advisor order in the chain, while `getName()` provides a unique advisor name.
 
@@ -54,12 +54,12 @@ Following flow diagram illustrates the interaction between the advisor chain and
 
 image::advisors-flow.jpg[Advisors API Flow, width=400, align="left"]
 
-. The Spring AI framework creates an `AdvisedRequest` from user's `Prompt` along with an empty `AdvisorContext` object.
+. The Spring AI framework creates an `ChatClientRequest` from user's `Prompt` along with an empty `AdvisorContext` object.
 . Each advisor in the chain processes the request, potentially modifying it. Alternatively, it can choose to block the request by not making the call to invoke the next entity. In the latter case, the advisor is responsible for filling out the response.
 . The final advisor, provided by the framework, sends the request to the `Chat Model`.
-. The Chat Model's response is then passed back through the advisor chain and converted into `AdvisedResponse`. Later includes the shared `AdvisorContext` instance.
+. The Chat Model's response is then passed back through the advisor chain and converted into `ChatClientResponse`. Later includes the shared `AdvisorContext` instance.
 . Each advisor can process or modify the response.
-. The final `AdvisedResponse` is returned to the client by extracting the `ChatCompletion`.
+. The final `ChatClientResponse` is returned to the client by extracting the `ChatCompletion`.
 
 === Advisor Order
 The execution order of advisors in the chain is determined by the `getOrder()` method. Key points to understand:
@@ -142,15 +142,15 @@ public interface Advisor extends Ordered {
 The two sub-interfaces for synchronous and reactive Advisors are
 
 ```java
-public interface CallAroundAdvisor extends Advisor {
+public interface CallAdvisor extends Advisor {
 
 	/**
 	 * Around advice that wraps the ChatModel#call(Prompt) method.
-	 * @param advisedRequest the advised request
+	 * @param chatClientRequest the advised request
 	 * @param chain the advisor chain
 	 * @return the response
 	 */
-	AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain);
+	ChatClientResponse aroundCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain);
 
 }
 ```
@@ -158,27 +158,29 @@ public interface CallAroundAdvisor extends Advisor {
 and
 
 ```java
-public interface StreamAroundAdvisor extends Advisor {
+public interface StreamAdvisor extends Advisor {
 
 	/**
 	 * Around advice that wraps the invocation of the advised request.
-	 * @param advisedRequest the advised request
+	 * @param chatClientRequest the advised request
 	 * @param chain the chain of advisors to execute
 	 * @return the result of the advised request
 	 */
-	Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain);
+	Flux<ChatClientResponse> aroundStream(ChatClientRequest chatClientRequest, StreamAdvisorChain streamAdvisorChain);
 
 }
 ```
 
-To continue the chain of Advice, use `CallAroundAdvisorChain` and `StreamAroundAdvisorChain` in your Advice implementation:
+To continue the chain of Advice, use `CallAdvisorChain` and `StreamAdvisorChain` in your Advice implementation:
 
 The interfaces are
 
 ```java
-public interface CallAroundAdvisorChain {
+public interface CallAdvisorChain extends AdvisorChain {
 
-	AdvisedResponse nextAroundCall(AdvisedRequest advisedRequest);
+	ChatClientResponse nextCall(ChatClientRequest chatClientRequest);
+
+	List<CallAdvisor> getCallAdvisors();
 
 }
 ```
@@ -186,9 +188,11 @@ public interface CallAroundAdvisorChain {
 and
 
 ```java
-public interface StreamAroundAdvisorChain {
+public interface StreamAdvisorChain extends AdvisorChain {
 
-	Flux<AdvisedResponse> nextAroundStream(AdvisedRequest advisedRequest);
+	Flux<ChatClientResponse> nextStream(ChatClientRequest chatClientRequest);
+
+	List<StreamAdvisor> getStreamAdvisors();
 
 }
 ```
@@ -197,7 +201,7 @@ public interface StreamAroundAdvisorChain {
 
 == Implementing an Advisor
 
-To create an advisor, implement either `CallAroundAdvisor` or `StreamAroundAdvisor` (or both). The key method to implement is `nextAroundCall()` for non-streaming or `nextAroundStream()` for streaming advisors.
+To create an advisor, implement either `CallAdvisor` or `StreamAdvisor` (or both). The key method to implement is `nextCall()` for non-streaming or `nextStream()` for streaming advisors.
 
 === Examples
 
@@ -205,13 +209,13 @@ We will provide few hands-on examples to illustrate how to implement advisors fo
 
 ==== Logging Advisor
 
-We can implement a simple logging advisor that logs the `AdvisedRequest` before and the `AdvisedResponse` after the call to the next advisor in the chain.
+We can implement a simple logging advisor that logs the `ChatClientRequest` before and the `ChatClientResponse` after the call to the next advisor in the chain.
 Note that the advisor only observes the request and response and does not modify them.
 This implementation support both non-streaming and streaming scenarios.
 
 [source,java]
 ----
-public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
@@ -226,32 +230,32 @@ public class SimpleLoggerAdvisor implements CallAroundAdvisor, StreamAroundAdvis
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
+	public ChatClientResponse aroundCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 
-		logger.debug("BEFORE: {}", advisedRequest);
+		logger.debug("BEFORE: {}", chatClientRequest);
 
-		AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
+		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
 
-		logger.debug("AFTER: {}", advisedResponse);
+		logger.debug("AFTER: {}", chatClientResponse);
 
-		return advisedResponse;
+		return chatClientResponse;
 	}
 
 	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+	public Flux<ChatClientResponse> aroundStream(ChatClientRequest chatClientRequest, StreamAdvisorChain streamAdvisorChain) {
 
-		logger.debug("BEFORE: {}", advisedRequest);
+		logger.debug("BEFORE: {}", chatClientRequest);
 
-		Flux<AdvisedResponse> advisedResponses = chain.nextAroundStream(advisedRequest);
+		Flux<ChatClientResponse> chatClientResponses = streamAdvisorChain.nextStream(chatClientRequest);
 		
-        return new MessageAggregator().aggregateAdvisedResponse(advisedResponses, 
-                    advisedResponse -> logger.debug("AFTER: {}", advisedResponse)); // <3>
+        return new MessageAggregator().aggregate(chatClientResponses, 
+                    chatClientResponse -> logger.debug("AFTER: {}", chatClientResponse)); // <3>
 	}
 }
 ----
 <1> Provides a unique name for the advisor.
 <2> You can control the order of execution by setting the order value. Lower values execute first.
-<3> The `MessageAggregator` is a utility class that aggregates the Flux responses into a single AdvisedResponse.
+<3> The `MessageAggregator` is a utility class that aggregates the Flux responses into a single ChatClientResponse.
 This can be useful for logging or other processing that observe the entire response rather than individual items in the stream.
 Note that you can not alter the response in the `MessageAggregator` as it is a read-only operation.
 
@@ -269,15 +273,15 @@ Implementing an advisor that applies the Re2 technique to the user's input query
 
 [source,java]
 ----
-public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public class ReReadingAdvisor implements CallAdvisor, StreamAdvisor {
 
 
-	private AdvisedRequest before(AdvisedRequest advisedRequest) { // <1>
+	private ChatClientRequest before(ChatClientRequest chatClientRequest) { // <1>
 
-		Map<String, Object> advisedUserParams = new HashMap<>(advisedRequest.userParams());
-		advisedUserParams.put("re2_input_query", advisedRequest.userText());
+		Map<String, Object> advisedUserParams = new HashMap<>(chatClientRequest.userParams());
+		advisedUserParams.put("re2_input_query", chatClientRequest.userText());
 
-		return AdvisedRequest.from(advisedRequest)
+		return ChatClientRequest.from(chatClientRequest)
 			.userText("""
 			    {re2_input_query}
 			    Read the question again: {re2_input_query}
@@ -287,13 +291,13 @@ public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) { // <2>
-		return chain.nextAroundCall(this.before(advisedRequest));
+	public ChatClientResponse aroundCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) { // <2>
+		return callAdvisorChain.nextCall(this.before(chatClientRequest));
 	}
 
 	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) { // <3>
-		return chain.nextAroundStream(this.before(advisedRequest));
+	public Flux<ChatClientResponse> aroundStream(ChatClientRequest chatClientRequest, StreamAdvisorChain streamAdvisorChain) { // <3>
+		return streamAdvisorChain.nextStream(this.before(chatClientRequest));
 	}
 
 	@Override
@@ -356,15 +360,15 @@ image::advisors-non-stream-vs-stream.jpg[Advisors Streaming vs Non-Streaming Flo
 [source,java]
 ----
 @Override
-public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
+public Flux<ChatClientResponse> aroundStream(ChatClientRequest chatClientRequest, StreamAdvisorChain chain) {
     
-    return  Mono.just(advisedRequest)
+    return  Mono.just(chatClientRequest)
             .publishOn(Schedulers.boundedElastic())
             .map(request -> {
                 // This can be executed by blocking and non-blocking Threads.
                 // Advisor before next section
             })
-            .flatMapMany(request -> chain.nextAroundStream(request))
+            .flatMapMany(request -> chain.nextStream(request))
             .map(response -> {
                 // Advisor after next section
             });
@@ -392,8 +396,8 @@ The Spring AI Advisor Chain underwent significant changes from version 1.0 M2 to
 ** `RequestAdvisor` was invoked before the `ChatModel.call` and `ChatModel.stream` methods.
 ** `ResponseAdvisor` was called after these methods.
 * In 1.0 M3, these interfaces have been replaced with:
-** `CallAroundAdvisor`
-** `StreamAroundAdvisor`
+** `CallAdvisor`
+** `StreamAdvisor`
 * The `StreamResponseMode`, previously part of `ResponseAdvisor`, has been removed.
 
 === Context Map Handling
