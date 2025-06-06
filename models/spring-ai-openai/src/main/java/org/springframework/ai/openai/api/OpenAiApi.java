@@ -63,6 +63,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author David Frizelle
  * @author Alexandros Pappas
  * @author Filip Hrisafov
+ * @author lambochen
  */
 public class OpenAiApi {
 
@@ -1886,9 +1887,9 @@ public class OpenAiApi {
 
 		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 
-		private String completionsPath = "/v1/chat/completions";
+		private String completionsPath = OpenAiApiConstants.DEFAULT_COMPLETIONS_PATH;
 
-		private String embeddingsPath = "/v1/embeddings";
+		private String embeddingsPath = OpenAiApiConstants.DEFAULT_EMBEDDINGS_PATH;
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 

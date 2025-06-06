@@ -42,6 +42,7 @@ import org.springframework.web.client.RestClient;
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
  * @author Filip Hrisafov
+ * @author lambochen
  * @see <a href=
  * "https://platform.openai.com/docs/api-reference/moderations">https://platform.openai.com/docs/api-reference/moderations</a>
  */
@@ -55,6 +56,8 @@ public class OpenAiModerationApi {
 
 	private final ObjectMapper objectMapper;
 
+	private final String moderationPath;
+
 	/**
 	 * Create a new OpenAI Moderation API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
@@ -63,7 +66,22 @@ public class OpenAiModerationApi {
 	 */
 	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, apiKey, headers, OpenAiApiConstants.DEFAULT_MODERATION_PATH, restClientBuilder,
+				responseErrorHandler);
+	}
 
+	/**
+	 * Create a new OpenAI Moderation API with the provided base URL.
+	 * @param baseUrl the base URL for the OpenAI API.
+	 * @param apiKey OpenAI apiKey.
+	 * @param restClientBuilder the rest client builder to use.
+	 * @param moderationPath the moderation path to use.
+	 */
+	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
+			String moderationPath, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
+
+		this.moderationPath = moderationPath;
 		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 		// @formatter:off
@@ -87,7 +105,7 @@ public class OpenAiModerationApi {
 		Assert.hasLength(openAiModerationRequest.prompt(), "Prompt cannot be empty.");
 
 		return this.restClient.post()
-			.uri("v1/moderations")
+			.uri(this.moderationPath)
 			.body(openAiModerationRequest)
 			.retrieve()
 			.toEntity(OpenAiModerationResponse.class);
@@ -176,6 +194,8 @@ public class OpenAiModerationApi {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
+		private String moderationPath = OpenAiApiConstants.DEFAULT_MODERATION_PATH;
+
 		private ApiKey apiKey;
 
 		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
@@ -187,6 +207,12 @@ public class OpenAiModerationApi {
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder moderationPath(String moderationPath) {
+			Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
+			this.moderationPath = moderationPath;
 			return this;
 		}
 
@@ -222,8 +248,8 @@ public class OpenAiModerationApi {
 
 		public OpenAiModerationApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
-					this.responseErrorHandler);
+			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.headers, this.moderationPath,
+					this.restClientBuilder, this.responseErrorHandler);
 		}
 
 	}

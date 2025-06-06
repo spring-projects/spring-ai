@@ -174,7 +174,7 @@ public class OpenAiImageApi {
 
 		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
 
-		private String imagesPath = "v1/images/generations";
+		private String imagesPath = OpenAiApiConstants.DEFAULT_IMAGES_PATH;
 
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
