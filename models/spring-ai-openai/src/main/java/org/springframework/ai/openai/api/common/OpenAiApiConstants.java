@@ -36,7 +36,7 @@ public final class OpenAiApiConstants {
 
 	public static final String DEFAULT_AUDIO_TRANSLATION_PATH = "/v1/audio/translations";
 
-	public static final String DEFAULT_MODERATION_PATH = "v1/moderations";
+	public static final String DEFAULT_MODERATION_PATH = "/v1/moderations";
 
 	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
 
