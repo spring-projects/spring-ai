@@ -301,7 +301,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private Map<String, Object> extractMetadata(Struct metadataStruct) {
 		try {
 			String json = JsonFormat.printer().print(metadataStruct);
-			Map<String, Object> metadata = this.objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+			Map<String, Object> metadata = this.objectMapper.readValue(json, new TypeReference<>() {
 
 			});
 			metadata.remove(this.pineconeContentFieldName);

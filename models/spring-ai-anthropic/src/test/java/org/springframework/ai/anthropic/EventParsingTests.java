@@ -44,7 +44,7 @@ public class EventParsingTests {
 		String json = new DefaultResourceLoader().getResource("classpath:/sample_events.json")
 			.getContentAsString(Charset.defaultCharset());
 
-		List<StreamEvent> events = new ObjectMapper().readerFor(new TypeReference<List<StreamEvent>>() {
+		List<StreamEvent> events = new ObjectMapper().readerFor(new TypeReference<>() {
 
 		}).readValue(json);
 

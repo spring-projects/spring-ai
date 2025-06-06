@@ -350,7 +350,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public Converter<MimeType, String> mimeTypeToStringConverter() {
-			return new Converter<MimeType, String>() {
+			return new Converter<>() {
 
 				@Override
 				public String convert(MimeType source) {
@@ -361,7 +361,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public Converter<String, MimeType> stringToMimeTypeConverter() {
-			return new Converter<String, MimeType>() {
+			return new Converter<>() {
 
 				@Override
 				public MimeType convert(String source) {
