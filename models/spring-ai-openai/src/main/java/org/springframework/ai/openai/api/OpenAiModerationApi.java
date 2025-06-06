@@ -68,7 +68,7 @@ public class OpenAiModerationApi {
 	 */
 	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, OpenAiApiConstants.DEFAULT_MODERATION_PATH, apiKey, headers, restClientBuilder,
+		this(baseUrl, apiKey, headers, OpenAiApiConstants.DEFAULT_MODERATION_PATH, restClientBuilder,
 				responseErrorHandler);
 	}
 
@@ -79,9 +79,8 @@ public class OpenAiModerationApi {
 	 * @param restClientBuilder the rest client builder to use.
 	 * @param moderationPath the moderation path to use.
 	 */
-	public OpenAiModerationApi(String baseUrl, String moderationPath, ApiKey apiKey,
-			MultiValueMap<String, String> headers, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
+			String moderationPath, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 		Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
 
 		this.moderationPath = moderationPath;
@@ -251,7 +250,7 @@ public class OpenAiModerationApi {
 
 		public OpenAiModerationApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiModerationApi(this.baseUrl, this.moderationPath, this.apiKey, this.headers,
+			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.headers, this.moderationPath,
 					this.restClientBuilder, this.responseErrorHandler);
 		}
 
