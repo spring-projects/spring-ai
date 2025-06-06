@@ -112,25 +112,25 @@ public class OpenAiAudioApi {
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()
-				.baseUrl(baseUrl)
-				.defaultHeaders(authHeaders)
-				.defaultStatusHandler(responseErrorHandler)
-				.defaultRequest(requestHeadersSpec -> {
-					if (!(apiKey instanceof NoopApiKey)) {
-						requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-					}
-				})
-				.build();
+			.baseUrl(baseUrl)
+			.defaultHeaders(authHeaders)
+			.defaultStatusHandler(responseErrorHandler)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
+			.build();
 
 		this.webClient = webClientBuilder.clone()
-				.baseUrl(baseUrl)
-				.defaultHeaders(authHeaders)
-				.defaultRequest(requestHeadersSpec -> {
-					if (!(apiKey instanceof NoopApiKey)) {
-						requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-					}
-				})
-				.build(); // @formatter:on
+			.baseUrl(baseUrl)
+			.defaultHeaders(authHeaders)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
+			.build(); // @formatter:on
 	}
 
 	public static Builder builder() {

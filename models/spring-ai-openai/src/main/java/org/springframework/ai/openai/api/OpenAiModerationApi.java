@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.moderation.Categories;
-import org.springframework.ai.moderation.CategoryScores;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -88,18 +86,18 @@ public class OpenAiModerationApi {
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()
-				.baseUrl(baseUrl)
-				.defaultHeaders(h -> {
-					h.setContentType(MediaType.APPLICATION_JSON);
-					h.addAll(headers);
-				})
-				.defaultStatusHandler(responseErrorHandler)
-				.defaultRequest(requestHeadersSpec -> {
-					if (!(apiKey instanceof NoopApiKey)) {
-						requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-					}
-				})
-				.build(); // @formatter:on
+			.baseUrl(baseUrl)
+			.defaultHeaders(h -> {
+				h.setContentType(MediaType.APPLICATION_JSON);
+				h.addAll(headers);
+			})
+			.defaultStatusHandler(responseErrorHandler)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
+			.build(); // @formatter:on
 	}
 
 	public ResponseEntity<OpenAiModerationResponse> createModeration(OpenAiModerationRequest openAiModerationRequest) {
