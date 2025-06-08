@@ -47,6 +47,7 @@ import org.springframework.util.Assert;
  * @see AbstractEmbeddingModel
  * @author Ricken Bazolo
  * @author Thomas Vitale
+ * @author Jason Smith
  * @since 1.0.0
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -73,20 +74,24 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	@Deprecated
 	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi) {
 		this(mistralAiApi, MetadataMode.EMBED);
 	}
 
+	@Deprecated
 	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MetadataMode metadataMode) {
 		this(mistralAiApi, metadataMode,
 				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build(),
 				RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
+	@Deprecated
 	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MistralAiEmbeddingOptions options) {
 		this(mistralAiApi, MetadataMode.EMBED, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
+	@Deprecated
 	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MetadataMode metadataMode,
 			MistralAiEmbeddingOptions options, RetryTemplate retryTemplate) {
 		this(mistralAiApi, metadataMode, options, retryTemplate, ObservationRegistry.NOOP);
@@ -186,6 +191,56 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private MistralAiApi mistralAiApi;
+
+		private MetadataMode metadataMode = MetadataMode.EMBED;
+
+		private MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder()
+			.withModel(MistralAiApi.EmbeddingModel.EMBED.getValue())
+			.build();
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
+		public Builder mistralAiApi(MistralAiApi mistralAiApi) {
+			this.mistralAiApi = mistralAiApi;
+			return this;
+		}
+
+		public Builder metadataMode(MetadataMode metadataMode) {
+			this.metadataMode = metadataMode;
+			return this;
+		}
+
+		public Builder options(MistralAiEmbeddingOptions options) {
+			this.options = options;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		public MistralAiEmbeddingModel build() {
+			return new MistralAiEmbeddingModel(this.mistralAiApi, this.metadataMode, this.options, this.retryTemplate,
+					this.observationRegistry);
+		}
+
 	}
 
 }
