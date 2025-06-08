@@ -86,6 +86,7 @@ import org.springframework.util.MimeType;
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
  * @author Nicolas Krier
+ * @author Jason Smith
  * @since 1.0.0
  */
 public class MistralAiChatModel implements ChatModel {
@@ -126,6 +127,7 @@ public class MistralAiChatModel implements ChatModel {
 	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	@Deprecated
 	public MistralAiChatModel(MistralAiApi mistralAiApi, MistralAiChatOptions defaultOptions,
 			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObservationRegistry observationRegistry) {
@@ -584,7 +586,7 @@ public class MistralAiChatModel implements ChatModel {
 			.model(MistralAiApi.ChatModel.SMALL.getValue())
 			.build();
 
-		private ToolCallingManager toolCallingManager;
+		private ToolCallingManager toolCallingManager = DEFAULT_TOOL_CALLING_MANAGER;
 
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
@@ -627,11 +629,7 @@ public class MistralAiChatModel implements ChatModel {
 		}
 
 		public MistralAiChatModel build() {
-			if (this.toolCallingManager != null) {
-				return new MistralAiChatModel(this.mistralAiApi, this.defaultOptions, this.toolCallingManager,
-						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
-			}
-			return new MistralAiChatModel(this.mistralAiApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+			return new MistralAiChatModel(this.mistralAiApi, this.defaultOptions, this.toolCallingManager,
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 

@@ -32,8 +32,9 @@ import org.springframework.web.client.RestClient;
 /**
  * Mistral AI Moderation API.
  *
- * @see <a href= "https://docs.mistral.ai/capabilities/guardrailing/">Moderation</a>
  * @author Ricken Bazolo
+ * @author Jason Smith
+ * @see <a href= "https://docs.mistral.ai/capabilities/guardrailing/">Moderation</a>
  */
 public class MistralAiModerationApi {
 
@@ -41,15 +42,16 @@ public class MistralAiModerationApi {
 
 	private final RestClient restClient;
 
-	public MistralAiModerationApi(String mistralAiApiKey) {
-		this(DEFAULT_BASE_URL, mistralAiApiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	@Deprecated
+	public MistralAiModerationApi(String apiKey) {
+		this(DEFAULT_BASE_URL, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
-	public MistralAiModerationApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+	public MistralAiModerationApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(mistralAiApiKey);
+			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -69,6 +71,51 @@ public class MistralAiModerationApi {
 			.body(mistralAiModerationRequest)
 			.retrieve()
 			.toEntity(MistralAiModerationResponse.class);
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			Assert.hasText(apiKey, "apiKey cannot be null or empty");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public MistralAiModerationApi build() {
+			return new MistralAiModerationApi(this.baseUrl, this.apiKey, this.restClientBuilder,
+					this.responseErrorHandler);
+		}
+
 	}
 
 	/**
