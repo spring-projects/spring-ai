@@ -30,6 +30,12 @@ public final class OpenAiApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://api.openai.com";
 
+	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
+
+	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
+
+	public static final String DEFAULT_IMAGES_PATH = "/v1/images/generations";
+
 	public static final String DEFAULT_AUDIO_SPEECH_PATH = "/v1/audio/speech";
 
 	public static final String DEFAULT_AUDIO_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
@@ -37,12 +43,6 @@ public final class OpenAiApiConstants {
 	public static final String DEFAULT_AUDIO_TRANSLATION_PATH = "/v1/audio/translations";
 
 	public static final String DEFAULT_MODERATION_PATH = "/v1/moderations";
-
-	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
-
-	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
-
-	public static final String DEFAULT_IMAGES_PATH = "/v1/images/generations";
 
 	public static final String PROVIDER_NAME = AiProvider.OPENAI.value();
 
