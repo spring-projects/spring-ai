@@ -160,7 +160,7 @@ public class OpenAiModerationApi {
 			@JsonProperty("violence") double violence) {
 
 	}
-	// @formatter:onn
+	// @formatter:on
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)

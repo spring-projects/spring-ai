@@ -48,7 +48,7 @@ public class FunctionCallWithFunctionWrapperIT {
 	// @formatter:off
 			"spring.ai.azure.openai.api-key=" + System.getenv("AZURE_OPENAI_API_KEY"),
 			"spring.ai.azure.openai.endpoint=" + System.getenv("AZURE_OPENAI_ENDPOINT"))
-			// @formatter:onn
+			// @formatter:on
 		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
