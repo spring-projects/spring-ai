@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
  * Integration tests for observation instrumentation in {@link MistralAiEmbeddingModel}.
  *
  * @author Thomas Vitale
+ * @author Jason Smith
  */
 @SpringBootTest(classes = MistralAiEmbeddingModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -101,14 +102,18 @@ public class MistralAiEmbeddingModelObservationIT {
 
 		@Bean
 		public MistralAiApi mistralAiApi() {
-			return new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+			return MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 		}
 
 		@Bean
 		public MistralAiEmbeddingModel openAiEmbeddingModel(MistralAiApi mistralAiApi,
 				TestObservationRegistry observationRegistry) {
-			return new MistralAiEmbeddingModel(mistralAiApi, MetadataMode.EMBED,
-					MistralAiEmbeddingOptions.builder().build(), RetryTemplate.defaultInstance(), observationRegistry);
+			return MistralAiEmbeddingModel.builder()
+				.mistralAiApi(mistralAiApi)
+				.options(MistralAiEmbeddingOptions.builder().build())
+				.retryTemplate(RetryTemplate.defaultInstance())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

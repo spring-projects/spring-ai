@@ -35,13 +35,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ricken Bazolo
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author Jason Smith
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiChatCompletionRequestTest {
 
-	MistralAiChatModel chatModel = MistralAiChatModel.builder().mistralAiApi(new MistralAiApi("test")).build();
+	MistralAiChatModel chatModel = MistralAiChatModel.builder()
+		.mistralAiApi(MistralAiApi.builder().apiKey("test").build())
+		.build();
 
 	@Test
 	void chatCompletionDefaultRequestTest() {
@@ -79,7 +82,7 @@ public class MistralAiChatCompletionRequestTest {
 			.build();
 
 		MistralAiChatModel chatModel = MistralAiChatModel.builder()
-			.mistralAiApi(new MistralAiApi("test"))
+			.mistralAiApi(MistralAiApi.builder().apiKey("test").build())
 			.defaultOptions(defaultOptions)
 			.build();
 
