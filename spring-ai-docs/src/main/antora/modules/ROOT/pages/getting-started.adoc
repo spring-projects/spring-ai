@@ -153,4 +153,4 @@ Each of the following sections in the documentation shows which dependencies you
 
 == Spring AI samples
 
-Please refer to https://github.com/danvega/awesome-spring-ai[this page] for more resources and samples related to Spring AI.
+Please refer to https://github.com/spring-ai-community/awesome-spring-ai[this page] for more resources and samples related to Spring AI.

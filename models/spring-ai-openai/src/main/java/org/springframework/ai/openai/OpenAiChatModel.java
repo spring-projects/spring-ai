@@ -219,7 +219,7 @@ public class OpenAiChatModel implements ChatModel {
 							"index", choice.index(),
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
-							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
+							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 				// @formatter:on
@@ -634,6 +634,10 @@ public class OpenAiChatModel implements ChatModel {
 		if (MimeTypeUtils.parseMimeType("audio/wav").equals(mimeType)) {
 			return new MediaContent(
 					new MediaContent.InputAudio(fromAudioData(media.getData()), MediaContent.InputAudio.Format.WAV));
+		}
+		if (MimeTypeUtils.parseMimeType("application/pdf").equals(mimeType)) {
+			return new MediaContent(new MediaContent.InputFile(media.getName(),
+					this.fromMediaData(media.getMimeType(), media.getData())));
 		}
 		else {
 			return new MediaContent(

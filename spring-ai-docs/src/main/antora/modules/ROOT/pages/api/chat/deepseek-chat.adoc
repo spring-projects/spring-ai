@@ -118,8 +118,8 @@ The prefix `spring.ai.deepseek.chat` is the property prefix that lets you config
 | spring.ai.deepseek.chat.base-url | Optionally overrides the spring.ai.deepseek.base-url to provide a chat-specific URL | https://api.deepseek.com/
 | spring.ai.deepseek.chat.api-key | Optionally overrides the spring.ai.deepseek.api-key to provide a chat-specific API key | -
 | spring.ai.deepseek.chat.completions-path | The path to the chat completions endpoint | /chat/completions
-| spring.ai.deepseek.chat.beta-prefix-path | The prefix path to the beta feature endpoint | /beta/chat/completions
-| spring.ai.deepseek.chat.options.model | ID of the model to use. You can use either deepseek-coder or deepseek-chat. | deepseek-chat
+| spring.ai.deepseek.chat.beta-prefix-path | The prefix path to the beta feature endpoint | /beta
+| spring.ai.deepseek.chat.options.model | ID of the model to use. You can use either deepseek-reasoner or deepseek-chat. | deepseek-chat
 | spring.ai.deepseek.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.deepseek.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.deepseek.chat.options.presencePenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. |  0.0f
@@ -348,11 +348,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = deepSeekApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7f, false));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = deepSeekApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7f, true));
+    new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-deepseek/src/main/java/org/springframework/ai/deepseek/api/DeepSeekApi.java[DeepSeekApi.java]'s JavaDoc for further information.

@@ -282,11 +282,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = this.miniMaxApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, false));
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = this.miniMaxApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, true));
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/api/MiniMaxApi.java[MiniMaxApi.java]'s JavaDoc for further information.

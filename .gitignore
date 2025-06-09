@@ -45,3 +45,5 @@ shell.log
 
 **/.claude/settings.local.json
 .devcontainer
+
+qodana.yaml

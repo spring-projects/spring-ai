@@ -75,6 +75,9 @@ final class QdrantValueFactory {
 				return ValueFactory.value((String) value);
 			case "Integer":
 				return ValueFactory.value((Integer) value);
+			case "Long":
+				// use String representation
+				return ValueFactory.value(String.valueOf(value));
 			case "Double":
 				return ValueFactory.value((Double) value);
 			case "Float":
