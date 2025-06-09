@@ -105,11 +105,7 @@ public class OpenAiImageEditModel implements ImageEditModel {
 	}
 
 	private OpenAiImageEditRequest createRequest(ImageEditPrompt imageEditPrompt) {
-		List<byte[]> images = imageEditPrompt.getInstructions()
-			.getImage()
-			.stream()
-			.map(Media::getDataAsByteArray)
-			.toList();
+		List<Media> images = imageEditPrompt.getInstructions().getImage();
 		String prompt = imageEditPrompt.getInstructions().getPrompt();
 		OpenAiImageEditOptions imageOptions = (OpenAiImageEditOptions) imageEditPrompt.getOptions();
 

@@ -18,6 +18,7 @@ package org.springframework.ai.openai.api;
 
 import java.util.List;
 
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
@@ -103,14 +104,15 @@ public class OpenAiImageApi {
 
 		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
 		openAiImageEditRequest.image().forEach(image -> {
-			Resource imageResource = new ByteArrayResource(image) {
+			Resource imageResource = new ByteArrayResource(image.getDataAsByteArray()) {
 				@Override
 				public String getFilename() {
-					return "image.png";
+					return image.getName();
 				}
 			};
 			multipartBody.add("image[]", imageResource);
 		});
+
 		multipartBody.add("model", openAiImageEditRequest.model());
 		multipartBody.add("prompt", openAiImageEditRequest.prompt());
 		multipartBody.add("response_format", openAiImageEditRequest.responseFormat());
@@ -118,11 +120,13 @@ public class OpenAiImageApi {
 		multipartBody.add("quality", openAiImageEditRequest.quality());
 		multipartBody.add("size", openAiImageEditRequest.size());
 		multipartBody.add("user", openAiImageEditRequest.user());
-		if (openAiImageEditRequest.mask() != null) {
-			Resource imageResource = new ByteArrayResource(openAiImageEditRequest.mask()) {
+
+		Media mask = openAiImageEditRequest.mask();
+		if (mask != null) {
+			Resource imageResource = new ByteArrayResource(mask.getDataAsByteArray()) {
 				@Override
 				public String getFilename() {
-					return "mask.png";
+					return mask.getName();
 				}
 			};
 			multipartBody.add("mask", imageResource);
@@ -196,21 +200,21 @@ public class OpenAiImageApi {
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record OpenAiImageEditRequest(
-		@JsonProperty("image") List<byte[]> image ,
+		@JsonProperty("image") List<Media> image,
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("model") String model,
-		@JsonProperty("mask") byte[] mask,
+		@JsonProperty("mask") Media mask,
 		@JsonProperty("n") Integer n,
 		@JsonProperty("quality") String quality,
 		@JsonProperty("response_format") String responseFormat,
 		@JsonProperty("size") String size,
 		@JsonProperty("user") String user) {
 
-		public OpenAiImageEditRequest(List<byte[]> images, String prompt, String model) {
+		public OpenAiImageEditRequest(List<Media> images, String prompt, String model) {
 			this(images, prompt, model, null, null, null, null, null, null);
 		}
 
-		public OpenAiImageEditRequest(byte[] image, String prompt, String model) {
+		public OpenAiImageEditRequest(Media image, String prompt, String model) {
 			this(List.of(image), prompt, model);
 		}
 	}
