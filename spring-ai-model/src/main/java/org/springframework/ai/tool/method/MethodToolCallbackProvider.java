@@ -103,9 +103,9 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	}
 
 	private boolean isFunctionalType(Method toolMethod) {
-		var isFunction = ClassUtils.isAssignable(toolMethod.getReturnType(), Function.class)
-				|| ClassUtils.isAssignable(toolMethod.getReturnType(), Supplier.class)
-				|| ClassUtils.isAssignable(toolMethod.getReturnType(), Consumer.class);
+		var isFunction = ClassUtils.isAssignable(Function.class, toolMethod.getReturnType())
+				|| ClassUtils.isAssignable(Supplier.class, toolMethod.getReturnType())
+				|| ClassUtils.isAssignable(Consumer.class, toolMethod.getReturnType());
 
 		if (isFunction) {
 			logger.warn("Method {} is annotated with @Tool but returns a functional type. "
