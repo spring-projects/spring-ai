@@ -96,7 +96,7 @@ public class OpenAiImageApi {
 					return "image.png";
 				}
 			};
-			multipartBody.add("image", imageResource);
+			multipartBody.add("image[]", imageResource);
 		});
 		multipartBody.add("model", openAiImageEditRequest.model());
 		multipartBody.add("prompt", openAiImageEditRequest.prompt());
