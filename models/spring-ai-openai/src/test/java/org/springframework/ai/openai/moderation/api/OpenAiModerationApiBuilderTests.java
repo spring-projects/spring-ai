@@ -55,7 +55,7 @@ class OpenAiModerationApiBuilderTests {
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
 
-	private static final String TEST_MODERATION_PATH = "/v1/moderations";
+	private static final String TEST_MODERATION_PATH = "/test/moderations";
 
 	@Test
 	void testMinimalBuilder() {
