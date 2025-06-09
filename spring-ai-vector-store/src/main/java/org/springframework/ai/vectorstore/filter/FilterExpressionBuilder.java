@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Value;
  * syntax.
  *
  * @author Christian Tzolov
+ * @author Andrey Litvitski
  */
 public class FilterExpressionBuilder {
 
@@ -89,16 +90,8 @@ public class FilterExpressionBuilder {
 		return new Op(new Filter.Expression(ExpressionType.OR, left.expression, right.expression));
 	}
 
-	public Op in(String key, Object... values) {
-		return this.in(key, List.of(values));
-	}
-
 	public Op in(String key, List<Object> values) {
 		return new Op(new Filter.Expression(ExpressionType.IN, new Key(key), new Value(values)));
-	}
-
-	public Op nin(String key, Object... values) {
-		return this.nin(key, List.of(values));
 	}
 
 	public Op nin(String key, List<Object> values) {
