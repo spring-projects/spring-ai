@@ -79,6 +79,7 @@ public class OpenAiModerationApi {
 	 */
 	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			String moderationPath, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 		Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
 
 		this.moderationPath = moderationPath;

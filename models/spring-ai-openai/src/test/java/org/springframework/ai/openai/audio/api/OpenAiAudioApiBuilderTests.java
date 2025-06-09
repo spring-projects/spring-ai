@@ -57,11 +57,11 @@ class OpenAiAudioApiBuilderTests {
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
 
-	private static final String TEST_AUDIO_SPEECH_PATH = "/v1/audio/speech";
+	private static final String TEST_AUDIO_SPEECH_PATH = "/test/audio/speech";
 
-	private static final String TEST_AUDIO_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
+	private static final String TEST_AUDIO_TRANSCRIPTION_PATH = "/test/audio/transcriptions";
 
-	private static final String TEST_AUDIO_TRANSLATION_PATH = "/v1/audio/translations";
+	private static final String TEST_AUDIO_TRANSLATION_PATH = "/test/audio/translations";
 
 	@Test
 	void testMinimalBuilder() {
