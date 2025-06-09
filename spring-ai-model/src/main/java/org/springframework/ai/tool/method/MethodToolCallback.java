@@ -118,8 +118,8 @@ public final class MethodToolCallback implements ToolCallback {
 	private void validateToolContextSupport(@Nullable ToolContext toolContext) {
 		var isNonEmptyToolContextProvided = toolContext != null && !CollectionUtils.isEmpty(toolContext.getContext());
 		var isToolContextAcceptedByMethod = Stream.of(this.toolMethod.getParameterTypes())
-			.anyMatch(type -> ClassUtils.isAssignable(type, ToolContext.class));
-		if (isToolContextAcceptedByMethod && !isNonEmptyToolContextProvided) {
+			.anyMatch(type -> ClassUtils.isAssignable(ToolContext.class, type));
+		if (isNonEmptyToolContextProvided && !isToolContextAcceptedByMethod) {
 			throw new IllegalArgumentException("ToolContext is required by the method as an argument");
 		}
 	}
