@@ -78,6 +78,15 @@ class MethodToolCallbackProviderTests {
 			.hasMessageContaining("Multiple tools with the same name (validTool) found in sources");
 	}
 
+	@Test
+	void whenToolObjectHasObjectTypeMethodThenSuccess() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new ObjectTypeToolMethodsObject())
+			.build();
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("objectTool");
+	}
+
 	static class ValidToolObject {
 
 		@Tool
@@ -133,6 +142,15 @@ class MethodToolCallbackProviderTests {
 		@Tool
 		public String validTool() {
 			return "Duplicate tool result";
+		}
+
+	}
+
+	static class ObjectTypeToolMethodsObject {
+
+		@Tool
+		public Object objectTool() {
+			return "Object tool result";
 		}
 
 	}
