@@ -22,10 +22,12 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for {@link MethodToolCallback} with generic types.
@@ -137,6 +139,76 @@ class MethodToolCallbackGenericTypesTest {
 		assertThat(result).isEqualTo("2 maps processed: [{a=1, b=2}, {c=3, d=4}]");
 	}
 
+	@Test
+	void testToolContextType() throws Exception {
+		// Create a test object with a method that takes a List<Map<String, Integer>>
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("processStringListInToolContext", ToolContext.class);
+
+		// Create a tool definition
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("processToolContext")
+			.description("Process tool context")
+			.inputSchema("{}")
+			.build();
+
+		// Create a MethodToolCallback
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		// Create an empty JSON input
+		String toolInput = """
+				{}
+				""";
+
+		// Create a toolContext
+		ToolContext toolContext = new ToolContext(Map.of("foo", "bar"));
+
+		// Call the tool
+		String result = callback.call(toolInput, toolContext);
+
+		// Verify the result
+		assertThat(result).isEqualTo("1 entries processed {foo=bar}");
+	}
+
+	@Test
+	void testToolContextTypeWithNonToolContextArgs() throws Exception {
+		// Create a test object with a method that takes a List<String>
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("processStringList", List.class);
+
+		// Create a tool definition
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("processStringList")
+			.description("Process a list of strings")
+			.inputSchema("{}")
+			.build();
+
+		// Create a MethodToolCallback
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		// Create a JSON input with a list of strings
+		String toolInput = """
+				{
+					"strings": ["one", "two", "three"]
+				}
+				""";
+
+		// Create a toolContext
+		ToolContext toolContext = new ToolContext(Map.of("foo", "bar"));
+
+		// Call the tool and verify
+		assertThatThrownBy(() -> callback.call(toolInput, toolContext)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ToolContext is required by the method as an argument");
+	}
+
 	/**
 	 * Test class with methods that use generic types.
 	 */
@@ -152,6 +224,11 @@ class MethodToolCallbackGenericTypesTest {
 
 		public String processListOfMaps(List<Map<String, Integer>> listOfMaps) {
 			return listOfMaps.size() + " maps processed: " + listOfMaps;
+		}
+
+		public String processStringListInToolContext(ToolContext toolContext) {
+			Map<String, Object> context = toolContext.getContext();
+			return context.size() + " entries processed " + context;
 		}
 
 	}
