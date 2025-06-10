@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  * @author Soby Chacko
  * @author Jonghoon Park
+ * @author Jionghui Zheng
  * @since 1.0.0
  */
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
@@ -72,6 +73,9 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 		mapper.from(properties::getIndexName).whenHasText().to(elasticsearchVectorStoreOptions::setIndexName);
 		mapper.from(properties::getDimensions).whenNonNull().to(elasticsearchVectorStoreOptions::setDimensions);
 		mapper.from(properties::getSimilarity).whenNonNull().to(elasticsearchVectorStoreOptions::setSimilarity);
+		mapper.from(properties::getEmbeddingFieldName)
+			.whenHasText()
+			.to(elasticsearchVectorStoreOptions::setEmbeddingFieldName);
 
 		return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 			.options(elasticsearchVectorStoreOptions)
