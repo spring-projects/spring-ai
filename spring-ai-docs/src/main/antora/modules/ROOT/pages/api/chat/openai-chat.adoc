@@ -632,7 +632,7 @@ OpenAiApi openAiApi = OpenAiApi.builder()
     .build();
 
 // Create a chat model with the custom OpenAiApi instance
-OpenAiChatmodel chatModel = OpenAiChatModel.builder()
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
     .openAiApi(openAiApi)
     .build();
 // Build the ChatClient using the custom chat model
