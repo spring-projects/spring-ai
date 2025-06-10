@@ -146,8 +146,10 @@ public class ElevenLabsApi {
 
 		MP3_22050_32("mp3_22050_32"), MP3_44100_32("mp3_44100_32"), MP3_44100_64("mp3_44100_64"),
 		MP3_44100_96("mp3_44100_96"), MP3_44100_128("mp3_44100_128"), MP3_44100_192("mp3_44100_192"),
-		PCM_16000("pcm_16000"), PCM_22050("pcm_22050"), PCM_24000("pcm_24000"), PCM_44100("pcm_44100"),
-		ULAW_8000("ulaw_8000");
+		PCM_8000("pcm_8000"), PCM_16000("pcm_16000"), PCM_22050("pcm_22050"), PCM_24000("pcm_24000"),
+		PCM_44100("pcm_44100"), PCM_48000("pcm_48000"), ULAW_8000("ulaw_8000"), ALAW_8000("alaw_8000"),
+		OPUS_48000_32("opus_48000_32"), OPUS_48000_64("opus_48000_64"), OPUS_48000_96("opus_48000_96"),
+		OPUS_48000_128("opus_48000_128"), OPUS_48000_192("opus_48000_192");
 
 		private final String value;
 
@@ -173,8 +175,8 @@ public class ElevenLabsApi {
 			@JsonProperty("next_text") String nextText,
 			@JsonProperty("previous_request_ids") List<String> previousRequestIds,
 			@JsonProperty("next_request_ids") List<String> nextRequestIds,
-			@JsonProperty("use_pvc_as_ivc") Boolean usePvcAsIvc,
-			@JsonProperty("apply_text_normalization") TextNormalizationMode applyTextNormalization) {
+			@JsonProperty("apply_text_normalization") TextNormalizationMode applyTextNormalization,
+			@JsonProperty("apply_language_text_normalization") Boolean applyLanguageTextNormalization) {
 
 		public static Builder builder() {
 			return new Builder();
@@ -243,9 +245,9 @@ public class ElevenLabsApi {
 
 			private List<String> nextRequestIds;
 
-			private Boolean usePvcAsIvc;
-
 			private TextNormalizationMode applyTextNormalization;
+
+			private Boolean applyLanguageTextNormalization = false;
 
 			public Builder text(String text) {
 				this.text = text;
@@ -298,21 +300,21 @@ public class ElevenLabsApi {
 				return this;
 			}
 
-			public Builder usePvcAsIvc(Boolean usePvcAsIvc) {
-				this.usePvcAsIvc = usePvcAsIvc;
+			public Builder applyTextNormalization(TextNormalizationMode applyTextNormalization) {
+				this.applyTextNormalization = applyTextNormalization;
 				return this;
 			}
 
-			public Builder applyTextNormalization(TextNormalizationMode applyTextNormalization) {
-				this.applyTextNormalization = applyTextNormalization;
+			public Builder applyLanguageTextNormalization(Boolean applyLanguageTextNormalization) {
+				this.applyLanguageTextNormalization = applyLanguageTextNormalization;
 				return this;
 			}
 
 			public SpeechRequest build() {
 				Assert.hasText(text, "text must not be empty");
 				return new SpeechRequest(text, modelId, languageCode, voiceSettings, pronunciationDictionaryLocators,
-						seed, previousText, nextText, previousRequestIds, nextRequestIds, usePvcAsIvc,
-						applyTextNormalization);
+						seed, previousText, nextText, previousRequestIds, nextRequestIds, applyTextNormalization,
+						applyLanguageTextNormalization);
 			}
 
 		}

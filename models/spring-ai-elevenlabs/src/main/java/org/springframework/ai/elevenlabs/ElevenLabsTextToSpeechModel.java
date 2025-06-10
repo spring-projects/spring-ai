@@ -23,11 +23,11 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
-import org.springframework.ai.elevenlabs.tts.Speech;
-import org.springframework.ai.elevenlabs.tts.StreamingTextToSpeechModel;
-import org.springframework.ai.elevenlabs.tts.TextToSpeechModel;
-import org.springframework.ai.elevenlabs.tts.TextToSpeechPrompt;
-import org.springframework.ai.elevenlabs.tts.TextToSpeechResponse;
+import org.springframework.ai.audio.tts.Speech;
+import org.springframework.ai.audio.tts.StreamingTextToSpeechModel;
+import org.springframework.ai.audio.tts.TextToSpeechModel;
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
@@ -131,8 +131,8 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 			.nextText(options.getNextText())
 			.previousRequestIds(options.getPreviousRequestIds())
 			.nextRequestIds(options.getNextRequestIds())
-			.usePvcAsIvc(options.getUsePvcAsIvc())
 			.applyTextNormalization(options.getApplyTextNormalization())
+			.applyLanguageTextNormalization(options.getApplyLanguageTextNormalization())
 			.build();
 	}
 
@@ -161,9 +161,10 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 			.previousRequestIds(
 					getOrDefault(runtimeOptions.getPreviousRequestIds(), defaultOptions.getPreviousRequestIds()))
 			.nextRequestIds(getOrDefault(runtimeOptions.getNextRequestIds(), defaultOptions.getNextRequestIds()))
-			.usePvcAsIvc(getOrDefault(runtimeOptions.getUsePvcAsIvc(), defaultOptions.getUsePvcAsIvc()))
 			.applyTextNormalization(getOrDefault(runtimeOptions.getApplyTextNormalization(),
 					defaultOptions.getApplyTextNormalization()))
+			.applyLanguageTextNormalization(getOrDefault(runtimeOptions.getApplyLanguageTextNormalization(),
+					defaultOptions.getApplyLanguageTextNormalization()))
 			.build();
 	}
 

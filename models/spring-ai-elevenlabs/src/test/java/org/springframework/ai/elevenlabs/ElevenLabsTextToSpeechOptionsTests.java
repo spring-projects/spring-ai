@@ -51,8 +51,8 @@ public class ElevenLabsTextToSpeechOptionsTests {
 			.nextText("next")
 			.previousRequestIds(List.of("req1", "req2"))
 			.nextRequestIds(List.of("req3", "req4"))
-			.usePvcAsIvc(true)
 			.applyTextNormalization(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON)
+			.applyLanguageTextNormalization(true)
 			.build();
 
 		assertThat(options.getModelId()).isEqualTo("test-model");
@@ -75,8 +75,8 @@ public class ElevenLabsTextToSpeechOptionsTests {
 		assertThat(options.getNextText()).isEqualTo("next");
 		assertThat(options.getPreviousRequestIds()).containsExactly("req1", "req2");
 		assertThat(options.getNextRequestIds()).containsExactly("req3", "req4");
-		assertThat(options.getUsePvcAsIvc()).isTrue();
 		assertThat(options.getApplyTextNormalization()).isEqualTo(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON);
+		assertThat(options.getApplyLanguageTextNormalization()).isTrue();
 	}
 
 	@Test
@@ -114,8 +114,8 @@ public class ElevenLabsTextToSpeechOptionsTests {
 		options.setNextText("next");
 		options.setPreviousRequestIds(List.of("req1", "req2"));
 		options.setNextRequestIds(List.of("req3", "req4"));
-		options.setUsePvcAsIvc(true);
 		options.setApplyTextNormalization(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON);
+		options.setApplyLanguageTextNormalization(true);
 
 		assertThat(options.getModelId()).isEqualTo("test-model");
 		assertThat(options.getVoice()).isEqualTo("test-voice-id");
@@ -134,8 +134,8 @@ public class ElevenLabsTextToSpeechOptionsTests {
 		assertThat(options.getNextText()).isEqualTo("next");
 		assertThat(options.getPreviousRequestIds()).containsExactly("req1", "req2");
 		assertThat(options.getNextRequestIds()).containsExactly("req3", "req4");
-		assertThat(options.getUsePvcAsIvc()).isTrue();
 		assertThat(options.getApplyTextNormalization()).isEqualTo(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON);
+		assertThat(options.getApplyLanguageTextNormalization()).isTrue();
 	}
 
 	@Test
@@ -155,8 +155,8 @@ public class ElevenLabsTextToSpeechOptionsTests {
 		assertThat(options.getNextText()).isNull();
 		assertThat(options.getPreviousRequestIds()).isNull();
 		assertThat(options.getNextRequestIds()).isNull();
-		assertThat(options.getUsePvcAsIvc()).isNull();
 		assertThat(options.getApplyTextNormalization()).isNull();
+		assertThat(options.getApplyLanguageTextNormalization()).isNull();
 	}
 
 	@Test

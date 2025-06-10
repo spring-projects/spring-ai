@@ -24,7 +24,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
-import org.springframework.ai.elevenlabs.tts.TextToSpeechOptions;
+import org.springframework.ai.audio.tts.TextToSpeechOptions;
 
 /**
  * Options for ElevenLabs text-to-speech.
@@ -76,11 +76,11 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 	@JsonProperty("next_request_ids")
 	private List<String> nextRequestIds;
 
-	@JsonProperty("use_pvc_as_ivc")
-	private Boolean usePvcAsIvc;
-
 	@JsonProperty("apply_text_normalization")
 	private ElevenLabsApi.SpeechRequest.TextNormalizationMode applyTextNormalization;
+
+	@JsonProperty("apply_language_text_normalization")
+	private Boolean applyLanguageTextNormalization;
 
 	public static Builder builder() {
 		return new ElevenLabsTextToSpeechOptions.Builder();
@@ -246,20 +246,20 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		this.nextRequestIds = nextRequestIds;
 	}
 
-	public Boolean getUsePvcAsIvc() {
-		return this.usePvcAsIvc;
-	}
-
-	public void setUsePvcAsIvc(Boolean usePvcAsIvc) {
-		this.usePvcAsIvc = usePvcAsIvc;
-	}
-
 	public ElevenLabsApi.SpeechRequest.TextNormalizationMode getApplyTextNormalization() {
 		return this.applyTextNormalization;
 	}
 
 	public void setApplyTextNormalization(ElevenLabsApi.SpeechRequest.TextNormalizationMode applyTextNormalization) {
 		this.applyTextNormalization = applyTextNormalization;
+	}
+
+	public Boolean getApplyLanguageTextNormalization() {
+		return this.applyLanguageTextNormalization;
+	}
+
+	public void setApplyLanguageTextNormalization(Boolean applyLanguageTextNormalization) {
+		this.applyLanguageTextNormalization = applyLanguageTextNormalization;
 	}
 
 	@Override
@@ -275,15 +275,16 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 				&& Objects.equals(seed, that.seed) && Objects.equals(previousText, that.previousText)
 				&& Objects.equals(nextText, that.nextText)
 				&& Objects.equals(previousRequestIds, that.previousRequestIds)
-				&& Objects.equals(nextRequestIds, that.nextRequestIds) && Objects.equals(usePvcAsIvc, that.usePvcAsIvc)
-				&& Objects.equals(applyTextNormalization, that.applyTextNormalization);
+				&& Objects.equals(applyTextNormalization, that.applyTextNormalization)
+				&& Objects.equals(nextRequestIds, that.nextRequestIds)
+				&& Objects.equals(applyLanguageTextNormalization, that.applyLanguageTextNormalization);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(modelId, voiceId, outputFormat, voiceSettings, languageCode,
 				pronunciationDictionaryLocators, seed, previousText, nextText, previousRequestIds, nextRequestIds,
-				usePvcAsIvc, applyTextNormalization);
+				applyTextNormalization, applyLanguageTextNormalization);
 	}
 
 	@Override
@@ -292,8 +293,9 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 				+ ", outputFormat='" + outputFormat + '\'' + ", voiceSettings=" + voiceSettings + ", languageCode='"
 				+ languageCode + '\'' + ", pronunciationDictionaryLocators=" + pronunciationDictionaryLocators
 				+ ", seed=" + seed + ", previousText='" + previousText + '\'' + ", nextText='" + nextText + '\''
-				+ ", previousRequestIds=" + previousRequestIds + ", nextRequestIds=" + nextRequestIds + ", usePvcAsIvc="
-				+ usePvcAsIvc + ", applyTextNormalization=" + applyTextNormalization + '}';
+				+ ", previousRequestIds=" + previousRequestIds + ", nextRequestIds=" + nextRequestIds
+				+ ", applyTextNormalization=" + applyTextNormalization + ", applyLanguageTextNormalization="
+				+ applyLanguageTextNormalization + '}';
 	}
 
 	@Override
@@ -313,8 +315,8 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 			.nextText(this.getNextText())
 			.previousRequestIds(this.getPreviousRequestIds())
 			.nextRequestIds(this.getNextRequestIds())
-			.usePvcAsIvc(this.getUsePvcAsIvc())
 			.applyTextNormalization(this.getApplyTextNormalization())
+			.applyLanguageTextNormalization(this.getApplyLanguageTextNormalization())
 			.build();
 	}
 
@@ -388,14 +390,14 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 			return this;
 		}
 
-		public Builder usePvcAsIvc(Boolean usePvcAsIvc) {
-			options.setUsePvcAsIvc(usePvcAsIvc);
-			return this;
-		}
-
 		public Builder applyTextNormalization(
 				ElevenLabsApi.SpeechRequest.TextNormalizationMode applyTextNormalization) {
 			options.setApplyTextNormalization(applyTextNormalization);
+			return this;
+		}
+
+		public Builder applyLanguageTextNormalization(Boolean applyLanguageTextNormalization) {
+			options.setApplyLanguageTextNormalization(applyLanguageTextNormalization);
 			return this;
 		}
 

@@ -54,7 +54,7 @@ The prefix `spring.ai.elevenlabs.tts` is used as the property prefix to configur
 |====
 | Property | Description | Default
 
-| spring.ai.elevenlabs.tts.options.model-id | The ID of the model to use. | eleven_monolingual_v1
+| spring.ai.elevenlabs.tts.options.model-id | The ID of the model to use. | eleven_turbo_v2_5
 | spring.ai.elevenlabs.tts.options.voice-id | The ID of the voice to use.  This is the *voice ID*, not the voice name. | 9BWtsMINqrJLrRacOk9x
 | spring.ai.elevenlabs.tts.options.output-format |  The output format for the generated audio. See xref:elevenlabs-tts.adoc#output-formats[Output Formats] below. | mp3_22050_32
 | spring.ai.elevenlabs.tts.enabled | Enable or disable the ElevenLabs Text-to-Speech client. | true
@@ -94,12 +94,12 @@ The `ElevenLabsSpeechOptions` class provides options to use when making a text-t
 * `languageCode`: The language code of the input text (e.g., "en" for English).
 * `pronunciationDictionaryLocators`:  A list of pronunciation dictionary locators.
 * `seed`: A seed for random number generation, for reproducibility.
-* `previousText`: Text before the main text, for context in multi-turn conversations (advanced use).
-* `nextText`: Text after the main text, for context in multi-turn conversations (advanced use).
-* `previousRequestIds`: Request IDs from previous turns in a conversation (advanced use).
-* `nextRequestIds`: Request IDs for subsequent turns in a conversation (advanced use).
-* `usePvcAsIvc`:  Use PVC as IVC (advanced use).
+* `previousText`: Text before the main text, for context in multi-turn conversations.
+* `nextText`: Text after the main text, for context in multi-turn conversations.
+* `previousRequestIds`: Request IDs from previous turns in a conversation.
+* `nextRequestIds`: Request IDs for subsequent turns in a conversation.
 * `applyTextNormalization`:  Apply text normalization ("auto", "on", or "off").
+* `applyTextNormalizationForVoice`:  Apply language text normalization.
 
 For example:
 
@@ -147,7 +147,7 @@ ElevenLabsApi elevenLabsApi = ElevenLabsApi.builder()
 		.build();
 
 ElevenLabsSpeechOptions defaultOptions = ElevenLabsSpeechOptions.builder()
-		.modelId("eleven_monolingual_v1")
+		.modelId("eleven_turbo_v2_5")
 		.voiceId("your_voice_id")
 		.outputFormat("mp3_44100_128")
 		.build();
@@ -176,7 +176,7 @@ ElevenLabsApi elevenLabsApi = ElevenLabsApi.builder()
 		.build();
 
 ElevenLabsSpeechOptions defaultOptions = ElevenLabsSpeechOptions.builder()
-		.modelId("eleven_monolingual_v1")
+		.modelId("eleven_turbo_v2_5")
 		.voiceId("your_voice_id")
 		.outputFormat("mp3_44100_128")
 		.build();

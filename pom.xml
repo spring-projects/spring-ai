@@ -99,6 +99,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
@@ -181,7 +182,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-elevenlabs</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>

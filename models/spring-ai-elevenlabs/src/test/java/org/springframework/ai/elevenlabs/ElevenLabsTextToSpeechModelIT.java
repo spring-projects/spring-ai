@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.elevenlabs.tts.Speech;
-import org.springframework.ai.elevenlabs.tts.TextToSpeechPrompt;
-import org.springframework.ai.elevenlabs.tts.TextToSpeechResponse;
+import org.springframework.ai.audio.tts.Speech;
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
