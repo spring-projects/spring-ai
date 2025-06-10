@@ -34,15 +34,12 @@ class QdrantObjectFactoryTests {
 
 	@Test
 	void toObjectMapShouldHandleNullValues() {
-		Map<String, Value> payloadWithNull = Map.of(
-				"name", Value.newBuilder().setStringValue("Spring AI").build(),
-				"version", Value.newBuilder().setDoubleValue(1.0).build(),
-				"is_ga", Value.newBuilder().setBoolValue(true).build(),
-				"description", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build()
-		);
+		Map<String, Value> payloadWithNull = Map.of("name", Value.newBuilder().setStringValue("Spring AI").build(),
+				"version", Value.newBuilder().setDoubleValue(1.0).build(), "is_ga",
+				Value.newBuilder().setBoolValue(true).build(), "description",
+				Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build());
 
 		Map<String, Object> result = QdrantObjectFactory.toObjectMap(payloadWithNull);
-
 
 		assertThat(result).isNotNull();
 		assertThat(result).hasSize(4);
