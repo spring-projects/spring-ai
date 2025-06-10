@@ -573,6 +573,11 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-elevenlabs</artifactId>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-huggingface</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -918,6 +923,11 @@
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-huggingface</artifactId>
 				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-elevenlabs</artifactId>
 			</dependency>
 
 			<dependency>

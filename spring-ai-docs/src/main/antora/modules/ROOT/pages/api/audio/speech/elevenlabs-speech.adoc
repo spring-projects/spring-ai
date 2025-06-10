@@ -18,7 +18,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-elevenlabs-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-elevenlabs</artifactId>
 </dependency>
 ----
 
@@ -27,7 +27,7 @@ or to your Gradle `build.gradle` build file:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-elevenlabs-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-elevenlabs'
 }
 ----
 
@@ -68,18 +68,26 @@ TIP: All properties prefixed with `spring.ai.elevenlabs.tts.options` can be over
 .Available Output Formats
 [cols="1,1"]
 |====
-| Enum Value       | Description
-| MP3_22050_32    | MP3, 22.05 kHz, 32 kbps
-| MP3_44100_32    | MP3, 44.1 kHz, 32 kbps
-| MP3_44100_64    | MP3, 44.1 kHz, 64 kbps
-| MP3_44100_96    | MP3, 44.1 kHz, 96 kbps
-| MP3_44100_128   | MP3, 44.1 kHz, 128 kbps
-| MP3_44100_192   | MP3, 44.1 kHz, 192 kbps
-| PCM_16000       | PCM, 16 kHz
-| PCM_22050       | PCM, 22.05 kHz
-| PCM_24000       | PCM, 24 kHz
-| PCM_44100       | PCM, 44 kHz
-| ULAW_8000        | µ-law, 8 kHz
+| Enum Value         | Description
+| MP3_22050_32       | MP3, 22.05 kHz, 32 kbps
+| MP3_44100_32       | MP3, 44.1 kHz, 32 kbps
+| MP3_44100_64       | MP3, 44.1 kHz, 64 kbps
+| MP3_44100_96       | MP3, 44.1 kHz, 96 kbps
+| MP3_44100_128      | MP3, 44.1 kHz, 128 kbps
+| MP3_44100_192      | MP3, 44.1 kHz, 192 kbps
+| PCM_8000           | PCM, 8 kHz
+| PCM_16000          | PCM, 16 kHz
+| PCM_22050          | PCM, 22.05 kHz
+| PCM_24000          | PCM, 24 kHz
+| PCM_44100          | PCM, 44.1 kHz
+| PCM_48000          | PCM, 48 kHz
+| ULAW_8000          | µ-law, 8 kHz
+| ALAW_8000          | A-law, 8 kHz
+| OPUS_48000_32      | Opus, 48 kHz, 32 kbps
+| OPUS_48000_64      | Opus, 48 kHz, 64 kbps
+| OPUS_48000_96      | Opus, 48 kHz, 96 kbps
+| OPUS_48000_128     | Opus, 48 kHz, 128 kbps
+| OPUS_48000_192     | Opus, 48 kHz, 192 kbps
 |====
 
 
