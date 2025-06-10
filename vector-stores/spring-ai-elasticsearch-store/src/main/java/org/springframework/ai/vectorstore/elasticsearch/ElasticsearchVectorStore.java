@@ -147,8 +147,6 @@ import org.springframework.util.Assert;
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Logger logger = LoggerFactory.getLogger(ElasticsearchVectorStore.class);
-
 	private static final Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
 			VectorStoreSimilarityMetric.EUCLIDEAN, SimilarityFunction.dot_product, VectorStoreSimilarityMetric.DOT);
