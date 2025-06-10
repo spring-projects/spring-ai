@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      <https://www.apache.org/licenses/LICENSE-2.0>
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,11 +29,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Heonwoo Kim
  */
-class QdrantObjectFactoryTest {
+
+class QdrantObjectFactoryTests {
 
 	@Test
 	void toObjectMapShouldHandleNullValues() {
-
 		Map<String, Value> payloadWithNull = Map.of(
 				"name", Value.newBuilder().setStringValue("Spring AI").build(),
 				"version", Value.newBuilder().setDoubleValue(1.0).build(),
@@ -45,13 +45,10 @@ class QdrantObjectFactoryTest {
 
 
 		assertThat(result).isNotNull();
-
 		assertThat(result).hasSize(4);
-
 		assertThat(result.get("name")).isEqualTo("Spring AI");
 		assertThat(result.get("version")).isEqualTo(1.0);
 		assertThat(result.get("is_ga")).isEqualTo(true);
-
 		assertThat(result).containsKey("description");
 		assertThat(result.get("description")).isNull();
 	}
