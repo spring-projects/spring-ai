@@ -71,21 +71,13 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 
 	@Override
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
-		ElevenLabsApi.SpeechRequest request = createRequest(prompt);
-		String voiceId = getOptions(prompt).getVoice();
-
-		MultiValueMap<String, String> queryParameters = new LinkedMultiValueMap<>();
-		if (getOptions(prompt).getEnableLogging() != null) {
-			queryParameters.add("enable_logging", getOptions(prompt).getEnableLogging().toString());
-		}
-		if (getOptions(prompt).getFormat() != null) {
-			queryParameters.add("output_format", getOptions(prompt).getFormat());
-		}
+		RequestContext requestContext = prepareRequest(prompt);
 
 		byte[] audioData = retryTemplate.execute(context -> {
-			var response = elevenLabsApi.textToSpeech(request, voiceId, queryParameters);
+			var response = elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
+					requestContext.queryParameters);
 			if (response.getBody() == null) {
-				logger.warn("No speech response returned for request: {}", request);
+				logger.warn("No speech response returned for request: {}", requestContext.request);
 				return new byte[0];
 			}
 			return response.getBody();
@@ -96,19 +88,35 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 
 	@Override
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
-		ElevenLabsApi.SpeechRequest request = createRequest(prompt);
-		String voiceId = getOptions(prompt).getVoice();
+		RequestContext requestContext = prepareRequest(prompt);
 
-		MultiValueMap<String, String> queryParameters = new LinkedMultiValueMap<>();
-		if (getOptions(prompt).getEnableLogging() != null) {
-			queryParameters.add("enable_logging", getOptions(prompt).getEnableLogging().toString());
-		}
-		if (getOptions(prompt).getFormat() != null) {
-			queryParameters.add("output_format", getOptions(prompt).getFormat());
-		}
-
-		return retryTemplate.execute(context -> elevenLabsApi.textToSpeechStream(request, voiceId, queryParameters)
+		return retryTemplate.execute(context -> elevenLabsApi
+			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
 			.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
+	}
+
+	private RequestContext prepareRequest(TextToSpeechPrompt prompt) {
+		ElevenLabsApi.SpeechRequest request = createRequest(prompt);
+		ElevenLabsTextToSpeechOptions options = getOptions(prompt);
+		String voiceId = options.getVoice();
+		MultiValueMap<String, String> queryParameters = buildQueryParameters(options);
+
+		return new RequestContext(request, voiceId, queryParameters);
+	}
+
+	private record RequestContext(ElevenLabsApi.SpeechRequest request, String voiceId,
+			MultiValueMap<String, String> queryParameters) {
+	}
+
+	private MultiValueMap<String, String> buildQueryParameters(ElevenLabsTextToSpeechOptions options) {
+		MultiValueMap<String, String> queryParameters = new LinkedMultiValueMap<>();
+		if (options.getEnableLogging() != null) {
+			queryParameters.add("enable_logging", options.getEnableLogging().toString());
+		}
+		if (options.getFormat() != null) {
+			queryParameters.add("output_format", options.getFormat());
+		}
+		return queryParameters;
 	}
 
 	private ElevenLabsApi.SpeechRequest createRequest(TextToSpeechPrompt prompt) {
