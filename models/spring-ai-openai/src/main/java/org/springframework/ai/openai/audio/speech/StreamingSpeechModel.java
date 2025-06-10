@@ -27,8 +27,8 @@ import org.springframework.ai.model.StreamingModel;
  *
  * @author Ahmed Yousri
  * @since 1.0.0-M1
- * @deprecated Use {@link org.springframework.ai.audio.tts.StreamingTextToSpeechModel} from the core package instead.
- * This interface will be removed in a future release.
+ * @deprecated Use {@link org.springframework.ai.audio.tts.StreamingTextToSpeechModel}
+ * from the core package instead. This interface will be removed in a future release.
  */
 @Deprecated
 @FunctionalInterface

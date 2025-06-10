@@ -16,9 +16,9 @@
 
 package org.springframework.ai.openai.metadata.audio;
 
+import org.springframework.ai.audio.tts.TextToSpeechResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.model.MutableResponseMetadata;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -29,7 +29,7 @@ import org.springframework.util.Assert;
  * @author Ahmed Yousri
  * @see RateLimit
  */
-public class OpenAiAudioSpeechResponseMetadata extends MutableResponseMetadata {
+public class OpenAiAudioSpeechResponseMetadata extends TextToSpeechResponseMetadata {
 
 	public static final OpenAiAudioSpeechResponseMetadata NULL = new OpenAiAudioSpeechResponseMetadata() {
 

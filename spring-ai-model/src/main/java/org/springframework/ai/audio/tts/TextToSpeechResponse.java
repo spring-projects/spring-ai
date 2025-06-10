@@ -31,15 +31,15 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 
 	private final List<Speech> results;
 
-	private final ResponseMetadata metadata;
+	private final TextToSpeechResponseMetadata textToSpeechResponseMetadata;
 
 	public TextToSpeechResponse(List<Speech> results) {
 		this(results, null);
 	}
 
-	public TextToSpeechResponse(List<Speech> results, ResponseMetadata metadata) {
+	public TextToSpeechResponse(List<Speech> results, TextToSpeechResponseMetadata textToSpeechResponseMetadata) {
 		this.results = results;
-		this.metadata = metadata;
+		this.textToSpeechResponseMetadata = textToSpeechResponseMetadata;
 	}
 
 	@Override
@@ -52,8 +52,8 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 	}
 
 	@Override
-	public ResponseMetadata getMetadata() {
-		return this.metadata;
+	public TextToSpeechResponseMetadata getMetadata() {
+		return this.textToSpeechResponseMetadata;
 	}
 
 	@Override
