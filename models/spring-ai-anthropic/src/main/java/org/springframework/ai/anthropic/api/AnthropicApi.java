@@ -30,11 +30,16 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.anthropic.api.tool.Tool;
+import org.springframework.ai.anthropic.util.ContentFieldDeserializer;
+import org.springframework.ai.anthropic.util.ContentFieldSerializer;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.SimpleApiKey;
@@ -750,7 +755,11 @@ public final class AnthropicApi {
 
 		// tool_result response only
 		@JsonProperty("tool_use_id") String toolUseId,
-		@JsonProperty("content") String content,
+
+		@JsonSerialize(using = ContentFieldSerializer.class)
+		@JsonDeserialize(using = ContentFieldDeserializer.class)
+		@JsonProperty("content")
+		Object content,
 
 		// Thinking only
 		@JsonProperty("signature") String signature,
@@ -759,6 +768,15 @@ public final class AnthropicApi {
 		// Redacted Thinking only
 		@JsonProperty("data") String data
 		) {
+		// @formatter:on
+
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record WebSearchToolContentBlock(@JsonProperty("type") String type, @JsonProperty("title") String title,
+				@JsonProperty("url") String url, @JsonProperty("encrypted_content") String EncryptedContent,
+				@JsonProperty("page_age") String pageAge) {
+
+		}
 		// @formatter:on
 
 		/**
@@ -845,6 +863,18 @@ public final class AnthropicApi {
 			 */
 			@JsonProperty("tool_result")
 			TOOL_RESULT("tool_result"),
+
+			/**
+			 * Server Tool request
+			 */
+			@JsonProperty("server_tool_use")
+			SERVER_TOOL_USE("server_tool_use"),
+
+			/**
+			 * Web search tool result
+			 */
+			@JsonProperty("web_search_tool_result")
+			WEB_SEARCH_TOOL_RESULT("web_search_tool_result"),
 
 			/**
 			 * Text message.
@@ -959,22 +989,6 @@ public final class AnthropicApi {
 	/// CONTENT_BLOCK EVENTS
 	///////////////////////////////////////
 
-	/**
-	 * Tool description.
-	 *
-	 * @param name The name of the tool.
-	 * @param description A description of the tool.
-	 * @param inputSchema The input schema of the tool.
-	 */
-	@JsonInclude(Include.NON_NULL)
-	public record Tool(
-	// @formatter:off
-		@JsonProperty("name") String name,
-		@JsonProperty("description") String description,
-		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
-		// @formatter:on
-	}
-
 	// CB START EVENT
 
 	/**
@@ -1020,16 +1034,25 @@ public final class AnthropicApi {
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens) {
-		// @formatter:off
+		@JsonProperty("output_tokens") Integer outputTokens,
+		@JsonProperty("server_tool_use") ServerToolUse serverToolUse) {
+		// @formatter:on
 	}
 
-	 /// ECB STOP
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record ServerToolUse(
+	// @formatter:off
+		@JsonProperty("web_search_requests") Integer webSearchRequests) {
+		// @formatter:on
+	}
+
+	/// ECB STOP
 
 	/**
 	 * Special event used to aggregate multiple tool use events into a single event with
 	 * list of aggregated ContentBlockToolUse.
-	*/
+	 */
 	public static class ToolUseAggregationEvent implements StreamEvent {
 
 		private Integer index;
@@ -1048,17 +1071,17 @@ public final class AnthropicApi {
 		}
 
 		/**
-		  * Get tool content blocks.
-		  * @return The tool content blocks.
-		*/
+		 * Get tool content blocks.
+		 * @return The tool content blocks.
+		 */
 		public List<ContentBlockStartEvent.ContentBlockToolUse> getToolContentBlocks() {
 			return this.toolContentBlocks;
 		}
 
 		/**
-		  * Check if the event is empty.
-		  * @return True if the event is empty, false otherwise.
-		*/
+		 * Check if the event is empty.
+		 * @return True if the event is empty, false otherwise.
+		 */
 		public boolean isEmpty() {
 			return (this.index == null || this.id == null || this.name == null
 					|| !StringUtils.hasText(this.partialJson));
@@ -1087,7 +1110,8 @@ public final class AnthropicApi {
 		void squashIntoContentBlock() {
 			Map<String, Object> map = (StringUtils.hasText(this.partialJson))
 					? ModelOptionsUtils.jsonToMap(this.partialJson) : Map.of();
-			this.toolContentBlocks.add(new ContentBlockStartEvent.ContentBlockToolUse("tool_use", this.id, this.name, map));
+			this.toolContentBlocks
+				.add(new ContentBlockStartEvent.ContentBlockToolUse("tool_use", this.id, this.name, map));
 			this.index = null;
 			this.id = null;
 			this.name = null;
@@ -1096,28 +1120,29 @@ public final class AnthropicApi {
 
 		@Override
 		public String toString() {
-			return "EventToolUseBuilder [index=" + this.index + ", id=" + this.id + ", name=" + this.name + ", partialJson="
-					+ this.partialJson + ", toolUseMap=" + this.toolContentBlocks + "]";
+			return "EventToolUseBuilder [index=" + this.index + ", id=" + this.id + ", name=" + this.name
+					+ ", partialJson=" + this.partialJson + ", toolUseMap=" + this.toolContentBlocks + "]";
 		}
 
 	}
 
-	 ///////////////////////////////////////
-	 /// MESSAGE EVENTS
-	 ///////////////////////////////////////
+	///////////////////////////////////////
+	/// MESSAGE EVENTS
+	///////////////////////////////////////
 
-	 // MESSAGE START EVENT
+	// MESSAGE START EVENT
 
 	/**
 	 * Content block start event.
+	 *
 	 * @param type The event type.
 	 * @param index The index of the content block.
 	 * @param contentBlock The content block body.
-	*/
+	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlockStartEvent(
-			// @formatter:off
+	// @formatter:off
 		@JsonProperty("type") EventType type,
 		@JsonProperty("index") Integer index,
 		@JsonProperty("content_block") ContentBlockBody contentBlock) implements StreamEvent {
