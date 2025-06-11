@@ -67,7 +67,7 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 		/**
 		 * Set the reason this choice completed for the generation.
 		 */
-		Builder finishReason(String id);
+		Builder finishReason(String finishReason);
 
 		/**
 		 * Add metadata to the Generation result.
