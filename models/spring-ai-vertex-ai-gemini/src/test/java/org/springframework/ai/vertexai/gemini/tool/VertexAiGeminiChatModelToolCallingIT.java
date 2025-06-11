@@ -97,6 +97,30 @@ public class VertexAiGeminiChatModelToolCallingIT {
 	}
 
 	@Test
+	public void functionCallModelReturnsMixedTextAndFunctionCallParts() {
+		UserMessage userMessage = new UserMessage(
+				"What can you tell me about the temperature in San Francisco, Paris and in Tokyo? Return the temperature in Celsius. Expose your thinking process.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = VertexAiGeminiChatOptions.builder()
+			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
+				.description("Get the current weather in a given location.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse chatResponse = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		assertThat(chatResponse.getResult().getOutput().getText()).contains("30", "10", "15");
+
+		assertThat(chatResponse.getMetadata()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(550);
+	}
+
+	@Test
 	public void functionCallTestInferredOpenApiSchema() {
 
 		UserMessage userMessage = new UserMessage(
