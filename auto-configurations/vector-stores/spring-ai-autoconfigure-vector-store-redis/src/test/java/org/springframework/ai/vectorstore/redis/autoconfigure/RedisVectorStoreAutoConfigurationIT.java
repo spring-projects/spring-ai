@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,9 @@
 
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
-import java.util.List;
-import java.util.Map;
-
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
@@ -40,6 +34,11 @@ import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Brian Sam-Bodden
  */
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
@@ -57,10 +57,12 @@ class RedisVectorStoreAutoConfigurationIT {
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
 
+	// Use host and port explicitly since getRedisURI() might not be consistent
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(RedisAutoConfiguration.class, RedisVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI())
+		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
+				"spring.data.redis.port=" + redisContainer.getFirstMappedPort())
 		.withPropertyValues("spring.ai.vectorstore.redis.initialize-schema=true")
 		.withPropertyValues("spring.ai.vectorstore.redis.index=myIdx")
 		.withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:");
@@ -132,6 +134,23 @@ class RedisVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(RedisVectorStore.class);
 		});
+	}
+
+	@Test
+	public void configureHnswAlgorithmParameters() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.type=redis", "spring.ai.vectorstore.redis.hnsw.m=32",
+					"spring.ai.vectorstore.redis.hnsw.ef-construction=100",
+					"spring.ai.vectorstore.redis.hnsw.ef-runtime=50")
+			.run(context -> {
+				assertThat(context.getBeansOfType(RedisVectorStoreProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(RedisVectorStore.class)).isNotEmpty();
+
+				RedisVectorStoreProperties properties = context.getBean(RedisVectorStoreProperties.class);
+				assertThat(properties.getHnsw().getM()).isEqualTo(32);
+				assertThat(properties.getHnsw().getEfConstruction()).isEqualTo(100);
+				assertThat(properties.getHnsw().getEfRuntime()).isEqualTo(50);
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)

@@ -44,6 +44,7 @@
 		<module>memory/spring-ai-model-chat-memory-cassandra</module>
 		<module>memory/spring-ai-model-chat-memory-jdbc</module>
 		<module>memory/spring-ai-model-chat-memory-neo4j</module>
+		<module>memory/spring-ai-model-chat-memory-redis</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
@@ -55,6 +56,7 @@
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-cassandra</module>
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-jdbc</module>
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-neo4j</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
 
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 
@@ -99,6 +101,7 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis-semantic-cache</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
@@ -132,6 +135,7 @@
 		<module>vector-stores/spring-ai-pinecone-store</module>
 		<module>vector-stores/spring-ai-qdrant-store</module>
 		<module>vector-stores/spring-ai-redis-store</module>
+		<module>vector-stores/spring-ai-redis-semantic-cache</module>
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
 
@@ -154,6 +158,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pinecone</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-qdrant</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis-semantic-cache</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
 
@@ -182,6 +187,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-jdbc</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-neo4j</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>

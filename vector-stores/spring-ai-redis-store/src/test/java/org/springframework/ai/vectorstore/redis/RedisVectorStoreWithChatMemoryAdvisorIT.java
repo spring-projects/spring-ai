@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,37 +97,42 @@ class RedisVectorStoreWithChatMemoryAdvisorIT {
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
 				Why don't scientists trust atoms?
-				Because they make up everything!
-				"""))));
+				Because they make up everything!"""))));
 		given(chatModel.call(argumentCaptor.capture())).willReturn(chatResponse);
 		return chatModel;
 	}
 
-	private EmbeddingModel embeddingModelShouldAlwaysReturnFakedEmbed() {
-		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
-		Mockito.doAnswer(invocationOnMock -> List.of(this.embed, this.embed))
-			.when(embeddingModel)
-			.embed(any(), any(), any());
-		given(embeddingModel.embed(any(String.class))).willReturn(this.embed);
-		given(embeddingModel.dimensions()).willReturn(3); // Explicit dimensions matching
-															// embed array
-		return embeddingModel;
+	private static void verifyRequestHasBeenAdvisedWithMessagesFromVectorStore(ChatModel chatModel) {
+		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(chatModel).call(argumentCaptor.capture());
+		List<SystemMessage> systemMessages = argumentCaptor.getValue()
+			.getInstructions()
+			.stream()
+			.filter(message -> message instanceof SystemMessage)
+			.map(message -> (SystemMessage) message)
+			.toList();
+		assertThat(systemMessages).hasSize(1);
+		SystemMessage systemMessage = systemMessages.get(0);
+		assertThat(systemMessage.getText()).contains("Tell me a good joke");
+		assertThat(systemMessage.getText()).contains("Tell me a bad joke");
 	}
 
-	private static void verifyRequestHasBeenAdvisedWithMessagesFromVectorStore(ChatModel chatModel) {
-		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
-		verify(chatModel).call(promptCaptor.capture());
-		assertThat(promptCaptor.getValue().getInstructions().get(0)).isInstanceOf(SystemMessage.class);
-		assertThat(promptCaptor.getValue().getInstructions().get(0).getText()).isEqualTo("""
+	private EmbeddingModel embeddingModelShouldAlwaysReturnFakedEmbed() {
+		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
+		given(embeddingModel.embed(any(String.class))).willReturn(embed);
+		given(embeddingModel.dimensions()).willReturn(embed.length);
 
-				Use the long term conversation memory from the LONG_TERM_MEMORY section to provide accurate answers.
+		// Mock the list version of embed method to return a list of embeddings
+		given(embeddingModel.embed(Mockito.anyList(), Mockito.any(), Mockito.any())).willAnswer(invocation -> {
+			List<Document> docs = invocation.getArgument(0);
+			List<float[]> embeddings = new java.util.ArrayList<>();
+			for (int i = 0; i < docs.size(); i++) {
+				embeddings.add(embed);
+			}
+			return embeddings;
+		});
 
-				---------------------
-				LONG_TERM_MEMORY:
-				Tell me a good joke
-				Tell me a bad joke
-				---------------------
-				""");
+		return embeddingModel;
 	}
 
 }

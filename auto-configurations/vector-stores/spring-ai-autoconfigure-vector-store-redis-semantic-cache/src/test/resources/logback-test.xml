@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <logger name="org.springframework.ai" level="INFO"/>
+    <logger name="org.springframework.ai.vectorstore.redis.cache.semantic" level="DEBUG"/>
+    <logger name="org.springframework.ai.chat.cache.semantic" level="DEBUG"/>
+    <logger name="org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure" level="DEBUG"/>
+    <logger name="redis.clients.jedis" level="DEBUG"/>
+</configuration>
