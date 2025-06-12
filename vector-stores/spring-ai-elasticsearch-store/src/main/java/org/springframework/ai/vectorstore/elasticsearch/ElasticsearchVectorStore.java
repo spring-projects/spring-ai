@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.mapping.DenseVectorSimilarity;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -328,13 +329,24 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		try {
 			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(this.options.getIndexName())
-					.mappings(map -> map.properties(this.options.getEmbeddingFieldName(),
-							p -> p.denseVector(dv -> dv.similarity(this.options.getSimilarity().toString())
-								.dims(this.options.getDimensions())))));
+					.mappings(
+							map -> map.properties(this.options.getEmbeddingFieldName(),
+									p -> p.denseVector(dv -> dv
+										.similarity(parseSimilarity(this.options.getSimilarity().toString()))
+										.dims(this.options.getDimensions())))));
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private DenseVectorSimilarity parseSimilarity(String similarity) {
+		for (DenseVectorSimilarity sim : DenseVectorSimilarity.values()) {
+			if (sim.jsonValue().equalsIgnoreCase(similarity)) {
+				return sim;
+			}
+		}
+		throw new IllegalArgumentException("Unsupported similarity: " + similarity);
 	}
 
 	@Override

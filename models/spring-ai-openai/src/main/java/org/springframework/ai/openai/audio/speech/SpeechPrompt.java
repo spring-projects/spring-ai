@@ -29,7 +29,10 @@ import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
  *
  * @author Ahmed Yousri
  * @since 1.0.0-M1
+ * @deprecated Use {@link org.springframework.ai.audio.tts.TextToSpeechPrompt} from the
+ * core package instead. This class will be removed in a future release.
  */
+@Deprecated
 public class SpeechPrompt implements ModelRequest<SpeechMessage> {
 
 	private final SpeechMessage message;
