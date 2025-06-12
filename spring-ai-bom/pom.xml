@@ -574,6 +574,7 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-elevenlabs</artifactId>
+				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
@@ -928,6 +929,7 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-elevenlabs</artifactId>
+				<version>${project.version}</version>
 			</dependency>
 
 			<dependency>
