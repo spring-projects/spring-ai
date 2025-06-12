@@ -39,6 +39,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 
 /**
  * @author Julien Ruaux
+ * @author Brian Sam-Bodden
  */
 class RedisFilterExpressionConverterTests {
 
