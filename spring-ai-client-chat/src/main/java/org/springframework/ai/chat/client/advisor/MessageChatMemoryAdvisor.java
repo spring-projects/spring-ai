@@ -19,6 +19,9 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -83,8 +86,18 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 
 		// 2. Advise the request messages list.
-		List<Message> processedMessages = new ArrayList<>(memoryMessages);
-		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
+		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
+		List<Message> processedMessages = new ArrayList<>();
+		if (StringUtils.hasText(systemMessage.getText())) {
+			processedMessages.add(systemMessage);
+		}
+		processedMessages.addAll(memoryMessages);
+		List<Message> instructions = chatClientRequest.prompt()
+			.getInstructions()
+			.stream()
+			.filter(m -> m.getMessageType() != MessageType.SYSTEM)
+			.toList();
+		processedMessages.addAll(instructions);
 
 		// 3. Create a new request with the advised messages.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
