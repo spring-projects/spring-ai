@@ -16,11 +16,13 @@
 
 package org.springframework.ai.model.tool;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
@@ -38,6 +40,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.observation.DefaultToolCallingObservationConvention;
 import org.springframework.ai.tool.observation.ToolCallingObservationContext;
 import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
@@ -45,6 +48,7 @@ import org.springframework.ai.tool.observation.ToolCallingObservationDocumentati
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.Assert;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -220,8 +224,17 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 						this.observationRegistry)
 				.observe(() -> {
 					String toolResult;
+
+					var acceptsToolContext = true;
+					if (toolCallback instanceof MethodToolCallback methodToolCallback) {
+						Method toolMethod = methodToolCallback.getToolMethod();
+						acceptsToolContext = Stream.of(toolMethod.getParameterTypes())
+							.anyMatch(type -> ClassUtils.isAssignable(ToolContext.class, type));
+					}
+
 					try {
-						toolResult = toolCallback.call(toolInputArguments, toolContext);
+						toolResult = acceptsToolContext ? toolCallback.call(toolInputArguments, toolContext)
+								: toolCallback.call(toolInputArguments);
 					}
 					catch (ToolExecutionException ex) {
 						toolResult = this.toolExecutionExceptionProcessor.process(ex);

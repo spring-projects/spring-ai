@@ -89,6 +89,10 @@ public final class MethodToolCallback implements ToolCallback {
 		return this.toolMetadata;
 	}
 
+	public Method getToolMethod() {
+		return this.toolMethod;
+	}
+
 	@Override
 	public String call(String toolInput) {
 		return call(toolInput, null);
