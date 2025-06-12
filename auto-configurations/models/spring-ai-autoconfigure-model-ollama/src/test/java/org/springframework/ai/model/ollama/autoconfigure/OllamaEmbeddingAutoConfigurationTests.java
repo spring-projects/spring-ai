@@ -45,7 +45,7 @@ public class OllamaEmbeddingAutoConfigurationTests {
 		)
 
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, OllamaChatAutoConfiguration.class))
+					RestClientAutoConfiguration.class, OllamaEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OllamaEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OllamaConnectionProperties.class);
