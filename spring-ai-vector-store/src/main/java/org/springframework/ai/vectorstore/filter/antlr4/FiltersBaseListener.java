@@ -284,6 +284,28 @@ public class FiltersBaseListener implements FiltersListener {
 	 * </p>
 	 */
 	@Override
+	public void enterLongConstant(FiltersParser.LongConstantContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitLongConstant(FiltersParser.LongConstantContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
 	public void enterIntegerConstant(FiltersParser.IntegerConstantContext ctx) {
 	}
 
