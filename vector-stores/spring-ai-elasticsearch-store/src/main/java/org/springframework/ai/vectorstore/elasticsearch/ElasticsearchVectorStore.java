@@ -329,14 +329,24 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		try {
 			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(this.options.getIndexName())
-					.mappings(map -> map.properties(this.options.getEmbeddingFieldName(),
-							p -> p.denseVector(dv -> dv
-								.similarity(DenseVectorSimilarity.valueOf(this.options.getSimilarity().toString()))
-								.dims(this.options.getDimensions())))));
+					.mappings(
+							map -> map.properties(this.options.getEmbeddingFieldName(),
+									p -> p.denseVector(dv -> dv
+										.similarity(parseSimilarity(this.options.getSimilarity().toString()))
+										.dims(this.options.getDimensions())))));
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private DenseVectorSimilarity parseSimilarity(String similarity) {
+		for (DenseVectorSimilarity sim : DenseVectorSimilarity.values()) {
+			if (sim.jsonValue().equalsIgnoreCase(similarity)) {
+				return sim;
+			}
+		}
+		throw new IllegalArgumentException("Unsupported similarity: " + similarity);
 	}
 
 	@Override
