@@ -86,19 +86,18 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 
 		// 2. Advise the request messages list.
-		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
 		List<Message> processedMessages = new ArrayList<>();
+		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
 		if (StringUtils.hasText(systemMessage.getText())) {
 			processedMessages.add(systemMessage);
 		}
 		processedMessages.addAll(memoryMessages);
-		List<Message> instructions = chatClientRequest.prompt()
-			.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() != MessageType.SYSTEM)
-			.toList();
-		processedMessages.addAll(instructions);
-
+		// Add non-system messages from instructions
+		for (Message message : chatClientRequest.prompt().getInstructions()) {
+			if (message.getMessageType() != MessageType.SYSTEM) {
+				processedMessages.add(message);
+			}
+		}
 		// 3. Create a new request with the advised messages.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
