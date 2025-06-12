@@ -90,6 +90,7 @@ import org.springframework.util.StringUtils;
  * @author Alexandros Pappas
  * @author Jonghoon Park
  * @author Soby Chacko
+ * @author lambochen
  * @since 1.0.0
  */
 public class AnthropicChatModel implements ChatModel {
@@ -174,6 +175,10 @@ public class AnthropicChatModel implements ChatModel {
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalCall(prompt, previousChatResponse, 1);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -203,7 +208,7 @@ public class AnthropicChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -215,7 +220,7 @@ public class AnthropicChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, iterations + 1);
 			}
 		}
 
@@ -236,6 +241,10 @@ public class AnthropicChatModel implements ChatModel {
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalStream(prompt, previousChatResponse, 1);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -260,7 +269,8 @@ public class AnthropicChatModel implements ChatModel {
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse) && chatResponse.hasFinishReasons(Set.of("tool_use"))) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse, iterations)
+						&& chatResponse.hasFinishReasons(Set.of("tool_use"))) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.defer(() -> {
@@ -274,7 +284,7 @@ public class AnthropicChatModel implements ChatModel {
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse);
+									chatResponse, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
@@ -437,6 +447,9 @@ public class AnthropicChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setInternalToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionMaxIterations(),
+							defaultOptions.getInternalToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -447,6 +460,8 @@ public class AnthropicChatModel implements ChatModel {
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions
+				.setInternalToolExecutionMaxIterations(this.defaultOptions.getInternalToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
