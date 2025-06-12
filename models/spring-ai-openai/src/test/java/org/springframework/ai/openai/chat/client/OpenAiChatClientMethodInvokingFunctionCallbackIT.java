@@ -37,7 +37,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
@@ -166,12 +165,12 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 	}
 
 	@Test
-	void methodGetWeatherNonStaticButWithToolContext() {
+	void methodGetWeatherToolContextButMissingContextArgument() {
 
 		TestFunctionClass targetObject = new TestFunctionClass();
 
-		var toolMethod = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherNonStatic", String.class,
-				Unit.class);
+		var toolMethod = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherWithContext", String.class,
+				Unit.class, ToolContext.class);
 
 		// @formatter:off
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
@@ -183,34 +182,10 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
 					.build())
-				.toolContext(Map.of("tool-context", "value"))
 				.call()
 				.content())
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("ToolContext is required by the method as an argument");
-		// @formatter:on
-	}
-
-	@Test
-	void methodGetWeatherToolContextButWithoutToolContext() {
-
-		TestFunctionClass targetObject = new TestFunctionClass();
-
-		var toolMethod = ReflectionUtils.findMethod(TestFunctionClass.class, "getWeatherWithContext", String.class,
-				Unit.class, ToolContext.class);
-
-		// @formatter:off
-		assertThatCode(() ->ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.toolCallbacks(MethodToolCallback.builder()
-						.toolDefinition(ToolDefinitions.builder(toolMethod)
-								.description("Get the weather in location")
-								.build())
-						.toolMethod(toolMethod)
-						.toolObject(targetObject)
-						.build())
-				.call()
-				.content()).doesNotThrowAnyException();
 		// @formatter:on
 	}
 
