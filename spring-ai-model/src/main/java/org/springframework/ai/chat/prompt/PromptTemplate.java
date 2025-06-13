@@ -209,17 +209,17 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		return new Builder();
 	}
 
-	public static final class Builder {
+	public static class Builder {
 
-		private String template;
+		protected String template;
 
-		private Resource resource;
+		protected Resource resource;
 
-		private Map<String, Object> variables = new HashMap<>();
+		protected Map<String, Object> variables = new HashMap<>();
 
-		private TemplateRenderer renderer = DEFAULT_TEMPLATE_RENDERER;
+		protected TemplateRenderer renderer = DEFAULT_TEMPLATE_RENDERER;
 
-		private Builder() {
+		protected Builder() {
 		}
 
 		public Builder template(String template) {
