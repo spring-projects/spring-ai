@@ -378,7 +378,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	public List<Double> embeddingDistance(String query) {
 		return this.jdbcTemplate.query(
 				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + getFullyQualifiedTableName(),
-				new RowMapper<Double>() {
+				new RowMapper<>() {
 
 					@Override
 					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {

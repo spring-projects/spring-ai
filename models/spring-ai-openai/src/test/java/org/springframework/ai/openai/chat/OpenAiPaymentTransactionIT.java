@@ -85,7 +85,7 @@ public class OpenAiPaymentTransactionIT {
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
 			.call()
-			.entity(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
+			.entity(new ParameterizedTypeReference<>() {
 
 			});
 

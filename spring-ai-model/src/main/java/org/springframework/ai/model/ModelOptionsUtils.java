@@ -74,11 +74,11 @@ public abstract class ModelOptionsUtils {
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
-	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
+	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
 
 	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
-	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
+	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 
 	};
 
