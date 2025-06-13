@@ -249,6 +249,7 @@ public class OllamaChatModel implements ChatModel {
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
 					generationMetadata = ChatGenerationMetadata.builder()
 						.finishReason(ollamaResponse.doneReason())
+						.metadata("thinking", ollamaResponse.message().thinking())
 						.build();
 				}
 
