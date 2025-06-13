@@ -77,7 +77,7 @@ class Neo4jChatMemoryRepositoryIT {
 	void setUp() {
 		this.driver = Neo4jDriverFactory.create(neo4jContainer.getBoltUrl());
 		this.config = Neo4jChatMemoryRepositoryConfig.builder().withDriver(this.driver).build();
-		this.chatMemoryRepository = new Neo4jChatMemoryRepository(this.config);
+		this.chatMemoryRepository = Neo4jChatMemoryRepository.create(this.config);
 	}
 
 	@AfterEach

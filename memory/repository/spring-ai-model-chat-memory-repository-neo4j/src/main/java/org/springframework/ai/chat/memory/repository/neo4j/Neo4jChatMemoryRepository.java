@@ -56,6 +56,10 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 		this.config = config;
 	}
 
+	public static Neo4jChatMemoryRepository create(Neo4jChatMemoryRepositoryConfig conf) {
+		return new Neo4jChatMemoryRepository(conf);
+	}
+
 	@Override
 	public List<String> findConversationIds() {
 		return this.config.getDriver()

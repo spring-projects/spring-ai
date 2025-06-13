@@ -53,7 +53,7 @@ public class Neo4jChatMemoryRepositoryAutoConfiguration {
 			.withToolResponseLabel(properties.getToolResponseLabel())
 			.withDriver(driver);
 
-		return new Neo4jChatMemoryRepository(builder.build());
+		return Neo4jChatMemoryRepository.create(builder.build());
 	}
 
 }
