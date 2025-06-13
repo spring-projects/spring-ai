@@ -356,7 +356,9 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new MistralAiEmbeddingModel(new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY")));
+			return MistralAiEmbeddingModel.builder()
+				.mistralAiApi(MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build())
+				.build();
 		}
 
 	}
