@@ -641,7 +641,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ----
 ChatModel chatModel = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools("currentWeather")
+    .defaultToolNames("currentWeather")
     .build();
 ----
 
