@@ -316,7 +316,7 @@ The `ToolMetadata.Builder` allows you to build a `ToolMetadata` instance and def
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
 ToolCallback toolCallback = MethodToolCallback.builder()
-    .toolDefinition(ToolDefinitions.builder(method)
+    .toolDefinition(ToolDefinitions.builder()
             .description("Get the current date and time in the user's timezone")
             .build())
     .toolMethod(method)
