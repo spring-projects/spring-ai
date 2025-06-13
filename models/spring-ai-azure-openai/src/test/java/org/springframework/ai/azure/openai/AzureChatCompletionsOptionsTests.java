@@ -1,17 +1,14 @@
 /*
  * Copyright 2023-2024 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.ai.azure.openai;
@@ -60,7 +57,7 @@ public class AzureChatCompletionsOptionsTests {
 			.frequencyPenalty(696.9)
 			.presencePenalty(969.6)
 			.logitBias(Map.of("foo", 1))
-			.maxTokens(969)
+			.maxCompletionTokens(969)
 			.N(69)
 			.stop(List.of("foo", "bar"))
 			.topP(0.69)
@@ -86,7 +83,7 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getFrequencyPenalty()).isEqualTo(696.9);
 		assertThat(requestOptions.getPresencePenalty()).isEqualTo(969.6);
 		assertThat(requestOptions.getLogitBias()).isEqualTo(Map.of("foo", 1));
-		assertThat(requestOptions.getMaxTokens()).isEqualTo(969);
+		assertThat(requestOptions.getMaxCompletionTokens()).isEqualTo(969);
 		assertThat(requestOptions.getN()).isEqualTo(69);
 		assertThat(requestOptions.getStop()).isEqualTo(List.of("foo", "bar"));
 		assertThat(requestOptions.getTopP()).isEqualTo(0.69);
@@ -106,7 +103,7 @@ public class AzureChatCompletionsOptionsTests {
 			.frequencyPenalty(100.0)
 			.presencePenalty(100.0)
 			.logitBias(Map.of("foo", 2))
-			.maxTokens(100)
+			.maxCompletionTokens(100)
 			.N(100)
 			.stop(List.of("foo", "bar"))
 			.topP(0.111)
@@ -127,7 +124,7 @@ public class AzureChatCompletionsOptionsTests {
 		assertThat(requestOptions.getFrequencyPenalty()).isEqualTo(100.0);
 		assertThat(requestOptions.getPresencePenalty()).isEqualTo(100.0);
 		assertThat(requestOptions.getLogitBias()).isEqualTo(Map.of("foo", 2));
-		assertThat(requestOptions.getMaxTokens()).isEqualTo(100);
+		assertThat(requestOptions.getMaxCompletionTokens()).isEqualTo(100);
 		assertThat(requestOptions.getN()).isEqualTo(100);
 		assertThat(requestOptions.getStop()).isEqualTo(List.of("foo", "bar"));
 		assertThat(requestOptions.getTopP()).isEqualTo(0.111);
@@ -144,7 +141,7 @@ public class AzureChatCompletionsOptionsTests {
 	public void createChatOptionsWithPresencePenaltyAndFrequencyPenalty(Double presencePenalty,
 			Double frequencyPenalty) {
 		var options = AzureOpenAiChatOptions.builder()
-			.maxTokens(800)
+			.maxCompletionTokens(800)
 			.temperature(0.7)
 			.topP(0.95)
 			.presencePenalty(presencePenalty)
