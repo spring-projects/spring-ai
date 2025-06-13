@@ -117,7 +117,7 @@ class VertexAiGeminiChatModelIT {
 	@Test
 	@Disabled
 	void testSafetySettings() {
-		List<VertexAiGeminiSafetySetting> safetySettings = List.of(new VertexAiGeminiSafetySetting.Builder()
+		List<VertexAiGeminiSafetySetting> safetySettings = List.of(VertexAiGeminiSafetySetting.builder()
 			.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
 			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
 			.build());
