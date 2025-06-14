@@ -244,6 +244,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 			.provider(ZhiPuApiConstants.PROVIDER_NAME)
 			.build();
 
+		// @formatter:off
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
@@ -262,13 +263,11 @@ public class ZhiPuAiChatModel implements ChatModel {
 				List<Choice> choices = chatCompletion.choices();
 
 				List<Generation> generations = choices.stream().map(choice -> {
-			// @formatter:off
 					Map<String, Object> metadata = Map.of(
 						"id", chatCompletion.id(),
 						"role", choice.message().role() != null ? choice.message().role().name() : "",
 						"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
 					);
-					// @formatter:on
 					return buildGeneration(choice, metadata);
 				}).toList();
 
@@ -278,6 +277,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 				return chatResponse;
 			});
+		// @formatter:on
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
@@ -326,12 +326,13 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
+			// @formatter:off
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
 				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
 					try {
 						String id = chatCompletion2.id();
 
-				// @formatter:off
+				
 						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(id, choice.message().role().name());
@@ -353,8 +354,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 					}
 
 				}));
-
-			// @formatter:off
+			
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
 							return Flux.defer(() -> {
