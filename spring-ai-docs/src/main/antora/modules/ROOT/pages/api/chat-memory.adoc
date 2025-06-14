@@ -296,8 +296,9 @@ If you'd rather create the `Neo4jChatMemoryRepository` manually, you can do so b
 
 [source,java]
 ----
-ChatMemoryRepository chatMemoryRepository = Neo4jChatMemoryRepository
-    .create(Neo4jChatMemoryRepositoryConfig.builder().withDriver(driver).build());
+ChatMemoryRepository chatMemoryRepository = Neo4jChatMemoryRepository.builder()
+    .driver(driver)
+    .build();
 
 ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .chatMemoryRepository(chatMemoryRepository)
