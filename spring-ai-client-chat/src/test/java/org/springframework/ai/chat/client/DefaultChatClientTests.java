@@ -48,6 +48,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
@@ -60,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link DefaultChatClient}.
@@ -122,6 +124,51 @@ class DefaultChatClientTests {
 			.prompt(prompt);
 		assertThat(spec.getMessages()).isEmpty();
 		assertThat(spec.getChatOptions()).isEqualTo(chatOptions);
+	}
+
+	@Test
+	void testMutate() {
+		var media = mock(Media.class);
+		var toolCallback = mock(ToolCallback.class);
+		var advisor = mock(Advisor.class);
+		var templateRenderer = mock(TemplateRenderer.class);
+		var chatOptions = mock(ChatOptions.class);
+		var copyChatOptions = mock(ChatOptions.class);
+		when(chatOptions.copy()).thenReturn(copyChatOptions);
+		var toolContext = new HashMap<String, Object>();
+		var userMessage1 = mock(UserMessage.class);
+		var userMessage2 = mock(UserMessage.class);
+
+		DefaultChatClientBuilder defaultChatClientBuilder = new DefaultChatClientBuilder(mock(ChatModel.class));
+		defaultChatClientBuilder.addMessages(List.of(userMessage1, userMessage2));
+		ChatClient originalChatClient = defaultChatClientBuilder.defaultAdvisors(advisor)
+			.defaultOptions(chatOptions)
+			.defaultUser(u -> u.text("original user {userParams}").param("userParams", "user value2").media(media))
+			.defaultSystem(s -> s.text("original system {sysParams}").param("sysParams", "system value1"))
+			.defaultTemplateRenderer(templateRenderer)
+			.defaultToolNames("toolName1", "toolName2")
+			.defaultToolCallbacks(toolCallback)
+			.defaultToolContext(toolContext)
+			.build();
+		var originalSpec = (DefaultChatClient.DefaultChatClientRequestSpec) originalChatClient.prompt();
+
+		ChatClient mutateChatClient = originalChatClient.mutate().build();
+		var mutateSpec = (DefaultChatClient.DefaultChatClientRequestSpec) mutateChatClient.prompt();
+
+		assertThat(mutateSpec).isNotSameAs(originalSpec);
+
+		assertThat(mutateSpec.getMessages()).hasSize(2).containsOnly(userMessage1, userMessage2);
+		assertThat(mutateSpec.getAdvisors()).hasSize(1).containsOnly(advisor);
+		assertThat(mutateSpec.getChatOptions()).isEqualTo(copyChatOptions);
+		assertThat(mutateSpec.getUserText()).isEqualTo("original user {userParams}");
+		assertThat(mutateSpec.getUserParams()).containsEntry("userParams", "user value2");
+		assertThat(mutateSpec.getMedia()).hasSize(1).containsOnly(media);
+		assertThat(mutateSpec.getSystemText()).isEqualTo("original system {sysParams}");
+		assertThat(mutateSpec.getSystemParams()).containsEntry("sysParams", "system value1");
+		assertThat(mutateSpec.getTemplateRenderer()).isEqualTo(templateRenderer);
+		assertThat(mutateSpec.getToolNames()).containsExactly("toolName1", "toolName2");
+		assertThat(mutateSpec.getToolCallbacks()).containsExactly(toolCallback);
+		assertThat(mutateSpec.getToolContext()).isEqualTo(toolContext);
 	}
 
 	@Test
