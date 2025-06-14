@@ -31,6 +31,10 @@ public class ToolCallingProperties {
 
 	private final Observations observations = new Observations();
 
+	public Observations getObservations() {
+		return this.observations;
+	}
+
 	/**
 	 * If true, tool calling errors are thrown as exceptions for the caller to handle. If
 	 * false, errors are converted to messages and sent back to the AI model, allowing it
