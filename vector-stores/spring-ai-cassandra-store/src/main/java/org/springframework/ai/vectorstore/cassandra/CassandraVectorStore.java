@@ -68,7 +68,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -267,11 +266,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		var futures = new CompletableFuture[documents.size()];
-
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
 
 		int i = 0;
 		for (Document d : documents) {

@@ -112,13 +112,13 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		int count = 1;
 		for (Document document : documents) {
 			logger.info("[{}/{}] Calling EmbeddingModel for document id = {}", count++, documents.size(),
 					document.getId());
 			String content = document.getText().replaceAll("\\s+", " ");
-			String embedding = getEmbedding(document);
+			String embedding = getEmbedding(embeddings.get(documents.indexOf(document)));
 			this.repository.save(this.tableName, document.getId(), embedding, content);
 		}
 		logger.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
@@ -171,8 +171,8 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 			.collect(Collectors.joining(", ")) + "]";
 	}
 
-	private String getEmbedding(Document document) {
-		return "[" + EmbeddingUtils.toList(this.embeddingModel.embed(document))
+	private String getEmbedding(float[] embedding) {
+		return "[" + EmbeddingUtils.toList(embedding)
 			.stream()
 			.map(String::valueOf)
 			.collect(Collectors.joining(", ")) + "]";

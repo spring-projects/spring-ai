@@ -102,7 +102,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		Objects.requireNonNull(documents, "Documents list cannot be null");
 		if (documents.isEmpty()) {
 			throw new IllegalArgumentException("Documents list cannot be empty");
@@ -110,9 +110,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
-			float[] embedding = this.embeddingModel.embed(document);
 			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(), document.getText(),
-					document.getMetadata(), embedding);
+					document.getMetadata(), embeddings.get(documents.indexOf(document)));
 			this.store.put(document.getId(), storeContent);
 		}
 	}

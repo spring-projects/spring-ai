@@ -29,11 +29,8 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -83,12 +80,10 @@ public class PgVectorStoreTests {
 
 		// Testing with 9989 documents
 		var documents = Collections.nCopies(9989, new Document("foo"));
+		var embeddings = Collections.nCopies(9989, new float[] { 0.1f, 0.2f, 0.3f });
 
 		// When
-		pgVectorStore.doAdd(documents);
-
-		// Then
-		verify(embeddingModel, only()).embed(eq(documents), any(), any());
+		pgVectorStore.doAdd(documents, embeddings);
 
 		var batchUpdateCaptor = ArgumentCaptor.forClass(BatchPreparedStatementSetter.class);
 		verify(jdbcTemplate, times(10)).batchUpdate(anyString(), batchUpdateCaptor.capture());

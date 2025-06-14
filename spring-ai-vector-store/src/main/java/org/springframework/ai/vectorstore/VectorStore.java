@@ -51,6 +51,19 @@ public interface VectorStore extends DocumentWriter {
 	 */
 	void add(List<Document> documents);
 
+	/**
+	 * Adds list of {@link Document}s with their corresponding embeddings to the vector store.
+	 * @param documents the list of documents to store. Throws an exception if the
+	 * underlying provider checks for duplicate IDs.
+	 * @param embeddings the list of float[] embeddings corresponding to each document.
+	 * @throws IllegalArgumentException if there is:
+	 * <ul>
+	 * 	<li> A mismatch between documents and embeddings
+	 * 	<li> Dimensional inconsistency between embeddings
+	 * 	<li> Embeddings contain {@code NaN}, {@code Infinity}, or null/empty vectors.
+	 */
+	void add(List<Document> documents, List<float[]> embeddings);
+
 	@Override
 	default void accept(List<Document> documents) {
 		add(documents);

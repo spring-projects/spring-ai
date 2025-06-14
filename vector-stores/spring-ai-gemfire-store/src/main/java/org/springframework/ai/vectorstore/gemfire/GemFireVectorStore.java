@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -200,9 +199,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		UploadRequest upload = new UploadRequest(documents.stream()
 			.map(document -> new UploadRequest.Embedding(document.getId(), embeddings.get(documents.indexOf(document)),
 					DOCUMENT_FIELD, document.getText(), document.getMetadata()))

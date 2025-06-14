@@ -23,11 +23,13 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Abstract base class for {@link VectorStore} implementations that provides observation
@@ -82,7 +84,29 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 		VectorStoreObservationDocumentation.AI_VECTOR_STORE
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
-			.observe(() -> this.doAdd(documents));
+			.observe(() -> this.doAdd(documents, this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+						this.batchingStrategy)));
+	}
+
+	/**
+	 * Create a new {@link AbstractObservationVectorStore} instance.
+	 * @param documents the documents to add
+	 * @param embeddings the embeddings corresponding to each document
+	 */
+	@Override
+	public void add(List<Document> documents, List<float[]> embeddings) {
+
+		VectorStoreObservationContext observationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.ADD.value())
+			.build();
+
+		VectorStoreObservationDocumentation.AI_VECTOR_STORE
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				this.validateEmbeddings(documents, embeddings);
+				this.doAdd(documents, embeddings);
+			});
 	}
 
 	@Override
@@ -132,8 +156,9 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	/**
 	 * Perform the actual add operation.
 	 * @param documents the documents to add
+	 * @param embeddings the embeddings corresponding to each document
 	 */
-	public abstract void doAdd(List<Document> documents);
+	public abstract void doAdd(List<Document> documents, List<float[]> embeddings);
 
 	/**
 	 * Perform the actual delete operation.
@@ -166,5 +191,56 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * @return the observation context builder
 	 */
 	public abstract VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName);
+
+	/**
+	 * Validates a list of documents and their corresponding embeddings.
+	 *
+	 * @param documents The list of documents. Must not be null.
+	 * @param embeddings The list of float[] embeddings corresponding to each document.
+	 * @throws IllegalArgumentException if validation fails for:
+	 * <ul>
+	 * 	<li> A mismatch between documents and embeddings
+	 * 	<li> Dimensional inconsistency between embeddings
+	 * 	<li> Embeddings contain {@code NaN}, {@code Infinity}, or null/empty vectors.
+	 */
+	protected void validateEmbeddings(List<Document> documents, List<float[]> embeddings) {
+		Assert.notNull(documents, "Documents list cannot be null.");
+		Assert.notNull(embeddings, "Embeddings list cannot be null.");
+
+		int docSize = documents.size();
+		int embSize = embeddings.size();
+
+		if (docSize != embSize) {
+			throw new IllegalArgumentException(
+					String.format("Mismatch between documents (%d) and embeddings (%d).", docSize, embSize));
+		}
+		if (embSize == 0) return;
+
+		float[] first = embeddings.get(0);
+		if (first == null || first.length == 0) {
+			throw new IllegalArgumentException("First embedding is null or empty.");
+		}
+
+		final int expectedDim = first.length;
+
+		for (int i = 0; i < embSize; i++) {
+			float[] emb = embeddings.get(i);
+
+			if (emb == null) {
+				throw new IllegalArgumentException("Embedding at index " + i + " is null.");
+			}
+			if (emb.length != expectedDim) {
+				throw new IllegalArgumentException(String.format(
+						"Embedding at index %d has dimension %d, expected %d.", i, emb.length, expectedDim));
+			}
+
+			for (float val : emb) {
+				if (Float.isNaN(val) || Float.isInfinite(val)) {
+					throw new IllegalArgumentException(String.format(
+							"Embedding at index %d contains NaN or Infinite value.", i));
+				}
+			}
+		}
+	}
 
 }

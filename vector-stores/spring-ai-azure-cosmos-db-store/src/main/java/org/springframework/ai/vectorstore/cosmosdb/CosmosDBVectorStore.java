@@ -60,7 +60,6 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -226,11 +225,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-
-		// Batch the documents based on the batching strategy
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID

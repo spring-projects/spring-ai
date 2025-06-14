@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -132,29 +131,18 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	}
 
 	/**
-	 * Adds a list of documents to the vector store based on the namespace.
+	 * Adds a list of documents to the vector store.
 	 * @param documents The list of documents to be added.
-	 * @param namespace The namespace to add the documents to
 	 */
-	public void add(List<Document> documents, String namespace) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
+	@Override
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		List<VectorWithUnsignedIndices> upsertVectors = new ArrayList<>();
 		for (Document document : documents) {
 			upsertVectors.add(io.pinecone.commons.IndexInterface.buildUpsertVectorWithUnsignedIndices(document.getId(),
 					EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))), null, null,
 					metadataToStruct(document)));
 		}
-		this.pinecone.getIndexConnection(this.pineconeIndexName).upsert(upsertVectors, namespace);
-	}
-
-	/**
-	 * Adds a list of documents to the vector store.
-	 * @param documents The list of documents to be added.
-	 */
-	@Override
-	public void doAdd(List<Document> documents) {
-		add(documents, this.pineconeNamespace);
+		this.pinecone.getIndexConnection(this.pineconeIndexName).upsert(upsertVectors, this.pineconeNamespace);
 	}
 
 	/**
