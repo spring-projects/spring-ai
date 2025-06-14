@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -587,35 +588,27 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.name())
 			.build();
 
-		boolean isFunctionCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
+		var assistantToolCalls = candidate.getContent()
+			.getPartsList()
+			.stream()
+			.filter(Part::hasFunctionCall)
+			.map(part -> {
+				FunctionCall functionCall = part.getFunctionCall();
+				var functionName = functionCall.getName();
+				String functionArguments = structToJson(functionCall.getArgs());
+				return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
+			})
+			.toList();
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.getContent()
-				.getPartsList()
-				.stream()
-				.filter(part -> part.hasFunctionCall())
-				.map(part -> {
-					FunctionCall functionCall = part.getFunctionCall();
-					var functionName = functionCall.getName();
-					String functionArguments = structToJson(functionCall.getArgs());
-					return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
-				})
-				.toList();
+		var text = candidate.getContent()
+			.getPartsList()
+			.stream()
+			.filter(Part::hasText)
+			.map(Part::getText)
+			.collect(Collectors.joining(System.lineSeparator()));
 
-			AssistantMessage assistantMessage = new AssistantMessage("", messageMetadata, assistantToolCalls);
-
-			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
-		}
-		else {
-			List<Generation> generations = candidate.getContent()
-				.getPartsList()
-				.stream()
-				.map(part -> new AssistantMessage(part.getText(), messageMetadata))
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
-
-			return generations;
-		}
+		return List.of(new Generation(new AssistantMessage(text, messageMetadata, assistantToolCalls),
+				chatGenerationMetadata));
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(Usage usage) {
