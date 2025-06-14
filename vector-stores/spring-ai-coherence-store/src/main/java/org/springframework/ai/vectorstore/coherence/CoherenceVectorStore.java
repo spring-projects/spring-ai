@@ -166,12 +166,12 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public void doAdd(final List<Document> documents) {
+	public void doAdd(final List<Document> documents, List<float[]> embeddings) {
 		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(documents.size() / 0.75f));
 		for (Document doc : documents) {
 			var id = toChunkId(doc.getId());
 			var chunk = new DocumentChunk(doc.getText(), doc.getMetadata(),
-					toFloat32Vector(this.embeddingModel.embed(doc)));
+					toFloat32Vector(embeddings.get(documents.indexOf(doc))));
 			chunks.put(id, chunk);
 		}
 		this.documentChunks.putAll(chunks);
