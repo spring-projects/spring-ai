@@ -34,6 +34,8 @@ public final class SpringAIModelProperties {
 
 	public static final String IMAGE_MODEL = MODEL_PREFIX + ".image";
 
+	public static final String IMAGE_EDIT_MODEL = MODEL_PREFIX + ".image.edit";
+
 	public static final String AUDIO_TRANSCRIPTION_MODEL = MODEL_PREFIX + ".audio.transcription";
 
 	public static final String AUDIO_SPEECH_MODEL = MODEL_PREFIX + ".audio.speech";
