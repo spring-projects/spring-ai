@@ -27,6 +27,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.util.ParsingUtils;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -42,7 +43,7 @@ public final class ToolUtils {
 
 	public static String getToolName(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		if (tool == null) {
 			return method.getName();
 		}
@@ -56,7 +57,7 @@ public final class ToolUtils {
 
 	public static String getToolDescription(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		if (tool == null) {
 			return ParsingUtils.reConcatenateCamelCase(method.getName(), " ");
 		}
@@ -65,13 +66,13 @@ public final class ToolUtils {
 
 	public static boolean getToolReturnDirect(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		return tool != null && tool.returnDirect();
 	}
 
 	public static ToolCallResultConverter getToolCallResultConverter(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		if (tool == null) {
 			return new DefaultToolCallResultConverter();
 		}
