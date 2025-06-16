@@ -36,6 +36,7 @@ import static org.springframework.ai.chat.messages.AssistantMessage.*;
  * Unit tests for {@link ChatResponse}.
  *
  * @author Thomas Vitale
+ * @author Heonwoo Kim
  */
 class ChatResponseTests {
 
