@@ -188,6 +188,7 @@ class DefaultToolCallingChatOptionsTests {
 			.stopSequences(List.of("stop"))
 			.topK(3)
 			.topP(0.9)
+			.think(true)
 			.build();
 
 		assertThat(options).satisfies(o -> {
@@ -203,6 +204,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(o.getStopSequences()).containsExactly("stop");
 			assertThat(o.getTopK()).isEqualTo(3);
 			assertThat(o.getTopP()).isEqualTo(0.9);
+			assertThat(o.isThink()).isEqualTo(true);
 		});
 	}
 

@@ -53,6 +53,7 @@ public class ChatOptionsBuilderTests {
 			.topP(1.0)
 			.topK(40)
 			.stopSequences(List.of("stop1", "stop2"))
+			.think(true)
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("gpt-4");
@@ -60,6 +61,7 @@ public class ChatOptionsBuilderTests {
 		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isEqualTo(1.0);
 		assertThat(options.getTopK()).isEqualTo(40);
+		assertThat(options.isThink()).isEqualTo(true);
 		assertThat(options.getStopSequences()).containsExactly("stop1", "stop2");
 	}
 
@@ -82,6 +84,7 @@ public class ChatOptionsBuilderTests {
 			.temperature(0.7)
 			.topP(1.0)
 			.topK(40)
+			.think(true)
 			.stopSequences(List.of("stop1", "stop2"))
 			.build();
 
@@ -107,6 +110,7 @@ public class ChatOptionsBuilderTests {
 			.temperature(0.7)
 			.topP(1.0)
 			.topK(40)
+			.think(true)
 			.stopSequences(List.of("stop1", "stop2"))
 			.toolNames(Set.of("function1", "function2"))
 			.toolCallbacks(List.of(callback))
@@ -121,6 +125,7 @@ public class ChatOptionsBuilderTests {
 		assertThat(chatOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(chatOptions.getTopP()).isEqualTo(1.0);
 		assertThat(chatOptions.getTopK()).isEqualTo(40);
+		assertThat(chatOptions.isThink()).isEqualTo(true);
 		assertThat(chatOptions.getStopSequences()).containsExactly("stop1", "stop2");
 	}
 

@@ -70,6 +70,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	@Nullable
 	private Double topP;
 
+	@Nullable
+	private Boolean think;
+
 	@Override
 	public List<ToolCallback> getToolCallbacks() {
 		return List.copyOf(this.toolCallbacks);
@@ -199,6 +202,16 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	public Boolean isThink() {
+		return this.think;
+	}
+
+	public void setThink(@Nullable Boolean think) {
+		this.think = think;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends ChatOptions> T copy() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
@@ -322,6 +335,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public ToolCallingChatOptions.Builder topP(@Nullable Double topP) {
 			this.options.setTopP(topP);
+			return this;
+		}
+
+		@Override
+		public ToolCallingChatOptions.Builder think(Boolean think) {
+			this.options.setThink(think);
 			return this;
 		}
 

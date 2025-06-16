@@ -220,6 +220,9 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		Builder topP(@Nullable Double topP);
 
 		@Override
+		Builder think(@Nullable Boolean think);
+
+		@Override
 		ToolCallingChatOptions build();
 
 	}

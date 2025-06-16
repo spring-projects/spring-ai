@@ -84,6 +84,15 @@ public interface ChatOptions extends ModelOptions {
 	Double getTopP();
 
 	/**
+	 * Returns the think flag to use for the chat.
+	 * @return the think flag to use for the chat
+	 */
+	@Nullable
+	default Boolean isThink() {
+		return false;
+	}
+
+	/**
 	 * Returns a copy of this {@link ChatOptions}.
 	 * @return a copy of this {@link ChatOptions}
 	 */
@@ -157,6 +166,13 @@ public interface ChatOptions extends ModelOptions {
 		 * @return the builder.
 		 */
 		Builder topP(Double topP);
+
+		/**
+		 * Builds with the think to use for the chat.
+		 * @param think Whether to enable thinking mode
+		 * @return the builder.
+		 */
+		Builder think(Boolean think);
 
 		/**
 		 * Build the {@link ChatOptions}.
