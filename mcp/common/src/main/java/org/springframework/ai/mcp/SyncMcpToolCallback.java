@@ -16,13 +16,11 @@
 
 package org.springframework.ai.mcp;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
-
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +30,6 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
-import org.springframework.core.log.LogAccessor;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -118,22 +115,24 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String functionInput) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		// Note that we use the original tool name here, not the adapted one from
-		// getToolDefinition
+
+		CallToolResult response;
 		try {
-			CallToolResult response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
-			if (response.isError() != null && response.isError()) {
-				logger.error("Error calling tool: {}", response.content());
-				throw new ToolExecutionException(this.getToolDefinition(),
-						new IllegalStateException("Error calling tool: " + response.content()));
-			}
-			return ModelOptionsUtils.toJsonString(response.content());
+			// Note that we use the original tool name here, not the adapted one from
+			// getToolDefinition
+			response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
 		}
 		catch (Exception ex) {
 			logger.error("Exception while tool calling: ", ex);
-			throw new ToolExecutionException(this.getToolDefinition(), ex.getCause());
+			throw new ToolExecutionException(this.getToolDefinition(), ex);
 		}
 
+		if (response.isError() != null && response.isError()) {
+			logger.error("Error calling tool: {}", response.content());
+			throw new ToolExecutionException(this.getToolDefinition(),
+					new IllegalStateException("Error calling tool: " + response.content()));
+		}
+		return ModelOptionsUtils.toJsonString(response.content());
 	}
 
 	@Override
