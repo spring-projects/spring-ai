@@ -73,6 +73,11 @@ public class DefaultChatOptionsBuilder implements ChatOptions.Builder {
 		return this;
 	}
 
+	public DefaultChatOptionsBuilder think(Boolean think) {
+		this.options.setThink(think);
+		return this;
+	}
+
 	public ChatOptions build() {
 		return this.options.copy();
 	}

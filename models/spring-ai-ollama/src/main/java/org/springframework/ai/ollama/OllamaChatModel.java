@@ -507,7 +507,7 @@ public class OllamaChatModel implements ChatModel {
 			.stream(stream)
 			.messages(ollamaMessages)
 			.options(requestOptions)
-			.think(requestOptions.getThink());
+			.think(requestOptions.isThink());
 
 		if (requestOptions.getFormat() != null) {
 			requestBuilder.format(requestOptions.getFormat());
