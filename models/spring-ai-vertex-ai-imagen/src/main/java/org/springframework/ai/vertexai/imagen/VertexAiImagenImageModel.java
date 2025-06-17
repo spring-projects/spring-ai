@@ -148,13 +148,13 @@ public class VertexAiImagenImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		VertexAiImagenImageOptions finalOptions = mergedOptions(imagePrompt);
+		ImagePrompt finalPrompt = mergedPrompt(imagePrompt);
+		VertexAiImagenImageOptions finalOptions = (VertexAiImagenImageOptions) finalPrompt.getOptions();
 
 		var observationContext = ImageModelObservationContext.builder()
-				.imagePrompt(imagePrompt)
-				.provider(AiProvider.VERTEX_AI.value())
-				.requestOptions(finalOptions)
-				.build();
+			.imagePrompt(finalPrompt)
+			.provider(AiProvider.VERTEX_AI.value())
+			.build();
 
 		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
 				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -164,7 +164,7 @@ public class VertexAiImagenImageModel implements ImageModel {
 
 					EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
 
-					PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(imagePrompt, endpointName,
+					PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(finalPrompt, endpointName,
 							finalOptions);
 
 					PredictResponse imageResponse = this.retryTemplate
@@ -175,7 +175,7 @@ public class VertexAiImagenImageModel implements ImageModel {
 						Value bytesBase64Encoded = prediction.getStructValue().getFieldsOrThrow("bytesBase64Encoded");
 						Value mimeType = prediction.getStructValue().getFieldsOrThrow("mimeType");
 						ImageGenerationMetadata metadata = new VertexAiImagenImageGenerationMetadata(
-								imagePrompt.getInstructions().get(0).getText(), finalOptions.getModel(),
+								finalPrompt.getInstructions().get(0).getText(), finalOptions.getModel(),
 								mimeType.getStringValue());
 						Image image = new Image(null, bytesBase64Encoded.getStringValue());
 						imageGenerationList.add(new ImageGeneration(image, metadata));
@@ -189,17 +189,16 @@ public class VertexAiImagenImageModel implements ImageModel {
 				});
 	}
 
-	private VertexAiImagenImageOptions mergedOptions(ImagePrompt imagePrompt) {
+	private ImagePrompt mergedPrompt(ImagePrompt originalPrompt) {
+		VertexAiImagenImageOptions finalOptions = this.defaultOptions;
 
-		VertexAiImagenImageOptions mergedOptions = this.defaultOptions;
-
-		if (imagePrompt.getOptions() != null) {
+		if (originalPrompt.getOptions() != null) {
 			var defaultOptionsCopy = VertexAiImagenImageOptions.builder().from(this.defaultOptions).build();
-			mergedOptions = ModelOptionsUtils.merge(imagePrompt.getOptions(), defaultOptionsCopy,
+			finalOptions = ModelOptionsUtils.merge(originalPrompt.getOptions(), defaultOptionsCopy,
 					VertexAiImagenImageOptions.class);
 		}
 
-		return mergedOptions;
+		return new ImagePrompt(originalPrompt.getInstructions(), finalOptions);
 	}
 
 	protected PredictRequest.Builder getPredictRequestBuilder(ImagePrompt imagePrompt, EndpointName endpointName,
