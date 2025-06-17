@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.lang.Nullable;
+import reactor.core.publisher.Mono;
 
 /**
  * A default implementation of {@link ToolCallResultConverter}.
@@ -47,6 +48,12 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 			logger.debug("The tool has no return type. Converting to conventional response.");
 			return JsonParser.toJson("Done");
 		}
+
+		// handle results of Mono type
+		if (result instanceof Mono<?>) {
+			result = ((Mono<?>) result).block();
+		}
+
 		if (result instanceof RenderedImage) {
 			final var buf = new ByteArrayOutputStream(1024 * 4);
 			try {
