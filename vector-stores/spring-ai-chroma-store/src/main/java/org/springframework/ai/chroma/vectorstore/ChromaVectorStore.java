@@ -135,7 +135,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 							new ChromaApi.CreateCollectionRequest(this.collectionName));
 				}
 				else {
-					throw new RuntimeException("Collection " + this.collectionName
+					throw new RuntimeException("Collection " + this.collectionName + " with the tenant: "
+							+ this.tenantName + " and the database: " + this.databaseName
 							+ " doesn't exist and won't be created as the initializeSchema is set to false.");
 				}
 			}
