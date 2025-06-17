@@ -75,7 +75,7 @@ import org.springframework.util.StringUtils;
  * <pre>{@code
  * // Create the vector store with builder
  * WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
- *     .objectClass("CustomClass")                // Optional: Custom class name (default: SpringAiWeaviate)
+ *     .options(options)                     	  // Optional: use custom options
  *     .consistencyLevel(ConsistentLevel.QUORUM)  // Optional: Set consistency level (default: ONE)
  *     .filterMetadataFields(List.of(             // Optional: Configure filterable metadata fields
  *         MetadataField.text("country"),
@@ -89,6 +89,7 @@ import org.springframework.util.StringUtils;
  * @author Josh Long
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
@@ -96,8 +97,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private static final Logger logger = LoggerFactory.getLogger(WeaviateVectorStore.class);
 
 	private static final String METADATA_FIELD_PREFIX = "meta_";
-
-	private static final String CONTENT_FIELD_NAME = "content";
 
 	private static final String METADATA_FIELD_NAME = "metadata";
 
@@ -111,9 +110,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	private final WeaviateClient weaviateClient;
 
-	private final ConsistentLevel consistencyLevel;
+	private final WeaviateVectorStoreOptions options;
 
-	private final String weaviateObjectClass;
+	private final ConsistentLevel consistencyLevel;
 
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
@@ -157,9 +156,10 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		Assert.notNull(builder.weaviateClient, "WeaviateClient must not be null");
 
+		this.options = builder.options;
+
 		this.weaviateClient = builder.weaviateClient;
 		this.consistencyLevel = builder.consistencyLevel;
-		this.weaviateObjectClass = builder.weaviateObjectClass;
 		this.filterMetadataFields = builder.filterMetadataFields;
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
 				this.filterMetadataFields.stream().map(MetadataField::name).toList());
@@ -179,7 +179,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		List<Field> searchWeaviateFieldList = new ArrayList<>();
 
-		searchWeaviateFieldList.add(Field.builder().name(CONTENT_FIELD_NAME).build());
+		searchWeaviateFieldList.add(Field.builder().name(this.options.getContentFieldName()).build());
 		searchWeaviateFieldList.add(Field.builder().name(METADATA_FIELD_NAME).build());
 		searchWeaviateFieldList.addAll(this.filterMetadataFields.stream()
 			.map(mf -> Field.builder().name(METADATA_FIELD_PREFIX + mf.name()).build())
@@ -247,7 +247,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();
-		fields.put(CONTENT_FIELD_NAME, document.getText());
+		fields.put(this.options.getContentFieldName(), document.getText());
 		try {
 			String metadataString = this.objectMapper.writeValueAsString(document.getMetadata());
 			fields.put(METADATA_FIELD_NAME, metadataString);
@@ -265,7 +265,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 
 		return WeaviateObject.builder()
-			.className(this.weaviateObjectClass)
+			.className(this.options.getObjectClass())
 			.id(document.getId())
 			.vector(EmbeddingUtils.toFloatArray(embeddings.get(documents.indexOf(document))))
 			.properties(fields)
@@ -277,7 +277,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		Result<BatchDeleteResponse> result = this.weaviateClient.batch()
 			.objectsBatchDeleter()
-			.withClassName(this.weaviateObjectClass)
+			.withClassName(this.options.getObjectClass())
 			.withConsistencyLevel(this.consistencyLevel.name())
 			.withWhere(WhereFilter.builder()
 				.path("id")
@@ -336,7 +336,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		GetBuilder.GetBuilderBuilder builder = GetBuilder.builder();
 
-		GetBuilderBuilder queryBuilder = builder.className(this.weaviateObjectClass)
+		GetBuilderBuilder queryBuilder = builder.className(this.options.getObjectClass())
 			.withNearVectorFilter(NearVectorArgument.builder()
 				.vector(EmbeddingUtils.toFloatArray(embedding))
 				.certainty((float) request.getSimilarityThreshold())
@@ -418,7 +418,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 
 		// Content
-		String content = (String) item.get(CONTENT_FIELD_NAME);
+		String content = (String) item.get(this.options.getContentFieldName());
 
 		// @formatter:off
 		return Document.builder()
@@ -434,7 +434,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.WEAVIATE.value(), operationName)
 			.dimensions(this.embeddingModel.dimensions())
-			.collectionName(this.weaviateObjectClass);
+			.collectionName(this.options.getObjectClass());
 	}
 
 	@Override
@@ -526,7 +526,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		private String weaviateObjectClass = "SpringAiWeaviate";
+		private WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
 
 		private ConsistentLevel consistencyLevel = ConsistentLevel.ONE;
 
@@ -552,10 +552,27 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		 * @param objectClass the object class to use
 		 * @return this builder instance
 		 * @throws IllegalArgumentException if objectClass is null or empty
+		 * @deprecated Use
+		 * {@link org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.Builder#options(WeaviateVectorStoreOptions)}
+		 * instead.
 		 */
+		@Deprecated
 		public Builder objectClass(String objectClass) {
 			Assert.hasText(objectClass, "objectClass must not be empty");
-			this.weaviateObjectClass = objectClass;
+			this.options.setObjectClass(objectClass);
+			return this;
+		}
+
+		/**
+		 * Configures the Weaviate vector store option.
+		 * @param options the vector store options to use
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if options is null or empty
+		 * @since 1.1.0
+		 */
+		public Builder options(WeaviateVectorStoreOptions options) {
+			Assert.notNull(options, "options must not be empty");
+			this.options = options;
 			return this;
 		}
 
