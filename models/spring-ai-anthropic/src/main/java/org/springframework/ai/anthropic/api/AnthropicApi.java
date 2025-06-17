@@ -209,7 +209,8 @@ public final class AnthropicApi {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
-		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
+		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>(
+				new ChatCompletionResponseBuilder());
 
 		// @formatter:off
 		return this.webClient.post()
