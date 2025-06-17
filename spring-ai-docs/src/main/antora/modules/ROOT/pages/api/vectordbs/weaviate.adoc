@@ -156,7 +156,7 @@ public WeaviateClient weaviateClient() {
 @Bean
 public VectorStore vectorStore(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
     return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
-        .objectClass("CustomClass")                    // Optional: defaults to "SpringAiWeaviate"
+        .options(options)                              // Optional: use custom options
         .consistencyLevel(ConsistentLevel.QUORUM)      // Optional: defaults to ConsistentLevel.ONE
         .filterMetadataFields(List.of(                 // Optional: fields that can be used in filters
             MetadataField.text("country"),
@@ -261,10 +261,13 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.weaviate.host`|The host of the Weaviate server|localhost:8080
 |`spring.ai.vectorstore.weaviate.scheme`|Connection schema|http
 |`spring.ai.vectorstore.weaviate.api-key`|The API key for authentication|
-|`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents|SpringAiWeaviate
+|`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents. should|SpringAiWeaviate
+|`spring.ai.vectorstore.weaviate.content-field-name`|The field name for content|content
 |`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
 |`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
 |===
+
+TIP: Object class names should start with an uppercase letter, and field names should start with a lowercase letter. see link:https://weaviate.io/developers/weaviate/concepts/data#data-object-concepts[data-object-concepts]
 
 == Accessing the Native Client
 
