@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * An implementation of {@link ChatMemoryRepository} for Apache Cassandra.
  *
  * @author Mick Semb Wever
+ * @author Xiaotong Fan
  * @since 1.0.0
  */
 public final class CassandraChatMemoryRepository implements ChatMemoryRepository {
@@ -163,6 +164,14 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 	@Override
 	public void deleteByConversationId(String conversationId) {
 		saveAll(conversationId, List.of());
+	}
+
+	@Override
+	public void deleteConversationIds() {
+		List<String> conversationIds = findConversationIds();
+		for (String conversationId : conversationIds) {
+			deleteByConversationId(conversationId);
+		}
 	}
 
 	private PreparedStatement prepareAddStmt() {

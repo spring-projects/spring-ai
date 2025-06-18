@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
  * @author Linar Abzaltdinov
  * @author Mark Pollack
  * @author Yanming Zhou
+ * @author Xiaotong Fan
  * @since 1.0.0
  */
 public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
@@ -105,6 +106,12 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		this.jdbcTemplate.update(this.dialect.getDeleteMessagesSql(), conversationId);
 	}
+
+	@Override
+	public void deleteConversationIds() {
+		this.jdbcTemplate.update(this.dialect.getDeleteAllMessageSql());
+	}
+
 
 	public static Builder builder() {
 		return new Builder();

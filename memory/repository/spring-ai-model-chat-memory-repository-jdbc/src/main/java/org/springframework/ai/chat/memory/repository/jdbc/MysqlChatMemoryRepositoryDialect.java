@@ -43,5 +43,9 @@ public class MysqlChatMemoryRepositoryDialect implements JdbcChatMemoryRepositor
 	public String getDeleteMessagesSql() {
 		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
 	}
+	@Override
+	public String getDeleteAllMessageSql() {
+		return "DELETE FROM SPRING_AI_CHAT_MEMORY";
+	}
 
 }
