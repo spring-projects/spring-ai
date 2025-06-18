@@ -25,26 +25,26 @@ import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
- * Converts {@link Expression} into PgVector metadata filter expression format.
- * (https://www.postgresql.org/docs/current/functions-json.html)
+ * Converts {@link Expression} into PgVector metadata filter expression format. (<a href=
+ * "https://www.postgresql.org/docs/current/functions-json.html">functions-json</a>)
  *
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
-		if (expression.type() == Filter.ExpressionType.IN) {
-			handleIn(expression, context);
-		}
-		else if (expression.type() == Filter.ExpressionType.NIN) {
-			handleNotIn(expression, context);
-		}
-		else {
-			this.convertOperand(expression.left(), context);
-			context.append(getOperationSymbol(expression));
-			this.convertOperand(expression.right(), context);
+		switch (expression.type()) {
+			case IN -> handleIn(expression, context);
+			case NIN -> handleNotIn(expression, context);
+			case AND, OR -> handleAndOr(expression, context);
+			default -> {
+				this.convertOperand(expression.left(), context);
+				context.append(getOperationSymbol(expression));
+				this.convertOperand(expression.right(), context);
+			}
 		}
 	}
 
@@ -74,6 +74,14 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	private void handleNotIn(Expression expression, StringBuilder context) {
 		context.append("!(");
 		convertToConditions(expression, context);
+		context.append(")");
+	}
+
+	private void handleAndOr(Expression expression, StringBuilder context) {
+		context.append("(");
+		this.convertOperand(expression.left(), context);
+		context.append(getOperationSymbol(expression));
+		this.convertOperand(expression.right(), context);
 		context.append(")");
 	}
 

@@ -119,4 +119,16 @@ public class PgVectorFilterExpressionConverterTests {
 		assertThat(vectorExpr).isEqualTo("$.\"country 1 2 3\" == \"BG\"");
 	}
 
+	@Test
+	public void testAndAndOrNesting() {
+		Expression eq1 = new Expression(EQ, new Key("id"), new Value("1"));
+		Expression eq2 = new Expression(EQ, new Key("id"), new Value("2"));
+		Expression eqTom = new Expression(EQ, new Key("name"), new Value("tom"));
+		Expression or = new Expression(OR, eq1, eq2);
+		Expression and = new Expression(AND, or, eqTom);
+
+		String vectorExpr = this.converter.convertExpression(and);
+		assertThat(vectorExpr).isEqualTo("(($.id == \"1\" || $.id == \"2\") && $.name == \"tom\")");
+	}
+
 }
