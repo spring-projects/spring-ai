@@ -316,7 +316,7 @@ The `ToolMetadata.Builder` allows you to build a `ToolMetadata` instance and def
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
 ToolCallback toolCallback = MethodToolCallback.builder()
-    .toolDefinition(ToolDefinition.builder(method)
+    .toolDefinition(ToolDefinitions.builder(method)
             .description("Get the current date and time in the user's timezone")
             .build())
     .toolMethod(method)
@@ -349,7 +349,7 @@ class DateTimeTools {
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
 ToolCallback toolCallback = MethodToolCallback.builder()
-    .toolDefinition(ToolDefinition.builder(method)
+    .toolDefinition(ToolDefinitions.builder(method)
             .description("Get the current date and time in the user's timezone")
             .build())
     .toolMethod(method)
@@ -641,7 +641,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ----
 ChatModel chatModel = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools("currentWeather")
+    .defaultToolNames("currentWeather")
     .build();
 ----
 
@@ -801,7 +801,7 @@ If you'd rather provide some or all of the attributes explicitly, you can use th
 [source,java]
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
-ToolDefinition toolDefinition = ToolDefinition.builder(method)
+ToolDefinition toolDefinition = ToolDefinitions.builder(method)
     .name("currentDateTime")
     .description("Get the current date and time in the user's timezone")
     .inputSchema(JsonSchemaGenerator.generateForMethodInput(method))

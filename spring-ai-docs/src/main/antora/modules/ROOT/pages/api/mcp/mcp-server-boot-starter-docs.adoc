@@ -80,7 +80,12 @@ The starter activates the `McpWebFluxServerAutoConfiguration` and `McpServerAuto
 * Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
 * Included `spring-boot-starter-webflux` and `mcp-spring-webflux` dependencies
 
-== Configuration Properties
+[NOTE]
+====
+Due to Spring Boot's default behavior, when both `org.springframework.web.servlet.DispatcherServlet` and `org.springframework.web.reactive.DispatcherHandler` are present on the classpath, Spring Boot will prioritize `DispatcherServlet`. As a result, if your project uses `spring-boot-starter-web`, it is recommended to use `spring-ai-starter-mcp-server-webmvc` instead of `spring-ai-starter-mcp-server-webflux`.
+====
+
+Configuration Properties
 
 All properties are prefixed with `spring.ai.mcp.server`:
 

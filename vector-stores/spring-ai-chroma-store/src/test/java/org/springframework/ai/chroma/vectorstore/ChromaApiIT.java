@@ -274,7 +274,7 @@ public class ChromaApiIT {
 			.hasMessage("Failed to initialize ChromaVectorStore")
 			.hasCauseInstanceOf(RuntimeException.class)
 			.hasRootCauseMessage(
-					"Collection non-existent doesn't exist and won't be created as the initializeSchema is set to false.");
+					"Collection non-existent with the tenant: SpringAiTenant and the database: SpringAiDatabase doesn't exist and won't be created as the initializeSchema is set to false.");
 	}
 
 	@Test

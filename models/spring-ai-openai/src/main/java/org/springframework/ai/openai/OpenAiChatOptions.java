@@ -271,6 +271,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.store(fromOptions.getStore())
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
+			.webSearchOptions(fromOptions.getWebSearchOptions())
 			.build();
 	}
 

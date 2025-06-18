@@ -51,6 +51,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Jonghoon Park
+ * @author Alexandros Pappas
  * @since 0.8.0
  */
 // @formatter:off
@@ -63,6 +64,9 @@ public final class OllamaApi {
 	public static final String REQUEST_BODY_NULL_ERROR = "The request body can not be null.";
 
 	private static final Log logger = LogFactory.getLog(OllamaApi.class);
+
+
+	private static final String DEFAULT_BASE_URL = "http://localhost:11434";
 
 	private final RestClient restClient;
 
@@ -77,10 +81,12 @@ public final class OllamaApi {
 	 */
 	private OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
+
 		Consumer<HttpHeaders> defaultHeaders = headers -> {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		};
+
 
 		this.restClient = restClientBuilder
 				.clone()
@@ -88,6 +94,7 @@ public final class OllamaApi {
 				.defaultHeaders(defaultHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
+
 
 		this.webClient = webClientBuilder
 				.clone()

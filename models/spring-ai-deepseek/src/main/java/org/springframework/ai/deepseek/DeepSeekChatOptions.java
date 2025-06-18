@@ -50,7 +50,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 
 	// @formatter:off
 	/**
-	 * ID of the model to use. You can use either usedeepseek-coder or deepseek-chat.
+	 * ID of the model to use. You can use either use deepseek-reasoner or deepseek-chat.
 	 */
 	private @JsonProperty("model") String model;
 	/**

@@ -34,8 +34,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
+import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -60,6 +62,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Alexandros Pappas
  * @author Jonghoon Park
  * @author Claudio Silva Junior
+ * @author Filip Hrisafov
  * @since 1.0.0
  */
 public final class AnthropicApi {
@@ -96,6 +99,8 @@ public final class AnthropicApi {
 
 	private final WebClient webClient;
 
+	private final ApiKey apiKey;
+
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
@@ -107,18 +112,18 @@ public final class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	private AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
+	private AnthropicApi(String baseUrl, String completionsPath, ApiKey anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.add(HEADER_X_API_KEY, anthropicApiKey);
 			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
 			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
 		this.completionsPath = completionsPath;
+		this.apiKey = anthropicApiKey;
 
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
@@ -160,12 +165,17 @@ public final class AnthropicApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
+		// @formatter:off
 		return this.restClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			})
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletionResponse.class);
+		// @formatter:on
 	}
 
 	/**
@@ -196,9 +206,13 @@ public final class AnthropicApi {
 
 		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
 
+		// @formatter:off
 		return this.webClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			}) // @formatter:off
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -230,6 +244,15 @@ public final class AnthropicApi {
 			.flatMap(mono -> mono)
 			.map(event -> this.streamHelper.eventToChatCompletionResponse(event, chatCompletionReference))
 			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
+	}
+
+	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
+		if (!headers.containsKey(HEADER_X_API_KEY)) {
+			String apiKeyValue = this.apiKey.getValue();
+			if (StringUtils.hasText(apiKeyValue)) {
+				headers.add(HEADER_X_API_KEY, apiKeyValue);
+			}
+		}
 	}
 
 	/**
@@ -1101,8 +1124,11 @@ public final class AnthropicApi {
 
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
-		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
-				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text") })
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
+				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text"),
+				@JsonSubTypes.Type(value = ContentBlockThinking.class, name = "thinking")
+		})
 		public interface ContentBlockBody {
 			String type();
 		}
@@ -1134,6 +1160,19 @@ public final class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockBody {
 		}
+
+		/**
+		 * Thinking content block.
+		 * @param type The content block type.
+		 * @param thinking The thinking content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ContentBlockThinking(
+			@JsonProperty("type") String type,
+			@JsonProperty("thinking") String thinking,
+			@JsonProperty("signature") String signature) implements ContentBlockBody {
+		}
+		
 	}
 	// @formatter:on
 
@@ -1349,7 +1388,7 @@ public final class AnthropicApi {
 
 		private String completionsPath = DEFAULT_MESSAGE_COMPLETIONS_PATH;
 
-		private String apiKey;
+		private ApiKey apiKey;
 
 		private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
 
@@ -1373,9 +1412,15 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public Builder apiKey(String apiKey) {
+		public Builder apiKey(ApiKey apiKey) {
 			Assert.notNull(apiKey, "apiKey cannot be null");
 			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
 

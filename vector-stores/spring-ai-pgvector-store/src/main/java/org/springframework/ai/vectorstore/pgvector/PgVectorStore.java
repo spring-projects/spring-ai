@@ -153,6 +153,7 @@ import org.springframework.util.StringUtils;
  * @author Sebastien Deleuze
  * @author Jihoon Kim
  * @author YeongMin Song
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -202,6 +203,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final ObjectMapper objectMapper;
 
+	private final DocumentRowMapper documentRowMapper;
+
 	private final boolean removeExistingVectorStoreTable;
 
 	private final PgIndexType createIndexMethod;
@@ -219,6 +222,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.documentRowMapper = new DocumentRowMapper(this.objectMapper);
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
@@ -372,7 +376,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),
 						jsonPathFilter),
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, request.getTopK());
+				this.documentRowMapper, queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
 
 	public List<Double> embeddingDistance(String query) {
@@ -598,8 +602,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private static class DocumentRowMapper implements RowMapper<Document> {
-
-		private static final String COLUMN_EMBEDDING = "embedding";
 
 		private static final String COLUMN_METADATA = "metadata";
 
