@@ -81,6 +81,10 @@ public class WeaviateVectorStoreProperties {
 		return this.objectClass;
 	}
 
+	public void setObjectClass(String indexName) {
+		this.objectClass = indexName;
+	}
+
 	/**
 	 * @since 1.1.0
 	 */
@@ -93,10 +97,6 @@ public class WeaviateVectorStoreProperties {
 	 */
 	public void setContentFieldName(String contentFieldName) {
 		this.contentFieldName = contentFieldName;
-	}
-
-	public void setObjectClass(String indexName) {
-		this.objectClass = indexName;
 	}
 
 	public ConsistentLevel getConsistencyLevel() {
