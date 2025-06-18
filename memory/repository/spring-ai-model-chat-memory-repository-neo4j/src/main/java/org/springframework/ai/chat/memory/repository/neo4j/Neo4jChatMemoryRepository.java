@@ -172,25 +172,28 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	private Message buildToolMessage(org.neo4j.driver.Record record) {
 		Message message;
-		message = new ToolResponseMessage(record.get("toolResponses").asList(v -> {
+		message = ToolResponseMessage.builder().responses(record.get("toolResponses").asList(v -> {
 			Map<String, Object> trMap = v.asMap();
 			return new ToolResponseMessage.ToolResponse((String) trMap.get(ToolResponseAttributes.ID.getValue()),
 					(String) trMap.get(ToolResponseAttributes.NAME.getValue()),
 					(String) trMap.get(ToolResponseAttributes.RESPONSE_DATA.getValue()));
-		}), record.get("metadata").asMap());
+		})).metadata(record.get("metadata").asMap()).build();
 		return message;
 	}
 
 	private Message buildAssistantMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
 			List<Media> mediaList) {
 		Message message;
-		message = new AssistantMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(),
-				record.get("metadata").asMap(Map.of()), record.get("toolCalls").asList(v -> {
-					var toolCallMap = v.asMap();
-					return new AssistantMessage.ToolCall((String) toolCallMap.get("id"),
-							(String) toolCallMap.get("type"), (String) toolCallMap.get("name"),
-							(String) toolCallMap.get("arguments"));
-				}), mediaList);
+		message = AssistantMessage.builder()
+			.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
+			.metadata(record.get("metadata").asMap(Map.of()))
+			.toolCalls(record.get("toolCalls").asList(v -> {
+				var toolCallMap = v.asMap();
+				return new AssistantMessage.ToolCall((String) toolCallMap.get("id"), (String) toolCallMap.get("type"),
+						(String) toolCallMap.get("name"), (String) toolCallMap.get("arguments"));
+			}))
+			.media(mediaList)
+			.build();
 		return message;
 	}
 

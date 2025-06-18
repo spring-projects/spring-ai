@@ -162,8 +162,10 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))
+				.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
@@ -184,8 +186,10 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))
+				.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
@@ -209,9 +213,11 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))
+				.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
@@ -233,8 +239,10 @@ class DefaultToolCallingManagerTests {
 					.toolNames("toolA")
 					.build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))
+				.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
@@ -257,9 +265,11 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))
+				.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
@@ -284,9 +294,11 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))
+				.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
@@ -309,8 +321,10 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolC", "function", "toolC", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.text("")
+				.toolCalls(new AssistantMessage.ToolCall("toolC", "function", "toolC", "{}"))
+				.build())))
 			.build();
 
 		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
