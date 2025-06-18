@@ -16,10 +16,9 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,12 +42,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.util.ClassUtils;
 
 /**
  * Auto-configuration for common tool calling features of {@link ChatModel}.
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Daniel Garnier-Moiroux
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -78,7 +79,21 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolExecutionExceptionProcessor toolExecutionExceptionProcessor(ToolCallingProperties properties) {
-		return new DefaultToolExecutionExceptionProcessor(properties.isThrowExceptionOnError());
+		ArrayList<Class<? extends RuntimeException>> rethrownExceptions = new ArrayList<>();
+
+		// ClientAuthorizationException is used by Spring Security in oauth2 flows,
+		// for example with ServletOAuth2AuthorizedClientExchangeFilterFunction and
+		// OAuth2ClientHttpRequestInterceptor.
+		Class<? extends RuntimeException> oauth2Exception = getClassOrNull(
+				"org.springframework.security.oauth2.client.ClientAuthorizationException");
+		if (oauth2Exception != null) {
+			rethrownExceptions.add(oauth2Exception);
+		}
+
+		return DefaultToolExecutionExceptionProcessor.builder()
+			.alwaysThrow(properties.isThrowExceptionOnError())
+			.rethrowExceptions(rethrownExceptions)
+			.build();
 	}
 
 	@Bean
@@ -106,6 +121,16 @@ public class ToolCallingAutoConfiguration {
 		logger.warn(
 				"You have enabled the inclusion of the tool call arguments and result in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
 		return new ToolCallingContentObservationFilter();
+	}
+
+	private static Class<? extends RuntimeException> getClassOrNull(String className) {
+		try {
+			return (Class<? extends RuntimeException>) ClassUtils.forName(className, null);
+		}
+		catch (ClassNotFoundException e) {
+			logger.debug("Cannot load class", e);
+		}
+		return null;
 	}
 
 }
