@@ -31,12 +31,12 @@ import java.util.Map;
  *
  * @author Eddú Meléndez
  */
-class DockerAgentsGatewayDockerComposeConnectionDetailsFactory
+class DockerMcpGatewayDockerComposeConnectionDetailsFactory
 		extends DockerComposeConnectionDetailsFactory<McpSseClientConnectionDetails> {
 
 	private static final int GATEWAY_PORT = 8811;
 
-	protected DockerAgentsGatewayDockerComposeConnectionDetailsFactory() {
+	protected DockerMcpGatewayDockerComposeConnectionDetailsFactory() {
 		super("docker/agents_gateway");
 	}
 

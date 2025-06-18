@@ -23,9 +23,9 @@ import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class DockerAgentsGatewayDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
+class DockerMcpGatewayDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
-	protected DockerAgentsGatewayDockerComposeConnectionDetailsFactoryIT() {
+	protected DockerMcpGatewayDockerComposeConnectionDetailsFactoryIT() {
 		super("docker-agents-gateway-compose.yaml", DockerImageName.parse("docker/agents_gateway:v2"));
 	}
 
