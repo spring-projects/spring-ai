@@ -19,11 +19,11 @@ This section provides a guide to the Spring AI Chat Model API interface and asso
 
 === ChatModel
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat//model/ChatModel.java[ChatModel] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/model/ChatModel.java[ChatModel] interface definition:
 
 [source,java]
 ----
-public interface ChatModel extends Model<Prompt, ChatResponse> {
+public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatModel {
 
 	default String call(String message) {...}
 
@@ -82,7 +82,8 @@ The `Message` interface encapsulates a `Prompt` textual content, a collection of
 
 The interface is defined as follows:
 
-```java
+[source,java]
+----
 public interface Content {
 
 	String getText();
@@ -94,17 +95,18 @@ public interface Message extends Content {
 
 	MessageType getMessageType();
 }
-```
+----
 
 The multimodal message types implement also the `MediaContent` interface providing a list of `Media` content objects.
 
-```java
+[source,java]
+----
 public interface MediaContent extends Content {
 
 	Collection<Media> getMedia();
 
 }
-```
+----
 
 The `Message` interface has various implementations that correspond to the categories of messages that an AI model can process:
 
