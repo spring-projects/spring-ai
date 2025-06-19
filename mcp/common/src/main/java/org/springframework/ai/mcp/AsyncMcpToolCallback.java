@@ -17,11 +17,9 @@
 package org.springframework.ai.mcp;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
-import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.Map;
-import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
