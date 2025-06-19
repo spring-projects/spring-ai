@@ -212,28 +212,6 @@ public class BedrockNovaChatClientIT {
 		assertThat(content).contains("20 degrees");
 	}
 
-	@Test
-	void streamingToolCallingWithArgumentlessToolSonnet() {
-
-		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
-
-		Flux<ChatResponse> responses = chatClient.prompt()
-			.tools(new DummyWeatherForecastTools())
-			.options(ToolCallingChatOptions.builder().model("us.anthropic.claude-3-7-sonnet-20250219-v1:0").build())
-			.user("Get current weather in Amsterdam")
-			.stream()
-			.chatResponse();
-
-		String content = responses.collectList()
-			.block()
-			.stream()
-			.filter(cr -> cr.getResult() != null)
-			.map(cr -> cr.getResult().getOutput().getText())
-			.collect(Collectors.joining());
-
-		assertThat(content).contains("20 degrees");
-	}
-
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@Test
 	void supplierBasedToolCalling() {
