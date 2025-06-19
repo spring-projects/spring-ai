@@ -25,6 +25,7 @@ import org.antlr.runtime.TokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
+import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.compiler.Compiler;
 import org.stringtemplate.v4.compiler.STLexer;
 
@@ -113,7 +114,9 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private ST createST(String template) {
 		try {
-			return new ST(template, this.startDelimiterToken, this.endDelimiterToken);
+			STGroup group = new STGroup(this.startDelimiterToken, this.endDelimiterToken);
+			group.setListener(new Slf4jStErrorListener(logger));
+			return new ST(group, template);
 		}
 		catch (Exception ex) {
 			throw new IllegalArgumentException("The template string is not valid.", ex);
