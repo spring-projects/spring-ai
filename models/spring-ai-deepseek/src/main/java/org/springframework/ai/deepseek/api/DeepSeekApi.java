@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.chat.model.StreamFunctionCallingHelper;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -67,7 +68,7 @@ public class DeepSeekApi {
 
 	private final WebClient webClient;
 
-	private DeepSeekStreamFunctionCallingHelper chunkMerger = new DeepSeekStreamFunctionCallingHelper();
+	private final StreamFunctionCallingHelper<ChatCompletionChunk> chunkMerger;
 
 	/**
 	 * Create a new chat completion api.
@@ -82,7 +83,7 @@ public class DeepSeekApi {
 	 */
 	public DeepSeekApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String betaPrefixPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ResponseErrorHandler responseErrorHandler,StreamFunctionCallingHelper<ChatCompletionChunk> chunkMerger) {
 
 		Assert.hasText(completionsPath, "Completions Path must not be null");
 		Assert.hasText(betaPrefixPath, "Beta feature path must not be null");
@@ -105,6 +106,8 @@ public class DeepSeekApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.build(); // @formatter:on
+
+		this.chunkMerger = chunkMerger;
 	}
 
 	/**
@@ -923,6 +926,8 @@ public class DeepSeekApi {
 
 		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
 
+		private StreamFunctionCallingHelper<ChatCompletionChunk> chunkMerger = new DeepSeekStreamFunctionCallingHelper();
+
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
@@ -977,10 +982,16 @@ public class DeepSeekApi {
 			return this;
 		}
 
+		public Builder streamFunctionCallingHelper(StreamFunctionCallingHelper<ChatCompletionChunk> chunkMerger){
+			Assert.notNull(chunkMerger, "chunkMerger cannot be null");
+			this.chunkMerger = chunkMerger;
+			return this;
+		}
+
 		public DeepSeekApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
 			return new DeepSeekApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath, this.betaPrefixPath,
-					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler,this.chunkMerger);
 		}
 
 	}
