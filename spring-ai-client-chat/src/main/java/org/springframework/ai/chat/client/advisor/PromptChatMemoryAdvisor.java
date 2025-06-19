@@ -113,29 +113,28 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		logger.debug("[PromptChatMemoryAdvisor.before] Memory before processing for conversationId={}: {}",
 				conversationId, memoryMessages);
 
-		// 2. Process memory messages as a string.
+		// 2. Add the new user message to the conversation memory.
+		UserMessage userMessage = chatClientRequest.prompt().getUserMessage();
+		this.chatMemory.add(conversationId, userMessage);
+		// 3. Check if memory is empty and return the request as is.
+		if (memoryMessages.isEmpty()) {
+			return chatClientRequest;
+		}
+		// 4. Process memory messages as a string.
 		String memory = memoryMessages.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(m -> m.getMessageType() + ":" + m.getText())
 			.collect(Collectors.joining(System.lineSeparator()));
 
-		// 3. Augment the system message.
+		// 5. Augment the system message.
 		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
 		String augmentedSystemText = this.systemPromptTemplate
 			.render(Map.of("instructions", systemMessage.getText(), "memory", memory));
 
-		// 4. Create a new request with the augmented system message.
-		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
+		// 6. Create a new request with the augmented system message.
+		return chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().augmentSystemMessage(augmentedSystemText))
 			.build();
-
-		// 5. Add all user messages from the current prompt to memory (after system
-		// message is generated)
-		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.chatMemory.add(conversationId, userMessage);
-
-		return processedChatClientRequest;
 	}
 
 	@Override
