@@ -180,7 +180,8 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 	public void testMappingPropertiesToOptions() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.vectorstore.weaviate.object-class=CustomObjectClass",
-					"spring.ai.vectorstore.weaviate.content-field-name=customContentFieldName")
+					"spring.ai.vectorstore.weaviate.content-field-name=customContentFieldName",
+					"spring.ai.vectorstore.weaviate.meta-field-prefix=custom_")
 			.run(context -> {
 				WeaviateVectorStoreAutoConfiguration autoConfiguration = context
 					.getBean(WeaviateVectorStoreAutoConfiguration.class);
@@ -189,6 +190,7 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 
 				assertThat(options.getObjectClass()).isEqualTo("CustomObjectClass");
 				assertThat(options.getContentFieldName()).isEqualTo("customContentFieldName");
+				assertThat(options.getMetaFieldPrefix()).isEqualTo("custom_");
 			});
 	}
 
