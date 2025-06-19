@@ -126,7 +126,18 @@ public enum AiObservationAttributes {
 	/**
 	 * The total number of tokens used in the model exchange.
 	 */
-	USAGE_TOTAL_TOKENS("gen_ai.usage.total_tokens");
+	USAGE_TOTAL_TOKENS("gen_ai.usage.total_tokens"),
+	
+	// GenAI Content
+
+	/**
+	 * The full prompt sent to the model.
+	 */
+	PROMPT("gen_ai.prompt"),
+	/**
+	 * The full response received from the model.
+	 */
+	COMPLETION("gen_ai.completion");
 
 	private final String value;
 
