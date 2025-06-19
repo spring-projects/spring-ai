@@ -31,6 +31,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 
@@ -117,7 +118,7 @@ public class PromptTemplateTest {
 		assertEqualsWithNormalizedEOLs(expected, message.getText());
 
 		PromptTemplate unfilledPromptTemplate = new PromptTemplate(templateString);
-		assertThatExceptionOfType(IllegalStateException.class).isThrownBy(unfilledPromptTemplate::render)
+		assertThatExceptionOfType(NonTransientAiException.class).isThrownBy(unfilledPromptTemplate::render)
 			.withMessage("Not all variables were replaced in the template. Missing variable names are: [items].");
 	}
 
@@ -202,7 +203,7 @@ public class PromptTemplateTest {
 		PromptTemplate promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 
 		// Rendering the template with a missing key should throw an exception
-		assertThrows(IllegalStateException.class, promptTemplate::render);
+		assertThrows(NonTransientAiException.class, promptTemplate::render);
 	}
 
 }

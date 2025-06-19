@@ -26,6 +26,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.retry.NonTransientAiException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -43,7 +44,7 @@ class PromptTests {
 
 		// Try to render with missing value for template variable, expect exception
 		Assertions.assertThatThrownBy(() -> pt.render(model))
-			.isInstanceOf(IllegalStateException.class)
+			.isInstanceOf(NonTransientAiException.class)
 			.hasMessage("Not all variables were replaced in the template. Missing variable names are: [lastName].");
 
 		pt.add("lastName", "Park"); // TODO investigate partial

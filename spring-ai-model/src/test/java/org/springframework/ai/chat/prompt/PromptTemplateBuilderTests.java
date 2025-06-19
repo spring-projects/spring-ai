@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.retry.NonTransientAiException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,7 +86,7 @@ class PromptTemplateBuilderTests {
 			// If render() doesn't throw, fail the test
 			Assertions.fail("Expected IllegalStateException was not thrown.");
 		}
-		catch (IllegalStateException e) {
+		catch (NonTransientAiException e) {
 			// Assert that the message is exactly the expected string
 			assertThat(e.getMessage())
 				.isEqualTo("Not all variables were replaced in the template. Missing variable names are: [name].");
