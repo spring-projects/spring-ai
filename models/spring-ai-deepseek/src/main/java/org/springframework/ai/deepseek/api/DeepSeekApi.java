@@ -80,6 +80,7 @@ public class DeepSeekApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
+	 * @param chunkMerger Chat completion chunk merger.
 	 */
 	public DeepSeekApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String betaPrefixPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
