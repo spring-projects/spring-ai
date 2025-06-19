@@ -71,6 +71,9 @@ public interface JdbcChatMemoryRepositoryDialect {
 			if (url.contains("hsqldb")) {
 				return new HsqldbChatMemoryRepositoryDialect();
 			}
+			if (url.contains("oracle")) {
+				return new OracleChatMemoryRepositoryDialect();
+			}
 			// Add more as needed
 		}
 		catch (Exception ignored) {
