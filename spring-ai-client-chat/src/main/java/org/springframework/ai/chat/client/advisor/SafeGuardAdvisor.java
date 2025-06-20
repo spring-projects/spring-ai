@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +45,8 @@ import org.springframework.util.CollectionUtils;
  */
 public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
+	public static final String CONTAINS_SENSITIVE_WORDS = "safe_guard_contains_sensitive_words";
+
 	private static final String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
 
 	private static final int DEFAULT_ORDER = 0;
@@ -70,15 +73,21 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 		return new Builder();
 	}
 
+	@Override
 	public String getName() {
 		return this.getClass().getSimpleName();
 	}
 
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
-		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> chatClientRequest.prompt().getContents().contains(w))) {
-			return createFailureResponse(chatClientRequest);
+		if (!CollectionUtils.isEmpty(this.sensitiveWords)) {
+			String lowerCaseContents = chatClientRequest.prompt().getContents().toLowerCase();
+			List<String> hitSensitiveWords = this.sensitiveWords.stream()
+				.filter(w -> lowerCaseContents.contains(w.toLowerCase()))
+				.toList();
+			if (!CollectionUtils.isEmpty(hitSensitiveWords)) {
+				return createFailureResponse(chatClientRequest, hitSensitiveWords);
+			}
 		}
 
 		return callAdvisorChain.nextCall(chatClientRequest);
@@ -87,20 +96,29 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
 			StreamAdvisorChain streamAdvisorChain) {
-		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> chatClientRequest.prompt().getContents().contains(w))) {
-			return Flux.just(createFailureResponse(chatClientRequest));
+		if (!CollectionUtils.isEmpty(this.sensitiveWords)) {
+			String lowerCaseContents = chatClientRequest.prompt().getContents().toLowerCase();
+			List<String> hitSensitiveWords = this.sensitiveWords.stream()
+				.filter(w -> lowerCaseContents.contains(w.toLowerCase()))
+				.toList();
+			if (!CollectionUtils.isEmpty(hitSensitiveWords)) {
+				return Flux.just(createFailureResponse(chatClientRequest, hitSensitiveWords));
+			}
 		}
 
 		return streamAdvisorChain.nextStream(chatClientRequest);
 	}
 
-	private ChatClientResponse createFailureResponse(ChatClientRequest chatClientRequest) {
+	private ChatClientResponse createFailureResponse(ChatClientRequest chatClientRequest,
+			List<String> hitSensitiveWords) {
+		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
+		context.put(CONTAINS_SENSITIVE_WORDS, hitSensitiveWords);
+
 		return ChatClientResponse.builder()
 			.chatResponse(ChatResponse.builder()
 				.generations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
 				.build())
-			.context(Map.copyOf(chatClientRequest.context()))
+			.context(context)
 			.build();
 	}
 
