@@ -110,7 +110,7 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
 			}
 		}
-		if (current.toolCalls() != null) {
+		if (current.toolCalls() != null && current.toolCalls().size() > 0) {
 			if (current.toolCalls().size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
