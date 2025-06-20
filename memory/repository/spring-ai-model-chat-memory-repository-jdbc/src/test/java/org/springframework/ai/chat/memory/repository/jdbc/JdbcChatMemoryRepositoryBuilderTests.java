@@ -37,6 +37,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Mark Pollack
  * @author Yanming Zhou
+ * @author Xiaotong Fan
  */
 public class JdbcChatMemoryRepositoryBuilderTests {
 
@@ -129,6 +130,23 @@ public class JdbcChatMemoryRepositoryBuilderTests {
 		when(dataSource.getConnection()).thenReturn(connection);
 		when(connection.getMetaData()).thenReturn(metaData);
 		when(metaData.getURL()).thenReturn("jdbc:hsqldb:mem:testdb");
+
+		// Test with dialect from datasource
+		JdbcChatMemoryRepository repository = JdbcChatMemoryRepository.builder().dataSource(dataSource).build();
+
+		assertThat(repository).isNotNull();
+	}
+
+	@Test
+	void testBuilderWithOracleDialectFromDataSource() throws SQLException {
+		// Setup mocks for Oracle
+		DataSource dataSource = mock(DataSource.class);
+		Connection connection = mock(Connection.class);
+		DatabaseMetaData metaData = mock(DatabaseMetaData.class);
+
+		when(dataSource.getConnection()).thenReturn(connection);
+		when(connection.getMetaData()).thenReturn(metaData);
+		when(metaData.getURL()).thenReturn("jdbc:oracle:thin:@//192.168.19.129:1521/ORCL");
 
 		// Test with dialect from datasource
 		JdbcChatMemoryRepository repository = JdbcChatMemoryRepository.builder().dataSource(dataSource).build();
