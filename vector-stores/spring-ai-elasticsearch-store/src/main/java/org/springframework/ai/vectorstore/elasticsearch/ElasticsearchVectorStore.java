@@ -40,7 +40,6 @@ import org.elasticsearch.client.RestClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -175,16 +174,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
 		if (!indexExists()) {
 			throw new IllegalArgumentException("Index not found");
 		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
 
 		for (int i = 0; i < embeddings.size(); i++) {
 			Document document = documents.get(i);

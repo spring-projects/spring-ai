@@ -42,7 +42,6 @@ import reactor.util.retry.RetrySpec;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -133,12 +132,10 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		logger.info("Trying Add");
 		logger.info(this.bucketName);
 		logger.info(this.scopeName);
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
 		for (Document document : documents) {
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(), document.getText(),
 					document.getMetadata(), embeddings.get(documents.indexOf(document)));

@@ -48,7 +48,6 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -250,11 +249,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
-
-			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-					this.batchingStrategy);
 
 			for (Document document : documents) {
 				var fields = new HashMap<String, Object>();
