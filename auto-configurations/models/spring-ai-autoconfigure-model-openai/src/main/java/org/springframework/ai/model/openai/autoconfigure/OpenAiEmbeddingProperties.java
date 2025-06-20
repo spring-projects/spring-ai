@@ -34,8 +34,6 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	private String embeddingsPath = DEFAULT_EMBEDDINGS_PATH;
 
-	private int maxBatchChars = 160000;
-
 	@NestedConfigurationProperty
 	private OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build();
 
@@ -61,14 +59,6 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public void setEmbeddingsPath(String embeddingsPath) {
 		this.embeddingsPath = embeddingsPath;
-	}
-
-	public int getMaxBatchChars() {
-		return this.maxBatchChars;
-	}
-
-	public void setMaxBatchChars(int maxBatchChars) {
-		this.maxBatchChars = maxBatchChars;
 	}
 
 }
