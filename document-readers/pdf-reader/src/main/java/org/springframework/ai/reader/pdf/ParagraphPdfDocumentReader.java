@@ -220,8 +220,9 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 					h = (int) pageHeight;
 				}
 
-				if (h < 0)
+				if (h < 0) {
 					h = 0;
+				}
 
 				pdfTextStripper.addRegion("pdfPageRegion", new Rectangle(x, y, w, h));
 				pdfTextStripper.extractRegions(page);
