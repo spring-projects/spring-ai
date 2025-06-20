@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.chat.observation.autoconfigure;
 
+import org.springframework.ai.chat.observation.trace.AiObservationContentFormatterName;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -41,6 +42,26 @@ public class ChatObservationProperties {
 	private boolean logPrompt = false;
 
 	/**
+	 * Whether to trace the completion content in the observations.
+	 */
+	private boolean traceCompletion = false;
+
+	/**
+	 * Whether to trace the prompt content in the observations.
+	 */
+	private boolean tracePrompt = false;
+
+	/**
+	 * prompt size in trace, smaller than 1 is unlimit
+	 */
+	private int tracePromptSize = 10;
+
+	/**
+	 * prompt and completion formatter
+	 */
+	private AiObservationContentFormatterName contentFormatter = AiObservationContentFormatterName.TEXT;
+
+	/**
 	 * Whether to include error logging in the observations.
 	 */
 	private boolean includeErrorLogging = false;
@@ -59,6 +80,38 @@ public class ChatObservationProperties {
 
 	public void setLogPrompt(boolean logPrompt) {
 		this.logPrompt = logPrompt;
+	}
+
+	public boolean isTraceCompletion() {
+		return traceCompletion;
+	}
+
+	public void setTraceCompletion(boolean traceCompletion) {
+		this.traceCompletion = traceCompletion;
+	}
+
+	public boolean isTracePrompt() {
+		return tracePrompt;
+	}
+
+	public void setTracePrompt(boolean tracePrompt) {
+		this.tracePrompt = tracePrompt;
+	}
+
+	public int getTracePromptSize() {
+		return tracePromptSize;
+	}
+
+	public void setTracePromptSize(int tracePromptSize) {
+		this.tracePromptSize = tracePromptSize;
+	}
+
+	public AiObservationContentFormatterName getContentFormatter() {
+		return contentFormatter;
+	}
+
+	public void setContentFormatter(AiObservationContentFormatterName contentFormatter) {
+		this.contentFormatter = contentFormatter;
 	}
 
 	public boolean isIncludeErrorLogging() {
