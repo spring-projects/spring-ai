@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -114,6 +115,28 @@ public class MiniMaxChatOptionsTests {
 		logger.info("Response: {}", content);
 
 		assertThat(content).contains("15");
+	}
+
+	@Test
+	void testOptionsDefaultValue() {
+		var options = new MiniMaxChatOptions();
+
+		assertThat(options.getInternalToolExecutionMaxIterations())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
+	}
+
+	@Test
+	void testOptionsSetter() {
+		var options = new MiniMaxChatOptions();
+		options.setInternalToolExecutionMaxIterations(3);
+		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+	}
+
+	@Test
+	void testOptionsBuilder() {
+		var options = MiniMaxChatOptions.builder().internalToolExecutionMaxIterations(3).build();
+
+		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 }
