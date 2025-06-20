@@ -66,6 +66,7 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 	public int getMaxBatchChars() {
 		return this.maxBatchChars;
 	}
+
 	public void setMaxBatchChars(int maxBatchChars) {
 		this.maxBatchChars = maxBatchChars;
 	}

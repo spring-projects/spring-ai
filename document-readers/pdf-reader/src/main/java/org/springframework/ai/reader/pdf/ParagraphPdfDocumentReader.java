@@ -207,18 +207,22 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 				if (pageNumber == startPage && pageNumber == endPage) {
 					y = toPos;
 					h = fromPos - toPos;
-				} else if (pageNumber == startPage) {
+				}
+				else if (pageNumber == startPage) {
 					y = 0;
 					h = fromPos;
-				} else if (pageNumber == endPage) {
+				}
+				else if (pageNumber == endPage) {
 					y = toPos;
 					h = (int) pageHeight - toPos;
-				} else {
+				}
+				else {
 					y = 0;
 					h = (int) pageHeight;
 				}
 
-				if (h < 0) h = 0;
+				if (h < 0)
+					h = 0;
 
 				pdfTextStripper.addRegion("pdfPageRegion", new Rectangle(x, y, w, h));
 				pdfTextStripper.extractRegions(page);
