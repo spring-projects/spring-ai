@@ -308,8 +308,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 			Prompt requestPrompt = buildRequestPrompt(prompt);
 			ChatCompletionRequest request = createRequest(requestPrompt, true);
 
-			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.zhiPuAiApi.chatCompletionStream(request));
+			Flux<ChatCompletionChunk> completionChunks = this.zhiPuAiApi.chatCompletionStream(request);
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
