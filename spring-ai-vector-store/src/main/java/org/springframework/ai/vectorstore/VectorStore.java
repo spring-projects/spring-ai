@@ -27,7 +27,6 @@ import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -91,7 +90,6 @@ public interface VectorStore extends DocumentWriter {
 	 * topK, similarity threshold and metadata filter expressions.
 	 * @return Returns documents th match the query request conditions.
 	 */
-	@Nullable
 	List<Document> similaritySearch(SearchRequest request);
 
 	/**
@@ -101,7 +99,6 @@ public interface VectorStore extends DocumentWriter {
 	 * @return Returns a list of documents that have embeddings similar to the query text
 	 * embedding.
 	 */
-	@Nullable
 	default List<Document> similaritySearch(String query) {
 		return this.similaritySearch(SearchRequest.builder().query(query).build());
 	}

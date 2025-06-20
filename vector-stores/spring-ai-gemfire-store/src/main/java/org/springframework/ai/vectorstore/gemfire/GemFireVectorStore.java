@@ -243,7 +243,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	@Nullable
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		if (request.hasFilterExpression()) {
 			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
