@@ -55,7 +55,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(WeaviateConnectionDetails.class)
-	public PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
+	public WeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
 		return new PropertiesWeaviateConnectionDetails(properties);
 	}
 
