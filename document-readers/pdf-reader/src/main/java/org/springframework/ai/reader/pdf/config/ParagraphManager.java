@@ -117,6 +117,7 @@ public class ParagraphManager {
 			if (nextSiblingNumber < 0) {
 				nextSiblingNumber = getPageNumber(current.getLastChild());
 			}
+
 			var paragraphPosition = (current.getDestination() instanceof PDPageXYZDestination)
 					? ((PDPageXYZDestination) current.getDestination()).getTop() : 0;
 

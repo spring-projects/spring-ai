@@ -171,7 +171,6 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 	public String getTextBetweenParagraphs(Paragraph fromParagraph, Paragraph toParagraph) {
 
 		if (fromParagraph.startPageNumber() < 1) {
-
 			logger.warn("Skipping paragraph titled '{}' because it has an invalid start page number: {}",
 					fromParagraph.title(), fromParagraph.startPageNumber());
 			return "";
