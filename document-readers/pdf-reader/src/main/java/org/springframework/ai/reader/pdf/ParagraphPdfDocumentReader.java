@@ -46,6 +46,7 @@ import org.springframework.util.StringUtils;
  * The paragraphs are grouped into {@link Document} objects.
  *
  * @author Christian Tzolov
+ * @author Heonwoo Kim
  */
 public class ParagraphPdfDocumentReader implements DocumentReader {
 
@@ -180,9 +181,20 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 	public String getTextBetweenParagraphs(Paragraph fromParagraph, Paragraph toParagraph) {
 
+		if (fromParagraph.startPageNumber() < 1) {
+
+			logger.warn("Skipping paragraph titled '{}' because it has an invalid start page number: {}",
+					fromParagraph.title(), fromParagraph.startPageNumber());
+			return "";
+		}
+
 		// Page started from index 0, while PDFBOx getPage return them from index 1.
 		int startPage = fromParagraph.startPageNumber() - 1;
 		int endPage = toParagraph.startPageNumber() - 1;
+
+		if (endPage < 0) {
+			endPage = startPage;
+		}
 
 		try {
 
