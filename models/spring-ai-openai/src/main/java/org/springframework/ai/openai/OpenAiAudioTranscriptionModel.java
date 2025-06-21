@@ -167,8 +167,10 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			}
 		}
 
+		Resource instructions = transcriptionPrompt.getInstructions();
 		return OpenAiAudioApi.TranscriptionRequest.builder()
-			.file(toBytes(transcriptionPrompt.getInstructions()))
+			.file(toBytes(instructions))
+			.fileName(instructions.getFilename())
 			.responseFormat(options.getResponseFormat())
 			.prompt(options.getPrompt())
 			.temperature(options.getTemperature())

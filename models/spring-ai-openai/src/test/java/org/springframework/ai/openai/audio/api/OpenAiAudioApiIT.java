@@ -63,24 +63,29 @@ public class OpenAiAudioApiIT {
 		FileCopyUtils.copy(speech, new File("target/speech.mp3"));
 
 		StructuredResponse translation = this.audioApi
-			.createTranslation(
-					TranslationRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
-					StructuredResponse.class)
+			.createTranslation(TranslationRequest.builder()
+				.model(WhisperModel.WHISPER_1.getValue())
+				.file(speech)
+				.fileName("speech.mp3")
+				.build(), StructuredResponse.class)
 			.getBody();
 
 		assertThat(translation.text().replaceAll(",", "")).isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionEnglish = this.audioApi
-			.createTranscription(
-					TranscriptionRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
-					StructuredResponse.class)
+			.createTranscription(TranscriptionRequest.builder()
+				.model(WhisperModel.WHISPER_1.getValue())
+				.file(speech)
+				.fileName("speech.mp3")
+				.build(), StructuredResponse.class)
 			.getBody();
 
 		assertThat(transcriptionEnglish.text().replaceAll(",", ""))
 			.isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionDutch = this.audioApi
-			.createTranscription(TranscriptionRequest.builder().file(speech).language("nl").build(),
+			.createTranscription(
+					TranscriptionRequest.builder().file(speech).fileName("speech.mp3").language("nl").build(),
 					StructuredResponse.class)
 			.getBody();
 
