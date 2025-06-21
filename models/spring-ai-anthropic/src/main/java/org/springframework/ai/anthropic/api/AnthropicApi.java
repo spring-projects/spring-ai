@@ -1060,8 +1060,7 @@ public final class AnthropicApi {
 		  * @return True if the event is empty, false otherwise.
 		*/
 		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
+			return (this.index == null || this.id == null || this.name == null);
 		}
 
 		ToolUseAggregationEvent withIndex(Integer index) {
