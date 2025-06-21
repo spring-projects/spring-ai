@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.template.ValidationMode;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -107,7 +108,7 @@ class StTemplateRendererTests {
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("name", "Spring AI");
 
-		assertThatThrownBy(() -> renderer.apply("Hello {name!", variables)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> renderer.apply("Hello {name!", variables)).isInstanceOf(NonTransientAiException.class)
 			.hasMessageContaining("The template string is not valid.");
 	}
 
@@ -118,7 +119,7 @@ class StTemplateRendererTests {
 		variables.put("greeting", "Hello");
 
 		assertThatThrownBy(() -> renderer.apply("{greeting} {name}!", variables))
-			.isInstanceOf(IllegalStateException.class)
+			.isInstanceOf(NonTransientAiException.class)
 			.hasMessageContaining(
 					"Not all variables were replaced in the template. Missing variable names are: [name]");
 	}
