@@ -264,6 +264,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.weaviate.api-key`|The API key for authentication|
 |`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents. |SpringAiWeaviate
 |`spring.ai.vectorstore.weaviate.content-field-name`|The field name for content|content
+|`spring.ai.vectorstore.weaviate.meta-field-prefix`|The field prefix for metadata|meta_
 |`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
 |`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
 |===

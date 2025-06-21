@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.weaviate;
 
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -64,6 +65,21 @@ class WeaviateVectorStoreOptionsTests {
 
 		assertThatThrownBy(() -> options.setContentFieldName("")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("contentFieldName cannot be null or empty");
+	}
+
+	@Test
+	void shouldFailWithNullMetaFieldPrefix() {
+		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
+
+		assertThatThrownBy(() -> options.setMetaFieldPrefix(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metaFieldPrefix can be empty but not null");
+	}
+
+	@Test
+	void shouldPassWithEmptyMetaFieldPrefix() {
+		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
+		options.setMetaFieldPrefix("");
+		assertThat(options.getMetaFieldPrefix()).isEqualTo("");
 	}
 
 }

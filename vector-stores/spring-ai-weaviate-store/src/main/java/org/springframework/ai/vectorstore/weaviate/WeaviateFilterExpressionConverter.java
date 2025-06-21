@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,19 +35,42 @@ import org.springframework.util.Assert;
  * (https://weaviate.io/developers/weaviate/api/graphql/filters)
  *
  * @author Christian Tzolov
+ * @author Jonghoon Park
  */
 public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
 	// https://weaviate.io/developers/weaviate/api/graphql/filters#special-cases
 	private static final List<String> SYSTEM_IDENTIFIERS = List.of("id", "_creationTimeUnix", "_lastUpdateTimeUnix");
 
+	private static final String DEFAULT_META_FIELD_PREFIX = "meta_";
+
 	private boolean mapIntegerToNumberValue = true;
 
 	private List<String> allowedIdentifierNames;
 
+	private final String metaFieldPrefix;
+
+	/**
+	 * Constructs a new instance of the {@code WeaviateFilterExpressionConverter} class.
+	 * This constructor uses the default meta field prefix
+	 * ({@link #DEFAULT_META_FIELD_PREFIX}).
+	 * @param allowedIdentifierNames A {@code List} of allowed identifier names.
+	 */
 	public WeaviateFilterExpressionConverter(List<String> allowedIdentifierNames) {
+		this(allowedIdentifierNames, DEFAULT_META_FIELD_PREFIX);
+	}
+
+	/**
+	 * Constructs a new instance of the {@code WeaviateFilterExpressionConverter} class.
+	 * @param allowedIdentifierNames A {@code List} of allowed identifier names.
+	 * @param metaFieldPrefix the prefix for meta fields
+	 * @since 1.1.0
+	 */
+	public WeaviateFilterExpressionConverter(List<String> allowedIdentifierNames, String metaFieldPrefix) {
 		Assert.notNull(allowedIdentifierNames, "List can be empty but not null.");
+		Assert.notNull(metaFieldPrefix, "metaFieldPrefix can be empty but not null.");
 		this.allowedIdentifierNames = allowedIdentifierNames;
+		this.metaFieldPrefix = metaFieldPrefix;
 	}
 
 	public void setAllowedIdentifierNames(List<String> allowedIdentifierNames) {
@@ -112,7 +135,7 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 		}
 
 		if (this.allowedIdentifierNames.contains(identifier)) {
-			return "meta_" + identifier;
+			return this.metaFieldPrefix + identifier;
 		}
 
 		throw new IllegalArgumentException("Not allowed filter identifier name: " + identifier

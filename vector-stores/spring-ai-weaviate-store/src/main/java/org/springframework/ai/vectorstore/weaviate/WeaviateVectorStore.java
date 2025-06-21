@@ -96,8 +96,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(WeaviateVectorStore.class);
 
-	private static final String METADATA_FIELD_PREFIX = "meta_";
-
 	private static final String METADATA_FIELD_NAME = "metadata";
 
 	private static final String ADDITIONAL_FIELD_NAME = "_additional";
@@ -162,7 +160,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		this.consistencyLevel = builder.consistencyLevel;
 		this.filterMetadataFields = builder.filterMetadataFields;
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
-				this.filterMetadataFields.stream().map(MetadataField::name).toList());
+				this.filterMetadataFields.stream().map(MetadataField::name).toList(),
+				this.options.getMetaFieldPrefix());
 		this.weaviateSimilaritySearchFields = buildWeaviateSimilaritySearchFields();
 	}
 
@@ -182,7 +181,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		searchWeaviateFieldList.add(Field.builder().name(this.options.getContentFieldName()).build());
 		searchWeaviateFieldList.add(Field.builder().name(METADATA_FIELD_NAME).build());
 		searchWeaviateFieldList.addAll(this.filterMetadataFields.stream()
-			.map(mf -> Field.builder().name(METADATA_FIELD_PREFIX + mf.name()).build())
+			.map(mf -> Field.builder().name(this.options.getMetaFieldPrefix() + mf.name()).build())
 			.toList());
 		searchWeaviateFieldList.add(Field.builder()
 			.name(ADDITIONAL_FIELD_NAME)
@@ -260,7 +259,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		// expressions on them.
 		for (MetadataField mf : this.filterMetadataFields) {
 			if (document.getMetadata().containsKey(mf.name())) {
-				fields.put(METADATA_FIELD_PREFIX + mf.name(), document.getMetadata().get(mf.name()));
+				fields.put(this.options.getMetaFieldPrefix() + mf.name(), document.getMetadata().get(mf.name()));
 			}
 		}
 
