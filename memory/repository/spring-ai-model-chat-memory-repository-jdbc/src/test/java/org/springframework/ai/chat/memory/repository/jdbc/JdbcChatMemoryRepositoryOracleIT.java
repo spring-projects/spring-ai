@@ -27,8 +27,8 @@ import org.springframework.test.context.jdbc.Sql;
  */
 
 @SpringBootTest
-@TestPropertySource(properties = {"spring.datasource.url=jdbc:tc:oracle:21.3.0.0:///"})
+@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:oracle:21.3.0.0:///" })
 @Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-oracle.sql")
-public class JdbcChatMemoryRepositoryOracleIT extends AbstractJdbcChatMemoryRepositoryIT{
+public class JdbcChatMemoryRepositoryOracleIT extends AbstractJdbcChatMemoryRepositoryIT {
 
 }

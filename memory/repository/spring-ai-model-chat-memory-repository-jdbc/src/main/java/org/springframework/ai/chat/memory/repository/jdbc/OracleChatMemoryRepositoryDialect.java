@@ -24,6 +24,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  */
 
 public class OracleChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
+
 	@Override
 	public String getSelectMessagesSql() {
 		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY \"timestamp\"";
@@ -45,9 +46,10 @@ public class OracleChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 	}
 
 	/**
-	 * This method requires uncommenting the Override annotation after the interface defines the method
+	 * This method requires uncommenting the Override annotation after the interface
+	 * defines the method
 	 */
-	//@Override
+	// @Override
 	public String getDeleteAllMessageSql() {
 		return "DELETE FROM SPRING_AI_CHAT_MEMORY";
 	}
