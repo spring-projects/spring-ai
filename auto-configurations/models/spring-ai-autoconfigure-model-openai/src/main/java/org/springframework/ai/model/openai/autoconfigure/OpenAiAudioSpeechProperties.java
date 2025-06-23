@@ -36,7 +36,7 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.speech";
 
-	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioApi.TtsModel.TTS_1.getValue();
+	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.getValue();
 
 	private static final Float SPEED = 1.0f;
 

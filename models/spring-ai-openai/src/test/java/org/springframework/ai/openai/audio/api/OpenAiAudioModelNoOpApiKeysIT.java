@@ -44,7 +44,7 @@ public class OpenAiAudioModelNoOpApiKeysIT {
 	void checkNoOpKey() {
 		assertThatThrownBy(() -> this.audioApi
 			.createSpeech(OpenAiAudioApi.SpeechRequest.builder()
-				.model(OpenAiAudioApi.TtsModel.TTS_1_HD.getValue())
+				.model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.getValue())
 				.input("Hello, my name is Chris and I love Spring A.I.")
 				.voice(OpenAiAudioApi.SpeechRequest.Voice.ONYX.getValue())
 				.build())
