@@ -26,7 +26,7 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.transcription";
 
-	public static final String DEFAULT_TRANSCRIPTION_MODEL = OpenAiAudioApi.WhisperModel.WHISPER_1.getValue();
+	public static final String DEFAULT_TRANSCRIPTION_MODEL = OpenAiAudioApi.TranscriptionModels.WHISPER_1.getValue();
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
