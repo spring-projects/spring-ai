@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -133,7 +134,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 						new IllegalStateException("Error calling tool: " + response.content()));
 			}
 			return ModelOptionsUtils.toJsonString(response.content());
-		}).block();
+		}).contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext())).block();
 	}
 
 	@Override

@@ -64,6 +64,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
@@ -265,8 +266,15 @@ public class AnthropicChatModel implements ChatModel {
 					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
-						return Flux.defer(() -> {
-							var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+						return Flux.deferContextual((ctx) -> {
+							// TODO: factor out the tool execution logic with setting context into a uitlity.
+							ToolExecutionResult toolExecutionResult;
+							try {
+								ToolCallReactiveContextHolder.setContext(ctx);
+								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+							} finally {
+								ToolCallReactiveContextHolder.clearContext();
+							}
 							if (toolExecutionResult.returnDirect()) {
 								// Return tool execution result directly to the client.
 								return Flux.just(ChatResponse.builder().from(chatResponse)
@@ -279,6 +287,7 @@ public class AnthropicChatModel implements ChatModel {
 										chatResponse);
 							}
 						}).subscribeOn(Schedulers.boundedElastic());
+
 					} else {						
 						return Mono.empty();
 					}
