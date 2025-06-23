@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.autoconfigure.ollama;
+package org.springframework.ai.model.ollama.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
 
-import org.springframework.ai.autoconfigure.chat.model.ToolCallingAutoConfiguration;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
-import org.springframework.ai.model.function.FunctionCallbackResolver;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -38,9 +37,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -50,14 +49,16 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.0
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+		ToolCallingAutoConfiguration.class })
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties({ OllamaChatProperties.class, OllamaEmbeddingProperties.class,
 		OllamaConnectionProperties.class, OllamaInitializationProperties.class })
-@ImportAutoConfiguration(classes = { RestClientAutoConfiguration.class, ToolCallingAutoConfiguration.class,
-		WebClientAutoConfiguration.class })
+@ImportAutoConfiguration(classes = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+		ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class })
 public class OllamaAutoConfiguration {
 
 	@Bean
@@ -68,12 +69,15 @@ public class OllamaAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails,
+	public OllamaApi ollamaApi(OllamaConnectionProperties connectionProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider) {
-		return new OllamaApi(connectionDetails.getBaseUrl(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder));
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+		return OllamaApi.builder()
+			.baseUrl(connectionProperties.getBaseUrl())
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 	@Bean
@@ -125,14 +129,6 @@ public class OllamaAutoConfiguration {
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
 		return embeddingModel;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public FunctionCallbackResolver springAiFunctionManager(ApplicationContext context) {
-		DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-		manager.setApplicationContext(context);
-		return manager;
 	}
 
 	static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
