@@ -222,7 +222,7 @@ public class OpenAiChatModel implements ChatModel {
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
-							"index", choice.index(),
+							"index", choice.index() != null ? choice.index() : 0,
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
 							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
@@ -325,7 +325,7 @@ public class OpenAiChatModel implements ChatModel {
 							Map<String, Object> metadata = Map.of(
 									"id", id,
 									"role", roleMap.getOrDefault(id, ""),
-									"index", choice.index(),
+									"index", choice.index() != null ? choice.index() : 0,
 									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
 									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
 									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());

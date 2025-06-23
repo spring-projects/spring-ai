@@ -593,8 +593,9 @@ You can customize what data from `AdvisedRequest` and `ChatResponse` is logged b
 [source,java]
 ----
 SimpleLoggerAdvisor(
-    Function<AdvisedRequest, String> requestToString,
-    Function<ChatResponse, String> responseToString
+    Function<ChatClientRequest, String> requestToString,
+    Function<ChatResponse, String> responseToString,
+    int order
 )
 ----
 
@@ -603,8 +604,9 @@ Example usage:
 [source,java]
 ----
 SimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
-    request -> "Custom request: " + request.userText,
-    response -> "Custom response: " + response.getResult()
+    request -> "Custom request: " + request.prompt().getUserMessage(),
+    response -> "Custom response: " + response.getResult(),
+    0
 );
 ----
 

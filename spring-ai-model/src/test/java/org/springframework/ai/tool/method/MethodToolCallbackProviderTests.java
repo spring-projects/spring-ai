@@ -16,6 +16,7 @@
 
 package org.springframework.ai.tool.method;
 
+import java.lang.annotation.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -23,6 +24,9 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
+import org.springframework.ai.tool.execution.ToolCallResultConverter;
+import org.springframework.core.annotation.AliasFor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,6 +89,27 @@ class MethodToolCallbackProviderTests {
 			.build();
 		assertThat(provider.getToolCallbacks()).hasSize(1);
 		assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("objectTool");
+	}
+
+	@Test
+	void whenToolObjectHasEnhanceToolAnnotatedMethodThenSucceed() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new ToolUseEnhanceToolObject())
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("enhanceTool");
+		assertThat(provider.getToolCallbacks()[0].getToolDefinition().description()).isEqualTo("enhance tool");
+	}
+
+	@Test
+	void whenEnhanceToolObjectHasMixOfValidAndFunctionalTypeToolMethodsThenSucceed() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new UseEnhanceToolMixedToolMethodsObject())
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("validTool");
 	}
 
 	static class ValidToolObject {
@@ -151,6 +176,52 @@ class MethodToolCallbackProviderTests {
 		@Tool
 		public Object objectTool() {
 			return "Object tool result";
+		}
+
+	}
+
+	@Target({ ElementType.METHOD, ElementType.ANNOTATION_TYPE })
+	@Retention(RetentionPolicy.RUNTIME)
+	@Documented
+	@Tool
+	@Inherited
+	@interface EnhanceTool {
+
+		@AliasFor(annotation = Tool.class)
+		String name() default "";
+
+		@AliasFor(annotation = Tool.class)
+		String description() default "";
+
+		@AliasFor(annotation = Tool.class)
+		boolean returnDirect() default false;
+
+		@AliasFor(annotation = Tool.class)
+		Class<? extends ToolCallResultConverter> resultConverter() default DefaultToolCallResultConverter.class;
+
+		String enhanceValue() default "";
+
+	}
+
+	static class ToolUseEnhanceToolObject {
+
+		@EnhanceTool(description = "enhance tool")
+		public String enhanceTool() {
+			return "enhance tool result";
+		}
+
+	}
+
+	static class UseEnhanceToolMixedToolMethodsObject {
+
+		@EnhanceTool
+		public String validTool() {
+			return "Valid tool result";
+		}
+
+		@EnhanceTool
+		public Function<String, String> functionTool() {
+			return input -> "Function result: " + input;
 		}
 
 	}
