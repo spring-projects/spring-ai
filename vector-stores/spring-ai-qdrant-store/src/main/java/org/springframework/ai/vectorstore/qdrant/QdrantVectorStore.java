@@ -296,6 +296,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 */
 	private Map<String, Value> toPayload(Document document) {
 		try {
+			if(!document.isText()) {
+				throw new IllegalArgumentException("""
+						QdrantVectorStore supports only text-based Document for now –
+						received media-only Document; see issue #3609.
+						""");
+			}
+
 			var payload = QdrantValueFactory.toValueMap(document.getMetadata());
 			payload.put(CONTENT_FIELD_NAME, io.qdrant.client.ValueFactory.value(document.getText()));
 			return payload;
