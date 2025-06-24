@@ -71,8 +71,8 @@ public interface ToolExecutionEligibilityPredicate extends BiPredicate<ChatOptio
 	 */
 	default boolean isLimitExceeded(ChatOptions promptOptions, int toolExecutionIterations) {
 		if (promptOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			return toolCallingChatOptions.getInternalToolExecutionMaxIterations() == null
-					|| toolExecutionIterations <= toolCallingChatOptions.getInternalToolExecutionMaxIterations();
+			return toolCallingChatOptions.getInternalToolExecutionMaxIterations() != null
+					&& toolExecutionIterations > toolCallingChatOptions.getInternalToolExecutionMaxIterations();
 		}
 
 		return false;
