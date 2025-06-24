@@ -18,10 +18,12 @@ package org.springframework.ai.minimax;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -45,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Alexandros Pappas
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -167,11 +170,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.presencePenalty(fromOptions.getPresencePenalty())
 			.responseFormat(fromOptions.getResponseFormat())
 			.seed(fromOptions.getSeed())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.maskSensitiveInfo(fromOptions.getMaskSensitiveInfo())
-			.tools(fromOptions.getTools())
+			.tools(fromOptions.getTools() != null ? new ArrayList<>(fromOptions.getTools()) : null)
 			.toolChoice(fromOptions.getToolChoice())
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
@@ -252,7 +255,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	public List<String> getStop() {
-		return this.stop;
+		return (this.stop != null) ? Collections.unmodifiableList(this.stop) : null;
 	}
 
 	public void setStop(List<String> stop) {
@@ -286,7 +289,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	public List<MiniMaxApi.FunctionTool> getTools() {
-		return this.tools;
+		return (this.tools != null) ? Collections.unmodifiableList(this.tools) : null;
 	}
 
 	public void setTools(List<MiniMaxApi.FunctionTool> tools) {
@@ -310,7 +313,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	@Override
 	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
-		return this.toolCallbacks;
+		return Collections.unmodifiableList(this.toolCallbacks);
 	}
 
 	@Override
@@ -324,7 +327,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	@Override
 	@JsonIgnore
 	public Set<String> getToolNames() {
-		return this.toolNames;
+		return Collections.unmodifiableSet(this.toolNames);
 	}
 
 	@Override
@@ -351,7 +354,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public Map<String, Object> getToolContext() {
-		return this.toolContext;
+		return (this.toolContext != null) ? Collections.unmodifiableMap(this.toolContext) : null;
 	}
 
 	@Override
@@ -361,182 +364,28 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.frequencyPenalty == null) ? 0 : this.frequencyPenalty.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.n == null) ? 0 : this.n.hashCode());
-		result = prime * result + ((this.presencePenalty == null) ? 0 : this.presencePenalty.hashCode());
-		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
-		result = prime * result + ((this.seed == null) ? 0 : this.seed.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.maskSensitiveInfo == null) ? 0 : this.maskSensitiveInfo.hashCode());
-		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
-		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
-		result = prime * result + ((this.toolCallbacks == null) ? 0 : this.toolCallbacks.hashCode());
-		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
-		result = prime * result
-				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
-		return result;
+		return Objects.hash(model, frequencyPenalty, maxTokens, n, presencePenalty, responseFormat, seed, stop,
+				temperature, topP, maskSensitiveInfo, tools, toolChoice, toolCallbacks, toolNames, toolContext,
+				internalToolExecutionEnabled);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object o) {
+		if (this == o)
 			return true;
-		}
-		if (obj == null) {
+		if (o == null || getClass() != o.getClass())
 			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		MiniMaxChatOptions other = (MiniMaxChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.frequencyPenalty == null) {
-			if (other.frequencyPenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.frequencyPenalty.equals(other.frequencyPenalty)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.n == null) {
-			if (other.n != null) {
-				return false;
-			}
-		}
-		else if (!this.n.equals(other.n)) {
-			return false;
-		}
-		if (this.presencePenalty == null) {
-			if (other.presencePenalty != null) {
-				return false;
-			}
-		}
-		else if (!this.presencePenalty.equals(other.presencePenalty)) {
-			return false;
-		}
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null) {
-				return false;
-			}
-		}
-		else if (!this.responseFormat.equals(other.responseFormat)) {
-			return false;
-		}
-		if (this.seed == null) {
-			if (other.seed != null) {
-				return false;
-			}
-		}
-		else if (!this.seed.equals(other.seed)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.maskSensitiveInfo == null) {
-			if (other.maskSensitiveInfo != null) {
-				return false;
-			}
-		}
-		else if (!this.maskSensitiveInfo.equals(other.maskSensitiveInfo)) {
-			return false;
-		}
-		if (this.tools == null) {
-			if (other.tools != null) {
-				return false;
-			}
-		}
-		else if (!this.tools.equals(other.tools)) {
-			return false;
-		}
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null) {
-				return false;
-			}
-		}
-		else if (!this.toolChoice.equals(other.toolChoice)) {
-			return false;
-		}
-		if (this.internalToolExecutionEnabled == null) {
-			if (other.internalToolExecutionEnabled != null) {
-				return false;
-			}
-		}
-		else if (!this.internalToolExecutionEnabled.equals(other.internalToolExecutionEnabled)) {
-			return false;
-		}
-
-		if (this.toolNames == null) {
-			if (other.toolNames != null) {
-				return false;
-			}
-		}
-		else if (!this.toolNames.equals(other.toolNames)) {
-			return false;
-		}
-
-		if (this.toolCallbacks == null) {
-			if (other.toolCallbacks != null) {
-				return false;
-			}
-		}
-		else if (!this.toolCallbacks.equals(other.toolCallbacks)) {
-			return false;
-		}
-
-		if (this.toolContext == null) {
-			if (other.toolContext != null) {
-				return false;
-			}
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-
-		return true;
+		MiniMaxChatOptions that = (MiniMaxChatOptions) o;
+		return Objects.equals(model, that.model) && Objects.equals(frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(maxTokens, that.maxTokens) && Objects.equals(n, that.n)
+				&& Objects.equals(presencePenalty, that.presencePenalty)
+				&& Objects.equals(responseFormat, that.responseFormat) && Objects.equals(seed, that.seed)
+				&& Objects.equals(stop, that.stop) && Objects.equals(temperature, that.temperature)
+				&& Objects.equals(topP, that.topP) && Objects.equals(maskSensitiveInfo, that.maskSensitiveInfo)
+				&& Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice)
+				&& Objects.equals(toolCallbacks, that.toolCallbacks) && Objects.equals(toolNames, that.toolNames)
+				&& Objects.equals(toolContext, that.toolContext)
+				&& Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled);
 	}
 
 	@Override

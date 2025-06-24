@@ -128,8 +128,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
-https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 == Tool Calling
 
@@ -166,7 +165,7 @@ public Function<Request, Response> weatherFunction() {
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
-        .tools("weatherFunction")
+        .toolNames("weatherFunction")
         .inputType(Request.class)
         .call()
         .content();

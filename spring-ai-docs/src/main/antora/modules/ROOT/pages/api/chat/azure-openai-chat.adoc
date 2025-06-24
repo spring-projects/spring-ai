@@ -199,7 +199,7 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
 | spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
-With this configuration the `spring.ai.azure.openai.chat.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+With this configuration the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 | spring.ai.azure.openai.custom-headers | A map of custom headers to be included in the API requests. Each entry in the map represents a header, where the key is the header name and the value is the header value. | Empty map
 |====
 
@@ -236,7 +236,10 @@ Deployments model name to provide as part of this completions request. | gpt-4o
 | spring.ai.azure.openai.chat.options.n | The number of chat completions choices that should be generated for a chat completions response. | -
 | spring.ai.azure.openai.chat.options.stop | A collection of textual sequences that will end completions generation. | -
 | spring.ai.azure.openai.chat.options.presencePenalty |  A value that influences the probability of generated tokens appearing based on their existing presence in generated text. Positive values will make tokens less likely to appear when they already exist and increase the model's likelihood to output new topics. | -
-| spring.ai.azure.openai.chat.options.responseFormat | An object specifying the format that the model must output. Using `AzureOpenAiResponseFormat.JSON` enables JSON mode, which guarantees the message the model generates is valid JSON.  Using AzureOpenAiResponseFormat.TEXT enables TEXT mode.| -
+| spring.ai.azure.openai.chat.options.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`.
+The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
+The `JSON_SCHEMA` type enables Structured Outputs which guarantees the model will match your supplied JSON schema. The `JSON_SCHEMA` type requires setting the `responseFormat.schema` property as well. | -
+| spring.ai.azure.openai.chat.options.responseFormat.schema | Response format JSON schema. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
 | spring.ai.azure.openai.chat.options.frequencyPenalty | A value that influences the probability of generated tokens appearing based on their cumulative frequency in generated text. Positive values will make tokens less likely to appear as their frequency increases and decrease the likelihood of the model repeating the same statements verbatim. | -
 | spring.ai.azure.openai.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 |====
@@ -264,7 +267,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 
 == Function Calling

@@ -58,11 +58,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Jonghoon Park
  * @since 0.8.1
  */
 @Testcontainers
-@EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+"),
-		@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+") })
+@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String COLLECTION_NAME = "test_collection";
@@ -73,8 +73,7 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 	static QdrantContainer qdrantContainer = new QdrantContainer(QdrantImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"));
+		.withUserConfiguration(TestApplication.class);
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
@@ -311,6 +310,27 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 			QdrantVectorStore vectorStore = context.getBean(QdrantVectorStore.class);
 			Optional<QdrantClient> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
+		});
+	}
+
+	@Test
+	void shouldConvertLongToString() {
+		this.contextRunner.run(context -> {
+			QdrantVectorStore vectorStore = context.getBean(QdrantVectorStore.class);
+			var refId = System.currentTimeMillis();
+			var doc = new Document("Long type ref_id", Map.of("ref_id", refId));
+			vectorStore.add(List.of(doc));
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Long type ref_id").topK(1).build());
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			var resultRefId = resultDoc.getMetadata().get("ref_id");
+			assertThat(resultRefId).isInstanceOf(String.class);
+			assertThat(Double.valueOf((String) resultRefId)).isEqualTo(refId);
+
+			// Remove all documents from the store
+			vectorStore.delete(List.of(resultDoc.getId()));
 		});
 	}
 

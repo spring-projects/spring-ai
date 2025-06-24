@@ -51,6 +51,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Jonghoon Park
+ * @author Alexandros Pappas
  * @author Sun Yuhan
  * @since 0.8.0
  */
@@ -65,6 +66,9 @@ public final class OllamaApi {
 
 	private static final Log logger = LogFactory.getLog(OllamaApi.class);
 
+
+	private static final String DEFAULT_BASE_URL = "http://localhost:11434";
+
 	private final RestClient restClient;
 
 	private final WebClient webClient;
@@ -78,10 +82,12 @@ public final class OllamaApi {
 	 */
 	private OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
+
 		Consumer<HttpHeaders> defaultHeaders = headers -> {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		};
+
 
 		this.restClient = restClientBuilder
 				.clone()
@@ -89,6 +95,7 @@ public final class OllamaApi {
 				.defaultHeaders(defaultHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
+
 
 		this.webClient = webClientBuilder
 				.clone()

@@ -35,10 +35,10 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
+import org.springframework.ai.retry.RetryUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Jihoon Kim
@@ -83,6 +83,7 @@ class OllamaChatModelTests {
 				() -> OllamaChatModel.builder()
 					.ollamaApi(this.ollamaApi)
 					.defaultOptions(OllamaOptions.builder().model(OllamaModel.LLAMA2).build())
+					.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 					.modelManagementOptions(null)
 					.build());
 		assertEquals("modelManagementOptions must not be null", exception.getMessage());
@@ -144,6 +145,30 @@ class OllamaChatModelTests {
 		assertEquals(Duration.ofNanos(promptEvalDuration).plus(Duration.ofSeconds(2)),
 				metadata.get("prompt-eval-duration"));
 		assertEquals(promptEvalCount + 66, (Integer) metadata.get("prompt-eval-count"));
+	}
+
+	@Test
+	void buildChatResponseMetadataAggregationWithNonEmptyMetadataButEmptyEval() {
+
+		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse("model", Instant.now(), null, null, null, null,
+				null, null, null, null, null);
+
+		ChatResponse previousChatResponse = ChatResponse.builder()
+			.generations(List.of())
+			.metadata(ChatResponseMetadata.builder()
+				.usage(new DefaultUsage(66, 99))
+				.keyValue("eval-duration", Duration.ofSeconds(2))
+				.keyValue("prompt-eval-duration", Duration.ofSeconds(2))
+				.build())
+			.build();
+
+		ChatResponseMetadata metadata = OllamaChatModel.from(response, previousChatResponse);
+
+		assertNull(metadata.get("eval-duration"));
+		assertNull(metadata.get("prompt-eval-duration"));
+		assertEquals(Integer.valueOf(99), metadata.get("eval-count"));
+		assertEquals(Integer.valueOf(66), metadata.get("prompt-eval-count"));
+
 	}
 
 }

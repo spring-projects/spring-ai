@@ -173,7 +173,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/MiniMaxChatOptions.java[MiniMaxChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/MiniMaxChatOptions.java[MiniMaxChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 == Sample Controller
 
@@ -282,11 +282,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = this.miniMaxApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, false));
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = this.miniMaxApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7f, true));
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-minimax/src/main/java/org/springframework/ai/minimax/api/MiniMaxApi.java[MiniMaxApi.java]'s JavaDoc for further information.

@@ -99,6 +99,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
@@ -162,6 +163,7 @@
 		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-bedrock-converse</module>
+		<module>models/spring-ai-elevenlabs</module>
 		<module>models/spring-ai-huggingface</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
@@ -180,6 +182,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
@@ -253,7 +256,7 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.4.5</spring-boot.version>
+		<spring-boot.version>3.5.0</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
@@ -261,8 +264,8 @@
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.31.26</bedrockruntime.version>
-		<awssdk.version>2.29.29</awssdk.version>
+		<bedrockruntime.version>2.31.65</bedrockruntime.version>
+		<awssdk.version>2.31.65</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
@@ -296,6 +299,7 @@
 		<azure-identity.version>1.15.4</azure-identity.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<azure-cosmos.version>5.22.0</azure-cosmos.version>
+		<elasticsearch-java.version>8.18.1</elasticsearch-java.version>
 		<weaviate-client.version>5.2.0</weaviate-client.version>
 		<qdrant.version>1.13.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
@@ -711,7 +715,8 @@
 								<exclude>org.springframework.ai.anthropic/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.azure.openai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.bedrock/**/*IT.java</exclude>
-								 <exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.elevenlabs/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.huggingface/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.minimax/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
@@ -759,6 +764,7 @@
 								 <exclude>org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
+								 <exclude>org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
 

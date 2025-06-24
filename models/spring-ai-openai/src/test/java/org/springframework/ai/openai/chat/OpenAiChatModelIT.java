@@ -551,8 +551,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
-	void streamingMultiModalityOutputAudio(String modelName) throws IOException {
-		// var audioResource = new ClassPathResource("speech1.mp3");
+	void streamingMultiModalityOutputAudio(String modelName) {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
 		assertThatThrownBy(() -> this.chatModel
@@ -564,13 +563,23 @@ public class OpenAiChatModelIT extends AbstractIT {
 						.build()))
 			.collectList()
 			.block()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Audio output is not supported for streaming requests.");
+
+		assertThatThrownBy(() -> this.chatModel
+			.stream(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder()
+						.model(modelName)
+						.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+						.build()))
+			.collectList()
+			.block()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Audio parameters are not supported for streaming requests.");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void multiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech1.mp3");
+		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
 			.text("What is this recording about?")
 			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
@@ -587,7 +596,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void streamingMultiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech1.mp3");
+		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
 			.text("What is this recording about?")
 			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))

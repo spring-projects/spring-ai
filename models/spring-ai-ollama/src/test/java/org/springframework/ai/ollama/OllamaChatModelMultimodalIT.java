@@ -16,6 +16,7 @@
 
 package org.springframework.ai.ollama;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -27,11 +28,17 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.RetryListener;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,9 +93,23 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
+			RetryTemplate retryTemplate = RetryTemplate.builder()
+				.maxAttempts(1)
+				.retryOn(TransientAiException.class)
+				.fixedBackoff(Duration.ofSeconds(1))
+				.withListener(new RetryListener() {
+
+					@Override
+					public <T extends Object, E extends Throwable> void onError(RetryContext context,
+							RetryCallback<T, E> callback, Throwable throwable) {
+						logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
+					}
+				})
+				.build();
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
 				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.retryTemplate(retryTemplate)
 				.build();
 		}
 
