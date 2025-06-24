@@ -85,15 +85,18 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 	/**
-	 * Get the maximum number of iteration for tool execution.
+	 * Get the maximum number of iteration for tool execution. If the number of iterations
+	 * exceeds the limit, an {@link ToolExecutionLimitExceededException} will be thrown.
 	 * @return the maximum number of iteration.
 	 * @see #getInternalToolExecutionEnabled()
+	 * @see ToolExecutionLimitExceededException
 	 */
 	@Nullable
 	Integer getInternalToolExecutionMaxIterations();
 
 	/**
-	 * Set the maximum number of iteration for tool execution.
+	 * Set the maximum number of iteration for tool execution. If the number of iterations
+	 * exceeds the limit, an {@link ToolExecutionLimitExceededException} will be thrown.
 	 * @param internalToolExecutionMaxIterations the maximum number of iteration.
 	 */
 	void setInternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations);

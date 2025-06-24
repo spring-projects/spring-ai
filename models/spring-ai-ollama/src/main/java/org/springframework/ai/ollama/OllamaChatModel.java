@@ -28,6 +28,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -293,6 +294,9 @@ public class OllamaChatModel implements ChatModel {
 						response, iterations + 1);
 			}
 		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
+		}
 
 		return response;
 	}
@@ -367,6 +371,8 @@ public class OllamaChatModel implements ChatModel {
 									response, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
+				} else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)){
+					throw new ToolExecutionLimitExceededException(iterations);
 				}
 				else {
 					return Flux.just(response);

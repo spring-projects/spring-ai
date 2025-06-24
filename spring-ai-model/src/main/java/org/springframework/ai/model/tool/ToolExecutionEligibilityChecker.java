@@ -103,14 +103,25 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 	default boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int toolExecutionIterations) {
 		boolean internalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
 		if (!internalToolExecutionEnabled) {
-			return internalToolExecutionEnabled;
+			return false;
 		}
 
-		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+		return !isLimitExceeded(chatOptions, toolExecutionIterations);
+	}
+
+	/**
+	 * Determines if the tool execution limit has been exceeded.
+	 * @param promptOptions The options from the prompt
+	 * @param toolExecutionIterations The number of toolExecutionIterations
+	 * @return true if the tool execution limit has been exceeded, false otherwise
+	 */
+	default boolean isLimitExceeded(ChatOptions promptOptions, int toolExecutionIterations) {
+		if (promptOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			return toolCallingChatOptions.getInternalToolExecutionMaxIterations() == null
 					|| toolExecutionIterations <= toolCallingChatOptions.getInternalToolExecutionMaxIterations();
 		}
-		return internalToolExecutionEnabled;
+
+		return false;
 	}
 
 }
