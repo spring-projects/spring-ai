@@ -85,25 +85,51 @@ public interface VectorStore extends DocumentWriter {
 	}
 
 	/**
+	 * Retrieves documents based on the specified search mode, query, and criteria.
+	 * Supports vector similarity, full-text, hybrid, and reranked hybrid searches as
+	 * defined by {@link SearchRequest#getSearchMode()}.
+	 * @param request Search request specifying query text, search mode, topK, similarity
+	 * threshold, and optional metadata filter expressions.
+	 * @return List of documents matching the request criteria, or empty list if no
+	 * matches.
+	 */
+	List<Document> search(SearchRequest request);
+
+	/**
 	 * Retrieves documents by query embedding similarity and metadata filters to retrieve
 	 * exactly the number of nearest-neighbor results that match the request criteria.
+	 * Delegates to {@link #search(SearchRequest)} with {@link SearchMode#VECTOR}.
 	 * @param request Search request for set search parameters, such as the query text,
 	 * topK, similarity threshold and metadata filter expressions.
-	 * @return Returns documents th match the query request conditions.
+	 * @return Returns documents that match the query request conditions, or null if no
+	 * matches.
+	 * @deprecated Use {@link #search(SearchRequest)} with {@link SearchMode#VECTOR}
+	 * instead.
 	 */
-	@Nullable
-	List<Document> similaritySearch(SearchRequest request);
+	@Deprecated
+	default List<Document> similaritySearch(SearchRequest request) {
+		return search(SearchRequest.builder()
+			.query(request.getQuery())
+			.topK(request.getTopK())
+			.similarityThreshold(request.getSimilarityThreshold())
+			.filterExpression(request.getFilterExpression())
+			.searchMode(SearchMode.VECTOR)
+			.build());
+	}
 
 	/**
 	 * Retrieves documents by query embedding similarity using the default
-	 * {@link SearchRequest}'s' search criteria.
+	 * {@link SearchRequest}'s search criteria. Delegates to
+	 * {@link #search(SearchRequest)} with {@link SearchMode#VECTOR}.
 	 * @param query Text to use for embedding similarity comparison.
 	 * @return Returns a list of documents that have embeddings similar to the query text
-	 * embedding.
+	 * embedding, or null if no matches.
+	 * @deprecated Use {@link #search(SearchRequest)} with {@link SearchMode#VECTOR}
+	 * instead.
 	 */
-	@Nullable
+	@Deprecated
 	default List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.builder().query(query).build());
+		return search(SearchRequest.builder().query(query).searchMode(SearchMode.VECTOR).build());
 	}
 
 	/**

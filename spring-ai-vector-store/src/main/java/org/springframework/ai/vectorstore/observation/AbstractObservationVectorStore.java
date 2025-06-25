@@ -24,6 +24,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.RerankingAdvisor;
+import org.springframework.ai.vectorstore.SearchMode;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -111,9 +113,9 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
+	@Deprecated
 	@Nullable
 	public List<Document> similaritySearch(SearchRequest request) {
-
 		VectorStoreObservationContext searchObservationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
 			.queryRequest(request)
@@ -123,9 +125,47 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION,
 					() -> searchObservationContext, this.observationRegistry)
 			.observe(() -> {
-				var documents = this.doSimilaritySearch(request);
+				SearchRequest vectorRequest = SearchRequest.builder()
+					.query(request.getQuery())
+					.topK(request.getTopK())
+					.similarityThreshold(request.getSimilarityThreshold())
+					.filterExpression(request.getFilterExpression())
+					.searchMode(SearchMode.VECTOR)
+					.build();
+				var documents = search(vectorRequest);
 				searchObservationContext.setQueryResponse(documents);
 				return documents;
+			});
+	}
+
+	/**
+	 * Retrieves documents based on the specified search mode, query, and criteria.
+	 * Default implementation supports {@link SearchMode#VECTOR} by delegating to
+	 * {@link #doSimilaritySearch(SearchRequest)}. Other modes throw an exception.
+	 * @param request Search request specifying query text, search mode, topK, similarity
+	 * threshold, and optional metadata filter expressions.
+	 * @return List of documents matching the request criteria, or empty list if no
+	 * matches.
+	 * @throws UnsupportedOperationException if the search mode is not supported.
+	 */
+	@Override
+	public List<Document> search(SearchRequest request) {
+		VectorStoreObservationContext searchObservationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
+			.queryRequest(request)
+			.build();
+
+		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION,
+					() -> searchObservationContext, this.observationRegistry)
+			.observe(() -> {
+				if (request.getSearchMode() != SearchMode.VECTOR) {
+					throw new UnsupportedOperationException(
+							"Search mode " + request.getSearchMode() + " not supported");
+				}
+				var documents = doSimilaritySearch(request);
+				searchObservationContext.setQueryResponse(documents);
+				return documents != null ? documents : List.of();
 			});
 	}
 

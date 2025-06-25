@@ -40,6 +40,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchMode;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.azure.AzureVectorStore.MetadataField;
@@ -116,6 +117,131 @@ public class AzureVectorStoreIT {
 			Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(SearchRequest.builder().query("Hello").topK(1).build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void addAndFullTextSearchTest() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			vectorStore.add(this.documents);
+
+			Awaitility.await()
+				.until(() -> vectorStore.search(SearchRequest.builder()
+					.query("Great Depression")
+					.topK(1)
+					.searchMode(SearchMode.FULL_TEXT)
+					.build()), hasSize(1));
+
+			List<Document> results = vectorStore.search(SearchRequest.builder()
+				.query("Great Depression")
+				.topK(1)
+				.searchMode(SearchMode.FULL_TEXT)
+				.scoreThreshold(0.0)
+				.build());
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getMetadata()).hasSize(2);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
+
+			// Remove all documents from the store
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore
+					.search(SearchRequest.builder().query("Hello").topK(1).searchMode(SearchMode.FULL_TEXT).build()),
+						hasSize(0));
+		});
+	}
+
+	@Test
+	public void addAndHybridSearchTest() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			vectorStore.add(this.documents);
+
+			Awaitility.await()
+				.until(() -> vectorStore.search(SearchRequest.builder()
+					.query("Great Depression")
+					.topK(1)
+					.searchMode(SearchMode.HYBRID)
+					.build()), hasSize(1));
+
+			List<Document> results = vectorStore.search(SearchRequest.builder()
+				.query("Great Depression")
+				.topK(1)
+				.searchMode(SearchMode.HYBRID)
+				.scoreThreshold(0.0)
+				.build());
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getMetadata()).hasSize(2);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
+
+			// Remove all documents from the store
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore
+					.search(SearchRequest.builder().query("Hello").topK(1).searchMode(SearchMode.HYBRID).build()),
+						hasSize(0));
+		});
+	}
+
+	@Test
+	public void addAndHybridRerankedSearchTest() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			vectorStore.add(this.documents);
+
+			Awaitility.await()
+				.until(() -> vectorStore.search(SearchRequest.builder()
+					.query("Great Depression")
+					.topK(1)
+					.searchMode(SearchMode.HYBRID_RERANKED)
+					.rerankingAdvisor(new AzureSemanticRerankingAdvisor())
+					.build()), hasSize(1));
+
+			List<Document> results = vectorStore.search(SearchRequest.builder()
+				.query("Great Depression")
+				.topK(1)
+				.searchMode(SearchMode.HYBRID_RERANKED)
+				.rerankingAdvisor(new AzureSemanticRerankingAdvisor())
+				.scoreThreshold(2.0)
+				.resultLimit(10)
+				.build());
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
+			assertThat(resultDoc.getText()).contains("The Great Depression (1929–1939) was an economic shock");
+			assertThat(resultDoc.getMetadata()).hasSize(3);
+			assertThat(resultDoc.getMetadata()).containsKey("meta2");
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
+			assertThat(resultDoc.getMetadata()).containsKey("re-rank_score");
+			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(2.0);
+
+			// Remove all documents from the store
+			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+
+			Awaitility.await()
+				.until(() -> vectorStore.search(SearchRequest.builder()
+					.query("Hello")
+					.topK(1)
+					.searchMode(SearchMode.HYBRID_RERANKED)
+					.rerankingAdvisor(new AzureSemanticRerankingAdvisor())
+					.build()), hasSize(0));
 		});
 	}
 

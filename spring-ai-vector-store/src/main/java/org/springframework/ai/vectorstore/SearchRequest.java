@@ -59,6 +59,15 @@ public class SearchRequest {
 	@Nullable
 	private Filter.Expression filterExpression;
 
+	private SearchMode searchMode = SearchMode.VECTOR;
+
+	@Nullable
+	private RerankingAdvisor rerankingAdvisor;
+
+	private double scoreThreshold = SIMILARITY_THRESHOLD_ACCEPT_ALL;
+
+	private int resultLimit = topK;
+
 	/**
 	 * Copy an existing {@link SearchRequest.Builder} instance.
 	 * @param originalSearchRequest {@link SearchRequest} instance to copy.
@@ -68,7 +77,11 @@ public class SearchRequest {
 		return builder().query(originalSearchRequest.getQuery())
 			.topK(originalSearchRequest.getTopK())
 			.similarityThreshold(originalSearchRequest.getSimilarityThreshold())
-			.filterExpression(originalSearchRequest.getFilterExpression());
+			.filterExpression(originalSearchRequest.getFilterExpression())
+			.searchMode(originalSearchRequest.getSearchMode())
+			.rerankingAdvisor(originalSearchRequest.getRerankingAdvisor())
+			.scoreThreshold(originalSearchRequest.getScoreThreshold())
+			.resultLimit(originalSearchRequest.getResultLimit());
 	}
 
 	public SearchRequest() {
@@ -79,6 +92,10 @@ public class SearchRequest {
 		this.topK = original.topK;
 		this.similarityThreshold = original.similarityThreshold;
 		this.filterExpression = original.filterExpression;
+		this.searchMode = original.searchMode;
+		this.rerankingAdvisor = original.rerankingAdvisor;
+		this.scoreThreshold = original.scoreThreshold;
+		this.resultLimit = original.resultLimit;
 	}
 
 	public String getQuery() {
@@ -102,10 +119,45 @@ public class SearchRequest {
 		return this.filterExpression != null;
 	}
 
+	/**
+	 * Returns the search mode.
+	 * @return The search mode.
+	 */
+	public SearchMode getSearchMode() {
+		return this.searchMode;
+	}
+
+	/**
+	 * Returns the reranking advisor.
+	 * @return The reranking advisor, or null if none set.
+	 */
+	@Nullable
+	public RerankingAdvisor getRerankingAdvisor() {
+		return this.rerankingAdvisor;
+	}
+
+	/**
+	 * Returns the score threshold for filtering results.
+	 * @return The score threshold.
+	 */
+	public double getScoreThreshold() {
+		return this.scoreThreshold;
+	}
+
+	/**
+	 * Returns the maximum number of results to return.
+	 * @return The result limit.
+	 */
+	public int getResultLimit() {
+		return this.resultLimit;
+	}
+
 	@Override
 	public String toString() {
 		return "SearchRequest{" + "query='" + this.query + '\'' + ", topK=" + this.topK + ", similarityThreshold="
-				+ this.similarityThreshold + ", filterExpression=" + this.filterExpression + '}';
+				+ this.similarityThreshold + ", filterExpression=" + this.filterExpression + ", searchMode="
+				+ this.searchMode + ", rerankingAdvisor=" + this.rerankingAdvisor + ", scoreThreshold="
+				+ this.scoreThreshold + ", resultLimit=" + this.resultLimit + '}';
 	}
 
 	@Override
@@ -118,13 +170,16 @@ public class SearchRequest {
 		}
 		SearchRequest that = (SearchRequest) o;
 		return this.topK == that.topK && Double.compare(that.similarityThreshold, this.similarityThreshold) == 0
+				&& Double.compare(that.scoreThreshold, this.scoreThreshold) == 0 && this.resultLimit == that.resultLimit
 				&& Objects.equals(this.query, that.query)
-				&& Objects.equals(this.filterExpression, that.filterExpression);
+				&& Objects.equals(this.filterExpression, that.filterExpression) && this.searchMode == that.searchMode
+				&& Objects.equals(this.rerankingAdvisor, that.rerankingAdvisor);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.query, this.topK, this.similarityThreshold, this.filterExpression);
+		return Objects.hash(this.query, this.topK, this.similarityThreshold, this.filterExpression, this.searchMode,
+				this.rerankingAdvisor, this.scoreThreshold, this.resultLimit);
 	}
 
 	/**
@@ -284,6 +339,50 @@ public class SearchRequest {
 		public Builder filterExpression(@Nullable String textExpression) {
 			this.searchRequest.filterExpression = (textExpression != null)
 					? new FilterExpressionTextParser().parse(textExpression) : null;
+			return this;
+		}
+
+		/**
+		 * Sets the search mode (e.g., vector, full-text, hybrid, or reranked hybrid).
+		 * @param searchMode The search mode.
+		 * @return This builder for chaining.
+		 */
+		public Builder searchMode(SearchMode searchMode) {
+			this.searchRequest.searchMode = searchMode != null ? searchMode : SearchMode.VECTOR;
+			return this;
+		}
+
+		/**
+		 * Sets the reranking advisor.
+		 * @param rerankingAdvisor The reranking advisor, or null for no reranking.
+		 * @return This builder.
+		 */
+		public Builder rerankingAdvisor(@Nullable RerankingAdvisor rerankingAdvisor) {
+			this.searchRequest.rerankingAdvisor = rerankingAdvisor;
+			return this;
+		}
+
+		/**
+		 * Sets the score threshold for filtering results.
+		 * @param scoreThreshold The lower bound of the score.
+		 * @return This builder.
+		 * @throws IllegalArgumentException if threshold is negative.
+		 */
+		public Builder scoreThreshold(double scoreThreshold) {
+			Assert.isTrue(scoreThreshold >= 0, "Score threshold must be non-negative.");
+			this.searchRequest.scoreThreshold = scoreThreshold;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of results to return.
+		 * @param resultLimit The maximum number of results.
+		 * @return This builder.
+		 * @throws IllegalArgumentException if resultLimit is negative.
+		 */
+		public Builder resultLimit(int resultLimit) {
+			Assert.isTrue(resultLimit >= 0, "Result limit must be positive.");
+			this.searchRequest.resultLimit = resultLimit;
 			return this;
 		}
 
