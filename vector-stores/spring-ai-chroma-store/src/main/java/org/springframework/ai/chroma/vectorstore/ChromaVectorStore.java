@@ -45,7 +45,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -148,7 +147,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(@NonNull List<Document> documents) {
+	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 		if (CollectionUtils.isEmpty(documents)) {
 			return;
@@ -202,8 +201,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	@NonNull
-	public List<Document> doSimilaritySearch(@NonNull SearchRequest request) {
+	public List<Document> doSimilaritySearch(SearchRequest request) {
 
 		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");
