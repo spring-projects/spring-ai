@@ -88,6 +88,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
 				.filter(this::isToolAnnotatedMethod)
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
+				.filter(ReflectionUtils.USER_DECLARED_METHODS::matches)
 				.map(toolMethod -> MethodToolCallback.builder()
 					.toolDefinition(ToolDefinitions.from(toolMethod))
 					.toolMetadata(ToolMetadata.from(toolMethod))
