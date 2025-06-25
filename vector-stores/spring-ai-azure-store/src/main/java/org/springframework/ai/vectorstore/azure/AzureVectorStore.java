@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.azure;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,9 +40,12 @@ import com.azure.search.documents.indexes.models.VectorSearchAlgorithmMetric;
 import com.azure.search.documents.indexes.models.VectorSearchProfile;
 import com.azure.search.documents.models.IndexDocumentsResult;
 import com.azure.search.documents.models.IndexingResult;
+import com.azure.search.documents.models.QueryType;
 import com.azure.search.documents.models.SearchOptions;
+import com.azure.search.documents.models.SemanticSearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
+import com.azure.search.documents.util.SearchPagedIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,10 +57,13 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.RerankingAdvisor;
+import org.springframework.ai.vectorstore.SearchMode;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
+import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -125,6 +132,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	private Double defaultSimilarityThreshold;
 
 	private String indexName;
+
+	private RerankingAdvisor rerankingAdvisor;
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
@@ -202,58 +211,15 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.builder()
-			.query(query)
-			.topK(this.defaultTopK)
-			.similarityThreshold(this.defaultSimilarityThreshold)
-			.build());
-	}
-
-	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
-
 		Assert.notNull(request, "The search request must not be null.");
-
-		var searchEmbedding = this.embeddingModel.embed(request.getQuery());
-
-		final var vectorQuery = new VectorizedQuery(EmbeddingUtils.toList(searchEmbedding))
-			.setKNearestNeighborsCount(request.getTopK())
-			// Set the fields to compare the vector against. This is a comma-delimited
-			// list of field names.
-			.setFields(EMBEDDING_FIELD_NAME);
-
-		var searchOptions = new SearchOptions()
-			.setVectorSearchOptions(new VectorSearchOptions().setQueries(vectorQuery));
-
-		if (request.hasFilterExpression()) {
-			String oDataFilter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
-			searchOptions.setFilter(oDataFilter);
-		}
-
-		final var searchResults = this.searchClient.search(null, searchOptions, Context.NONE);
-
-		return searchResults.stream()
-			.filter(result -> result.getScore() >= request.getSimilarityThreshold())
-			.map(result -> {
-
-				final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
-
-				Map<String, Object> metadata = (StringUtils.hasText(entry.metadata()))
-						? JSONObject.parseObject(entry.metadata(), new TypeReference<Map<String, Object>>() {
-
-						}) : Map.of();
-
-				metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - result.getScore());
-
-				return Document.builder()
-					.id(entry.id())
-					.text(entry.content)
-					.metadata(metadata)
-					.score(result.getScore())
-					.build();
-			})
-			.collect(Collectors.toList());
+		return search(SearchRequest.builder()
+			.query(request.getQuery())
+			.topK(request.getTopK())
+			.similarityThreshold(request.getSimilarityThreshold())
+			.filterExpression(request.getFilterExpression())
+			.searchMode(SearchMode.VECTOR)
+			.build());
 	}
 
 	@Override
@@ -307,6 +273,83 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		logger.info("Created search index: " + index.getName());
 
 		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
+	}
+
+	@Override
+	public List<Document> search(SearchRequest request) {
+		Assert.notNull(request, "The search request must not be null.");
+
+		SearchOptions options = new SearchOptions();
+		int limit = request.getResultLimit();
+
+		switch (request.getSearchMode()) {
+			case VECTOR:
+				var vectorQuery = new VectorizedQuery(EmbeddingUtils.toList(embeddingModel.embed(request.getQuery())))
+					.setKNearestNeighborsCount(request.getTopK())
+					.setFields(EMBEDDING_FIELD_NAME);
+				options.setVectorSearchOptions(new VectorSearchOptions().setQueries(vectorQuery));
+				options.setTop(request.getTopK());
+				break;
+			case FULL_TEXT:
+				options.setQueryType(QueryType.FULL);
+				options.setTop(request.getTopK());
+				break;
+			case HYBRID:
+				var hybridVectorQuery = new VectorizedQuery(
+						EmbeddingUtils.toList(embeddingModel.embed(request.getQuery())))
+					.setKNearestNeighborsCount(request.getTopK())
+					.setFields(EMBEDDING_FIELD_NAME);
+				options.setVectorSearchOptions(new VectorSearchOptions().setQueries(hybridVectorQuery));
+				options.setQueryType(QueryType.FULL);
+				options.setTop(request.getTopK());
+				break;
+			case HYBRID_RERANKED:
+				var rerankedVectorQuery = new VectorizedQuery(
+						EmbeddingUtils.toList(embeddingModel.embed(request.getQuery())))
+					.setKNearestNeighborsCount(request.getTopK())
+					.setFields(EMBEDDING_FIELD_NAME);
+				options.setVectorSearchOptions(new VectorSearchOptions().setQueries(rerankedVectorQuery));
+				options.setQueryType(QueryType.SEMANTIC);
+				SemanticSearchOptions semanticSearchOptions = new SemanticSearchOptions();
+				semanticSearchOptions.setSemanticConfigurationName("semanticConfiguration"); // TODO:
+																								// make
+																								// configurable
+				options.setSemanticSearchOptions(semanticSearchOptions);
+				options.setTop(limit);
+				break;
+			default:
+				throw new IllegalArgumentException("Unsupported search mode: " + request.getSearchMode());
+		}
+
+		if (request.hasFilterExpression()) {
+			options.setFilter(filterExpressionConverter.convertExpression(request.getFilterExpression()));
+		}
+
+		SearchPagedIterable results = searchClient.search(request.getQuery(), options,
+				com.azure.core.util.Context.NONE);
+		List<Document> documents = results.stream().filter(result -> {
+			double score = request.getSearchMode() == SearchMode.HYBRID_RERANKED && result.getSemanticSearch() != null
+					? result.getSemanticSearch().getRerankerScore() : result.getScore();
+			return score >= request.getScoreThreshold();
+		}).map(result -> {
+			final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
+			Map<String, Object> metadata = StringUtils.hasText(entry.metadata())
+					? JSONObject.parseObject(entry.metadata(), new TypeReference<Map<String, Object>>() {
+					}) : new HashMap<>();
+			metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - result.getScore());
+			double score = request.getSearchMode() == SearchMode.HYBRID_RERANKED && result.getSemanticSearch() != null
+					? result.getSemanticSearch().getRerankerScore() : result.getScore();
+			if (request.getSearchMode() == SearchMode.HYBRID_RERANKED && result.getSemanticSearch() != null) {
+				metadata.put("re-rank_score", result.getSemanticSearch().getRerankerScore());
+			}
+			return Document.builder().id(entry.id()).text(entry.content()).metadata(metadata).score(score).build();
+		}).collect(Collectors.toList());
+
+		if (request.getRerankingAdvisor() != null && request.getSearchMode() == SearchMode.HYBRID_RERANKED) {
+			documents = request.getRerankingAdvisor().rerank(documents, request);
+		}
+
+		return documents;
 	}
 
 	@Override
