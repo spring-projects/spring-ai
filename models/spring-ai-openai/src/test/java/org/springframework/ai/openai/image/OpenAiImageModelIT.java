@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,11 @@ import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.openai.OpenAiImageModel;
+import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.metadata.OpenAiImageGenerationMetadata;
 import org.springframework.ai.openai.testutils.AbstractIT;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -65,6 +69,54 @@ public class OpenAiImageModelIT extends AbstractIT {
 
 		assertThat(openAiImageGenerationMetadata).isNotNull();
 		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNotBlank();
+	}
+
+	@Test
+	void gptImageModelTest() {
+		var options = ImageOptionsBuilder.builder().height(1024).width(1024).build();
+
+		var instructions = """
+				A light cream colored mini golden doodle with a sign that contains the message "I'm on my way to BARCADE!".""";
+
+		ImagePrompt imagePrompt = new ImagePrompt(instructions, options);
+
+		OpenAiImageApi imageApi = OpenAiImageApi.builder()
+			.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
+			.build();
+
+		OpenAiImageOptions imageOptions = OpenAiImageOptions.builder()
+			.model(OpenAiImageApi.ImageModel.GPT_IMAGE_1.getValue())
+			.background("transparent")
+			.moderation("low")
+			.outputCompression(80)
+			.outputFormat("webp")
+			.quality("low")
+			.build();
+
+		OpenAiImageModel openAiImageModel = OpenAiImageModel.builder()
+			.openAiImageApi(imageApi)
+			.defaultOptions(imageOptions)
+			.build();
+
+		ImageResponse imageResponse = openAiImageModel.call(imagePrompt);
+
+		assertThat(imageResponse.getResults()).hasSize(1);
+
+		ImageResponseMetadata imageResponseMetadata = imageResponse.getMetadata();
+		assertThat(imageResponseMetadata.getCreated()).isPositive();
+
+		var generation = imageResponse.getResult();
+		Image image = generation.getOutput();
+		assertThat(image.getUrl()).isNull();
+		assertThat(image.getB64Json()).isNotNull();
+
+		var imageGenerationMetadata = generation.getMetadata();
+		Assertions.assertThat(imageGenerationMetadata).isInstanceOf(OpenAiImageGenerationMetadata.class);
+
+		OpenAiImageGenerationMetadata openAiImageGenerationMetadata = (OpenAiImageGenerationMetadata) imageGenerationMetadata;
+
+		assertThat(openAiImageGenerationMetadata).isNotNull();
+		assertThat(openAiImageGenerationMetadata.getRevisedPrompt()).isNull();
 	}
 
 }
