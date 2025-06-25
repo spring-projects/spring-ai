@@ -40,7 +40,6 @@ import org.typesense.model.MultiSearchSearchesParameter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -138,11 +137,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<Document> documents, List<float[]> embeddings) {
 		Assert.notNull(documents, "Documents must not be null");
-
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
 
 		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
