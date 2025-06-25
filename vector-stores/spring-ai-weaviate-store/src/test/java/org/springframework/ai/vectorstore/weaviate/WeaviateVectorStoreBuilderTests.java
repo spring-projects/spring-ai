@@ -60,6 +60,7 @@ class WeaviateVectorStoreBuilderTests {
 		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
 		options.setObjectClass("CustomObjectClass");
 		options.setContentFieldName("customContentFieldName");
+		options.setMetaFieldPrefix("custom_");
 
 		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, this.embeddingModel)
 			.options(options)
