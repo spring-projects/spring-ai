@@ -39,6 +39,7 @@ import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfigura
 import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Ollama Chat model.
@@ -47,6 +48,7 @@ import org.springframework.context.annotation.Bean;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  * @since 0.8.0
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, ToolCallingAutoConfiguration.class })
@@ -64,7 +66,8 @@ public class OllamaChatAutoConfiguration {
 			OllamaInitializationProperties initProperties, ToolCallingManager toolCallingManager,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> ollamaToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityPredicate> ollamaToolExecutionEligibilityPredicate,
+			RetryTemplate retryTemplate) {
 		var chatModelPullStrategy = initProperties.getChat().isInclude() ? initProperties.getPullModelStrategy()
 				: PullModelStrategy.NEVER;
 
@@ -78,6 +81,7 @@ public class OllamaChatAutoConfiguration {
 			.modelManagementOptions(
 					new ModelManagementOptions(chatModelPullStrategy, initProperties.getChat().getAdditionalModels(),
 							initProperties.getTimeout(), initProperties.getMaxRetries()))
+			.retryTemplate(retryTemplate)
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
