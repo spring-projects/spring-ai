@@ -21,15 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import java.util.stream.Collectors;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
@@ -49,6 +41,16 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Single class implementation of the
@@ -144,11 +146,20 @@ public class OpenAiApi {
 			.build(); // @formatter:on
 	}
 
+	/**
+	 * Returns a string containing all text values from the given media content list. Only
+	 * elements of type "text" are processed and concatenated in order.
+	 * @param content The list of {@link ChatCompletionMessage.MediaContent}
+	 * @return a string containing all text values from "text" type elements
+	 * @throws IllegalArgumentException if content is null
+	 */
 	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
+		Assert.notNull(content, "content cannot be null");
+
 		return content.stream()
 			.filter(c -> "text".equals(c.type()))
 			.map(ChatCompletionMessage.MediaContent::text)
-			.reduce("", (a, b) -> a + b);
+			.collect(Collectors.joining());
 	}
 
 	/**
