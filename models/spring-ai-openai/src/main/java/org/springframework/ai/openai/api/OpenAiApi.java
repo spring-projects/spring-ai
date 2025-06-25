@@ -1909,7 +1909,6 @@ public class OpenAiApi {
 		}
 
 		public Builder apiKey(String simpleApiKey) {
-			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
 			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
