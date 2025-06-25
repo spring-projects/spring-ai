@@ -83,6 +83,13 @@
 			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-core-http-okhttp</artifactId>
+			<version>1.12.11</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 </project>
