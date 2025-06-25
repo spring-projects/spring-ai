@@ -16,6 +16,7 @@
 
 package org.springframework.ai.util.json.schema;
 
+import java.lang.annotation.Annotation;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -104,7 +105,8 @@ public final class SpringAiSchemaModule implements Module {
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
 		}
 
-		var nullableAnnotation = member.getAnnotationConsideringFieldAndGetter(Nullable.class);
+		var nullableAnnotation = member.getAnnotationConsideringFieldAndGetter(Annotation.class,
+				ann -> ann.annotationType().getSimpleName().equals("Nullable"));
 		if (nullableAnnotation != null) {
 			return false;
 		}
