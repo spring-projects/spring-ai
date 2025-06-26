@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author Jason Smith
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -405,7 +406,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final MistralAiChatOptions options = new MistralAiChatOptions();
 

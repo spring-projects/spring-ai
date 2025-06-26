@@ -68,10 +68,18 @@ public class MistralAiModerationAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
-		var mistralAiModerationAi = new MistralAiModerationApi(resoledBaseUrl, resolvedApiKey,
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+		var mistralAiModerationApi = MistralAiModerationApi.builder()
+			.baseUrl(resoledBaseUrl)
+			.apiKey(resolvedApiKey)
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 
-		return new MistralAiModerationModel(mistralAiModerationAi, retryTemplate, moderationProperties.getOptions());
+		return MistralAiModerationModel.builder()
+			.mistralAiModerationApi(mistralAiModerationApi)
+			.retryTemplate(retryTemplate)
+			.options(moderationProperties.getOptions())
+			.build();
 	}
 
 }
