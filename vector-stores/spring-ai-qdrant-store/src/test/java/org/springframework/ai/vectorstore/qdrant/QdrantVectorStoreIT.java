@@ -32,11 +32,11 @@ import io.qdrant.client.grpc.Collections.VectorParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
 
+import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -49,8 +49,12 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Anush Shetty
@@ -59,6 +63,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jonghoon Park
+ * @author Kim San
  * @since 0.8.1
  */
 @Testcontainers
@@ -331,6 +336,20 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 			// Remove all documents from the store
 			vectorStore.delete(List.of(resultDoc.getId()));
+		});
+	}
+
+	@Test
+	void testNonTextDocuments() {
+		this.contextRunner.run(context -> {
+			QdrantVectorStore vectorStore = context.getBean(QdrantVectorStore.class);
+			Media media = new Media(MimeType.valueOf("image/png"), new ByteArrayResource(new byte[] { 0x00 }));
+
+			Document imgDoc = Document.builder().media(media).metadata(Map.of("fileName", "pixel.png")).build();
+
+			Exception exception = assertThrows(IllegalArgumentException.class, () -> vectorStore.add(List.of(imgDoc)));
+			assertEquals("Only text documents are supported for now. One of the documents contains non-text content.",
+					exception.getMessage());
 		});
 	}
 
