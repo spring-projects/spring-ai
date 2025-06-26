@@ -1,17 +1,14 @@
 /*
  * Copyright 2025-2025 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 
 package org.springframework.ai.azure.openai;
@@ -51,6 +48,7 @@ class AzureOpenAiChatOptionsTests {
 			.frequencyPenalty(0.5)
 			.logitBias(Map.of("token1", 1, "token2", -1))
 			.maxTokens(200)
+			.maxCompletionTokens(400)
 			.N(2)
 			.presencePenalty(0.8)
 			.stop(List.of("stop1", "stop2"))
@@ -68,10 +66,10 @@ class AzureOpenAiChatOptionsTests {
 			.build();
 
 		assertThat(options)
-			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "n", "presencePenalty", "stop",
-					"temperature", "topP", "user", "responseFormat", "streamUsage", "reasoningEffort", "seed",
-					"logprobs", "topLogProbs", "enhancements", "streamOptions")
-			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), 200, 2, 0.8,
+			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "maxCompletionTokens", "n",
+					"presencePenalty", "stop", "temperature", "topP", "user", "responseFormat", "streamUsage",
+					"reasoningEffort", "seed", "logprobs", "topLogProbs", "enhancements", "streamOptions")
+			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), 200, 400, 2, 0.8,
 					List.of("stop1", "stop2"), 0.7, 0.9, "test-user", responseFormat, true, "low", 12345L, true, 5,
 					enhancements, streamOptions);
 	}
@@ -93,6 +91,7 @@ class AzureOpenAiChatOptionsTests {
 			.frequencyPenalty(0.5)
 			.logitBias(Map.of("token1", 1, "token2", -1))
 			.maxTokens(200)
+			.maxCompletionTokens(400)
 			.N(2)
 			.presencePenalty(0.8)
 			.stop(List.of("stop1", "stop2"))
@@ -131,6 +130,7 @@ class AzureOpenAiChatOptionsTests {
 		options.setFrequencyPenalty(0.5);
 		options.setLogitBias(Map.of("token1", 1, "token2", -1));
 		options.setMaxTokens(200);
+		options.setMaxCompletionTokens(400);
 		options.setN(2);
 		options.setPresencePenalty(0.8);
 		options.setStop(List.of("stop1", "stop2"));
@@ -153,6 +153,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
 		assertThat(options.getLogitBias()).isEqualTo(Map.of("token1", 1, "token2", -1));
 		assertThat(options.getMaxTokens()).isEqualTo(200);
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(400);
 		assertThat(options.getN()).isEqualTo(2);
 		assertThat(options.getPresencePenalty()).isEqualTo(0.8);
 		assertThat(options.getStop()).isEqualTo(List.of("stop1", "stop2"));
@@ -178,6 +179,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isNull();
 		assertThat(options.getN()).isNull();
 		assertThat(options.getPresencePenalty()).isNull();
 		assertThat(options.getStop()).isNull();
