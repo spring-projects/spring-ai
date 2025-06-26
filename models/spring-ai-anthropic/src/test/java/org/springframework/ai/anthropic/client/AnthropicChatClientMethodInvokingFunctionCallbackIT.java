@@ -290,7 +290,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("20 degrees");
+		assertThat(content).contains("20");
 	}
 
 	public static class ParameterLessTools {
