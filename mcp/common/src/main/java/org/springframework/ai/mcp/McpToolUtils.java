@@ -278,7 +278,7 @@ public final class McpToolUtils {
 	 * </ul>
 	 * @param toolCallback the Spring AI tool callback to convert
 	 * @param mimeType the MIME type of the output content
-	 * @return an MCP asynchronous tool specificaiotn that wraps the tool callback
+	 * @return an MCP asynchronous tool specification that wraps the tool callback
 	 * @see McpServerFeatures.AsyncToolSpecification
 	 * @see Schedulers#boundedElastic()
 	 */
