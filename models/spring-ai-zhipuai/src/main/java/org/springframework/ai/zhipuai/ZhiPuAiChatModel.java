@@ -568,16 +568,6 @@ public class ZhiPuAiChatModel implements ChatModel {
 		}
 	}
 
-	private ChatOptions buildRequestOptions(ZhiPuAiApi.ChatCompletionRequest request) {
-		return ChatOptions.builder()
-			.model(request.model())
-			.maxTokens(request.maxTokens())
-			.stopSequences(request.stop())
-			.temperature(request.temperature())
-			.topP(request.topP())
-			.build();
-	}
-
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
 		this.observationConvention = observationConvention;
 	}

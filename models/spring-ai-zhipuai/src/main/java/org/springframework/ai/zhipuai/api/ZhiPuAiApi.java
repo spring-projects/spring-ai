@@ -314,18 +314,6 @@ public class ZhiPuAiApi {
 		}
 	}
 
-	public class Foo {
-
-		String foo;
-
-		public Foo() {
-
-		}
-		public Foo(String foo) {
-			this.foo = foo;
-		}
-	}
-
 
 	/**
 	 * Represents a tool the model may call. Currently, only functions are supported as a tool.
