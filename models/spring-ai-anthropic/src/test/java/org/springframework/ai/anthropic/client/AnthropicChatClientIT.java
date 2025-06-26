@@ -16,6 +16,8 @@
 
 package org.springframework.ai.anthropic.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
@@ -29,8 +31,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -41,7 +41,9 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.test.CurlyBracketEscaper;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,7 +55,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
 @SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
@@ -340,6 +342,41 @@ class AnthropicChatClientIT {
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {
+
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	void streamToolCallingResponseShouldNotContainToolCallMessages(String modelName) {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.tools(new MyTools())
+			.user("Get current weather in Amsterdam and Paris")
+			// .user("Get current weather in Amsterdam. Please don't explain that you will
+			// call tools.")
+			.stream()
+			.chatResponse();
+
+		List<ChatResponse> chatResponses = responses.collectList().block();
+
+		assertThat(chatResponses).isNotEmpty();
+
+		// Verify that none of the ChatResponse objects have tool calls
+		chatResponses.forEach(chatResponse -> {
+			logger.info("ChatResponse Results: {}", chatResponse.getResults());
+			assertThat(chatResponse.hasToolCalls()).isFalse();
+		});
+	}
+
+	public static class MyTools {
+
+		@Tool(description = "Get the current weather forecast by city name")
+		String getCurrentDateTime(String cityName) {
+			return "For " + cityName + " Weather is hot and sunny with a temperature of 20 degrees";
+		}
 
 	}
 
