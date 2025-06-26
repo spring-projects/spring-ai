@@ -9,7 +9,7 @@ Its goal is to apply to the AI domain Spring ecosystem design principles such as
 
 > At its core, Spring AI addresses the fundamental challenge of AI integration: Connecting your enterprise __Data__ and __APIs__ with the __AI Models__.
 
-The project draws inspiration from notable Python projects, such as [LangChain](https://docs.langchain.com/docs/) and [LlamaIndex](https://gpt-index.readthedocs.io/en/latest/getting_started/concepts.html), but Spring AI is not a direct port of those projects. The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
+The project draws inspiration from notable Python projects, such as [LangChain](https://docs.langchain.com/docs/) and [LlamaIndex](https://gpt-index.readthedocs.io/en/latest/getting_started/concepts.html), but Spring AI is not a direct part of those projects. The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
 
 You can check out the blog post [Why Spring AI](https://spring.io/blog/2024/11/19/why-spring-ai) for additional motivations.
 
