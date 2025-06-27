@@ -16,11 +16,11 @@
 
 package org.springframework.ai.mcp;
 
-import io.modelcontextprotocol.spec.McpSchema;
 import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.content.Content;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;

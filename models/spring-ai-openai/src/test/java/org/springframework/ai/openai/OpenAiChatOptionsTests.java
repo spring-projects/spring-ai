@@ -30,7 +30,6 @@ import org.springframework.ai.openai.api.ResponseFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice.ALLOY;
-import static org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM;
 
 /**
  * Tests for {@link OpenAiChatOptions}.
@@ -263,14 +262,16 @@ class OpenAiChatOptionsTests {
 	@Test
 	void testFromOptions_webSearchOptions() {
 		var chatOptions = OpenAiChatOptions.builder()
-			.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(MEDIUM,
+			.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(
+					org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM,
 					new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation("type",
 							new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation.Approximate("beijing",
 									"china", "region", "UTC+8"))))
 			.build();
 		var target = OpenAiChatOptions.fromOptions(chatOptions);
 		assertThat(target.getWebSearchOptions()).isNotNull();
-		assertThat(target.getWebSearchOptions().searchContextSize()).isEqualTo(MEDIUM);
+		assertThat(target.getWebSearchOptions().searchContextSize()).isEqualTo(
+				org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM);
 		assertThat(target.getWebSearchOptions().userLocation()).isNotNull();
 		assertThat(target.getWebSearchOptions().userLocation().type()).isEqualTo("type");
 		assertThat(target.getWebSearchOptions().userLocation().approximate()).isNotNull();

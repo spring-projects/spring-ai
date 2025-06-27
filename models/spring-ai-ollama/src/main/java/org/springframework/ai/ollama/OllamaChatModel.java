@@ -65,13 +65,10 @@ import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
-
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
-
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;

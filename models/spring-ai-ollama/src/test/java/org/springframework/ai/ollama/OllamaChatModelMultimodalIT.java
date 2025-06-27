@@ -28,7 +28,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;

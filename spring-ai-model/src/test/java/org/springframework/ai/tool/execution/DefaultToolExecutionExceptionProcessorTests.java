@@ -17,12 +17,13 @@
 package org.springframework.ai.tool.execution;
 
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 /**
  * Unit tests for {@link DefaultToolExecutionExceptionProcessor}.
@@ -36,8 +37,8 @@ class DefaultToolExecutionExceptionProcessorTests {
 	private final DefaultToolDefinition toolDefinition = new DefaultToolDefinition("toolName", "toolDescription",
 			"inputSchema");
 
-	private final ToolExecutionException toolExecutionException = new ToolExecutionException(toolDefinition,
-			toolException);
+	private final ToolExecutionException toolExecutionException = new ToolExecutionException(this.toolDefinition,
+			this.toolException);
 
 	@Test
 	void processReturnsMessage() {
@@ -57,7 +58,7 @@ class DefaultToolExecutionExceptionProcessorTests {
 		assertThatThrownBy(() -> processor.process(this.toolExecutionException))
 			.hasMessage(this.toolException.getMessage())
 			.hasCauseInstanceOf(this.toolException.getClass())
-			.asInstanceOf(type(ToolExecutionException.class))
+			.asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.type(ToolExecutionException.class))
 			.extracting(ToolExecutionException::getToolDefinition)
 			.isEqualTo(this.toolDefinition);
 	}

@@ -16,8 +16,9 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
+
+import javax.sql.DataSource;
 
 /**
  * Abstraction for database-specific SQL for chat memory repository.

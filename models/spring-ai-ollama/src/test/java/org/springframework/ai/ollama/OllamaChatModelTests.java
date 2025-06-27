@@ -38,7 +38,9 @@ import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.retry.RetryUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Jihoon Kim

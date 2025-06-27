@@ -86,8 +86,9 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	private void validateNonTextDocuments(List<Document> documents) {
-		if (documents == null)
+		if (documents == null) {
 			return;
+		}
 		for (Document document : documents) {
 			if (document != null && !document.isText()) {
 				throw new IllegalArgumentException(

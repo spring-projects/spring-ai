@@ -279,11 +279,12 @@ public class AnthropicChatModel implements ChatModel {
 										chatResponse);
 							}
 						}).subscribeOn(Schedulers.boundedElastic());
-					} else {						
+					}
+					else {
 						return Mono.empty();
 					}
-
-				} else {
+				}
+				else {
 					// If internal tool execution is not required, just return the chat response.
 					return Mono.just(chatResponse);
 				}
