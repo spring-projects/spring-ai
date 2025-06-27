@@ -79,7 +79,7 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 			.toolNames("paymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
-					If requred invoke the function per transaction.
+					If required invoke the function per transaction.
 					""")
 			.call()
 			.content();
@@ -97,7 +97,7 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 			.toolNames("paymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
-					If requred invoke the function per transaction.
+					If required invoke the function per transaction.
 					""")
 			.stream()
 			.content();
@@ -136,7 +136,7 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 		}
 
 		@Tool(description = "Get the list statuses of a list of payment transactions")
-		public List<Status> statusespaymentStatuses(List<Transaction> transactions) {
+		public List<Status> statusesPaymentStatuses(List<Transaction> transactions) {
 			logger.info("Transactions: " + transactions);
 			return transactions.stream().map(t -> DATASET.get(t)).toList();
 		}
