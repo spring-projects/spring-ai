@@ -335,9 +335,7 @@ public class DocumentTests {
 		metadata.put("validKey", "validValue");
 		metadata.put("nullKey", null);
 
-		assertThrows(IllegalArgumentException.class, () -> {
-			Document.builder().text("test").metadata(metadata).build();
-		});
+		assertThrows(IllegalArgumentException.class, () -> Document.builder().text("test").metadata(metadata).build());
 	}
 
 	@Test

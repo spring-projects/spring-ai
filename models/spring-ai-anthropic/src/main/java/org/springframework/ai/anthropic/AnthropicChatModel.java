@@ -64,11 +64,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -266,13 +266,14 @@ public class AnthropicChatModel implements ChatModel {
 					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
-						return Flux.deferContextual((ctx) -> {
+						return Flux.deferContextual(ctx -> {
 							// TODO: factor out the tool execution logic with setting context into a utility.
 							ToolExecutionResult toolExecutionResult;
 							try {
 								ToolCallReactiveContextHolder.setContext(ctx);
 								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-							} finally {
+							}
+							finally {
 								ToolCallReactiveContextHolder.clearContext();
 							}
 							if (toolExecutionResult.returnDirect()) {
@@ -287,12 +288,12 @@ public class AnthropicChatModel implements ChatModel {
 										chatResponse);
 							}
 						}).subscribeOn(Schedulers.boundedElastic());
-
-					} else {						
+					}
+					else {
 						return Mono.empty();
 					}
-
-				} else {
+				}
+				else {
 					// If internal tool execution is not required, just return the chat response.
 					return Mono.just(chatResponse);
 				}

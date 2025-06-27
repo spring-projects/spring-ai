@@ -30,7 +30,6 @@ import org.springframework.core.io.PathResource;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.vertexai.gemini.MimeTypeDetector.GEMINI_MIME_TYPES;
 
 /**
  * @author YunKui Lu
@@ -38,7 +37,9 @@ import static org.springframework.ai.vertexai.gemini.MimeTypeDetector.GEMINI_MIM
 class MimeTypeDetectorTests {
 
 	private static Stream<Arguments> provideMimeTypes() {
-		return GEMINI_MIME_TYPES.entrySet().stream().map(entry -> Arguments.of(entry.getKey(), entry.getValue()));
+		return org.springframework.ai.vertexai.gemini.MimeTypeDetector.GEMINI_MIME_TYPES.entrySet()
+			.stream()
+			.map(entry -> Arguments.of(entry.getKey(), entry.getValue()));
 	}
 
 	@ParameterizedTest

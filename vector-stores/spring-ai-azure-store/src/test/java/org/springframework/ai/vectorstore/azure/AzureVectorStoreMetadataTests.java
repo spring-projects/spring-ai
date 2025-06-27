@@ -16,11 +16,11 @@
 
 package org.springframework.ai.vectorstore.azure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link AzureVectorStore#parseMetadataToMutable(String)}.

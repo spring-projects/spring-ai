@@ -145,28 +145,26 @@ class FunctionToolCallbackTest {
 		AtomicReference<ToolContext> calledToolContext = new AtomicReference<>();
 
 		public Consumer<String> stringConsumer() {
-			return s -> {
-				calledValue.set(s);
-			};
+			return s -> this.calledValue.set(s);
 		}
 
 		public BiFunction<String, ToolContext, String> stringBiFunction() {
 			return (s, context) -> {
-				calledValue.set(s);
-				calledToolContext.set(context);
+				this.calledValue.set(s);
+				this.calledToolContext.set(context);
 				return "return value = " + s;
 			};
 		}
 
 		public Function<String, String> stringFunction() {
 			return s -> {
-				calledValue.set(s);
+				this.calledValue.set(s);
 				return "return value = " + s;
 			};
 		}
 
 		public Supplier<String> stringSupplier() {
-			calledValue.set("not params");
+			this.calledValue.set("not params");
 			return () -> "return value = ";
 		}
 

@@ -264,38 +264,42 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof ElevenLabsTextToSpeechOptions that))
+		}
+		if (!(o instanceof ElevenLabsTextToSpeechOptions that)) {
 			return false;
-		return Objects.equals(modelId, that.modelId) && Objects.equals(voiceId, that.voiceId)
-				&& Objects.equals(outputFormat, that.outputFormat) && Objects.equals(voiceSettings, that.voiceSettings)
-				&& Objects.equals(languageCode, that.languageCode)
-				&& Objects.equals(pronunciationDictionaryLocators, that.pronunciationDictionaryLocators)
-				&& Objects.equals(seed, that.seed) && Objects.equals(previousText, that.previousText)
-				&& Objects.equals(nextText, that.nextText)
-				&& Objects.equals(previousRequestIds, that.previousRequestIds)
-				&& Objects.equals(applyTextNormalization, that.applyTextNormalization)
-				&& Objects.equals(nextRequestIds, that.nextRequestIds)
-				&& Objects.equals(applyLanguageTextNormalization, that.applyLanguageTextNormalization);
+		}
+		return Objects.equals(this.modelId, that.modelId) && Objects.equals(this.voiceId, that.voiceId)
+				&& Objects.equals(this.outputFormat, that.outputFormat)
+				&& Objects.equals(this.voiceSettings, that.voiceSettings)
+				&& Objects.equals(this.languageCode, that.languageCode)
+				&& Objects.equals(this.pronunciationDictionaryLocators, that.pronunciationDictionaryLocators)
+				&& Objects.equals(this.seed, that.seed) && Objects.equals(this.previousText, that.previousText)
+				&& Objects.equals(this.nextText, that.nextText)
+				&& Objects.equals(this.previousRequestIds, that.previousRequestIds)
+				&& Objects.equals(this.applyTextNormalization, that.applyTextNormalization)
+				&& Objects.equals(this.nextRequestIds, that.nextRequestIds)
+				&& Objects.equals(this.applyLanguageTextNormalization, that.applyLanguageTextNormalization);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(modelId, voiceId, outputFormat, voiceSettings, languageCode,
-				pronunciationDictionaryLocators, seed, previousText, nextText, previousRequestIds, nextRequestIds,
-				applyTextNormalization, applyLanguageTextNormalization);
+		return Objects.hash(this.modelId, this.voiceId, this.outputFormat, this.voiceSettings, this.languageCode,
+				this.pronunciationDictionaryLocators, this.seed, this.previousText, this.nextText,
+				this.previousRequestIds, this.nextRequestIds, this.applyTextNormalization,
+				this.applyLanguageTextNormalization);
 	}
 
 	@Override
 	public String toString() {
-		return "ElevenLabsSpeechOptions{" + "modelId='" + modelId + '\'' + ", voiceId='" + voiceId + '\''
-				+ ", outputFormat='" + outputFormat + '\'' + ", voiceSettings=" + voiceSettings + ", languageCode='"
-				+ languageCode + '\'' + ", pronunciationDictionaryLocators=" + pronunciationDictionaryLocators
-				+ ", seed=" + seed + ", previousText='" + previousText + '\'' + ", nextText='" + nextText + '\''
-				+ ", previousRequestIds=" + previousRequestIds + ", nextRequestIds=" + nextRequestIds
-				+ ", applyTextNormalization=" + applyTextNormalization + ", applyLanguageTextNormalization="
-				+ applyLanguageTextNormalization + '}';
+		return "ElevenLabsSpeechOptions{" + "modelId='" + this.modelId + '\'' + ", voiceId='" + this.voiceId + '\''
+				+ ", outputFormat='" + this.outputFormat + '\'' + ", voiceSettings=" + this.voiceSettings
+				+ ", languageCode='" + this.languageCode + '\'' + ", pronunciationDictionaryLocators="
+				+ this.pronunciationDictionaryLocators + ", seed=" + this.seed + ", previousText='" + this.previousText
+				+ '\'' + ", nextText='" + this.nextText + '\'' + ", previousRequestIds=" + this.previousRequestIds
+				+ ", nextRequestIds=" + this.nextRequestIds + ", applyTextNormalization=" + this.applyTextNormalization
+				+ ", applyLanguageTextNormalization=" + this.applyLanguageTextNormalization + '}';
 	}
 
 	@Override
@@ -331,7 +335,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @return this builder.
 		 */
 		public Builder model(String model) {
-			options.setModel(model);
+			this.options.setModel(model);
 			return this;
 		}
 
@@ -342,7 +346,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @return this builder.
 		 */
 		public Builder modelId(String modelId) {
-			options.setModelId(modelId);
+			this.options.setModelId(modelId);
 			return this;
 		}
 
@@ -353,7 +357,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @return this builder.
 		 */
 		public Builder voice(String voice) {
-			options.setVoice(voice);
+			this.options.setVoice(voice);
 			return this;
 		}
 
@@ -364,69 +368,69 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		 * @return this builder.
 		 */
 		public Builder voiceId(String voiceId) {
-			options.setVoiceId(voiceId);
+			this.options.setVoiceId(voiceId);
 			return this;
 		}
 
 		public Builder format(String format) {
-			options.setFormat(format);
+			this.options.setFormat(format);
 			return this;
 		}
 
 		public Builder outputFormat(String outputFormat) {
-			options.setOutputFormat(outputFormat);
+			this.options.setOutputFormat(outputFormat);
 			return this;
 		}
 
 		public Builder voiceSettings(ElevenLabsApi.SpeechRequest.VoiceSettings voiceSettings) {
-			options.setVoiceSettings(voiceSettings);
+			this.options.setVoiceSettings(voiceSettings);
 			return this;
 		}
 
 		public Builder languageCode(String languageCode) {
-			options.setLanguageCode(languageCode);
+			this.options.setLanguageCode(languageCode);
 			return this;
 		}
 
 		public Builder pronunciationDictionaryLocators(
 				List<ElevenLabsApi.SpeechRequest.PronunciationDictionaryLocator> pronunciationDictionaryLocators) {
-			options.setPronunciationDictionaryLocators(pronunciationDictionaryLocators);
+			this.options.setPronunciationDictionaryLocators(pronunciationDictionaryLocators);
 			return this;
 		}
 
 		public Builder seed(Integer seed) {
-			options.setSeed(seed);
+			this.options.setSeed(seed);
 			return this;
 		}
 
 		public Builder previousText(String previousText) {
-			options.setPreviousText(previousText);
+			this.options.setPreviousText(previousText);
 			return this;
 		}
 
 		public Builder nextText(String nextText) {
-			options.setNextText(nextText);
+			this.options.setNextText(nextText);
 			return this;
 		}
 
 		public Builder previousRequestIds(List<String> previousRequestIds) {
-			options.setPreviousRequestIds(previousRequestIds);
+			this.options.setPreviousRequestIds(previousRequestIds);
 			return this;
 		}
 
 		public Builder nextRequestIds(List<String> nextRequestIds) {
-			options.setNextRequestIds(nextRequestIds);
+			this.options.setNextRequestIds(nextRequestIds);
 			return this;
 		}
 
 		public Builder applyTextNormalization(
 				ElevenLabsApi.SpeechRequest.TextNormalizationMode applyTextNormalization) {
-			options.setApplyTextNormalization(applyTextNormalization);
+			this.options.setApplyTextNormalization(applyTextNormalization);
 			return this;
 		}
 
 		public Builder applyLanguageTextNormalization(Boolean applyLanguageTextNormalization) {
-			options.setApplyLanguageTextNormalization(applyLanguageTextNormalization);
+			this.options.setApplyLanguageTextNormalization(applyLanguageTextNormalization);
 			return this;
 		}
 

@@ -20,10 +20,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
-import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.Prompt
+import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
+import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
 import org.springframework.ai.model.tool.ToolCallingChatOptions
 import org.springframework.ai.ollama.OllamaChatModel
 import org.springframework.boot.autoconfigure.AutoConfigurations

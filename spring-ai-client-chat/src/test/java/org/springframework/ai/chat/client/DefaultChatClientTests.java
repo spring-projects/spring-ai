@@ -2097,9 +2097,6 @@ class DefaultChatClientTests {
 		assertThat(defaultSpec.getUserMetadata()).containsEntry("msgId", "uuid-xxx");
 	}
 
-	record Person(String name) {
-	}
-
 	@Test
 	void whenDefaultChatClientBuilderWithObservationRegistryThenReturn() {
 		var chatModel = mock(ChatModel.class);
@@ -2198,6 +2195,9 @@ class DefaultChatClientTests {
 		assertThatThrownBy(() -> spec.user(user -> user.param("key", null)))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("value cannot be null");
+	}
+
+	record Person(String name) {
 	}
 
 }
