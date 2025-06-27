@@ -38,6 +38,9 @@ The following service connection factories are provided in the `spring-ai-spring
 | `ChromaConnectionDetails`
 | Containers of type `ChromaDBContainer`
 
+| `McpSseClientConnectionDetails`
+| Containers of type `DockerMcpGatewayContainer`
+
 | `MilvusServiceClientConnectionDetails`
 | Containers of type `MilvusContainer`
 
