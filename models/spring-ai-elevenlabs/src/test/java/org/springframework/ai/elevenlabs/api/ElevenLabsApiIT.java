@@ -58,7 +58,7 @@ public class ElevenLabsApiIT {
 			.build();
 
 		String validVoiceId = "9BWtsMINqrJLrRacOk9x";
-		ResponseEntity<byte[]> response = elevenLabsApi.textToSpeech(request, validVoiceId, null);
+		ResponseEntity<byte[]> response = this.elevenLabsApi.textToSpeech(request, validVoiceId, null);
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getBody()).isNotNull().isNotEmpty();
@@ -73,7 +73,7 @@ public class ElevenLabsApiIT {
 			.build();
 
 		String validVoiceId = "9BWtsMINqrJLrRacOk9x";
-		ResponseEntity<byte[]> response = elevenLabsApi.textToSpeech(request, validVoiceId, null);
+		ResponseEntity<byte[]> response = this.elevenLabsApi.textToSpeech(request, validVoiceId, null);
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getBody()).isNotNull().isNotEmpty();
@@ -92,7 +92,7 @@ public class ElevenLabsApiIT {
 		queryParams.add("enable_logging", "true");
 		queryParams.add("output_format", ElevenLabsApi.OutputFormat.MP3_22050_32.getValue());
 
-		ResponseEntity<byte[]> response = elevenLabsApi.textToSpeech(request, validVoiceId, queryParams);
+		ResponseEntity<byte[]> response = this.elevenLabsApi.textToSpeech(request, validVoiceId, queryParams);
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getBody()).isNotNull().isNotEmpty();
@@ -106,7 +106,7 @@ public class ElevenLabsApiIT {
 			.build();
 
 		Exception exception = assertThrows(IllegalArgumentException.class,
-				() -> elevenLabsApi.textToSpeech(request, null, null));
+				() -> this.elevenLabsApi.textToSpeech(request, null, null));
 		assertThat(exception.getMessage()).isEqualTo("voiceId must be provided. It cannot be null.");
 	}
 
@@ -127,7 +127,7 @@ public class ElevenLabsApiIT {
 			.build();
 
 		String validVoiceId = "9BWtsMINqrJLrRacOk9x";
-		Flux<ResponseEntity<byte[]>> responseFlux = elevenLabsApi.textToSpeechStream(request, validVoiceId, null);
+		Flux<ResponseEntity<byte[]>> responseFlux = this.elevenLabsApi.textToSpeechStream(request, validVoiceId, null);
 
 		// Track the number of chunks received
 		AtomicInteger chunkCount = new AtomicInteger(0);
@@ -154,7 +154,7 @@ public class ElevenLabsApiIT {
 			.build();
 
 		String validVoiceId = "9BWtsMINqrJLrRacOk9x";
-		Flux<ResponseEntity<byte[]>> responseFlux = elevenLabsApi.textToSpeechStream(request, validVoiceId, null);
+		Flux<ResponseEntity<byte[]>> responseFlux = this.elevenLabsApi.textToSpeechStream(request, validVoiceId, null);
 
 		StepVerifier.create(responseFlux).thenConsumeWhile(response -> {
 			assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -176,7 +176,7 @@ public class ElevenLabsApiIT {
 		queryParams.add("enable_logging", "true");
 		queryParams.add("output_format", "mp3_44100_128");
 
-		Flux<ResponseEntity<byte[]>> responseFlux = elevenLabsApi.textToSpeechStream(request, validVoiceId,
+		Flux<ResponseEntity<byte[]>> responseFlux = this.elevenLabsApi.textToSpeechStream(request, validVoiceId,
 				queryParams);
 
 		StepVerifier.create(responseFlux).thenConsumeWhile(response -> {
@@ -194,7 +194,7 @@ public class ElevenLabsApiIT {
 			.build();
 
 		Exception exception = assertThrows(IllegalArgumentException.class,
-				() -> elevenLabsApi.textToSpeechStream(request, null, null));
+				() -> this.elevenLabsApi.textToSpeechStream(request, null, null));
 		assertThat(exception.getMessage()).isEqualTo("voiceId must be provided for streaming. It cannot be null.");
 	}
 
@@ -203,7 +203,7 @@ public class ElevenLabsApiIT {
 		String validVoiceId = "9BWtsMINqrJLrRacOk9x";
 
 		Exception exception = assertThrows(IllegalArgumentException.class,
-				() -> elevenLabsApi.textToSpeechStream(null, validVoiceId, null));
+				() -> this.elevenLabsApi.textToSpeechStream(null, validVoiceId, null));
 		assertThat(exception.getMessage()).isEqualTo("requestBody can not be null.");
 	}
 
@@ -216,7 +216,7 @@ public class ElevenLabsApiIT {
 				.build();
 
 			String validVoiceId = "9BWtsMINqrJLrRacOk9x";
-			elevenLabsApi.textToSpeechStream(request, validVoiceId, null);
+			this.elevenLabsApi.textToSpeechStream(request, validVoiceId, null);
 		});
 		assertThat(exception.getMessage()).isEqualTo("text must not be empty");
 	}

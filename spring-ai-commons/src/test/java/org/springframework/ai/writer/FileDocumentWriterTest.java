@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,20 @@
 
 package org.springframework.ai.writer;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.document.MetadataMode;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Jemin Huh
@@ -43,8 +45,8 @@ public class FileDocumentWriterTest {
 
 	@BeforeEach
 	void setUp() {
-		testFileName = tempDir.resolve("file-document-test-output.txt").toString();
-		testDocuments = List.of(
+		this.testFileName = this.tempDir.resolve("file-document-test-output.txt").toString();
+		this.testDocuments = List.of(
 				Document.builder()
 					.text("Document one introduces the core functionality of Spring AI.")
 					.metadata("page_number", "1")
@@ -69,10 +71,10 @@ public class FileDocumentWriterTest {
 
 	@Test
 	void testBasicWrite() throws IOException {
-		var writer = new FileDocumentWriter(testFileName);
-		writer.accept(testDocuments);
+		var writer = new FileDocumentWriter(this.testFileName);
+		writer.accept(this.testDocuments);
 
-		List<String> lines = Files.readAllLines(Path.of(testFileName));
+		List<String> lines = Files.readAllLines(Path.of(this.testFileName));
 		assertEquals("", lines.get(0));
 		assertEquals("", lines.get(1));
 		assertEquals("Document one introduces the core functionality of Spring AI.", lines.get(2));
@@ -85,10 +87,10 @@ public class FileDocumentWriterTest {
 
 	@Test
 	void testWriteWithDocumentMarkers() throws IOException {
-		var writer = new FileDocumentWriter(testFileName, true, MetadataMode.NONE, false);
-		writer.accept(testDocuments);
+		var writer = new FileDocumentWriter(this.testFileName, true, MetadataMode.NONE, false);
+		writer.accept(this.testDocuments);
 
-		List<String> lines = Files.readAllLines(Path.of(testFileName));
+		List<String> lines = Files.readAllLines(Path.of(this.testFileName));
 		assertEquals("", lines.get(0));
 		assertEquals("### Doc: 0, pages:[1,2]", lines.get(1));
 		assertEquals("", lines.get(2));
@@ -107,10 +109,10 @@ public class FileDocumentWriterTest {
 
 	@Test
 	void testMetadataModeAllWithDocumentMarkers() throws IOException {
-		var writer = new FileDocumentWriter(testFileName, true, MetadataMode.ALL, false);
-		writer.accept(testDocuments);
+		var writer = new FileDocumentWriter(this.testFileName, true, MetadataMode.ALL, false);
+		writer.accept(this.testDocuments);
 
-		List<String> lines = Files.readAllLines(Path.of(testFileName));
+		List<String> lines = Files.readAllLines(Path.of(this.testFileName));
 		assertEquals("", lines.get(0));
 		assertEquals("### Doc: 0, pages:[1,2]", lines.get(1));
 		String subListToString = lines.subList(2, 7).toString();
@@ -142,12 +144,12 @@ public class FileDocumentWriterTest {
 
 	@Test
 	void testAppendWrite() throws IOException {
-		Files.writeString(Path.of(testFileName), "Test String\n");
+		Files.writeString(Path.of(this.testFileName), "Test String\n");
 
-		var writer = new FileDocumentWriter(testFileName, false, MetadataMode.NONE, true);
-		writer.accept(testDocuments.subList(0, 2));
+		var writer = new FileDocumentWriter(this.testFileName, false, MetadataMode.NONE, true);
+		writer.accept(this.testDocuments.subList(0, 2));
 
-		List<String> lines = Files.readAllLines(Path.of(testFileName));
+		List<String> lines = Files.readAllLines(Path.of(this.testFileName));
 		assertEquals("Test String", lines.get(0));
 		assertEquals("", lines.get(1));
 		assertEquals("", lines.get(2));

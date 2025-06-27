@@ -46,7 +46,7 @@ public class ElevenLabsVoicesApiIT {
 
 	@Test
 	void getVoices() {
-		ResponseEntity<ElevenLabsVoicesApi.Voices> response = voicesApi.getVoices();
+		ResponseEntity<ElevenLabsVoicesApi.Voices> response = this.voicesApi.getVoices();
 		System.out.println("Response: " + response);
 
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
@@ -63,7 +63,7 @@ public class ElevenLabsVoicesApiIT {
 
 	@Test
 	void getDefaultVoiceSettings() {
-		ResponseEntity<ElevenLabsVoicesApi.VoiceSettings> response = voicesApi.getDefaultVoiceSettings();
+		ResponseEntity<ElevenLabsVoicesApi.VoiceSettings> response = this.voicesApi.getDefaultVoiceSettings();
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getBody()).isNotNull();
 
@@ -76,13 +76,13 @@ public class ElevenLabsVoicesApiIT {
 
 	@Test
 	void getVoiceSettings() {
-		ResponseEntity<ElevenLabsVoicesApi.Voices> voicesResponse = voicesApi.getVoices();
+		ResponseEntity<ElevenLabsVoicesApi.Voices> voicesResponse = this.voicesApi.getVoices();
 		assertThat(voicesResponse.getStatusCode().is2xxSuccessful()).isTrue();
 		List<ElevenLabsVoicesApi.Voice> voices = voicesResponse.getBody().voices();
 		assertThat(voices).isNotEmpty();
 		String voiceId = voices.get(0).voiceId();
 
-		ResponseEntity<ElevenLabsVoicesApi.VoiceSettings> settingsResponse = voicesApi.getVoiceSettings(voiceId);
+		ResponseEntity<ElevenLabsVoicesApi.VoiceSettings> settingsResponse = this.voicesApi.getVoiceSettings(voiceId);
 		assertThat(settingsResponse.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(settingsResponse.getBody()).isNotNull();
 
@@ -95,13 +95,13 @@ public class ElevenLabsVoicesApiIT {
 
 	@Test
 	void getVoice() {
-		ResponseEntity<ElevenLabsVoicesApi.Voices> voicesResponse = voicesApi.getVoices();
+		ResponseEntity<ElevenLabsVoicesApi.Voices> voicesResponse = this.voicesApi.getVoices();
 		assertThat(voicesResponse.getStatusCode().is2xxSuccessful()).isTrue();
 		List<ElevenLabsVoicesApi.Voice> voices = voicesResponse.getBody().voices();
 		assertThat(voices).isNotEmpty();
 		String voiceId = voices.get(0).voiceId();
 
-		ResponseEntity<ElevenLabsVoicesApi.Voice> voiceResponse = voicesApi.getVoice(voiceId);
+		ResponseEntity<ElevenLabsVoicesApi.Voice> voiceResponse = this.voicesApi.getVoice(voiceId);
 		assertThat(voiceResponse.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(voiceResponse.getBody()).isNotNull();
 

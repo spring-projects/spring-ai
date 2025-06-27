@@ -16,6 +16,13 @@
 
 package org.springframework.ai.aot;
 
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.annotation.Tool;
@@ -29,8 +36,6 @@ import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.lang.Nullable;
-
-import java.lang.annotation.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

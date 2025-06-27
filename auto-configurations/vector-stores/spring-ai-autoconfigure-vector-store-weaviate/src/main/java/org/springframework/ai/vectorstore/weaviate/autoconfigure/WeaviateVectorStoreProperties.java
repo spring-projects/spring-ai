@@ -91,7 +91,7 @@ public class WeaviateVectorStoreProperties {
 	 * @since 1.1.0
 	 */
 	public String getContentFieldName() {
-		return contentFieldName;
+		return this.contentFieldName;
 	}
 
 	/**
@@ -105,7 +105,7 @@ public class WeaviateVectorStoreProperties {
 	 * @since 1.1.0
 	 */
 	public String getMetaFieldPrefix() {
-		return metaFieldPrefix;
+		return this.metaFieldPrefix;
 	}
 
 	/**

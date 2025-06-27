@@ -18,6 +18,7 @@ package org.springframework.ai.tool.execution;
 
 import java.util.Collections;
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +101,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		}
 
 		public DefaultToolExecutionExceptionProcessor build() {
-			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, exceptions);
+			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, this.exceptions);
 		}
 
 	}

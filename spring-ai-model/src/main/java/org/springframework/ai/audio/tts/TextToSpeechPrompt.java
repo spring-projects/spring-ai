@@ -64,21 +64,23 @@ public class TextToSpeechPrompt implements ModelRequest<TextToSpeechMessage> {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (!(o instanceof TextToSpeechPrompt that))
+		}
+		if (!(o instanceof TextToSpeechPrompt that)) {
 			return false;
-		return Objects.equals(message, that.message) && Objects.equals(options, that.options);
+		}
+		return Objects.equals(this.message, that.message) && Objects.equals(this.options, that.options);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(message, options);
+		return Objects.hash(this.message, this.options);
 	}
 
 	@Override
 	public String toString() {
-		return "TextToSpeechPrompt{" + "message=" + message + ", options=" + options + '}';
+		return "TextToSpeechPrompt{" + "message=" + this.message + ", options=" + this.options + '}';
 	}
 
 }

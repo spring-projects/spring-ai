@@ -71,9 +71,7 @@ public class OpenAiAudioApi {
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		Consumer<HttpHeaders> authHeaders = h -> {
-			h.addAll(headers);
-		};
+		Consumer<HttpHeaders> authHeaders = h -> h.addAll(headers);
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()

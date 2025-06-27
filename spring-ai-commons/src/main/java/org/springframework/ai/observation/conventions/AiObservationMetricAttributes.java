@@ -33,12 +33,12 @@ public enum AiObservationMetricAttributes {
 	/**
 	 * The type of token being counted (input, output, total).
 	 */
-	TOKEN_TYPE("gen_ai.token.type");
+	TOKEN_TYPE();
 
 	private final String value;
 
-	AiObservationMetricAttributes(String value) {
-		this.value = value;
+	AiObservationMetricAttributes() {
+		this.value = "gen_ai.token.type";
 	}
 
 	/**

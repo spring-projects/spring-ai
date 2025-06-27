@@ -32,12 +32,12 @@ public enum DocumentMetadata {
 	 * The lower the distance, the more they are similar.
 	 * It's the opposite of the similarity score.
 	 */
-	DISTANCE("distance");
+	DISTANCE();
 
 	private final String value;
 
-	DocumentMetadata(String value) {
-		this.value = value;
+	DocumentMetadata() {
+		this.value = "distance";
 	}
 	public String value() {
 		return this.value;

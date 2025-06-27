@@ -16,13 +16,14 @@
 
 package org.springframework.ai.model.elevenlabs.autoconfigure;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechModel;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for the {@link ElevenLabsSpeechProperties} and
