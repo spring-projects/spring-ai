@@ -112,7 +112,7 @@ class McpSseClientPropertiesTests {
 	}
 
 	@Test
-	void sseParametersRecordWithNullSseEdnpoint() {
+	void sseParametersRecordWithNullSseEndpoint() {
 		String url = "http://test-server:8080/events";
 		McpSseClientProperties.SseParameters params = new McpSseClientProperties.SseParameters(url, null);
 
