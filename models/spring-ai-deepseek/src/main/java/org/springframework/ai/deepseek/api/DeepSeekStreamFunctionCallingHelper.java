@@ -19,6 +19,7 @@ package org.springframework.ai.deepseek.api;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.chat.model.StreamFunctionCallingHelper;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk.ChunkChoice;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionFinishReason;
@@ -35,8 +36,9 @@ import org.springframework.util.StringUtils;
  *
  * @author Geng Rong
  */
-public class DeepSeekStreamFunctionCallingHelper {
+public class DeepSeekStreamFunctionCallingHelper implements StreamFunctionCallingHelper<ChatCompletionChunk>  {
 
+	@Override
 	public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
 
 		if (previous == null) {
@@ -143,6 +145,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 	 * @param chatCompletion the ChatCompletionChunk to check
 	 * @return true if the ChatCompletionChunk is a streaming tool function call.
 	 */
+	@Override
 	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
 
 		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.choices())) {
@@ -161,6 +164,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 	 * @return true if the ChatCompletionChunk is a streaming tool function call and it is
 	 * the last one.
 	 */
+	@Override
 	public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
 
 		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.choices())) {
