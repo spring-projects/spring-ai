@@ -111,7 +111,9 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
-	@Nullable
+	// Micrometer Observation#observe returns the value of the Supplier, which is never
+	// null
+	@SuppressWarnings("DataFlowIssue")
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		VectorStoreObservationContext searchObservationContext = this

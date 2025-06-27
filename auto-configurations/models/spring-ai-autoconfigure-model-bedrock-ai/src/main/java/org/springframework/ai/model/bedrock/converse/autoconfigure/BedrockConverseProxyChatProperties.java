@@ -33,11 +33,7 @@ public class BedrockConverseProxyChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.converse.chat";
 
 	@NestedConfigurationProperty
-	private ToolCallingChatOptions options = ToolCallingChatOptions.builder()
-		.temperature(0.7)
-		.maxTokens(300)
-		.topK(10)
-		.build();
+	private ToolCallingChatOptions options = ToolCallingChatOptions.builder().temperature(0.7).maxTokens(300).build();
 
 	public ToolCallingChatOptions getOptions() {
 		return this.options;

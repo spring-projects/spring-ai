@@ -99,7 +99,7 @@ public class MistralAiChatModel implements ChatModel {
 	private final MistralAiChatOptions defaultOptions;
 
 	/**
-	 * Low-level access to the OpenAI API.
+	 * Low-level access to the Mistral API.
 	 */
 	private final MistralAiApi mistralAiApi;
 

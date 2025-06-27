@@ -23,6 +23,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -186,12 +188,15 @@ public class BedrockNovaChatClientIT {
 		assertThat(response).contains("20 degrees");
 	}
 
-	@Test
-	void toolAnnotationWeatherForecastStreaming() {
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@ParameterizedTest
+	@ValueSource(strings = { "amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	void toolAnnotationWeatherForecastStreaming(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().model(modelName).build())
 			.tools(new DummyWeatherForecastTools())
 			.user("Get current weather in Amsterdam")
 			.stream()
@@ -257,6 +262,7 @@ public class BedrockNovaChatClientIT {
 		public BedrockProxyChatModel bedrockConverseChatModel() {
 
 			String modelId = "amazon.nova-pro-v1:0";
+			// String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 			return BedrockProxyChatModel.builder()
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())

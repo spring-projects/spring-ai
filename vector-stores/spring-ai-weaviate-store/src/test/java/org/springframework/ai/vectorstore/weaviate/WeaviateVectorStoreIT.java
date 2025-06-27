@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 import io.weaviate.client.Config;
 import io.weaviate.client.WeaviateClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -356,6 +358,77 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 					() -> vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build()))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("exactly one of text or media must be specified");
+		});
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "custom_", "" })
+	public void addAndSearchWithCustomMetaFieldPrefix(String metaFieldPrefix) {
+		WeaviateVectorStoreOptions optionsWithCustomContentFieldName = new WeaviateVectorStoreOptions();
+		optionsWithCustomContentFieldName.setMetaFieldPrefix(metaFieldPrefix);
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			resetCollection(vectorStore);
+		});
+
+		this.contextRunner.run(context -> {
+			WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			VectorStore customVectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country")))
+				.options(optionsWithCustomContentFieldName)
+				.build();
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			customVectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			List<Document> results = customVectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
+			assertThat(results).hasSize(3);
+
+			results = customVectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'NL'")
+				.build());
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+		});
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'NL'")
+				.build());
+			assertThat(results).hasSize(0);
+		});
+
+		// remove documents for parameterized test
+		this.contextRunner.run(context -> {
+			WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			VectorStore customVectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country")))
+				.options(optionsWithCustomContentFieldName)
+				.build();
+
+			List<Document> results = customVectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
+
+			customVectorStore.delete(results.stream().map(Document::getId).toList());
 		});
 	}
 

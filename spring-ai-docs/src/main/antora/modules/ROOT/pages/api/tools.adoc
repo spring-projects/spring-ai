@@ -385,7 +385,7 @@ Besides the `@ToolParam` annotation, you can also use the `@Schema` annotation f
 
 ==== Adding Tools to `ChatClient` and `ChatModel`
 
-When using the programmatic specification approach, you can pass the `MethodToolCallback` instance to the `tools()` method of `ChatClient`.
+When using the programmatic specification approach, you can pass the `MethodToolCallback` instance to the `toolCallbacks()` method of `ChatClient`.
 The tool will only be available for the specific chat request it's added to.
 
 [source,java]
@@ -393,14 +393,14 @@ The tool will only be available for the specific chat request it's added to.
 ToolCallback toolCallback = ...
 ChatClient.create(chatModel)
     .prompt("What day is tomorrow?")
-    .tools(toolCallback)
+    .toolCallbacks(toolCallback)
     .call()
     .content();
 ----
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `MethodToolCallback` instance to the `defaultTools()` method.
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `MethodToolCallback` instance to the `defaultToolCallbacks()` method.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
@@ -410,7 +410,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools(toolCallback)
+    .defaultToolCallbacks(toolCallback)
     .build();
 ----
 
@@ -508,21 +508,21 @@ NOTE: Some types are not supported. See xref:_function_tool_limitations[] for mo
 
 ==== Adding Tools to `ChatClient`
 
-When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance to the `tools()` method of `ChatClient`. The tool will only be available for the specific chat request it's added to.
+When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance to the `toolCallbacks()` method of `ChatClient`. The tool will only be available for the specific chat request it's added to.
 
 [source,java]
 ----
 ToolCallback toolCallback = ...
 ChatClient.create(chatModel)
     .prompt("What's the weather like in Copenhagen?")
-    .tools(toolCallback)
+    .toolCallbacks(toolCallback)
     .call()
     .content();
 ----
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `FunctionToolCallback` instance to the `defaultTools()` method.
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `FunctionToolCallback` instance to the `defaultToolCallbacks()` method.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
@@ -532,7 +532,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools(toolCallback)
+    .defaultToolCallbacks(toolCallback)
     .build();
 ----
 
@@ -632,7 +632,7 @@ ChatClient.create(chatModel)
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool name to the `defaultTools()` method.
+When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool name to the `defaultToolNames()` method.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
