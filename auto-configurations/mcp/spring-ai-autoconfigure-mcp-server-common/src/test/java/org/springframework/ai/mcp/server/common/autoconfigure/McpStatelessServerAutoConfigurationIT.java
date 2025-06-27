@@ -16,24 +16,9 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.ai.mcp.SyncMcpToolCallback;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpStatelessAsyncServer;
@@ -49,7 +34,22 @@ import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.server.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
+
+import org.springframework.ai.mcp.SyncMcpToolCallback;
+import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 public class McpStatelessServerAutoConfigurationIT {
 
@@ -103,29 +103,21 @@ public class McpStatelessServerAutoConfigurationIT {
 	void syncToolCallbackRegistrationControl() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=SYNC", "spring.ai.mcp.server.tool-callback-converter=true")
-			.run(context -> {
-				assertThat(context).hasBean("syncTools");
-			});
+			.run(context -> assertThat(context).hasBean("syncTools"));
 
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=SYNC", "spring.ai.mcp.server.tool-callback-converter=false")
-			.run(context -> {
-				assertThat(context).doesNotHaveBean("syncTools");
-			});
+			.run(context -> assertThat(context).doesNotHaveBean("syncTools"));
 	}
 
 	@Test
 	void asyncToolCallbackRegistrationControl() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.tool-callback-converter=true")
-			.run(context -> {
-				assertThat(context).hasBean("asyncTools");
-			});
+			.run(context -> assertThat(context).hasBean("asyncTools"));
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.tool-callback-converter=false")
-			.run(context -> {
-				assertThat(context).doesNotHaveBean("asyncTools");
-			});
+			.run(context -> assertThat(context).doesNotHaveBean("asyncTools"));
 	}
 
 	@Test

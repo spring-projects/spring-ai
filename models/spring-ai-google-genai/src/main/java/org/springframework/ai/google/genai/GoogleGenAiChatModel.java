@@ -29,6 +29,7 @@ import com.google.genai.Client;
 import com.google.genai.ResponseStream;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.FinishReason;
 import com.google.genai.types.FunctionCall;
 import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.FunctionResponse;
@@ -40,13 +41,11 @@ import com.google.genai.types.SafetySetting;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.Tool;
-import com.google.genai.types.FinishReason;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -72,6 +71,9 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
+import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
@@ -83,8 +85,6 @@ import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
-import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.support.RetryTemplate;
@@ -542,12 +542,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
-						return Flux.deferContextual((ctx) -> {
+						return Flux.deferContextual(ctx -> {
 							ToolExecutionResult toolExecutionResult;
 							try {
 								ToolCallReactiveContextHolder.setContext(ctx);
 								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-							} finally {
+							}
+							finally {
 								ToolCallReactiveContextHolder.clearContext();
 							}
 							if (toolExecutionResult.returnDirect()) {

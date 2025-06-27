@@ -16,12 +16,13 @@
 
 package org.springframework.ai.mcp.client.webflux.autoconfigure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
@@ -31,9 +32,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link StreamableHttpWebFluxTransportAutoConfiguration}.

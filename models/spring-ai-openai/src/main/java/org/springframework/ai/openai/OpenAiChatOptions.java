@@ -29,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -612,7 +611,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public String getServiceTier() {
-		return serviceTier;
+		return this.serviceTier;
 	}
 
 	public void setServiceTier(String serviceTier) {

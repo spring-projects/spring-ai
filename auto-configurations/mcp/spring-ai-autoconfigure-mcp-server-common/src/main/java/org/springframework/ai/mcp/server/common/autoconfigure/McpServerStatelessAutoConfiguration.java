@@ -19,21 +19,6 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.core.env.Environment;
-import org.springframework.core.log.LogAccessor;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.context.support.StandardServletEnvironment;
-
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessAsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
@@ -51,6 +36,21 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 
+import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.core.env.Environment;
+import org.springframework.core.log.LogAccessor;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.context.support.StandardServletEnvironment;
+
 /**
  * @author Christian Tzolov
  */
@@ -65,26 +65,6 @@ import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 public class McpServerStatelessAutoConfiguration {
 
 	private static final LogAccessor logger = new LogAccessor(McpServerStatelessAutoConfiguration.class);
-
-	public static class EnabledStatelessServerCondition extends AllNestedConditions {
-
-		public EnabledStatelessServerCondition() {
-			super(ConfigurationPhase.PARSE_CONFIGURATION);
-		}
-
-		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-				matchIfMissing = true)
-		static class McpServerEnabledCondition {
-
-		}
-
-		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "STATELESS",
-				matchIfMissing = false)
-		static class StatelessEnabledCondition {
-
-		}
-
-	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -240,6 +220,26 @@ public class McpServerStatelessAutoConfiguration {
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
 
 		return serverBuilder.build();
+	}
+
+	public static class EnabledStatelessServerCondition extends AllNestedConditions {
+
+		public EnabledStatelessServerCondition() {
+			super(ConfigurationPhase.PARSE_CONFIGURATION);
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+				matchIfMissing = true)
+		static class McpServerEnabledCondition {
+
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "STATELESS",
+				matchIfMissing = false)
+		static class StatelessEnabledCondition {
+
+		}
+
 	}
 
 }

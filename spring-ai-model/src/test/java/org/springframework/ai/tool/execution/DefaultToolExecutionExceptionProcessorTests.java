@@ -42,13 +42,14 @@ class DefaultToolExecutionExceptionProcessorTests {
 	private final DefaultToolDefinition toolDefinition = new DefaultToolDefinition("toolName", "toolDescription",
 			"inputSchema");
 
-	private final ToolExecutionException toolExecutionException = new ToolExecutionException(toolDefinition,
-			toolException);
+	private final ToolExecutionException toolExecutionException = new ToolExecutionException(this.toolDefinition,
+			this.toolException);
 
-	private final ToolExecutionException toolExecutionCheckedException = new ToolExecutionException(toolDefinition,
-			toolCheckedException);
+	private final ToolExecutionException toolExecutionCheckedException = new ToolExecutionException(this.toolDefinition,
+			this.toolCheckedException);
 
-	private final ToolExecutionException toolExecutionError = new ToolExecutionException(toolDefinition, toolError);
+	private final ToolExecutionException toolExecutionError = new ToolExecutionException(this.toolDefinition,
+			this.toolError);
 
 	@Test
 	void processReturnsMessage() {

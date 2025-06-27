@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.azure.ai.openai.OpenAIClient;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.springframework.ai.document.MetadataMode;
@@ -43,20 +43,21 @@ public class AzureEmbeddingsOptionsTests {
 
 	@BeforeEach
 	void setUp() {
-		mockClient = Mockito.mock(OpenAIClient.class);
-		client = new AzureOpenAiEmbeddingModel(mockClient, MetadataMode.EMBED,
+		this.mockClient = Mockito.mock(OpenAIClient.class);
+		this.client = new AzureOpenAiEmbeddingModel(this.mockClient, MetadataMode.EMBED,
 				AzureOpenAiEmbeddingOptions.builder().deploymentName("DEFAULT_MODEL").user("USER_TEST").build());
 	}
 
 	@Test
 	public void createRequestWithChatOptions() {
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test message content"), null));
+		var requestOptions = this.client
+			.toEmbeddingOptions(new EmbeddingRequest(List.of("Test message content"), null));
 
 		assertThat(requestOptions.getInput()).hasSize(1);
 		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
 		assertThat(requestOptions.getUser()).isEqualTo("USER_TEST");
 
-		requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test message content"),
+		requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test message content"),
 				AzureOpenAiEmbeddingOptions.builder().deploymentName("PROMPT_MODEL").user("PROMPT_USER").build()));
 
 		assertThat(requestOptions.getInput()).hasSize(1);
@@ -67,7 +68,7 @@ public class AzureEmbeddingsOptionsTests {
 	@Test
 	public void createRequestWithMultipleInputs() {
 		List<String> inputs = Arrays.asList("First text", "Second text", "Third text");
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(inputs, null));
+		var requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(inputs, null));
 
 		assertThat(requestOptions.getInput()).hasSize(3);
 		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
@@ -76,7 +77,7 @@ public class AzureEmbeddingsOptionsTests {
 
 	@Test
 	public void createRequestWithEmptyInputs() {
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(Collections.emptyList(), null));
+		var requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(Collections.emptyList(), null));
 
 		assertThat(requestOptions.getInput()).isEmpty();
 		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
@@ -84,7 +85,7 @@ public class AzureEmbeddingsOptionsTests {
 
 	@Test
 	public void createRequestWithNullOptions() {
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), null));
+		var requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), null));
 
 		assertThat(requestOptions.getInput()).hasSize(1);
 		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
@@ -98,7 +99,8 @@ public class AzureEmbeddingsOptionsTests {
 			.user("CUSTOM_USER")
 			.build();
 
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), customOptions));
+		var requestOptions = this.client
+			.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), customOptions));
 
 		assertThat(requestOptions.getModel()).isEqualTo("CUSTOM_MODEL");
 		assertThat(requestOptions.getUser()).isEqualTo("CUSTOM_USER");
@@ -107,14 +109,14 @@ public class AzureEmbeddingsOptionsTests {
 	@Test
 	public void shouldPreserveInputOrder() {
 		List<String> orderedInputs = Arrays.asList("First", "Second", "Third", "Fourth");
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(orderedInputs, null));
+		var requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(orderedInputs, null));
 
 		assertThat(requestOptions.getInput()).containsExactly("First", "Second", "Third", "Fourth");
 	}
 
 	@Test
 	public void shouldHandleDifferentMetadataModes() {
-		var clientWithNoneMode = new AzureOpenAiEmbeddingModel(mockClient, MetadataMode.NONE,
+		var clientWithNoneMode = new AzureOpenAiEmbeddingModel(this.mockClient, MetadataMode.NONE,
 				AzureOpenAiEmbeddingOptions.builder().deploymentName("TEST_MODEL").build());
 
 		var requestOptions = clientWithNoneMode.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), null));
@@ -150,8 +152,8 @@ public class AzureEmbeddingsOptionsTests {
 		var request2 = new EmbeddingRequest(List.of("Second request"),
 				AzureOpenAiEmbeddingOptions.builder().deploymentName("MODEL2").user("USER2").build());
 
-		var options1 = client.toEmbeddingOptions(request1);
-		var options2 = client.toEmbeddingOptions(request2);
+		var options1 = this.client.toEmbeddingOptions(request1);
+		var options2 = this.client.toEmbeddingOptions(request2);
 
 		assertThat(options1.getModel()).isEqualTo("MODEL1");
 		assertThat(options1.getUser()).isEqualTo("USER1");
@@ -162,7 +164,7 @@ public class AzureEmbeddingsOptionsTests {
 	@Test
 	public void shouldHandleEmptyStringInputs() {
 		List<String> inputsWithEmpty = Arrays.asList("", "Valid text", "", "Another valid text");
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(inputsWithEmpty, null));
+		var requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(inputsWithEmpty, null));
 
 		assertThat(requestOptions.getInput()).hasSize(4);
 		assertThat(requestOptions.getInput()).containsExactly("", "Valid text", "", "Another valid text");
@@ -170,7 +172,7 @@ public class AzureEmbeddingsOptionsTests {
 
 	@Test
 	public void shouldHandleDifferentClientConfigurations() {
-		var clientWithDifferentDefaults = new AzureOpenAiEmbeddingModel(mockClient, MetadataMode.EMBED,
+		var clientWithDifferentDefaults = new AzureOpenAiEmbeddingModel(this.mockClient, MetadataMode.EMBED,
 				AzureOpenAiEmbeddingOptions.builder().deploymentName("DIFFERENT_DEFAULT").build());
 
 		var requestOptions = clientWithDifferentDefaults
@@ -183,7 +185,7 @@ public class AzureEmbeddingsOptionsTests {
 	@Test
 	public void shouldHandleWhitespaceOnlyInputs() {
 		List<String> whitespaceInputs = Arrays.asList("   ", "\t\t", "\n\n", "  valid text  ");
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(whitespaceInputs, null));
+		var requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(whitespaceInputs, null));
 
 		assertThat(requestOptions.getInput()).hasSize(4);
 		assertThat(requestOptions.getInput()).containsExactlyElementsOf(whitespaceInputs);
@@ -194,7 +196,7 @@ public class AzureEmbeddingsOptionsTests {
 		List<String> originalInputs = Arrays.asList("Input 1", "Input 2", "Input 3");
 		List<String> inputsCopy = new ArrayList<>(originalInputs);
 
-		client.toEmbeddingOptions(new EmbeddingRequest(inputsCopy, null));
+		this.client.toEmbeddingOptions(new EmbeddingRequest(inputsCopy, null));
 
 		// Verify original list wasn't modified
 		assertThat(inputsCopy).isEqualTo(originalInputs);

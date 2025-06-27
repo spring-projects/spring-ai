@@ -16,6 +16,10 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
+import io.modelcontextprotocol.spec.McpSchema;
+
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -28,11 +32,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.web.reactive.function.server.RouterFunction;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
-import io.modelcontextprotocol.spec.McpSchema;
 
 /**
  * @author Christian Tzolov

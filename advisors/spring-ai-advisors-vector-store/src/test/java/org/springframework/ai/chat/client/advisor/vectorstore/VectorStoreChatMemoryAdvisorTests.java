@@ -18,10 +18,10 @@ package org.springframework.ai.chat.client.advisor.vectorstore;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
-import reactor.core.scheduler.Scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

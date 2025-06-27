@@ -22,7 +22,6 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
-import org.springframework.ai.google.genai.aot.GoogleGenAiRuntimeHints;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 

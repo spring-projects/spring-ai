@@ -30,16 +30,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.metadata.ChatResponseMetadata;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel.GeminiRequest;
+import org.springframework.ai.google.genai.tool.MockWeatherService;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.google.genai.GoogleGenAiChatModel.GeminiRequest;
-import org.springframework.ai.google.genai.tool.MockWeatherService;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
