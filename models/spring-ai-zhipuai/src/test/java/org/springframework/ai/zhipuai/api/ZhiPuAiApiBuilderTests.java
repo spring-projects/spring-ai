@@ -173,13 +173,13 @@ class ZhiPuAiApiBuilderTests {
 
 		@BeforeEach
 		void setUp() throws IOException {
-			mockWebServer = new MockWebServer();
-			mockWebServer.start();
+			this.mockWebServer = new MockWebServer();
+			this.mockWebServer.start();
 		}
 
 		@AfterEach
 		void tearDown() throws IOException {
-			mockWebServer.shutdown();
+			this.mockWebServer.shutdown();
 		}
 
 		@Test
@@ -187,7 +187,7 @@ class ZhiPuAiApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			ZhiPuAiApi api = ZhiPuAiApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -195,8 +195,8 @@ class ZhiPuAiApiBuilderTests {
 				.setBody("""
 						{}
 						""");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			ZhiPuAiApi.ChatCompletionMessage chatCompletionMessage = new ZhiPuAiApi.ChatCompletionMessage("Hello world",
 					ZhiPuAiApi.ChatCompletionMessage.Role.USER);
@@ -204,13 +204,13 @@ class ZhiPuAiApiBuilderTests {
 					List.of(chatCompletionMessage), "glm-4-flash", 0.8, false);
 			ResponseEntity<ZhiPuAiApi.ChatCompletion> response = api.chatCompletionEntity(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.chatCompletionEntity(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 
@@ -218,14 +218,14 @@ class ZhiPuAiApiBuilderTests {
 		void dynamicApiKeyRestClientWithAdditionalAuthorizationHeader() throws InterruptedException {
 			ZhiPuAiApi api = ZhiPuAiApi.builder().apiKey(() -> {
 				throw new AssertionFailedError("Should not be called, API key is provided in headers");
-			}).baseUrl(mockWebServer.url("/").toString()).build();
+			}).baseUrl(this.mockWebServer.url("/").toString()).build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
 				.setBody("""
 						{}
 						""");
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			ZhiPuAiApi.ChatCompletionMessage chatCompletionMessage = new ZhiPuAiApi.ChatCompletionMessage("Hello world",
 					ZhiPuAiApi.ChatCompletionMessage.Role.USER);
@@ -236,7 +236,7 @@ class ZhiPuAiApiBuilderTests {
 			additionalHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer additional-key");
 			ResponseEntity<ZhiPuAiApi.ChatCompletion> response = api.chatCompletionEntity(request, additionalHeaders);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer additional-key");
 		}
 
@@ -245,7 +245,7 @@ class ZhiPuAiApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			ZhiPuAiApi api = ZhiPuAiApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -253,8 +253,8 @@ class ZhiPuAiApiBuilderTests {
 				.setBody("""
 						{}
 						""".replace("\n", ""));
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			ZhiPuAiApi.ChatCompletionMessage chatCompletionMessage = new ZhiPuAiApi.ChatCompletionMessage("Hello world",
 					ZhiPuAiApi.ChatCompletionMessage.Role.USER);
@@ -262,13 +262,13 @@ class ZhiPuAiApiBuilderTests {
 					List.of(chatCompletionMessage), "glm-4-flash", 0.8, true);
 			List<ZhiPuAiApi.ChatCompletionChunk> response = api.chatCompletionStream(request).collectList().block();
 			assertThat(response).hasSize(1);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.chatCompletionStream(request).collectList().block();
 			assertThat(response).hasSize(1);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 
@@ -276,14 +276,14 @@ class ZhiPuAiApiBuilderTests {
 		void dynamicApiKeyWebClientWithAdditionalAuthorizationHeader() throws InterruptedException {
 			ZhiPuAiApi api = ZhiPuAiApi.builder().apiKey(() -> {
 				throw new AssertionFailedError("Should not be called, API key is provided in headers");
-			}).baseUrl(mockWebServer.url("/").toString()).build();
+			}).baseUrl(this.mockWebServer.url("/").toString()).build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
 				.setBody("""
 						{}
 						""".replace("\n", ""));
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			ZhiPuAiApi.ChatCompletionMessage chatCompletionMessage = new ZhiPuAiApi.ChatCompletionMessage("Hello world",
 					ZhiPuAiApi.ChatCompletionMessage.Role.USER);
@@ -295,7 +295,7 @@ class ZhiPuAiApiBuilderTests {
 				.collectList()
 				.block();
 			assertThat(response).hasSize(1);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer additional-key");
 		}
 
@@ -304,7 +304,7 @@ class ZhiPuAiApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			ZhiPuAiApi api = ZhiPuAiApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -312,19 +312,19 @@ class ZhiPuAiApiBuilderTests {
 				.setBody("""
 						{}
 						""");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			ZhiPuAiApi.EmbeddingRequest<String> request = new ZhiPuAiApi.EmbeddingRequest<>("Hello world");
 			ResponseEntity<ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding>> response = api.embeddings(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.embeddings(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 

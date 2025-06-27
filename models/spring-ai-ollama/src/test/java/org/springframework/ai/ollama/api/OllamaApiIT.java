@@ -16,16 +16,21 @@
 
 package org.springframework.ai.ollama.api;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.ollama.BaseOllamaIT;
-import org.springframework.ai.ollama.api.OllamaApi.*;
-import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
-import reactor.core.publisher.Flux;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+
+import org.springframework.ai.ollama.BaseOllamaIT;
+import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
+import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
+import org.springframework.ai.ollama.api.OllamaApi.Message;
+import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

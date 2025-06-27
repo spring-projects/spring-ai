@@ -16,6 +16,8 @@
 
 package org.springframework.ai.reader;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -31,9 +33,6 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.File;
-import java.io.FileWriter;
 
 /**
  * @author Christian Tzolov

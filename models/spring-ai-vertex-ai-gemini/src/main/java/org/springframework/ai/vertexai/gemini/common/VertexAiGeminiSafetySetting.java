@@ -16,7 +16,7 @@
 
 package org.springframework.ai.vertexai.gemini.common;
 
-public class VertexAiGeminiSafetySetting {
+public final class VertexAiGeminiSafetySetting {
 
 	public static Builder builder() {
 		return new Builder();

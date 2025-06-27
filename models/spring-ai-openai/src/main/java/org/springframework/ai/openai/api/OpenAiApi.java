@@ -1370,12 +1370,12 @@ public class OpenAiApi {
 
 		private final String value;
 
-		private ServiceTier(String value) {
+		ServiceTier(String value) {
 			this.value = value;
 		}
 
 		public String getValue() {
-			return value;
+			return this.value;
 		}
 
 	}

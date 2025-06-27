@@ -30,6 +30,8 @@
 	<suppress files="FiltersLexer\.java" checks="MultipleVariableDeclarations"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
+	<suppress  files="OpenAiApiBuilderTests.java" checks="RegexpSinglelineJava"/>
+	<suppress  files="AnthropicApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiChatModelWithChatResponseMetadataTests.java" checks="RegexpSinglelineJava"/>

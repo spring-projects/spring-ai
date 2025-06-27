@@ -203,29 +203,21 @@ public class McpServerAutoConfigurationIT {
 	void syncToolCallbackRegistrationControl() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server..type=SYNC", "spring.ai.mcp.server..tool-callback-converter=true")
-			.run(context -> {
-				assertThat(context).hasBean("syncTools");
-			});
+			.run(context -> assertThat(context).hasBean("syncTools"));
 
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=SYNC", "spring.ai.mcp.server.tool-callback-converter=false")
-			.run(context -> {
-				assertThat(context).doesNotHaveBean("syncTools");
-			});
+			.run(context -> assertThat(context).doesNotHaveBean("syncTools"));
 	}
 
 	@Test
 	void asyncToolCallbackRegistrationControl() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.tool-callback-converter=true")
-			.run(context -> {
-				assertThat(context).hasBean("asyncTools");
-			});
+			.run(context -> assertThat(context).hasBean("asyncTools"));
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.tool-callback-converter=false")
-			.run(context -> {
-				assertThat(context).doesNotHaveBean("asyncTools");
-			});
+			.run(context -> assertThat(context).doesNotHaveBean("asyncTools"));
 	}
 
 	@Test
