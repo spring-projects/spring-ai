@@ -76,14 +76,14 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 
 		String content = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("paymentStatus")
+			.toolNames("getPaymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.
 					""")
 			.call()
 			.content();
-		logger.info("" + content);
+		logger.info(content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -94,7 +94,7 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("paymentStatus")
+			.toolNames("getPaymentStatuses")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.
@@ -130,13 +130,13 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 	public static class PaymentService {
 
 		@Tool(description = "Get the status of a single payment transaction")
-		public Status paymentStatus(Transaction transaction) {
+		public Status getPaymentStatus(Transaction transaction) {
 			logger.info("Single Transaction: " + transaction);
 			return DATASET.get(transaction);
 		}
 
 		@Tool(description = "Get the list statuses of a list of payment transactions")
-		public List<Status> statusesPaymentStatuses(List<Transaction> transactions) {
+		public List<Status> getPaymentStatuses(List<Transaction> transactions) {
 			logger.info("Transactions: " + transactions);
 			return transactions.stream().map(t -> DATASET.get(t)).toList();
 		}
