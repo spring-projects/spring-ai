@@ -68,7 +68,7 @@
         <!-- TESTING -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-mistral-ai</artifactId>
+			<artifactId>spring-ai-openai</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>

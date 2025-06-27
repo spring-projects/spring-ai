@@ -32,7 +32,6 @@ import io.qdrant.client.grpc.Collections.VectorParams;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
@@ -40,8 +39,8 @@ import org.testcontainers.qdrant.QdrantContainer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
-import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.openai.OpenAiEmbeddingModel;
+import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -62,12 +61,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 0.8.1
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String COLLECTION_NAME = "test_collection";
 
-	private static final int EMBEDDING_DIMENSION = 1024;
+	private static final int EMBEDDING_DIMENSION = 1536;
 
 	@Container
 	static QdrantContainer qdrantContainer = new QdrantContainer(QdrantImage.DEFAULT_IMAGE);
@@ -355,7 +354,7 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new MistralAiEmbeddingModel(new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY")));
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 	}
