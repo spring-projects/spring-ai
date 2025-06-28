@@ -41,6 +41,8 @@ public class DefaultChatOptions implements ChatOptions {
 
 	private Double topP;
 
+	private Boolean think;
+
 	@Override
 	public String getModel() {
 		return this.model;
@@ -114,6 +116,15 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
+	public Boolean isThink() {
+		return this.think;
+	}
+
+	public void setThink(Boolean think) {
+		this.think = think;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends ChatOptions> T copy() {
 		DefaultChatOptions copy = new DefaultChatOptions();
@@ -125,6 +136,7 @@ public class DefaultChatOptions implements ChatOptions {
 		copy.setTemperature(this.getTemperature());
 		copy.setTopK(this.getTopK());
 		copy.setTopP(this.getTopP());
+		copy.setThink(this.isThink());
 		return (T) copy;
 	}
 
