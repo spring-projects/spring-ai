@@ -26,7 +26,7 @@ import java.util.Map;
 
 /**
  * A {@link DockerComposeConnectionDetailsFactory} implementation that creates
- * {@link McpSseClientConnectionDetails} for a Docker Agent Gateway instance running in a
+ * {@link McpSseClientConnectionDetails} for a Docker MCP Gateway instance running in a
  * Docker container.
  *
  * @author Eddú Meléndez
@@ -37,7 +37,7 @@ class DockerMcpGatewayDockerComposeConnectionDetailsFactory
 	private static final int GATEWAY_PORT = 8811;
 
 	protected DockerMcpGatewayDockerComposeConnectionDetailsFactory() {
-		super("docker/agents_gateway");
+		super("docker/mcp-gateway");
 	}
 
 	@Override
@@ -46,7 +46,7 @@ class DockerMcpGatewayDockerComposeConnectionDetailsFactory
 	}
 
 	/**
-	 * {@link McpSseClientConnectionDetails} backed by a {@code Docker Agents Gateway}
+	 * {@link McpSseClientConnectionDetails} backed by a {@code Docker MCP Gateway}
 	 * {@link RunningService}.
 	 */
 	static class DockerAgentsGatewayContainerConnectionDetails extends DockerComposeConnectionDetails

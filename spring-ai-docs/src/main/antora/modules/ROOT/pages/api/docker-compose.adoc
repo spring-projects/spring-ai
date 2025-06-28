@@ -56,5 +56,5 @@ The following service connection factories are provided in the `spring-ai-spring
 | Containers named `semitechnologies/weaviate`, `cr.weaviate.io/semitechnologies/weaviate`
 
 | `McpSseClientConnectionDetails`
-| Containers named `docker/agents_gateway`
+| Containers named `docker/mcp-gateway`
 |====

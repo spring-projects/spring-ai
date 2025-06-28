@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DockerMcpGatewayDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
 	protected DockerMcpGatewayDockerComposeConnectionDetailsFactoryIT() {
-		super("docker-agents-gateway-compose.yaml", DockerImageName.parse("docker/agents_gateway:v2"));
+		super("docker-agents-gateway-compose.yaml", DockerImageName.parse("docker/mcp-gateway"));
 	}
 
 	@Test
