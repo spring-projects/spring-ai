@@ -54,6 +54,7 @@ constant
     | (MINUS | PLUS)? DECIMAL_VALUE # DecimalConstant
     | QUOTED_STRING+                # TextConstant
     | BOOLEAN_VALUE                 # BooleanConstant
+    | NULL                          # NullConstant
     ;
 
 WHERE : 'WHERE' | 'where';
@@ -95,6 +96,8 @@ INTEGER_VALUE
 DECIMAL_VALUE
     : DECIMAL_DIGITS
     ;
+
+NULL: 'NULL' | 'null';
 
 IDENTIFIER
     : (LETTER | DIGIT | '_')+

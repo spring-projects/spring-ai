@@ -56,6 +56,12 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
+		else if (expression.type() == Filter.ExpressionType.EQ && expression.right() == null) {
+			context.append("-");
+			this.convertOperand(expression.left(), context);
+			context.append(getOperationSymbol(expression));
+			context.append("*");
+		}
 		else {
 			this.convertOperand(expression.left(), context);
 			context.append(getOperationSymbol(expression));

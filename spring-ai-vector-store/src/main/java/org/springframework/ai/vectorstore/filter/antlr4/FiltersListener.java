@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,5 +231,19 @@ public interface FiltersListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitBooleanConstant(FiltersParser.BooleanConstantContext ctx);
+
+	/**
+	 * Enter a parse tree produced by the {@code NullConstant} labeled alternative in
+	 * {@link FiltersParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void enterNullConstant(FiltersParser.NullConstantContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code NullConstant} labeled alternative in
+	 * {@link FiltersParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void exitNullConstant(FiltersParser.NullConstantContext ctx);
 
 }
