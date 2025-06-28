@@ -18,6 +18,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -77,10 +78,10 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
 			.from(this.jdbcTemplate.getDataSource());
 		String selectSql = dialect.getSelectMessagesSql()
-			.replace("content, type", "conversation_id, content, type, timestamp");
+			.replace("content, type, tool_calls", "conversation_id, content, type, tool_calls, timestamp");
 		var result = this.jdbcTemplate.queryForMap(selectSql, conversationId);
 
-		assertThat(result.size()).isEqualTo(4);
+		assertThat(result.size()).isEqualTo(5);
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
@@ -102,7 +103,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		JdbcChatMemoryRepositoryDialect dialect = JdbcChatMemoryRepositoryDialect
 			.from(this.jdbcTemplate.getDataSource());
 		String selectSql = dialect.getSelectMessagesSql()
-			.replace("content, type", "conversation_id, content, type, timestamp");
+			.replace("content, type, tool_calls", "conversation_id, content, type, tool_calls, timestamp");
 		var results = this.jdbcTemplate.queryForList(selectSql, conversationId);
 
 		assertThat(results).hasSize(messages.size());
@@ -184,6 +185,67 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		// Messages should be in the original order (ASC)
 		assertThat(retrievedContents).containsExactly("1-First message", "2-Second message", "3-Third message",
 				"4-Fourth message");
+	}
+
+	@Test
+	void saveAndRetrieveAssistantMessageWithToolCalls() {
+		String conversationId = UUID.randomUUID().toString();
+
+		// Create tool calls
+		List<AssistantMessage.ToolCall> toolCalls = List.of(
+				new AssistantMessage.ToolCall("call_1", "function", "get_weather", "{\"location\":\"Seoul\"}"),
+				new AssistantMessage.ToolCall("call_2", "function", "get_time", "{\"timezone\":\"Asia/Seoul\"}"));
+
+		var assistantMessage = new AssistantMessage("I'll help you with that.", Map.of(), toolCalls);
+
+		this.chatMemoryRepository.saveAll(conversationId, List.of(assistantMessage));
+
+		// Retrieve and verify
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(retrievedMessages).hasSize(1);
+
+		Message retrievedMessage = retrievedMessages.get(0);
+		assertThat(retrievedMessage).isInstanceOf(AssistantMessage.class);
+
+		AssistantMessage retrievedAssistantMessage = (AssistantMessage) retrievedMessage;
+		assertThat(retrievedAssistantMessage.getText()).isEqualTo("I'll help you with that.");
+		assertThat(retrievedAssistantMessage.hasToolCalls()).isTrue();
+		assertThat(retrievedAssistantMessage.getToolCalls()).hasSize(2);
+
+		// Verify first tool call
+		AssistantMessage.ToolCall firstToolCall = retrievedAssistantMessage.getToolCalls().get(0);
+		assertThat(firstToolCall.id()).isEqualTo("call_1");
+		assertThat(firstToolCall.type()).isEqualTo("function");
+		assertThat(firstToolCall.name()).isEqualTo("get_weather");
+		assertThat(firstToolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
+
+		// Verify second tool call
+		AssistantMessage.ToolCall secondToolCall = retrievedAssistantMessage.getToolCalls().get(1);
+		assertThat(secondToolCall.id()).isEqualTo("call_2");
+		assertThat(secondToolCall.type()).isEqualTo("function");
+		assertThat(secondToolCall.name()).isEqualTo("get_time");
+		assertThat(secondToolCall.arguments()).isEqualTo("{\"timezone\":\"Asia/Seoul\"}");
+	}
+
+	@Test
+	void saveAndRetrieveAssistantMessageWithoutToolCalls() {
+		String conversationId = UUID.randomUUID().toString();
+
+		var assistantMessage = new AssistantMessage("Simple response without tool calls.");
+
+		this.chatMemoryRepository.saveAll(conversationId, List.of(assistantMessage));
+
+		// Retrieve and verify
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(retrievedMessages).hasSize(1);
+
+		Message retrievedMessage = retrievedMessages.get(0);
+		assertThat(retrievedMessage).isInstanceOf(AssistantMessage.class);
+
+		AssistantMessage retrievedAssistantMessage = (AssistantMessage) retrievedMessage;
+		assertThat(retrievedAssistantMessage.getText()).isEqualTo("Simple response without tool calls.");
+		assertThat(retrievedAssistantMessage.hasToolCalls()).isFalse();
+		assertThat(retrievedAssistantMessage.getToolCalls()).isEmpty();
 	}
 
 	/**
