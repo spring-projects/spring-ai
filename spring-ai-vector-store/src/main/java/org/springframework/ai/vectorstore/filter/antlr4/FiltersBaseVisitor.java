@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,6 +227,19 @@ public class FiltersBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 */
 	@Override
 	public T visitBooleanConstant(FiltersParser.BooleanConstantContext ctx) {
+		return visitChildren(ctx);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation returns the result of calling {@link #visitChildren} on
+	 * {@code ctx}.
+	 * </p>
+	 */
+	@Override
+	public T visitNullConstant(FiltersParser.NullConstantContext ctx) {
 		return visitChildren(ctx);
 	}
 

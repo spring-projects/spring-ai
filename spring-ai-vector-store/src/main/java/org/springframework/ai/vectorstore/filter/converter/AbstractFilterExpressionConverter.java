@@ -77,7 +77,8 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		}
 		else if (operand instanceof Filter.Expression expression) {
 			if ((expression.type() != ExpressionType.NOT && expression.type() != ExpressionType.AND
-					&& expression.type() != ExpressionType.OR) && !(expression.right() instanceof Filter.Value)) {
+					&& expression.type() != ExpressionType.OR) && !(expression.right() instanceof Filter.Value)
+					&& !(expression.type() == ExpressionType.EQ && expression.right() == null)) {
 				throw new RuntimeException("Non AND/OR expression must have Value right argument!");
 			}
 			if (expression.type() == ExpressionType.NOT) {
