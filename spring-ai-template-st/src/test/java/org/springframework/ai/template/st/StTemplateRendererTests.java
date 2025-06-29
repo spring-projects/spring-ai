@@ -16,16 +16,23 @@
 
 package org.springframework.ai.template.st;
 
+import static org.assertj.core.api.Assertions.*;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.template.ValidationMode;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 /**
  * Unit tests for {@link StTemplateRenderer}.
@@ -295,6 +302,36 @@ class StTemplateRendererTests {
 		String result = renderer.apply(template, variables);
 
 		assertThat(result).isEqualTo("Hello!");
+	}
+
+	@Test
+	void malformedTemplateShouldLogErrorViaSlf4j() {
+		Logger logger = (Logger) LoggerFactory.getLogger(StTemplateRenderer.class);
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		logger.addAppender(appender);
+
+		PrintStream originalErr = System.err;
+		ByteArrayOutputStream err = new ByteArrayOutputStream();
+		System.setErr(new PrintStream(err));
+		try {
+			StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+			Map<String, Object> variables = new HashMap<>();
+			variables.put("name", "Spring AI");
+			assertThatThrownBy(() -> renderer.apply("Hello {name!", variables))
+					.isInstanceOf(IllegalArgumentException.class);
+		}
+		finally {
+			System.setErr(originalErr);
+			logger.detachAppender(appender);
+			appender.stop();
+		}
+
+		assertThat(appender.list).isNotEmpty();
+		ILoggingEvent event = appender.list.get(0);
+		assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+		assertThat(event.getFormattedMessage()).contains("StringTemplate compile error");
+		assertThat(err.toString(StandardCharsets.UTF_8)).isEmpty();
 	}
 
 }
