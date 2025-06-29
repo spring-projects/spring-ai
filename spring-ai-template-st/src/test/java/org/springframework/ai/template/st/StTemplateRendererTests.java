@@ -16,16 +16,23 @@
 
 package org.springframework.ai.template.st;
 
+import static org.assertj.core.api.Assertions.*;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.template.ValidationMode;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 /**
  * Unit tests for {@link StTemplateRenderer}.
@@ -37,8 +44,8 @@ class StTemplateRendererTests {
 	@Test
 	void shouldNotAcceptNullValidationMode() {
 		assertThatThrownBy(() -> StTemplateRenderer.builder().validationMode(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("validationMode cannot be null");
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("validationMode cannot be null");
 	}
 
 	@Test
@@ -80,14 +87,14 @@ class StTemplateRendererTests {
 		Map<String, Object> variables = new HashMap<>();
 
 		assertThatThrownBy(() -> renderer.apply("", variables)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("template cannot be null or empty");
+				.hasMessageContaining("template cannot be null or empty");
 	}
 
 	@Test
 	void shouldNotAcceptNullVariables() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 		assertThatThrownBy(() -> renderer.apply("Hello!", null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("variables cannot be null");
+				.hasMessageContaining("variables cannot be null");
 	}
 
 	@Test
@@ -98,7 +105,7 @@ class StTemplateRendererTests {
 		variables.put(null, "Spring AI");
 
 		assertThatThrownBy(() -> renderer.apply(template, variables)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("variables keys cannot be null");
+				.hasMessageContaining("variables keys cannot be null");
 	}
 
 	@Test
@@ -108,7 +115,7 @@ class StTemplateRendererTests {
 		variables.put("name", "Spring AI");
 
 		assertThatThrownBy(() -> renderer.apply("Hello {name!", variables)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("The template string is not valid.");
+				.hasMessageContaining("The template string is not valid.");
 	}
 
 	@Test
@@ -118,9 +125,9 @@ class StTemplateRendererTests {
 		variables.put("greeting", "Hello");
 
 		assertThatThrownBy(() -> renderer.apply("{greeting} {name}!", variables))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining(
-					"Not all variables were replaced in the template. Missing variable names are: [name]");
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining(
+						"Not all variables were replaced in the template. Missing variable names are: [name]");
 	}
 
 	@Test
@@ -148,9 +155,9 @@ class StTemplateRendererTests {
 	@Test
 	void shouldRenderWithCustomDelimiters() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder()
-			.startDelimiterToken('<')
-			.endDelimiterToken('>')
-			.build();
+				.startDelimiterToken('<')
+				.endDelimiterToken('>')
+				.build();
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("name", "Spring AI");
 
@@ -162,9 +169,9 @@ class StTemplateRendererTests {
 	@Test
 	void shouldHandleSpecialCharactersAsDelimiters() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder()
-			.startDelimiterToken('$')
-			.endDelimiterToken('$')
-			.build();
+				.startDelimiterToken('$')
+				.endDelimiterToken('$')
+				.build();
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("name", "Spring AI");
 
@@ -295,6 +302,36 @@ class StTemplateRendererTests {
 		String result = renderer.apply(template, variables);
 
 		assertThat(result).isEqualTo("Hello!");
+	}
+
+	@Test
+	void malformedTemplateShouldLogErrorViaSlf4j() {
+		Logger logger = (Logger) LoggerFactory.getLogger(StTemplateRenderer.class);
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		logger.addAppender(appender);
+
+		PrintStream originalErr = System.err;
+		ByteArrayOutputStream err = new ByteArrayOutputStream();
+		System.setErr(new PrintStream(err));
+		try {
+			StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+			Map<String, Object> variables = new HashMap<>();
+			variables.put("name", "Spring AI");
+			assertThatThrownBy(() -> renderer.apply("Hello {name!", variables))
+					.isInstanceOf(IllegalArgumentException.class);
+		}
+		finally {
+			System.setErr(originalErr);
+			logger.detachAppender(appender);
+			appender.stop();
+		}
+
+		assertThat(appender.list).isNotEmpty();
+		ILoggingEvent event = appender.list.get(0);
+		assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+		assertThat(event.getFormattedMessage()).contains("StringTemplate compile error");
+		assertThat(err.toString(StandardCharsets.UTF_8)).isEmpty();
 	}
 
 }
