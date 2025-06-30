@@ -16,36 +16,8 @@
 
 package org.springframework.ai.bedrock.converse.api;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import software.amazon.awssdk.core.SdkField;
-import software.amazon.awssdk.core.document.Document;
-import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
-import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDeltaEvent;
-import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStart;
-import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStartEvent;
-import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStopEvent;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamMetadataEvent;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamMetrics;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput.EventType;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler.Visitor;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamTrace;
-import software.amazon.awssdk.services.bedrockruntime.model.MessageStartEvent;
-import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent;
-import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
-import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -56,6 +28,22 @@ import org.springframework.ai.model.ModelOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.SdkField;
+import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.services.bedrockruntime.model.*;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput.EventType;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler.Visitor;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * Amazon Bedrock Converse API utils.
@@ -63,9 +51,13 @@ import org.springframework.util.StringUtils;
  * @author Wei Jiang
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Brave Lin
  * @since 1.0.0
  */
 public final class ConverseApiUtils {
+
+	//cachePoint support https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html
+	public static final String CACHE_POINT="cachePoint";
 
 	public static final ChatResponse EMPTY_CHAT_RESPONSE = ChatResponse.builder()
 		.generations(List.of())
@@ -74,6 +66,17 @@ public final class ConverseApiUtils {
 
 	private ConverseApiUtils() {
 
+	}
+
+	/**
+	 * buidl aws bedrock prompt-caching
+	 * url: https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html
+	 * @return
+	 */
+	public static SystemMessage buildCachePointMesssage(){
+		SystemMessage message = new SystemMessage(CACHE_POINT);
+		message.getMetadata().put(CACHE_POINT, CachePointType.DEFAULT);
+		return message;
 	}
 
 	public static boolean isToolUseStart(ConverseStreamOutput event) {
