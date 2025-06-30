@@ -1,5 +1,8 @@
+// Generated from org/springframework/ai/vectorstore/filter/antlr4/Filters.g4 by ANTLR 4.13.1
+package org.springframework.ai.vectorstore.filter.antlr4;
+
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.springframework.ai.vectorstore.filter.antlr4;
-
-// Generated from org/springframework/ai/vectorstore/filter/antlr4/Filters.g4 by ANTLR 4.13.1
 
 // ############################################################
 // # NOTE: This is ANTLR4 auto-generated code. Do not modify! #
@@ -76,6 +75,50 @@ public class FiltersBaseListener implements FiltersListener {
 	 */
 	@Override
 	public void exitNinExpression(FiltersParser.NinExpressionContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void enterIsNullExpression(FiltersParser.IsNullExpressionContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitIsNullExpression(FiltersParser.IsNullExpressionContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void enterIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx) {
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation does nothing.
+	 * </p>
+	 */
+	@Override
+	public void exitIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx) {
 	}
 
 	/**

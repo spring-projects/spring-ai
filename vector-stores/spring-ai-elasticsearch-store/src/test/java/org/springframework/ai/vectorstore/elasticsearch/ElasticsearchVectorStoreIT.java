@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -58,6 +59,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -410,6 +412,98 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Great Depression").topK(50).similarityThresholdAll().build()),
 						hasSize(0));
+		});
+	}
+
+	@Test
+	public void searchWithIsNullFilter() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
+			var nlDocument = new Document("2", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("3", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023, "activationDate", new Date(3000)));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build()),
+						hasSize(3));
+
+			// with text filter expression
+			List<Document> resultWithText = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("year IS NULL")
+				.build());
+
+			assertThat(resultWithText).hasSize(1);
+			assertThat(resultWithText.get(0).getId()).isEqualTo(nlDocument.getId());
+
+			// with filter expression builder
+			List<Document> resultsWithBuilder = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression(new FilterExpressionBuilder().isNull("year").build())
+				.build());
+
+			assertThat(resultsWithBuilder).hasSize(1);
+			assertThat(resultsWithBuilder.get(0).getId()).isEqualTo(nlDocument.getId());
+		});
+	}
+
+	@Test
+	public void searchWithIsNotNullFilter() {
+		getContextRunner().run(context -> {
+			ElasticsearchVectorStore vectorStore = context.getBean("vectorStore_cosine",
+					ElasticsearchVectorStore.class);
+
+			var bgDocument = new Document("1", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020, "activationDate", new Date(1000)));
+			var nlDocument = new Document("2", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("3", "The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023, "activationDate", new Date(3000)));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(
+						SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build()),
+						hasSize(3));
+
+			Set<String> expectedResultSet = Set.of(bgDocument.getId(), bgDocument2.getId());
+
+			// with text filter expression
+			List<Document> resultWithText = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("year IS NOT NULL")
+				.build());
+
+			assertThat(resultWithText).hasSize(2);
+			assertThat(resultWithText.get(0).getId()).isIn(expectedResultSet);
+			assertThat(resultWithText.get(1).getId()).isIn(expectedResultSet);
+
+			// with filter expression builder
+			List<Document> resultsWithBuilder = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression(new FilterExpressionBuilder().isNotNull("year").build())
+				.build());
+
+			assertThat(resultsWithBuilder).hasSize(2);
+			assertThat(resultsWithBuilder.get(0).getId()).isIn(expectedResultSet);
+			assertThat(resultsWithBuilder.get(1).getId()).isIn(expectedResultSet);
 		});
 	}
 
