@@ -40,7 +40,7 @@ spring:
 export ANTHROPIC_API_KEY=<your-anthropic-api-key>
 ----
 
-You can also set this configuration programmatically in your application code:
+You can also get this configuration programmatically in your application code:
 
 [source,java]
 ----
