@@ -644,6 +644,25 @@ Consider the following example:
 Expression exp = b.and(b.in("genre", "drama", "documentary"), b.not(b.lt("year", 2020))).build();
 ----
 
+You can also use the following operators:
+
+[source,text]
+----
+IS: 'IS' | 'is';
+NULL: 'NULL' | 'null';
+NOT NULL: 'NOT NULL' | 'not null';
+----
+
+Consider the following example:
+
+[source,java]
+----
+Expression exp = b.and(b.isNull("year")).build();
+Expression exp = b.and(b.isNotNull("year")).build();
+----
+
+NOTE: `IS NULL` and `IS NOT NULL` have not been implemented in all vector stores yet.
+
 == Deleting Documents from Vector Store
 
 The Vector Store interface provides multiple methods for deleting documents, allowing you to remove data either by specific document IDs or using filter expressions.
