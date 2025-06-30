@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -237,6 +237,16 @@ public class FilterExpressionTextParser {
 		public Filter.Operand visitCompareExpression(FiltersParser.CompareExpressionContext ctx) {
 			return new Filter.Expression(this.covertCompare(ctx.compare().getText()),
 					this.visitIdentifier(ctx.identifier()), this.visit(ctx.constant()));
+		}
+
+		@Override
+		public Filter.Operand visitIsNullExpression(FiltersParser.IsNullExpressionContext ctx) {
+			return new Filter.Expression(Filter.ExpressionType.ISNULL, this.visitIdentifier(ctx.identifier()));
+		}
+
+		@Override
+		public Filter.Operand visitIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx) {
+			return new Filter.Expression(Filter.ExpressionType.ISNOTNULL, this.visitIdentifier(ctx.identifier()));
 		}
 
 		private Filter.ExpressionType covertCompare(String compare) {
