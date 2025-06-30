@@ -94,7 +94,7 @@ class StTemplateRendererTests {
 	void shouldNotAcceptVariablesWithNullKeySet() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 		String template = "Hello!";
-		Map<String, Object> variables = new HashMap<String, Object>();
+		Map<String, Object> variables = new HashMap<>();
 		variables.put(null, "Spring AI");
 
 		assertThatThrownBy(() -> renderer.apply(template, variables)).isInstanceOf(IllegalArgumentException.class)
