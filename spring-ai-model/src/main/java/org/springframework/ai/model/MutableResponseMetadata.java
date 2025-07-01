@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.springframework.lang.NonNull;
-import io.micrometer.common.lang.Nullable;
+import org.springframework.lang.Nullable;
 
 public class MutableResponseMetadata implements ResponseMetadata {
 

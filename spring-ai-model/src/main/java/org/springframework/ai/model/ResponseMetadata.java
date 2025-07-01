@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.springframework.lang.NonNull;
-import io.micrometer.common.lang.Nullable;
+import org.springframework.lang.Nullable;
 
 /**
  * Interface representing metadata associated with an AI model's response.
