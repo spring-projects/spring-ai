@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.micrometer.common.lang.NonNull;
+import org.springframework.lang.NonNull;
 import io.micrometer.common.lang.Nullable;
 
 public class AbstractResponseMetadata {
