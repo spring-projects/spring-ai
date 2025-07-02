@@ -16,11 +16,12 @@
 
 package org.springframework.ai.chat.model;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.tool.annotation.IgnoredInToolInputSchema;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.ai.chat.messages.Message;
 
 /**
  * Represents the context for tool execution in a function calling scenario.
@@ -43,6 +44,7 @@ import org.springframework.ai.chat.messages.Message;
  * @author Christian Tzolov
  * @since 1.0.0
  */
+@IgnoredInToolInputSchema
 public final class ToolContext {
 
 	/**
