@@ -592,7 +592,6 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				.toList()))
 			.toList();
 
-		// Convert from VertexAI protobuf to VertexAiGeminiApi DTOs
 		List<VertexAiGeminiApi.LogProbs.Content> chosenCandidates = candidate.getLogprobsResult()
 			.getChosenCandidatesList()
 			.stream()
