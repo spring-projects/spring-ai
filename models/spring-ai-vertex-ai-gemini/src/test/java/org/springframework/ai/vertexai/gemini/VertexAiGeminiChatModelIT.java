@@ -47,6 +47,7 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
+import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -224,6 +225,26 @@ class VertexAiGeminiChatModelIT {
 
 		// logger.info("{}", actorsFilms);
 		assertThat(generationTextFromStream).isNotEmpty();
+	}
+
+	@Test
+	void logprobs() {
+		VertexAiGeminiChatOptions chatOptions = VertexAiGeminiChatOptions.builder()
+			.logprobs(1)
+			.responseLogprobs(true)
+			.build();
+
+		var logprobs = (VertexAiGeminiApi.LogProbs) this.chatModel
+			.call(new Prompt("Explain Bulgaria? Answer in 10 paragraphs.", chatOptions))
+			.getResult()
+			.getOutput()
+			.getMetadata()
+			.get("logprobs");
+
+		assertThat(logprobs).isNotNull();
+		assertThat(logprobs.avgLogprobs()).isNotZero();
+		assertThat(logprobs.topCandidates()).isNotEmpty();
+		assertThat(logprobs.chosenCandidates()).isNotEmpty();
 	}
 
 	@Test

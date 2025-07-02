@@ -49,6 +49,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -580,8 +581,29 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		int candidateIndex = candidate.getIndex();
 		FinishReason candidateFinishReason = candidate.getFinishReason();
 
+		// Convert from VertexAI protobuf to VertexAiGeminiApi DTOs
+		List<VertexAiGeminiApi.LogProbs.TopContent> topCandidates = candidate.getLogprobsResult()
+			.getTopCandidatesList()
+			.stream()
+			.filter(topCandidate -> !topCandidate.getCandidatesList().isEmpty())
+			.map(topCandidate -> new VertexAiGeminiApi.LogProbs.TopContent(topCandidate.getCandidatesList()
+				.stream()
+				.map(c -> new VertexAiGeminiApi.LogProbs.Content(c.getToken(), c.getLogProbability(), c.getTokenId()))
+				.toList()))
+			.toList();
+
+		// Convert from VertexAI protobuf to VertexAiGeminiApi DTOs
+		List<VertexAiGeminiApi.LogProbs.Content> chosenCandidates = candidate.getLogprobsResult()
+			.getChosenCandidatesList()
+			.stream()
+			.map(c -> new VertexAiGeminiApi.LogProbs.Content(c.getToken(), c.getLogProbability(), c.getTokenId()))
+			.toList();
+
+		VertexAiGeminiApi.LogProbs logprobs = new VertexAiGeminiApi.LogProbs(candidate.getAvgLogprobs(), topCandidates,
+				chosenCandidates);
+
 		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
-				candidateFinishReason);
+				candidateFinishReason, "logprobs", logprobs);
 
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
 			.finishReason(candidateFinishReason.name())
@@ -737,6 +759,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		if (options.getPresencePenalty() != null) {
 			generationConfigBuilder.setPresencePenalty(options.getPresencePenalty().floatValue());
 		}
+		if (options.getLogprobs() != null) {
+			generationConfigBuilder.setLogprobs(options.getLogprobs());
+		}
+		generationConfigBuilder.setResponseLogprobs(options.getResponseLogprobs());
 
 		return generationConfigBuilder.build();
 	}
