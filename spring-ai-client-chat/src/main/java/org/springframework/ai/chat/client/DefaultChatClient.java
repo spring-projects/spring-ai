@@ -364,13 +364,13 @@ public class DefaultChatClient implements ChatClient {
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doResponseEntity(new BeanOutputConverter<T>(type));
+			return doResponseEntity(new BeanOutputConverter<>(type));
 		}
 
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doResponseEntity(new BeanOutputConverter<T>(type));
+			return doResponseEntity(new BeanOutputConverter<>(type));
 		}
 
 		@Override
