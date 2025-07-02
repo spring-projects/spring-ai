@@ -387,8 +387,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
 				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolContext, this.toolContext, this.logprobs,
-				this.responseLogprobs);
+				this.internalToolExecutionEnabled, this.toolContext, this.logprobs, this.responseLogprobs);
 	}
 
 	@Override
