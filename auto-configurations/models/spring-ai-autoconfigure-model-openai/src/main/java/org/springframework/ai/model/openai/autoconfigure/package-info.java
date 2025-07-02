@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,9 @@
  * limitations under the License.
  */
 
-/**
- * Provides a set of interfaces and classes for a generic API designed to interact with
- * various AI models. This package includes interfaces for handling AI model calls,
- * requests, responses, results, and associated metadata. It is designed to offer a
- * flexible and adaptable framework for interacting with different types of AI models,
- * abstracting the complexities involved in model invocation and result processing. The
- * use of generics enhances the API's capability to work with a wide range of models,
- * ensuring a broad applicability across diverse AI scenarios.
- *
- */
-
 @NonNullApi
 @NonNullFields
-package org.springframework.ai.model;
+package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

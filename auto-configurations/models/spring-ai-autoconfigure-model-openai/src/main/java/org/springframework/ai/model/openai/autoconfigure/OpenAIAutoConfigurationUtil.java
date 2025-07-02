@@ -20,8 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.NotNull;
-
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MultiValueMap;
@@ -33,7 +32,7 @@ public final class OpenAIAutoConfigurationUtil {
 		// Avoids instantiation
 	}
 
-	public static @NotNull ResolvedConnectionProperties resolveConnectionProperties(
+	public static @NonNull ResolvedConnectionProperties resolveConnectionProperties(
 			OpenAiParentProperties commonProperties, OpenAiParentProperties modelProperties, String modelType) {
 
 		String baseUrl = StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
