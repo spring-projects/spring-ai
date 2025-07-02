@@ -58,7 +58,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	public ForkPDFLayoutTextStripper() throws IOException {
 		super();
 		this.previousTextPosition = null;
-		this.textLineList = new ArrayList<TextLine>();
+		this.textLineList = new ArrayList<>();
 	}
 
 	/**
@@ -71,7 +71,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 			this.setCurrentPageWidth(pageRectangle.getWidth() * 1.4);
 			super.processPage(page);
 			this.previousTextPosition = null;
-			this.textLineList = new ArrayList<TextLine>();
+			this.textLineList = new ArrayList<>();
 		}
 	}
 
@@ -128,7 +128,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	}
 
 	private void iterateThroughTextList(Iterator<TextPosition> textIterator) {
-		List<TextPosition> textPositionList = new ArrayList<TextPosition>();
+		List<TextPosition> textPositionList = new ArrayList<>();
 
 		while (textIterator.hasNext()) {
 			TextPosition textPosition = (TextPosition) textIterator.next();
