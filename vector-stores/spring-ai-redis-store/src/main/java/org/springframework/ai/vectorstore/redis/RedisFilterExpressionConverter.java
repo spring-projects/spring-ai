@@ -38,11 +38,11 @@ import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
  */
 public class RedisFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-	public static final NumericBoundary POSITIVE_INFINITY = new NumericBoundary(Double.POSITIVE_INFINITY, true);
+	static final NumericBoundary POSITIVE_INFINITY = new NumericBoundary(Double.POSITIVE_INFINITY, true);
 
-	public static final NumericBoundary NEGATIVE_INFINITY = new NumericBoundary(Double.NEGATIVE_INFINITY, true);
+	static final NumericBoundary NEGATIVE_INFINITY = new NumericBoundary(Double.NEGATIVE_INFINITY, true);
 
-	private Map<String, MetadataField> metadataFields;
+	private final Map<String, MetadataField> metadataFields;
 
 	public RedisFilterExpressionConverter(List<MetadataField> metadataFields) {
 		this.metadataFields = metadataFields.stream()
@@ -168,11 +168,11 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 		return new NumericBoundary(value.value(), true);
 	}
 
-	static record Numeric(NumericBoundary lower, NumericBoundary upper) {
+	record Numeric(NumericBoundary lower, NumericBoundary upper) {
 
 	}
 
-	static record NumericBoundary(Object value, boolean exclusive) {
+	record NumericBoundary(Object value, boolean exclusive) {
 
 		private static final String INFINITY = "inf";
 
