@@ -75,10 +75,9 @@ public class McpStdioClientProperties {
 
 	private Map<String, ServerParameters> resourceToServerParameters() {
 		try {
-			Map<String, Map<String, Parameters>> stdioConnection = new ObjectMapper().readValue(
-					this.serversConfiguration.getInputStream(),
-					new TypeReference<Map<String, Map<String, Parameters>>>() {
-					});
+			Map<String, Map<String, Parameters>> stdioConnection = new ObjectMapper()
+				.readValue(this.serversConfiguration.getInputStream(), new TypeReference<>() {
+				});
 
 			Map<String, Parameters> mcpServerJsonConfig = stdioConnection.entrySet().iterator().next().getValue();
 

@@ -98,7 +98,7 @@ public class ChatClientResponseEntityTests {
 			.prompt()
 			.user("Tell me about them")
 			.call()
-			.responseEntity(new ParameterizedTypeReference<List<MyBean>>() {
+			.responseEntity(new ParameterizedTypeReference<>() {
 
 			});
 

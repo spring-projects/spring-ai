@@ -24,15 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
@@ -52,6 +45,16 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 /**
  * The Anthropic API client.
  *
@@ -66,6 +69,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @since 1.0.0
  */
 public final class AnthropicApi {
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
 
 	public static Builder builder() {
 		return new Builder();
@@ -222,6 +227,9 @@ public final class AnthropicApi {
 			.filter(event -> event.type() != EventType.PING)
 			// Detect if the chunk is part of a streaming function call.
 			.map(event -> {
+				
+				logger.debug("Received event: {}", event);
+
 				if (this.streamHelper.isToolUseStart(event)) {
 					isInsideTool.set(true);
 				}

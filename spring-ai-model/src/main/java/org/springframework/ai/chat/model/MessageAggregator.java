@@ -66,9 +66,9 @@ public class MessageAggregator {
 				ChatGenerationMetadata.NULL);
 
 		// Usage
-		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<Integer>(0);
-		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<Integer>(0);
-		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<Integer>(0);
+		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<>(0);
+		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<>(0);
+		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<>(0);
 
 		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
 		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
