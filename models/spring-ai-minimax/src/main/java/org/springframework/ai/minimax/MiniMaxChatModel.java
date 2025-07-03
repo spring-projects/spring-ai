@@ -394,7 +394,7 @@ public class MiniMaxChatModel implements ChatModel {
 								ToolExecutionResult toolExecutionResult;
 								try {
 									ToolCallReactiveContextHolder.setContext(ctx);
-									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+									toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 								} finally {
 									ToolCallReactiveContextHolder.clearContext();
 								}
