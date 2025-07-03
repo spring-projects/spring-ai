@@ -23,7 +23,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -131,7 +130,7 @@ class MistralAiChatOptionsTests {
 	void testOptionsDefault() {
 		var options = new MistralAiChatOptions();
 
-		assertThat(options.getInternalToolExecutionMaxIterations())
+		assertThat(options.getToolExecutionMaxIterations())
 			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 	}
 
@@ -139,16 +138,16 @@ class MistralAiChatOptionsTests {
 	void testOptionsCustom() {
 		var options = new MistralAiChatOptions();
 
-		options.setInternalToolExecutionMaxIterations(3);
+		options.setToolExecutionMaxIterations(3);
 
-		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
 	void testBuilder() {
-		var options = MistralAiChatOptions.builder().internalToolExecutionMaxIterations(3).build();
+		var options = MistralAiChatOptions.builder().toolExecutionMaxIterations(3).build();
 
-		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 }

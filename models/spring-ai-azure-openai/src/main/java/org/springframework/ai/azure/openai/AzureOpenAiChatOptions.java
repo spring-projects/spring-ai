@@ -202,7 +202,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
-	private Integer internalToolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
 
 	/**
 	 * Whether to include token usage information in streaming chat completion responses.
@@ -262,13 +262,13 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Integer getInternalToolExecutionMaxIterations() {
-		return this.internalToolExecutionMaxIterations;
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
 	}
 
 	@Override
-	public void setInternalToolExecutionMaxIterations(Integer internalToolExecutionMaxIterations) {
-		this.internalToolExecutionMaxIterations = internalToolExecutionMaxIterations;
+	public void setToolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
 	}
 
 	public static Builder builder() {
@@ -298,7 +298,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.enhancements(fromOptions.getEnhancements())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.internalToolExecutionMaxIterations(fromOptions.getInternalToolExecutionMaxIterations())
+			.toolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations())
 			.streamOptions(fromOptions.getStreamOptions())
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
@@ -519,7 +519,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.internalToolExecutionMaxIterations, that.internalToolExecutionMaxIterations)
+				&& Objects.equals(this.toolExecutionMaxIterations, that.toolExecutionMaxIterations)
 				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.topLogProbs, that.topLogProbs)
 				&& Objects.equals(this.enhancements, that.enhancements)
 				&& Objects.equals(this.streamOptions, that.streamOptions)
@@ -534,10 +534,10 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.logitBias, this.user, this.n, this.stop, this.deploymentName, this.responseFormat,
-				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.internalToolExecutionMaxIterations, this.seed, this.logprobs, this.topLogProbs, this.enhancements,
-				this.streamOptions, this.reasoningEffort, this.enableStreamUsage, this.toolContext, this.maxTokens,
-				this.frequencyPenalty, this.presencePenalty, this.temperature, this.topP);
+				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolExecutionMaxIterations,
+				this.seed, this.logprobs, this.topLogProbs, this.enhancements, this.streamOptions, this.reasoningEffort,
+				this.enableStreamUsage, this.toolContext, this.maxTokens, this.frequencyPenalty, this.presencePenalty,
+				this.temperature, this.topP);
 	}
 
 	public static class Builder {
@@ -680,8 +680,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations) {
-			this.options.setInternalToolExecutionMaxIterations(internalToolExecutionMaxIterations);
+		public Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

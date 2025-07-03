@@ -92,14 +92,14 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * @see ToolExecutionLimitExceededException
 	 */
 	@Nullable
-	Integer getInternalToolExecutionMaxIterations();
+	Integer getToolExecutionMaxIterations();
 
 	/**
 	 * Set the maximum number of iteration for tool execution. If the number of iterations
 	 * exceeds the limit, an {@link ToolExecutionLimitExceededException} will be thrown.
-	 * @param internalToolExecutionMaxIterations the maximum number of iteration.
+	 * @param toolExecutionMaxIterations the maximum number of iteration.
 	 */
-	void setInternalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations);
+	void setToolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations);
 
 	/**
 	 * Get the configured tool context.
@@ -141,8 +141,8 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		}
 
 		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
-				&& toolCallingChatOptions.getInternalToolExecutionMaxIterations() != null) {
-			int maxIterations = toolCallingChatOptions.getInternalToolExecutionMaxIterations();
+				&& toolCallingChatOptions.getToolExecutionMaxIterations() != null) {
+			int maxIterations = toolCallingChatOptions.getToolExecutionMaxIterations();
 			return toolExecutionIterations <= maxIterations;
 		}
 
@@ -220,10 +220,10 @@ public interface ToolCallingChatOptions extends ChatOptions {
 
 		/**
 		 * the maximum number of attempts for tool execution.
-		 * @param internalToolExecutionMaxIterations the maximum number of iteration.
+		 * @param toolExecutionMaxIterations the maximum number of iteration.
 		 * @return the {@link ToolCallingChatOptions} Builder.
 		 */
-		Builder internalToolExecutionMaxIterations(@Nullable Integer internalToolExecutionMaxIterations);
+		Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.

@@ -82,7 +82,7 @@ class OpenAiChatOptionsTests {
 			.metadata(metadata)
 			.reasoningEffort("medium")
 			.internalToolExecutionEnabled(false)
-			.internalToolExecutionMaxIterations(10)
+			.toolExecutionMaxIterations(10)
 			.httpHeaders(Map.of("header1", "value1"))
 			.toolContext(toolContext)
 			.build();
@@ -92,7 +92,7 @@ class OpenAiChatOptionsTests {
 					"maxCompletionTokens", "n", "outputModalities", "outputAudio", "presencePenalty", "responseFormat",
 					"streamOptions", "seed", "stop", "temperature", "topP", "tools", "toolChoice", "user",
 					"parallelToolCalls", "store", "metadata", "reasoningEffort", "internalToolExecutionEnabled",
-					"internalToolExecutionMaxIterations", "httpHeaders", "toolContext")
+					"toolExecutionMaxIterations", "httpHeaders", "toolContext")
 			.containsExactly("test-model", 0.5, logitBias, true, 5, 100, 50, 2, outputModalities, outputAudio, 0.8,
 					responseFormat, streamOptions, 12345, stopSequences, 0.7, 0.9, tools, toolChoice, "test-user", true,
 					false, metadata, "medium", false, 10, Map.of("header1", "value1"), toolContext);
@@ -142,7 +142,7 @@ class OpenAiChatOptionsTests {
 			.metadata(metadata)
 			.reasoningEffort("low")
 			.internalToolExecutionEnabled(true)
-			.internalToolExecutionMaxIterations(3)
+			.toolExecutionMaxIterations(3)
 			.httpHeaders(Map.of("header1", "value1"))
 			.build();
 
@@ -191,7 +191,7 @@ class OpenAiChatOptionsTests {
 		options.setMetadata(metadata);
 		options.setReasoningEffort("high");
 		options.setInternalToolExecutionEnabled(false);
-		options.setInternalToolExecutionMaxIterations(3);
+		options.setToolExecutionMaxIterations(3);
 		options.setHttpHeaders(Map.of("header2", "value2"));
 
 		assertThat(options.getModel()).isEqualTo("test-model");
@@ -219,7 +219,7 @@ class OpenAiChatOptionsTests {
 		assertThat(options.getMetadata()).isEqualTo(metadata);
 		assertThat(options.getReasoningEffort()).isEqualTo("high");
 		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
-		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 		assertThat(options.getHttpHeaders()).isEqualTo(Map.of("header2", "value2"));
 		assertThat(options.getStreamUsage()).isTrue();
 		options.setStreamUsage(false);
@@ -259,7 +259,7 @@ class OpenAiChatOptionsTests {
 		assertThat(options.getReasoningEffort()).isNull();
 		assertThat(options.getToolCallbacks()).isNotNull().isEmpty();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
-		assertThat(options.getInternalToolExecutionMaxIterations())
+		assertThat(options.getToolExecutionMaxIterations())
 			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 		assertThat(options.getHttpHeaders()).isNotNull().isEmpty();
 		assertThat(options.getToolContext()).isEqualTo(new HashMap<>());

@@ -17,7 +17,7 @@ class ToolExecutionEligibilityCheckerTest {
 
 		ToolCallingChatOptions promptOptions = ToolCallingChatOptions.builder().build();
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("test"))));
-		promptOptions.setInternalToolExecutionMaxIterations(2);
+		promptOptions.setToolExecutionMaxIterations(2);
 
 		assertThat(checker.isToolExecutionRequired(promptOptions, chatResponse, 1)).isTrue();
 		assertThat(checker.isToolExecutionRequired(promptOptions, chatResponse, 2)).isTrue();
@@ -32,7 +32,7 @@ class ToolExecutionEligibilityCheckerTest {
 		ToolExecutionEligibilityChecker checker = new TestToolExecutionEligibilityChecker();
 
 		ToolCallingChatOptions promptOptions = ToolCallingChatOptions.builder().build();
-		promptOptions.setInternalToolExecutionMaxIterations(2);
+		promptOptions.setToolExecutionMaxIterations(2);
 
 		assertThat(checker.isInternalToolExecutionEnabled(promptOptions, 1)).isTrue();
 		assertThat(checker.isInternalToolExecutionEnabled(promptOptions, 2)).isTrue();

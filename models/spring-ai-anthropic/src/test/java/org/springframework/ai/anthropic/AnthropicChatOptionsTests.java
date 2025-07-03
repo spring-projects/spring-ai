@@ -44,12 +44,12 @@ class AnthropicChatOptionsTests {
 			.topP(0.8)
 			.topK(50)
 			.metadata(new Metadata("userId_123"))
-			.internalToolExecutionMaxIterations(3)
+			.toolExecutionMaxIterations(3)
 			.build();
 
 		assertThat(options)
 			.extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata",
-					"internalToolExecutionMaxIterations")
+					"toolExecutionMaxIterations")
 			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"), 3);
 	}
 
@@ -64,7 +64,7 @@ class AnthropicChatOptionsTests {
 			.topK(50)
 			.metadata(new Metadata("userId_123"))
 			.toolContext(Map.of("key1", "value1"))
-			.internalToolExecutionMaxIterations(3)
+			.toolExecutionMaxIterations(3)
 			.build();
 
 		AnthropicChatOptions copied = original.copy();
@@ -74,7 +74,7 @@ class AnthropicChatOptionsTests {
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
 
-		assertThat(copied.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		assertThat(copied.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
@@ -87,7 +87,7 @@ class AnthropicChatOptionsTests {
 		options.setTopP(0.8);
 		options.setStopSequences(List.of("stop1", "stop2"));
 		options.setMetadata(new Metadata("userId_123"));
-		options.setInternalToolExecutionMaxIterations(3);
+		options.setToolExecutionMaxIterations(3);
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getMaxTokens()).isEqualTo(100);
@@ -96,7 +96,7 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isEqualTo(0.8);
 		assertThat(options.getStopSequences()).isEqualTo(List.of("stop1", "stop2"));
 		assertThat(options.getMetadata()).isEqualTo(new Metadata("userId_123"));
-		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getMetadata()).isNull();
-		assertThat(options.getInternalToolExecutionMaxIterations())
+		assertThat(options.getToolExecutionMaxIterations())
 			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 	}
 

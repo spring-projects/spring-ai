@@ -20,7 +20,7 @@ package org.springframework.ai.model.tool;
  * Exception thrown when the tool execution limit is exceeded.
  *
  * @author lambochen
- * @see ToolCallingChatOptions#getInternalToolExecutionMaxIterations()
+ * @see ToolCallingChatOptions#getToolExecutionMaxIterations()
  */
 public class ToolExecutionLimitExceededException extends RuntimeException {
 

@@ -50,7 +50,7 @@ class OllamaChatRequestTests {
 		OllamaOptions defaultOptions = OllamaOptions.builder()
 			.model("MODEL_NAME")
 			.internalToolExecutionEnabled(true)
-			.internalToolExecutionMaxIterations(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS)
+			.toolExecutionMaxIterations(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS)
 			.toolCallbacks(new TestToolCallback("tool1"), new TestToolCallback("tool2"))
 			.toolNames("tool1", "tool2")
 			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
@@ -62,7 +62,7 @@ class OllamaChatRequestTests {
 
 		OllamaOptions runtimeOptions = OllamaOptions.builder()
 			.internalToolExecutionEnabled(false)
-			.internalToolExecutionMaxIterations(3)
+			.toolExecutionMaxIterations(3)
 			.toolCallbacks(new TestToolCallback("tool3"), new TestToolCallback("tool4"))
 			.toolNames("tool3")
 			.toolContext(Map.of("key2", "valueB"))
@@ -71,7 +71,7 @@ class OllamaChatRequestTests {
 
 		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolExecutionMaxIterations()).isEqualTo(3);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()

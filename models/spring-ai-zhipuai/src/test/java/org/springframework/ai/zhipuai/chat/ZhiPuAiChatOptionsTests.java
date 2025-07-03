@@ -15,22 +15,22 @@ class ZhiPuAiChatOptionsTests {
 	void testDefaultValue() {
 		var options = new ZhiPuAiChatOptions();
 
-		assertThat(options.getInternalToolExecutionMaxIterations())
+		assertThat(options.getToolExecutionMaxIterations())
 			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 	}
 
 	@Test
 	void testSetter() {
 		var options = new ZhiPuAiChatOptions();
-		options.setInternalToolExecutionMaxIterations(3);
-		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		options.setToolExecutionMaxIterations(3);
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
 	void testBuilder() {
-		var options = ZhiPuAiChatOptions.builder().internalToolExecutionMaxIterations(3).build();
+		var options = ZhiPuAiChatOptions.builder().toolExecutionMaxIterations(3).build();
 
-		assertThat(options.getInternalToolExecutionMaxIterations()).isEqualTo(3);
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 }
