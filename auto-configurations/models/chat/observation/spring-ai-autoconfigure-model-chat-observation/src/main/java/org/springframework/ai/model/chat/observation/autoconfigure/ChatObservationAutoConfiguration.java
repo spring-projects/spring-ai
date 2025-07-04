@@ -26,10 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
-import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
-import org.springframework.ai.chat.observation.ChatModelObservationContext;
-import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
+import org.springframework.ai.chat.observation.*;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
@@ -70,6 +67,16 @@ public class ChatObservationAutoConfiguration {
 				"You have enabled logging out the completion content with the risk of exposing sensitive or private information. Please, be careful!");
 	}
 
+	private static void tracePromptContentWarning() {
+		logger.warn(
+				"You have enabled tracing out the prompt content with the risk of exposing sensitive or private information. Please, be careful!");
+	}
+
+	private static void traceCompletionWarning() {
+		logger.warn(
+				"You have enabled tracing out the completion content with the risk of exposing sensitive or private information. Please, be careful!");
+	}
+
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(MeterRegistry.class)
@@ -105,6 +112,30 @@ public class ChatObservationAutoConfiguration {
 		}
 
 		@Bean
+		@ConditionalOnMissingBean(value = ChatModelPromptContentObservationTraceHandler.class,
+				name = "chatModelPromptContentObservationTraceHandler")
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "trace-prompt",
+				havingValue = "true")
+		TracingAwareLoggingObservationHandler<ChatModelObservationContext> chatModelPromptContentObservationTraceHandler(
+				ChatObservationProperties properties, Tracer tracer) {
+			tracePromptContentWarning();
+			return new TracingAwareLoggingObservationHandler<>(new ChatModelPromptContentObservationTraceHandler(
+					properties.getContentFormatter(), properties.getTracePromptSize()), tracer);
+		}
+
+		@Bean
+		@ConditionalOnMissingBean(value = ChatModelCompletionObservationTraceHandler.class,
+				name = "chatModelCompletionObservationTraceHandler")
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "trace-completion",
+				havingValue = "true")
+		TracingAwareLoggingObservationHandler<ChatModelObservationContext> chatModelCompletionObservationTraceHandler(
+				ChatObservationProperties properties, Tracer tracer) {
+			traceCompletionWarning();
+			return new TracingAwareLoggingObservationHandler<>(
+					new ChatModelCompletionObservationTraceHandler(properties.getContentFormatter()), tracer);
+		}
+
+		@Bean
 		@ConditionalOnMissingBean
 		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-error-logging",
 				havingValue = "true")
@@ -137,6 +168,27 @@ public class ChatObservationAutoConfiguration {
 		ChatModelCompletionObservationHandler chatModelCompletionObservationHandler() {
 			logCompletionWarning();
 			return new ChatModelCompletionObservationHandler();
+		}
+
+		@Bean
+		@ConditionalOnMissingBean()
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "trace-prompt",
+				havingValue = "true")
+		ChatModelPromptContentObservationTraceHandler chatModelPromptContentObservationTraceHandler(
+				ChatObservationProperties properties) {
+			tracePromptContentWarning();
+			return new ChatModelPromptContentObservationTraceHandler(properties.getContentFormatter(),
+					properties.getTracePromptSize());
+		}
+
+		@Bean
+		@ConditionalOnMissingBean()
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "trace-completion",
+				havingValue = "true")
+		ChatModelCompletionObservationTraceHandler chatModelCompletionObservationTraceHandler(
+				ChatObservationProperties properties) {
+			traceCompletionWarning();
+			return new ChatModelCompletionObservationTraceHandler(properties.getContentFormatter());
 		}
 
 	}
