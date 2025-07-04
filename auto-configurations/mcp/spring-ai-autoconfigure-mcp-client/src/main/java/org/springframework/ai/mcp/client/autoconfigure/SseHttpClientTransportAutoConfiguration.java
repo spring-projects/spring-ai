@@ -69,6 +69,11 @@ import org.springframework.context.annotation.Bean;
 		matchIfMissing = true)
 public class SseHttpClientTransportAutoConfiguration {
 
+	@Bean
+	PropertiesMcpSseClientConnectionDetails mcpSseClientConnectionDetails(McpSseClientProperties sseProperties) {
+		return new PropertiesMcpSseClientConnectionDetails(sseProperties);
+	}
+
 	/**
 	 * Creates a list of HTTP client-based SSE transports for MCP communication.
 	 *
@@ -79,20 +84,21 @@ public class SseHttpClientTransportAutoConfiguration {
 	 * <li>Server URL from properties
 	 * <li>ObjectMapper for JSON processing
 	 * </ul>
-	 * @param sseProperties the SSE client properties containing server configurations
+	 * @param connectionDetails the SSE client connection details containing server
+	 * configurations
 	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
 	 * available
 	 * @return list of named MCP transports
 	 */
 	@Bean
-	public List<NamedClientMcpTransport> mcpHttpClientTransports(McpSseClientProperties sseProperties,
+	public List<NamedClientMcpTransport> mcpHttpClientTransports(McpSseClientConnectionDetails connectionDetails,
 			ObjectProvider<ObjectMapper> objectMapperProvider) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
-		for (Map.Entry<String, SseParameters> serverParameters : sseProperties.getConnections().entrySet()) {
+		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 
 			String baseUrl = serverParameters.getValue().url();
 			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
