@@ -27,6 +27,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -83,9 +84,11 @@ import org.springframework.util.MimeType;
  * @author Geng Rong
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @see ChatModel
  * @see StreamingChatModel
  * @see ZhiPuAiApi
+ * @see ToolCallingChatOptions
  * @since 1.0.0 M1
  */
 public class ZhiPuAiChatModel implements ChatModel {
@@ -238,6 +241,10 @@ public class ZhiPuAiChatModel implements ChatModel {
 		// Before moving any further, build the final request Prompt,
 		// merging runtime and default options.
 		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return internalCall(requestPrompt, 1);
+	}
+
+	private ChatResponse internalCall(Prompt requestPrompt, int iterations) {
 		ChatCompletionRequest request = createRequest(requestPrompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -256,7 +263,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 				var chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					logger.warn("No chat completion returned for prompt: {}", prompt);
+					logger.warn("No chat completion returned for prompt: {}", requestPrompt);
 					return new ChatResponse(List.of());
 				}
 
@@ -264,12 +271,12 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 				List<Generation> generations = choices.stream().map(choice -> {
 			// @formatter:off
-					Map<String, Object> metadata = Map.of(
-						"id", chatCompletion.id(),
-						"role", choice.message().role() != null ? choice.message().role().name() : "",
-						"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
-					);
-					// @formatter:on
+						Map<String, Object> metadata = Map.of(
+								"id", chatCompletion.id(),
+								"role", choice.message().role() != null ? choice.message().role().name() : "",
+								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
+						);
+						// @formatter:on
 					return buildGeneration(choice, metadata);
 				}).toList();
 
@@ -279,7 +286,8 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 				return chatResponse;
 			});
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response,
+				iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -290,9 +298,15 @@ public class ZhiPuAiChatModel implements ChatModel {
 			}
 			else {
 				// Send the tool execution result back to the model.
-				return this.call(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
+				return this.internalCall(
+						new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()),
+						iterations + 1);
 			}
 		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(requestPrompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
+		}
+
 		return response;
 	}
 
@@ -303,6 +317,10 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
+		return internalStream(prompt, 1);
+	}
+
+	private Flux<ChatResponse> internalStream(Prompt prompt, int iterations) {
 		return Flux.deferContextual(contextView -> {
 			// Before moving any further, build the final request Prompt,
 			// merging runtime and default options.
@@ -333,18 +351,18 @@ public class ZhiPuAiChatModel implements ChatModel {
 						String id = chatCompletion2.id();
 
 				// @formatter:off
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
-							if (choice.message().role() != null) {
-								roleMap.putIfAbsent(id, choice.message().role().name());
-							}
-							Map<String, Object> metadata = Map.of(
-								"id", chatCompletion2.id(),
-								"role", roleMap.getOrDefault(id, ""),
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
-							);
-							return buildGeneration(choice, metadata);
-						}).toList();
-						// @formatter:on
+							List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
+								if (choice.message().role() != null) {
+									roleMap.putIfAbsent(id, choice.message().role().name());
+								}
+								Map<String, Object> metadata = Map.of(
+										"id", chatCompletion2.id(),
+										"role", roleMap.getOrDefault(id, ""),
+										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
+								);
+								return buildGeneration(choice, metadata);
+							}).toList();
+							// @formatter:on
 
 						return new ChatResponse(generations, from(chatCompletion2));
 					}
@@ -357,7 +375,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
+						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response, iterations)) {
 							// FIXME: bounded elastic needs to be used since tool calling
 							//  is currently only synchronous
 							return Flux.deferContextual((ctx) -> {
@@ -376,15 +394,19 @@ public class ZhiPuAiChatModel implements ChatModel {
 								}
 								else {
 									// Send the tool execution result back to the model.
-									return this.stream(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
+									return this.internalStream(
+											new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()),
+											iterations + 1);
 								}
 							}).subscribeOn(Schedulers.boundedElastic());
+						} else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)){
+							throw new ToolExecutionLimitExceededException(iterations);
 						}
 						return Flux.just(response);
-			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+					})
+					.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
@@ -456,6 +478,9 @@ public class ZhiPuAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getToolExecutionMaxIterations(),
+							this.defaultOptions.getToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -465,6 +490,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setToolExecutionMaxIterations(this.defaultOptions.getToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
