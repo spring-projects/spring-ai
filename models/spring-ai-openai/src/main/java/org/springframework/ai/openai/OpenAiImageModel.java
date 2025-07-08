@@ -135,7 +135,6 @@ public class OpenAiImageModel implements ImageModel {
 		var observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(imagePrompt)
 			.provider(OpenAiApiConstants.PROVIDER_NAME)
-			.requestOptions(requestImagePrompt.getOptions())
 			.build();
 
 		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION

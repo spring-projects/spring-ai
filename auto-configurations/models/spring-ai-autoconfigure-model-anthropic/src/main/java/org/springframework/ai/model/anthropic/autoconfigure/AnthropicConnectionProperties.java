@@ -41,6 +41,11 @@ public class AnthropicConnectionProperties {
 	private String baseUrl = AnthropicApi.DEFAULT_BASE_URL;
 
 	/**
+	 * Path to append to the base URL
+	 */
+	private String completionsPath = AnthropicApi.DEFAULT_MESSAGE_COMPLETIONS_PATH;
+
+	/**
 	 * Anthropic API version.
 	 */
 	private String version = AnthropicApi.DEFAULT_ANTHROPIC_VERSION;
@@ -65,6 +70,14 @@ public class AnthropicConnectionProperties {
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public String getCompletionsPath() {
+		return this.completionsPath;
+	}
+
+	public void setCompletionsPath(String completionsPath) {
+		this.completionsPath = completionsPath;
 	}
 
 	public String getVersion() {

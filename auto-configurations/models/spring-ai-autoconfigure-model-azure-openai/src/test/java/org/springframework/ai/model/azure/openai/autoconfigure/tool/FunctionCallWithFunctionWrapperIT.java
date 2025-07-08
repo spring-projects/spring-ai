@@ -48,7 +48,7 @@ public class FunctionCallWithFunctionWrapperIT {
 	// @formatter:off
 			"spring.ai.azure.openai.api-key=" + System.getenv("AZURE_OPENAI_API_KEY"),
 			"spring.ai.azure.openai.endpoint=" + System.getenv("AZURE_OPENAI_ENDPOINT"))
-			// @formatter:onn
+			// @formatter:on
 		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
@@ -65,7 +65,7 @@ public class FunctionCallWithFunctionWrapperIT {
 						"What's the weather like in San Francisco, Paris and in Tokyo?");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						AzureOpenAiChatOptions.builder().function("WeatherInfo").build()));
+						AzureOpenAiChatOptions.builder().toolNames("WeatherInfo").build()));
 
 				logger.info("Response: {}", response);
 

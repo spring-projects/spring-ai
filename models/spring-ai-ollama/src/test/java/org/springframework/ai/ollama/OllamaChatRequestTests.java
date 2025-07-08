@@ -22,24 +22,27 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.retry.RetryUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 class OllamaChatRequestTests {
 
 	OllamaChatModel chatModel = OllamaChatModel.builder()
-		.ollamaApi(new OllamaApi())
+		.ollamaApi(OllamaApi.builder().build())
 		.defaultOptions(OllamaOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
+		.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 		.build();
 
 	@Test
@@ -52,7 +55,7 @@ class OllamaChatRequestTests {
 			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
 			.build();
 		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(new OllamaApi())
+			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(defaultOptions)
 			.build();
 
@@ -69,7 +72,7 @@ class OllamaChatRequestTests {
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()
-			.map(FunctionCallback::getName)).containsExactlyInAnyOrder("tool3", "tool4");
+			.map(toolCallback -> toolCallback.getToolDefinition().name())).containsExactlyInAnyOrder("tool3", "tool4");
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolNames()).containsExactlyInAnyOrder("tool3");
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolContext()).containsEntry("key1", "value1")
 			.containsEntry("key2", "valueB");
@@ -144,8 +147,9 @@ class OllamaChatRequestTests {
 	@Test
 	public void createRequestWithDefaultOptionsModelOverride() {
 		OllamaChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(new OllamaApi())
+			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(OllamaOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.build();
 
 		var prompt1 = chatModel.buildRequestPrompt(new Prompt("Test message content"));
@@ -168,7 +172,7 @@ class OllamaChatRequestTests {
 		private final ToolDefinition toolDefinition;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override

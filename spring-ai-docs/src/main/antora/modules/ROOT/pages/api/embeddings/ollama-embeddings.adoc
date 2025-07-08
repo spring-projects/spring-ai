@@ -113,7 +113,7 @@ Here are the advanced request parameter for the Ollama embedding model:
 |====
 | Property | Description | Default
 | spring.ai.ollama.embedding.enabled (Removed and no longer valid)     | Enables the Ollama embedding model auto-configuration. | true
-| spring.ai.model.embedding      | Enables the Ollama embedding model auto-configuration. | ollama
+| spring.ai.model.embedding      | Enables the Ollama embedding model auto-configuration. | mxbai-embed-large
 | spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use.
 You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mistral
 | spring.ai.ollama.embedding.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
@@ -319,7 +319,7 @@ Next, create an `OllamaEmbeddingModel` instance and use it to compute the embedd
 
 [source,java]
 ----
-var ollamaApi = new OllamaApi();
+var ollamaApi = OllamaApi.builder().build();
 
 var embeddingModel = new OllamaEmbeddingModel(this.ollamaApi,
         OllamaOptions.builder()

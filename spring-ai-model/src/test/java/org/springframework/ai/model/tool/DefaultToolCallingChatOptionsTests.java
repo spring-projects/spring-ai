@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +41,7 @@ class DefaultToolCallingChatOptionsTests {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
-		List<FunctionCallback> callbacks = List.of(callback1, callback2);
+		List<ToolCallback> callbacks = List.of(callback1, callback2);
 
 		options.setToolCallbacks(callbacks);
 
@@ -221,22 +220,19 @@ class DefaultToolCallingChatOptionsTests {
 	void deprecatedMethodsShouldWorkCorrectly() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
-		FunctionCallback callback1 = mock(FunctionCallback.class);
+		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
-		options.setFunctionCallbacks(List.of(callback1, callback2));
-		assertThat(options.getFunctionCallbacks()).hasSize(2);
+		options.setToolCallbacks(List.of(callback1, callback2));
+		assertThat(options.getToolCallbacks()).hasSize(2);
 
 		options.setToolNames(Set.of("tool1"));
-		assertThat(options.getFunctions()).containsExactly("tool1");
+		assertThat(options.getToolNames()).containsExactly("tool1");
 
-		options.setFunctions(Set.of("function1"));
+		options.setToolNames(Set.of("function1"));
 		assertThat(options.getToolNames()).containsExactly("function1");
 
 		options.setInternalToolExecutionEnabled(true);
-		assertThat(options.getProxyToolCalls()).isFalse();
-
-		options.setProxyToolCalls(true);
-		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
+		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
 	}
 
 }

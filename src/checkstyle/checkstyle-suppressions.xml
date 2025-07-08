@@ -31,9 +31,8 @@
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
-	<suppress files="MethodInvokingFunctionCallbackTests.java" checks="RegexpSinglelineJava"/>
-	<suppress files="DefaultFunctionCallbackBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
+	<suppress files="OpenAiChatModelWithChatResponseMetadataTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="MistralAiApi.java" checks="RegexpSinglelineJava"/>
 	<suppress files="MariaDBSchemaValidator.java" checks="RegexpSinglelineJava"/>
 	<suppress files="JsonSchemaGeneratorTests.java" checks="RegexpSinglelineJava"/>
@@ -41,6 +40,7 @@
 	<suppress files="DockerModelRunnerWithOpenAiChatModelIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="AzureOpenAiChatModelMetadataTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="CouchbaseSearchVectorStore.java" checks="RegexpSinglelineJava"/>
+	<suppress files="DeepSeekChatModelIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiApi.java" checks="AnnotationLocation"/>
 
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>

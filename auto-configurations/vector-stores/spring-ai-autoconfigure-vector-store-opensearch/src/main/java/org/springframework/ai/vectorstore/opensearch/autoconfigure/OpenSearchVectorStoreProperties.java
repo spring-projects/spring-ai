@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.opensearch.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
@@ -38,6 +39,28 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	private String password;
 
 	private String mappingJson;
+
+	/**
+	 * SSL Bundle name ({@link org.springframework.boot.ssl.SslBundles}).
+	 */
+	private String sslBundle;
+
+	/**
+	 * Time to wait until connection established. 0 - infinity.
+	 */
+	private Duration connectionTimeout;
+
+	/**
+	 * Time to wait for response from the opposite endpoint. 0 - infinity.
+	 */
+	private Duration readTimeout;
+
+	/**
+	 * Path prefix for OpenSearch API endpoints. Used when OpenSearch is behind a reverse
+	 * proxy with a non-root path. For example, if your OpenSearch instance is accessible
+	 * at https://example.com/opensearch/, set this to "/opensearch".
+	 */
+	private String pathPrefix;
 
 	private Aws aws = new Aws();
 
@@ -79,6 +102,38 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	public void setMappingJson(String mappingJson) {
 		this.mappingJson = mappingJson;
+	}
+
+	public String getSslBundle() {
+		return this.sslBundle;
+	}
+
+	public void setSslBundle(String sslBundle) {
+		this.sslBundle = sslBundle;
+	}
+
+	public Duration getConnectionTimeout() {
+		return this.connectionTimeout;
+	}
+
+	public void setConnectionTimeout(Duration connectionTimeout) {
+		this.connectionTimeout = connectionTimeout;
+	}
+
+	public Duration getReadTimeout() {
+		return this.readTimeout;
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.readTimeout = readTimeout;
+	}
+
+	public String getPathPrefix() {
+		return this.pathPrefix;
+	}
+
+	public void setPathPrefix(String pathPrefix) {
+		this.pathPrefix = pathPrefix;
 	}
 
 	public Aws getAws() {

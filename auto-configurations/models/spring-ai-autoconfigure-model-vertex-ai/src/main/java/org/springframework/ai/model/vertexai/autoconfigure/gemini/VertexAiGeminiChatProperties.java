@@ -19,11 +19,13 @@ package org.springframework.ai.model.vertexai.autoconfigure.gemini;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Vertex AI Gemini Chat.
  *
  * @author Christian Tzolov
+ * @author Hyunsang Han
  * @since 0.8.0
  */
 @ConfigurationProperties(VertexAiGeminiChatProperties.CONFIG_PREFIX)
@@ -36,6 +38,7 @@ public class VertexAiGeminiChatProperties {
 	/**
 	 * Vertex AI Gemini API generative options.
 	 */
+	@NestedConfigurationProperty
 	private VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
 		.temperature(0.7)
 		.candidateCount(1)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.util.List;
 
 import com.google.cloud.vertexai.VertexAI;
@@ -32,7 +32,6 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -45,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -80,12 +80,36 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
+	public void createRequestWithFrequencyAndPresencePenalty() {
+
+		var client = VertexAiGeminiChatModel.builder()
+			.vertexAI(this.vertexAI)
+			.defaultOptions(VertexAiGeminiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.frequencePenalty(.25)
+				.presencePenalty(.75)
+				.build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(client
+			.buildRequestPrompt(new Prompt("Test message content", VertexAiGeminiChatOptions.builder().build())));
+
+		assertThat(request.contents()).hasSize(1);
+
+		assertThat(request.model().getGenerationConfig().getFrequencyPenalty()).isEqualTo(.25F);
+		assertThat(request.model().getGenerationConfig().getPresencePenalty()).isEqualTo(.75F);
+	}
+
+	@Test
 	public void createRequestWithSystemMessage() throws MalformedURLException {
 
 		var systemMessage = new SystemMessage("System Message Text");
 
-		var userMessage = new UserMessage("User Message Text",
-				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new URL("http://example.com")).build()));
+		var userMessage = UserMessage.builder()
+			.text("User Message Text")
+			.media(List
+				.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(URI.create("http://example.com")).build()))
+			.build();
 
 		var client = VertexAiGeminiChatModel.builder()
 			.vertexAI(this.vertexAI)
@@ -165,8 +189,7 @@ public class CreateGeminiRequestTests {
 			.toolCallingManager(toolCallingManager)
 			.defaultOptions(VertexAiGeminiChatOptions.builder()
 				.model("DEFAULT_MODEL")
-				.functionCallbacks(List.of(FunctionCallback.builder()
-					.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
@@ -205,8 +228,7 @@ public class CreateGeminiRequestTests {
 		// Override the default options function with one from the prompt
 		requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
 				VertexAiGeminiChatOptions.builder()
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+					.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
 						.description("Overridden function description")
 						.inputType(MockWeatherService.Request.class)
 						.build()))

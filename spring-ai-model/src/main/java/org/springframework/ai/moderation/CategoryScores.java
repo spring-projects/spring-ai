@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Objects;
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
  * @author Ricken Bazolo
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public final class CategoryScores {
@@ -129,6 +130,26 @@ public final class CategoryScores {
 		return this.violence;
 	}
 
+	public double getDangerousAndCriminalContent() {
+		return this.dangerousAndCriminalContent;
+	}
+
+	public double getHealth() {
+		return this.health;
+	}
+
+	public double getFinancial() {
+		return this.financial;
+	}
+
+	public double getLaw() {
+		return this.law;
+	}
+
+	public double getPii() {
+		return this.pii;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -147,14 +168,18 @@ public final class CategoryScores {
 				&& Double.compare(that.selfHarmIntent, this.selfHarmIntent) == 0
 				&& Double.compare(that.selfHarmInstructions, this.selfHarmInstructions) == 0
 				&& Double.compare(that.harassmentThreatening, this.harassmentThreatening) == 0
-				&& Double.compare(that.violence, this.violence) == 0;
+				&& Double.compare(that.violence, this.violence) == 0
+				&& Double.compare(that.dangerousAndCriminalContent, this.dangerousAndCriminalContent) == 0
+				&& Double.compare(that.health, this.health) == 0 && Double.compare(that.financial, this.financial) == 0
+				&& Double.compare(that.law, this.law) == 0 && Double.compare(that.pii, this.pii) == 0;
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.sexual, this.hate, this.harassment, this.selfHarm, this.sexualMinors,
 				this.hateThreatening, this.violenceGraphic, this.selfHarmIntent, this.selfHarmInstructions,
-				this.harassmentThreatening, this.violence);
+				this.harassmentThreatening, this.violence, this.dangerousAndCriminalContent, this.health,
+				this.financial, this.law, this.pii);
 	}
 
 	@Override
@@ -163,7 +188,9 @@ public final class CategoryScores {
 				+ ", selfHarm=" + this.selfHarm + ", sexualMinors=" + this.sexualMinors + ", hateThreatening="
 				+ this.hateThreatening + ", violenceGraphic=" + this.violenceGraphic + ", selfHarmIntent="
 				+ this.selfHarmIntent + ", selfHarmInstructions=" + this.selfHarmInstructions
-				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence + '}';
+				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence
+				+ ", dangerousAndCriminalContent=" + this.dangerousAndCriminalContent + ", health=" + this.health
+				+ ", financial=" + this.financial + ", law=" + this.law + ", pii=" + this.pii + '}';
 	}
 
 	public static class Builder {

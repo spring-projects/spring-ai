@@ -27,11 +27,12 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
@@ -203,7 +204,7 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 		public FunctionToolCallback<I, O> build() {
 			Assert.notNull(this.inputType, "inputType cannot be null");
-			var toolDefinition = ToolDefinition.builder()
+			var toolDefinition = DefaultToolDefinition.builder()
 				.name(this.name)
 				.description(StringUtils.hasText(this.description) ? this.description
 						: ToolUtils.getToolDescriptionFromName(this.name))

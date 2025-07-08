@@ -240,7 +240,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 				final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
 
 				Map<String, Object> metadata = (StringUtils.hasText(entry.metadata()))
-						? JSONObject.parseObject(entry.metadata(), new TypeReference<Map<String, Object>>() {
+						? JSONObject.parseObject(entry.metadata(), new TypeReference<>() {
 
 						}) : Map.of();
 

@@ -19,6 +19,7 @@ package org.springframework.ai.openai.api;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -48,6 +49,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
+ * @author Filip Hrisafov
  * @since 0.8.1
  */
 public class OpenAiAudioApi {
@@ -70,19 +72,30 @@ public class OpenAiAudioApi {
 			ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> authHeaders = h -> {
-			if (!(apiKey instanceof NoopApiKey)) {
-				h.setBearerAuth(apiKey.getValue());
-			}
 			h.addAll(headers);
-			// h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		// @formatter:off
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(authHeaders)
 			.defaultStatusHandler(responseErrorHandler)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(authHeaders).build();
+		this.webClient = webClientBuilder.clone()
+			.baseUrl(baseUrl)
+			.defaultHeaders(authHeaders)
+			.defaultRequest(requestHeadersSpec -> {
+				if (!(apiKey instanceof NoopApiKey)) {
+					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
+			.build(); // @formatter:on
 	}
 
 	public static Builder builder() {
@@ -147,7 +160,7 @@ public class OpenAiAudioApi {
 
 			@Override
 			public String getFilename() {
-				return "audio.webm";
+				return requestBody.fileName();
 			}
 		});
 		multipartBody.add("model", requestBody.model());
@@ -193,7 +206,7 @@ public class OpenAiAudioApi {
 
 			@Override
 			public String getFilename() {
-				return "audio.webm";
+				return requestBody.fileName();
 			}
 		});
 		multipartBody.add("model", requestBody.model());
@@ -227,7 +240,12 @@ public class OpenAiAudioApi {
 		 * The latest text to speech model, optimized for quality.
 		 */
 		@JsonProperty("tts-1-hd")
-		TTS_1_HD("tts-1-hd");
+		TTS_1_HD("tts-1-hd"),
+		/**
+		 * Text-to-speech model powered by GPT-4o mini
+		 */
+		@JsonProperty("gpt-4o-mini-tts")
+		GPT_4_O_MINI_TTS("gpt-4o-mini-tts");
 		// @formatter:on
 
 		public final String value;
@@ -317,14 +335,15 @@ public class OpenAiAudioApi {
 	 * Speech</a>
 	 *
 	 * @param model The model to use for generating the audio. One of the available TTS
-	 * models: tts-1 or tts-1-hd.
+	 * models: tts-1, tts-1-hd, or gpt-4o-mini-tts.
 	 * @param input The input text to synthesize. Must be at most 4096 tokens long.
 	 * @param voice The voice to use for synthesis. One of the available voices for the
-	 * chosen model: 'alloy', 'echo', 'fable', 'onyx', 'nova', and 'shimmer'.
+	 * chosen model: 'alloy', 'ash', 'ballad', 'coral', 'echo', 'fable', 'onyx', 'nova',
+	 * 'sage', 'shimmer', and 'verse'.
 	 * @param responseFormat The format to audio in. Supported formats are mp3, opus, aac,
-	 * and flac. Defaults to mp3.
+	 * flac, wav, and pcm. Defaults to mp3.
 	 * @param speed The speed of the voice synthesis. The acceptable range is from 0.25
-	 * (slowest) to 4.0 (fastest).
+	 * (slowest) to 4.0 (fastest). Does not work with gpt-4o-mini-tts.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record SpeechRequest(
@@ -348,6 +367,8 @@ public class OpenAiAudioApi {
 			// @formatter:off
 			@JsonProperty("alloy")
 			ALLOY("alloy"),
+			@JsonProperty("ballad")
+			BALLAD("ballad"),
 			@JsonProperty("echo")
 			ECHO("echo"),
 			@JsonProperty("fable")
@@ -363,7 +384,9 @@ public class OpenAiAudioApi {
 			@JsonProperty("coral")
 			CORAL("coral"),
 			@JsonProperty("ash")
-			ASH("ash");
+			ASH("ash"),
+			@JsonProperty("verse")
+			VERSE("verse");
 			// @formatter:on
 
 			public final String value;
@@ -473,6 +496,7 @@ public class OpenAiAudioApi {
 	 * Transcription</a>
 	 *
 	 * @param file The audio file to transcribe. Must be a valid audio file type.
+	 * @param fileName The audio file name.
 	 * @param model ID of the model to use. Only whisper-1 is currently available.
 	 * @param language The language of the input audio. Supplying the input language in
 	 * ISO-639-1 format will improve accuracy and latency.
@@ -494,6 +518,7 @@ public class OpenAiAudioApi {
 	public record TranscriptionRequest(
 	// @formatter:off
 		@JsonProperty("file") byte[] file,
+		@JsonProperty("fileName") String fileName,
 		@JsonProperty("model") String model,
 		@JsonProperty("language") String language,
 		@JsonProperty("prompt") String prompt,
@@ -531,6 +556,8 @@ public class OpenAiAudioApi {
 
 			private byte[] file;
 
+			private String fileName;
+
 			private String model = WhisperModel.WHISPER_1.getValue();
 
 			private String language;
@@ -545,6 +572,11 @@ public class OpenAiAudioApi {
 
 			public Builder file(byte[] file) {
 				this.file = file;
+				return this;
+			}
+
+			public Builder fileName(String fileName) {
+				this.fileName = fileName;
 				return this;
 			}
 
@@ -580,11 +612,12 @@ public class OpenAiAudioApi {
 
 			public TranscriptionRequest build() {
 				Assert.notNull(this.file, "file must not be null");
+				Assert.notNull(this.fileName, "fileName must not be null");
 				Assert.hasText(this.model, "model must not be empty");
 				Assert.notNull(this.responseFormat, "response_format must not be null");
 
-				return new TranscriptionRequest(this.file, this.model, this.language, this.prompt, this.responseFormat,
-						this.temperature, this.granularityType);
+				return new TranscriptionRequest(this.file, this.fileName, this.model, this.language, this.prompt,
+						this.responseFormat, this.temperature, this.granularityType);
 			}
 
 		}
@@ -596,6 +629,7 @@ public class OpenAiAudioApi {
 	 *
 	 * @param file The audio file object (not file name) to translate, in one of these
 	 * formats: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.
+	 * @param fileName The audio file name.
 	 * @param model ID of the model to use. Only whisper-1 is currently available.
 	 * @param prompt An optional text to guide the model's style or continue a previous
 	 * audio segment. The prompt should be in English.
@@ -610,6 +644,7 @@ public class OpenAiAudioApi {
 	public record TranslationRequest(
 	// @formatter:off
 		@JsonProperty("file") byte[] file,
+		@JsonProperty("fileName") String fileName,
 		@JsonProperty("model") String model,
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("response_format") TranscriptResponseFormat responseFormat,
@@ -624,6 +659,8 @@ public class OpenAiAudioApi {
 
 			private byte[] file;
 
+			private String fileName;
+
 			private String model = WhisperModel.WHISPER_1.getValue();
 
 			private String prompt;
@@ -634,6 +671,11 @@ public class OpenAiAudioApi {
 
 			public Builder file(byte[] file) {
 				this.file = file;
+				return this;
+			}
+
+			public Builder fileName(String fileName) {
+				this.fileName = fileName;
 				return this;
 			}
 
@@ -662,7 +704,7 @@ public class OpenAiAudioApi {
 				Assert.hasText(this.model, "model must not be empty");
 				Assert.notNull(this.responseFormat, "response_format must not be null");
 
-				return new TranslationRequest(this.file, this.model, this.prompt, this.responseFormat,
+				return new TranslationRequest(this.file, this.fileName, this.model, this.prompt, this.responseFormat,
 						this.temperature);
 			}
 
@@ -684,6 +726,7 @@ public class OpenAiAudioApi {
 	 * details.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record StructuredResponse(
 	// @formatter:off
 		@JsonProperty("language") String language,
@@ -701,6 +744,7 @@ public class OpenAiAudioApi {
 		 * @param end The end time of the word in seconds.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Word(
 		// @formatter:off
 			@JsonProperty("word") String word,
@@ -727,6 +771,7 @@ public class OpenAiAudioApi {
 		 * higher than 1.0 and the avg_logprob is below -1, consider this segment silent.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Segment(
 		// @formatter:off
 			@JsonProperty("id") Integer id,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,25 +77,6 @@ public enum ChatClientObservationDocumentation implements ObservationDocumentati
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**
-		 * Enabled tool function names.
-		 */
-		CHAT_CLIENT_TOOL_FUNCTION_NAMES {
-			@Override
-			public String asString() {
-				return "spring.ai.chat.client.tool.function.names";
-			}
-		},
-		/**
-		 * List of configured chat client function callbacks.
-		 */
-		CHAT_CLIENT_TOOL_FUNCTION_CALLBACKS {
-			@Override
-			public String asString() {
-				return "spring.ai.chat.client.tool.function.callbacks";
-			}
-		},
-
-		/**
 		 * List of configured chat client advisors.
 		 */
 		CHAT_CLIENT_ADVISORS {
@@ -104,49 +85,26 @@ public enum ChatClientObservationDocumentation implements ObservationDocumentati
 				return "spring.ai.chat.client.advisors";
 			}
 		},
+
 		/**
-		 * Map of advisor parameters.
+		 * The identifier of the conversation.
 		 */
-		CHAT_CLIENT_ADVISOR_PARAMS {
+		CHAT_CLIENT_CONVERSATION_ID {
 			@Override
 			public String asString() {
-				return "spring.ai.chat.client.advisor.params";
+				return "spring.ai.chat.client.conversation.id";
 			}
 		},
+
+		// Request
+
 		/**
-		 * Chat client user text.
+		 * Names of the tools made available to the chat client.
 		 */
-		CHAT_CLIENT_USER_TEXT {
+		CHAT_CLIENT_TOOL_NAMES {
 			@Override
 			public String asString() {
-				return "spring.ai.chat.client.user.text";
-			}
-		},
-		/**
-		 * Chat client user parameters.
-		 */
-		CHAT_CLIENT_USER_PARAMS {
-			@Override
-			public String asString() {
-				return "spring.ai.chat.client.user.params";
-			}
-		},
-		/**
-		 * Chat client system text.
-		 */
-		CHAT_CLIENT_SYSTEM_TEXT {
-			@Override
-			public String asString() {
-				return "spring.ai.chat.client.system.text";
-			}
-		},
-		/**
-		 * Chat client system parameters.
-		 */
-		CHAT_CLIENT_SYSTEM_PARAM {
-			@Override
-			public String asString() {
-				return "spring.ai.chat.client.system.params";
+				return "spring.ai.chat.client.tool.names";
 			}
 		}
 

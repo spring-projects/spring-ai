@@ -140,7 +140,7 @@ public abstract class VertexAiEmbeddingUtils {
 			Struct.Builder textBuilder = Struct.newBuilder();
 			textBuilder.putFields("content", valueOf(this.content));
 			if (StringUtils.hasText(this.taskType)) {
-				textBuilder.putFields("taskType", valueOf(this.taskType));
+				textBuilder.putFields("task_type", valueOf(this.taskType));
 			}
 			if (StringUtils.hasText(this.title)) {
 				textBuilder.putFields("title", valueOf(this.title));

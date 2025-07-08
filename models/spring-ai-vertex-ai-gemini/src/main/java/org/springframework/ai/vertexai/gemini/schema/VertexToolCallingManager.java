@@ -25,6 +25,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.util.Assert;
@@ -75,7 +76,7 @@ public class VertexToolCallingManager implements ToolCallingManager {
 			ObjectNode openApiSchema = JsonSchemaConverter.convertToOpenApiSchema(jsonSchema);
 			JsonSchemaGenerator.convertTypeValuesToUpperCase(openApiSchema);
 
-			return ToolDefinition.builder()
+			return DefaultToolDefinition.builder()
 				.name(td.name())
 				.description(td.description())
 				.inputSchema(openApiSchema.toPrettyString())

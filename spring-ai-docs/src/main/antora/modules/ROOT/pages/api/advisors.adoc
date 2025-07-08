@@ -13,15 +13,16 @@ You can configure existing advisors using the xref:api/chatclient.adoc#_advisor_
 ----
 var chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(
-        new MessageChatMemoryAdvisor(chatMemory), // chat-memory advisor
-        new QuestionAnswerAdvisor(vectorStore)    // RAG advisor
+        MessageChatMemoryAdvisor.builder(chatMemory).build(), // chat-memory advisor
+        QuestionAnswerAdvisor.builder(vectorStore).build()    // RAG advisor
     )
     .build();
 
+var conversationId = "678";
+
 String response = this.chatClient.prompt()
-    // Set advisor parameters at runtime
-    .advisors(advisor -> advisor.param("chat_memory_conversation_id", "678") 
-            .param("chat_memory_response_size", 100)) 
+    // Set advisor parameters at runtime	
+    .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
     .user(userText)
     .call()
 	.content();
@@ -31,7 +32,8 @@ It is recommend to register the advisors at build time using builder's `defaultA
 
 Advisors also participate in the Observability stack, so you can view metrics and traces related to their execution.
 
-xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
+- xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
+- xref:ROOT:api/chat-memory.adoc#_memory_in_chat_client[Learn about Chat Memory Advisor]
 
 == Core Components
 
@@ -75,9 +77,11 @@ The execution order of advisors in the chain is determined by the `getOrder()` m
 [NOTE]
 ====
 The seeming contradiction between order and execution sequence is due to the stack-like nature of the advisor chain:
-* An advisor with the highest precedence (lowest order value) is added to the top of the stack.
-* It will be the first to process the request as the stack unwinds.
-* It will be the last to process the response as the stack rewinds.
+
+- An advisor with the highest precedence (lowest order value) is added to the top of the stack.
+- It will be the first to process the request as the stack unwinds.
+- It will be the last to process the response as the stack rewinds.
+
 ====
 
 As a reminder, here are the semantics of the Spring `Ordered` interface:

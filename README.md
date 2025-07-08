@@ -25,9 +25,9 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
   - [Moderation](https://docs.spring.io/spring-ai/reference/api/index.html#api/moderation)
 * Portable API support across AI providers for both synchronous and streaming options. Access to [model-specific features](https://docs.spring.io/spring-ai/reference/api/chatmodel.html#_chat_options) is also available.
 * [Structured Outputs](https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html) - Mapping of AI Model output to POJOs.
-* Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Apache Cassandra, Azure Vector Search, Chroma, Milvus, MongoDB Atlas, MariaDB, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate*.
+* Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Apache Cassandra, Azure Vector Search, Chroma, Elasticsearch, Milvus, MongoDB Atlas, MariaDB, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate*.
 * Portable API across Vector Store providers, including a novel SQL-like [metadata filter API](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#metadata-filters).
-* [Tools/Function Calling](https://docs.spring.io/spring-ai/reference/api/functions.html) - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
+* [Tools/Function Calling](https://docs.spring.io/spring-ai/reference/api/tools.html) - permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required.
 * [Observability](https://docs.spring.io/spring-ai/reference/observability/index.html) - Provides insights into AI-related operations.
 * Document injection [ETL framework](https://docs.spring.io/spring-ai/reference/api/etl-pipeline.html) for Data Engineering.
 * [AI Model Evaluation](https://docs.spring.io/spring-ai/reference/api/testing.html) - Utilities to help evaluate generated content and protect against hallucinated response.
@@ -45,7 +45,7 @@ Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/ref
 * [Documentation](https://docs.spring.io/spring-ai/reference/)
 * [Issues](https://github.com/spring-projects/spring-ai/issues)
 <!-- * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback! -->
-* [Awesome Spring AI](https://github.com/danvega/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
+* [Awesome Spring AI](https://github.com/spring-ai-community/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
 * [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
 
 ## Breaking changes
@@ -115,23 +115,36 @@ To build the docs
 
 The docs are then in the directory `spring-ai-docs/target/antora/site/index.html`
 
+### Formatting the Source Code
+
 To reformat using the [java-format plugin](https://github.com/spring-io/spring-javaformat)
 ```shell
 ./mvnw spring-javaformat:apply
 ```
+### Updating License Headers
 
 To update the year on license headers using the [license-maven-plugin](https://oss.carbou.me/license-maven-plugin/#goals)
 ```shell
 ./mvnw license:update-file-header -Plicense
 ```
+### Javadocs
 
 To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
 ```shell
 ./mvnw javadoc:javadoc -Pjavadoc
 ```
+### Enabling Checkstyle
 
-To build with checkstyles enabled.
 Checkstyles are currently disabled, but you can enable them by doing the following:
+
 ```shell
 ./mvnw clean package -DskipTests -Ddisable.checks=false
 ```
+
+#### Source Code Style
+
+Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
+The wiki pages
+[Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and
+[IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
+define the source file coding standards we use along with some IDEA editor settings we customize.

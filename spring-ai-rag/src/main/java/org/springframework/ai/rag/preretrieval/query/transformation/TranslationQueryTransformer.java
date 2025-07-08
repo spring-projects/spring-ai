@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.util.PromptAssert;
+import org.springframework.ai.rag.util.PromptAssert;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -91,7 +90,6 @@ public final class TranslationQueryTransformer implements QueryTransformer {
 			.user(user -> user.text(this.promptTemplate.getTemplate())
 				.param("targetLanguage", this.targetLanguage)
 				.param("query", query.text()))
-			.options(ChatOptions.builder().build())
 			.call()
 			.content();
 

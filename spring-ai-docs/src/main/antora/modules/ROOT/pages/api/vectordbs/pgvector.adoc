@@ -88,7 +88,7 @@ dependencies {
 ----
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 To connect to and configure the `PgVectorStore`, you need to provide access details for your instance.
 A simple configuration can be provided via Spring Boot's `application.yml`.

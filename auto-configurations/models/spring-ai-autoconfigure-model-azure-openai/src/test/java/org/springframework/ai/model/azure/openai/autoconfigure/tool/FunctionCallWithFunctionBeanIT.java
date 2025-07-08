@@ -50,7 +50,7 @@ class FunctionCallWithFunctionBeanIT {
 	// @formatter:off
 			"spring.ai.azure.openai.api-key=" + System.getenv("AZURE_OPENAI_API_KEY"),
 			"spring.ai.azure.openai.endpoint=" + System.getenv("AZURE_OPENAI_ENDPOINT"))
-			// @formatter:onn
+			// @formatter:on
 		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
@@ -67,14 +67,14 @@ class FunctionCallWithFunctionBeanIT {
 						"What's the weather like in San Francisco, Paris and in Tokyo? Use Multi-turn function calling.");
 
 				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-						AzureOpenAiChatOptions.builder().function("weatherFunction").build()));
+						AzureOpenAiChatOptions.builder().toolNames("weatherFunction").build()));
 
 				logger.info("Response: {}", response);
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 
 				response = chatModel.call(new Prompt(List.of(userMessage),
-						AzureOpenAiChatOptions.builder().function("weatherFunction3").build()));
+						AzureOpenAiChatOptions.builder().toolNames("weatherFunction3").build()));
 
 				logger.info("Response: {}", response);
 

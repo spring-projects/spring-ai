@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 
 package org.springframework.ai.chat.client.advisor.observation;
 
-import java.util.Map;
-
 import io.micrometer.observation.Observation;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -37,54 +34,19 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	private final String advisorName;
 
-	private final Type advisorType;
+	private final ChatClientRequest chatClientRequest;
 
-	/**
-	 * The order of the advisor in the advisor chain.
-	 */
 	private final int order;
 
-	/**
-	 * The {@link AdvisedRequest} data to be advised. Represents the row
-	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
-	 */
 	@Nullable
-	private AdvisedRequest advisorRequest;
+	private ChatClientResponse chatClientResponse;
 
-	/**
-	 * The shared data between the advisors in the chain. It is shared between all request
-	 * and response advising points of all advisors in the chain.
-	 */
-	@Nullable
-	private Map<String, Object> advisorRequestContext;
-
-	/**
-	 * the shared data between the advisors in the chain. It is shared between all request
-	 * and response advising points of all advisors in the chain.
-	 */
-	@Nullable
-	private Map<String, Object> advisorResponseContext;
-
-	/**
-	 * Create a new {@link AdvisorObservationContext}.
-	 * @param advisorName the advisor name
-	 * @param advisorType the advisor type
-	 * @param advisorRequest the advised request
-	 * @param advisorRequestContext the shared data between the advisors in the chain
-	 * @param advisorResponseContext the shared data between the advisors in the chain
-	 * @param order the order of the advisor in the advisor chain
-	 */
-	public AdvisorObservationContext(String advisorName, Type advisorType, @Nullable AdvisedRequest advisorRequest,
-			@Nullable Map<String, Object> advisorRequestContext, @Nullable Map<String, Object> advisorResponseContext,
-			int order) {
-		Assert.hasText(advisorName, "advisorName must not be null or empty");
-		Assert.notNull(advisorType, "advisorType must not be null");
+	AdvisorObservationContext(String advisorName, ChatClientRequest chatClientRequest, int order) {
+		Assert.hasText(advisorName, "advisorName cannot be null or empty");
+		Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
 
 		this.advisorName = advisorName;
-		this.advisorType = advisorType;
-		this.advisorRequest = advisorRequest;
-		this.advisorRequestContext = advisorRequestContext;
-		this.advisorResponseContext = advisorResponseContext;
+		this.chatClientRequest = chatClientRequest;
 		this.order = order;
 	}
 
@@ -96,104 +58,25 @@ public class AdvisorObservationContext extends Observation.Context {
 		return new Builder();
 	}
 
-	/**
-	 * The advisor name.
-	 * @return the advisor name
-	 */
 	public String getAdvisorName() {
 		return this.advisorName;
 	}
 
-	/**
-	 * The type of the advisor.
-	 * @return the type of the advisor
-	 */
-	public Type getAdvisorType() {
-		return this.advisorType;
+	public ChatClientRequest getChatClientRequest() {
+		return this.chatClientRequest;
 	}
 
-	/**
-	 * The order of the advisor in the advisor chain.
-	 * @return the order of the advisor in the advisor chain
-	 */
-	@Nullable
-	public AdvisedRequest getAdvisedRequest() {
-		return this.advisorRequest;
-	}
-
-	/**
-	 * Set the {@link AdvisedRequest} data to be advised. Represents the row
-	 * {@link ChatClient.ChatClientRequestSpec} data before sealed into a {@link Prompt}.
-	 * @param advisedRequest the advised request
-	 */
-	public void setAdvisedRequest(@Nullable AdvisedRequest advisedRequest) {
-		this.advisorRequest = advisedRequest;
-	}
-
-	/**
-	 * Get the shared data between the advisors in the chain. It is shared between all
-	 * request and response advising points of all advisors in the chain.
-	 * @return the shared data between the advisors in the chain
-	 */
-	@Nullable
-	public Map<String, Object> getAdvisorRequestContext() {
-		return this.advisorRequestContext;
-	}
-
-	/**
-	 * Set the shared data between the advisors in the chain. It is shared between all
-	 * request and response advising points of all advisors in the chain.
-	 * @param advisorRequestContext the shared data between the advisors in the chain
-	 */
-	public void setAdvisorRequestContext(@Nullable Map<String, Object> advisorRequestContext) {
-		this.advisorRequestContext = advisorRequestContext;
-	}
-
-	/**
-	 * Get the shared data between the advisors in the chain. It is shared between all
-	 * request and response advising points of all advisors in the chain.
-	 * @return the shared data between the advisors in the chain
-	 */
-	@Nullable
-	public Map<String, Object> getAdvisorResponseContext() {
-		return this.advisorResponseContext;
-	}
-
-	/**
-	 * Set the shared data between the advisors in the chain. It is shared between all
-	 * request and response advising points of all advisors in the chain.
-	 * @param advisorResponseContext the shared data between the advisors in the chain
-	 */
-	public void setAdvisorResponseContext(@Nullable Map<String, Object> advisorResponseContext) {
-		this.advisorResponseContext = advisorResponseContext;
-	}
-
-	/**
-	 * The order of the advisor in the advisor chain.
-	 * @return the order of the advisor in the advisor chain
-	 */
 	public int getOrder() {
 		return this.order;
 	}
 
-	/**
-	 * The type of the advisor.
-	 */
-	public enum Type {
+	@Nullable
+	public ChatClientResponse getChatClientResponse() {
+		return this.chatClientResponse;
+	}
 
-		/**
-		 * The advisor is called before the advised request is executed.
-		 */
-		BEFORE,
-		/**
-		 * The advisor is called after the advised request is executed.
-		 */
-		AFTER,
-		/**
-		 * The advisor is called around the advised request.
-		 */
-		AROUND
-
+	public void setChatClientResponse(@Nullable ChatClientResponse chatClientResponse) {
+		this.chatClientResponse = chatClientResponse;
 	}
 
 	/**
@@ -203,86 +86,30 @@ public class AdvisorObservationContext extends Observation.Context {
 
 		private String advisorName;
 
-		private Type advisorType;
-
-		private AdvisedRequest advisorRequest;
-
-		private Map<String, Object> advisorRequestContext;
-
-		private Map<String, Object> advisorResponseContext;
+		private ChatClientRequest chatClientRequest;
 
 		private int order = 0;
 
 		private Builder() {
 		}
 
-		/**
-		 * Set the advisor name.
-		 * @param advisorName the advisor name
-		 * @return the builder
-		 */
 		public Builder advisorName(String advisorName) {
 			this.advisorName = advisorName;
 			return this;
 		}
 
-		/**
-		 * Set the advisor type.
-		 * @param advisorType the advisor type
-		 * @return the builder
-		 */
-		public Builder advisorType(Type advisorType) {
-			this.advisorType = advisorType;
+		public Builder chatClientRequest(ChatClientRequest chatClientRequest) {
+			this.chatClientRequest = chatClientRequest;
 			return this;
 		}
 
-		/**
-		 * Set the advised request.
-		 * @param advisedRequest the advised request
-		 * @return the builder
-		 */
-		public Builder advisedRequest(AdvisedRequest advisedRequest) {
-			this.advisorRequest = advisedRequest;
-			return this;
-		}
-
-		/**
-		 * Set the advisor request context.
-		 * @param advisorRequestContext the advisor request context
-		 * @return the builder
-		 */
-		public Builder advisorRequestContext(Map<String, Object> advisorRequestContext) {
-			this.advisorRequestContext = advisorRequestContext;
-			return this;
-		}
-
-		/**
-		 * Set the advisor response context.
-		 * @param advisorResponseContext the advisor response context
-		 * @return the builder
-		 */
-		public Builder advisorResponseContext(Map<String, Object> advisorResponseContext) {
-			this.advisorResponseContext = advisorResponseContext;
-			return this;
-		}
-
-		/**
-		 * Set the order of the advisor in the advisor chain.
-		 * @param order the order of the advisor in the advisor chain
-		 * @return the builder
-		 */
 		public Builder order(int order) {
 			this.order = order;
 			return this;
 		}
 
-		/**
-		 * Build the {@link AdvisorObservationContext}.
-		 * @return the {@link AdvisorObservationContext}
-		 */
 		public AdvisorObservationContext build() {
-			return new AdvisorObservationContext(this.advisorName, this.advisorType, this.advisorRequest,
-					this.advisorRequestContext, this.advisorResponseContext, this.order);
+			return new AdvisorObservationContext(this.advisorName, this.chatClientRequest, this.order);
 		}
 
 	}

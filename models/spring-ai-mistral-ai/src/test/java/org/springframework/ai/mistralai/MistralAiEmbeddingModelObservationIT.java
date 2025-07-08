@@ -105,7 +105,7 @@ public class MistralAiEmbeddingModelObservationIT {
 		}
 
 		@Bean
-		public MistralAiEmbeddingModel openAiEmbeddingModel(MistralAiApi mistralAiApi,
+		public MistralAiEmbeddingModel mistralAiEmbeddingModel(MistralAiApi mistralAiApi,
 				TestObservationRegistry observationRegistry) {
 			return new MistralAiEmbeddingModel(mistralAiApi, MetadataMode.EMBED,
 					MistralAiEmbeddingOptions.builder().build(), RetryTemplate.defaultInstance(), observationRegistry);

@@ -36,6 +36,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.tool.MockWeatherService;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -62,7 +63,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.model(MODEL)
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
@@ -85,7 +86,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		var promptOptions = OllamaOptions.builder()
 			.model(MODEL)
-			.functionCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
 				.inputType(MockWeatherService.Request.class)
@@ -120,6 +121,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
 				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 

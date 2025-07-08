@@ -19,10 +19,15 @@ package org.springframework.ai.bedrock.converse.client;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Set;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
@@ -30,8 +35,10 @@ import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -141,7 +148,7 @@ public class BedrockNovaChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", (WeatherRequest request) -> {
 						if (request.location().contains("Paris")) {
 							return new WeatherResponse(15, request.unit());
 						}
@@ -165,10 +172,87 @@ public class BedrockNovaChatClientIT {
 		assertThat(response).contains("30", "10", "15");
 	}
 
-	public record WeatherRequest(String location, String unit) {
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@Test
+	void toolAnnotationWeatherForecast() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		String response = chatClient.prompt()
+			.tools(new DummyWeatherForecastTools())
+			.user("Get current weather in Amsterdam")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		assertThat(response).contains("20 degrees");
 	}
 
-	public record WeatherResponse(int temp, String unit) {
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@ParameterizedTest
+	@ValueSource(strings = { "amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	void toolAnnotationWeatherForecastStreaming(String modelName) {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.tools(new DummyWeatherForecastTools())
+			.user("Get current weather in Amsterdam")
+			.stream()
+			.chatResponse();
+
+		String content = responses.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		assertThat(content).contains("20 degrees");
+	}
+
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@Test
+	void supplierBasedToolCalling() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		WeatherService.Response response = chatClient.prompt()
+			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+				.description("Get the current weather")
+				.inputType(Void.class)
+				.build())
+			.user("Get current weather in Amsterdam")
+			.call()
+			.entity(WeatherService.Response.class);
+
+		assertThat(response).isNotNull();
+		assertThat(response.temp()).isEqualTo(30.0);
+	}
+
+	@Test
+	void supplierBasedToolCallingStreaming() {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.toolCallbacks(FunctionToolCallback.builder("weather", new WeatherService())
+				.description("Get the current weather")
+				.inputType(Void.class)
+				.build())
+			.user("Get current weather in Amsterdam")
+			.stream()
+			.chatResponse();
+
+		String content = responses.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		assertThat(content).contains("30.0");
 	}
 
 	@SpringBootConfiguration
@@ -178,6 +262,7 @@ public class BedrockNovaChatClientIT {
 		public BedrockProxyChatModel bedrockConverseChatModel() {
 
 			String modelId = "amazon.nova-pro-v1:0";
+			// String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 			return BedrockProxyChatModel.builder()
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
@@ -185,6 +270,33 @@ public class BedrockNovaChatClientIT {
 				.timeout(Duration.ofSeconds(120))
 				.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
 				.build();
+		}
+
+	}
+
+	public record WeatherRequest(String location, String unit) {
+	}
+
+	public record WeatherResponse(int temp, String unit) {
+	}
+
+	public static class DummyWeatherForecastTools {
+
+		@Tool(description = "Get the current weather forecast in Amsterdam")
+		String getCurrentDateTime() {
+			return "Weather is hot and sunny with a temperature of 20 degrees";
+		}
+
+	}
+
+	public static class WeatherService implements Supplier<WeatherService.Response> {
+
+		public Response get() {
+			return new Response(30.0);
+		}
+
+		public record Response(double temp) {
+
 		}
 
 	}

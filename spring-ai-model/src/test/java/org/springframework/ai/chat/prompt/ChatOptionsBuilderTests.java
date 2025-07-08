@@ -23,8 +23,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -96,25 +96,24 @@ public class ChatOptionsBuilderTests {
 	@Test
 	void shouldUpcastToChatOptions() {
 		// Given
-		FunctionCallback callback = FunctionCallback.builder()
-			.function("function1", x -> "result")
+		FunctionToolCallback callback = FunctionToolCallback.builder("function1", x -> "result")
 			.description("Test function")
 			.inputType(String.class)
 			.build();
 
-		FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+		ToolCallingChatOptions toolCallingChatOptions = ToolCallingChatOptions.builder()
 			.model("gpt-4")
 			.maxTokens(100)
 			.temperature(0.7)
 			.topP(1.0)
 			.topK(40)
 			.stopSequences(List.of("stop1", "stop2"))
-			.functions(Set.of("function1", "function2"))
-			.functionCallbacks(List.of(callback))
+			.toolNames(Set.of("function1", "function2"))
+			.toolCallbacks(List.of(callback))
 			.build();
 
 		// When
-		ChatOptions chatOptions = functionOptions;
+		ChatOptions chatOptions = toolCallingChatOptions;
 
 		// Then
 		assertThat(chatOptions.getModel()).isEqualTo("gpt-4");

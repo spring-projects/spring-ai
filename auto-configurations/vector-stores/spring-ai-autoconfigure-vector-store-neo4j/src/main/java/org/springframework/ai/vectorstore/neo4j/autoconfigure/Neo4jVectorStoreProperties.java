@@ -33,7 +33,7 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String databaseName;
 
-	private int embeddingDimension = Neo4jVectorStore.DEFAULT_EMBEDDING_DIMENSION;
+	private Integer embeddingDimension;
 
 	private Neo4jVectorStore.Neo4jDistanceType distanceType = Neo4jVectorStore.Neo4jDistanceType.COSINE;
 
@@ -47,6 +47,8 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String constraintName = Neo4jVectorStore.DEFAULT_CONSTRAINT_NAME;
 
+	private String textProperty = Neo4jVectorStore.DEFAULT_TEXT_PROPERTY;
+
 	public String getDatabaseName() {
 		return this.databaseName;
 	}
@@ -55,7 +57,7 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 		this.databaseName = databaseName;
 	}
 
-	public int getEmbeddingDimension() {
+	public Integer getEmbeddingDimension() {
 		return this.embeddingDimension;
 	}
 
@@ -109,6 +111,14 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setConstraintName(String constraintName) {
 		this.constraintName = constraintName;
+	}
+
+	public String getTextProperty() {
+		return this.textProperty;
+	}
+
+	public void setTextProperty(String textProperty) {
+		this.textProperty = textProperty;
 	}
 
 }

@@ -31,12 +31,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -181,6 +182,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 * Whether to store the output of this chat completion request for use in our model <a href="https://platform.openai.com/docs/guides/distillation">distillation</a> or <a href="https://platform.openai.com/docs/guides/evals">evals</a> products.
 	 */
 	private @JsonProperty("store") Boolean store;
+
 	/**
 	 * Developer-defined tags and values used for filtering completions in the <a href="https://platform.openai.com/chat-completions">dashboard</a>.
 	 */
@@ -195,10 +197,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("reasoning_effort") String reasoningEffort;
 
 	/**
+	 * This tool searches the web for relevant results to use in a response.
+	 */
+	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * Collection of tool names to be resolved at runtime and used for tool calling in the chat completion requests.
@@ -260,6 +267,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.store(fromOptions.getStore())
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
+			.webSearchOptions(fromOptions.getWebSearchOptions())
 			.build();
 	}
 
@@ -440,23 +448,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.toolChoice = toolChoice;
 	}
 
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public Boolean getProxyToolCalls() {
-		return this.getToolExecutionEnabled() != null ? !this.internalToolExecutionEnabled : null;
-	}
-
-	private Boolean getToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Deprecated
-	@JsonIgnore
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
-	}
-
 	public String getUser() {
 		return this.user;
 	}
@@ -475,13 +466,13 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@JsonIgnore
-	public List<FunctionCallback> getToolCallbacks() {
+	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
 	@JsonIgnore
-	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks;
@@ -513,34 +504,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.getToolCallbacks();
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.setToolCallbacks(functionCallbacks);
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public Set<String> getFunctions() {
-		return this.getToolNames();
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public void setFunctions(Set<String> functionNames) {
-		this.setToolNames(functionNames);
 	}
 
 	public Map<String, String> getHttpHeaders() {
@@ -593,6 +556,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.reasoningEffort = reasoningEffort;
 	}
 
+	public WebSearchOptions getWebSearchOptions() {
+		return this.webSearchOptions;
+	}
+
+	public void setWebSearchOptions(WebSearchOptions webSearchOptions) {
+		this.webSearchOptions = webSearchOptions;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -605,7 +576,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions);
 	}
 
 	@Override
@@ -637,7 +608,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.outputModalities, other.outputModalities)
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
 				&& Objects.equals(this.metadata, other.metadata)
-				&& Objects.equals(this.reasoningEffort, other.reasoningEffort);
+				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
+				&& Objects.equals(this.webSearchOptions, other.webSearchOptions);
 	}
 
 	@Override
@@ -767,12 +739,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
-		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
@@ -792,29 +764,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		@Deprecated
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return toolCallbacks(functionCallbacks);
-		}
-
-		@Deprecated
-		public Builder functions(Set<String> functionNames) {
-			return toolNames(functionNames);
-		}
-
-		@Deprecated
-		public Builder function(String functionName) {
-			return toolNames(functionName);
-		}
-
-		@Deprecated
-		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			if (proxyToolCalls != null) {
-				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
-			}
 			return this;
 		}
 
@@ -845,6 +794,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder reasoningEffort(String reasoningEffort) {
 			this.options.reasoningEffort = reasoningEffort;
+			return this;
+		}
+
+		public Builder webSearchOptions(WebSearchOptions webSearchOptions) {
+			this.options.webSearchOptions = webSearchOptions;
 			return this;
 		}
 

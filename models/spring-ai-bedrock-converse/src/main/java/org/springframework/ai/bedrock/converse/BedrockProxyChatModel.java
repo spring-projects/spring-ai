@@ -40,8 +40,10 @@ import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
@@ -99,6 +101,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.Assert;
@@ -130,6 +133,7 @@ import org.springframework.util.StringUtils;
  * @author Wei Jiang
  * @author Alexandros Pappas
  * @author Jihoon Kim
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -220,7 +224,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(AiProvider.BEDROCK_CONVERSE.value())
-			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse chatResponse = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -280,19 +283,23 @@ public class BedrockProxyChatModel implements ChatModel {
 			updatedRuntimeOptions = this.defaultOptions.copy();
 		}
 		else {
+			if (runtimeOptions.getFrequencyPenalty() != null) {
+				logger.warn("The frequencyPenalty option is not supported by BedrockProxyChatModel. Ignoring.");
+			}
+			if (runtimeOptions.getPresencePenalty() != null) {
+				logger.warn("The presencePenalty option is not supported by BedrockProxyChatModel. Ignoring.");
+			}
+			if (runtimeOptions.getTopK() != null) {
+				logger.warn("The topK option is not supported by BedrockProxyChatModel. Ignoring.");
+			}
 			updatedRuntimeOptions = ToolCallingChatOptions.builder()
 				.model(runtimeOptions.getModel() != null ? runtimeOptions.getModel() : this.defaultOptions.getModel())
-				.frequencyPenalty(runtimeOptions.getFrequencyPenalty() != null ? runtimeOptions.getFrequencyPenalty()
-						: this.defaultOptions.getFrequencyPenalty())
 				.maxTokens(runtimeOptions.getMaxTokens() != null ? runtimeOptions.getMaxTokens()
 						: this.defaultOptions.getMaxTokens())
-				.presencePenalty(runtimeOptions.getPresencePenalty() != null ? runtimeOptions.getPresencePenalty()
-						: this.defaultOptions.getPresencePenalty())
 				.stopSequences(runtimeOptions.getStopSequences() != null ? runtimeOptions.getStopSequences()
 						: this.defaultOptions.getStopSequences())
 				.temperature(runtimeOptions.getTemperature() != null ? runtimeOptions.getTemperature()
 						: this.defaultOptions.getTemperature())
-				.topK(runtimeOptions.getTopK() != null ? runtimeOptions.getTopK() : this.defaultOptions.getTopK())
 				.topP(runtimeOptions.getTopP() != null ? runtimeOptions.getTopP() : this.defaultOptions.getTopP())
 
 				.toolCallbacks(runtimeOptions.getToolCallbacks() != null ? runtimeOptions.getToolCallbacks()
@@ -647,7 +654,6 @@ public class BedrockProxyChatModel implements ChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.BEDROCK_CONVERSE.value())
-				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -676,8 +682,15 @@ public class BedrockProxyChatModel implements ChatModel {
 
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
-					return Flux.defer(() -> {
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+					return Flux.deferContextual((ctx) -> {
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
 
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
@@ -785,6 +798,12 @@ public class BedrockProxyChatModel implements ChatModel {
 		private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
+			try {
+				this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
+			}
 		}
 
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {

@@ -18,7 +18,7 @@ package org.springframework.ai.tool.metadata;
 
 import java.lang.reflect.Method;
 
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.Assert;
 
 /**

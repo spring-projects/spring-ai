@@ -121,6 +121,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 * The format in which the generated images are returned. It is sent as part of the
 	 * accept header. Must be "application/json" or "image/png"
 	 */
+	@JsonProperty("response_format")
 	private String responseFormat;
 
 	/**
@@ -481,11 +482,6 @@ public class StabilityAiImageOptions implements ImageOptions {
 
 		public Builder steps(Integer steps) {
 			this.options.setSteps(steps);
-			return this;
-		}
-
-		public Builder samples(Integer samples) {
-			this.options.setN(samples);
 			return this;
 		}
 

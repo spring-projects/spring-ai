@@ -75,7 +75,7 @@ public class OpenAiApiIT {
 				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
-				null, null, null, "low");
+				null, null, null, "low", null);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();
@@ -100,7 +100,7 @@ public class OpenAiApiIT {
 
 	@Test
 	void inputAudio() throws IOException {
-		var audioData = new ClassPathResource("speech1.mp3").getContentAsByteArray();
+		var audioData = new ClassPathResource("speech/speech1.mp3").getContentAsByteArray();
 		List<ChatCompletionMessage.MediaContent> content = List
 			.of(new ChatCompletionMessage.MediaContent("What is this recording about?"),
 					new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.InputAudio(

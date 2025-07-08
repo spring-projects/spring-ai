@@ -247,7 +247,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	@Nullable
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		String filterQuery = null;
 		if (request.hasFilterExpression()) {
