@@ -35,7 +35,6 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.SafetySetting;
-import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
 import com.google.cloud.vertexai.api.Tool.GoogleSearch;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
@@ -88,6 +87,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
+import org.springframework.ai.vertexai.gemini.schema.VertexAiSchemaConverter;
 import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
@@ -370,17 +370,6 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			}
 
 			return structBuilder.build();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static Schema jsonToSchema(String json) {
-		try {
-			var schemaBuilder = Schema.newBuilder();
-			JsonFormat.parser().ignoringUnknownFields().merge(json, schemaBuilder);
-			return schemaBuilder.build();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -697,7 +686,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				.map(toolDefinition -> FunctionDeclaration.newBuilder()
 					.setName(toolDefinition.name())
 					.setDescription(toolDefinition.description())
-					.setParameters(jsonToSchema(toolDefinition.inputSchema()))
+					.setParameters(VertexAiSchemaConverter.fromOpenApiSchema(toolDefinition.inputSchema()))
 					.build())
 				.toList();
 			tools.add(Tool.newBuilder().addAllFunctionDeclarations(functionDeclarations).build());
@@ -758,6 +747,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 		if (options.getResponseMimeType() != null) {
 			generationConfigBuilder.setResponseMimeType(options.getResponseMimeType());
+		}
+		if (options.getResponseSchema() != null) {
+			generationConfigBuilder
+				.setResponseSchema(VertexAiSchemaConverter.fromOpenApiSchema(options.getResponseSchema()));
 		}
 		if (options.getFrequencyPenalty() != null) {
 			generationConfigBuilder.setFrequencyPenalty(options.getFrequencyPenalty().floatValue());
