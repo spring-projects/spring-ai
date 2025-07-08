@@ -34,7 +34,8 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.lang.Nullable;
 
 /**
- * A configurable logger advisor that logs the request and response messages at configurable log levels.
+ * A configurable logger advisor that logs the request and response messages at
+ * configurable log levels.
  *
  * @author Christian Tzolov
  * @author Engineer Zhong
@@ -42,14 +43,19 @@ import org.springframework.lang.Nullable;
 public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
 	public static final Function<ChatClientRequest, String> DEFAULT_REQUEST_TO_STRING = ChatClientRequest::toString;
+
 	public static final Function<ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = ModelOptionsUtils::toJsonStringPrettyPrinter;
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
 
 	private final Function<ChatClientRequest, String> requestToString;
+
 	private final Function<ChatResponse, String> responseToString;
+
 	private final int order;
+
 	private final LogLevel requestLogLevel;
+
 	private final LogLevel responseLogLevel;
 
 	public SimpleLoggerAdvisor() {
@@ -61,10 +67,8 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	public SimpleLoggerAdvisor(@Nullable Function<ChatClientRequest, String> requestToString,
-							   @Nullable Function<ChatResponse, String> responseToString,
-							   int order,
-							   LogLevel requestLogLevel,
-							   LogLevel responseLogLevel) {
+			@Nullable Function<ChatResponse, String> responseToString, int order, LogLevel requestLogLevel,
+			LogLevel responseLogLevel) {
 		this.requestToString = requestToString != null ? requestToString : DEFAULT_REQUEST_TO_STRING;
 		this.responseToString = responseToString != null ? responseToString : DEFAULT_RESPONSE_TO_STRING;
 		this.order = order;
@@ -85,7 +89,7 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
-												 StreamAdvisorChain streamAdvisorChain) {
+			StreamAdvisorChain streamAdvisorChain) {
 		logRequest(chatClientRequest);
 
 		Flux<ChatClientResponse> chatClientResponses = streamAdvisorChain.nextStream(chatClientRequest);
@@ -151,15 +155,21 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	public enum LogLevel {
+
 		TRACE, DEBUG, INFO, WARN, ERROR
+
 	}
 
 	public static final class Builder {
 
 		private Function<ChatClientRequest, String> requestToString;
+
 		private Function<ChatResponse, String> responseToString;
+
 		private int order = 0;
+
 		private LogLevel requestLogLevel = LogLevel.DEBUG;
+
 		private LogLevel responseLogLevel = LogLevel.DEBUG;
 
 		private Builder() {
@@ -197,13 +207,10 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		public SimpleLoggerAdvisor build() {
-			return new SimpleLoggerAdvisor(
-					this.requestToString,
-					this.responseToString,
-					this.order,
-					this.requestLogLevel,
-					this.responseLogLevel
-			);
+			return new SimpleLoggerAdvisor(this.requestToString, this.responseToString, this.order,
+					this.requestLogLevel, this.responseLogLevel);
 		}
+
 	}
+
 }
