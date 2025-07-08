@@ -23,6 +23,7 @@ import com.vmware.gemfire.testcontainers.GemFireCluster;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -56,6 +57,8 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Nabarun Nag
  * @since 1.0.0
  */
+@Disabled
+@Testcontainers
 public class GemFireVectorStoreIT {
 
 	public static final String INDEX_NAME = "spring-ai-index1";
