@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore;
 
 import java.util.Objects;
+import java.util.Map;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -58,6 +59,8 @@ public class SearchRequest {
 
 	@Nullable
 	private Filter.Expression filterExpression;
+
+	private static final Map<Character, String> ESCAPE_TEXT = Map.of('\\', "\\\\", '.', "\\.");
 
 	/**
 	 * Copy an existing {@link SearchRequest.Builder} instance.
@@ -191,7 +194,6 @@ public class SearchRequest {
 		/**
 		 * Retrieves documents by query embedding similarity and matching the filters.
 		 * Value of 'null' means that no metadata filters will be applied to the search.
-		 *
 		 * For example if the {@link Document#getMetadata()} schema is:
 		 *
 		 * <pre>{@code
@@ -283,8 +285,30 @@ public class SearchRequest {
 		 */
 		public Builder filterExpression(@Nullable String textExpression) {
 			this.searchRequest.filterExpression = (textExpression != null)
-					? new FilterExpressionTextParser().parse(textExpression) : null;
+					? new FilterExpressionTextParser().parse(escapeTextExpression(textExpression)) : null;
 			return this;
+		}
+
+		private String escapeTextExpression(String expression) {
+			StringBuilder sb = new StringBuilder(expression.length() + 8);
+			boolean inQuote = false;
+
+			for (int i = 0; i < expression.length(); i++) {
+				char ch = expression.charAt(i);
+
+				if (ch == '\'') {
+					inQuote = !inQuote;
+					sb.append(ch);
+				}
+				else if (inQuote) {
+					sb.append(ESCAPE_TEXT.getOrDefault(ch, String.valueOf(ch)));
+				}
+				else {
+					sb.append(ch);
+				}
+			}
+
+			return sb.toString();
 		}
 
 		public SearchRequest build() {
