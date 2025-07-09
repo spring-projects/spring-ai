@@ -20,7 +20,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.vectorstore.SearchRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -122,31 +125,31 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		String query = request.prompt().getUserMessage() != null ? request.prompt().getUserMessage().getText() : "";
 		int topK = getChatMemoryTopK(request.context());
 		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
-		var searchRequest = org.springframework.ai.vectorstore.SearchRequest.builder()
+		SearchRequest searchRequest = SearchRequest.builder()
 			.query(query)
 			.topK(topK)
 			.filterExpression(filter)
 			.build();
-		java.util.List<org.springframework.ai.document.Document> documents = this.vectorStore
+		List<Document> documents = this.vectorStore
 			.similaritySearch(searchRequest);
 
 		String longTermMemory = documents == null ? ""
 				: documents.stream()
-					.map(org.springframework.ai.document.Document::getText)
-					.collect(java.util.stream.Collectors.joining(System.lineSeparator()));
+					.map(Document::getText)
+					.collect(Collectors.joining(System.lineSeparator()));
 
-		org.springframework.ai.chat.messages.SystemMessage systemMessage = request.prompt().getSystemMessage();
+		SystemMessage systemMessage = request.prompt().getSystemMessage();
 		String augmentedSystemText = this.systemPromptTemplate
-			.render(java.util.Map.of("instructions", systemMessage.getText(), "long_term_memory", longTermMemory));
+			.render(Map.of("instructions", systemMessage.getText(), "long_term_memory", longTermMemory));
 
 		ChatClientRequest processedChatClientRequest = request.mutate()
 			.prompt(request.prompt().augmentSystemMessage(augmentedSystemText))
 			.build();
 
-		org.springframework.ai.chat.messages.UserMessage userMessage = processedChatClientRequest.prompt()
-			.getUserMessage();
+		UserMessage userMessage = processedChatClientRequest.prompt()
+				.getUserMessage();
 		if (userMessage != null) {
-			this.vectorStore.write(toDocuments(java.util.List.of(userMessage), conversationId));
+			this.vectorStore.write(toDocuments(List.of(userMessage), conversationId));
 		}
 
 		return processedChatClientRequest;
@@ -186,10 +189,10 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 	}
 
 	private List<Document> toDocuments(List<Message> messages, String conversationId) {
-		List<Document> docs = messages.stream()
+		return messages.stream()
 			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
 			.map(message -> {
-				var metadata = new HashMap<>(message.getMetadata() != null ? message.getMetadata() : new HashMap<>());
+				Map<String, Object> metadata = new HashMap<>(message.getMetadata() != null ? message.getMetadata() : new HashMap<>());
 				metadata.put(DOCUMENT_METADATA_CONVERSATION_ID, conversationId);
 				metadata.put(DOCUMENT_METADATA_MESSAGE_TYPE, message.getMessageType().name());
 				if (message instanceof UserMessage userMessage) {
@@ -201,15 +204,12 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 						// .media(userMessage.getMedia())
 						.metadata(metadata)
 						.build();
-				}
-				else if (message instanceof AssistantMessage assistantMessage) {
+				}  else if (message instanceof AssistantMessage assistantMessage) {
 					return Document.builder().text(assistantMessage.getText()).metadata(metadata).build();
 				}
 				throw new RuntimeException("Unknown message type: " + message.getMessageType());
 			})
 			.toList();
-
-		return docs;
 	}
 
 	/**
