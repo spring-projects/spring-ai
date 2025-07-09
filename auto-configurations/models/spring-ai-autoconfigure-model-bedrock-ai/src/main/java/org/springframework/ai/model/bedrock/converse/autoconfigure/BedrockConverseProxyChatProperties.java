@@ -16,7 +16,7 @@
 
 package org.springframework.ai.model.bedrock.converse.autoconfigure;
 
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *
  * @author Christian Tzolov
  * @author Josh Long
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 @ConfigurationProperties(BedrockConverseProxyChatProperties.CONFIG_PREFIX)
@@ -38,12 +39,9 @@ public class BedrockConverseProxyChatProperties {
 	private boolean enabled;
 
 	@NestedConfigurationProperty
-	private final ToolCallingChatOptions options = ToolCallingChatOptions.builder()
-		.temperature(0.7)
-		.maxTokens(300)
-		.build();
+	private final BedrockChatOptions options = BedrockChatOptions.builder().temperature(0.7).maxTokens(300).build();
 
-	public ToolCallingChatOptions getOptions() {
+	public BedrockChatOptions getOptions() {
 		return this.options;
 	}
 
