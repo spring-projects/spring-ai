@@ -44,25 +44,25 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@JsonProperty("model")
 	private String model;
 
-	@JsonProperty("frequency_penalty")
+	@JsonProperty("frequencyPenalty")
 	private Double frequencyPenalty;
 
-	@JsonProperty("max_tokens")
+	@JsonProperty("maxTokens")
 	private Integer maxTokens;
 
-	@JsonProperty("presence_penalty")
+	@JsonProperty("presencePenalty")
 	private Double presencePenalty;
 
-	@JsonProperty("stop_sequences")
+	@JsonProperty("stopSequences")
 	private List<String> stopSequences;
 
 	@JsonProperty("temperature")
 	private Double temperature;
 
-	@JsonProperty("top_k")
+	@JsonProperty("topK")
 	private Integer topK;
 
-	@JsonProperty("top_p")
+	@JsonProperty("topP")
 	private Double topP;
 
 	@JsonIgnore
