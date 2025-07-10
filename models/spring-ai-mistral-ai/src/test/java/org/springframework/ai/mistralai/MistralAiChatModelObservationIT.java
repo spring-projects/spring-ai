@@ -184,7 +184,7 @@ public class MistralAiChatModelObservationIT {
 		}
 
 		@Bean
-		public MistralAiChatModel openAiChatModel(MistralAiApi mistralAiApi,
+		public MistralAiChatModel mistralAiChatModel(MistralAiApi mistralAiApi,
 				TestObservationRegistry observationRegistry) {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)

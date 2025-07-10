@@ -49,7 +49,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 	void typeRefOutputConverterRecords() {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
-				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
+				new ParameterizedTypeReference<>() {
 
 				});
 
@@ -78,7 +78,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 	void typeRefStreamOutputConverterRecords() {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
-				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
+				new ParameterizedTypeReference<>() {
 
 				});
 

@@ -40,7 +40,7 @@ spring:
 export ANTHROPIC_API_KEY=<your-anthropic-api-key>
 ----
 
-You can also set this configuration programmatically in your application code:
+You can also get this configuration programmatically in your application code:
 
 [source,java]
 ----
@@ -484,13 +484,13 @@ Next, create a `AnthropicChatModel` and use it for text generations:
 [source,java]
 ----
 var anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
-
-var chatModel = new AnthropicChatModel(this.anthropicApi,
-        AnthropicChatOptions.builder()
-            .model("claude-3-opus-20240229")
+var anthropicChatOptions = AnthropicChatOptions.builder()
+            .model("claude-3-7-sonnet-20250219")
             .temperature(0.4)
             .maxTokens(200)
-        .build());
+        .build()
+var chatModel = AnthropicChatModel.builder().anthropicApi(anthropicApi)
+                .defaultOptions(anthropicChatOptions).build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));

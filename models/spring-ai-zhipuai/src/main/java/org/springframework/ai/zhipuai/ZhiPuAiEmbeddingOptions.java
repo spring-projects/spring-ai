@@ -16,7 +16,6 @@
 
 package org.springframework.ai.zhipuai;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -63,9 +62,8 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	@JsonIgnore
 	public Integer getDimensions() {
-		return null;
+		return this.dimensions;
 	}
 
 	public static class Builder {

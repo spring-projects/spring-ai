@@ -20,6 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
@@ -55,6 +58,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class StreamHelper {
+
+	private static final Logger logger = LoggerFactory.getLogger(StreamHelper.class);
 
 	public boolean isToolUseStart(StreamEvent event) {
 		if (event == null || event.type() == null || event.type() != EventType.CONTENT_BLOCK_START) {
@@ -216,7 +221,11 @@ public class StreamHelper {
 		}
 		else {
 			// Any other event types that should propagate upwards without content
+			if (contentBlockReference.get() == null) {
+				contentBlockReference.set(new ChatCompletionResponseBuilder());
+			}
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of());
+			logger.warn("Unhandled event type: {}", event.type().name());
 		}
 
 		return contentBlockReference.get().build();
