@@ -42,7 +42,8 @@ public interface ChatMemoryRepository {
 	void deleteByConversationId(String conversationId);
 
 	/**
-	* Deletes all the conversation IDs.
-	*/
+	 * Deletes all the conversation IDs.
+	 */
 	void deleteConversationIds();
+
 }

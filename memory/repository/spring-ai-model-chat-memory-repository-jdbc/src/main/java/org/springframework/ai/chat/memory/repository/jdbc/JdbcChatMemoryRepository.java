@@ -112,7 +112,6 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		this.jdbcTemplate.update(this.dialect.getDeleteAllMessageSql());
 	}
 
-
 	public static Builder builder() {
 		return new Builder();
 	}

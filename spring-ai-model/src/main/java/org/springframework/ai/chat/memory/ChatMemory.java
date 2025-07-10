@@ -63,7 +63,7 @@ public interface ChatMemory {
 	void clear(String conversationId);
 
 	/**
-	  Clear all the chat memory.
+	 * Clear all the chat memory.
 	 */
 	void clear();
 
