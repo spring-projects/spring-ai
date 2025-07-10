@@ -36,6 +36,7 @@ import org.springframework.util.Assert;
  * All properties are prefixed with {@code spring.ai.mcp.server}.
  *
  * @author Christian Tzolov
+ * @author Jemin Huh
  * @since 1.0.0
  * @see McpServerAutoConfiguration
  */
@@ -120,7 +121,7 @@ public class McpServerProperties {
 	 * <p>
 	 * This property is only used when transport is set to WEBMVC or WEBFLUX.
 	 */
-	private String sseMessageEndpoint = "/mcp/message";
+	private String sseMessageEndpoint = "/mcp/messages";
 
 	/**
 	 * The type of server to use for MCP server communication.
