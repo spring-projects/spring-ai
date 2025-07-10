@@ -317,7 +317,7 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.10.0</mcp.sdk.version>
+		<mcp.sdk.version>0.11.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
