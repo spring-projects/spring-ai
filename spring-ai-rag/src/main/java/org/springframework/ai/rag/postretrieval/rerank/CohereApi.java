@@ -6,6 +6,7 @@ package org.springframework.ai.rag.postretrieval.rerank;
  * @author KoreaNirsa
  */
 public class CohereApi {
+
 	private String apiKey;
 
 	public static Builder builder() {
@@ -17,6 +18,7 @@ public class CohereApi {
 	}
 
 	public static class Builder {
+
 		private final CohereApi instance = new CohereApi();
 
 		public Builder apiKey(String key) {
@@ -30,5 +32,7 @@ public class CohereApi {
 			}
 			return instance;
 		}
+
 	}
+
 }
