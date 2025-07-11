@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +66,7 @@ public class BedrockProxyChatModelObservationIT {
 
 	@Test
 	void observationForChatOperation() {
-		var options = ToolCallingChatOptions.builder()
+		var options = BedrockChatOptions.builder()
 			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
@@ -89,7 +88,7 @@ public class BedrockProxyChatModelObservationIT {
 
 	@Test
 	void observationForStreamingChatOperation() {
-		var options = ToolCallingChatOptions.builder()
+		var options = BedrockChatOptions.builder()
 			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
@@ -173,7 +172,7 @@ public class BedrockProxyChatModelObservationIT {
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
+				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 

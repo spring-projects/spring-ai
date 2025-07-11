@@ -27,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -268,7 +269,7 @@ public class BedrockNovaChatClientIT {
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.timeout(Duration.ofSeconds(120))
-				.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
+				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 
