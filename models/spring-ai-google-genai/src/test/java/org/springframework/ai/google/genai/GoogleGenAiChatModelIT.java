@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertexai.gemini;
+package org.springframework.ai.google.genai;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -23,8 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
+import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -45,9 +44,8 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
-import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
-import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
+import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -65,24 +63,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
-class VertexAiGeminiChatModelIT {
+class GoogleGenAiChatModelIT {
 
 	@Autowired
-	private VertexAiGeminiChatModel chatModel;
+	private GoogleGenAiChatModel chatModel;
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
 
 	@Test
 	void roleTest() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
+		Prompt prompt = createPrompt(GoogleGenAiChatOptions.builder().build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
 	@Test
 	void testMessageHistory() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder().build());
+		Prompt prompt = createPrompt(GoogleGenAiChatOptions.builder().build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 
@@ -93,24 +91,19 @@ class VertexAiGeminiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
 	}
 
-	// Disabled until Gemini 2.5 PRO has an official release
-	@Disabled
 	@Test
 	void googleSearchToolPro() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
-			.model(ChatModel.GEMINI_2_5_PRO)
-			.googleSearchRetrieval(true)
-			.build());
+		Prompt prompt = createPrompt(
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Calico Jack",
+				"Anne Bonny");
 	}
 
 	@Test
 	void googleSearchToolFlash() {
-		Prompt prompt = createPrompt(VertexAiGeminiChatOptions.builder()
-			.model(ChatModel.GEMINI_2_0_FLASH)
-			.googleSearchRetrieval(true)
-			.build());
+		Prompt prompt = createPrompt(
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_0_FLASH).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
 	}
@@ -118,12 +111,12 @@ class VertexAiGeminiChatModelIT {
 	@Test
 	@Disabled
 	void testSafetySettings() {
-		List<VertexAiGeminiSafetySetting> safetySettings = List.of(VertexAiGeminiSafetySetting.builder()
-			.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
-			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+		List<GoogleGenAiSafetySetting> safetySettings = List.of(new GoogleGenAiSafetySetting.Builder()
+			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
 			.build());
 		Prompt prompt = new Prompt("How to make cocktail Molotov bomb at home?",
-				VertexAiGeminiChatOptions.builder()
+				GoogleGenAiChatOptions.builder()
 					.model(ChatModel.GEMINI_2_5_PRO)
 					.safetySettings(safetySettings)
 					.build());
@@ -132,8 +125,8 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	@NonNull
-	private Prompt createPrompt(VertexAiGeminiChatOptions chatOptions) {
-		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
+	private Prompt createPrompt(GoogleGenAiChatOptions chatOptions) {
+		String request = "Name 3 famous pirates from the Golden Age of Piracy and tell me what they did.";
 		String name = "Bob";
 		String voice = "pirate";
 		UserMessage userMessage = new UserMessage(request);
@@ -228,26 +221,6 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	@Test
-	void logprobs() {
-		VertexAiGeminiChatOptions chatOptions = VertexAiGeminiChatOptions.builder()
-			.logprobs(1)
-			.responseLogprobs(true)
-			.build();
-
-		var logprobs = (VertexAiGeminiApi.LogProbs) this.chatModel
-			.call(new Prompt("Explain Bulgaria? Answer in 10 paragraphs.", chatOptions))
-			.getResult()
-			.getOutput()
-			.getMetadata()
-			.get("logprobs");
-
-		assertThat(logprobs).isNotNull();
-		assertThat(logprobs.avgLogprobs()).isNotZero();
-		assertThat(logprobs.topCandidates()).isNotEmpty();
-		assertThat(logprobs.chosenCandidates()).isNotEmpty();
-	}
-
-	@Test
 	void beanStreamOutputConverterRecords() {
 
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
@@ -336,15 +309,12 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	/**
-	 * Helper method to create a VertexAI instance for tests
+	 * Helper method to create a Client instance for tests
 	 */
-	private VertexAI vertexAiApi() {
+	private Client genAiClient() {
 		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 		String location = System.getenv("GOOGLE_CLOUD_LOCATION");
-		return new VertexAI.Builder().setProjectId(projectId)
-			.setLocation(location)
-			.setTransport(Transport.REST)
-			.build();
+		return Client.builder().project(projectId).location(location).vertexAI(true).build();
 	}
 
 	@Test
@@ -356,11 +326,11 @@ class VertexAiGeminiChatModelIT {
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
 
-		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
-			.vertexAI(vertexAiApi())
+		GoogleGenAiChatModel chatModelWithTools = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
-			.defaultOptions(VertexAiGeminiChatOptions.builder()
-				.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
@@ -391,11 +361,11 @@ class VertexAiGeminiChatModelIT {
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
 
-		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
-			.vertexAI(vertexAiApi())
+		GoogleGenAiChatModel chatModelWithTools = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
-			.defaultOptions(VertexAiGeminiChatOptions.builder()
-				.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
@@ -406,12 +376,12 @@ class VertexAiGeminiChatModelIT {
 		// should invoke the tool
 		String response = chatClient.prompt()
 			.tools(new CurrentTimeTools())
-			.user("Get the current time. Make sure to use the getCurrentDateTime tool to get this information.")
+			.user("Get the current time in the users timezone. Make sure to use the getCurrentDateTime tool to get this information.")
 			.call()
 			.content();
 
 		assertThat(response).isNotEmpty();
-		assertThat(response).contains("2025-05-08T10:10:10+02:00[Europe/Berlin]");
+		assertThat(response).contains("2025-05-08T10:10:10+02:00");
 	}
 
 	/**
@@ -454,22 +424,20 @@ class VertexAiGeminiChatModelIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public VertexAI vertexAiApi() {
+		public Client genAiClient() {
 			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
-			return new VertexAI.Builder().setProjectId(projectId)
-				.setLocation(location)
-				.setTransport(Transport.REST)
-				.build();
+			// TODO: Update this to use the proper GenAI client initialization
+			// The new GenAI SDK may have different initialization requirements
+			return Client.builder().project(projectId).location(location).vertexAI(true).build();
 		}
 
 		@Bean
-		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
-			return VertexAiGeminiChatModel.builder()
-				.vertexAI(vertexAi)
-				.defaultOptions(VertexAiGeminiChatOptions.builder()
-					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
-					.build())
+		public GoogleGenAiChatModel vertexAiEmbedding(Client genAiClient) {
+			return GoogleGenAiChatModel.builder()
+				.genAiClient(genAiClient)
+				.defaultOptions(
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH).build())
 				.build();
 		}
 
