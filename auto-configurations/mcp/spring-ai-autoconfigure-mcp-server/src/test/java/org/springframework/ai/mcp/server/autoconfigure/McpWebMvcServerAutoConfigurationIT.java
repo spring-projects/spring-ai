@@ -17,11 +17,16 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.web.context.support.StandardServletEnvironment;
 import org.springframework.web.servlet.function.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,6 +71,23 @@ class McpWebMvcServerAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.base-url=/test")
 			.run(context -> assertThat(context.getBean(WebMvcSseServerTransportProvider.class)).extracting("baseUrl")
 				.isEqualTo("/test"));
+	}
+
+	@Test
+	void servletEnvironmentConfiguration() {
+		new ApplicationContextRunner(() -> new AnnotationConfigApplicationContext() {
+			@Override
+			public ConfigurableEnvironment getEnvironment() {
+				return new StandardServletEnvironment();
+			}
+		}).withConfiguration(
+				AutoConfigurations.of(McpWebMvcServerAutoConfiguration.class, McpServerAutoConfiguration.class))
+			.run(context -> {
+				var mcpSyncServer = context.getBean(McpSyncServer.class);
+				var field = ReflectionUtils.findField(McpSyncServer.class, "immediateExecution");
+				field.setAccessible(true);
+				assertThat(field.getBoolean(mcpSyncServer)).isTrue();
+			});
 	}
 
 }
