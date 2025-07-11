@@ -32,6 +32,7 @@ import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import reactor.test.StepVerifier;
 
 import org.springframework.ai.tool.ToolCallback;
@@ -199,8 +200,10 @@ class ToolUtilsTests {
 			.description("Test tool")
 			.inputSchema("{}")
 			.build();
+		ToolMetadata metadata = ToolMetadata.builder().build();
 		when(callback.getToolDefinition()).thenReturn(definition);
 		when(callback.call(anyString(), any())).thenReturn(result);
+		when(callback.getToolMetadata()).thenReturn(metadata);
 		return callback;
 	}
 
@@ -211,8 +214,10 @@ class ToolUtilsTests {
 			.description("Test tool")
 			.inputSchema("{}")
 			.build();
+		ToolMetadata metadata = ToolMetadata.builder().build();
 		when(callback.getToolDefinition()).thenReturn(definition);
 		when(callback.call(anyString(), any())).thenThrow(error);
+		when(callback.getToolMetadata()).thenReturn(metadata);
 		return callback;
 	}
 

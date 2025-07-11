@@ -30,6 +30,7 @@ import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -167,8 +168,11 @@ public final class McpToolUtils {
 	 */
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
+		boolean returnDirect = Optional.ofNullable(toolCallback.getToolMetadata())
+			.map(ToolMetadata::returnDirect)
+			.orElse(false);
 		McpSchema.ToolAnnotations toolAnnotations = new McpSchema.ToolAnnotations(null, null, null, null, null,
-				toolCallback.getToolMetadata().returnDirect());
+				returnDirect);
 
 		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
 				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema(),
