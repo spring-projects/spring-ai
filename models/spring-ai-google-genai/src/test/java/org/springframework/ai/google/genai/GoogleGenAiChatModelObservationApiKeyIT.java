@@ -14,47 +14,46 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertexai.gemini;
+package org.springframework.ai.google.genai;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
+import com.google.genai.Client;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import reactor.core.publisher.Flux;
-
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import reactor.core.publisher.Flux;
 
 /**
  * @author Soby Chacko
+ * @author Dan Dobrin
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
-public class VertexAiChatModelObservationIT {
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+public class GoogleGenAiChatModelObservationApiKeyIT {
 
 	@Autowired
 	TestObservationRegistry observationRegistry;
 
 	@Autowired
-	VertexAiGeminiChatModel chatModel;
+	GoogleGenAiChatModel chatModel;
 
 	@BeforeEach
 	void beforeEach() {
@@ -64,8 +63,8 @@ public class VertexAiChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 
-		var options = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+		var options = GoogleGenAiChatOptions.builder()
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -86,8 +85,8 @@ public class VertexAiChatModelObservationIT {
 	@Test
 	void observationForStreamingOperation() {
 
-		var options = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+		var options = GoogleGenAiChatOptions.builder()
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -124,10 +123,10 @@ public class VertexAiChatModelObservationIT {
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(ChatModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
-					AiProvider.VERTEX_AI.value())
+					AiProvider.GOOGLE_GENAI_AI.value())
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+					GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.hasHighCardinalityKeyValue(
@@ -164,25 +163,19 @@ public class VertexAiChatModelObservationIT {
 		}
 
 		@Bean
-		public VertexAI vertexAiApi() {
-			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
-			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
-			return new VertexAI.Builder().setProjectId(projectId)
-				.setLocation(location)
-				.setTransport(Transport.REST)
-				.build();
+		public Client genAiClient() {
+			String apiKey = System.getenv("GOOGLE_API_KEY");
+			return Client.builder().apiKey(apiKey).build();
 		}
 
 		@Bean
-		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi,
-				TestObservationRegistry observationRegistry) {
+		public GoogleGenAiChatModel vertexAiEmbedding(Client genAiClient, TestObservationRegistry observationRegistry) {
 
-			return VertexAiGeminiChatModel.builder()
-				.vertexAI(vertexAi)
+			return GoogleGenAiChatModel.builder()
+				.genAiClient(genAiClient)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(VertexAiGeminiChatOptions.builder()
-					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
-					.build())
+				.defaultOptions(
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH).build())
 				.build();
 		}
 

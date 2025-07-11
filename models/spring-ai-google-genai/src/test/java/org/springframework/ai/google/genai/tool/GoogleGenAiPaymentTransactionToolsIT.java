@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertexai.gemini.tool;
+package org.springframework.ai.google.genai.tool;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
+import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -40,8 +41,6 @@ import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -54,13 +53,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Dan Dobrin
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
-public class VertexAiGeminiPaymentTransactionToolsIT {
+public class GoogleGenAiPaymentTransactionToolsIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionToolsIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiPaymentTransactionToolsIT.class);
 
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
@@ -143,31 +143,28 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public ChatClient chatClient(VertexAiGeminiChatModel chatModel) {
+		public ChatClient chatClient(GoogleGenAiChatModel chatModel) {
 			return ChatClient.builder(chatModel).build();
 		}
 
 		@Bean
-		public VertexAI vertexAiApi() {
+		public Client genAiClient() {
 
 			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 
-			return new VertexAI.Builder().setLocation(location)
-				.setProjectId(projectId)
-				.setTransport(Transport.REST)
-				// .setTransport(Transport.GRPC)
-				.build();
+			// TODO: Update this to use the proper GenAI client initialization
+			return Client.builder().project(projectId).location(location).vertexAI(true).build();
 		}
 
 		@Bean
-		public VertexAiGeminiChatModel vertexAiChatModel(VertexAI vertexAi, ToolCallingManager toolCallingManager) {
+		public GoogleGenAiChatModel vertexAiChatModel(Client genAiClient, ToolCallingManager toolCallingManager) {
 
-			return VertexAiGeminiChatModel.builder()
-				.vertexAI(vertexAi)
+			return GoogleGenAiChatModel.builder()
+				.genAiClient(genAiClient)
 				.toolCallingManager(toolCallingManager)
-				.defaultOptions(VertexAiGeminiChatOptions.builder()
-					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.defaultOptions(GoogleGenAiChatOptions.builder()
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 					.temperature(0.1)
 					.build())
 				.build();

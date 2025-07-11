@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertexai.gemini.tool;
+package org.springframework.ai.google.genai.tool;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
+import com.google.genai.Client;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -36,8 +37,6 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,12 +47,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
-public class VertexAiGeminiChatModelToolCallingIT {
+public class GoogleGenAiChatModelToolCallingIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiChatModelToolCallingIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelToolCallingIT.class);
 
 	@Autowired
-	private VertexAiGeminiChatModel chatModel;
+	private GoogleGenAiChatModel chatModel;
 
 	@Test
 	public void functionCallExplicitOpenApiSchema() {
@@ -81,7 +80,7 @@ public class VertexAiGeminiChatModelToolCallingIT {
 					}
 					""";
 
-		var promptOptions = VertexAiGeminiChatOptions.builder()
+		var promptOptions = GoogleGenAiChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputSchema(openApiSchema)
@@ -104,8 +103,8 @@ public class VertexAiGeminiChatModelToolCallingIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -145,8 +144,8 @@ public class VertexAiGeminiChatModelToolCallingIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -171,15 +170,15 @@ public class VertexAiGeminiChatModelToolCallingIT {
 	}
 
 	@Test
-	public void functionCallUsageTestInferredOpenApiSchemaStream() {
+	public void functionCallUsageTestInferredOpenApiSchemaStreamFlash20() {
 
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = VertexAiGeminiChatOptions.builder()
-			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -205,6 +204,41 @@ public class VertexAiGeminiChatModelToolCallingIT {
 
 	}
 
+	@Test
+	public void functionCallUsageTestInferredOpenApiSchemaStreamFlash25() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+			.toolCallbacks(List.of(
+					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
+						.description("Get the current weather in a given location.")
+						.inputType(MockWeatherService.Request.class)
+						.build(),
+					FunctionToolCallback.builder("get_payment_status", new PaymentStatus())
+						.description(
+								"Retrieves the payment status for transaction. For example what is the payment status for transaction 700?")
+						.inputType(PaymentInfoRequest.class)
+						.build()))
+			.build();
+
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+
+		ChatResponse chatResponse = response.blockLast();
+
+		logger.info("Response: {}", chatResponse);
+
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getMetadata()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(600);
+
+	}
+
 	public record PaymentInfoRequest(String id) {
 
 	}
@@ -226,21 +260,18 @@ public class VertexAiGeminiChatModelToolCallingIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public VertexAI vertexAiApi() {
+		public Client genAiClient() {
 			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
-			return new VertexAI.Builder().setLocation(location)
-				.setProjectId(projectId)
-				.setTransport(Transport.REST)
-				.build();
+			return Client.builder().project(projectId).location(location).vertexAI(true).build();
 		}
 
 		@Bean
-		public VertexAiGeminiChatModel vertexAiEmbedding(VertexAI vertexAi) {
-			return VertexAiGeminiChatModel.builder()
-				.vertexAI(vertexAi)
-				.defaultOptions(VertexAiGeminiChatOptions.builder()
-					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+		public GoogleGenAiChatModel vertexAiEmbedding(Client genAiClient) {
+			return GoogleGenAiChatModel.builder()
+				.genAiClient(genAiClient)
+				.defaultOptions(GoogleGenAiChatOptions.builder()
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 					.temperature(0.9)
 					.build())
 				.build();

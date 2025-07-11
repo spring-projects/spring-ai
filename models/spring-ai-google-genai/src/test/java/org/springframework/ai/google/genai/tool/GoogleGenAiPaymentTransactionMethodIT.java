@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,34 +14,36 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vertexai.gemini.tool;
+package org.springframework.ai.google.genai.tool;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.cloud.vertexai.Transport;
-import com.google.cloud.vertexai.VertexAI;
+import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -54,13 +56,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Dan Dobrin
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
-public class VertexAiGeminiPaymentTransactionToolsIT {
+public class GoogleGenAiPaymentTransactionMethodIT {
 
-	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionToolsIT.class);
+	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiPaymentTransactionMethodIT.class);
 
 	private static final Map<Transaction, Status> DATASET = Map.of(new Transaction("001"), new Status("pending"),
 			new Transaction("002"), new Status("approved"), new Transaction("003"), new Status("rejected"));
@@ -70,16 +73,17 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 
 	@Test
 	public void paymentStatuses() {
-		// @formatter:off
+
 		String content = this.chatClient.prompt()
-				.advisors(new SimpleLoggerAdvisor())
-				.tools(new MyTools())
-				.user("""
-				What is the status of my payment transactions 001, 002 and 003?
-				If required invoke the function per transaction.
-				""").call().content();
-		// @formatter:on
-		logger.info("" + content);
+			.advisors(new SimpleLoggerAdvisor())
+			.toolNames("getPaymentStatus")
+			.user("""
+					What is the status of my payment transactions 001, 002 and 003?
+					If required invoke the function per transaction.
+					""")
+			.call()
+			.content();
+		logger.info(content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -90,7 +94,7 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.tools(new MyTools())
+			.toolNames("getPaymentStatuses")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					If required invoke the function per transaction.
@@ -123,18 +127,18 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 	record Status(String name) {
 	}
 
-	record Transactions(List<Transaction> transactions) {
-	}
+	public static class PaymentService {
 
-	record Statuses(List<Status> statuses) {
-	}
-
-	public static class MyTools {
+		@Tool(description = "Get the status of a single payment transaction")
+		public Status getPaymentStatus(Transaction transaction) {
+			logger.info("Single Transaction: " + transaction);
+			return DATASET.get(transaction);
+		}
 
 		@Tool(description = "Get the list statuses of a list of payment transactions")
-		public Statuses paymentStatuses(Transactions transactions) {
+		public List<Status> getPaymentStatuses(List<Transaction> transactions) {
 			logger.info("Transactions: " + transactions);
-			return new Statuses(transactions.transactions().stream().map(t -> DATASET.get(t)).toList());
+			return transactions.stream().map(t -> DATASET.get(t)).toList();
 		}
 
 	}
@@ -143,31 +147,32 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 	public static class TestConfiguration {
 
 		@Bean
-		public ChatClient chatClient(VertexAiGeminiChatModel chatModel) {
+		public ToolCallbackProvider paymentServiceTools() {
+			return ToolCallbackProvider.from(List.of(ToolCallbacks.from(new PaymentService())));
+		}
+
+		@Bean
+		public ChatClient chatClient(GoogleGenAiChatModel chatModel) {
 			return ChatClient.builder(chatModel).build();
 		}
 
 		@Bean
-		public VertexAI vertexAiApi() {
+		public Client genAiClient() {
 
 			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 
-			return new VertexAI.Builder().setLocation(location)
-				.setProjectId(projectId)
-				.setTransport(Transport.REST)
-				// .setTransport(Transport.GRPC)
-				.build();
+			return Client.builder().project(projectId).location(location).vertexAI(true).build();
 		}
 
 		@Bean
-		public VertexAiGeminiChatModel vertexAiChatModel(VertexAI vertexAi, ToolCallingManager toolCallingManager) {
+		public GoogleGenAiChatModel vertexAiChatModel(Client genAiClient, ToolCallingManager toolCallingManager) {
 
-			return VertexAiGeminiChatModel.builder()
-				.vertexAI(vertexAi)
+			return GoogleGenAiChatModel.builder()
+				.genAiClient(genAiClient)
 				.toolCallingManager(toolCallingManager)
-				.defaultOptions(VertexAiGeminiChatOptions.builder()
-					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.defaultOptions(GoogleGenAiChatOptions.builder()
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 					.temperature(0.1)
 					.build())
 				.build();
@@ -175,9 +180,14 @@ public class VertexAiGeminiPaymentTransactionToolsIT {
 
 		@Bean
 		ToolCallingManager toolCallingManager(GenericApplicationContext applicationContext,
-				List<ToolCallback> toolCallbacks, ObjectProvider<ObservationRegistry> observationRegistry) {
+				List<ToolCallbackProvider> tcps, List<ToolCallback> toolCallbacks,
+				ObjectProvider<ObservationRegistry> observationRegistry) {
 
-			var staticToolCallbackResolver = new StaticToolCallbackResolver(toolCallbacks);
+			List<ToolCallback> allToolCallbacks = new ArrayList(toolCallbacks);
+			tcps.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allToolCallbacks::addAll);
+
+			var staticToolCallbackResolver = new StaticToolCallbackResolver(allToolCallbacks);
+
 			var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
 				.applicationContext(applicationContext)
 				.build();
