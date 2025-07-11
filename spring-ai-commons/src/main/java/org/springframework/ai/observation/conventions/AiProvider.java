@@ -94,6 +94,11 @@ public enum AiProvider {
 	VERTEX_AI("vertex_ai"),
 
 	/**
+	 * AI system provided by Vertex AI.
+	 */
+	GOOGLE_GENAI_AI("google_genai"),
+
+	/**
 	 * AI system provided by ONNX.
 	 */
 	ONNX("onnx");

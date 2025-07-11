@@ -178,6 +178,7 @@
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
+		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-deepseek</module>
 
