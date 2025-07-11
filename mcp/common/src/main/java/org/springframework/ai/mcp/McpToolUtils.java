@@ -59,6 +59,7 @@ import org.springframework.util.MimeType;
  * </ul>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public final class McpToolUtils {
 
@@ -166,9 +167,12 @@ public final class McpToolUtils {
 	 */
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
+		McpSchema.ToolAnnotations toolAnnotations = new McpSchema.ToolAnnotations(null, null, null, null, null,
+				toolCallback.getToolMetadata().returnDirect());
 
 		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
-				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema(),
+				toolAnnotations);
 
 		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
 			try {
