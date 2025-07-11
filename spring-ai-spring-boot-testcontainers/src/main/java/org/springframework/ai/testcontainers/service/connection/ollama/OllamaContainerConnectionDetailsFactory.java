@@ -16,6 +16,7 @@
 
 package org.springframework.ai.testcontainers.service.connection.ollama;
 
+import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.testcontainers.ollama.OllamaContainer;
 
 import org.springframework.ai.model.ollama.autoconfigure.OllamaConnectionDetails;
@@ -24,6 +25,7 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
 
 /**
  * @author Eddú Meléndez
+ * @author lambochen
  */
 class OllamaContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<OllamaContainer, OllamaConnectionDetails> {
@@ -46,6 +48,41 @@ class OllamaContainerConnectionDetailsFactory
 		@Override
 		public String getBaseUrl() {
 			return getContainer().getEndpoint();
+		}
+
+		@Override
+		public String getChatPath() {
+			return OllamaApiConstants.DEFAULT_CHAT_PATH;
+		}
+
+		@Override
+		public String getEmbedPath() {
+			return OllamaApiConstants.DEFAULT_EMBED_PATH;
+		}
+
+		@Override
+		public String getListModelsPath() {
+			return OllamaApiConstants.DEFAULT_LIST_MODELS_PATH;
+		}
+
+		@Override
+		public String getShowModelPath() {
+			return OllamaApiConstants.DEFAULT_SHOW_MODEL_PATH;
+		}
+
+		@Override
+		public String getCopyModelPath() {
+			return OllamaApiConstants.DEFAULT_COPY_MODEL_PATH;
+		}
+
+		@Override
+		public String getDeleteModelPath() {
+			return OllamaApiConstants.DEFAULT_DELETE_MODEL_PATH;
+		}
+
+		@Override
+		public String getPullModelPath() {
+			return OllamaApiConstants.DEFAULT_PULL_MODEL_PATH;
 		}
 
 	}
