@@ -38,6 +38,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 
 /**
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public class FilterExpressionTextParserTests {
 
@@ -178,6 +179,15 @@ public class FilterExpressionTextParserTests {
 				new Expression(LTE, new Key("temperature"), new Value(20.13))));
 
 		assertThat(this.parser.getCache().get("WHERE " + expText)).isEqualTo(exp);
+	}
+
+	@Test
+	public void testLong() {
+		Expression exp2 = this.parser.parse("biz_id == 3L");
+		Expression exp3 = this.parser.parse("biz_id == -5L");
+
+		assertThat(exp2).isEqualTo(new Expression(EQ, new Key("biz_id"), new Value(3L)));
+		assertThat(exp3).isEqualTo(new Expression(EQ, new Key("biz_id"), new Value(-5L)));
 	}
 
 	@Test
