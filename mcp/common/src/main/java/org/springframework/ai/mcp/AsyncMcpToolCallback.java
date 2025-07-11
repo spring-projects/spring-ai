@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -55,15 +57,20 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  * @see ToolCallback
  * @see McpAsyncClient
  * @see Tool
  */
 public class AsyncMcpToolCallback implements ToolCallback {
 
+	private static final ToolMetadata DEFAULT_TOOL_METADATA = ToolMetadata.builder().build();
+
 	private final McpAsyncClient asyncMcpClient;
 
 	private final Tool tool;
+
+	private final ToolMetadata toolMetadata;
 
 	/**
 	 * Creates a new {@code AsyncMcpToolCallback} instance.
@@ -73,6 +80,14 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	public AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool) {
 		this.asyncMcpClient = mcpClient;
 		this.tool = tool;
+		McpSchema.ToolAnnotations annotations = tool.annotations();
+		Boolean returnDirect = (annotations != null) ? annotations.returnDirect() : null;
+		if (returnDirect != null) {
+			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
+		}
+		else {
+			this.toolMetadata = DEFAULT_TOOL_METADATA;
+		}
 	}
 
 	/**
@@ -128,6 +143,11 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	public String call(String toolArguments, ToolContext toolContext) {
 		// ToolContext is not supported by the MCP tools
 		return this.call(toolArguments);
+	}
+
+	@Override
+	public ToolMetadata getToolMetadata() {
+		return this.toolMetadata;
 	}
 
 }

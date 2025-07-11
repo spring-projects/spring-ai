@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.content.Content;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,16 +52,21 @@ class SyncMcpToolCallbackTests {
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 
 		var clientInfo = new Implementation("testClient", "1.0.0");
+		var toolAnnotations = new McpSchema.ToolAnnotations(null, false, false, false, false, true);
+
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test tool description");
+		when(this.tool.annotations()).thenReturn(toolAnnotations);
 
 		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
 
 		var toolDefinition = callback.getToolDefinition();
+		var toolMetadata = callback.getToolMetadata();
 
 		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "_testTool");
 		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
+		assertThat(toolMetadata.returnDirect()).isEqualTo(true);
 	}
 
 	@Test
