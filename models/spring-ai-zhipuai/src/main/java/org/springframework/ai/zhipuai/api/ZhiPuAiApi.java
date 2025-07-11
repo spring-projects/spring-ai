@@ -379,7 +379,15 @@ public class ZhiPuAiApi {
 
 		GLM_4_Flash("glm-4-flash"),
 
-		GLM_3_Turbo("GLM-3-Turbo"); // @formatter:on
+		GLM_3_Turbo("GLM-3-Turbo"),
+
+		// --- Visual Reasoning Models ---
+
+		GLM_4_Thinking_FlashX("glm-4.1v-thinking-flashx"),
+
+		GLM_4_Thinking_Flash("glm-4.1v-thinking-flash"),
+
+		; // @formatter:on
 
 		public final String value;
 
@@ -774,7 +782,8 @@ public class ZhiPuAiApi {
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls) { // @formatter:on
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -783,7 +792,7 @@ public class ZhiPuAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
+			this(content, role, null, null, null, null);
 		}
 
 		/**
