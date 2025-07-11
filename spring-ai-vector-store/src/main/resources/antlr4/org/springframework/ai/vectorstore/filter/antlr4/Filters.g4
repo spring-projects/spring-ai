@@ -30,6 +30,8 @@ booleanExpression
     : identifier compare constant                                 # CompareExpression
     | identifier IN constantArray                                 # InExpression
     | identifier (NOT IN | NIN) constantArray                     # NinExpression
+    | identifier IS NULL                                          # IsNullExpression
+    | identifier IS NOT NULL                                      # IsNotNullExpression
     | left=booleanExpression operator=AND right=booleanExpression # AndExpression
     | left=booleanExpression operator=OR right=booleanExpression  # OrExpression
     | LEFT_PARENTHESIS booleanExpression RIGHT_PARENTHESIS        # GroupExpression
@@ -78,6 +80,8 @@ OR: 'OR' | 'or' | '||';
 IN: 'IN' | 'in';
 NIN: 'NIN' | 'nin';
 NOT: 'NOT' | 'not';
+IS: 'IS' | 'is';
+NULL: 'NULL' | 'null';
 
 BOOLEAN_VALUE
     : 'TRUE' | 'true' | 'FALSE' | 'false'
