@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.vectorstore.redis.RedisVectorStoreBuilderCustomizer;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisClientConfig;
@@ -46,6 +47,7 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author Dongha Koo
  */
 @AutoConfiguration(after = RedisAutoConfiguration.class)
 @ConditionalOnClass({ JedisPooled.class, JedisConnectionFactory.class, RedisVectorStore.class, EmbeddingModel.class })
@@ -63,20 +65,33 @@ public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
-			JedisConnectionFactory jedisConnectionFactory, ObjectProvider<ObservationRegistry> observationRegistry,
+	public RedisVectorStore.Builder redisVectorStoreBuilder(
+			EmbeddingModel embeddingModel,
+			RedisVectorStoreProperties properties,
+			JedisConnectionFactory jedisConnectionFactory,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-			BatchingStrategy batchingStrategy) {
-
+			BatchingStrategy batchingStrategy,
+			ObjectProvider<RedisVectorStoreBuilderCustomizer> customizers
+	) {
 		JedisPooled jedisPooled = this.jedisPooled(jedisConnectionFactory);
-		return RedisVectorStore.builder(jedisPooled, embeddingModel)
-			.initializeSchema(properties.isInitializeSchema())
-			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-			.batchingStrategy(batchingStrategy)
-			.indexName(properties.getIndexName())
-			.prefix(properties.getPrefix())
-			.build();
+
+		RedisVectorStore.Builder builder = RedisVectorStore.builder(jedisPooled, embeddingModel)
+				.initializeSchema(properties.isInitializeSchema())
+				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+				.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+				.batchingStrategy(batchingStrategy)
+				.indexName(properties.getIndexName())
+				.prefix(properties.getPrefix());
+		customizers.orderedStream().forEach(c -> c.customize(builder));
+
+		return builder;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public RedisVectorStore vectorStore(RedisVectorStore.Builder builder) {
+		return builder.build();
 	}
 
 	private JedisPooled jedisPooled(JedisConnectionFactory jedisConnectionFactory) {
