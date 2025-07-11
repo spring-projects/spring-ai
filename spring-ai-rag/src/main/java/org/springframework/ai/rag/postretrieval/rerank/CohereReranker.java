@@ -2,6 +2,7 @@ package org.springframework.ai.rag.postretrieval.rerank;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,7 +82,12 @@ public class CohereReranker {
         return sendRerankRequest(payload)
                 .map(results -> results.stream()
                     .sorted(Comparator.comparingDouble(RerankResponse.Result::getRelevanceScore).reversed())
-                    .map(r -> documents.get(r.getIndex()))
+                    .map(r -> {
+                        Document original = documents.get(r.getIndex());
+                        Map<String, Object> metadata = new HashMap<>(original.getMetadata());
+                        metadata.put("score", String.format("%.4f", r.getRelevanceScore()));
+                        return new Document(original.getText(), metadata);
+                    })
                     .toList())
                 .orElseGet(() -> {
                     logger.warn("Cohere response is null or invalid");

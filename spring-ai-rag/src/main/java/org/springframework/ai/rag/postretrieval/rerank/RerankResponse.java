@@ -30,7 +30,7 @@ public class RerankResponse {
         private int index;
 
         @JsonProperty("relevance_score")
-        private int relevanceScore;
+        private double relevanceScore;
 
         public int getIndex() {
             return index;
@@ -40,11 +40,11 @@ public class RerankResponse {
             this.index = index;
         }
 
-        public int getRelevanceScore() {
+        public double getRelevanceScore() {
             return relevanceScore;
         }
 
-        public void setRelevanceScore(int relevanceScore) {
+        public void setRelevanceScore(double relevanceScore) {
             this.relevanceScore = relevanceScore;
         }
     }
