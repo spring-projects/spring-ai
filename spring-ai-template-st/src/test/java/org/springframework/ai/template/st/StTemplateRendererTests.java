@@ -148,8 +148,8 @@ class StTemplateRendererTests {
 	@Test
 	void shouldRenderWithCustomDelimiters() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder()
-			.startDelimiterToken('<')
-			.endDelimiterToken('>')
+			.startDelimiterToken("<")
+			.endDelimiterToken(">")
 			.build();
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("name", "Spring AI");
@@ -160,10 +160,39 @@ class StTemplateRendererTests {
 	}
 
 	@Test
+	void shouldRenderWithDoubleAngleBracketDelimiters() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder()
+			.startDelimiterToken("<<")
+			.endDelimiterToken(">>")
+			.build();
+
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("name", "Spring AI");
+
+		String result = renderer.apply("Hello <<name>>!", variables);
+
+		assertThat(result).isEqualTo("Hello Spring AI!");
+	}
+
+	@Test
+	void shouldHandleDoubleCurlyBracesAsDelimiters() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder()
+			.startDelimiterToken("{{")
+			.endDelimiterToken("}}")
+			.build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("name", "Spring AI");
+
+		String result = renderer.apply("Hello {{name}}!", variables);
+
+		assertThat(result).isEqualTo("Hello Spring AI!");
+	}
+
+	@Test
 	void shouldHandleSpecialCharactersAsDelimiters() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder()
-			.startDelimiterToken('$')
-			.endDelimiterToken('$')
+			.startDelimiterToken("$")
+			.endDelimiterToken("$")
 			.build();
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("name", "Spring AI");
