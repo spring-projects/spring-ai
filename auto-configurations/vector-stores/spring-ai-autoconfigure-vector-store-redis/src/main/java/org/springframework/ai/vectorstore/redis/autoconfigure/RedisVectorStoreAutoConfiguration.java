@@ -65,24 +65,20 @@ public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public RedisVectorStore.Builder redisVectorStoreBuilder(
-			EmbeddingModel embeddingModel,
-			RedisVectorStoreProperties properties,
-			JedisConnectionFactory jedisConnectionFactory,
+	public RedisVectorStore.Builder redisVectorStoreBuilder(EmbeddingModel embeddingModel,
+			RedisVectorStoreProperties properties, JedisConnectionFactory jedisConnectionFactory,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-			BatchingStrategy batchingStrategy,
-			ObjectProvider<RedisVectorStoreBuilderCustomizer> customizers
-	) {
+			BatchingStrategy batchingStrategy, ObjectProvider<RedisVectorStoreBuilderCustomizer> customizers) {
 		JedisPooled jedisPooled = this.jedisPooled(jedisConnectionFactory);
 
 		RedisVectorStore.Builder builder = RedisVectorStore.builder(jedisPooled, embeddingModel)
-				.initializeSchema(properties.isInitializeSchema())
-				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-				.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-				.batchingStrategy(batchingStrategy)
-				.indexName(properties.getIndexName())
-				.prefix(properties.getPrefix());
+			.initializeSchema(properties.isInitializeSchema())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.batchingStrategy(batchingStrategy)
+			.indexName(properties.getIndexName())
+			.prefix(properties.getPrefix());
 		customizers.orderedStream().forEach(c -> c.customize(builder));
 
 		return builder;

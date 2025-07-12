@@ -16,12 +16,28 @@
 
 package org.springframework.ai.vectorstore.redis;
 
+import org.springframework.ai.vectorstore.VectorStoreBuilderCustomizer;
+import org.springframework.ai.vectorstore.VectorStore;
+
 /**
- * A customizer interface for RedisVectorStore builder.
+ * A customizer interface for RedisVectorStore.Builder.
+ * <p>
+ * This allows users to apply additional configuration to a Redis-based VectorStore
+ * without overriding the default auto-configuration.
+ * <p>
+ * For example, custom metadata fields can be added via this hook:
+ *
+ * <pre>{@code
+ * &#64;Bean
+ * public RedisVectorStoreBuilderCustomizer metadataCustomizer() {
+ *     return builder -> builder.metadataFields(List.of(RedisVectorStore.MetadataField.tag("conversationId")));
+ * }
+ * }</pre>
  *
  * @author Dongha Koo
- * @since 1.0.0
+ * @see RedisVectorStore
+ * @see VectorStore
  */
-public interface RedisVectorStoreBuilderCustomizer
-		extends VectorStoreBuilderCustomizer<RedisVectorStore.Builder> {
+public interface RedisVectorStoreBuilderCustomizer extends VectorStoreBuilderCustomizer<RedisVectorStore.Builder> {
+
 }
