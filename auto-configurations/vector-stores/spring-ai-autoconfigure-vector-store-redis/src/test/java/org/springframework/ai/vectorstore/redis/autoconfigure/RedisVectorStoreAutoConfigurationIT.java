@@ -22,6 +22,7 @@ import java.util.Map;
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.vectorstore.redis.RedisVectorStoreBuilderCustomizer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Dongha Koo
  */
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
@@ -132,6 +134,18 @@ class RedisVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(RedisVectorStore.class);
 		});
+	}
+
+	@Test
+	void customizerShouldApplyMetadataField() {
+		this.contextRunner
+			.withBean(RedisVectorStoreBuilderCustomizer.class,
+					() -> builder -> builder.metadataFields(RedisVectorStore.MetadataField.tag("customField")))
+			.run(context -> {
+				RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+				List<RedisVectorStore.MetadataField> metadataFields = vectorStore.getMetadataFields();
+				assertThat(metadataFields).extracting(RedisVectorStore.MetadataField::name).contains("customField");
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)
