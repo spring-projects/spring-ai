@@ -29,12 +29,14 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
@@ -44,6 +46,7 @@ import org.springframework.util.CollectionUtils;
  * A {@link ToolCallback} implementation to invoke methods as tools.
  *
  * @author Thomas Vitale
+ * @author Dongha Koo
  * @since 1.0.0
  */
 public final class MethodToolCallback implements ToolCallback {
@@ -129,13 +132,43 @@ public final class MethodToolCallback implements ToolCallback {
 		});
 	}
 
-	// Based on the implementation in MethodToolCallback.
+	/**
+	 * Builds the array of arguments to be passed into the target method, based on the
+	 * input tool arguments and method parameter metadata.
+	 *
+	 * <p>
+	 * This method handles special cases like:
+	 * <ul>
+	 * <li>{@link ToolContext} parameters are injected directly.</li>
+	 * <li>When a {@link ToolParam} annotation is present on a parameter, its
+	 * {@code value} is used to bind input keys to parameters — useful when method
+	 * parameter names are not retained (e.g. missing {@code -parameters} during
+	 * compilation).</li>
+	 * <li>Otherwise, falls back to {@link java.lang.reflect.Parameter#getName()}.</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * Examples: <pre>{@code
+	 * public String greet(@ToolParam("user_name") String name) {
+	 *     return "Hi, " + name;
+	 * }
+	 * }</pre> If the tool input contains {"user_name": "Alice"}, the {@code name}
+	 * parameter is populated with "Alice".
+	 * @param toolInputArguments the parsed input map from JSON
+	 * @param toolContext optional tool context, injected if required
+	 * @return an array of method arguments to invoke the tool method with
+	 */
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
 		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
 			if (parameter.getType().isAssignableFrom(ToolContext.class)) {
 				return toolContext;
 			}
-			Object rawArgument = toolInputArguments.get(parameter.getName());
+
+			ToolParam toolParam = AnnotationUtils.getAnnotation(parameter, ToolParam.class);
+			String paramName = (toolParam != null && !toolParam.value().isEmpty()) ? toolParam.value()
+					: parameter.getName();
+
+			Object rawArgument = toolInputArguments.get(paramName);
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
 	}

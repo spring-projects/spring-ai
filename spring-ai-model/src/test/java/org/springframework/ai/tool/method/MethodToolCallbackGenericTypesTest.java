@@ -23,6 +23,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
@@ -173,6 +174,117 @@ class MethodToolCallbackGenericTypesTest {
 		assertThat(result).isEqualTo("1 entries processed {foo=bar}");
 	}
 
+	@Test
+	void testToolParamAnnotationValueUsedAsBindingKey() throws Exception {
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("greetWithAlias", String.class);
+
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("greet")
+			.description("Greet a user with alias binding")
+			.inputSchema("{}")
+			.build();
+
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		String toolInput = """
+				{
+					"user_name": "Alice"
+				}
+				""";
+
+		String result = callback.call(toolInput);
+
+		assertThat(result).isEqualTo("\"Hello, Alice\"");
+	}
+
+	@Test
+	void testToolParamEmptyValueUsesParameterName() throws Exception {
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("greet", String.class);
+
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("greet")
+			.description("Greet a user with implicit binding")
+			.inputSchema("{}")
+			.build();
+
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		String toolInput = """
+				{
+					"name": "Bob"
+				}
+				""";
+
+		String result = callback.call(toolInput);
+
+		assertThat(result).isEqualTo("\"Hello, Bob\"");
+	}
+
+	@Test
+	void testToolParamMissingInputHandledAsNull() throws Exception {
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("greetWithAlias", String.class);
+
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("greet")
+			.description("Greet a user with missing input")
+			.inputSchema("{}")
+			.build();
+
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		String toolInput = """
+				{}
+				""";
+
+		String result = callback.call(toolInput);
+
+		assertThat(result).isEqualTo("\"Hello, null\"");
+	}
+
+	@Test
+	void testMultipleToolParamsBinding() throws Exception {
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("greetFullName", String.class, String.class);
+
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("greetFullName")
+			.description("Greet a user by full name")
+			.inputSchema("{}")
+			.build();
+
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		String toolInput = """
+				{
+					"first": "Jane",
+					"last": "Doe"
+				}
+				""";
+
+		String result = callback.call(toolInput);
+
+		assertThat(result).isEqualTo("\"Hello, Jane Doe\"");
+	}
+
 	/**
 	 * Test class with methods that use generic types.
 	 */
@@ -193,6 +305,18 @@ class MethodToolCallbackGenericTypesTest {
 		public String processStringListInToolContext(ToolContext toolContext) {
 			Map<String, Object> context = toolContext.getContext();
 			return context.size() + " entries processed " + context;
+		}
+
+		public String greetWithAlias(@ToolParam("user_name") String name) {
+			return "Hello, " + name;
+		}
+
+		public String greet(@ToolParam String name) {
+			return "Hello, " + name;
+		}
+
+		public String greetFullName(@ToolParam("first") String first, @ToolParam("last") String last) {
+			return "Hello, " + first + " " + last;
 		}
 
 	}
