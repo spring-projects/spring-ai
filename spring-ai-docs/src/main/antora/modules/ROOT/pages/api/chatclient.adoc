@@ -301,7 +301,7 @@ This also demonstrates the use of parameters in the fluent API that will be disc
 
 [source,java]
 ----
-var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<ActorsFilms>>() {});
+var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<ActorFilms>>() {});
 
 Flux<String> flux = this.chatClient.prompt()
     .user(u -> u.text("""
