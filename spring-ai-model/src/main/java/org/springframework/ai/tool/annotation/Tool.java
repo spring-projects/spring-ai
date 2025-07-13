@@ -42,6 +42,11 @@ public @interface Tool {
 	String name() default "";
 
 	/**
+	 * The title of the tool. If not provided, the method name will be used.
+	 */
+	String title() default "";
+
+	/**
 	 * The description of the tool. If not provided, the method name will be used.
 	 */
 	String description() default "";

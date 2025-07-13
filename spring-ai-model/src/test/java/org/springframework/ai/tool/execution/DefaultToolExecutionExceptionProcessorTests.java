@@ -33,8 +33,8 @@ class DefaultToolExecutionExceptionProcessorTests {
 
 	private final IllegalStateException toolException = new IllegalStateException("Inner exception");
 
-	private final DefaultToolDefinition toolDefinition = new DefaultToolDefinition("toolName", "toolDescription",
-			"inputSchema");
+	private final DefaultToolDefinition toolDefinition = new DefaultToolDefinition("toolName", "toolTitle",
+			"toolDescription", "inputSchema");
 
 	private final ToolExecutionException toolExecutionException = new ToolExecutionException(toolDefinition,
 			toolException);
