@@ -17,8 +17,11 @@
 package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 
 import java.time.Duration;
+import java.util.Set;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import static org.springframework.ai.chat.model.ToolContext.TOOL_CALL_HISTORY;
 
 /**
  * Common Configuration properties for the Model Context Protocol (MCP) clients shared for
@@ -190,12 +193,28 @@ public class McpClientCommonProperties {
 		 */
 		private boolean enabled = true;
 
+		/**
+		 * The keys that will not be sent to the MCP Server inside the `_meta` field of
+		 * {@link io.modelcontextprotocol.spec.McpSchema.CallToolRequest}
+		 */
+		// Remember to update META-INF/additional-spring-configuration-metadata.json if
+		// you change this default values.
+		private Set<String> excludedToolContextKeys = Set.of(TOOL_CALL_HISTORY);
+
 		public void setEnabled(boolean enabled) {
 			this.enabled = enabled;
 		}
 
 		public boolean isEnabled() {
 			return this.enabled;
+		}
+
+		public Set<String> getExcludedToolContextKeys() {
+			return excludedToolContextKeys;
+		}
+
+		public void setExcludedToolContextKeys(Set<String> excludedToolContextKeys) {
+			this.excludedToolContextKeys = excludedToolContextKeys;
 		}
 
 	}

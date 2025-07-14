@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 
 import java.time.Duration;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,6 +48,9 @@ class McpClientCommonPropertiesTests {
 			assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
 			assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
 			assertThat(properties.isRootChangeNotification()).isTrue();
+			assertThat(properties.getToolcallback().isEnabled()).isTrue();
+			assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+				.containsExactlyElementsOf(Set.of("TOOL_CALL_HISTORY"));
 		});
 	}
 
@@ -56,7 +60,9 @@ class McpClientCommonPropertiesTests {
 			.withPropertyValues("spring.ai.mcp.client.enabled=false", "spring.ai.mcp.client.name=custom-client",
 					"spring.ai.mcp.client.version=2.0.0", "spring.ai.mcp.client.initialized=false",
 					"spring.ai.mcp.client.request-timeout=30s", "spring.ai.mcp.client.type=ASYNC",
-					"spring.ai.mcp.client.root-change-notification=false")
+					"spring.ai.mcp.client.root-change-notification=false",
+					"spring.ai.mcp.client.toolcallback.enabled=false",
+					"spring.ai.mcp.client.toolcallback.excluded-tool-context-keys=foo,bar")
 			.run(context -> {
 				McpClientCommonProperties properties = context.getBean(McpClientCommonProperties.class);
 				assertThat(properties.isEnabled()).isFalse();
@@ -66,6 +72,9 @@ class McpClientCommonPropertiesTests {
 				assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
 				assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.ASYNC);
 				assertThat(properties.isRootChangeNotification()).isFalse();
+				assertThat(properties.getToolcallback().isEnabled()).isFalse();
+				assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+					.containsExactlyInAnyOrderElementsOf(Set.of("foo", "bar"));
 			});
 	}
 
@@ -101,6 +110,14 @@ class McpClientCommonPropertiesTests {
 		// Test rootChangeNotification property
 		properties.setRootChangeNotification(false);
 		assertThat(properties.isRootChangeNotification()).isFalse();
+
+		// Test toolcallback property
+		properties.getToolcallback().setEnabled(false);
+		assertThat(properties.getToolcallback().isEnabled()).isFalse();
+
+		properties.getToolcallback().setExcludedToolContextKeys(Set.of("foo", "bar"));
+		assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+			.containsExactlyInAnyOrderElementsOf(Set.of("foo", "bar"));
 	}
 
 	@Test
@@ -125,7 +142,9 @@ class McpClientCommonPropertiesTests {
 			.withPropertyValues("spring.ai.mcp.client.enabled=false", "spring.ai.mcp.client.name=test-mcp-client",
 					"spring.ai.mcp.client.version=0.5.0", "spring.ai.mcp.client.initialized=false",
 					"spring.ai.mcp.client.request-timeout=45s", "spring.ai.mcp.client.type=ASYNC",
-					"spring.ai.mcp.client.root-change-notification=false")
+					"spring.ai.mcp.client.root-change-notification=false",
+					"spring.ai.mcp.client.toolcallback.enabled=false",
+					"spring.ai.mcp.client.toolcallback.excluded-tool-context-keys=foo,bar")
 			.run(context -> {
 				McpClientCommonProperties properties = context.getBean(McpClientCommonProperties.class);
 				assertThat(properties.isEnabled()).isFalse();
@@ -135,6 +154,9 @@ class McpClientCommonPropertiesTests {
 				assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(45));
 				assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.ASYNC);
 				assertThat(properties.isRootChangeNotification()).isFalse();
+				assertThat(properties.getToolcallback().isEnabled()).isFalse();
+				assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+					.containsExactlyInAnyOrderElementsOf(Set.of("foo", "bar"));
 			});
 	}
 
@@ -165,7 +187,9 @@ class McpClientCommonPropertiesTests {
 			.withPropertyValues("spring.ai.mcp.client.enabled=false", "spring.ai.mcp.client.name=test-mcp-client-yaml",
 					"spring.ai.mcp.client.version=0.6.0", "spring.ai.mcp.client.initialized=false",
 					"spring.ai.mcp.client.request-timeout=60s", "spring.ai.mcp.client.type=ASYNC",
-					"spring.ai.mcp.client.root-change-notification=false")
+					"spring.ai.mcp.client.root-change-notification=false",
+					"spring.ai.mcp.client.toolcallback.enabled=false",
+					"spring.ai.mcp.client.toolcallback.excluded-tool-context-keys=foo,bar")
 			.run(context -> {
 				McpClientCommonProperties properties = context.getBean(McpClientCommonProperties.class);
 				assertThat(properties.isEnabled()).isFalse();
@@ -175,6 +199,9 @@ class McpClientCommonPropertiesTests {
 				assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(60));
 				assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.ASYNC);
 				assertThat(properties.isRootChangeNotification()).isFalse();
+				assertThat(properties.getToolcallback().isEnabled()).isFalse();
+				assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+					.containsExactlyInAnyOrderElementsOf(Set.of("foo", "bar"));
 			});
 	}
 
@@ -201,6 +228,9 @@ class McpClientCommonPropertiesTests {
 			assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
 			assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
 			assertThat(properties.isRootChangeNotification()).isTrue();
+			assertThat(properties.getToolcallback().isEnabled()).isTrue();
+			assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+				.containsExactlyInAnyOrderElementsOf(Set.of("TOOL_CALL_HISTORY"));
 		});
 	}
 
@@ -216,6 +246,9 @@ class McpClientCommonPropertiesTests {
 			assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
 			assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
 			assertThat(properties.isRootChangeNotification()).isTrue();
+			assertThat(properties.getToolcallback().isEnabled()).isTrue();
+			assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+				.containsExactlyInAnyOrderElementsOf(Set.of("TOOL_CALL_HISTORY"));
 		});
 	}
 
@@ -231,6 +264,9 @@ class McpClientCommonPropertiesTests {
 			assertThat(properties.isInitialized()).isTrue();
 			assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
 			assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
+			assertThat(properties.getToolcallback().isEnabled()).isTrue();
+			assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+				.containsExactlyInAnyOrderElementsOf(Set.of("TOOL_CALL_HISTORY"));
 		});
 	}
 
@@ -246,6 +282,9 @@ class McpClientCommonPropertiesTests {
 			assertThat(properties.isInitialized()).isTrue();
 			assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
 			assertThat(properties.isRootChangeNotification()).isTrue();
+			assertThat(properties.getToolcallback().isEnabled()).isTrue();
+			assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+				.containsExactlyInAnyOrderElementsOf(Set.of("TOOL_CALL_HISTORY"));
 		});
 	}
 
@@ -261,6 +300,9 @@ class McpClientCommonPropertiesTests {
 			assertThat(properties.isInitialized()).isTrue();
 			assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
 			assertThat(properties.isRootChangeNotification()).isTrue();
+			assertThat(properties.getToolcallback().isEnabled()).isTrue();
+			assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+				.containsExactlyInAnyOrderElementsOf(Set.of("TOOL_CALL_HISTORY"));
 		});
 	}
 
@@ -278,6 +320,9 @@ class McpClientCommonPropertiesTests {
 				assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
 				assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
 				assertThat(properties.isRootChangeNotification()).isTrue();
+				assertThat(properties.getToolcallback().isEnabled()).isTrue();
+				assertThat(properties.getToolcallback().getExcludedToolContextKeys())
+					.containsExactlyInAnyOrderElementsOf(Set.of("TOOL_CALL_HISTORY"));
 			});
 	}
 

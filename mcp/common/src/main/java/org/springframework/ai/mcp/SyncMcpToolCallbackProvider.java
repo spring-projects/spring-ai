@@ -16,7 +16,10 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -62,6 +65,7 @@ import org.springframework.util.CollectionUtils;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author YunKui Lu
  * @see ToolCallbackProvider
  * @see SyncMcpToolCallback
  * @see McpSyncClient
@@ -75,16 +79,37 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	private final BiPredicate<McpSyncClient, Tool> toolFilter;
 
 	/**
+	 * The keys that will not be sent to the MCP Server inside the `_meta` field of
+	 * {@link io.modelcontextprotocol.spec.McpSchema.CallToolRequest}
+	 */
+	private final Set<String> excludedToolContextKeys;
+
+	/**
 	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
 	 * clients.
 	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
 	 */
 	public SyncMcpToolCallbackProvider(BiPredicate<McpSyncClient, Tool> toolFilter, List<McpSyncClient> mcpClients) {
+		this(toolFilter, mcpClients, Set.of());
+	}
+
+	/**
+	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
+	 * clients.
+	 * @param mcpClients the list of MCP clients to use for discovering tools
+	 * @param toolFilter a filter to apply to each discovered tool
+	 * @param excludedToolContextKeys the keys that will not be sent to the MCP Server
+	 * inside the `_meta` field of
+	 * {@link io.modelcontextprotocol.spec.McpSchema.CallToolRequest}
+	 */
+	public SyncMcpToolCallbackProvider(BiPredicate<McpSyncClient, Tool> toolFilter, List<McpSyncClient> mcpClients,
+			Set<String> excludedToolContextKeys) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		this.mcpClients = mcpClients;
 		this.toolFilter = toolFilter;
+		this.excludedToolContextKeys = excludedToolContextKeys;
 	}
 
 	/**
@@ -115,6 +140,10 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		this(List.of(mcpClients));
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	/**
 	 * Discovers and returns all available tools from all connected MCP servers.
 	 * <p>
@@ -134,7 +163,11 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 				.tools()
 				.stream()
 				.filter(tool -> this.toolFilter.test(mcpClient, tool))
-				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
+				.map(tool -> SyncMcpToolCallback.builder()
+					.syncMcpClient(mcpClient)
+					.tool(tool)
+					.addExcludedToolContextKeys(excludedToolContextKeys)
+					.build()))
 			.toArray(ToolCallback[]::new);
 		validateToolCallbacks(array);
 		return array;
@@ -176,6 +209,48 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			return List.of();
 		}
 		return List.of((new SyncMcpToolCallbackProvider(mcpClients).getToolCallbacks()));
+	}
+
+	public static class Builder {
+
+		private BiPredicate<McpSyncClient, Tool> toolFilter = (mcpClient, tool) -> true;
+
+		private List<McpSyncClient> mcpClients = new ArrayList<>();
+
+		private Set<String> excludedToolContextKeys = new HashSet<>();
+
+		private Builder() {
+		}
+
+		public Builder toolFilter(BiPredicate<McpSyncClient, Tool> toolFilter) {
+			this.toolFilter = toolFilter;
+			return this;
+		}
+
+		public Builder addMcpClient(McpSyncClient mcpClient) {
+			this.mcpClients.add(mcpClient);
+			return this;
+		}
+
+		public Builder addMcpClients(List<McpSyncClient> mcpClients) {
+			this.mcpClients.addAll(mcpClients);
+			return this;
+		}
+
+		public Builder addExcludedToolContextKeys(String excludedToolContextKey) {
+			this.excludedToolContextKeys.add(excludedToolContextKey);
+			return this;
+		}
+
+		public Builder addExcludedToolContextKeys(Set<String> excludedToolContextKeys) {
+			this.excludedToolContextKeys.addAll(excludedToolContextKeys);
+			return this;
+		}
+
+		public SyncMcpToolCallbackProvider build() {
+			return new SyncMcpToolCallbackProvider(toolFilter, mcpClients, excludedToolContextKeys);
+		}
+
 	}
 
 }

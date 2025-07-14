@@ -16,11 +16,15 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +34,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -57,17 +63,16 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author YunKui Lu
  * @see ToolCallback
  * @see McpSyncClient
  * @see Tool
  */
-public class SyncMcpToolCallback implements ToolCallback {
+public class SyncMcpToolCallback extends AbstractMcpToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
 
 	private final McpSyncClient mcpClient;
-
-	private final Tool tool;
 
 	/**
 	 * Creates a new {@code SyncMcpToolCallback} instance.
@@ -75,9 +80,23 @@ public class SyncMcpToolCallback implements ToolCallback {
 	 * @param tool the MCP tool definition to adapt
 	 */
 	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
-		this.mcpClient = mcpClient;
-		this.tool = tool;
+		this(mcpClient, tool, Set.of());
+	}
 
+	/**
+	 * Creates a new {@code SyncMcpToolCallback} instance.
+	 * @param mcpClient the MCP client to use for tool execution
+	 * @param tool the MCP tool definition to adapt
+	 * @param excludedToolContextKeys the keys that will not be sent to the MCP Server
+	 * inside the `_meta` field of
+	 * {@link io.modelcontextprotocol.spec.McpSchema.CallToolRequest}
+	 */
+	private SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool, Set<String> excludedToolContextKeys) {
+		super(tool, excludedToolContextKeys);
+
+		Assert.notNull(mcpClient, "mcpClient cannot be null");
+
+		this.mcpClient = mcpClient;
 	}
 
 	/**
@@ -110,17 +129,23 @@ public class SyncMcpToolCallback implements ToolCallback {
 	 * <li>Converts the tool's response content to a JSON string</li>
 	 * </ol>
 	 * @param functionInput the tool input as a JSON string
+	 * @param toolContext the context for tool execution in a function calling scenario
 	 * @return the tool's response as a JSON string
 	 */
 	@Override
-	public String call(String functionInput) {
+	public String call(String functionInput, @Nullable ToolContext toolContext) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
 
 		CallToolResult response;
 		try {
+			Map<String, Object> meta = new HashMap<>();
+			if (toolContext != null && !toolContext.getContext().isEmpty()) {
+				meta.put(DEFAULT_MCP_META_TOOL_CONTEXT_KEY, super.getAdditionalToolContextToMeta(toolContext));
+			}
+
 			// Note that we use the original tool name here, not the adapted one from
 			// getToolDefinition
-			response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
+			response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments, meta));
 		}
 		catch (Exception ex) {
 			logger.error("Exception while tool calling: ", ex);
@@ -135,10 +160,45 @@ public class SyncMcpToolCallback implements ToolCallback {
 		return ModelOptionsUtils.toJsonString(response.content());
 	}
 
-	@Override
-	public String call(String toolArguments, ToolContext toolContext) {
-		// ToolContext is not supported by the MCP tools
-		return this.call(toolArguments);
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private McpSyncClient syncMcpClient;
+
+		private Tool tool;
+
+		private Set<String> excludedToolContextKeys = new HashSet<>();
+
+		private Builder() {
+		}
+
+		public Builder syncMcpClient(McpSyncClient syncMcpClient) {
+			this.syncMcpClient = syncMcpClient;
+			return this;
+		}
+
+		public Builder tool(Tool tool) {
+			this.tool = tool;
+			return this;
+		}
+
+		public Builder addExcludedToolContextKeys(Set<String> excludedToolContextKeys) {
+			this.excludedToolContextKeys.addAll(excludedToolContextKeys);
+			return this;
+		}
+
+		public Builder addExcludedToolContextKeys(String excludedToolContextKey) {
+			this.excludedToolContextKeys.add(excludedToolContextKey);
+			return this;
+		}
+
+		public SyncMcpToolCallback build() {
+			return new SyncMcpToolCallback(this.syncMcpClient, this.tool, this.excludedToolContextKeys);
+		}
+
 	}
 
 }

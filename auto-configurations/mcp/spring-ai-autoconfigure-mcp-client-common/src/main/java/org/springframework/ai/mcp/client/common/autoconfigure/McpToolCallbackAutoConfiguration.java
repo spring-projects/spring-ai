@@ -51,16 +51,24 @@ public class McpToolCallbackAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public SyncMcpToolCallbackProvider mcpToolCallbacks(ObjectProvider<List<McpSyncClient>> syncMcpClients) {
+	public SyncMcpToolCallbackProvider mcpToolCallbacks(ObjectProvider<List<McpSyncClient>> syncMcpClients,
+			McpClientCommonProperties commonProperties) {
 		List<McpSyncClient> mcpClients = syncMcpClients.stream().flatMap(List::stream).toList();
-		return new SyncMcpToolCallbackProvider(mcpClients);
+		return SyncMcpToolCallbackProvider.builder()
+			.addMcpClients(mcpClients)
+			.addExcludedToolContextKeys(commonProperties.getToolcallback().getExcludedToolContextKeys())
+			.build();
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public AsyncMcpToolCallbackProvider mcpAsyncToolCallbacks(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider) {
+	public AsyncMcpToolCallbackProvider mcpAsyncToolCallbacks(ObjectProvider<List<McpAsyncClient>> mcpClientsProvider,
+			McpClientCommonProperties commonProperties) {
 		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
-		return new AsyncMcpToolCallbackProvider(mcpClients);
+		return AsyncMcpToolCallbackProvider.builder()
+			.addMcpClients(mcpClients)
+			.addExcludedToolContextKeys(commonProperties.getToolcallback().getExcludedToolContextKeys())
+			.build();
 	}
 
 	public static class McpToolCallbackAutoConfigurationCondition extends AllNestedConditions {
