@@ -421,8 +421,7 @@ public final class ConverseApiUtils {
 		}
 
 		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
+			return (this.index == null || this.id == null || this.name == null || this.partialJson == null);
 		}
 
 		ToolUseAggregationEvent withIndex(Integer index) {
@@ -451,7 +450,9 @@ public final class ConverseApiUtils {
 		}
 
 		void squashIntoContentBlock() {
-			this.toolUseEntries.add(new ToolUseEntry(this.index, this.id, this.name, this.partialJson, this.usage));
+			// Workaround to handle streaming tool calling with no input arguments.
+			String json = StringUtils.hasText(this.partialJson) ? this.partialJson : "{}";
+			this.toolUseEntries.add(new ToolUseEntry(this.index, this.id, this.name, json, this.usage));
 			this.index = null;
 			this.id = null;
 			this.name = null;

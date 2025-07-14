@@ -124,7 +124,8 @@ Please have a look at the list of xref:#_weaviatevectorstore_properties[configur
 
 TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
-Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+Additionally, you will need a configured `EmbeddingModel` bean.
+Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 Here is an example of the required bean:
 
@@ -156,7 +157,7 @@ public WeaviateClient weaviateClient() {
 @Bean
 public VectorStore vectorStore(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
     return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
-        .objectClass("CustomClass")                    // Optional: defaults to "SpringAiWeaviate"
+        .options(options)                              // Optional: use custom options
         .consistencyLevel(ConsistentLevel.QUORUM)      // Optional: defaults to ConsistentLevel.ONE
         .filterMetadataFields(List.of(                 // Optional: fields that can be used in filters
             MetadataField.text("country"),
@@ -261,10 +262,15 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.weaviate.host`|The host of the Weaviate server|localhost:8080
 |`spring.ai.vectorstore.weaviate.scheme`|Connection schema|http
 |`spring.ai.vectorstore.weaviate.api-key`|The API key for authentication|
-|`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents|SpringAiWeaviate
+|`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents. |SpringAiWeaviate
+|`spring.ai.vectorstore.weaviate.content-field-name`|The field name for content|content
+|`spring.ai.vectorstore.weaviate.meta-field-prefix`|The field prefix for metadata|meta_
 |`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
 |`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
 |===
+
+TIP: Object class names should start with an uppercase letter, and field names should start with a lowercase letter.
+See link:https://weaviate.io/developers/weaviate/concepts/data#data-object-concepts[data-object-concepts]
 
 == Accessing the Native Client
 

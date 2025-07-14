@@ -76,7 +76,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 */
 	@Override
 	public void add(List<Document> documents) {
-
+		validateNonTextDocuments(documents);
 		VectorStoreObservationContext observationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.ADD.value())
 			.build();
@@ -109,6 +109,17 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 			});
 	}
 
+	private void validateNonTextDocuments(List<Document> documents) {
+		if (documents == null)
+			return;
+		for (Document document : documents) {
+			if (document != null && !document.isText()) {
+				throw new IllegalArgumentException(
+						"Only text documents are supported for now. One of the documents contains non-text content.");
+			}
+		}
+	}
+
 	@Override
 	public void delete(List<String> deleteDocIds) {
 
@@ -135,7 +146,9 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	@Override
-	@Nullable
+	// Micrometer Observation#observe returns the value of the Supplier, which is never
+	// null
+	@SuppressWarnings("DataFlowIssue")
 	public List<Document> similaritySearch(SearchRequest request) {
 
 		VectorStoreObservationContext searchObservationContext = this

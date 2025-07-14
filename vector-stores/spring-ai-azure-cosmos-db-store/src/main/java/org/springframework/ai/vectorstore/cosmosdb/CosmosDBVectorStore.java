@@ -150,7 +150,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		// handle hierarchical partition key
 		PartitionKeyDefinition subPartitionKeyDefinition = new PartitionKeyDefinition();
-		List<String> pathsFromCommaSeparatedList = new ArrayList<String>();
+		List<String> pathsFromCommaSeparatedList = new ArrayList<>();
 		String[] subPartitionKeyPaths = partitionKeyPath.split(",");
 		Collections.addAll(pathsFromCommaSeparatedList, subPartitionKeyPaths);
 		if (subPartitionKeyPaths.length > 1) {
@@ -429,15 +429,13 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			}
 
 			// Convert JsonNode to Document
-			List<Document> docs = documents.stream()
+			return documents.stream()
 				.map(doc -> Document.builder()
 					.id(doc.get("id").asText())
 					.text(doc.get("content").asText())
 					.metadata(docFields)
 					.build())
 				.collect(Collectors.toList());
-
-			return docs != null ? docs : List.of();
 		}
 		catch (Exception e) {
 			logger.error("Error during similarity search: {}", e.getMessage());

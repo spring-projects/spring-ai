@@ -124,10 +124,10 @@ public final class DefaultContentFormatter implements ContentFormatter {
 	protected Map<String, Object> metadataFilter(Map<String, Object> metadata, MetadataMode metadataMode) {
 
 		if (metadataMode == MetadataMode.ALL) {
-			return new HashMap<String, Object>(metadata);
+			return new HashMap<>(metadata);
 		}
 		if (metadataMode == MetadataMode.NONE) {
-			return new HashMap<String, Object>(Collections.emptyMap());
+			return new HashMap<>(Collections.emptyMap());
 		}
 
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
@@ -139,7 +139,7 @@ public final class DefaultContentFormatter implements ContentFormatter {
 			usableMetadataKeys.removeAll(this.excludedEmbedMetadataKeys);
 		}
 
-		return new HashMap<String, Object>(metadata.entrySet()
+		return new HashMap<>(metadata.entrySet()
 			.stream()
 			.filter(e -> usableMetadataKeys.contains(e.getKey()))
 			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));

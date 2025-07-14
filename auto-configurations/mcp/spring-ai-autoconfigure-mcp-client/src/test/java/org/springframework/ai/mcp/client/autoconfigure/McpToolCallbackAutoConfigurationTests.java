@@ -29,7 +29,7 @@ public class McpToolCallbackAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class));
 
 	@Test
-	void enableddByDefault() {
+	void enabledByDefault() {
 
 		this.applicationContext.run(context -> {
 			assertThat(context).hasBean("mcpToolCallbacks");

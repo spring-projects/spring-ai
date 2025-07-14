@@ -264,8 +264,8 @@
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.31.26</bedrockruntime.version>
-		<awssdk.version>2.29.29</awssdk.version>
+		<bedrockruntime.version>2.31.65</bedrockruntime.version>
+		<awssdk.version>2.31.65</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
@@ -317,7 +317,7 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.10.0</mcp.sdk.version>
+		<mcp.sdk.version>0.11.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
