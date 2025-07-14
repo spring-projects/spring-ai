@@ -33,6 +33,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Dongha Koo
  * @since 1.0.0
  */
 public class AssistantMessage extends AbstractMessage implements MediaContent {
@@ -102,6 +103,18 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	public record ToolCall(String id, String type, String name, String arguments) {
 
+	}
+
+	/**
+	 * Returns a safe, non-null text representation. If text is null or empty and
+	 * toolCalls exist, returns "__tool_call__".
+	 */
+	public String getDisplayText() {
+		String text = super.getText();
+		if ((text == null || text.trim().isEmpty()) && this.hasToolCalls()) {
+			return "__tool_call__";
+		}
+		return (text != null) ? text : "";
 	}
 
 }

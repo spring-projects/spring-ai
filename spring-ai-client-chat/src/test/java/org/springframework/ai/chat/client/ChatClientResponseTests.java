@@ -17,9 +17,12 @@
 package org.springframework.ai.chat.client;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.Generation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link ChatClientResponse}.
  *
  * @author Thomas Vitale
+ * @author Dongha Koo
  */
 class ChatClientResponseTests {
 
@@ -80,6 +84,17 @@ class ChatClientResponseTests {
 		copy.context().put("key", "newValue");
 		assertThat(copy.context()).containsEntry("key", "newValue");
 		assertThat(response.context()).containsEntry("key", "value");
+	}
+
+	@Test
+	void whenAssistantMessageHasOnlyToolCalls_thenContentIsToolCallMarker() {
+		var toolCall = new AssistantMessage.ToolCall("tool-1", "function", "doSomething", "{\"foo\":\"bar\"}");
+		var assistantMessage = new AssistantMessage(null, Map.of(), List.of(toolCall), List.of());
+
+		assertThat(assistantMessage.getDisplayText()).isEqualTo("__tool_call__");
+
+		var generation = new Generation(assistantMessage);
+		assertThat(generation.getOutput().getDisplayText()).isEqualTo("__tool_call__");
 	}
 
 }
