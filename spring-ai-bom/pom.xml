@@ -531,7 +531,19 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-client</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-client-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-client-webflux</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
