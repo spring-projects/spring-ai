@@ -62,6 +62,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 		matchIfMissing = true)
 public class SseWebFluxTransportAutoConfiguration {
 
+	@Bean
+	PropertiesMcpSseClientConnectionDetails mcpSseClientConnectionDetails(McpSseClientProperties sseProperties) {
+		return new PropertiesMcpSseClientConnectionDetails(sseProperties);
+	}
+
 	/**
 	 * Creates a list of WebFlux-based SSE transports for MCP communication.
 	 *
@@ -79,7 +84,7 @@ public class SseWebFluxTransportAutoConfiguration {
 	 * @return list of named MCP transports
 	 */
 	@Bean
-	public List<NamedClientMcpTransport> webFluxClientTransports(McpSseClientProperties sseProperties,
+	public List<NamedClientMcpTransport> webFluxClientTransports(McpSseClientConnectionDetails connectionDetails,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
 			ObjectProvider<ObjectMapper> objectMapperProvider) {
 
@@ -88,7 +93,7 @@ public class SseWebFluxTransportAutoConfiguration {
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
 		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
-		for (Map.Entry<String, SseParameters> serverParameters : sseProperties.getConnections().entrySet()) {
+		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
 			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
 					? serverParameters.getValue().sseEndpoint() : "/sse";
