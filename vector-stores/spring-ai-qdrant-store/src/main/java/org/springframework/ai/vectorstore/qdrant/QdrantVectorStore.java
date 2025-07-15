@@ -41,6 +41,7 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -168,17 +169,20 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 	/**
 	 * Adds a list of documents to the vector store.
-	 * @param documents The list of documents to be added.
+	 * @param embeddedDocuments The list of {@link EmbeddedDocument} instances to be added.
 	 */
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		try {
-			List<PointStruct> points = documents.stream()
-				.map(document -> PointStruct.newBuilder()
-					.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
-					.setVectors(io.qdrant.client.VectorsFactory.vectors(embeddings.get(documents.indexOf(document))))
-					.putAllPayload(toPayload(document))
-					.build())
+			List<PointStruct> points = embeddedDocuments.stream()
+				.map(ed -> {
+					Document document = ed.document();
+					return PointStruct.newBuilder()
+							.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
+							.setVectors(io.qdrant.client.VectorsFactory.vectors(ed.embedding()))
+							.putAllPayload(toPayload(document))
+							.build();
+				})
 				.toList();
 
 			this.qdrantClient.upsertAsync(this.collectionName, points).get();

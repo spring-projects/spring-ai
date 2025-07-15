@@ -25,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -79,11 +80,10 @@ public class PgVectorStoreTests {
 		var pgVectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel).maxDocumentBatchSize(1000).build();
 
 		// Testing with 9989 documents
-		var documents = Collections.nCopies(9989, new Document("foo"));
-		var embeddings = Collections.nCopies(9989, new float[] { 0.1f, 0.2f, 0.3f });
+		var embeddedDocuments = Collections.nCopies(9989, new EmbeddedDocument(new Document("foo"), new float[] { 0.1f, 0.2f, 0.3f }));
 
 		// When
-		pgVectorStore.doAdd(documents, embeddings);
+		pgVectorStore.doAdd(embeddedDocuments);
 
 		var batchUpdateCaptor = ArgumentCaptor.forClass(BatchPreparedStatementSetter.class);
 		verify(jdbcTemplate, times(10)).batchUpdate(anyString(), batchUpdateCaptor.capture());

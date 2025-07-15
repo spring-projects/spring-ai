@@ -54,6 +54,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -150,17 +151,17 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 
-		Assert.notNull(documents, "The document list should not be null.");
-		if (CollectionUtils.isEmpty(documents)) {
+		if (CollectionUtils.isEmpty(embeddedDocuments)) {
 			return; // nothing to do;
 		}
 
-		final var searchDocuments = documents.stream().map(document -> {
+		final var searchDocuments = embeddedDocuments.stream().map(ed -> {
+			Document document = ed.document();
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
-			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
+			searchDocument.put(EMBEDDING_FIELD_NAME, ed.embedding());
 			searchDocument.put(CONTENT_FIELD_NAME, document.getText());
 			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
 

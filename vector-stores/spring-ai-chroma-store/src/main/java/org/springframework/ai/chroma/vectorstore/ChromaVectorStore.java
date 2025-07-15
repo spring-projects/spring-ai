@@ -41,6 +41,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -146,9 +147,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-		Assert.notNull(documents, "Documents must not be null");
-		if (CollectionUtils.isEmpty(documents)) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
+		if (CollectionUtils.isEmpty(embeddedDocuments)) {
 			return;
 		}
 
@@ -157,11 +157,12 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		List<String> contents = new ArrayList<>();
 		List<float[]> embeddings = new ArrayList<>();
 
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			ids.add(document.getId());
 			metadatas.add(document.getMetadata());
 			contents.add(document.getText());
-			embeddings.add(documentEmbeddings.get(documents.indexOf(document)));
+			embeddings.add(ed.embedding());
 		}
 
 		this.chromaApi.upsertEmbeddings(this.tenantName, this.databaseName, this.collectionId,

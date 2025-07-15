@@ -46,6 +46,7 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -166,15 +167,15 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(final List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(final List<EmbeddedDocument> embeddedDocuments) {
 		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
 
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
-				final Document document = documents.get(i);
+				final Document document = embeddedDocuments.get(i).document();
 				final String content = document.getText();
 				final byte[] json = toJson(document.getMetadata());
-				final VECTOR embeddingVector = toVECTOR(embeddings.get(documents.indexOf(document)));
+				final VECTOR embeddingVector = toVECTOR(embeddedDocuments.get(i).embedding());
 
 				org.springframework.jdbc.core.StatementCreatorUtils.setParameterValue(ps, 1, Types.VARCHAR,
 						document.getId());
@@ -187,7 +188,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 			@Override
 			public int getBatchSize() {
-				return documents.size();
+				return embeddedDocuments.size();
 			}
 		});
 	}

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
@@ -89,75 +90,56 @@ class SimpleVectorStoreTests {
 
 	@Test
 	void shouldAddMultipleDocsWithProvidedEmbeddings() {
-		List<Document> docs = Arrays.asList(Document.builder().id("1").text("first").build(),
-				Document.builder().id("2").text("second").build());
-		List<float[]> embeddings = List.of(new float[] {0.1f, 0.2f, 0.3f}, new float[] {0.4f, 0.5f, 0.6f});
+		List<EmbeddedDocument> embeddedDocs = Arrays.asList(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[] {0.1f, 0.2f, 0.3f}),
+				new EmbeddedDocument(Document.builder().id("2").text("second").build(), new float[] {0.4f, 0.5f, 0.6f})
+		);
 
-		this.vectorStore.add(docs, embeddings);
+		this.vectorStore.addEmbedded(embeddedDocs);
 
 		List<Document> results = this.vectorStore.similaritySearch("first");
 		assertThat(results).hasSize(2).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
 	}
 
 	@Test
-	void shouldHandleNullEmbeddingsList() {
-		assertThatThrownBy(() -> this.vectorStore.add(Collections.emptyList(), null))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Embeddings list cannot be null.");
-	}
-
-	@Test
-	void shouldHandleMismatchDocsAndEmbeddingsList() {
-		List<float[]> embeddings = List.of(new float[] {0.1f, 0.2f, 0.3f});
-
-		assertThatThrownBy(() -> this.vectorStore.add(Collections.emptyList(), embeddings))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Mismatch between documents (0) and embeddings (1).");
-	}
-
-	@Test
 	void shouldHandleInvalidEmbeddings() {
-		List<Document> docs = List.of(Document.builder().id("1").text("first").build());
+		List<EmbeddedDocument> invalidEmbeddings = List.of(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[] {})
+		);
 
-		assertThatThrownBy(() -> this.vectorStore.add(docs, List.of(new float[] {Float.NaN})))
+		assertThatThrownBy(() -> this.vectorStore.addEmbedded(invalidEmbeddings))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Embedding at index 0 contains NaN or Infinite value.");
+				.hasMessage("First embedding is empty.");
 
-		List<float[]> nullEmbeddings = new ArrayList<>();
-		nullEmbeddings.add(null);
+		List<EmbeddedDocument> invalidEmbeddingsDimensions = List.of(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[] {0.1f, 0.2f, 0.3f}),
+				new EmbeddedDocument(Document.builder().id("2").text("second").build(), new float[] {0.1f, 0.2f})
+		);
 
-		assertThatThrownBy(() -> this.vectorStore.add(docs, nullEmbeddings))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("First embedding is null or empty.");
-
-		List<Document> newDocs = Arrays.asList(Document.builder().id("1").text("first").build(),
-				Document.builder().id("2").text("second").build());
-		List<float[]> invalidEmbeddings = new ArrayList<>();
-		invalidEmbeddings.add(new float[] {0.1f, 0.2f, 0.3f});
-		invalidEmbeddings.add(null);
-
-		assertThatThrownBy(() -> this.vectorStore.add(newDocs, invalidEmbeddings))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Embedding at index 1 is null.");
-
-		List<float[]> invalidEmbeddingsDimensions = List.of(new float[] {0.1f, 0.2f, 0.3f}, new float[] {0.1f, 0.2f});
-
-		assertThatThrownBy(() -> this.vectorStore.add(newDocs, invalidEmbeddingsDimensions))
+		assertThatThrownBy(() -> this.vectorStore.addEmbedded(invalidEmbeddingsDimensions))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessage("Embedding at index 1 has dimension 2, expected 3.");
+
+		List<EmbeddedDocument> nanEmbeddings = List.of(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[]{Float.NaN})
+		);
+
+		assertThatThrownBy(() -> this.vectorStore.addEmbedded(nanEmbeddings))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Embedding at index 0 contains NaN or Infinite value.");
 	}
 
 	@Test
 	void shouldHandleEmptyDocumentList() {
 		assertThatThrownBy(() -> this.vectorStore.add(Collections.emptyList()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Documents list cannot be empty");
+			.hasMessage("Embedded document list cannot be empty");
 	}
 
 	@Test
 	void shouldHandleNullDocumentList() {
-		assertThatThrownBy(() -> this.vectorStore.add(null)).isInstanceOf(NullPointerException.class)
-			.hasMessage("Documents list cannot be null");
+		assertThatThrownBy(() -> this.vectorStore.add(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("The document list should not be null.");
 	}
 
 	@Test

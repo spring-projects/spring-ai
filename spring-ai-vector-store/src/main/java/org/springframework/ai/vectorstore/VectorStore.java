@@ -25,6 +25,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.util.Assert;
@@ -51,17 +52,16 @@ public interface VectorStore extends DocumentWriter {
 	void add(List<Document> documents);
 
 	/**
-	 * Adds list of {@link Document}s with their corresponding embeddings to the vector store.
-	 * @param documents the list of documents to store. Throws an exception if the
+	 * Adds list of {@link Document}s along with their corresponding embeddings to the vector store.
+	 * @param embeddedDocuments the list of {@link EmbeddedDocument} instances to store. Throws an exception if the
 	 * underlying provider checks for duplicate IDs.
-	 * @param embeddings the list of float[] embeddings corresponding to each document.
 	 * @throws IllegalArgumentException if there is:
 	 * <ul>
 	 * 	<li> A mismatch between documents and embeddings
 	 * 	<li> Dimensional inconsistency between embeddings
 	 * 	<li> Embeddings contain {@code NaN}, {@code Infinity}, or null/empty vectors.
 	 */
-	void add(List<Document> documents, List<float[]> embeddings);
+	void addEmbedded(List<EmbeddedDocument> embeddedDocuments);
 
 	@Override
 	default void accept(List<Document> documents) {

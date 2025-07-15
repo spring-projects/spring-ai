@@ -44,6 +44,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.lang.Nullable;
@@ -132,14 +133,15 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	/**
 	 * Adds a list of documents to the vector store.
-	 * @param documents The list of documents to be added.
+	 * @param embeddedDocuments The list of {@link EmbeddedDocument} instances to be added.
 	 */
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		List<VectorWithUnsignedIndices> upsertVectors = new ArrayList<>();
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			upsertVectors.add(io.pinecone.commons.IndexInterface.buildUpsertVectorWithUnsignedIndices(document.getId(),
-					EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))), null, null,
+					EmbeddingUtils.toList(ed.embedding()), null, null,
 					metadataToStruct(document)));
 		}
 		this.pinecone.getIndexConnection(this.pineconeIndexName).upsert(upsertVectors, this.pineconeNamespace);

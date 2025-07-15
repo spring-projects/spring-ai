@@ -67,6 +67,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -231,10 +232,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
-
-		Assert.notNull(documents, "Documents must not be null");
-
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		List<String> docIdArray = new ArrayList<>();
 		List<String> contentArray = new ArrayList<>();
 		List<JsonObject> metadataArray = new ArrayList<>();
@@ -242,7 +240,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		// TODO: Need to customize how we pass the embedding options
 
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
@@ -250,7 +249,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
-			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
+			embeddingArray.add(EmbeddingUtils.toList(ed.embedding()));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();

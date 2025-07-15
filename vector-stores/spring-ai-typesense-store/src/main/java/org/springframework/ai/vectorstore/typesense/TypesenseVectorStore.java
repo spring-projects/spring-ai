@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
 import org.typesense.model.CollectionResponse;
@@ -137,15 +138,15 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
-		Assert.notNull(documents, "Documents must not be null");
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 
-		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
+		List<HashMap<String, Object>> documentList = embeddedDocuments.stream().map(ed -> {
+			Document document = ed.document();
 			HashMap<String, Object> typesenseDoc = new HashMap<>();
 			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
 			typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
 			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, ed.embedding());
 
 			return typesenseDoc;
 		}).toList();

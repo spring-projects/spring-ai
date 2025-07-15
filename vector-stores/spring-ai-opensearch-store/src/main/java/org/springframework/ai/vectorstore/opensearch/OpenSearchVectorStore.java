@@ -50,6 +50,7 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -202,11 +203,12 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+					document.getMetadata(), ed.embedding());
 			bulkRequestBuilder.operations(op -> op
 				.index(idx -> idx.index(this.index).id(openSearchDocument.id()).document(openSearchDocument)));
 		}

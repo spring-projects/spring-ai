@@ -36,6 +36,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -202,10 +203,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 
-		var rows = documents.stream()
-			.map(document -> documentToRecord(document, embeddings.get(documents.indexOf(document))))
+		var rows = embeddedDocuments.stream()
+			.map(ed -> documentToRecord(ed.document(), ed.embedding()))
 			.toList();
 
 		try (var session = this.driver.session()) {

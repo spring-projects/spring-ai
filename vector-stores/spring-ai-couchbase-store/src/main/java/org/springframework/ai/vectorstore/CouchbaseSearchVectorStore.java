@@ -37,6 +37,7 @@ import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.RetrySpec;
 
@@ -132,13 +133,14 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		logger.info("Trying Add");
 		logger.info(this.bucketName);
 		logger.info(this.scopeName);
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+					document.getMetadata(), ed.embedding());
 			this.collection.upsert(document.getId(), cbDoc);
 		}
 	}

@@ -40,6 +40,7 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -248,25 +249,17 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
-		List<List<MariaDBDocument>> batchedDocuments = batchDocuments(documents, embeddings);
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
+		List<List<MariaDBDocument>> batchedDocuments = batchDocuments(embeddedDocuments);
 		batchedDocuments.forEach(this::insertOrUpdateBatch);
 	}
 
-	private List<List<MariaDBDocument>> batchDocuments(List<Document> documents, List<float[]> embeddings) {
+	private List<List<MariaDBDocument>> batchDocuments(List<EmbeddedDocument> embeddedDocuments) {
 		List<List<MariaDBDocument>> batches = new ArrayList<>();
-		List<MariaDBDocument> mariaDBDocuments = new ArrayList<>(documents.size());
-		if (embeddings.size() == documents.size()) {
-			for (Document document : documents) {
-				mariaDBDocuments.add(new MariaDBDocument(document.getId(), document.getText(), document.getMetadata(),
-						embeddings.get(documents.indexOf(document))));
-			}
-		}
-		else {
-			for (Document document : documents) {
-				mariaDBDocuments
-					.add(new MariaDBDocument(document.getId(), document.getText(), document.getMetadata(), null));
-			}
+		List<MariaDBDocument> mariaDBDocuments = new ArrayList<>(embeddedDocuments.size());
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
+			mariaDBDocuments.add(new MariaDBDocument(document.getId(), document.getText(), document.getMetadata(), ed.embedding()));
 		}
 
 		for (int i = 0; i < mariaDBDocuments.size(); i += this.maxDocumentBatchSize) {

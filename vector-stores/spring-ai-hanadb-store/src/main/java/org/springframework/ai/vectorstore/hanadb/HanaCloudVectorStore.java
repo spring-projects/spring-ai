@@ -34,6 +34,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.lang.Nullable;
@@ -112,13 +113,14 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public void doAdd(List<Document> documents, List<float[]> embeddings) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		int count = 1;
-		for (Document document : documents) {
-			logger.info("[{}/{}] Calling EmbeddingModel for document id = {}", count++, documents.size(),
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
+			logger.info("[{}/{}] Calling EmbeddingModel for document id = {}", count++, embeddedDocuments.size(),
 					document.getId());
 			String content = document.getText().replaceAll("\\s+", " ");
-			String embedding = getEmbedding(embeddings.get(documents.indexOf(document)));
+			String embedding = getEmbedding(ed.embedding());
 			this.repository.save(this.tableName, document.getId(), embedding, content);
 		}
 		logger.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
