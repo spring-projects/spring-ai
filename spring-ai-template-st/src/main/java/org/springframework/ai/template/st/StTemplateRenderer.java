@@ -1,12 +1,12 @@
-/*
+/**
  * Copyright 2023-2025 the original author or authors.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  *      https://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.compiler.Compiler;
+import org.stringtemplate.v4.compiler.STException;
 import org.stringtemplate.v4.compiler.STLexer;
 
 import org.springframework.ai.template.TemplateRenderer;
@@ -64,14 +65,8 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private static final String DEFAULT_END_DELIMITER = "}";
 
-	private static final char INTERNAL_START_DELIMITER = '{';
-
-	private static final char INTERNAL_END_DELIMITER = '}';
-
-	/** Default validation mode: throw an exception if variables are missing */
 	private static final ValidationMode DEFAULT_VALIDATION_MODE = ValidationMode.THROW;
 
-	/** Default behavior: do not validate ST built-in functions */
 	private static final boolean DEFAULT_VALIDATE_ST_FUNCTIONS = false;
 
 	private final String startDelimiterToken;
@@ -116,24 +111,18 @@ public class StTemplateRenderer implements TemplateRenderer {
 		Assert.noNullElements(variables.keySet(), "variables keys must not contain null");
 
 		try {
-			// Convert custom delimiters (e.g., <name>) to ST's native format ({name})
 			String processedTemplate = preprocessTemplate(template);
-			ST st = new ST(processedTemplate, INTERNAL_START_DELIMITER, INTERNAL_END_DELIMITER);
-
-			// Add variables to the template
+			ST st = new ST(processedTemplate, '{', '}');
 			variables.forEach(st::add);
 
-			// Validate variable completeness if enabled
 			if (validationMode != ValidationMode.NONE) {
 				validate(st, variables);
 			}
 
-			// Render directly (no post-processing needed)
 			return st.render();
 		}
-		catch (Exception e) {
-			logger.error("Template rendering failed for template: {}", template, e);
-			throw new RuntimeException("Failed to render template", e);
+		catch (STException e) {
+			throw new IllegalArgumentException("Failed to render template", e);
 		}
 	}
 
@@ -142,15 +131,12 @@ public class StTemplateRenderer implements TemplateRenderer {
 	 * ({name}).
 	 */
 	private String preprocessTemplate(String template) {
-		// Escape special regex characters in delimiters
+		if ("{".equals(startDelimiterToken) && "}".equals(endDelimiterToken)) {
+			return template;
+		}
 		String escapedStart = Pattern.quote(startDelimiterToken);
 		String escapedEnd = Pattern.quote(endDelimiterToken);
-
-		// Regex pattern to match custom variables (e.g., <name> or {{name}})
-		// Group 1 captures the variable name (letters, numbers, underscores)
 		String variablePattern = escapedStart + "([a-zA-Z_][a-zA-Z0-9_]*)" + escapedEnd;
-
-		// Replace with ST's native format (e.g., {name})
 		return template.replaceAll(variablePattern, "{$1}");
 	}
 
@@ -183,16 +169,18 @@ public class StTemplateRenderer implements TemplateRenderer {
 		TokenStream tokens = st.impl.tokens;
 		boolean isInsideList = false;
 
-		// Primary token-based extraction
+		// StringTemplate 控制结构关键字集合，校验时忽略它们
+		Set<String> stKeywords = Set.of("if", "elseif", "else", "endif", "for", "endfor", "while", "endwhile", "switch",
+				"endswitch", "case", "default");
+
 		for (int i = 0; i < tokens.size(); i++) {
 			Token token = tokens.get(i);
 
-			// Handle list variables (e.g., {items; separator=", "})
 			if (token.getType() == STLexer.LDELIM && i + 1 < tokens.size()
 					&& tokens.get(i + 1).getType() == STLexer.ID) {
 				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
 					String text = tokens.get(i + 1).getText();
-					if (!Compiler.funcs.containsKey(text) || validateStFunctions) {
+					if ((!Compiler.funcs.containsKey(text) || validateStFunctions) && !stKeywords.contains(text)) {
 						inputVariables.add(text);
 						isInsideList = true;
 					}
@@ -201,23 +189,26 @@ public class StTemplateRenderer implements TemplateRenderer {
 			else if (token.getType() == STLexer.RDELIM) {
 				isInsideList = false;
 			}
-			// Handle regular variables (exclude functions/properties)
 			else if (!isInsideList && token.getType() == STLexer.ID) {
 				boolean isFunctionCall = (i + 1 < tokens.size() && tokens.get(i + 1).getType() == STLexer.LPAREN);
 				boolean isDotProperty = (i > 0 && tokens.get(i - 1).getType() == STLexer.DOT);
-				if (!isFunctionCall && (!Compiler.funcs.containsKey(token.getText()) || validateStFunctions
-						|| !(isDotProperty && Compiler.funcs.containsKey(token.getText())))) {
-					inputVariables.add(token.getText());
+				String tokenText = token.getText();
+				if (!isFunctionCall && (!Compiler.funcs.containsKey(tokenText) || validateStFunctions
+						|| !(isDotProperty && Compiler.funcs.containsKey(tokenText)))) {
+					if (!stKeywords.contains(tokenText)) {
+						inputVariables.add(tokenText);
+					}
 				}
 			}
 		}
 
-		// Secondary regex check to catch edge cases
-		Pattern varPattern = Pattern.compile(Pattern.quote(String.valueOf(INTERNAL_START_DELIMITER))
-				+ "([a-zA-Z_][a-zA-Z0-9_]*)" + Pattern.quote(String.valueOf(INTERNAL_END_DELIMITER)));
+		Pattern varPattern = Pattern.compile(Pattern.quote("{") + "([a-zA-Z_][a-zA-Z0-9_]*)" + Pattern.quote("}"));
 		Matcher matcher = varPattern.matcher(st.impl.template);
 		while (matcher.find()) {
-			inputVariables.add(matcher.group(1));
+			String var = matcher.group(1);
+			if (!stKeywords.contains(var)) {
+				inputVariables.add(var);
+			}
 		}
 
 		return inputVariables;

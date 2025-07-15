@@ -38,15 +38,15 @@ class StTemplateRendererTests {
 	void shouldNotAcceptNullValidationMode() {
 		assertThatThrownBy(() -> StTemplateRenderer.builder().validationMode(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("validationMode cannot be null");
+			.hasMessageContaining("validationMode must not be null");
 	}
 
 	@Test
 	void shouldUseDefaultValuesWhenUsingBuilder() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 
-		assertThat(ReflectionTestUtils.getField(renderer, "startDelimiterToken")).isEqualTo('{');
-		assertThat(ReflectionTestUtils.getField(renderer, "endDelimiterToken")).isEqualTo('}');
+		assertThat(ReflectionTestUtils.getField(renderer, "startDelimiterToken")).isEqualTo("{");
+		assertThat(ReflectionTestUtils.getField(renderer, "endDelimiterToken")).isEqualTo("}");
 		assertThat(ReflectionTestUtils.getField(renderer, "validationMode")).isEqualTo(ValidationMode.THROW);
 	}
 
@@ -80,14 +80,14 @@ class StTemplateRendererTests {
 		Map<String, Object> variables = new HashMap<>();
 
 		assertThatThrownBy(() -> renderer.apply("", variables)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("template cannot be null or empty");
+			.hasMessageContaining("template must not be null or empty");
 	}
 
 	@Test
 	void shouldNotAcceptNullVariables() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 		assertThatThrownBy(() -> renderer.apply("Hello!", null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("variables cannot be null");
+			.hasMessageContaining("variables must not be null");
 	}
 
 	@Test
@@ -98,7 +98,7 @@ class StTemplateRendererTests {
 		variables.put(null, "Spring AI");
 
 		assertThatThrownBy(() -> renderer.apply(template, variables)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("variables keys cannot be null");
+			.hasMessageContaining("variables keys must not contain null");
 	}
 
 	@Test
@@ -108,7 +108,7 @@ class StTemplateRendererTests {
 		variables.put("name", "Spring AI");
 
 		assertThatThrownBy(() -> renderer.apply("Hello {name!", variables)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("The template string is not valid.");
+			.hasMessageContaining("Failed to render template");
 	}
 
 	@Test
@@ -316,9 +316,11 @@ class StTemplateRendererTests {
 	 */
 	@Test
 	void shouldRenderTemplateWithBuiltInFunctions() {
-		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		StTemplateRenderer renderer = StTemplateRenderer.builder().validationMode(ValidationMode.THROW).build();
+
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("memory", "you are a helpful assistant");
+
 		String template = "{if(strlen(memory))}Hello!{endif}";
 
 		String result = renderer.apply(template, variables);

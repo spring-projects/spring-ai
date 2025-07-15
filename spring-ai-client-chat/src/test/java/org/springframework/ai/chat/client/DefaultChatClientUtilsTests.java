@@ -342,8 +342,8 @@ class DefaultChatClientUtilsTests {
 		String systemText = "Instructions <name>";
 		Map<String, Object> systemParams = Map.of("name", "Spring AI");
 		TemplateRenderer customRenderer = StTemplateRenderer.builder()
-			.startDelimiterToken('<')
-			.endDelimiterToken('>')
+			.startDelimiterToken("<")
+			.endDelimiterToken(">")
 			.build();
 		ChatModel chatModel = mock(ChatModel.class);
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
