@@ -44,7 +44,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-autoconfigure-mcp-client</artifactId>
+            <artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

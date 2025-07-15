@@ -114,7 +114,10 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
+
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
@@ -289,6 +292,7 @@
 		<coherence.version>24.09</coherence.version>
 		<milvus.version>2.5.8</milvus.version>
 		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
+		<testcontainers.version>1.20.4</testcontainers.version>
 
 		<pinecone.version>4.0.1</pinecone.version>
 		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
