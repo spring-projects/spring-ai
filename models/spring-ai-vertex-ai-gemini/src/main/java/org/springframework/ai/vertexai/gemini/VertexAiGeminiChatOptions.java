@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Grogdunn
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
+ * @author lambochen
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -127,6 +128,9 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
+	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
@@ -161,6 +165,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
+		options.setToolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations());
 		options.setToolContext(fromOptions.getToolContext());
 		return options;
 	}
@@ -282,6 +287,16 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
 	public Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -346,6 +361,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolExecutionMaxIterations, that.toolExecutionMaxIterations)
 				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
@@ -354,7 +370,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
 				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.internalToolExecutionEnabled, this.toolExecutionMaxIterations, this.toolContext);
 	}
 
 	@Override
@@ -475,6 +491,11 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(boolean internalToolExecutionEnabled) {
 			this.options.internalToolExecutionEnabled = internalToolExecutionEnabled;
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+			this.options.toolExecutionMaxIterations = toolExecutionMaxIterations;
 			return this;
 		}
 
