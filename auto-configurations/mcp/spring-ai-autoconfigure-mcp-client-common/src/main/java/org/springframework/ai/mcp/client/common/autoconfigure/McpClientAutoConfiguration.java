@@ -99,10 +99,11 @@ import org.springframework.util.CollectionUtils;
  * @see SseWebFluxTransportAutoConfiguration
  */
 @AutoConfiguration(afterName = {
-		"org.springframework.ai.mcp.client.autoconfigure.StdioTransportAutoConfiguration.class",
-		"org.springframework.ai.mcp.client.autoconfigure.SseHttpClientTransportAutoConfiguration.class",
-		"org.springframework.ai.mcp.client.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration.class",
-		"org.springframework.ai.mcp.client.autoconfigure.SseWebFluxTransportAutoConfiguration.class" })
+		"org.springframework.ai.mcp.client.common.autoconfigure.StdioTransportAutoConfiguration",
+		"org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration",
+		"org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration",
+		"org.springframework.ai.mcp.client.webflux.autoconfigure.SseWebFluxTransportAutoConfiguration",
+		"org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration" })
 
 // @AutoConfiguration
 @ConditionalOnClass({ McpSchema.class })
