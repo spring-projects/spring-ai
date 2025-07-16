@@ -77,7 +77,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void singleConnectionCreatesOneTransport() {
 		this.applicationContext
-			.withPropertyValues("spring.ai.mcp.client.streamable.connections.server1.url=http://localhost:8080")
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
 						List.class);
@@ -90,8 +90,8 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void multipleConnectionsCreateMultipleTransports() {
 		this.applicationContext
-			.withPropertyValues("spring.ai.mcp.client.streamable.connections.server1.url=http://localhost:8080",
-					"spring.ai.mcp.client.streamable.connections.server2.url=http://otherserver:8081")
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.server2.url=http://otherserver:8081")
 			.run(context -> {
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
 						List.class);
@@ -110,8 +110,8 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void customStreamableHttpEndpointIsRespected() {
 		this.applicationContext
-			.withPropertyValues("spring.ai.mcp.client.streamable.connections.server1.url=http://localhost:8080",
-					"spring.ai.mcp.client.streamable.connections.server1.endpoint=/custom-mcp")
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.server1.endpoint=/custom-mcp")
 			.run(context -> {
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
 						List.class);
@@ -127,7 +127,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void customWebClientBuilderIsUsed() {
 		this.applicationContext.withUserConfiguration(CustomWebClientConfiguration.class)
-			.withPropertyValues("spring.ai.mcp.client.streamable.connections.server1.url=http://localhost:8080")
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
 				assertThat(context.getBean(WebClient.Builder.class)).isNotNull();
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
@@ -139,7 +139,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void customObjectMapperIsUsed() {
 		this.applicationContext.withUserConfiguration(CustomObjectMapperConfiguration.class)
-			.withPropertyValues("spring.ai.mcp.client.streamable.connections.server1.url=http://localhost:8080")
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
 				assertThat(context.getBean(ObjectMapper.class)).isNotNull();
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
@@ -151,7 +151,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void defaultStreamableHttpEndpointIsUsedWhenNotSpecified() {
 		this.applicationContext
-			.withPropertyValues("spring.ai.mcp.client.streamable.connections.server1.url=http://localhost:8080")
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
 						List.class);
@@ -166,9 +166,9 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void mixedConnectionsWithAndWithoutCustomStreamableHttpEndpoint() {
 		this.applicationContext
-			.withPropertyValues("spring.ai.mcp.client.streamable.connections.server1.url=http://localhost:8080",
-					"spring.ai.mcp.client.streamable.connections.server1.endpoint=/custom-mcp",
-					"spring.ai.mcp.client.streamable.connections.server2.url=http://otherserver:8081")
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.server1.endpoint=/custom-mcp",
+					"spring.ai.mcp.client.streamable-http.connections.server2.url=http://otherserver:8081")
 			.run(context -> {
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
 						List.class);

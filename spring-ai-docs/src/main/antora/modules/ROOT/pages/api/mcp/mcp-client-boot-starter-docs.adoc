@@ -206,7 +206,7 @@ spring:
 
 === Streamable Http Transport Properties
 
-Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client.streamable`:
+Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client.streamable-http`:
 
 [cols="3,4,3"]
 |===
@@ -232,7 +232,7 @@ spring:
   ai:
     mcp:
       client:
-        streamable:
+        streamable-http:
           connections:
             server1:
               url: http://localhost:8080
@@ -377,7 +377,7 @@ spring:
               url: http://localhost:8080
             server2:
               url: http://otherserver:8081
-        streamable:
+        streamable-http:
           connections:
             server3:
               url: http://localhost:8083

@@ -30,8 +30,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * <p>
  * Example configuration: <pre>
- * spring.ai.mcp.client.streamable:
- *   connections:
+ * spring.ai.mcp.client.streamable-http:
+ *   connections-http:
  *     server1:
  *       url: http://localhost:8080/events
  *     server2:
@@ -44,7 +44,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(McpStreamableHttpClientProperties.CONFIG_PREFIX)
 public class McpStreamableHttpClientProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.mcp.client.streamable";
+	public static final String CONFIG_PREFIX = "spring.ai.mcp.client.streamable-http";
 
 	/**
 	 * Map of named Streamable Http connection configurations.

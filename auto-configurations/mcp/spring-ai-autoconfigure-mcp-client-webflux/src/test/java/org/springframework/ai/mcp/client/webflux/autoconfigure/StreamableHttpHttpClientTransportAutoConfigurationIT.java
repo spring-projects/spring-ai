@@ -31,7 +31,7 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
-				"spring.ai.mcp.client.streamable.connections.server1.url=" + host)
+				"spring.ai.mcp.client.streamable-http.connections.server1.url=" + host)
 		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
 				StreamableHttpWebFluxTransportAutoConfiguration.class));
 
