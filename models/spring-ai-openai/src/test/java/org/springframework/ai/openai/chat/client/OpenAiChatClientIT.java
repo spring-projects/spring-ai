@@ -389,7 +389,7 @@ class OpenAiChatClientIT extends AbstractIT {
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "<format>")
 						.param("format", outputConverter.getFormat()))
-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
 				.call()
 				.content();
 		// @formatter:on
@@ -413,7 +413,7 @@ class OpenAiChatClientIT extends AbstractIT {
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "<format>")
 						.param("format", outputConverter.getFormat()))
-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
 				.call()
 				.content();
 		// @formatter:on
@@ -438,7 +438,7 @@ class OpenAiChatClientIT extends AbstractIT {
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "<format>")
 						.param("format", outputConverter.getFormat()))
-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
 				.stream()
 				.chatResponse();
 
@@ -474,7 +474,7 @@ class OpenAiChatClientIT extends AbstractIT {
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "<format>")
 						.param("format", outputConverter.getFormat()))
-				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken("<").endDelimiterToken(">").build())
 				.stream()
 				.chatResponse();
 
