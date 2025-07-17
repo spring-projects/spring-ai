@@ -17,10 +17,8 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
-import java.util.function.BiPredicate;
 
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -72,7 +70,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 	private final List<McpSyncClient> mcpClients;
 
-	private final BiPredicate<McpSyncClient, Tool> toolFilter;
+	private final McpToolFilter toolFilter;
 
 	/**
 	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
@@ -80,7 +78,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
 	 */
-	public SyncMcpToolCallbackProvider(BiPredicate<McpSyncClient, Tool> toolFilter, List<McpSyncClient> mcpClients) {
+	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpSyncClient> mcpClients) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		this.mcpClients = mcpClients;
@@ -102,7 +100,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param mcpClients the MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
 	 */
-	public SyncMcpToolCallbackProvider(BiPredicate<McpSyncClient, Tool> toolFilter, McpSyncClient... mcpClients) {
+	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpSyncClient... mcpClients) {
 		this(toolFilter, List.of(mcpClients));
 	}
 
@@ -133,7 +131,8 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			.flatMap(mcpClient -> mcpClient.listTools()
 				.tools()
 				.stream()
-				.filter(tool -> this.toolFilter.test(mcpClient, tool))
+				.filter(tool -> this.toolFilter.test(new McpMetadata(mcpClient.getClientCapabilities(),
+						mcpClient.getClientInfo(), mcpClient.getCurrentInitializationResult()), tool))
 				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
 			.toArray(ToolCallback[]::new);
 		validateToolCallbacks(array);
