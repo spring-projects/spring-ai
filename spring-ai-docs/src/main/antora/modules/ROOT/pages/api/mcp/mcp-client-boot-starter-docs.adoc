@@ -9,6 +9,7 @@ The MCP Client Boot Starter provides:
 * Automatic client initialization (if enabled)
 * Support for multiple named transports (STDIO, Http/SSE and Streamable HTTP)
 * Integration with Spring AI's tool execution framework
+* Tool filtering capabilities for selective tool inclusion/exclusion
 * Proper lifecycle management with automatic cleanup of resources when the application context is closed
 * Customizable client creation through customizers
 
@@ -380,10 +381,62 @@ The auto-configuration supports multiple transport types:
 * (HttpClient) HTTP/SSE and StreamableHTTP (activated by the `spring-ai-starter-mcp-client`)
 * (WebFlux) HTTP/SSE and StreamableHTTP (activated by the `spring-ai-starter-mcp-client-webflux`)
 
-=== Integration with Spring AI
+=== Tool Filtering
 
-The starter can configure tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions. 
-This integration is enabled by default and can be disabled by setting the `spring.ai.mcp.client.toolcallback.enabled=false` property.
+The MCP Client Boot Starter supports filtering of discovered tools through the `McpToolFilter` interface. This allows you to selectively include or exclude tools based on custom criteria such as the MCP client metadata or tool properties.
+
+To implement tool filtering, create a bean that implements the `McpToolFilter` interface:
+
+[source,java]
+----
+@Component
+public class CustomMcpToolFilter implements McpToolFilter {
+    
+    @Override
+    public boolean test(McpMetadata metadata, McpSchema.Tool tool) {
+        // Filter logic based on client metadata and tool properties
+        // Return true to include the tool, false to exclude it
+        
+        // Example: Exclude tools from a specific client
+        if (metadata.clientInfo().name().equals("restricted-client")) {
+            return false;
+        }
+        
+        // Example: Only include tools with specific names
+        if (tool.name().startsWith("allowed_")) {
+            return true;
+        }
+        
+        // Example: Filter based on tool description or other properties
+        if (tool.description() != null && 
+            tool.description().contains("experimental")) {
+            return false;
+        }
+        
+        return true; // Include all other tools by default
+    }
+}
+----
+
+The `McpMetadata` record provides access to:
+
+* `clientCapabilities` - The capabilities of the MCP client
+* `clientInfo` - Information about the MCP client (name and version)
+* `initializeResult` - The initialization result from the MCP server
+
+The filter is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers. 
+If no custom filter is provided, all discovered tools are included by default.
+
+Note: Only one `McpToolFilter` bean should be defined in the application context. 
+If multiple filters are needed, combine them into a single composite filter implementation.
+
+
+=== Disable the MCP ToolCallback Auto-Configuration
+
+The MCP ToolCallback auto-configuration is enabled by default, but can be disabled with the `spring.ai.mcp.client.toolcallback.enabled=false` property.
+
+When disabled, no `ToolCallbackProvider` bean is created from the available MCP tools.
+If you need a fine grained control for selecting the which MCP tools to use, consider using the xref:/api/mcp/mcp-client-boot-starter-docs.adoc#_tool_filtering[Tool Filtering].
 
 == MCP Client Annotations
 
