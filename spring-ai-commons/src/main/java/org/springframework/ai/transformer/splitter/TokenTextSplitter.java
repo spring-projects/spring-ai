@@ -154,15 +154,15 @@ public class TokenTextSplitter extends TextSplitter {
 
 	public static final class Builder {
 
-		private int chunkSize;
+		private int chunkSize = DEFAULT_CHUNK_SIZE;
 
-		private int minChunkSizeChars;
+		private int minChunkSizeChars = MIN_CHUNK_SIZE_CHARS;
 
-		private int minChunkLengthToEmbed;
+		private int minChunkLengthToEmbed = MIN_CHUNK_LENGTH_TO_EMBED;
 
-		private int maxNumChunks;
+		private int maxNumChunks = MAX_NUM_CHUNKS;
 
-		private boolean keepSeparator;
+		private boolean keepSeparator = KEEP_SEPARATOR;
 
 		private Builder() {
 		}

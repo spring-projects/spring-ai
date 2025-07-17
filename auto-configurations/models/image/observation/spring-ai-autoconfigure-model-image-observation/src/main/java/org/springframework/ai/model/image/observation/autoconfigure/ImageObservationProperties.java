@@ -22,6 +22,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for image model observations.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 @ConfigurationProperties(ImageObservationProperties.CONFIG_PREFIX)
@@ -30,16 +31,16 @@ public class ImageObservationProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.image.observations";
 
 	/**
-	 * Whether to include the prompt content in the observations.
+	 * Whether to log the prompt content in the observations.
 	 */
-	private boolean includePrompt = false;
+	private boolean logPrompt = false;
 
-	public boolean isIncludePrompt() {
-		return this.includePrompt;
+	public boolean isLogPrompt() {
+		return this.logPrompt;
 	}
 
-	public void setIncludePrompt(boolean includePrompt) {
-		this.includePrompt = includePrompt;
+	public void setLogPrompt(boolean logPrompt) {
+		this.logPrompt = logPrompt;
 	}
 
 }

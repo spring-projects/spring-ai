@@ -19,6 +19,7 @@ package org.springframework.ai.tool.method;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -31,10 +32,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolDefinitions;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
@@ -44,6 +46,7 @@ import org.springframework.util.ReflectionUtils;
  * {@link Tool}-annotated methods.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public final class MethodToolCallbackProvider implements ToolCallbackProvider {
@@ -55,7 +58,26 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	private MethodToolCallbackProvider(List<Object> toolObjects) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
 		Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
+		assertToolAnnotatedMethodsPresent(toolObjects);
 		this.toolObjects = toolObjects;
+		validateToolCallbacks(getToolCallbacks());
+	}
+
+	private void assertToolAnnotatedMethodsPresent(List<Object> toolObjects) {
+
+		for (Object toolObject : toolObjects) {
+			List<Method> toolMethods = Stream
+				.of(ReflectionUtils.getDeclaredMethods(
+						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
+				.filter(this::isToolAnnotatedMethod)
+				.filter(toolMethod -> !isFunctionalType(toolMethod))
+				.toList();
+
+			if (toolMethods.isEmpty()) {
+				throw new IllegalStateException("No @Tool annotated methods found in " + toolObject + "."
+						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, you have to use .toolCallbacks() instead of .tool()");
+			}
+		}
 	}
 
 	@Override
@@ -64,10 +86,10 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 			.map(toolObject -> Stream
 				.of(ReflectionUtils.getDeclaredMethods(
 						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
-				.filter(toolMethod -> toolMethod.isAnnotationPresent(Tool.class))
+				.filter(this::isToolAnnotatedMethod)
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
 				.map(toolMethod -> MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.from(toolMethod))
+					.toolDefinition(ToolDefinitions.from(toolMethod))
 					.toolMetadata(ToolMetadata.from(toolMethod))
 					.toolMethod(toolMethod)
 					.toolObject(toolObject)
@@ -83,9 +105,9 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	}
 
 	private boolean isFunctionalType(Method toolMethod) {
-		var isFunction = ClassUtils.isAssignable(toolMethod.getReturnType(), Function.class)
-				|| ClassUtils.isAssignable(toolMethod.getReturnType(), Supplier.class)
-				|| ClassUtils.isAssignable(toolMethod.getReturnType(), Consumer.class);
+		var isFunction = ClassUtils.isAssignable(Function.class, toolMethod.getReturnType())
+				|| ClassUtils.isAssignable(Supplier.class, toolMethod.getReturnType())
+				|| ClassUtils.isAssignable(Consumer.class, toolMethod.getReturnType());
 
 		if (isFunction) {
 			logger.warn("Method {} is annotated with @Tool but returns a functional type. "
@@ -93,6 +115,11 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 		}
 
 		return isFunction;
+	}
+
+	private boolean isToolAnnotatedMethod(Method method) {
+		Tool annotation = AnnotationUtils.findAnnotation(method, Tool.class);
+		return Objects.nonNull(annotation);
 	}
 
 	private void validateToolCallbacks(ToolCallback[] toolCallbacks) {

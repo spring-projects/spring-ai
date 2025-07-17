@@ -26,16 +26,7 @@ public enum ChatClientAttributes {
 
 	//@formatter:off
 
-	@Deprecated // Only for backward compatibility until the next release.
-	ADVISORS("spring.ai.chat.client.advisors"),
-	@Deprecated // Only for backward compatibility until the next release.
-	CHAT_MODEL("spring.ai.chat.client.model"),
-	@Deprecated // Only for backward compatibility until the next release.
-	OUTPUT_FORMAT("spring.ai.chat.client.output.format"),
-	@Deprecated // Only for backward compatibility until the next release.
-	USER_PARAMS("spring.ai.chat.client.user.params"),
-	@Deprecated // Only for backward compatibility until the next release.
-	SYSTEM_PARAMS("spring.ai.chat.client.system.params");
+	OUTPUT_FORMAT("spring.ai.chat.client.output.format");
 
 	//@formatter:on
 
@@ -46,7 +37,7 @@ public enum ChatClientAttributes {
 	}
 
 	public String getKey() {
-		return key;
+		return this.key;
 	}
 
 }

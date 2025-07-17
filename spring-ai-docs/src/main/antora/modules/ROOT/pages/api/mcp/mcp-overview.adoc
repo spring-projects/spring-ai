@@ -26,7 +26,7 @@ The Java MCP implementation follows a three-layer architecture:
 |  |
 ^a| image::mcp/mcp-stack.svg[MCP Stack Architecture]
 a| * *Client/Server Layer*: The McpClient handles client-side operations while the McpServer manages server-side protocol operations. Both utilize McpSession for communication management.
-* *Session Layer (McpSession)*: Manages communication patterns and state through the DefaultMcpSession implementation.
+* *Session Layer (McpSession)*: Manages communication patterns and state through the McpClientSession and McpServerSession implementations.
 * *Transport Layer (McpTransport)*: Handles JSON-RPC message serialization and deserialization with support for multiple transport implementations.
 |===
 

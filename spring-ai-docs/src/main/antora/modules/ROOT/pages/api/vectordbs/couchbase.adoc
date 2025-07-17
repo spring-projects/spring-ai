@@ -46,7 +46,7 @@ NOTE: Couchbase Vector search is only available in starting version 7.6 and Java
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Milestone and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the configured bucket, scope, collection and search index for you, with default options, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor.
 
@@ -81,9 +81,9 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Sprin
 === Configuration Properties
 
 To connect to Couchbase and use the `CouchbaseSearchVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's `application.properties`,
+Configuration can be provided via Spring Boot's `application.properties`:
 
-[application,properties]
+[source,properties]
 ----
 spring.ai.openai.api-key=<key>
 spring.couchbase.connection-string=<conn_string>
@@ -91,19 +91,44 @@ spring.couchbase.username=<username>
 spring.couchbase.password=<password>
 ----
 
-environment variables,
+If you prefer to use environment variables for sensitive information like passwords or API keys, you have multiple options:
+
+==== Option 1: Using Spring Expression Language (SpEL)
+
+You can use custom environment variable names and reference them in your application configuration using SpEL:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+  couchbase:
+    connection-string: ${COUCHBASE_CONN_STRING}
+    username: ${COUCHBASE_USER}
+    password: ${COUCHBASE_PASSWORD}
+----
 
 [source,bash]
 ----
-export SPRING_COUCHBASE_CONNECTION_STRINGS=<couchbase connection string like couchbase://localhost>
-export SPRING_COUCHBASE_USERNAME=<couchbase username>
-export SPRING_COUCHBASE_PASSWORD=<couchbase password>
-# API key if needed, e.g. OpenAI
-export SPRING_AI_OPENAI_API_KEY=<api-key>
+# In your environment or .env file
+export OPENAI_API_KEY=<api-key>
+export COUCHBASE_CONN_STRING=<couchbase connection string like couchbase://localhost>
+export COUCHBASE_USER=<couchbase username>
+export COUCHBASE_PASSWORD=<couchbase password>
 ----
 
-or can be a mix of those.
-For example, if you want to store your password as an environment variable but keep the rest in the plain `application.yml` file.
+==== Option 2: Accessing Environment Variables Programmatically
+
+Alternatively, you can access environment variables in your Java code:
+
+[source,java]
+----
+String apiKey = System.getenv("OPENAI_API_KEY");
+----
+
+This approach gives you flexibility in naming your environment variables while keeping sensitive information out of your application configuration files.
 
 NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
 

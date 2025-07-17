@@ -64,7 +64,7 @@ public class CosmosDBVectorStoreAutoConfiguration {
 		}
 
 		CosmosClientBuilder builder = new CosmosClientBuilder().endpoint(properties.getEndpoint())
-			.userAgentSuffix(agentSuffix);
+			.userAgentSuffix(this.agentSuffix);
 
 		if (properties.getKey() == null || properties.getKey().isEmpty()) {
 			builder.credential(new DefaultAzureCredentialBuilder().build());

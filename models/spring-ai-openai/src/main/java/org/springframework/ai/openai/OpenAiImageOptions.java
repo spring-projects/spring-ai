@@ -112,6 +112,25 @@ public class OpenAiImageOptions implements ImageOptions {
 		return new Builder();
 	}
 
+	/**
+	 * Create a new OpenAiImageOptions instance from an existing one.
+	 * @param fromOptions The options to copy from
+	 * @return A new OpenAiImageOptions instance
+	 */
+	public static OpenAiImageOptions fromOptions(OpenAiImageOptions fromOptions) {
+		OpenAiImageOptions options = new OpenAiImageOptions();
+		options.n = fromOptions.n;
+		options.model = fromOptions.model;
+		options.width = fromOptions.width;
+		options.height = fromOptions.height;
+		options.quality = fromOptions.quality;
+		options.responseFormat = fromOptions.responseFormat;
+		options.size = fromOptions.size;
+		options.style = fromOptions.style;
+		options.user = fromOptions.user;
+		return options;
+	}
+
 	@Override
 	public Integer getN() {
 		return this.n;
@@ -227,6 +246,20 @@ public class OpenAiImageOptions implements ImageOptions {
 
 	public void setSize(String size) {
 		this.size = size;
+
+		// Parse the size string to update width and height
+		if (size != null) {
+			try {
+				String[] dimensions = size.split("x");
+				if (dimensions.length == 2) {
+					this.width = Integer.parseInt(dimensions[0]);
+					this.height = Integer.parseInt(dimensions[1]);
+				}
+			}
+			catch (Exception ex) {
+				// If parsing fails, leave width and height unchanged
+			}
+		}
 	}
 
 	@Override
@@ -258,12 +291,24 @@ public class OpenAiImageOptions implements ImageOptions {
 				+ ", user='" + this.user + '\'' + '}';
 	}
 
+	/**
+	 * Create a copy of this options instance.
+	 * @return A new instance with the same options
+	 */
+	public OpenAiImageOptions copy() {
+		return fromOptions(this);
+	}
+
 	public static final class Builder {
 
-		private final OpenAiImageOptions options;
+		protected OpenAiImageOptions options;
 
-		private Builder() {
+		public Builder() {
 			this.options = new OpenAiImageOptions();
+		}
+
+		public Builder(OpenAiImageOptions options) {
+			this.options = options;
 		}
 
 		public Builder N(Integer n) {
@@ -302,46 +347,6 @@ public class OpenAiImageOptions implements ImageOptions {
 		}
 
 		public Builder user(String user) {
-			this.options.setUser(user);
-			return this;
-		}
-
-		public Builder withN(Integer n) {
-			this.options.setN(n);
-			return this;
-		}
-
-		public Builder withModel(String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		public Builder withQuality(String quality) {
-			this.options.setQuality(quality);
-			return this;
-		}
-
-		public Builder withResponseFormat(String responseFormat) {
-			this.options.setResponseFormat(responseFormat);
-			return this;
-		}
-
-		public Builder withWidth(Integer width) {
-			this.options.setWidth(width);
-			return this;
-		}
-
-		public Builder withHeight(Integer height) {
-			this.options.setHeight(height);
-			return this;
-		}
-
-		public Builder withStyle(String style) {
-			this.options.setStyle(style);
-			return this;
-		}
-
-		public Builder withUser(String user) {
 			this.options.setUser(user);
 			return this;
 		}

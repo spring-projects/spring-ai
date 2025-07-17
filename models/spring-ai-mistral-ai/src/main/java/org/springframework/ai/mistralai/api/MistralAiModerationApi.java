@@ -149,6 +149,6 @@ public class MistralAiModerationApi {
 			@JsonProperty("pii") double pii)  {
 
 	}
-	// @formatter:onn
+	// @formatter:on
 
 }

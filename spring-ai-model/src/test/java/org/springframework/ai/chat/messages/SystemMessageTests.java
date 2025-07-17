@@ -16,14 +16,16 @@
 
 package org.springframework.ai.chat.messages;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.ai.chat.messages.AbstractMessage.MESSAGE_TYPE;
 
 /**

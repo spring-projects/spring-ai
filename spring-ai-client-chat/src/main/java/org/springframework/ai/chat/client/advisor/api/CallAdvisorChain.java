@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
+import java.util.List;
+
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 
@@ -23,20 +25,23 @@ import org.springframework.ai.chat.client.ChatClientResponse;
  * A chain of {@link CallAdvisor} instances orchestrating the execution of a
  * {@link ChatClientRequest} on the next {@link CallAdvisor} in the chain.
  *
+ * @author Christian Tzolov
+ * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public interface CallAdvisorChain extends CallAroundAdvisorChain {
+public interface CallAdvisorChain extends AdvisorChain {
 
 	/**
-	 * @deprecated use {@link #nextCall(ChatClientRequest)}
+	 * Invokes the next {@link CallAdvisor} in the {@link CallAdvisorChain} with the given
+	 * request.
 	 */
-	@Deprecated
-	default AdvisedResponse nextAroundCall(AdvisedRequest advisedRequest) {
-		ChatClientResponse chatClientResponse = nextCall(advisedRequest.toChatClientRequest());
-		return AdvisedResponse.from(chatClientResponse);
-	}
-
 	ChatClientResponse nextCall(ChatClientRequest chatClientRequest);
+
+	/**
+	 * Returns the list of all the {@link CallAdvisor} instances included in this chain at
+	 * the time of its creation.
+	 */
+	List<CallAdvisor> getCallAdvisors();
 
 }

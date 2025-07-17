@@ -17,6 +17,7 @@
 package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -99,9 +100,25 @@ public final class JsonParser {
 	}
 
 	/**
-	 * Converts a Java object to a JSON string.
+	 * Checks if a string is a valid JSON string.
+	 */
+	private static boolean isValidJson(String input) {
+		try {
+			OBJECT_MAPPER.readTree(input);
+			return true;
+		}
+		catch (JsonProcessingException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Converts a Java object to a JSON string if it's not already a valid JSON string.
 	 */
 	public static String toJson(@Nullable Object object) {
+		if (object instanceof String && isValidJson((String) object)) {
+			return (String) object;
+		}
 		try {
 			return OBJECT_MAPPER.writeValueAsString(object);
 		}
@@ -112,7 +129,7 @@ public final class JsonParser {
 
 	/**
 	 * Convert a Java Object to a typed Object. Based on the implementation in
-	 * MethodInvokingFunctionCallback.
+	 * MethodToolCallback.
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static Object toTypedObject(Object value, Class<?> type) {
@@ -128,13 +145,15 @@ public final class JsonParser {
 			return Byte.parseByte(value.toString());
 		}
 		else if (javaType == Integer.class) {
-			return Integer.parseInt(value.toString());
+			BigDecimal bigDecimal = new BigDecimal(value.toString());
+			return bigDecimal.intValueExact();
 		}
 		else if (javaType == Short.class) {
 			return Short.parseShort(value.toString());
 		}
 		else if (javaType == Long.class) {
-			return Long.parseLong(value.toString());
+			BigDecimal bigDecimal = new BigDecimal(value.toString());
+			return bigDecimal.longValueExact();
 		}
 		else if (javaType == Double.class) {
 			return Double.parseDouble(value.toString());

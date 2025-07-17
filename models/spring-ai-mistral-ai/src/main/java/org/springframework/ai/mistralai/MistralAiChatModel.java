@@ -39,7 +39,6 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
-import org.springframework.ai.chat.metadata.UsageUtils;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -65,7 +64,9 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
@@ -99,7 +100,7 @@ public class MistralAiChatModel implements ChatModel {
 	private final MistralAiChatOptions defaultOptions;
 
 	/**
-	 * Low-level access to the OpenAI API.
+	 * Low-level access to the Mistral API.
 	 */
 	private final MistralAiApi mistralAiApi;
 
@@ -187,7 +188,6 @@ public class MistralAiChatModel implements ChatModel {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
 			.provider(MistralAiApi.PROVIDER_NAME)
-			.requestOptions(prompt.getOptions())
 			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -217,7 +217,7 @@ public class MistralAiChatModel implements ChatModel {
 				}).toList();
 
 				DefaultUsage usage = getDefaultUsage(completionEntity.getBody().usage());
-				Usage cumulativeUsage = UsageUtils.getCumulativeUsage(usage, previousChatResponse);
+				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(completionEntity.getBody(), cumulativeUsage));
 
@@ -260,7 +260,6 @@ public class MistralAiChatModel implements ChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(MistralAiApi.PROVIDER_NAME)
-				.requestOptions(prompt.getOptions())
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
@@ -300,7 +299,7 @@ public class MistralAiChatModel implements ChatModel {
 
 						if (chatCompletion2.usage() != null) {
 							DefaultUsage usage = getDefaultUsage(chatCompletion2.usage());
-							Usage cumulativeUsage = UsageUtils.getCumulativeUsage(usage, previousChatResponse);
+							Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
 							return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
 						}
 						else {
@@ -318,8 +317,14 @@ public class MistralAiChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
-					return Flux.defer(() -> {
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+					return Flux.deferContextual((ctx) -> {
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						} finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
 							return Flux.just(ChatResponse.builder().from(response)

@@ -17,7 +17,8 @@
 package org.springframework.ai.openai.chat;
 
 import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,8 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -126,9 +129,8 @@ public class MessageTypeContentTests {
 		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
 			.willReturn(Mockito.mock(ResponseEntity.class));
 
-		URL mediaUrl = new URL("http://test");
-		this.chatModel.call(new Prompt(List.of(new UserMessage("test message",
-				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))));
+		this.chatModel
+			.call(new Prompt(List.of(UserMessage.builder().text("test message").media(this.buildMediaList()).build())));
 
 		validateComplexContent(this.pomptCaptor.getValue());
 	}
@@ -139,9 +141,9 @@ public class MessageTypeContentTests {
 		given(this.openAiApi.chatCompletionStream(this.pomptCaptor.capture(), this.headersCaptor.capture()))
 			.willReturn(this.fluxResponse);
 
-		URL mediaUrl = new URL("http://test");
-		this.chatModel.stream(new Prompt(List.of(new UserMessage("test message",
-				List.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(mediaUrl).build())))))
+		this.chatModel
+			.stream(new Prompt(
+					List.of(UserMessage.builder().text("test message").media(this.buildMediaList()).build())))
 			.subscribe();
 
 		validateComplexContent(this.pomptCaptor.getValue());
@@ -158,16 +160,40 @@ public class MessageTypeContentTests {
 		@SuppressWarnings({ "unused", "unchecked" })
 		List<Map<String, Object>> mediaContents = (List<Map<String, Object>>) userMessage.rawContent();
 
-		assertThat(mediaContents).hasSize(2);
+		assertThat(mediaContents).hasSize(3);
 
+		// Assert text content
 		Map<String, Object> textContent = mediaContents.get(0);
 		assertThat(textContent.get("type")).isEqualTo("text");
 		assertThat(textContent.get("text")).isEqualTo("test message");
 
+		// Assert image content
 		Map<String, Object> imageContent = mediaContents.get(1);
 
 		assertThat(imageContent.get("type")).isEqualTo("image_url");
 		assertThat(imageContent).containsKey("image_url");
+
+		// Assert file content
+		Map<String, Object> fileContent = mediaContents.get(2);
+		assertThat(fileContent.get("type")).isEqualTo("file");
+		assertThat(fileContent).containsKey("file");
+		assertThat(fileContent.get("file")).isInstanceOf(Map.class);
+
+		Map<String, Object> fileMap = (Map<String, Object>) fileContent.get("file");
+		assertThat(fileMap.get("file_data")).isEqualTo("data:application/pdf;base64,JVBERi0xLjc=");
+	}
+
+	private List<Media> buildMediaList() {
+		URI imageUri = URI.create("http://test");
+		Media imageMedia = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(imageUri).build();
+
+		byte[] pdfData = "%PDF-1.7".getBytes(StandardCharsets.UTF_8);
+		Media pdfMedia = Media.builder()
+			.mimeType(MimeType.valueOf("application/pdf"))
+			.data(new ByteArrayResource(pdfData))
+			.build();
+
+		return List.of(imageMedia, pdfMedia);
 	}
 
 }

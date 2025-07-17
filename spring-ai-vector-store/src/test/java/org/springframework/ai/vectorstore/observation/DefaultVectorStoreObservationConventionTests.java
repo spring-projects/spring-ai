@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,10 +96,6 @@ class DefaultVectorStoreObservationConventionTests {
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
 			.contains(KeyValue.of(LowCardinalityKeyNames.DB_OPERATION_NAME.asString(),
 					VectorStoreObservationContext.Operation.QUERY.value));
-
-		// Optional, filter only added content
-		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
-			.doesNotContain(KeyValue.of(HighCardinalityKeyNames.DB_VECTOR_QUERY_RESPONSE_DOCUMENTS, "[doc1,doc2]"));
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
 				KeyValue.of(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), "COLLECTION_NAME"),

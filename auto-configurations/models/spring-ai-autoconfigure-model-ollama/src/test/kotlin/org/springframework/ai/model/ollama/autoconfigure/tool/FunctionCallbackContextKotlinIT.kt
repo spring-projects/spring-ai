@@ -59,7 +59,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 		.withUserConfiguration(Config::class.java)
 
 	@Test
-	fun functionCallTest() {
+	fun toolCallTest() {
 		this.contextRunner.run {context ->
 
 			val chatModel = context.getBean(OllamaChatModel::class.java)

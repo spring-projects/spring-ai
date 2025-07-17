@@ -18,7 +18,8 @@ package org.springframework.ai.aot;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.aot.hint.RuntimeHints;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,11 +33,13 @@ class SpringAiCoreRuntimeHintsTest {
 		var runtimeHints = new RuntimeHints();
 		var springAiCore = new SpringAiCoreRuntimeHints();
 		springAiCore.registerHints(runtimeHints, null);
+
+		// Verify resource hints
 		assertThat(runtimeHints).matches(resource().forResource("embedding/embedding-model-dimensions.properties"));
 
-		assertThat(runtimeHints).matches(reflection().onMethod(FunctionCallback.class, "getDescription"));
-		assertThat(runtimeHints).matches(reflection().onMethod(FunctionCallback.class, "getInputTypeSchema"));
-		assertThat(runtimeHints).matches(reflection().onMethod(FunctionCallback.class, "getName"));
+		// Verify ToolCallback and ToolDefinition type registration
+		assertThat(runtimeHints).matches(reflection().onType(ToolCallback.class));
+		assertThat(runtimeHints).matches(reflection().onType(ToolDefinition.class));
 	}
 
 }

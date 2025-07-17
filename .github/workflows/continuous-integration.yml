@@ -2,12 +2,15 @@ name: CI/CD build
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
+      - '*.*.x'
 
 jobs:
   build:
     name: Build branch
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'spring-projects' }}
     services:
       ollama:
         image: ollama/ollama:latest

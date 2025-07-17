@@ -22,6 +22,7 @@ import java.util.Base64;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -46,6 +47,9 @@ class BedrockTitanEmbeddingModelIT {
 
 	@Autowired
 	private BedrockTitanEmbeddingModel embeddingModel;
+
+	@Autowired
+	TestObservationRegistry observationRegistry;
 
 	@Test
 	void singleEmbedding() {
@@ -75,6 +79,11 @@ class BedrockTitanEmbeddingModelIT {
 	public static class TestConfiguration {
 
 		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
 			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
@@ -82,8 +91,9 @@ class BedrockTitanEmbeddingModelIT {
 		}
 
 		@Bean
-		public BedrockTitanEmbeddingModel titanEmbedding(TitanEmbeddingBedrockApi titanEmbeddingApi) {
-			return new BedrockTitanEmbeddingModel(titanEmbeddingApi);
+		public BedrockTitanEmbeddingModel titanEmbedding(TitanEmbeddingBedrockApi titanEmbeddingApi,
+				TestObservationRegistry observationRegistry) {
+			return new BedrockTitanEmbeddingModel(titanEmbeddingApi, observationRegistry);
 		}
 
 	}

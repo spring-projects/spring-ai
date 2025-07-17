@@ -16,11 +16,11 @@
 
 package org.springframework.ai.chat.client;
 
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.util.Assert;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.util.Assert;
 
 /**
  * Represents a request processed by a {@link ChatClient} that ultimately is used to build
@@ -39,8 +39,12 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 		Assert.noNullElements(context.keySet(), "context keys cannot be null");
 	}
 
+	public ChatClientRequest copy() {
+		return new ChatClientRequest(this.prompt.copy(), new HashMap<>(this.context));
+	}
+
 	public Builder mutate() {
-		return new Builder().prompt(this.prompt).context(this.context);
+		return new Builder().prompt(this.prompt.copy()).context(new HashMap<>(this.context));
 	}
 
 	public static Builder builder() {
@@ -75,7 +79,7 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 		}
 
 		public ChatClientRequest build() {
-			return new ChatClientRequest(prompt, context);
+			return new ChatClientRequest(this.prompt, this.context);
 		}
 
 	}

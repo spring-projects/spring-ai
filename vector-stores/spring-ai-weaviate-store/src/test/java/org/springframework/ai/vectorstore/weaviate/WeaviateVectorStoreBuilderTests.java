@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for {@link WeaviateVectorStore.Builder}.
  *
  * @author Mark Pollack
+ * @author Jonghoon Park
  */
 @ExtendWith(MockitoExtension.class)
 class WeaviateVectorStoreBuilderTests {
@@ -56,8 +57,13 @@ class WeaviateVectorStoreBuilderTests {
 	void shouldBuildWithCustomConfiguration() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
+		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
+		options.setObjectClass("CustomObjectClass");
+		options.setContentFieldName("customContentFieldName");
+		options.setMetaFieldPrefix("custom_");
+
 		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, this.embeddingModel)
-			.objectClass("CustomClass")
+			.options(options)
 			.consistencyLevel(ConsistentLevel.QUORUM)
 			.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.number("year")))
 			.build();
@@ -82,13 +88,12 @@ class WeaviateVectorStoreBuilderTests {
 	}
 
 	@Test
-	void shouldFailWithInvalidObjectClass() {
+	void shouldFailWithNullOptions() {
 		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
 
-		assertThatThrownBy(
-				() -> WeaviateVectorStore.builder(weaviateClient, this.embeddingModel).objectClass("").build())
+		assertThatThrownBy(() -> WeaviateVectorStore.builder(weaviateClient, this.embeddingModel).options(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("objectClass must not be empty");
+			.hasMessage("options must not be empty");
 	}
 
 	@Test

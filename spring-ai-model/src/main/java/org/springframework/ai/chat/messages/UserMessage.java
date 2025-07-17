@@ -44,47 +44,15 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 		this(textContent, new ArrayList<>(), Map.of());
 	}
 
-	public UserMessage(Resource resource) {
-		this(MessageUtils.readResource(resource));
-	}
-
-	/**
-	 * @deprecated use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public UserMessage(String textContent, List<Media> media) {
-		this(MessageType.USER, textContent, media, Map.of());
-	}
-
-	/**
-	 * @deprecated use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public UserMessage(String textContent, Media... media) {
-		this(textContent, Arrays.asList(media));
-	}
-
-	/**
-	 * @deprecated use {@link #builder()} instead. Will be made private in the next
-	 * release.
-	 */
-	@Deprecated
-	public UserMessage(String textContent, Collection<Media> media, Map<String, Object> metadata) {
+	private UserMessage(String textContent, Collection<Media> media, Map<String, Object> metadata) {
 		super(MessageType.USER, textContent, metadata);
 		Assert.notNull(media, "media cannot be null");
 		Assert.noNullElements(media, "media cannot have null elements");
 		this.media = new ArrayList<>(media);
 	}
 
-	/**
-	 * @deprecated use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public UserMessage(MessageType messageType, String textContent, Collection<Media> media,
-			Map<String, Object> metadata) {
-		super(messageType, textContent, metadata);
-		Assert.notNull(media, "media data must not be null");
-		this.media = new ArrayList<>(media);
+	public UserMessage(Resource resource) {
+		this(MessageUtils.readResource(resource));
 	}
 
 	@Override
@@ -105,7 +73,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	}
 
 	public UserMessage copy() {
-		return new UserMessage(getText(), List.copyOf(getMedia()), Map.copyOf(getMetadata()));
+		return new Builder().text(getText()).media(List.copyOf(getMedia())).metadata(Map.copyOf(getMetadata())).build();
 	}
 
 	public Builder mutate() {
@@ -156,11 +124,11 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 		}
 
 		public UserMessage build() {
-			if (StringUtils.hasText(textContent) && resource != null) {
+			if (StringUtils.hasText(this.textContent) && this.resource != null) {
 				throw new IllegalArgumentException("textContent and resource cannot be set at the same time");
 			}
-			else if (resource != null) {
-				this.textContent = MessageUtils.readResource(resource);
+			else if (this.resource != null) {
+				this.textContent = MessageUtils.readResource(this.resource);
 			}
 			return new UserMessage(this.textContent, this.media, this.metadata);
 		}

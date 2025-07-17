@@ -33,12 +33,15 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.observation.DefaultToolCallingObservationConvention;
+import org.springframework.ai.tool.observation.ToolCallingObservationContext;
+import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
+import org.springframework.ai.tool.observation.ToolCallingObservationDocumentation;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.Assert;
@@ -50,7 +53,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class DefaultToolCallingManager implements ToolCallingManager {
+public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallingManager.class);
 
@@ -58,6 +61,9 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 
 	private static final ObservationRegistry DEFAULT_OBSERVATION_REGISTRY
 			= ObservationRegistry.NOOP;
+
+	private static final ToolCallingObservationConvention DEFAULT_OBSERVATION_CONVENTION
+			= new DefaultToolCallingObservationConvention();
 
 	private static final ToolCallbackResolver DEFAULT_TOOL_CALLBACK_RESOLVER
 			= new DelegatingToolCallbackResolver(List.of());
@@ -72,6 +78,8 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	private final ToolCallbackResolver toolCallbackResolver;
 
 	private final ToolExecutionExceptionProcessor toolExecutionExceptionProcessor;
+
+	private ToolCallingObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
@@ -93,7 +101,9 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			// Skip the tool if it is already present in the request toolCallbacks.
 			// That might happen if a tool is defined in the options
 			// both as a ToolCallback and as a tool name.
-			if (chatOptions.getToolCallbacks().stream().anyMatch(tool -> tool.getName().equals(toolName))) {
+			if (chatOptions.getToolCallbacks()
+				.stream()
+				.anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
 				continue;
 			}
 			ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
@@ -103,7 +113,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			toolCallbacks.add(toolCallback);
 		}
 
-		return toolCallbacks.stream().map(toolCallback -> toolCallback.getToolDefinition()).toList();
+		return toolCallbacks.stream().map(ToolCallback::getToolDefinition).toList();
 	}
 
 	@Override
@@ -143,10 +153,6 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 				&& !CollectionUtils.isEmpty(toolCallingChatOptions.getToolContext())) {
 			toolContextMap = new HashMap<>(toolCallingChatOptions.getToolContext());
 
-			List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-			messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-					assistantMessage.getToolCalls()));
-
 			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY,
 					buildConversationHistoryBeforeToolExecution(prompt, assistantMessage));
 		}
@@ -163,9 +169,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 	}
 
 	/**
-	 * Execute the tool call and return the response message. To ensure backward
-	 * compatibility, both {@link ToolCallback} and {@link FunctionCallback} are
-	 * supported.
+	 * Execute the tool call and return the response message.
 	 */
 	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
 			ToolContext toolContext) {
@@ -186,7 +190,7 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 			String toolInputArguments = toolCall.arguments();
 
 			ToolCallback toolCallback = toolCallbacks.stream()
-				.filter(tool -> toolName.equals(tool.getName()))
+				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
 				.findFirst()
 				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
 
@@ -201,15 +205,29 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 			}
 
-			String toolResult;
-			try {
-				toolResult = toolCallback.call(toolInputArguments, toolContext);
-			}
-			catch (ToolExecutionException ex) {
-				toolResult = this.toolExecutionExceptionProcessor.process(ex);
-			}
+			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+				.toolDefinition(toolCallback.getToolDefinition())
+				.toolMetadata(toolCallback.getToolMetadata())
+				.toolCallArguments(toolInputArguments)
+				.build();
 
-			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult));
+			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
+				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+						this.observationRegistry)
+				.observe(() -> {
+					String toolResult;
+					try {
+						toolResult = toolCallback.call(toolInputArguments, toolContext);
+					}
+					catch (ToolExecutionException ex) {
+						toolResult = this.toolExecutionExceptionProcessor.process(ex);
+					}
+					observationContext.setToolCallResult(toolResult);
+					return toolResult;
+				});
+
+			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
+					toolCallResult != null ? toolCallResult : ""));
 		}
 
 		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()), returnDirect);
@@ -221,6 +239,10 @@ public class DefaultToolCallingManager implements ToolCallingManager {
 		messages.add(assistantMessage);
 		messages.add(toolResponseMessage);
 		return messages;
+	}
+
+	public void setObservationConvention(ToolCallingObservationConvention observationConvention) {
+		this.observationConvention = observationConvention;
 	}
 
 	public static Builder builder() {

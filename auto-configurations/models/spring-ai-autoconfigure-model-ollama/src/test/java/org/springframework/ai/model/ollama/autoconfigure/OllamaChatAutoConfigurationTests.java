@@ -18,6 +18,7 @@ package org.springframework.ai.model.ollama.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -41,8 +42,9 @@ public class OllamaChatAutoConfigurationTests {
 				"spring.ai.ollama.chat.options.topP=0.56",
 				"spring.ai.ollama.chat.options.topK=123")
 			// @formatter:on
-			.withConfiguration(
-					AutoConfigurations.of(RestClientAutoConfiguration.class, OllamaChatAutoConfiguration.class))
+
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
+					RestClientAutoConfiguration.class, OllamaChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OllamaChatProperties.class);
 				var connectionProperties = context.getBean(OllamaConnectionProperties.class);

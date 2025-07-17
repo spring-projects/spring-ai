@@ -69,8 +69,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	@Override
 	public KeyValues getLowCardinalityKeyValues(AdvisorObservationContext context) {
 		Assert.notNull(context, "context cannot be null");
-		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(), advisorType(context),
-				advisorName(context));
+		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(), advisorName(context));
 	}
 
 	protected KeyValue aiOperationType(AdvisorObservationContext context) {
@@ -79,11 +78,6 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 
 	protected KeyValue aiProvider(AdvisorObservationContext context) {
 		return KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER, AiProvider.SPRING_AI.value());
-	}
-
-	@Deprecated
-	protected KeyValue advisorType(AdvisorObservationContext context) {
-		return KeyValue.of(LowCardinalityKeyNames.ADVISOR_TYPE, context.getAdvisorType().name());
 	}
 
 	protected KeyValue springAiKind() {

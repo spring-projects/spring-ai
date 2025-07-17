@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * all transport types.
  *
  * @author Christian Tzolov
+ * @author Yangki Zhang
  * @since 1.0.0
  */
 @ConfigurationProperties(McpClientCommonProperties.CONFIG_PREFIX)
@@ -101,6 +102,13 @@ public class McpClientCommonProperties {
 	 */
 	private boolean rootChangeNotification = true;
 
+	/**
+	 * Tool callback configuration.
+	 * <p>
+	 * This configuration is used to enable or disable tool callbacks in the MCP client.
+	 */
+	private Toolcallback toolcallback = new Toolcallback();
+
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -155,6 +163,41 @@ public class McpClientCommonProperties {
 
 	public void setRootChangeNotification(boolean rootChangeNotification) {
 		this.rootChangeNotification = rootChangeNotification;
+	}
+
+	public Toolcallback getToolcallback() {
+		return this.toolcallback;
+	}
+
+	public void setToolcallback(Toolcallback toolcallback) {
+		this.toolcallback = toolcallback;
+	}
+
+	/**
+	 * Represents a callback configuration for tools.
+	 * <p>
+	 * This record is used to encapsulate the configuration for enabling or disabling tool
+	 * callbacks in the MCP client.
+	 *
+	 * @param enabled A boolean flag indicating whether the tool callback is enabled. If
+	 * true, the tool callback is active; otherwise, it is disabled.
+	 */
+	public static class Toolcallback {
+
+		/**
+		 * A boolean flag indicating whether the tool callback is enabled. If true, the
+		 * tool callback is active; otherwise, it is disabled.
+		 */
+		private boolean enabled = true;
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
 	}
 
 }

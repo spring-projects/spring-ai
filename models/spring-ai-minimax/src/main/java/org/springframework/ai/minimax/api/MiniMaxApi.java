@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -115,7 +116,7 @@ public class MiniMaxApi {
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
 
-		this.webClient = WebClient.builder()
+		this.webClient = WebClient.builder() // FIXME: use a bean instead
 				.baseUrl(baseUrl)
 				.defaultHeaders(authHeaders)
 				.build();
@@ -654,6 +655,7 @@ public class MiniMaxApi {
 	 * {@link Role#ASSISTANT} role and null otherwise.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(
 			@JsonProperty("content") Object rawContent,
 			@JsonProperty("role") Role role,
@@ -719,6 +721,7 @@ public class MiniMaxApi {
 		 * images by adding multiple image_url content parts.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MediaContent(
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text,
@@ -748,6 +751,7 @@ public class MiniMaxApi {
 			 * @param detail Specifies the detail level of the image.
 			 */
 			@JsonInclude(Include.NON_NULL)
+			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record ImageUrl(
 				@JsonProperty("url") String url,
 				@JsonProperty("detail") String detail) {
@@ -766,6 +770,7 @@ public class MiniMaxApi {
 		 * @param function The function definition.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(
 				@JsonProperty("id") String id,
 				@JsonProperty("type") String type,
@@ -779,6 +784,7 @@ public class MiniMaxApi {
 		 * @param arguments The arguments that the model expects you to pass to the function.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChatCompletionFunction(
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
@@ -800,6 +806,7 @@ public class MiniMaxApi {
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletion(
 			@JsonProperty("id") String id,
 			@JsonProperty("choices") List<Choice> choices,
@@ -821,6 +828,7 @@ public class MiniMaxApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Choice(
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
@@ -829,6 +837,8 @@ public class MiniMaxApi {
 				@JsonProperty("logprobs") LogProbs logprobs) {
 		}
 
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record BaseResponse(
 				@JsonProperty("status_code") Long statusCode,
 				@JsonProperty("status_msg") String message
@@ -841,6 +851,7 @@ public class MiniMaxApi {
 	 * @param content A list of message content tokens with log probability information.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record LogProbs(
 			@JsonProperty("content") List<Content> content) {
 
@@ -858,6 +869,7 @@ public class MiniMaxApi {
 		 * requested top_logprobs returned.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Content(
 				@JsonProperty("token") String token,
 				@JsonProperty("logprob") Float logprob,
@@ -875,6 +887,7 @@ public class MiniMaxApi {
 			 * text representation. Can be null if there is no bytes representation for the token.
 			 */
 			@JsonInclude(Include.NON_NULL)
+			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record TopLogProbs(
 					@JsonProperty("token") String token,
 					@JsonProperty("logprob") Float logprob,
@@ -891,6 +904,7 @@ public class MiniMaxApi {
 	 * @param totalTokens Total number of tokens used in the request (prompt + completion).
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(
 			@JsonProperty("completion_tokens") Integer completionTokens,
 			@JsonProperty("prompt_tokens") Integer promptTokens,
@@ -912,6 +926,7 @@ public class MiniMaxApi {
 	 * @param object The object type, which is always 'chat.completion.chunk'.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionChunk(
 			@JsonProperty("id") String id,
 			@JsonProperty("choices") List<ChunkChoice> choices,
@@ -929,6 +944,7 @@ public class MiniMaxApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
@@ -1021,6 +1037,7 @@ public class MiniMaxApi {
 	 * @param totalTokens Usage tokens the request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record EmbeddingList(
 			@JsonProperty("vectors") List<float[]> vectors,
 			@JsonProperty("model") String model,

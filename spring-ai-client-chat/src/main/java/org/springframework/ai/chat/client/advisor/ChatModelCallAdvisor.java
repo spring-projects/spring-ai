@@ -16,16 +16,19 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.Map;
+
+import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
-
-import java.util.Map;
+import org.springframework.util.StringUtils;
 
 /**
  * A {@link CallAdvisor} that uses a {@link ChatModel} to generate a response.
@@ -37,17 +40,38 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 
 	private final ChatModel chatModel;
 
-	public ChatModelCallAdvisor(ChatModel chatModel) {
+	private ChatModelCallAdvisor(ChatModel chatModel) {
+		Assert.notNull(chatModel, "chatModel cannot be null");
 		this.chatModel = chatModel;
 	}
 
 	@Override
-	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAroundAdvisorChain chain) {
+	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
 
-		ChatResponse chatResponse = chatModel.call(chatClientRequest.prompt());
+		ChatClientRequest formattedChatClientRequest = augmentWithFormatInstructions(chatClientRequest);
+
+		ChatResponse chatResponse = this.chatModel.call(formattedChatClientRequest.prompt());
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponse)
+			.context(Map.copyOf(formattedChatClientRequest.context()))
+			.build();
+	}
+
+	private static ChatClientRequest augmentWithFormatInstructions(ChatClientRequest chatClientRequest) {
+		String outputFormat = (String) chatClientRequest.context().get(ChatClientAttributes.OUTPUT_FORMAT.getKey());
+
+		if (!StringUtils.hasText(outputFormat)) {
+			return chatClientRequest;
+		}
+
+		Prompt augmentedPrompt = chatClientRequest.prompt()
+			.augmentUserMessage(userMessage -> userMessage.mutate()
+				.text(userMessage.getText() + System.lineSeparator() + outputFormat)
+				.build());
+
+		return ChatClientRequest.builder()
+			.prompt(augmentedPrompt)
 			.context(Map.copyOf(chatClientRequest.context()))
 			.build();
 	}
@@ -60,6 +84,28 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 	@Override
 	public int getOrder() {
 		return Ordered.LOWEST_PRECEDENCE;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private ChatModel chatModel;
+
+		private Builder() {
+		}
+
+		public Builder chatModel(ChatModel chatModel) {
+			this.chatModel = chatModel;
+			return this;
+		}
+
+		public ChatModelCallAdvisor build() {
+			return new ChatModelCallAdvisor(this.chatModel);
+		}
+
 	}
 
 }

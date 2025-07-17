@@ -5,44 +5,21 @@
 * You need a SAP HANA Cloud vector engine account - Refer xref:api/vectordbs/hanadb-provision-a-trial-account.adoc[SAP HANA Cloud vector engine - provision a trial account] guide to create a trial account.
 * If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the vector store.
 
-
 == Auto-configuration
 
-[NOTE]
-====
-There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
-Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
-====
-
-Spring AI provides Spring Boot auto-configuration for the SAP Hana Vector Store.
-To enable it, add the following dependency to your project's Maven `pom.xml` file:
-
-[source, xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-vector-store-hana</artifactId>
-</dependency>
-----
-
-or to your Gradle `build.gradle` build file.
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-starter-vector-store-hana'
-}
-----
+Spring AI does not provide a dedicated module for SAP Hana vector store.
+Users are expected to provide their own configuration in the applications using the standard vector store module for SAP Hana vector store in Spring AI - `spring-ai-hanadb-store`.
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Please have a look at the list of xref:#_hanacloudvectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+Please have a look at the list of xref:#hanacloudvectorstore-properties[HanaCloudVectorStore Properties] for the vector store to learn about the default values and configuration options.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
-== HanaCloudVectorStore properties
+[[hanacloudvectorstore-properties]]
+== HanaCloudVectorStore Properties
 
 You can use the following properties in your Spring Boot configuration to customize the SAP Hana vector store.
 It uses `spring.datasource.*` properties to configure the Hana datasource and the `spring.ai.vectorstore.hanadb.*` properties to configure the Hana vector store.
@@ -314,6 +291,21 @@ public class CricketWorldCupHanaController {
         log.info("Generation: {}", generation);
         return Map.of("generation", generation);
     }
+}
+----
+
+Since HanaDB vector store support does not provide the autoconfiguration module, you also need to provide the vector store bean in your application, as shown below, as an example.
+
+[source,java]
+----
+@Bean
+public VectorStore hanaCloudVectorStore(CricketWorldCupRepository cricketWorldCupRepository,
+        EmbeddingModel embeddingModel) {
+
+    return HanaCloudVectorStore.builder(cricketWorldCupRepository, embeddingModel)
+        .tableName("CRICKET_WORLD_CUP")
+        .topK(1)
+        .build();
 }
 ----
 

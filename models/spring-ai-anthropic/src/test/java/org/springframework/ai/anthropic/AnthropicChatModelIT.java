@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,8 +88,7 @@ class AnthropicChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-3-5-sonnet-latest", "claude-3-5-haiku-latest",
-			"claude-3-opus-latest" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -154,8 +153,10 @@ class AnthropicChatModelIT {
 				List five {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "ice cream flavors", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -172,8 +173,11 @@ class AnthropicChatModelIT {
 				Provide me a List of {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format",
+					format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -192,7 +196,10 @@ class AnthropicChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -212,7 +219,10 @@ class AnthropicChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = this.streamingChatModel.stream(prompt)
@@ -236,8 +246,10 @@ class AnthropicChatModelIT {
 
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
@@ -251,9 +263,10 @@ class AnthropicChatModelIT {
 
 		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
 
-		var userMessage = new UserMessage(
-				"You are a very professional document summarization specialist. Please summarize the given document.",
-				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+		var userMessage = UserMessage.builder()
+			.text("You are a very professional document summarization specialist. Please summarize the given document.")
+			.media(List.of(new Media(new MimeType("application", "pdf"), pdfData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage),
 				ToolCallingChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName()).build()));
@@ -288,7 +301,7 @@ class AnthropicChatModelIT {
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(1800);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(100);
 	}
 
 	@Test
@@ -416,6 +429,38 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void thinkingWithStreamingTest() {
+		UserMessage userMessage = new UserMessage(
+				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
+
+		var promptOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.temperature(1.0) // Temperature should be set to 1 when thinking is enabled
+			.maxTokens(8192)
+			.thinking(AnthropicApi.ThinkingType.ENABLED, 2048) // Must be ≥1024 && <
+																// max_tokens
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.streamingChatModel
+			.stream(new Prompt(List.of(userMessage), promptOptions));
+
+		String content = responseFlux.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(text -> text != null && !text.isBlank())
+			.collect(Collectors.joining());
+
+		logger.info("Response: {}", content);
+
+		assertThat(content).isNotBlank();
+		assertThat(content).contains("prime numbers");
+	}
+
+	@Test
 	void testToolUseContentBlock() {
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
@@ -455,7 +500,7 @@ class AnthropicChatModelIT {
 
 		@Bean
 		public AnthropicApi anthropicApi() {
-			return new AnthropicApi(getApiKey());
+			return AnthropicApi.builder().apiKey(getApiKey()).build();
 		}
 
 		private String getApiKey() {

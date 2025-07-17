@@ -16,10 +16,11 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
+import io.micrometer.observation.ObservationRegistry;
 import java.util.ArrayList;
 import java.util.List;
-
-import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -27,6 +28,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
+import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
@@ -35,19 +38,26 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.util.ClassUtils;
 
 /**
  * Auto-configuration for common tool calling features of {@link ChatModel}.
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Daniel Garnier-Moiroux
  * @since 1.0.0
  */
 @AutoConfiguration
 @ConditionalOnClass(ChatModel.class)
+@EnableConfigurationProperties(ToolCallingProperties.class)
 public class ToolCallingAutoConfiguration {
+
+	private static final Logger logger = LoggerFactory.getLogger(ToolCallingAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -68,20 +78,59 @@ public class ToolCallingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
-		return new DefaultToolExecutionExceptionProcessor(false);
+	ToolExecutionExceptionProcessor toolExecutionExceptionProcessor(ToolCallingProperties properties) {
+		ArrayList<Class<? extends RuntimeException>> rethrownExceptions = new ArrayList<>();
+
+		// ClientAuthorizationException is used by Spring Security in oauth2 flows,
+		// for example with ServletOAuth2AuthorizedClientExchangeFilterFunction and
+		// OAuth2ClientHttpRequestInterceptor.
+		Class<? extends RuntimeException> oauth2Exception = getClassOrNull(
+				"org.springframework.security.oauth2.client.ClientAuthorizationException");
+		if (oauth2Exception != null) {
+			rethrownExceptions.add(oauth2Exception);
+		}
+
+		return DefaultToolExecutionExceptionProcessor.builder()
+			.alwaysThrow(properties.isThrowExceptionOnError())
+			.rethrowExceptions(rethrownExceptions)
+			.build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
-			ObjectProvider<ObservationRegistry> observationRegistry) {
-		return ToolCallingManager.builder()
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ToolCallingObservationConvention> observationConvention) {
+		var toolCallingManager = ToolCallingManager.builder()
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallbackResolver(toolCallbackResolver)
 			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 			.build();
+
+		observationConvention.ifAvailable(toolCallingManager::setObservationConvention);
+
+		return toolCallingManager;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = ToolCallingProperties.CONFIG_PREFIX + ".observations", name = "include-content",
+			havingValue = "true")
+	ToolCallingContentObservationFilter toolCallingContentObservationFilter() {
+		logger.warn(
+				"You have enabled the inclusion of the tool call arguments and result in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
+		return new ToolCallingContentObservationFilter();
+	}
+
+	private static Class<? extends RuntimeException> getClassOrNull(String className) {
+		try {
+			return (Class<? extends RuntimeException>) ClassUtils.forName(className, null);
+		}
+		catch (ClassNotFoundException e) {
+			logger.debug("Cannot load class", e);
+		}
+		return null;
 	}
 
 }

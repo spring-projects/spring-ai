@@ -16,9 +16,6 @@
 
 package org.springframework.ai.vectorstore.cassandra.autoconfigure;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.vectorstore.cassandra.CassandraVectorStore;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -35,8 +32,6 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.cassandra";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStoreProperties.class);
-
 	private String keyspace = CassandraVectorStore.DEFAULT_KEYSPACE_NAME;
 
 	private String table = CassandraVectorStore.DEFAULT_TABLE_NAME;
@@ -46,8 +41,6 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 	private String contentColumnName = CassandraVectorStore.DEFAULT_CONTENT_COLUMN_NAME;
 
 	private String embeddingColumnName = CassandraVectorStore.DEFAULT_EMBEDDING_COLUMN_NAME;
-
-	private boolean returnEmbeddings = false;
 
 	private int fixedThreadPoolExecutorSize = CassandraVectorStore.DEFAULT_ADD_CONCURRENCY;
 
@@ -89,14 +82,6 @@ public class CassandraVectorStoreProperties extends CommonVectorStoreProperties 
 
 	public void setEmbeddingColumnName(String embeddingColumnName) {
 		this.embeddingColumnName = embeddingColumnName;
-	}
-
-	public boolean getReturnEmbeddings() {
-		return this.returnEmbeddings;
-	}
-
-	public void setReturnEmbeddings(boolean returnEmbeddings) {
-		this.returnEmbeddings = returnEmbeddings;
 	}
 
 	public int getFixedThreadPoolExecutorSize() {

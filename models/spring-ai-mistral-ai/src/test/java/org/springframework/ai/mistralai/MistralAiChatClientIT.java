@@ -123,7 +123,7 @@ class MistralAiChatClientIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -156,7 +156,7 @@ class MistralAiChatClientIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -228,7 +228,7 @@ class MistralAiChatClientIT {
 		String response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.SMALL).toolChoice(ToolChoice.AUTO).build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius."))
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -249,7 +249,7 @@ class MistralAiChatClientIT {
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
 				.defaultOptions(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.SMALL).build())
-				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -272,7 +272,7 @@ class MistralAiChatClientIT {
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.options(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.SMALL).build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use parallel function calling if required. Response should be in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())

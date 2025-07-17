@@ -68,13 +68,15 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)
 			.databaseName(properties.getDatabaseName())
-			.embeddingDimension(properties.getEmbeddingDimension())
+			.embeddingDimension(properties.getEmbeddingDimension() != null ? properties.getEmbeddingDimension()
+					: embeddingModel.dimensions())
 			.distanceType(properties.getDistanceType())
 			.label(properties.getLabel())
 			.embeddingProperty(properties.getEmbeddingProperty())
 			.indexName(properties.getIndexName())
 			.idProperty(properties.getIdProperty())
 			.constraintName(properties.getConstraintName())
+			.textProperty(properties.getTextProperty())
 			.build();
 	}
 

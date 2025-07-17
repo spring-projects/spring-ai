@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,12 @@ import java.util.stream.Stream;
 
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
-import org.jetbrains.annotations.NotNull;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -42,6 +43,8 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +55,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.NonNull;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
@@ -118,12 +122,15 @@ class VertexAiGeminiChatModelIT {
 			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
 			.build());
 		Prompt prompt = new Prompt("How to make cocktail Molotov bomb at home?",
-				VertexAiGeminiChatOptions.builder().model(ChatModel.GEMINI_PRO).safetySettings(safetySettings).build());
+				VertexAiGeminiChatOptions.builder()
+					.model(ChatModel.GEMINI_2_5_PRO)
+					.safetySettings(safetySettings)
+					.build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
 
-	@NotNull
+	@NonNull
 	private Prompt createPrompt(VertexAiGeminiChatOptions chatOptions) {
 		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
 		String name = "Bob";
@@ -145,8 +152,10 @@ class VertexAiGeminiChatModelIT {
 				List five {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors.", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "ice cream flavors.", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -163,8 +172,11 @@ class VertexAiGeminiChatModelIT {
 				Provide me a List of {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format",
+					format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -184,7 +196,10 @@ class VertexAiGeminiChatModelIT {
 				Remove the ```json outer brackets.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -222,7 +237,10 @@ class VertexAiGeminiChatModelIT {
 				Remove the ```json outer brackets.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = this.chatModel.stream(prompt)
@@ -246,8 +264,10 @@ class VertexAiGeminiChatModelIT {
 
 		var data = new ClassPathResource("/vertex.test.png");
 
-		var userMessage = new UserMessage("Explain what do you see o this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see o this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, data)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
@@ -284,13 +304,125 @@ class VertexAiGeminiChatModelIT {
 
 		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
 
-		var userMessage = new UserMessage(
-				"You are a very professional document summarization specialist. Please summarize the given document.",
-				List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+		var userMessage = UserMessage.builder()
+			.text("You are a very professional document summarization specialist. Please summarize the given document.")
+			.media(List.of(new Media(new MimeType("application", "pdf"), pdfData)))
+			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
+	}
+
+	/**
+	 * Helper method to create a VertexAI instance for tests
+	 */
+	private VertexAI vertexAiApi() {
+		String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
+		String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+		return new VertexAI.Builder().setProjectId(projectId)
+			.setLocation(location)
+			.setTransport(Transport.REST)
+			.build();
+	}
+
+	@Test
+	void jsonArrayToolCallingTest() {
+		// Test for the improved jsonToStruct method that handles JSON arrays in tool
+		// calling
+
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+			.observationRegistry(ObservationRegistry.NOOP)
+			.build();
+
+		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
+			.vertexAI(vertexAiApi())
+			.toolCallingManager(toolCallingManager)
+			.defaultOptions(VertexAiGeminiChatOptions.builder()
+				.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.temperature(0.1)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		String response = chatClient.prompt()
+			.tools(new ScientistTools())
+			.user("List 3 famous scientists and their discoveries. Make sure to use the tool to get this information.")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+
+		assertThat(response).satisfiesAnyOf(content -> assertThat(content).contains("Einstein"),
+				content -> assertThat(content).contains("Newton"), content -> assertThat(content).contains("Curie"));
+
+	}
+
+	@Test
+	void jsonTextToolCallingTest() {
+		// Test for the improved jsonToStruct method that handles JSON texts in tool
+		// calling
+
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+			.observationRegistry(ObservationRegistry.NOOP)
+			.build();
+
+		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
+			.vertexAI(vertexAiApi())
+			.toolCallingManager(toolCallingManager)
+			.defaultOptions(VertexAiGeminiChatOptions.builder()
+				.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
+				.temperature(0.1)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		String response = chatClient.prompt()
+			.tools(new CurrentTimeTools())
+			.user("Get the current time. Make sure to use the getCurrentDateTime tool to get this information.")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		assertThat(response).contains("2025-05-08T10:10:10+02:00[Europe/Berlin]");
+	}
+
+	/**
+	 * Tool class that returns a JSON array to test the jsonToStruct method's ability to
+	 * handle JSON arrays. This specifically tests the PR changes that improve the
+	 * jsonToStruct method to handle JSON arrays in addition to JSON objects.
+	 */
+	public static class ScientistTools {
+
+		@Tool(description = "Get information about famous scientists and their discoveries")
+		public List<Map<String, String>> getScientists() {
+			// Return a JSON array with scientist information
+			return List.of(Map.of("name", "Albert Einstein", "discovery", "Theory of Relativity"),
+					Map.of("name", "Isaac Newton", "discovery", "Laws of Motion"),
+					Map.of("name", "Marie Curie", "discovery", "Radioactivity"));
+		}
+
+	}
+
+	/**
+	 * Tool class that returns a String to test the jsonToStruct method's ability to
+	 * handle JSON texts. This specifically tests the PR changes that improve the
+	 * jsonToStruct method to handle JSON texts in addition to JSON objects and JSON
+	 * arrays.
+	 */
+	public static class CurrentTimeTools {
+
+		@Tool(description = "Get the current date and time in the user's timezone")
+		String getCurrentDateTime() {
+			return "2025-05-08T10:10:10+02:00[Europe/Berlin]";
+		}
+
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

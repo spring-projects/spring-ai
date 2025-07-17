@@ -16,12 +16,12 @@
 
 package org.springframework.ai.chat.client;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Represents a response returned by a {@link ChatClient}.
@@ -38,11 +38,19 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 		Assert.noNullElements(context.keySet(), "context keys cannot be null");
 	}
 
+	public ChatClientResponse copy() {
+		return new ChatClientResponse(this.chatResponse, new HashMap<>(this.context));
+	}
+
+	public Builder mutate() {
+		return new Builder().chatResponse(this.chatResponse).context(new HashMap<>(this.context));
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ChatResponse chatResponse;
 
@@ -51,7 +59,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 		private Builder() {
 		}
 
-		public Builder chatResponse(ChatResponse chatResponse) {
+		public Builder chatResponse(@Nullable ChatResponse chatResponse) {
 			this.chatResponse = chatResponse;
 			return this;
 		}

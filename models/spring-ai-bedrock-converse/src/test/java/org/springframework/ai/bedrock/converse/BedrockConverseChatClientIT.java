@@ -88,7 +88,7 @@ class BedrockConverseChatClientIT {
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
-				.entity(new ParameterizedTypeReference<List<String>>() { });
+				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
 
 		logger.info(collection.toString());
@@ -102,7 +102,7 @@ class BedrockConverseChatClientIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -135,7 +135,7 @@ class BedrockConverseChatClientIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -212,7 +212,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -231,7 +231,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -265,7 +265,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -284,7 +284,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-			.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build())
@@ -306,7 +306,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<ChatResponse> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -347,7 +347,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -380,7 +380,6 @@ class BedrockConverseChatClientIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
-	@Deprecated
 	void multiModalityImageUrl2(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.function.DefaultFunctionCallbackResolver;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
@@ -160,14 +159,13 @@ public class ZhiPuAiChatModelObservationIT {
 
 		@Bean
 		public ZhiPuAiApi zhiPuAiApi() {
-			return new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
+			return ZhiPuAiApi.builder().apiKey(System.getenv("ZHIPU_AI_API_KEY")).build();
 		}
 
 		@Bean
 		public ZhiPuAiChatModel zhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi, TestObservationRegistry observationRegistry) {
 			return new ZhiPuAiChatModel(zhiPuAiApi, ZhiPuAiChatOptions.builder().build(),
-					new DefaultFunctionCallbackResolver(), List.of(), RetryTemplate.defaultInstance(),
-					observationRegistry);
+					RetryTemplate.defaultInstance(), observationRegistry);
 		}
 
 	}

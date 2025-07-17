@@ -6,13 +6,41 @@ Spring AI supports DALL-E, the Image generation model from OpenAI.
 == Prerequisites
 
 You will need to create an API key with OpenAI to access ChatGPT models.
-Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
-The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
-Exporting an environment variable is one way to set that configuration property:
 
-[source,shell]
+Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
+
+The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
+spring.ai.openai.api-key=<your-openai-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference a custom environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export OPENAI_API_KEY=<your-openai-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("OPENAI_API_KEY");
 ----
 
 == Auto-configuration
