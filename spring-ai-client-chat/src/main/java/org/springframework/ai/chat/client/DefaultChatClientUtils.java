@@ -98,7 +98,7 @@ final class DefaultChatClientUtils {
 			if (processedChatOptions == null) {
 				ToolCallingChatOptions.Builder builder = ToolCallingChatOptions.builder();
 				if (!inputRequest.getToolNames().isEmpty()) {
-					builder.toolNames(inputRequest.getToolNames());
+					builder.toolNames(new HashSet<>(inputRequest.getToolNames()));
 				}
 				if (!inputRequest.getToolCallbacks().isEmpty()) {
 					List<ToolCallback> toolCallbacks = inputRequest.getToolCallbacks();

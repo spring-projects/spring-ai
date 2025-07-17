@@ -575,7 +575,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final List<Media> media = new ArrayList<>();
 
-		private final Set<String> toolNames = new LinkedHashSet<>();
+		private final List<String> toolNames = new ArrayList<>();
 
 		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
 
@@ -611,9 +611,9 @@ public class DefaultChatClient implements ChatClient {
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, @Nullable String systemText, Map<String, Object> systemParams,
-				List<ToolCallback> toolCallbacks, List<Message> messages, Collection<String> toolNames,
-				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
-				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
+				List<ToolCallback> toolCallbacks, List<Message> messages, List<String> toolNames, List<Media> media,
+				@Nullable ChatOptions chatOptions, List<Advisor> advisors, Map<String, Object> advisorParams,
+				ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext,
 				@Nullable TemplateRenderer templateRenderer) {
 
@@ -690,7 +690,7 @@ public class DefaultChatClient implements ChatClient {
 			return this.media;
 		}
 
-		public Set<String> getToolNames() {
+		public List<String> getToolNames() {
 			return this.toolNames;
 		}
 
