@@ -17,7 +17,6 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
-import java.util.function.BiPredicate;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
@@ -164,7 +163,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
 		// Create a filter that rejects all tools
-		BiPredicate<McpSyncClient, Tool> rejectAllFilter = (client, tool) -> false;
+		McpSyncClientBiPredicate rejectAllFilter = (client, tool) -> false;
 
 		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(rejectAllFilter, this.mcpClient);
 
@@ -192,8 +191,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
 		// Create a filter that only accepts tools with names containing "2" or "3"
-		BiPredicate<McpSyncClient, Tool> nameFilter = (client, tool) -> tool.name().contains("2")
-				|| tool.name().contains("3");
+		McpSyncClientBiPredicate nameFilter = (client, tool) -> tool.name().contains("2") || tool.name().contains("3");
 
 		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(nameFilter, this.mcpClient);
 
@@ -228,8 +226,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
 
 		// Create a filter that only accepts tools from client1
-		BiPredicate<McpSyncClient, Tool> clientFilter = (client,
-				tool) -> client.getClientInfo().name().equals("testClient1");
+		McpSyncClientBiPredicate clientFilter = (client, tool) -> client.getClientInfo().name().equals("testClient1");
 
 		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(clientFilter, mcpClient1, mcpClient2);
 
@@ -256,7 +253,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(weatherClient.getClientInfo()).thenReturn(weatherClientInfo);
 
 		// Create a filter that only accepts weather tools from the weather service
-		BiPredicate<McpSyncClient, Tool> complexFilter = (client,
+		McpSyncClientBiPredicate complexFilter = (client,
 				tool) -> client.getClientInfo().name().equals("weather-service") && tool.name().equals("weather");
 
 		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(complexFilter, weatherClient);
