@@ -53,9 +53,29 @@ public class BedrockAwsConnectionProperties {
 	private String sessionToken;
 
 	/**
-	 * Set model timeout, Defaults 5 min.
+	 * Maximum duration of the entire API call operation.
 	 */
 	private Duration timeout = Duration.ofMinutes(5L);
+
+	/**
+	 * Maximum time to wait while establishing connection with AWS service.
+	 */
+	private Duration connectionTimeout = Duration.ofSeconds(5L);
+
+	/**
+	 * Maximum duration spent reading response data.
+	 */
+	private Duration asyncReadTimeout = Duration.ofSeconds(30L);
+
+	/**
+	 * Maximum time to wait for a new connection from the pool.
+	 */
+	private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
+
+	/**
+	 * Maximum time to wait for response data.
+	 */
+	private Duration socketTimeout = Duration.ofSeconds(90L);
 
 	public String getRegion() {
 		return this.region;
@@ -87,6 +107,38 @@ public class BedrockAwsConnectionProperties {
 
 	public void setTimeout(Duration timeout) {
 		this.timeout = timeout;
+	}
+
+	public Duration getConnectionTimeout() {
+		return connectionTimeout;
+	}
+
+	public void setConnectionTimeout(Duration connectionTimeout) {
+		this.connectionTimeout = connectionTimeout;
+	}
+
+	public Duration getAsyncReadTimeout() {
+		return asyncReadTimeout;
+	}
+
+	public void setAsyncReadTimeout(Duration asyncReadTimeout) {
+		this.asyncReadTimeout = asyncReadTimeout;
+	}
+
+	public Duration getConnectionAcquisitionTimeout() {
+		return connectionAcquisitionTimeout;
+	}
+
+	public void setConnectionAcquisitionTimeout(Duration connectionAcquisitionTimeout) {
+		this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
+	}
+
+	public Duration getSocketTimeout() {
+		return socketTimeout;
+	}
+
+	public void setSocketTimeout(Duration socketTimeout) {
+		this.socketTimeout = socketTimeout;
 	}
 
 	public String getSessionToken() {
