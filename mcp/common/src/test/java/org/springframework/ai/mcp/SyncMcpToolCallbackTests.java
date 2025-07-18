@@ -114,7 +114,7 @@ class SyncMcpToolCallbackTests {
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.cause()
 			.isInstanceOf(IllegalStateException.class)
-			.hasMessage("Error calling tool: [TextContent[annotations=null, text=Some error data]]");
+			.hasMessage("Error calling tool: [TextContent[annotations=null, text=Some error data, meta=null]]");
 	}
 
 	@Test
