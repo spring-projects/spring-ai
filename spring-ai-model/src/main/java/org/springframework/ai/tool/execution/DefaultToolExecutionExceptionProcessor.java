@@ -18,6 +18,7 @@ package org.springframework.ai.tool.execution;
 
 import java.util.Collections;
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		if (this.alwaysThrow) {
 			throw exception;
 		}
-		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(),
+		logger.error("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(),
 				exception.getMessage());
 		return exception.getMessage();
 	}
