@@ -18,6 +18,9 @@ package org.springframework.ai.aot;
 
 import java.util.Set;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.NOP_FallbackServiceProvider;
+import org.slf4j.helpers.SubstituteServiceProvider;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -32,6 +35,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
+import org.springframework.aot.hint.TypeReference;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -57,6 +61,14 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 
 		for (var r : Set.of("embedding/embedding-model-dimensions.properties")) {
 			hints.resources().registerResource(new ClassPathResource(r));
+		}
+
+		// Register SLF4J types for Java 22 native compilation compatibility
+		var slf4jTypes = Set.of(NOP_FallbackServiceProvider.class, SubstituteServiceProvider.class,
+				LoggerFactory.class);
+		for (var c : slf4jTypes) {
+			hints.reflection().registerType(TypeReference.of(c), MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+					MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.DECLARED_FIELDS);
 		}
 
 	}
