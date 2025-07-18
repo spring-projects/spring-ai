@@ -30,6 +30,11 @@ public interface ToolDefinition {
 	String name();
 
 	/**
+	 * The human-readable title for the tool.
+	 */
+	String title();
+
+	/**
 	 * The tool description, used by the AI model to determine what the tool does.
 	 */
 	String description();
