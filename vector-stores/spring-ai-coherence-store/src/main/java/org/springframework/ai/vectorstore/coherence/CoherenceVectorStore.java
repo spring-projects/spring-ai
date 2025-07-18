@@ -43,6 +43,7 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -166,12 +167,13 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public void doAdd(final List<Document> documents) {
-		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(documents.size() / 0.75f));
-		for (Document doc : documents) {
+	public void doAdd(final List<EmbeddedDocument> embeddedDocuments) {
+		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(embeddedDocuments.size() / 0.75f));
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document doc = ed.document();
 			var id = toChunkId(doc.getId());
 			var chunk = new DocumentChunk(doc.getText(), doc.getMetadata(),
-					toFloat32Vector(this.embeddingModel.embed(doc)));
+					toFloat32Vector(ed.embedding()));
 			chunks.put(id, chunk);
 		}
 		this.documentChunks.putAll(chunks);
