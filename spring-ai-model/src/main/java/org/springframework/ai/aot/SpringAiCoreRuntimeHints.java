@@ -67,8 +67,9 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 		var slf4jTypes = Set.of(NOP_FallbackServiceProvider.class, SubstituteServiceProvider.class,
 				LoggerFactory.class);
 		for (var c : slf4jTypes) {
-			hints.reflection().registerType(TypeReference.of(c), MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
-					MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.DECLARED_FIELDS);
+			hints.reflection()
+				.registerType(TypeReference.of(c), MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+						MemberCategory.INVOKE_PUBLIC_METHODS, MemberCategory.DECLARED_FIELDS);
 		}
 
 	}

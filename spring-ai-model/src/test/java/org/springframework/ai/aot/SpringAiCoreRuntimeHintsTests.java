@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests for {@link SpringAiCoreRuntimeHints}.
  *
- * @author Christian Tzolov
  * @author Hyunjoon Park
  */
 class SpringAiCoreRuntimeHintsTests {
@@ -50,49 +49,37 @@ class SpringAiCoreRuntimeHintsTests {
 
 		// Verify chat message types are registered
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(AbstractMessage.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(AbstractMessage.class)));
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(AssistantMessage.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(AssistantMessage.class)));
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(Message.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(Message.class)));
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(MessageType.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(MessageType.class)));
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(SystemMessage.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(SystemMessage.class)));
+		assertThat(runtimeHints.reflection().typeHints()).anySatisfy(
+				typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(ToolResponseMessage.class)));
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(ToolResponseMessage.class)));
-		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(UserMessage.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(UserMessage.class)));
 
 		// Verify tool types are registered
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(ToolCallback.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(ToolCallback.class)));
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(ToolDefinition.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(ToolDefinition.class)));
 
 		// Verify SLF4J types are registered for Java 22 compatibility
+		assertThat(runtimeHints.reflection().typeHints()).anySatisfy(typeHint -> assertThat(typeHint.getType())
+			.isEqualTo(TypeReference.of(NOP_FallbackServiceProvider.class)));
+		assertThat(runtimeHints.reflection().typeHints()).anySatisfy(typeHint -> assertThat(typeHint.getType())
+			.isEqualTo(TypeReference.of(SubstituteServiceProvider.class)));
 		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(NOP_FallbackServiceProvider.class)));
-		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(SubstituteServiceProvider.class)));
-		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType())
-				.isEqualTo(TypeReference.of(LoggerFactory.class)));
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(LoggerFactory.class)));
 
 		// Verify resources are registered
-		assertThat(runtimeHints.resources().resourcePatternHints())
-			.anySatisfy(hint -> assertThat(hint.getIncludes())
-				.anyMatch(include -> include.getPattern().contains("embedding-model-dimensions.properties")));
+		assertThat(runtimeHints.resources().resourcePatternHints()).anySatisfy(hint -> assertThat(hint.getIncludes())
+			.anyMatch(include -> include.getPattern().contains("embedding-model-dimensions.properties")));
 	}
+
 }
