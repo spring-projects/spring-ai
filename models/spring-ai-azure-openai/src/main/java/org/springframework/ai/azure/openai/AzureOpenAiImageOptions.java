@@ -233,6 +233,13 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	public enum ImageModel {
 
 		/**
+		 * GPT Image 1 is our new state-of-the-art image generation model. It is a
+		 * natively multimodal language model that accepts both text and image inputs, and
+		 * produces image outputs.
+		 */
+		GPT_IMAGE_1("gpt-image-1"),
+
+		/**
 		 * The latest DALL·E model released in Nov 2023.
 		 */
 		DALL_E_3("dall-e-3"),
