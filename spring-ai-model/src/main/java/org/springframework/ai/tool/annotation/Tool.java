@@ -38,6 +38,17 @@ public @interface Tool {
 
 	/**
 	 * The name of the tool. If not provided, the method name will be used.
+	 * <p>
+	 * Tool names can only contain alphanumeric characters, underscores, hyphens, and
+	 * dots. Spaces and special characters are not allowed.
+	 * </p>
+	 * <p>
+	 * Examples of valid names: "get_weather", "search-docs", "tool.v1"
+	 * </p>
+	 * <p>
+	 * Examples of invalid names: "get weather" (contains space), "tool()" (contains
+	 * parentheses)
+	 * </p>
 	 */
 	String name() default "";
 

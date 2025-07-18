@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.tool.ToolCallback;
@@ -38,16 +39,27 @@ import org.springframework.util.StringUtils;
  */
 public final class ToolUtils {
 
+	/**
+	 * Regular expression pattern for valid tool names. Tool names can only contain
+	 * alphanumeric characters, underscores, hyphens, and dots.
+	 */
+	private static final Pattern TOOL_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\.-]+$");
+
 	private ToolUtils() {
 	}
 
 	public static String getToolName(Method method) {
 		Assert.notNull(method, "method cannot be null");
 		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
+		String toolName;
 		if (tool == null) {
-			return method.getName();
+			toolName = method.getName();
 		}
-		return StringUtils.hasText(tool.name()) ? tool.name() : method.getName();
+		else {
+			toolName = StringUtils.hasText(tool.name()) ? tool.name() : method.getName();
+		}
+		validateToolName(toolName);
+		return toolName;
 	}
 
 	public static String getToolDescriptionFromName(String toolName) {
@@ -100,6 +112,21 @@ public final class ToolUtils {
 	public static List<String> getDuplicateToolNames(ToolCallback... toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		return getDuplicateToolNames(Arrays.asList(toolCallbacks));
+	}
+
+	/**
+	 * Validates that a tool name conforms to the required pattern. Tool names can only
+	 * contain alphanumeric characters, underscores, hyphens, and dots.
+	 * @param toolName the tool name to validate
+	 * @throws IllegalArgumentException if the tool name contains invalid characters
+	 */
+	private static void validateToolName(String toolName) {
+		Assert.hasText(toolName, "Tool name cannot be null or empty");
+		if (!TOOL_NAME_PATTERN.matcher(toolName).matches()) {
+			throw new IllegalArgumentException(
+					"Tool name '%s' contains invalid characters. Tool names can only contain alphanumeric characters, underscores, hyphens, and dots."
+						.formatted(toolName));
+		}
 	}
 
 }
