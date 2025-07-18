@@ -38,6 +38,18 @@ public @interface Tool {
 
 	/**
 	 * The name of the tool. If not provided, the method name will be used.
+	 * <p>
+	 * For maximum compatibility across different LLMs, it is recommended to use only
+	 * alphanumeric characters, underscores, hyphens, and dots in tool names. Using spaces
+	 * or special characters may cause issues with some LLMs (e.g., OpenAI).
+	 * </p>
+	 * <p>
+	 * Examples of recommended names: "get_weather", "search-docs", "tool.v1"
+	 * </p>
+	 * <p>
+	 * Examples of names that may cause compatibility issues: "get weather" (contains
+	 * space), "tool()" (contains parentheses)
+	 * </p>
 	 */
 	String name() default "";
 
