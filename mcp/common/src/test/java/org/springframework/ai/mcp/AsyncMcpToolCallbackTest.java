@@ -9,6 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.tool.execution.ToolExecutionException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -21,6 +23,27 @@ class AsyncMcpToolCallbackTest {
 
 	@Mock
 	private McpSchema.Tool tool;
+
+	@Test
+	void getToolDefinitionShouldReturnCorrectDefinition() {
+
+		var clientInfo = new McpSchema.Implementation("testClient", "1.0.0");
+		var toolAnnotations = new McpSchema.ToolAnnotations(null, false, false, false, false, true);
+
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.tool.name()).thenReturn("testTool");
+		when(this.tool.description()).thenReturn("Test tool description");
+		when(this.tool.annotations()).thenReturn(toolAnnotations);
+
+		AsyncMcpToolCallback callback = new AsyncMcpToolCallback(this.mcpClient, this.tool);
+
+		var toolDefinition = callback.getToolDefinition();
+		var toolMetadata = callback.getToolMetadata();
+
+		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "_testTool");
+		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
+		assertThat(toolMetadata.returnDirect()).isEqualTo(true);
+	}
 
 	@Test
 	void callShouldThrowOnError() {
