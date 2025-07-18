@@ -192,7 +192,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 					.toList();
 
 				if (!CollectionUtils.isEmpty(callAroundAdvisorList)) {
-					callAroundAdvisorList.forEach(this.callAdvisors::push);
+					this.callAdvisors.addAll(callAroundAdvisorList);
 				}
 
 				List<StreamAdvisor> streamAroundAdvisorList = advisors.stream()
@@ -201,7 +201,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 					.toList();
 
 				if (!CollectionUtils.isEmpty(streamAroundAdvisorList)) {
-					streamAroundAdvisorList.forEach(this.streamAdvisors::push);
+					this.streamAdvisors.addAll(streamAroundAdvisorList);
 				}
 
 				this.reOrder();
