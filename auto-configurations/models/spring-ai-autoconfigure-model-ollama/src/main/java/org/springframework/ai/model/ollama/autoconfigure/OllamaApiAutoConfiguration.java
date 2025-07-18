@@ -36,6 +36,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 0.8.0
  */
 @AutoConfiguration
@@ -57,6 +58,13 @@ public class OllamaApiAutoConfiguration {
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 		return OllamaApi.builder()
 			.baseUrl(connectionDetails.getBaseUrl())
+			.chatPath(connectionDetails.getChatPath())
+			.embedPath(connectionDetails.getEmbedPath())
+			.listModelsPath(connectionDetails.getListModelsPath())
+			.showModelPath(connectionDetails.getShowModelPath())
+			.copyModelPath(connectionDetails.getCopyModelPath())
+			.deleteModelPath(connectionDetails.getDeleteModelPath())
+			.pullModelPath(connectionDetails.getPullModelPath())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
 			.responseErrorHandler(responseErrorHandler)
@@ -74,6 +82,41 @@ public class OllamaApiAutoConfiguration {
 		@Override
 		public String getBaseUrl() {
 			return this.properties.getBaseUrl();
+		}
+
+		@Override
+		public String getChatPath() {
+			return this.properties.getChatPath();
+		}
+
+		@Override
+		public String getEmbedPath() {
+			return this.properties.getEmbedPath();
+		}
+
+		@Override
+		public String getListModelsPath() {
+			return this.properties.getListModelsPath();
+		}
+
+		@Override
+		public String getShowModelPath() {
+			return this.properties.getShowModelPath();
+		}
+
+		@Override
+		public String getCopyModelPath() {
+			return this.properties.getCopyModelPath();
+		}
+
+		@Override
+		public String getDeleteModelPath() {
+			return this.properties.getDeleteModelPath();
+		}
+
+		@Override
+		public String getPullModelPath() {
+			return this.properties.getPullModelPath();
 		}
 
 	}
