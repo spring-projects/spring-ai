@@ -20,10 +20,14 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.RequiresConsent;
 import org.springframework.ai.tool.consent.exception.ConsentDeniedException;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.util.Assert;
 
 /**
@@ -59,14 +63,25 @@ public class ConsentAwareToolCallback implements ToolCallback {
 		this.requiresConsent = requiresConsent;
 	}
 
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
 	@Override
-	public Object call(Map<String, Object> parameters) {
-		String toolName = getName();
+	public String call(String toolInput) {
+		// Parse input JSON to get parameters
+		Map<String, Object> parameters;
+		try {
+			parameters = OBJECT_MAPPER.readValue(toolInput, new TypeReference<Map<String, Object>>() {
+			});
+		}
+		catch (Exception e) {
+			parameters = Map.of();
+		}
+		String toolName = this.delegate.getToolDefinition().name();
 
 		// Check if consent was already granted based on consent level
 		if (this.consentManager.hasValidConsent(toolName, this.requiresConsent.level(),
 				this.requiresConsent.categories())) {
-			return this.delegate.call(parameters);
+			return this.delegate.call(toolInput);
 		}
 
 		// Prepare consent message with parameter substitution
@@ -81,22 +96,17 @@ public class ConsentAwareToolCallback implements ToolCallback {
 		}
 
 		// Execute the tool if consent was granted
-		return this.delegate.call(parameters);
-	}
-
-	@Override
-	public String getName() {
-		return this.delegate.getName();
-	}
-
-	@Override
-	public String getDescription() {
-		return this.delegate.getDescription();
+		return this.delegate.call(toolInput);
 	}
 
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return this.delegate.getToolDefinition();
+	}
+
+	@Override
+	public ToolMetadata getToolMetadata() {
+		return this.delegate.getToolMetadata();
 	}
 
 	/**
