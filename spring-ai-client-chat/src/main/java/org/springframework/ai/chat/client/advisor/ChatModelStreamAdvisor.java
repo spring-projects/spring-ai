@@ -46,15 +46,21 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
-			StreamAdvisorChain streamAdvisorChain) {
+												 StreamAdvisorChain streamAdvisorChain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
 
 		return this.chatModel.stream(chatClientRequest.prompt())
-			.map(chatResponse -> ChatClientResponse.builder()
-				.chatResponse(chatResponse)
-				.context(Map.copyOf(chatClientRequest.context()))
-				.build())
-			.publishOn(Schedulers.boundedElastic()); // TODO add option to disable
+				.map(chatResponse -> {
+					boolean isStop = "stop".equals(
+							chatResponse.getResult().getMetadata().getFinishReason()
+					);
+					return ChatClientResponse.builder()
+							.chatResponse(chatResponse)
+							.context(isStop ? Map.copyOf(chatClientRequest.context()) : Map.of())
+							.build();
+				})
+				.publishOn(Schedulers.boundedElastic()); // TODO add option to disable
+		// TODO add option to disable
 	}
 
 	@Override
