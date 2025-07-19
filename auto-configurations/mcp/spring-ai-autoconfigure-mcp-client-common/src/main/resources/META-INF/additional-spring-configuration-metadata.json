@@ -1,0 +1,6 @@
+{"properties": [
+	{
+		"name": "spring.ai.mcp.client.toolcallback.excluded-tool-context-keys",
+		"defaultValue": ["TOOL_CALL_HISTORY"]
+	}
+]}

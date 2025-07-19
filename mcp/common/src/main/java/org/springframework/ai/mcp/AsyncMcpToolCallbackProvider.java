@@ -17,7 +17,9 @@
 package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -67,12 +69,19 @@ import org.springframework.util.CollectionUtils;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author YunKui Lu
  * @since 1.0.0
  * @see ToolCallbackProvider
  * @see AsyncMcpToolCallback
  * @see McpAsyncClient
  */
 public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
+
+	/**
+	 * The keys that will not be sent to the MCP Server inside the `_meta` field of
+	 * {@link io.modelcontextprotocol.spec.McpSchema.CallToolRequest}
+	 */
+	private final Set<String> excludedToolContextKeys;
 
 	private final List<McpAsyncClient> mcpClients;
 
@@ -85,10 +94,27 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param toolFilter a filter to apply to each discovered tool
 	 */
 	public AsyncMcpToolCallbackProvider(BiPredicate<McpAsyncClient, Tool> toolFilter, List<McpAsyncClient> mcpClients) {
+		this(toolFilter, mcpClients, Set.of());
+	}
+
+	/**
+	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance with a list of MCP
+	 * clients.
+	 * @param mcpClients the list of MCP clients to use for discovering tools
+	 * @param toolFilter a filter to apply to each discovered tool
+	 * @param excludedToolContextKeys the keys that will not be sent to the MCP Server
+	 * inside the `_meta` field of
+	 * {@link io.modelcontextprotocol.spec.McpSchema.CallToolRequest}
+	 */
+	protected AsyncMcpToolCallbackProvider(BiPredicate<McpAsyncClient, Tool> toolFilter,
+			List<McpAsyncClient> mcpClients, Set<String> excludedToolContextKeys) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
+		Assert.notNull(excludedToolContextKeys, "Excluded tool context keys must not be null");
+
 		this.mcpClients = mcpClients;
 		this.toolFilter = toolFilter;
+		this.excludedToolContextKeys = excludedToolContextKeys;
 	}
 
 	/**
@@ -148,7 +174,11 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 				.map(response -> response.tools()
 					.stream()
 					.filter(tool -> this.toolFilter.test(mcpClient, tool))
-					.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
+					.map(tool -> AsyncMcpToolCallback.builder()
+						.asyncMcpClient(mcpClient)
+						.tool(tool)
+						.addExcludedToolContextKeys(excludedToolContextKeys)
+						.build())
 					.toArray(ToolCallback[]::new))
 				.block();
 
@@ -201,6 +231,52 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		}
 
 		return Flux.fromArray(new AsyncMcpToolCallbackProvider(mcpClients).getToolCallbacks());
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+
+		private List<McpAsyncClient> mcpClients = new ArrayList<>();
+
+		private BiPredicate<McpAsyncClient, Tool> toolFilter = (mcpClient, tool) -> true;
+
+		private Set<String> excludedToolContextKeys = new HashSet<>();
+
+		private Builder() {
+		}
+
+		public Builder addMcpClient(McpAsyncClient mcpClient) {
+			this.mcpClients.add(mcpClient);
+			return this;
+		}
+
+		public Builder addMcpClients(List<McpAsyncClient> mcpClients) {
+			this.mcpClients.addAll(mcpClients);
+			return this;
+		}
+
+		public Builder addExcludedToolContextKey(String excludedToolContextKey) {
+			this.excludedToolContextKeys.add(excludedToolContextKey);
+			return this;
+		}
+
+		public Builder addExcludedToolContextKeys(Set<String> excludedToolContextKeys) {
+			this.excludedToolContextKeys.addAll(excludedToolContextKeys);
+			return this;
+		}
+
+		public Builder toolFilter(BiPredicate<McpAsyncClient, Tool> toolFilter) {
+			this.toolFilter = toolFilter;
+			return this;
+		}
+
+		public AsyncMcpToolCallbackProvider build() {
+			return new AsyncMcpToolCallbackProvider(this.toolFilter, this.mcpClients, excludedToolContextKeys);
+		}
+
 	}
 
 }

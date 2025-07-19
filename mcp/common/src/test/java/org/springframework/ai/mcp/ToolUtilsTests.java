@@ -26,6 +26,7 @@ import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
@@ -42,7 +43,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ToolUtilsTests {
@@ -111,8 +114,20 @@ class ToolUtilsTests {
 		assertThat(toolSpecification).isNotNull();
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		Map<String, Object> meta = Map.of("ai.springframework.org/tool_context", Map.of("foo", "bar"), "key1",
+				"value1");
+		CallToolRequest callToolRequest = new CallToolRequest("test", Map.of("param", "value"), meta);
+
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), callToolRequest);
 		TextContent content = (TextContent) result.content().get(0);
+
+		verify(callback).call(anyString(), assertArg(toolContext -> {
+			Map<String, Object> context = toolContext.getContext();
+			assertThat(context).containsEntry("foo", "bar");
+			assertThat(context).containsEntry("_meta", meta);
+		}));
+
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
 	}
@@ -124,10 +139,23 @@ class ToolUtilsTests {
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
 		assertThat(toolSpecification).isNotNull();
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+
+		Map<String, Object> meta = Map.of("ai.springframework.org/tool_context", Map.of("foo", "bar"), "key1",
+				"value1");
+		CallToolRequest callToolRequest = new CallToolRequest("test", Map.of("param", "value"), meta);
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), callToolRequest);
 		TextContent content = (TextContent) result.content().get(0);
+
+		verify(callback).call(anyString(), assertArg(toolContext -> {
+			Map<String, Object> context = toolContext.getContext();
+			assertThat(context).containsEntry("foo", "bar");
+			assertThat(context).containsEntry("_meta", meta);
+		}));
+
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();
+
 	}
 
 	@Test
@@ -152,13 +180,23 @@ class ToolUtilsTests {
 		assertThat(toolSpecification).isNotNull();
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
-		StepVerifier.create(toolSpecification.call().apply(mock(McpAsyncServerExchange.class), Map.of()))
+		Map<String, Object> meta = Map.of("ai.springframework.org/tool_context", Map.of("foo", "bar"), "key1",
+				"value1");
+		CallToolRequest callToolRequest = new CallToolRequest("test", Map.of("param", "value"), meta);
+
+		StepVerifier.create(toolSpecification.callHandler().apply(mock(McpAsyncServerExchange.class), callToolRequest))
 			.assertNext(result -> {
 				TextContent content = (TextContent) result.content().get(0);
 				assertThat(content.text()).isEqualTo("success");
 				assertThat(result.isError()).isFalse();
 			})
 			.verifyComplete();
+
+		verify(callback).call(anyString(), assertArg(toolContext -> {
+			Map<String, Object> context = toolContext.getContext();
+			assertThat(context).containsEntry("foo", "bar");
+			assertThat(context).containsEntry("_meta", meta);
+		}));
 	}
 
 	@Test
@@ -168,13 +206,24 @@ class ToolUtilsTests {
 		AsyncToolSpecification toolSpecification = McpToolUtils.toAsyncToolSpecification(callback);
 
 		assertThat(toolSpecification).isNotNull();
-		StepVerifier.create(toolSpecification.call().apply(mock(McpAsyncServerExchange.class), Map.of()))
+
+		Map<String, Object> meta = Map.of("ai.springframework.org/tool_context", Map.of("foo", "bar"), "key1",
+				"value1");
+		CallToolRequest callToolRequest = new CallToolRequest("test", Map.of("param", "value"), meta);
+
+		StepVerifier.create(toolSpecification.callHandler().apply(mock(McpAsyncServerExchange.class), callToolRequest))
 			.assertNext(result -> {
 				TextContent content = (TextContent) result.content().get(0);
 				assertThat(content.text()).isEqualTo("error");
 				assertThat(result.isError()).isTrue();
 			})
 			.verifyComplete();
+
+		verify(callback).call(anyString(), assertArg(toolContext -> {
+			Map<String, Object> context = toolContext.getContext();
+			assertThat(context).containsEntry("foo", "bar");
+			assertThat(context).containsEntry("_meta", meta);
+		}));
 	}
 
 	@Test
