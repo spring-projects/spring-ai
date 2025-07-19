@@ -709,18 +709,26 @@ class MyKeywordEnricher {
     }
 
     List<Document> enrichDocuments(List<Document> documents) {
-        KeywordMetadataEnricher enricher = new KeywordMetadataEnricher(this.chatModel, 5);
+        KeywordMetadataEnricher enricher = KeywordMetadataEnricher.builder(chatModel)
+                .keywordCount(5)
+                .build();
+
+        // Or use custom templates
+        KeywordMetadataEnricher enricher = KeywordMetadataEnricher.builder(chatModel)
+               .keywordsTemplate(YOUR_CUSTOM_TEMPLATE)
+               .build();
+
         return enricher.apply(documents);
     }
 }
 ----
 
-==== Constructor
+==== Constructor Options
 
-The `KeywordMetadataEnricher` constructor takes two parameters:
+The `KeywordMetadataEnricher` provides two constructor options:
 
-1. `ChatModel chatModel`: The AI model used for generating keywords.
-2. `int keywordCount`: The number of keywords to extract for each document.
+1. `KeywordMetadataEnricher(ChatModel chatModel, int keywordCount)`: To use the default template and extract a specified number of keywords.
+2. `KeywordMetadataEnricher(ChatModel chatModel, PromptTemplate keywordsTemplate)`: To use a custom template for keyword extraction.
 
 ==== Behavior
 
@@ -734,7 +742,8 @@ The `KeywordMetadataEnricher` processes documents as follows:
 
 ==== Customization
 
-The keyword extraction prompt can be customized by modifying the `KEYWORDS_TEMPLATE` constant in the class. The default template is:
+You can use the default template or customize the template through the keywordsTemplate parameter.
+The default template is:
 
 [source,java]
 ----
@@ -748,7 +757,14 @@ Where `+{context_str}+` is replaced with the document content, and `%s` is repla
 [source,java]
 ----
 ChatModel chatModel = // initialize your chat model
-KeywordMetadataEnricher enricher = new KeywordMetadataEnricher(chatModel, 5);
+KeywordMetadataEnricher enricher = KeywordMetadataEnricher.builder(chatModel)
+                .keywordCount(5)
+                .build();
+
+// Or use custom templates
+KeywordMetadataEnricher enricher = KeywordMetadataEnricher.builder(chatModel)
+                .keywordsTemplate(new PromptTemplate("Extract 5 important keywords from the following text and separate them with commas:\n{context_str}"))
+                .build();
 
 Document doc = new Document("This is a document about artificial intelligence and its applications in modern technology.");
 
@@ -766,6 +782,7 @@ System.out.println("Extracted keywords: " + keywords);
 * The enricher adds the "excerpt_keywords" metadata field to each processed document.
 * The generated keywords are returned as a comma-separated string.
 * This enricher is particularly useful for improving document searchability and for generating tags or categories for documents.
+* In the Builder pattern, if the `keywordsTemplate` parameter is set, the `keywordCount` parameter will be ignored.
 
 === SummaryMetadataEnricher
 The `SummaryMetadataEnricher` is a `DocumentTransformer` that uses a generative AI model to create summaries for documents and add them as metadata. It can generate summaries for the current document, as well as adjacent documents (previous and next).
