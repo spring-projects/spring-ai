@@ -65,10 +65,12 @@ public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public RedisVectorStore.Builder vectorStoreBuilder(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
-			JedisConnectionFactory jedisConnectionFactory, ObjectProvider<ObservationRegistry> observationRegistry,
+	public RedisVectorStore.Builder vectorStoreBuilder(EmbeddingModel embeddingModel,
+			RedisVectorStoreProperties properties, JedisConnectionFactory jedisConnectionFactory,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-			BatchingStrategy batchingStrategy, ObjectProvider<RedisVectorStoreBuilderCustomizer> vectorStoreBuilderCustomizers) {
+			BatchingStrategy batchingStrategy,
+			ObjectProvider<RedisVectorStoreBuilderCustomizer> vectorStoreBuilderCustomizers) {
 
 		JedisPooled jedisPooled = this.jedisPooled(jedisConnectionFactory);
 		RedisVectorStore.Builder builder = RedisVectorStore.builder(jedisPooled, embeddingModel)
@@ -79,14 +81,14 @@ public class RedisVectorStoreAutoConfiguration {
 			.indexName(properties.getIndexName())
 			.prefix(properties.getPrefix());
 		vectorStoreBuilderCustomizers.orderedStream().forEach(customizer -> customizer.customize(builder));
-        return builder;
+		return builder;
 	}
 
-    @Bean
-    @ConditionalOnMissingBean
-    public RedisVectorStore vectorStore(RedisVectorStore.Builder vectorStoreBuilder) {
-        return vectorStoreBuilder.build();
-    }
+	@Bean
+	@ConditionalOnMissingBean
+	public RedisVectorStore vectorStore(RedisVectorStore.Builder vectorStoreBuilder) {
+		return vectorStoreBuilder.build();
+	}
 
 	private JedisPooled jedisPooled(JedisConnectionFactory jedisConnectionFactory) {
 

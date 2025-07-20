@@ -26,10 +26,9 @@ import org.springframework.ai.vectorstore.VectorStoreBuilderCustomizer;
  * default auto-configuration. Implementations can add additional settings or modify
  * existing ones without overriding the entire configuration.
  *
- * <h3>Usage Example</h3>
- * The following example shows how to add custom metadata fields:
+ * <h3>Usage Example</h3> The following example shows how to add custom metadata fields:
  * <pre>{@code
- * @Bean
+ * &#64;Bean
  * public RedisVectorStoreBuilderCustomizer metadataCustomizer() {
  *     return builder -> builder.metadataFields(
  *         List.of(RedisVectorStore.MetadataField.tag("conversationId"))

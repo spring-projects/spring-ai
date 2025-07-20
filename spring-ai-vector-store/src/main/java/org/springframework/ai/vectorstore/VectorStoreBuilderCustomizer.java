@@ -19,15 +19,15 @@ package org.springframework.ai.vectorstore;
 /**
  * Callback interface for customizing {@link VectorStore.Builder} instances.
  * <p>
- * Implemented by Spring beans that wish to configure {@code VectorStore} builders
- * before they are constructed. Customizers are applied in declaration order
- * (or priority order if {@link org.springframework.core.Ordered} is implemented),
- * allowing incremental builder configuration while preserving auto-configuration.
+ * Implemented by Spring beans that wish to configure {@code VectorStore} builders before
+ * they are constructed. Customizers are applied in declaration order (or priority order
+ * if {@link org.springframework.core.Ordered} is implemented), allowing incremental
+ * builder configuration while preserving auto-configuration.
  *
  * <h3>Typical Use Cases</h3>
  * <ul>
- *   <li>Adding custom metadata fields to vector stores</li>
- *   <li>Configuring observation behaviors</li>
+ * <li>Adding custom metadata fields to vector stores</li>
+ * <li>Configuring observation behaviors</li>
  * </ul>
  *
  * @param <T> the specific type of {@link VectorStore.Builder} being customized
@@ -44,4 +44,5 @@ public interface VectorStoreBuilderCustomizer<T extends VectorStore.Builder<T>> 
 	 * @param builder the builder to configure (never {@code null})
 	 */
 	void customize(T builder);
+
 }
