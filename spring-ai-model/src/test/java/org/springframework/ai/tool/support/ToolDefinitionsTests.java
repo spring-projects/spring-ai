@@ -66,7 +66,7 @@ class ToolDefinitionsTests {
 	}
 
 	record PersonData(@JsonProperty("full_name") @JsonPropertyDescription("The person's full name") String name,
-					  @JsonPropertyDescription("The person's age") int age) {
+			@JsonPropertyDescription("The person's age") int age) {
 	}
 
 	@Test
@@ -113,7 +113,7 @@ class ToolDefinitionsTests {
 	@Test
 	void builderShouldThrowExceptionWhenMethodIsNull() {
 		assertThatThrownBy(() -> ToolDefinitions.builder(null)).isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("method cannot be null");
+			.hasMessageContaining("method cannot be null");
 	}
 
 	@Test
@@ -144,7 +144,7 @@ class ToolDefinitionsTests {
 	@Test
 	void fromShouldThrowExceptionWhenMethodIsNull() {
 		assertThatThrownBy(() -> ToolDefinitions.from(null)).isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("method cannot be null");
+			.hasMessageContaining("method cannot be null");
 	}
 
 	@Test
