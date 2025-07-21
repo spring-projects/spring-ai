@@ -90,7 +90,7 @@ public class JsonReader implements DocumentReader {
 	}
 
 	private Document parseJsonNode(JsonNode jsonNode, ObjectMapper objectMapper) {
-		Map<String, Object> item = objectMapper.convertValue(jsonNode, new TypeReference<Map<String, Object>>() {
+		Map<String, Object> item = objectMapper.convertValue(jsonNode, new TypeReference<>() {
 
 		});
 		var sb = new StringBuilder();

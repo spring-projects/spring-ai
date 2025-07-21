@@ -70,10 +70,11 @@ The format instructions are most often appended to the end of the user input usi
         {format}
         """; // user input with a "format" placeholder.
     Prompt prompt = new Prompt(
-       new PromptTemplate(
-			   this.userInputTemplate,
-          Map.of(..., "format", outputConverter.getFormat()) // replace the "format" placeholder with the converter's format.
-       ).createMessage());
+            PromptTemplate.builder()
+						.template(this.userInputTemplate)
+						.variables(Map.of(..., "format", this.outputConverter.getFormat())) // replace the "format" placeholder with the converter's format.
+						.build().createMessage()
+    );
 ----
 
 The Converter<String, T> is responsible to transform output text from the model into instances of the specified type `T`.
@@ -134,7 +135,7 @@ String template = """
         """;
 
 Generation generation = chatModel.call(
-    new PromptTemplate(this.template, Map.of("actor", this.actor, "format", this.format)).create()).getResult();
+    PromptTemplate.builder().template(this.template).variables(Map.of("actor", this.actor, "format", this.format)).build().create()).getResult();
 
 ActorsFilms actorsFilms = this.beanOutputConverter.convert(this.generation.getOutput().getText());
 ----
@@ -180,7 +181,7 @@ String template = """
         {format}
         """;
 
-Prompt prompt = new PromptTemplate(this.template, Map.of("format", this.format)).create();
+Prompt prompt = PromptTemplate.builder().template(this.template).variables(Map.of("format", this.format)).build().create();
 
 Generation generation = chatModel.call(this.prompt).getResult();
 
@@ -212,8 +213,8 @@ String template = """
         {format}
         """;
 
-Prompt prompt = new PromptTemplate(this.template,
-        Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", this.format)).create();
+Prompt prompt = PromptTemplate.builder().template(this.template)
+.variables(Map.of("subject", "an array of numbers from 1 to 9 under they key name 'numbers'", "format", this.format)).build().create();
 
 Generation generation = chatModel.call(this.prompt).getResult();
 
@@ -245,8 +246,7 @@ String template = """
         {format}
         """;
 
-Prompt prompt = new PromptTemplate(this.template,
-        Map.of("subject", "ice cream flavors", "format", this.format)).create();
+Prompt prompt = PromptTemplate.builder().template(this.template).variables(Map.of("subject", "ice cream flavors", "format", this.format)).build().create();
 
 Generation generation = this.chatModel.call(this.prompt).getResult();
 

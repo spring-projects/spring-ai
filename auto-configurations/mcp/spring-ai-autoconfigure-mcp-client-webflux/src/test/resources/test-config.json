@@ -1,0 +1,8 @@
+{
+  "name": "test-config",
+  "description": "Test JSON file in root test resources folder",
+  "version": "1.0.0",
+  "properties": {
+	"testProperty1": "value1"
+  }
+}

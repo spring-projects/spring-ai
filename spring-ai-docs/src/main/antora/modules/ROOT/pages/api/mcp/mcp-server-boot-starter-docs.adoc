@@ -383,5 +383,5 @@ You can have multiple beans producing ToolCallbacks. The auto-configuration will
 == Additional Resources
 
 * link:https://docs.spring.io/spring-ai/reference/[Spring AI Documentation]
-* link:https://modelcontextprotocol.github.io/specification/[Model Context Protocol Specification]
+* link:https://modelcontextprotocol.io/specification[Model Context Protocol Specification]
 * link:https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.developing-auto-configuration[Spring Boot Auto-configuration]

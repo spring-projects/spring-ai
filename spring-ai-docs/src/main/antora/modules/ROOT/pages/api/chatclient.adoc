@@ -314,7 +314,7 @@ Flux<String> flux = this.chatClient.prompt()
 
 String content = this.flux.collectList().block().stream().collect(Collectors.joining());
 
-List<ActorFilms> actorFilms = this.converter.convert(this.content);
+List<ActorsFilms> actorFilms = this.converter.convert(this.content);
 ----
 
 == Prompt Templates

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
@@ -143,7 +142,7 @@ public class BedrockConverseUsageAggregationTests {
 			.build();
 
 		var result = this.chatModel.call(new Prompt("What is the weather in Paris?",
-				ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build()));
+				BedrockChatOptions.builder().toolCallbacks(toolCallback).build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText())

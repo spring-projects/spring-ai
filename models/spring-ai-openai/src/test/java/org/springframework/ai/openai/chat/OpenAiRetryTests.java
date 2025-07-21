@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -157,7 +157,7 @@ public class OpenAiRetryTests {
 	}
 
 	@Test
-	@Disabled("Currently stream() does not implmement retry")
+	@Disabled("Currently stream() does not implement retry")
 	public void openAiChatStreamTransientError() {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
@@ -179,7 +179,7 @@ public class OpenAiRetryTests {
 	}
 
 	@Test
-	@Disabled("Currently stream() does not implmement retry")
+	@Disabled("Currently stream() does not implement retry")
 	public void openAiChatStreamNonTransientError() {
 		given(this.openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 			.willThrow(new RuntimeException("Non Transient Error"));

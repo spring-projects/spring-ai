@@ -122,8 +122,7 @@ public class OpenAiApiIT {
 
 	@Test
 	void outputAudio() {
-		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
-				"What is the magic spell to make objects fly?", Role.USER);
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Say 'I am a robot'", Role.USER);
 		ChatCompletionRequest.AudioParameters audioParameters = new ChatCompletionRequest.AudioParameters(
 				ChatCompletionRequest.AudioParameters.Voice.NOVA,
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
@@ -139,7 +138,7 @@ public class OpenAiApiIT {
 
 		assertThat(response.getBody().choices().get(0).message().audioOutput().data()).isNotNull();
 		assertThat(response.getBody().choices().get(0).message().audioOutput().transcript())
-			.containsIgnoringCase("leviosa");
+			.containsIgnoringCase("robot");
 	}
 
 	@Test

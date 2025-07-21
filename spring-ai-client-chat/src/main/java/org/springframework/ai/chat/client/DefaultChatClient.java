@@ -122,8 +122,8 @@ public class DefaultChatClient implements ChatClient {
 	}
 
 	/**
-	 * Return a {@code ChatClient2Builder} to create a new {@code ChatClient} whose
-	 * settings are replicated from this {@code ChatClientRequest}.
+	 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
+	 * settings are replicated from this {@link ChatClientRequest}.
 	 */
 	@Override
 	public Builder mutate() {
@@ -364,13 +364,13 @@ public class DefaultChatClient implements ChatClient {
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doResponseEntity(new BeanOutputConverter<T>(type));
+			return doResponseEntity(new BeanOutputConverter<>(type));
 		}
 
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doResponseEntity(new BeanOutputConverter<T>(type));
+			return doResponseEntity(new BeanOutputConverter<>(type));
 		}
 
 		@Override
@@ -703,8 +703,8 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		/**
-		 * Return a {@code ChatClient2Builder} to create a new {@code ChatClient2} whose
-		 * settings are replicated from this {@code ChatClientRequest}.
+		 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
+		 * settings are replicated from this {@link ChatClientRequest}.
 		 */
 		@Override
 		public Builder mutate() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,6 +44,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.lang.NonNull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,7 +68,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 
 	float[] embed = { 0.003961659F, -0.0073295482F, 0.02663665F };
 
-	private static @NotNull ChatModel chatModelAlwaysReturnsTheSameReply() {
+	private static @NonNull ChatModel chatModelAlwaysReturnsTheSameReply() {
 		ChatModel chatModel = mock(ChatModel.class);
 		ArgumentCaptor<Prompt> argumentCaptor = ArgumentCaptor.forClass(Prompt.class);
 		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
@@ -95,7 +95,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 			.build();
 	}
 
-	private static @NotNull JdbcTemplate createJdbcTemplateWithConnectionToTestcontainer() {
+	private static @NonNull JdbcTemplate createJdbcTemplateWithConnectionToTestcontainer() {
 		PGSimpleDataSource ds = new PGSimpleDataSource();
 		ds.setUrl("jdbc:postgresql://localhost:" + postgresContainer.getMappedPort(5432) + "/postgres");
 		ds.setUser(postgresContainer.getUsername());
@@ -123,7 +123,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	 * Create a mock ChatModel that supports streaming responses for testing.
 	 * @return A mock ChatModel that returns a predefined streaming response
 	 */
-	private static @NotNull ChatModel chatModelWithStreamingSupport() {
+	private static @NonNull ChatModel chatModelWithStreamingSupport() {
 		ChatModel chatModel = mock(ChatModel.class);
 
 		// Mock the regular call method
@@ -158,7 +158,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	 * VectorStoreChatMemoryAdvisor.
 	 * @return A mock ChatModel that returns a problematic streaming response
 	 */
-	private static @NotNull ChatModel chatModelWithProblematicStreamingBehavior() {
+	private static @NonNull ChatModel chatModelWithProblematicStreamingBehavior() {
 		ChatModel chatModel = mock(ChatModel.class);
 
 		// Mock the regular call method
@@ -390,7 +390,7 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	}
 
 	@SuppressWarnings("unchecked")
-	private @NotNull EmbeddingModel embeddingNModelShouldAlwaysReturnFakedEmbed() {
+	private @NonNull EmbeddingModel embeddingNModelShouldAlwaysReturnFakedEmbed() {
 		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
 
 		Mockito.doAnswer(invocationOnMock -> List.of(this.embed, this.embed))

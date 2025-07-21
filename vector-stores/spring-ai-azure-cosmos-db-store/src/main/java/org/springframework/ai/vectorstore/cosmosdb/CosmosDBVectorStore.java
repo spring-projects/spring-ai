@@ -151,7 +151,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		// handle hierarchical partition key
 		PartitionKeyDefinition subPartitionKeyDefinition = new PartitionKeyDefinition();
-		List<String> pathsFromCommaSeparatedList = new ArrayList<String>();
+		List<String> pathsFromCommaSeparatedList = new ArrayList<>();
 		String[] subPartitionKeyPaths = partitionKeyPath.split(",");
 		Collections.addAll(pathsFromCommaSeparatedList, subPartitionKeyPaths);
 		if (subPartitionKeyPaths.length > 1) {

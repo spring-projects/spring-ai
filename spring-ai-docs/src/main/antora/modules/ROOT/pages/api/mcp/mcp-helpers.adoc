@@ -65,7 +65,24 @@ For multiple clients:
 List<McpSyncClient> clients = // obtain list of clients
 List<ToolCallback> callbacks = SyncMcpToolCallbackProvider.syncToolCallbacks(clients);
 ----
++
+For dynamic selection of a subset of clients 
++
+[source,java]
+----
+@Autowired
+private List<McpSyncClient> mcpSyncClients;
 
+public ToolCallbackProvider buildProvider(Set<String> allowedServerNames) {
+    // Filter by server.name().
+    List<McpSyncClient> selected = mcpSyncClients.stream()
+        .filter(c -> allowedServerNames.contains(c.getServerInfo().name()))
+        .toList();
+
+    return new SyncMcpToolCallbackProvider(selected);
+}
+
+----
 Async::
 +
 [source,java]

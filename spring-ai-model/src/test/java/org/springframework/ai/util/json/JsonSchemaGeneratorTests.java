@@ -162,6 +162,29 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForMethodWithObjectParam() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("objectParamMethod", Object.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "object": {
+				        }
+				    },
+				    "required": [
+				        "object"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
 	void generateSchemaForMethodWithJacksonAnnotations() throws Exception {
 		Method method = TestMethods.class.getDeclaredMethod("jacksonMethod", String.class, String.class);
 
@@ -660,6 +683,9 @@ class JsonSchemaGeneratorTests {
 	static class TestMethods {
 
 		public void simpleMethod(String name, int age) {
+		}
+
+		public void objectParamMethod(Object object) {
 		}
 
 		public void annotatedMethod(

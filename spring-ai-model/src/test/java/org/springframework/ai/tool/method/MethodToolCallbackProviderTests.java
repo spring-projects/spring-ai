@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
@@ -30,6 +31,8 @@ import org.springframework.core.annotation.AliasFor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
  * Unit tests for {@link MethodToolCallbackProvider}.
@@ -110,6 +113,31 @@ class MethodToolCallbackProviderTests {
 
 		assertThat(provider.getToolCallbacks()).hasSize(1);
 		assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("validTool");
+	}
+
+	@Test
+	public void buildToolsWithBridgeMethodReturnOnlyUserDeclaredMethods() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new TestObjectSuperClass())
+			.build();
+		ToolCallback[] toolCallbacks = provider.getToolCallbacks();
+		assertEquals(1, toolCallbacks.length);
+		assertInstanceOf(MethodToolCallback.class, toolCallbacks[0]);
+	}
+
+	abstract class TestObjectClass<T> {
+
+		public abstract String test(T input);
+
+	}
+
+	class TestObjectSuperClass extends TestObjectClass<String> {
+
+		@Tool
+		public String test(String input) {
+			return input;
+		}
+
 	}
 
 	static class ValidToolObject {
