@@ -303,8 +303,8 @@ public class BedrockProxyChatModel implements ChatModel {
 						: this.defaultOptions.getTemperature())
 				.topP(runtimeOptions.getTopP() != null ? runtimeOptions.getTopP() : this.defaultOptions.getTopP())
 
-				.toolCallbacks(runtimeOptions.getToolCallbacks() != null ? runtimeOptions.getToolCallbacks()
-						: this.defaultOptions.getToolCallbacks())
+				.toolCallbacks(runtimeOptions.getFilteredToolCallbacks(runtimeOptions.getToolCallbacks() != null
+						? runtimeOptions.getToolCallbacks() : this.defaultOptions.getToolCallbacks()))
 				.toolNames(runtimeOptions.getToolNames() != null ? runtimeOptions.getToolNames()
 						: this.defaultOptions.getToolNames())
 				.toolContext(runtimeOptions.getToolContext() != null ? runtimeOptions.getToolContext()
@@ -312,6 +312,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				.internalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
 						? runtimeOptions.getInternalToolExecutionEnabled()
 						: this.defaultOptions.getInternalToolExecutionEnabled())
+				.toolCallbackFilter(runtimeOptions.getToolCallbackFilter())
 				.build();
 		}
 

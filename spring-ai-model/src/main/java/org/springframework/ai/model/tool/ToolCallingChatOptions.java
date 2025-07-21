@@ -22,8 +22,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.support.ToolUtils;
@@ -87,6 +90,26 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * @param toolContext as map
 	 */
 	void setToolContext(Map<String, Object> toolContext);
+
+	void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter);
+
+	Predicate<? extends ToolCallback> getToolCallbackFilter();
+
+	default List<ToolCallback> getFilteredToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Predicate<? extends ToolCallback> filter = getToolCallbackFilter();
+		if (filter == null) {
+			return this.getToolCallbacks();
+		}
+		else {
+			return applyFilter(toolCallbacks, filter);
+		}
+	}
+
+	private <T extends ToolCallback> List<ToolCallback> applyFilter(List<ToolCallback> toolCallbacks,
+			Predicate<T> filter) {
+
+		return toolCallbacks.stream().filter(toolCallback -> filter.test((T) toolCallback)).toList();
+	}
 
 	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.
@@ -192,6 +215,8 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * @return the {@link ToolCallingChatOptions} Builder.
 		 */
 		Builder toolContext(String key, Object value);
+
+		Builder toolCallbackFilter(@Nullable Predicate<? extends ToolCallback> toolCallbackFilter);
 
 		// ChatOptions.Builder methods
 

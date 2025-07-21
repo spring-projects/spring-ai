@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -344,6 +345,9 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -398,7 +402,8 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.toolNames(fromOptions.getToolNames())
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolContext(fromOptions.getToolContext()).build();
+				.toolContext(fromOptions.getToolContext())
+				.toolCallbackFilter(fromOptions.getToolCallbackFilter()).build();
 	}
 
 	// -------------------
@@ -764,6 +769,16 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.toolContext = toolContext;
 	}
 
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
+	}
+
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -1036,6 +1051,11 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder toolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+			this.options.setToolCallbackFilter(toolCallbackFilter);
 			return this;
 		}
 

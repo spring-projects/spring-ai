@@ -455,17 +455,22 @@ public class AnthropicChatModel implements ChatModel {
 							this.defaultOptions.getInternalToolExecutionEnabled()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.defaultOptions.getToolCallbacks()));
+			// Make sure to set the tool context before setting toolcallbacks so that the
+			// context can be used to filter the toolcallbacks.
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.defaultOptions.getToolContext()));
+			requestOptions.setToolCallbacks(runtimeOptions.getFilteredToolCallbacks(ToolCallingChatOptions
+				.mergeToolCallbacks(runtimeOptions.getToolCallbacks(), this.defaultOptions.getToolCallbacks())));
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
-			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
+			// Make sure to set the tool context before setting toolcallbacks so that the
+			// context can be used to filter the toolcallbacks.
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+			requestOptions
+				.setToolCallbacks(this.defaultOptions.getFilteredToolCallbacks(this.defaultOptions.getToolCallbacks()));
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());

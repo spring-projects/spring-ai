@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -50,6 +53,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -284,11 +288,23 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
+			.toolContext(Map.of("tool_prefix", "get"))
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
 				.inputType(MockWeatherService.Request.class)
-				.build())
+				.build(),
+					FunctionToolCallback.builder("retrieveWeather", new MockWeatherService())
+						.description(
+								"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+						.inputType(MockWeatherService.Request.class)
+						.build())
+			.toolCallbackFilter(new Predicate<ToolCallback>() {
+				@Override
+				public boolean test(ToolCallback toolCallback) {
+					return (toolCallback.getToolDefinition().name().startsWith("get")) ? true : false;
+				}
+			})
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));

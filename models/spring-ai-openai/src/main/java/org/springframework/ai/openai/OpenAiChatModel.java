@@ -529,10 +529,10 @@ public class OpenAiChatModel implements ChatModel {
 							this.defaultOptions.getInternalToolExecutionEnabled()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.defaultOptions.getToolCallbacks()));
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.defaultOptions.getToolContext()));
+			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
+					this.defaultOptions.getToolCallbacks()));
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -542,7 +542,8 @@ public class OpenAiChatModel implements ChatModel {
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
 		}
 
-		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
+		ToolCallingChatOptions
+			.validateToolCallbacks(requestOptions.getFilteredToolCallbacks(requestOptions.getToolCallbacks()));
 
 		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
