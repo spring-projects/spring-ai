@@ -36,7 +36,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.test.CurlyBracketEscaper;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,7 +87,7 @@ class BedrockConverseChatClientIT {
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
-				.entity(new ParameterizedTypeReference<List<String>>() { });
+				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
 
 		logger.info(collection.toString());
@@ -102,7 +101,7 @@ class BedrockConverseChatClientIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -135,7 +134,7 @@ class BedrockConverseChatClientIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -367,7 +366,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(ToolCallingChatOptions.builder().model(modelName).build())
+				.options(BedrockChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -388,7 +387,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(ToolCallingChatOptions.builder().model(modelName).build())
+		.options(BedrockChatOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();
@@ -408,7 +407,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(ToolCallingChatOptions.builder().model(modelName).build())
+		.options(BedrockChatOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();

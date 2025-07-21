@@ -114,7 +114,10 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
+
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
@@ -176,6 +179,7 @@
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-vertex-ai-imagen</module>
+		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-deepseek</module>
 
@@ -266,8 +270,8 @@
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.31.26</bedrockruntime.version>
-		<awssdk.version>2.29.29</awssdk.version>
+		<bedrockruntime.version>2.31.65</bedrockruntime.version>
+		<awssdk.version>2.31.65</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
@@ -291,6 +295,7 @@
 		<coherence.version>24.09</coherence.version>
 		<milvus.version>2.5.8</milvus.version>
 		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
+		<testcontainers.version>1.20.4</testcontainers.version>
 
 		<pinecone.version>4.0.1</pinecone.version>
 		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
@@ -319,7 +324,7 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.10.0</mcp.sdk.version>
+		<mcp.sdk.version>0.11.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>

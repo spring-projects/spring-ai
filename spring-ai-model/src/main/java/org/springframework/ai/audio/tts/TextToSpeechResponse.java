@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResponse;
-import org.springframework.ai.model.ResponseMetadata;
 
 /**
  * Implementation of the {@link ModelResponse} interface for the text to speech response.

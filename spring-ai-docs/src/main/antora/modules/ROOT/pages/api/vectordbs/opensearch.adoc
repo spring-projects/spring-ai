@@ -41,26 +41,8 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-For Amazon OpenSearch Service, use these dependencies instead:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
-</dependency>
-----
-
-or for Gradle:
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
-}
-----
+TIP: For both self-hosted and Amazon OpenSearch Service, use the same dependency.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 

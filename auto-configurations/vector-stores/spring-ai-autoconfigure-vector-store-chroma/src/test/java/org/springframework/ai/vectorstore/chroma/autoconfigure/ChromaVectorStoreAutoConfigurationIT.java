@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import static org.springframework.ai.test.vectorstore.ObservationTestUtil.assert
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Jonghoon Park
  */
 @Testcontainers
 public class ChromaVectorStoreAutoConfigurationIT {
@@ -182,7 +183,7 @@ public class ChromaVectorStoreAutoConfigurationIT {
 				.hasCauseInstanceOf(BeanCreationException.class)
 				.hasRootCauseExactlyInstanceOf(RuntimeException.class)
 				.hasRootCauseMessage(
-						"Collection TestCollection doesn't exist and won't be created as the initializeSchema is set to false."));
+						"Collection TestCollection with the tenant: SpringAiTenant and the database: SpringAiDatabase doesn't exist and won't be created as the initializeSchema is set to false."));
 	}
 
 	@Test

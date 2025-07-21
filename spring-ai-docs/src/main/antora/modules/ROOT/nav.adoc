@@ -65,6 +65,7 @@
 ***** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 **** xref:api/audio/speech.adoc[]
 ***** xref:api/audio/speech/openai-speech.adoc[OpenAI]
+***** xref:api/audio/speech/elevenlabs-speech.adoc[ElevenLabs]
 
 *** xref:api/moderation[Moderation Models]
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]

@@ -16,14 +16,14 @@
 
 package org.springframework.ai.mcp;
 
-import java.util.Map;
-
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.util.Map;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -112,19 +112,16 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
 		// Note that we use the original tool name here, not the adapted one from
 		// getToolDefinition
-		try {
-			return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).map(response -> {
-				if (response.isError() != null && response.isError()) {
-					throw new ToolExecutionException(this.getToolDefinition(),
-							new IllegalStateException("Error calling tool: " + response.content()));
-				}
-				return ModelOptionsUtils.toJsonString(response.content());
-			}).block();
-		}
-		catch (Exception ex) {
-			throw new ToolExecutionException(this.getToolDefinition(), ex.getCause());
-		}
-
+		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).onErrorMap(exception -> {
+			// If the tool throws an error during execution
+			throw new ToolExecutionException(this.getToolDefinition(), exception);
+		}).map(response -> {
+			if (response.isError() != null && response.isError()) {
+				throw new ToolExecutionException(this.getToolDefinition(),
+						new IllegalStateException("Error calling tool: " + response.content()));
+			}
+			return ModelOptionsUtils.toJsonString(response.content());
+		}).contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext())).block();
 	}
 
 	@Override
