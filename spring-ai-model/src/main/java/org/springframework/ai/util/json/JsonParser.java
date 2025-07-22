@@ -33,6 +33,8 @@ import org.springframework.util.ClassUtils;
 
 /**
  * Utilities to perform parsing operations between JSON and Java.
+ *
+ * @author lambochen
  */
 public final class JsonParser {
 
@@ -141,7 +143,11 @@ public final class JsonParser {
 		if (javaType == String.class) {
 			return value.toString();
 		}
-		else if (javaType == Byte.class) {
+		if (value.toString().isEmpty()) {
+			return null;
+		}
+
+		if (javaType == Byte.class) {
 			return Byte.parseByte(value.toString());
 		}
 		else if (javaType == Integer.class) {
