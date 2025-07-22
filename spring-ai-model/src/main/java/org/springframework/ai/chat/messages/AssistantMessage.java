@@ -63,7 +63,8 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		this(content, properties, toolCalls, List.of());
 	}
 
-	public AssistantMessage(String content, String reasoningContent, Map<String, Object> properties, List<ToolCall> toolCalls) {
+	public AssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
+			List<ToolCall> toolCalls) {
 		this(content, reasoningContent, properties, toolCalls, List.of());
 	}
 
@@ -72,8 +73,8 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		this(content, "", properties, toolCalls, media);
 	}
 
-	public AssistantMessage(String content, String reasoningContent, Map<String, Object> properties, List<ToolCall> toolCalls,
-							List<Media> media) {
+	public AssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
+			List<ToolCall> toolCalls, List<Media> media) {
 		super(MessageType.ASSISTANT, content, properties);
 		Assert.notNull(toolCalls, "Tool calls must not be null");
 		Assert.notNull(media, "Media must not be null");
@@ -81,7 +82,6 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		this.media = media;
 		this.reasoningContent = reasoningContent;
 	}
-
 
 	public List<ToolCall> getToolCalls() {
 		return this.toolCalls;
@@ -119,7 +119,8 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	@Override
 	public String toString() {
 		return "AssistantMessage [messageType=" + this.messageType + ", toolCalls=" + this.toolCalls + ", textContent="
-				+ this.textContent + ", metadata=" + this.metadata + ", reasoningContent=" + this.reasoningContent + "]";
+				+ this.textContent + ", metadata=" + this.metadata + ", reasoningContent=" + this.reasoningContent
+				+ "]";
 	}
 
 	public String getReasoningContent() {

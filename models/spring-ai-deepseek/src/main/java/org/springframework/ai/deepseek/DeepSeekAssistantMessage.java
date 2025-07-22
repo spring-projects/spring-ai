@@ -94,4 +94,5 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 				+ ", textContent=" + this.textContent + ", reasoningContent=" + this.getReasoningContent() + ", prefix="
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
+
 }

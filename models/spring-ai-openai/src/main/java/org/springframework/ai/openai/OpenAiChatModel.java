@@ -601,8 +601,9 @@ public class OpenAiChatModel implements ChatModel {
 					audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
 
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null, assistantMessage.getReasoningContent()));
+				return List
+					.of(new ChatCompletionMessage(assistantMessage.getText(), ChatCompletionMessage.Role.ASSISTANT,
+							null, null, toolCalls, null, audioOutput, null, assistantMessage.getReasoningContent()));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;

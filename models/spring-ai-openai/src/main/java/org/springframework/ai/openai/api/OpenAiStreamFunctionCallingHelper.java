@@ -140,7 +140,8 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput, annotations, reasoningContent);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput, annotations,
+				reasoningContent);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
