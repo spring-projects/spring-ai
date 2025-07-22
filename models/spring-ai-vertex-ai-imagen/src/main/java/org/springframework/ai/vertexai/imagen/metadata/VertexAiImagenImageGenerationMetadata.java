@@ -34,7 +34,7 @@ public class VertexAiImagenImageGenerationMetadata implements ImageGenerationMet
 
 	private final String mimeType;
 
-	public VertexAiImagenImageGenerationMetadata(String revisedPrompt, String mimeType, String model) {
+	public VertexAiImagenImageGenerationMetadata(String revisedPrompt, String model, String mimeType) {
 		this.prompt = revisedPrompt;
 		this.model = model;
 		this.mimeType = mimeType;
