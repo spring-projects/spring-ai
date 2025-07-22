@@ -23,6 +23,7 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.AudioTranscriptionFormat;
 import com.azure.ai.openai.models.AudioTranscriptionOptions;
 import com.azure.ai.openai.models.AudioTranscriptionTimestampGranularity;
+import com.azure.core.http.rest.RequestOptions;
 import com.azure.core.http.rest.Response;
 
 import org.springframework.ai.audio.transcription.AudioTranscription;
@@ -83,9 +84,18 @@ public class AzureOpenAiAudioTranscriptionModel implements TranscriptionModel {
 		AudioTranscriptionOptions audioTranscriptionOptions = toAudioTranscriptionOptions(audioTranscriptionPrompt);
 
 		AudioTranscriptionFormat responseFormat = audioTranscriptionOptions.getResponseFormat();
+		RequestOptions requestOptions = new RequestOptions();
+
+		if (audioTranscriptionPrompt
+			.getOptions() instanceof AzureOpenAiAudioTranscriptionOptions azureOpenAiAudioTranscriptionOptions
+				&& null != azureOpenAiAudioTranscriptionOptions.getApiVersion()) {
+			requestOptions.addQueryParam("api-version", azureOpenAiAudioTranscriptionOptions.getApiVersion());
+		}
 		if (JSON_FORMATS.contains(responseFormat)) {
-			var audioTranscription = this.openAIClient.getAudioTranscription(deploymentOrModelName, FILENAME_MARKER,
-					audioTranscriptionOptions);
+			var audioTranscription = this.openAIClient
+				.getAudioTranscriptionWithResponse(deploymentOrModelName, FILENAME_MARKER, audioTranscriptionOptions,
+						requestOptions)
+				.getValue();
 
 			List<Word> words = null;
 			if (audioTranscription.getWords() != null) {
@@ -120,7 +130,7 @@ public class AzureOpenAiAudioTranscriptionModel implements TranscriptionModel {
 		}
 		else {
 			Response<String> audioTranscription = this.openAIClient.getAudioTranscriptionTextWithResponse(
-					deploymentOrModelName, FILENAME_MARKER, audioTranscriptionOptions, null);
+					deploymentOrModelName, FILENAME_MARKER, audioTranscriptionOptions, requestOptions);
 			String text = audioTranscription.getValue();
 			AudioTranscription transcript = new AudioTranscription(text);
 			return new AudioTranscriptionResponse(transcript, AzureOpenAiAudioTranscriptionResponseMetadata.from(text));

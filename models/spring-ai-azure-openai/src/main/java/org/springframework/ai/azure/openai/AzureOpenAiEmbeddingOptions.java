@@ -57,6 +57,12 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private Integer dimensions;
 
+	/**
+	 * The explicit Azure AI Foundry Models API version to use for this request. latest if
+	 * not otherwise specified.
+	 */
+	private String apiVersion;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -105,6 +111,14 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 		this.dimensions = dimensions;
 	}
 
+	public String getApiVersion() {
+		return apiVersion;
+	}
+
+	public void setApiVersion(String apiVersion) {
+		this.apiVersion = apiVersion;
+	}
+
 	public com.azure.ai.openai.models.EmbeddingsOptions toAzureOptions(List<String> instructions) {
 
 		var azureOptions = new com.azure.ai.openai.models.EmbeddingsOptions(instructions);
@@ -144,6 +158,9 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 				if (castFrom.getDimensions() != null) {
 					this.options.setDimensions(castFrom.getDimensions());
 				}
+				if (castFrom.getApiVersion() != null) {
+					this.options.setApiVersion(castFrom.getApiVersion());
+				}
 			}
 			return this;
 		}
@@ -174,6 +191,11 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder dimensions(Integer dimensions) {
 			this.options.dimensions = dimensions;
+			return this;
+		}
+
+		public Builder apiVersion(String apiVersion) {
+			this.options.apiVersion = apiVersion;
 			return this;
 		}
 
