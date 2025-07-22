@@ -85,8 +85,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		// Test for null.
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null));
 		// Test for empty.
-		assertion.accept(
-				new OpenAiApi.ChatCompletionMessage(null, null, null, null, Collections.emptyList(), null, null, null, null));
+		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null, Collections.emptyList(), null,
+				null, null, null));
 	}
 
 	@Test
