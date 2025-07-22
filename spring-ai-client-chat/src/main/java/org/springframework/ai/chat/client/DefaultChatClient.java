@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.Observation;
@@ -348,6 +349,11 @@ public class DefaultChatClient implements ChatClient {
 
 		private final ChatClientObservationConvention observationConvention;
 
+		/**
+		 * Used to ensure that the {@link CallResponseSpec} is used only once.
+		 */
+		private final AtomicBoolean used = new AtomicBoolean(false);
+
 		public DefaultCallResponseSpec(ChatClientRequest chatClientRequest, BaseAdvisorChain advisorChain,
 				ObservationRegistry observationRegistry, ChatClientObservationConvention observationConvention) {
 			Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
@@ -450,6 +456,10 @@ public class DefaultChatClient implements ChatClient {
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest,
 				@Nullable String outputFormat) {
 
+			if (!this.used.compareAndSet(false, true)) {
+				throw new IllegalStateException("The CallResponseSpec instance can only be used once.");
+			}
+
 			if (outputFormat != null) {
 				chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputFormat);
 			}
@@ -494,6 +504,11 @@ public class DefaultChatClient implements ChatClient {
 
 		private final ChatClientObservationConvention observationConvention;
 
+		/**
+		 * Used to ensure that the {@link StreamResponseSpec} is used only once.
+		 */
+		private final AtomicBoolean used = new AtomicBoolean(false);
+
 		public DefaultStreamResponseSpec(ChatClientRequest chatClientRequest, BaseAdvisorChain advisorChain,
 				ObservationRegistry observationRegistry, ChatClientObservationConvention observationConvention) {
 			Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
@@ -508,6 +523,11 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		private Flux<ChatClientResponse> doGetObservableFluxChatResponse(ChatClientRequest chatClientRequest) {
+
+			if (!this.used.compareAndSet(false, true)) {
+				throw new IllegalStateException("The StreamResponseSpec instance can only be used once.");
+			}
+
 			return Flux.deferContextual(contextView -> {
 
 				ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
