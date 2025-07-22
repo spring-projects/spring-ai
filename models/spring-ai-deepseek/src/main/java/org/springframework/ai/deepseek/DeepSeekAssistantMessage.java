@@ -27,15 +27,12 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	private Boolean prefix;
 
-	private String reasoningContent;
-
 	public DeepSeekAssistantMessage(String content) {
 		super(content);
 	}
 
 	public DeepSeekAssistantMessage(String content, String reasoningContent) {
-		super(content);
-		this.reasoningContent = reasoningContent;
+		super(content, reasoningContent);
 	}
 
 	public DeepSeekAssistantMessage(String content, Map<String, Object> properties) {
@@ -53,8 +50,7 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
 			List<ToolCall> toolCalls, List<Media> media) {
-		super(content, properties, toolCalls, media);
-		this.reasoningContent = reasoningContent;
+		super(content, reasoningContent, properties, toolCalls, media);
 	}
 
 	public static DeepSeekAssistantMessage prefixAssistantMessage(String context) {
@@ -73,14 +69,6 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		this.prefix = prefix;
 	}
 
-	public String getReasoningContent() {
-		return this.reasoningContent;
-	}
-
-	public void setReasoningContent(String reasoningContent) {
-		this.reasoningContent = reasoningContent;
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -92,19 +80,18 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		if (!super.equals(o)) {
 			return false;
 		}
-		return Objects.equals(this.reasoningContent, that.reasoningContent) && Objects.equals(this.prefix, that.prefix);
+		return Objects.equals(this.prefix, that.prefix);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.prefix, this.reasoningContent);
+		return Objects.hash(super.hashCode(), this.prefix);
 	}
 
 	@Override
 	public String toString() {
 		return "AssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
-				+ ", textContent=" + this.textContent + ", reasoningContent=" + this.reasoningContent + ", prefix="
+				+ ", textContent=" + this.textContent + ", reasoningContent=" + this.getReasoningContent() + ", prefix="
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
-
 }
