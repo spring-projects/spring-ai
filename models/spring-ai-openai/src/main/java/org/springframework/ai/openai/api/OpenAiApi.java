@@ -1385,7 +1385,8 @@ public class OpenAiApi {
 			@JsonProperty("tool_calls") @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("refusal") String refusal,
 			@JsonProperty("audio") AudioOutput audioOutput,
-			@JsonProperty("annotations") List<Annotation> annotations
+			@JsonProperty("annotations") List<Annotation> annotations,
+			@JsonProperty("reasoning_content") String reasoningContent
 	) { // @formatter:on
 
 		/**
@@ -1395,7 +1396,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null, null, null);
+			this(content, role, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1409,6 +1410,10 @@ public class OpenAiApi {
 				return text;
 			}
 			throw new IllegalStateException("The content is not a string!");
+		}
+
+		public String reasoningContent() {
+			return reasoningContent;
 		}
 
 		/**

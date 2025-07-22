@@ -425,6 +425,7 @@ public class OpenAiChatModel implements ChatModel {
 
 		List<Media> media = new ArrayList<>();
 		String textContent = choice.message().content();
+		String reasoningContent = choice.message().reasoningContent();
 		var audioOutput = choice.message().audioOutput();
 		if (audioOutput != null) {
 			String mimeType = String.format("audio/%s", request.audioParameters().format().name().toLowerCase());
@@ -447,7 +448,7 @@ public class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("logprobs", choice.logprobs());
 		}
 
-		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
+		var assistantMessage = new AssistantMessage(textContent, reasoningContent, metadata, toolCalls, media);
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 
@@ -600,7 +601,7 @@ public class OpenAiChatModel implements ChatModel {
 
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null, assistantMessage.getReasoningContent()));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -610,7 +611,7 @@ public class OpenAiChatModel implements ChatModel {
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null, null, null))
+							tr.id(), null, null, null, null, null))
 					.toList();
 			}
 			else {
