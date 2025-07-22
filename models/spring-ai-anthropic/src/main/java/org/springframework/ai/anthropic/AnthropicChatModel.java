@@ -318,13 +318,13 @@ public class AnthropicChatModel implements ChatModel {
 		for (ContentBlock content : chatCompletion.content()) {
 			switch (content.type()) {
 				case TEXT, TEXT_DELTA:
-					generations.add(new Generation(new AssistantMessage(content.text(), Map.of()),
+					generations.add(new Generation(new AssistantMessage(content.text(), "", Map.of()),
 							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
 					break;
 				case THINKING, THINKING_DELTA:
 					Map<String, Object> thinkingProperties = new HashMap<>();
 					thinkingProperties.put("signature", content.signature());
-					generations.add(new Generation(new AssistantMessage(content.thinking(), thinkingProperties),
+					generations.add(new Generation(new AssistantMessage("", content.thinking(), thinkingProperties),
 							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
 					break;
 				case REDACTED_THINKING:
