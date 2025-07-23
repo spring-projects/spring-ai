@@ -26,6 +26,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
+import org.springframework.ai.tool.definition.McpToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
@@ -83,15 +84,21 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 * <li>The tool's name from the MCP definition</li>
 	 * <li>The tool's description from the MCP definition</li>
 	 * <li>The input schema converted to JSON format</li>
+	 * <li>The tool's name before being prefixed with MCP client info</li>
+	 * <li>The client name from the MCP client info</li>
 	 * </ul>
 	 * @return the Spring AI tool definition
 	 */
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return DefaultToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.asyncMcpClient.getClientInfo().name(), this.tool.name()))
+		String clientName = this.asyncMcpClient.getClientInfo().name();
+		String toolName = this.tool.name();
+		return McpToolDefinition.builder()
+			.name(McpToolUtils.prefixedToolName(clientName, toolName))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
+			.toolName(toolName)
+			.clientName(clientName)
 			.build();
 	}
 
