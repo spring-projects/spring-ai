@@ -141,7 +141,7 @@ public class OpenAiStreamFunctionCallingHelper {
 			}
 		}
 		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput, annotations,
-				reasoningContent);
+				reasoningContent, null);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
