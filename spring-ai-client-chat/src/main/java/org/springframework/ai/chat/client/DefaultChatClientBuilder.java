@@ -54,6 +54,8 @@ import org.springframework.util.Assert;
  */
 public class DefaultChatClientBuilder implements Builder {
 
+	private final ChatModel chatModel;
+
 	protected final DefaultChatClientRequestSpec defaultRequest;
 
 	DefaultChatClientBuilder(ChatModel chatModel) {
@@ -67,10 +69,11 @@ public class DefaultChatClientBuilder implements Builder {
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), null, Map.of(), List.of(),
 				List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
 				customObservationConvention, Map.of(), null);
+		this.chatModel = chatModel;
 	}
 
 	public ChatClient build() {
-		return new DefaultChatClient(this.defaultRequest);
+		return new DefaultChatClient(this.defaultRequest, chatModel);
 	}
 
 	public Builder clone() {

@@ -20,6 +20,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -88,6 +89,14 @@ public interface ChatClient {
 	ChatClientRequestSpec prompt(String content);
 
 	ChatClientRequestSpec prompt(Prompt prompt);
+
+	/**
+	 * Returns the underlying {@link ChatModel} used by this client. This allows access to
+	 * model metadata such as the model name, temperature, etc.
+	 * @return the ChatModel
+	 * @since 1.0.1
+	 */
+	ChatModel getChatModel();
 
 	/**
 	 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose

@@ -74,7 +74,7 @@ class DefaultChatClientTests {
 
 	@Test
 	void whenChatClientRequestIsNullThenThrow() {
-		assertThatThrownBy(() -> new DefaultChatClient(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> new DefaultChatClient(null, null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("defaultChatClientRequest cannot be null");
 	}
 
@@ -1956,6 +1956,23 @@ class DefaultChatClientTests {
 		assertThat(defaultSpec.getUserText()).isEqualTo("my question about {topic}");
 		assertThat(defaultSpec.getUserParams()).containsEntry("topic", "AI");
 		assertThat(defaultSpec.getMedia()).hasSize(1);
+	}
+
+	@Test
+	void whenGetChatModelThenReturnModelName() {
+		// Arrange
+		ChatModel mockChatModel = mock(ChatModel.class);
+		ChatOptions mockOptions = mock(ChatOptions.class);
+
+		when(mockChatModel.getDefaultOptions()).thenReturn(mockOptions);
+		when(mockOptions.getModel()).thenReturn("gpt-4o-mini");
+
+		// Act
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel).build();
+
+		// Assert
+		assertThat(chatClient.getChatModel()).isNotNull();
+		assertThat(chatClient.getChatModel().getDefaultOptions().getModel()).isEqualTo("gpt-4o-mini");
 	}
 
 	record Person(String name) {
