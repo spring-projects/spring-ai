@@ -87,7 +87,7 @@ public class CreateGeminiRequestTests {
 			.genAiClient(this.genAiClient)
 			.defaultOptions(GoogleGenAiChatOptions.builder()
 				.model("DEFAULT_MODEL")
-				.frequencePenalty(.25)
+				.frequencyPenalty(.25)
 				.presencePenalty(.75)
 				.build())
 			.build();

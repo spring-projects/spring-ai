@@ -437,7 +437,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder frequencePenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.options.setFrequencyPenalty(frequencyPenalty);
 			return this;
 		}
