@@ -110,4 +110,41 @@ public class OpenAiCompatibleChatModelIT {
 		assertThat(stitchedResponseContent).contains("Blackbeard");
 	}
 
+	static Stream<ChatModel> reasoningModelsFromOpenRouter() {
+		Stream.Builder<ChatModel> builder = Stream.builder();
+
+		if (System.getenv("OPEN_ROUTER_API_KEY") != null) {
+			OpenAiChatModel.Builder openRouter = OpenAiChatModel.builder()
+				.openAiApi(OpenAiApi.builder()
+					.baseUrl("https://openrouter.ai/api")
+					.apiKey(System.getenv("OPEN_ROUTER_API_KEY"))
+					.build());
+			builder.add(openRouter.defaultOptions(forModelName("qwen/qwen3-8b")).build());
+			builder.add(openRouter.defaultOptions(forModelName("deepseek/deepseek-r1")).build());
+		}
+
+		return builder.build();
+	}
+
+	@ParameterizedTest
+	@MethodSource("reasoningModelsFromOpenRouter")
+	void reasoning(StreamingChatModel streamingChatModel) {
+		Prompt prompt = new Prompt(this.conversation);
+		Flux<ChatResponse> flux = streamingChatModel.stream(prompt);
+
+		List<ChatResponse> responses = flux.collectList().block();
+		assertThat(responses).hasSizeGreaterThan(1);
+
+		String stitchedResponseContent = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getReasoningContent)
+			.collect(Collectors.joining());
+
+		System.out.println(stitchedResponseContent);
+
+		assertThat(stitchedResponseContent).isNotEmpty();
+	}
+
 }

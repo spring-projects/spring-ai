@@ -86,7 +86,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null));
 		// Test for empty.
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null, Collections.emptyList(), null,
-				null, null, null));
+				null, null, null, null));
 	}
 
 	@Test
@@ -99,7 +99,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		};
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null,
 				List.of(Mockito.mock(org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall.class)),
-				null, null, null, null));
+				null, null, null, null, null));
 	}
 
 	@Test
