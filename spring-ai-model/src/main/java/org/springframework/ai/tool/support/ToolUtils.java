@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
@@ -39,11 +42,14 @@ import org.springframework.util.StringUtils;
  */
 public final class ToolUtils {
 
+	private static final Logger logger = LoggerFactory.getLogger(ToolUtils.class);
+
 	/**
-	 * Regular expression pattern for valid tool names. Tool names can only contain
-	 * alphanumeric characters, underscores, hyphens, and dots.
+	 * Regular expression pattern for recommended tool names. Tool names should contain
+	 * only alphanumeric characters, underscores, hyphens, and dots for maximum
+	 * compatibility across different LLMs.
 	 */
-	private static final Pattern TOOL_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\.-]+$");
+	private static final Pattern RECOMMENDED_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\.-]+$");
 
 	private ToolUtils() {
 	}
@@ -115,17 +121,15 @@ public final class ToolUtils {
 	}
 
 	/**
-	 * Validates that a tool name conforms to the required pattern. Tool names can only
-	 * contain alphanumeric characters, underscores, hyphens, and dots.
+	 * Validates that a tool name follows recommended naming conventions. Logs a warning
+	 * if the tool name contains characters that may not be compatible with some LLMs.
 	 * @param toolName the tool name to validate
-	 * @throws IllegalArgumentException if the tool name contains invalid characters
 	 */
 	private static void validateToolName(String toolName) {
 		Assert.hasText(toolName, "Tool name cannot be null or empty");
-		if (!TOOL_NAME_PATTERN.matcher(toolName).matches()) {
-			throw new IllegalArgumentException(
-					"Tool name '%s' contains invalid characters. Tool names can only contain alphanumeric characters, underscores, hyphens, and dots."
-						.formatted(toolName));
+		if (!RECOMMENDED_NAME_PATTERN.matcher(toolName).matches()) {
+			logger.warn("Tool name '{}' may not be compatible with some LLMs (e.g., OpenAI). "
+					+ "Consider using only alphanumeric characters, underscores, hyphens, and dots.", toolName);
 		}
 	}
 

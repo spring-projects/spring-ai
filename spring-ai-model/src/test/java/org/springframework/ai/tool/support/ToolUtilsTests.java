@@ -55,26 +55,28 @@ class ToolUtilsTests {
 	}
 
 	@Test
-	void getToolNameFromMethodWithInvalidNameContainingSpaces() throws NoSuchMethodException {
+	void getToolNameFromMethodWithNameContainingSpaces() throws NoSuchMethodException {
+		// Tool names with spaces are now allowed but will generate a warning log
 		Method method = TestTools.class.getMethod("methodWithSpacesInName");
-		assertThatThrownBy(() -> ToolUtils.getToolName(method)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Tool name 'invalid tool name' contains invalid characters")
-			.hasMessageContaining(
-					"Tool names can only contain alphanumeric characters, underscores, hyphens, and dots");
+		String toolName = ToolUtils.getToolName(method);
+		assertThat(toolName).isEqualTo("invalid tool name");
 	}
 
 	@Test
-	void getToolNameFromMethodWithInvalidNameContainingSpecialChars() throws NoSuchMethodException {
+	void getToolNameFromMethodWithNameContainingSpecialChars() throws NoSuchMethodException {
+		// Tool names with special characters are now allowed but will generate a warning
+		// log
 		Method method = TestTools.class.getMethod("methodWithSpecialCharsInName");
-		assertThatThrownBy(() -> ToolUtils.getToolName(method)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Tool name 'tool@name!' contains invalid characters");
+		String toolName = ToolUtils.getToolName(method);
+		assertThat(toolName).isEqualTo("tool@name!");
 	}
 
 	@Test
-	void getToolNameFromMethodWithInvalidNameContainingParentheses() throws NoSuchMethodException {
+	void getToolNameFromMethodWithNameContainingParentheses() throws NoSuchMethodException {
+		// Tool names with parentheses are now allowed but will generate a warning log
 		Method method = TestTools.class.getMethod("methodWithParenthesesInName");
-		assertThatThrownBy(() -> ToolUtils.getToolName(method)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Tool name 'tool()' contains invalid characters");
+		String toolName = ToolUtils.getToolName(method);
+		assertThat(toolName).isEqualTo("tool()");
 	}
 
 	@Test
@@ -104,6 +106,14 @@ class ToolUtilsTests {
 		Method method = TestTools.class.getMethod("methodWithDescription");
 		String description = ToolUtils.getToolDescription(method);
 		assertThat(description).isEqualTo("This is a tool description");
+	}
+
+	@Test
+	void getToolNameFromMethodWithUnicodeCharacters() throws NoSuchMethodException {
+		// Tool names with unicode characters should be allowed for non-English contexts
+		Method method = TestTools.class.getMethod("methodWithUnicodeName");
+		String toolName = ToolUtils.getToolName(method);
+		assertThat(toolName).isEqualTo("获取天气");
 	}
 
 	// Test helper class with various tool methods
@@ -146,6 +156,11 @@ class ToolUtilsTests {
 		@Tool(description = "This is a tool description")
 		public void methodWithDescription() {
 			// Method with description
+		}
+
+		@Tool(name = "获取天气")
+		public void methodWithUnicodeName() {
+			// Method with unicode characters in tool name (Chinese: "get weather")
 		}
 
 	}
