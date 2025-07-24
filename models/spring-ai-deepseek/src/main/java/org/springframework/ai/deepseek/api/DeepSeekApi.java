@@ -608,7 +608,7 @@ public class DeepSeekApi {
 			@JsonProperty("tool_calls")
 			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("prefix") Boolean prefix,
-			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
+			@JsonProperty(value = "reasoning_content", access = JsonProperty.Access.WRITE_ONLY) String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other

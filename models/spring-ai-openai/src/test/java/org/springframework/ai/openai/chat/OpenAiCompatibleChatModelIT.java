@@ -80,6 +80,16 @@ public class OpenAiCompatibleChatModelIT {
 				.build());
 		}
 
+		if (System.getenv("GROQ_API_KEY") != null) {
+			builder.add(OpenAiChatModel.builder()
+				.openAiApi(OpenAiApi.builder()
+					.baseUrl("https://api.groq.com/openai")
+					.apiKey(System.getenv("GROQ_API_KEY"))
+					.build())
+				.defaultOptions(forModelName("llama-3.3-70b-versatile"))
+				.build());
+		}
+
 		return builder.build();
 	}
 
@@ -143,8 +153,6 @@ public class OpenAiCompatibleChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getReasoningContent)
 			.collect(Collectors.joining());
-
-		System.out.println(stitchedResponseContent);
 
 		assertThat(stitchedResponseContent).isNotEmpty();
 	}
