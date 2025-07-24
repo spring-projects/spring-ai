@@ -50,6 +50,8 @@ public class McpToolCallbackAutoConfiguration {
 	 * <p>
 	 * These callbacks enable integration with Spring AI's tool execution framework,
 	 * allowing MCP tools to be used as part of AI interactions.
+	 * @param syncClientsToolFilter list of {@link McpSyncClientBiPredicate}s for the sync
+	 * client to filter the discovered tools
 	 * @param syncMcpClients provider of MCP sync clients
 	 * @return list of tool callbacks for MCP integration
 	 */
