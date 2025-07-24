@@ -107,8 +107,8 @@ public class PgVectorEmbeddingDimensionsTests {
 		given(this.embeddingModel.dimensions()).willReturn(embeddingModelDimensions);
 
 		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
-				.dimensions(0)
-				.build();
+			.dimensions(0)
+			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();
 
 		assertThat(actualDimensions).isEqualTo(embeddingModelDimensions);
@@ -121,11 +121,12 @@ public class PgVectorEmbeddingDimensionsTests {
 		given(this.embeddingModel.dimensions()).willReturn(embeddingModelDimensions);
 
 		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
-				.dimensions(-1)
-				.build();
+			.dimensions(-1)
+			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();
 
 		assertThat(actualDimensions).isEqualTo(embeddingModelDimensions);
 		verify(this.embeddingModel, only()).dimensions();
 	}
+
 }
