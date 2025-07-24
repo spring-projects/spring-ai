@@ -81,8 +81,8 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	/**
 	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance with a list of MCP
 	 * clients.
-	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
+	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 */
 	public AsyncMcpToolCallbackProvider(BiPredicate<McpAsyncClient, Tool> toolFilter, List<McpAsyncClient> mcpClients) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
@@ -106,8 +106,8 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	/**
 	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance with one or more MCP
 	 * clients.
-	 * @param mcpClients the MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
+	 * @param mcpClients the MCP clients to use for discovering tools
 	 */
 	public AsyncMcpToolCallbackProvider(BiPredicate<McpAsyncClient, Tool> toolFilter, McpAsyncClient... mcpClients) {
 		this(toolFilter, List.of(mcpClients));

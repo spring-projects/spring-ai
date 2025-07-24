@@ -30,6 +30,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.lang.Nullable;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -57,6 +58,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @see ToolCallback
  * @see McpSyncClient
  * @see Tool
@@ -114,13 +116,19 @@ public class SyncMcpToolCallback implements ToolCallback {
 	 */
 	@Override
 	public String call(String functionInput) {
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
+		return this.call(functionInput, null);
+	}
+
+	@Override
+	public String call(String toolArguments, @Nullable ToolContext toolContext) {
+		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolArguments);
 
 		CallToolResult response;
 		try {
 			// Note that we use the original tool name here, not the adapted one from
 			// getToolDefinition
-			response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
+			response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments,
+					(toolContext != null ? toolContext.getContext() : Map.of())));
 		}
 		catch (Exception ex) {
 			logger.error("Exception while tool calling: ", ex);
@@ -133,12 +141,6 @@ public class SyncMcpToolCallback implements ToolCallback {
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
 		return ModelOptionsUtils.toJsonString(response.content());
-	}
-
-	@Override
-	public String call(String toolArguments, ToolContext toolContext) {
-		// ToolContext is not supported by the MCP tools
-		return this.call(toolArguments);
 	}
 
 }

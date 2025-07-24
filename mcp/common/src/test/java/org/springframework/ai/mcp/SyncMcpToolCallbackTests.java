@@ -37,7 +37,9 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,9 +86,7 @@ class SyncMcpToolCallbackTests {
 	}
 
 	@Test
-	void callShouldIgnoreToolContext() {
-		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
-		// "1.0.0"));
+	void shouldApplyToolContext() {
 
 		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
@@ -97,6 +97,12 @@ class SyncMcpToolCallbackTests {
 		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
 		assertThat(response).isNotNull();
+
+		verify(this.mcpClient).callTool(argThat(callToolRequest -> callToolRequest.name().equals("testTool")));
+		verify(this.mcpClient)
+			.callTool(argThat(callToolRequest -> callToolRequest.arguments().equals(Map.of("param", "value"))));
+		verify(this.mcpClient)
+			.callTool(argThat(callToolRequest -> callToolRequest.meta().equals(Map.of("foo", "bar"))));
 	}
 
 	@Test

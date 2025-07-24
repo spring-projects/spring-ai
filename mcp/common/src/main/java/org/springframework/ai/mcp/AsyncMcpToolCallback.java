@@ -28,6 +28,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.lang.Nullable;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -55,6 +56,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  * @see ToolCallback
  * @see McpAsyncClient
  * @see Tool
@@ -109,25 +111,30 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 */
 	@Override
 	public String call(String functionInput) {
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		// Note that we use the original tool name here, not the adapted one from
-		// getToolDefinition
-		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).onErrorMap(exception -> {
-			// If the tool throws an error during execution
-			throw new ToolExecutionException(this.getToolDefinition(), exception);
-		}).map(response -> {
-			if (response.isError() != null && response.isError()) {
-				throw new ToolExecutionException(this.getToolDefinition(),
-						new IllegalStateException("Error calling tool: " + response.content()));
-			}
-			return ModelOptionsUtils.toJsonString(response.content());
-		}).contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext())).block();
+		return this.call(functionInput, null);
 	}
 
 	@Override
-	public String call(String toolArguments, ToolContext toolContext) {
-		// ToolContext is not supported by the MCP tools
-		return this.call(toolArguments);
+	public String call(String toolArguments, @Nullable ToolContext toolContext) {
+		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolArguments);
+		// Note that we use the original tool name here, not the adapted one from
+		// getToolDefinition
+		return this.asyncMcpClient
+			.callTool(new CallToolRequest(this.tool.name(), arguments,
+					toolContext != null ? toolContext.getContext() : Map.of()))
+			.onErrorMap(exception -> {
+				// If the tool throws an error during execution
+				throw new ToolExecutionException(this.getToolDefinition(), exception);
+			})
+			.map(response -> {
+				if (response.isError() != null && response.isError()) {
+					throw new ToolExecutionException(this.getToolDefinition(),
+							new IllegalStateException("Error calling tool: " + response.content()));
+				}
+				return ModelOptionsUtils.toJsonString(response.content());
+			})
+			.contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext()))
+			.block();
 	}
 
 }
