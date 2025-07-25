@@ -70,7 +70,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 	private final List<McpSyncClient> mcpClients;
 
-	private final McpSyncClientBiPredicate toolFilter;
+	private final McpClientBiPredicate toolFilter;
 
 	/**
 	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
@@ -78,7 +78,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
 	 */
-	public SyncMcpToolCallbackProvider(McpSyncClientBiPredicate toolFilter, List<McpSyncClient> mcpClients) {
+	public SyncMcpToolCallbackProvider(McpClientBiPredicate toolFilter, List<McpSyncClient> mcpClients) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		this.mcpClients = mcpClients;
@@ -100,7 +100,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param mcpClients the MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
 	 */
-	public SyncMcpToolCallbackProvider(McpSyncClientBiPredicate toolFilter, McpSyncClient... mcpClients) {
+	public SyncMcpToolCallbackProvider(McpClientBiPredicate toolFilter, McpSyncClient... mcpClients) {
 		this(toolFilter, List.of(mcpClients));
 	}
 
@@ -131,7 +131,8 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			.flatMap(mcpClient -> mcpClient.listTools()
 				.tools()
 				.stream()
-				.filter(tool -> this.toolFilter.test(mcpClient, tool))
+				.filter(tool -> this.toolFilter.test(new McpClientMetadata(mcpClient.getClientCapabilities(),
+						mcpClient.getClientInfo(), mcpClient.initialize()), tool))
 				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
 			.toArray(ToolCallback[]::new);
 		validateToolCallbacks(array);
