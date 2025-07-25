@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -101,16 +102,8 @@ final class DefaultChatClientUtils {
 		if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
 			if (!inputRequest.getToolNames().isEmpty() || !inputRequest.getToolCallbacks().isEmpty()
 					|| !CollectionUtils.isEmpty(inputRequest.getToolContext())) {
-				processedChatOptions = DefaultToolCallingChatOptions.builder()
-					.model(defaultChatOptions.getModel())
-					.frequencyPenalty(defaultChatOptions.getFrequencyPenalty())
-					.maxTokens(defaultChatOptions.getMaxTokens())
-					.presencePenalty(defaultChatOptions.getPresencePenalty())
-					.stopSequences(defaultChatOptions.getStopSequences())
-					.temperature(defaultChatOptions.getTemperature())
-					.topK(defaultChatOptions.getTopK())
-					.topP(defaultChatOptions.getTopP())
-					.build();
+				processedChatOptions = ModelOptionsUtils.copyToTarget(defaultChatOptions, ChatOptions.class,
+						DefaultToolCallingChatOptions.class);
 			}
 		}
 
