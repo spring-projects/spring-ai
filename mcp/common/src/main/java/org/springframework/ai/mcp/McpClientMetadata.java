@@ -16,17 +16,13 @@
 
 package org.springframework.ai.mcp;
 
-import java.util.function.BiPredicate;
-
-import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
 /**
- * A {@link BiPredicate} for {@link AsyncMcpToolCallbackProvider} to filter the discovered
- * tool for the given {@link McpAsyncClient}.
+ * MCP client metadata record containing the client/server specific data.
  *
  * @author Ilayaperumal Gopinathan
  */
-public interface McpAsyncClientBiPredicate extends BiPredicate<McpAsyncClient, McpSchema.Tool> {
-
+public record McpClientMetadata(McpSchema.ClientCapabilities clientCapabilities, McpSchema.Implementation clientInfo,
+		McpSchema.InitializeResult initializeResult) {
 }

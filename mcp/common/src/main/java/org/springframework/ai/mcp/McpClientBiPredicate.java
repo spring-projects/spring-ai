@@ -22,11 +22,12 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
 /**
- * A {@link BiPredicate} for {@link SyncMcpToolCallbackProvider} to filter the discovered
- * tool for the given {@link McpSyncClient}.
+ * A {@link BiPredicate} for {@link SyncMcpToolCallbackProvider} and the
+ * {@link AsyncMcpToolCallbackProvider} to filter the discovered tool for the given
+ * {@link McpClientMetadata}.
  *
  * @author Ilayaperumal Gopinathan
  */
-public interface McpSyncClientBiPredicate extends BiPredicate<McpSyncClient, McpSchema.Tool> {
+public interface McpClientBiPredicate extends BiPredicate<McpClientMetadata, McpSchema.Tool> {
 
 }
