@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.content.Content;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
