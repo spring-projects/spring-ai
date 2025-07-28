@@ -104,7 +104,15 @@ public final class MethodToolCallback implements ToolCallback {
 
 		Map<String, Object> toolArguments = extractToolArguments(toolInput);
 
-		Object[] methodArguments = buildMethodArguments(toolArguments, toolContext);
+		Object[] methodArguments;
+		try {
+			methodArguments = buildMethodArguments(toolArguments, toolContext);
+		}
+		catch (IllegalArgumentException ex) {
+			logger.debug("Failed to build method arguments for tool: {}. Error: {}", this.toolDefinition.name(),
+					ex.getMessage());
+			throw new ToolExecutionException(this.toolDefinition, ex);
+		}
 
 		Object result = callMethod(methodArguments);
 
