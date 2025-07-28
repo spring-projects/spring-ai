@@ -34,15 +34,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.springframework.ai.ollama.api.*;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
-import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -201,12 +199,7 @@ class OpenSearchVectorStoreWithOllamaIT {
 		public EmbeddingModel embeddingModel() {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(OllamaApi.builder().build())
-				.defaultOptions(OllamaOptions.builder()
-					.model(OllamaModel.MXBAI_EMBED_LARGE)
-					.mainGPU(11)
-					.useMMap(true)
-					.numGPU(1)
-					.build())
+				.defaultOptions(OllamaEmbeddingOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE).build())
 				.build();
 		}
 

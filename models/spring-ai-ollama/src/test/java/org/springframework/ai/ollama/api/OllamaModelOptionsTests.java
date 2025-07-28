@@ -33,7 +33,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testBasicOptions() {
-		var options = OllamaOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
+		var options = OllamaChatOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("temperature", 3.14);
@@ -43,7 +43,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testAllNumericOptions() {
-		var options = OllamaOptions.builder()
+		var options = OllamaChatOptions.builder()
 			.numCtx(2048)
 			.numBatch(512)
 			.numGPU(1)
@@ -91,7 +91,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testBooleanOptions() {
-		var options = OllamaOptions.builder()
+		var options = OllamaChatOptions.builder()
 			.truncate(true)
 			.useNUMA(true)
 			.lowVRAM(false)
@@ -117,7 +117,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testModelAndFormat() {
-		var options = OllamaOptions.builder().model("llama2").format("json").build();
+		var options = OllamaChatOptions.builder().model("llama2").format("json").build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("model", "llama2");
@@ -126,7 +126,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testFunctionAndToolOptions() {
-		var options = OllamaOptions.builder()
+		var options = OllamaChatOptions.builder()
 			.toolNames("function1")
 			.toolNames("function2")
 			.toolNames("function3")
@@ -150,21 +150,21 @@ public class OllamaModelOptionsTests {
 		functionSet.add("function1");
 		functionSet.add("function2");
 
-		var options = OllamaOptions.builder().toolNames(functionSet).toolNames("function3").build();
+		var options = OllamaChatOptions.builder().toolNames(functionSet).toolNames("function3").build();
 
 		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
 	}
 
 	@Test
 	public void testFromOptions() {
-		var originalOptions = OllamaOptions.builder()
+		var originalOptions = OllamaChatOptions.builder()
 			.model("llama2")
 			.temperature(0.7)
 			.topK(40)
 			.toolNames(Set.of("function1"))
 			.build();
 
-		var copiedOptions = OllamaOptions.fromOptions(originalOptions);
+		var copiedOptions = OllamaChatOptions.fromOptions(originalOptions);
 
 		// Test the copied options directly rather than through toMap()
 		assertThat(copiedOptions.getModel()).isEqualTo("llama2");
@@ -175,7 +175,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testFunctionOptionsNotInMap() {
-		var options = OllamaOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
+		var options = OllamaChatOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
 
 		var optionsMap = options.toMap();
 
@@ -190,10 +190,14 @@ public class OllamaModelOptionsTests {
 		assertThat(options.getToolNames()).containsExactly("function1");
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void testDeprecatedMethods() {
-		var options = OllamaOptions.builder().model("llama2").temperature(0.7).topK(40).toolNames("function1").build();
+		var options = OllamaChatOptions.builder()
+			.model("llama2")
+			.temperature(0.7)
+			.topK(40)
+			.toolNames("function1")
+			.build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("model", "llama2");

@@ -16,7 +16,6 @@
 
 package org.springframework.ai.ollama;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,7 @@ import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
-import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,7 +63,7 @@ public class OllamaEmbeddingModelTests {
 					List.of(new float[] { 7f, 8f, 9f }, new float[] { 10f, 11f, 12f }), 0L, 0L, 0));
 
 		// Tests default options
-		var defaultOptions = OllamaOptions.builder().model("DEFAULT_MODEL").build();
+		var defaultOptions = OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").build();
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(this.ollamaApi)
@@ -90,12 +89,7 @@ public class OllamaEmbeddingModelTests {
 		assertThat(this.embeddingsRequestCaptor.getValue().model()).isEqualTo("DEFAULT_MODEL");
 
 		// Tests runtime options
-		var runtimeOptions = OllamaOptions.builder()
-			.model("RUNTIME_MODEL")
-			.keepAlive("10m")
-			.truncate(false)
-			.mainGPU(666)
-			.build();
+		var runtimeOptions = OllamaEmbeddingOptions.builder().model("RUNTIME_MODEL").build();
 
 		response = embeddingModel.call(new EmbeddingRequest(List.of("Input4", "Input5", "Input6"), runtimeOptions));
 
@@ -108,10 +102,7 @@ public class OllamaEmbeddingModelTests {
 		assertThat(response.getResults().get(1).getMetadata()).isEqualTo(EmbeddingResultMetadata.EMPTY);
 		assertThat(response.getMetadata().getModel()).isEqualTo("RESPONSE_MODEL_NAME2");
 
-		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo(Duration.ofMinutes(10));
-		assertThat(this.embeddingsRequestCaptor.getValue().truncate()).isFalse();
 		assertThat(this.embeddingsRequestCaptor.getValue().input()).isEqualTo(List.of("Input4", "Input5", "Input6"));
-		assertThat(this.embeddingsRequestCaptor.getValue().options()).isEqualTo(Map.of("main_gpu", 666));
 		assertThat(this.embeddingsRequestCaptor.getValue().model()).isEqualTo("RUNTIME_MODEL");
 
 	}

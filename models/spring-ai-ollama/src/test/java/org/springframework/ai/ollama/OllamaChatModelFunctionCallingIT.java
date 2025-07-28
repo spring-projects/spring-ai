@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -62,7 +64,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OllamaOptions.builder()
+		var promptOptions = OllamaChatOptions.builder()
 			.model(MODEL)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -85,7 +87,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OllamaOptions.builder()
+		var promptOptions = OllamaChatOptions.builder()
 			.model(MODEL)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -121,7 +123,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
