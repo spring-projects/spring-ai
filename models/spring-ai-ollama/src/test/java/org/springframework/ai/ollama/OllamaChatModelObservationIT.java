@@ -23,6 +23,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -33,7 +34,6 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -68,7 +68,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 	@Test
 	void observationForChatOperation() {
-		var options = OllamaOptions.builder()
+		var options = OllamaChatOptions.builder()
 			.model(MODEL)
 			.frequencyPenalty(0.0)
 			.numPredict(2048)
@@ -92,7 +92,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 	@Test
 	void observationForStreamingChatOperation() {
-		var options = OllamaOptions.builder()
+		var options = OllamaChatOptions.builder()
 			.model(MODEL)
 			.frequencyPenalty(0.0)
 			.numPredict(2048)

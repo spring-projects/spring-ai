@@ -32,8 +32,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.retry.RetryUtils;
 
@@ -57,7 +57,7 @@ class OllamaChatModelTests {
 	void buildOllamaChatModelWithDeprecatedConstructor() {
 		ChatModel chatModel = OllamaChatModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaOptions.builder().model(OllamaModel.MISTRAL).build())
+			.defaultOptions(OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build())
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
 		assertThat(chatModel).isNotNull();
@@ -66,7 +66,7 @@ class OllamaChatModelTests {
 	@Test
 	void buildOllamaChatModelWithConstructor() {
 		ChatModel chatModel = new OllamaChatModel(this.ollamaApi,
-				OllamaOptions.builder().model(OllamaModel.MISTRAL).build(), ToolCallingManager.builder().build(),
+				OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build(), ToolCallingManager.builder().build(),
 				ObservationRegistry.NOOP, ModelManagementOptions.builder().build());
 		assertThat(chatModel).isNotNull();
 	}
@@ -82,7 +82,7 @@ class OllamaChatModelTests {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
 					.ollamaApi(this.ollamaApi)
-					.defaultOptions(OllamaOptions.builder().model(OllamaModel.LLAMA2).build())
+					.defaultOptions(OllamaChatOptions.builder().model(OllamaModel.LLAMA2).build())
 					.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 					.modelManagementOptions(null)
 					.build());
