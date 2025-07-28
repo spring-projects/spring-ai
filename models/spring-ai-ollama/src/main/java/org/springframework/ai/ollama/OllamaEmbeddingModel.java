@@ -41,6 +41,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
@@ -69,7 +70,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OllamaApi ollamaApi;
 
-	private final OllamaOptions defaultOptions;
+	private final OllamaEmbeddingOptions defaultOptions;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -77,7 +78,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "options must not be null");
@@ -146,15 +147,15 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
-		OllamaOptions runtimeOptions = null;
+		OllamaEmbeddingOptions runtimeOptions = null;
 		if (embeddingRequest.getOptions() != null) {
 			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					OllamaOptions.class);
+					OllamaEmbeddingOptions.class);
 		}
 
 		// Define request options by merging runtime options and default options
-		OllamaOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				OllamaOptions.class);
+		OllamaEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				OllamaEmbeddingOptions.class);
 
 		// Validate request options
 		if (!StringUtils.hasText(requestOptions.getModel())) {
@@ -168,10 +169,17 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	 * Package access for testing.
 	 */
 	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		OllamaOptions requestOptions = (OllamaOptions) embeddingRequest.getOptions();
+		OllamaEmbeddingOptions requestOptions = null;
+		if (embeddingRequest.getOptions() instanceof OllamaEmbeddingOptions) {
+			requestOptions = (OllamaEmbeddingOptions) embeddingRequest.getOptions();
+		}
+		else {
+			requestOptions = OllamaEmbeddingOptions.fromOptions((OllamaOptions) embeddingRequest.getOptions());
+		}
+
 		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
 				DurationParser.parse(requestOptions.getKeepAlive()),
-				OllamaOptions.filterNonSupportedFields(requestOptions.toMap()), requestOptions.getTruncate());
+				OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()), requestOptions.getTruncate());
 	}
 
 	/**
@@ -227,7 +235,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.builder()
+		private OllamaEmbeddingOptions defaultOptions = OllamaEmbeddingOptions.builder()
 			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
 			.build();
 
@@ -243,7 +251,13 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			return this;
 		}
 
+		@Deprecated
 		public Builder defaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = OllamaEmbeddingOptions.fromOptions(defaultOptions);
+			return this;
+		}
+
+		public Builder defaultOptions(OllamaEmbeddingOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
 			return this;
 		}
