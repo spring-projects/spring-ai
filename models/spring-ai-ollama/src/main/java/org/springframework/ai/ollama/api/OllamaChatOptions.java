@@ -31,7 +31,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -49,11 +48,9 @@ import org.springframework.util.Assert;
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
- * @deprecated use OllamaChatOptions or OllamaEmbeddingOptions instead.
  */
 @JsonInclude(Include.NON_NULL)
-@Deprecated
-public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
+public class OllamaChatOptions implements ToolCallingChatOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
@@ -65,11 +62,8 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	/**
 	 * Whether to use NUMA. (Default: false)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("numa")
-	@Deprecated
 	private Boolean useNUMA;
 
 	/**
@@ -104,39 +98,27 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	/**
 	 * (Default: false)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("low_vram")
-	@Deprecated
 	private Boolean lowVRAM;
 
 	/**
 	 * (Default: true)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("f16_kv")
-	@Deprecated
 	private Boolean f16KV;
 
 	/**
 	 * Return logits for all the tokens, not just the last one.
 	 * To enable completions to return logprobs, this must be true.
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("logits_all")
-	@Deprecated
 	private Boolean logitsAll;
 
 	/**
 	 * Load only the vocabulary, not the weights.
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("vocab_only")
-	@Deprecated
 	private Boolean vocabOnly;
 
 	/**
@@ -156,11 +138,8 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	 * This can improve performance but trades away some of the advantages of memory-mapping
 	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
 	 * (Default: false)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("use_mlock")
-	@Deprecated
 	private Boolean useMLock;
 
 	/**
@@ -225,11 +204,8 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	 * Tail free sampling is used to reduce the impact of less probable tokens
 	 * from the output. A higher value (e.g., 2.0) will reduce the impact more, while a
 	 * value of 1.0 disables this setting. (default: 1)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("tfs_z")
-	@Deprecated
 	private Float tfsZ;
 
 	/**
@@ -275,41 +251,29 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	/**
 	 * Enable Mirostat sampling for controlling perplexity. (default: 0, 0
 	 * = disabled, 1 = Mirostat, 2 = Mirostat 2.0)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("mirostat")
-	@Deprecated
 	private Integer mirostat;
 
 	/**
 	 * Controls the balance between coherence and diversity of the output.
 	 * A lower value will result in more focused and coherent text. (Default: 5.0)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("mirostat_tau")
-	@Deprecated
 	private Float mirostatTau;
 
 	/**
 	 * Influences how quickly the algorithm responds to feedback from the generated text.
 	 * A lower learning rate will result in slower adjustments, while a higher learning rate
 	 * will make the algorithm more responsive. (Default: 0.1)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("mirostat_eta")
-	@Deprecated
 	private Float mirostatEta;
 
 	/**
 	 * (Default: true)
-	 *
-	 * @deprecated Not supported in Ollama anymore.
 	 */
 	@JsonProperty("penalize_newline")
-	@Deprecated
 	private Boolean penalizeNewline;
 
 	/**
@@ -394,7 +358,49 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
+	public static OllamaChatOptions fromOptions(OllamaChatOptions fromOptions) {
+		return builder()
+				.model(fromOptions.getModel())
+				.format(fromOptions.getFormat())
+				.keepAlive(fromOptions.getKeepAlive())
+				.truncate(fromOptions.getTruncate())
+				.useNUMA(fromOptions.getUseNUMA())
+				.numCtx(fromOptions.getNumCtx())
+				.numBatch(fromOptions.getNumBatch())
+				.numGPU(fromOptions.getNumGPU())
+				.mainGPU(fromOptions.getMainGPU())
+				.lowVRAM(fromOptions.getLowVRAM())
+				.f16KV(fromOptions.getF16KV())
+				.logitsAll(fromOptions.getLogitsAll())
+				.vocabOnly(fromOptions.getVocabOnly())
+				.useMMap(fromOptions.getUseMMap())
+				.useMLock(fromOptions.getUseMLock())
+				.numThread(fromOptions.getNumThread())
+				.numKeep(fromOptions.getNumKeep())
+				.seed(fromOptions.getSeed())
+				.numPredict(fromOptions.getNumPredict())
+				.topK(fromOptions.getTopK())
+				.topP(fromOptions.getTopP())
+				.minP(fromOptions.getMinP())
+				.tfsZ(fromOptions.getTfsZ())
+				.typicalP(fromOptions.getTypicalP())
+				.repeatLastN(fromOptions.getRepeatLastN())
+				.temperature(fromOptions.getTemperature())
+				.repeatPenalty(fromOptions.getRepeatPenalty())
+				.presencePenalty(fromOptions.getPresencePenalty())
+				.frequencyPenalty(fromOptions.getFrequencyPenalty())
+				.mirostat(fromOptions.getMirostat())
+				.mirostatTau(fromOptions.getMirostatTau())
+				.mirostatEta(fromOptions.getMirostatEta())
+				.penalizeNewline(fromOptions.getPenalizeNewline())
+				.stop(fromOptions.getStop())
+				.toolNames(fromOptions.getToolNames())
+				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.toolCallbacks(fromOptions.getToolCallbacks())
+				.toolContext(fromOptions.getToolContext()).build();
+	}
+
+	public static OllamaChatOptions fromOptions(OllamaOptions fromOptions) {
 		return builder()
 				.model(fromOptions.getModel())
 				.format(fromOptions.getFormat())
@@ -464,18 +470,10 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.keepAlive = keepAlive;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Boolean getUseNUMA() {
 		return this.useNUMA;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setUseNUMA(Boolean useNUMA) {
 		this.useNUMA = useNUMA;
 	}
@@ -512,66 +510,34 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.mainGPU = mainGPU;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Boolean getLowVRAM() {
 		return this.lowVRAM;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setLowVRAM(Boolean lowVRAM) {
 		this.lowVRAM = lowVRAM;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Boolean getF16KV() {
 		return this.f16KV;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setF16KV(Boolean f16kv) {
 		this.f16KV = f16kv;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Boolean getLogitsAll() {
 		return this.logitsAll;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setLogitsAll(Boolean logitsAll) {
 		this.logitsAll = logitsAll;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Boolean getVocabOnly() {
 		return this.vocabOnly;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setVocabOnly(Boolean vocabOnly) {
 		this.vocabOnly = vocabOnly;
 	}
@@ -584,18 +550,10 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.useMMap = useMMap;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Boolean getUseMLock() {
 		return this.useMLock;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setUseMLock(Boolean useMLock) {
 		this.useMLock = useMLock;
 	}
@@ -669,18 +627,10 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.minP = minP;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Float getTfsZ() {
 		return this.tfsZ;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setTfsZ(Float tfsZ) {
 		this.tfsZ = tfsZ;
 	}
@@ -736,66 +686,34 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.frequencyPenalty = frequencyPenalty;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Integer getMirostat() {
 		return this.mirostat;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setMirostat(Integer mirostat) {
 		this.mirostat = mirostat;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Float getMirostatTau() {
 		return this.mirostatTau;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setMirostatTau(Float mirostatTau) {
 		this.mirostatTau = mirostatTau;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Float getMirostatEta() {
 		return this.mirostatEta;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setMirostatEta(Float mirostatEta) {
 		this.mirostatEta = mirostatEta;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public Boolean getPenalizeNewline() {
 		return this.penalizeNewline;
 	}
 
-	/**
-	 * @deprecated Not supported in Ollama anymore.
-	 */
-	@Deprecated
 	public void setPenalizeNewline(Boolean penalizeNewline) {
 		this.penalizeNewline = penalizeNewline;
 	}
@@ -871,12 +789,6 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@Override
 	@JsonIgnore
-	public Integer getDimensions() {
-		return null;
-	}
-
-	@Override
-	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -888,7 +800,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	/**
-	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
+	 * Convert the {@link OllamaChatOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
@@ -896,7 +808,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	@Override
-	public OllamaOptions copy() {
+	public OllamaChatOptions copy() {
 		return fromOptions(this);
 	}
 	// @formatter:on
@@ -909,7 +821,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		OllamaOptions that = (OllamaOptions) o;
+		OllamaChatOptions that = (OllamaChatOptions) o;
 		return Objects.equals(this.model, that.model) && Objects.equals(this.format, that.format)
 				&& Objects.equals(this.keepAlive, that.keepAlive) && Objects.equals(this.truncate, that.truncate)
 				&& Objects.equals(this.useNUMA, that.useNUMA) && Objects.equals(this.numCtx, that.numCtx)
@@ -946,10 +858,9 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				this.toolContext);
 	}
 
-	@Deprecated
 	public static class Builder {
 
-		private final OllamaOptions options = new OllamaOptions();
+		private final OllamaChatOptions options = new OllamaChatOptions();
 
 		public Builder model(String model) {
 			this.options.model = model;
@@ -976,10 +887,6 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder useNUMA(Boolean useNUMA) {
 			this.options.useNUMA = useNUMA;
 			return this;
@@ -1005,37 +912,21 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder lowVRAM(Boolean lowVRAM) {
 			this.options.lowVRAM = lowVRAM;
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder f16KV(Boolean f16KV) {
 			this.options.f16KV = f16KV;
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder logitsAll(Boolean logitsAll) {
 			this.options.logitsAll = logitsAll;
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder vocabOnly(Boolean vocabOnly) {
 			this.options.vocabOnly = vocabOnly;
 			return this;
@@ -1046,10 +937,6 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder useMLock(Boolean useMLock) {
 			this.options.useMLock = useMLock;
 			return this;
@@ -1090,10 +977,6 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder tfsZ(Float tfsZ) {
 			this.options.tfsZ = tfsZ;
 			return this;
@@ -1129,37 +1012,21 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder mirostat(Integer mirostat) {
 			this.options.mirostat = mirostat;
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder mirostatTau(Float mirostatTau) {
 			this.options.mirostatTau = mirostatTau;
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder mirostatEta(Float mirostatEta) {
 			this.options.mirostatEta = mirostatEta;
 			return this;
 		}
 
-		/**
-		 * @deprecated Not supported in Ollama anymore.
-		 */
-		@Deprecated
 		public Builder penalizeNewline(Boolean penalizeNewline) {
 			this.options.penalizeNewline = penalizeNewline;
 			return this;
@@ -1207,7 +1074,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		public OllamaOptions build() {
+		public OllamaChatOptions build() {
 			return this.options;
 		}
 

@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.ToolCallback;
@@ -48,13 +49,13 @@ class OllamaChatRequestTests {
 
 	private final OllamaChatModel chatModel = OllamaChatModel.builder()
 		.ollamaApi(OllamaApi.builder().build())
-		.defaultOptions(OllamaOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
+		.defaultOptions(OllamaChatOptions.builder().model("MODEL_NAME").topK(99).temperature(66.6).numGPU(1).build())
 		.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 		.build();
 
 	@Test
 	void whenToolRuntimeOptionsThenMergeWithDefaults() {
-		OllamaOptions defaultOptions = OllamaOptions.builder()
+		OllamaChatOptions defaultOptions = OllamaChatOptions.builder()
 			.model("MODEL_NAME")
 			.internalToolExecutionEnabled(true)
 			.toolCallbacks(new TestToolCallback("tool1"), new TestToolCallback("tool2"))
@@ -66,7 +67,7 @@ class OllamaChatRequestTests {
 			.defaultOptions(defaultOptions)
 			.build();
 
-		OllamaOptions runtimeOptions = OllamaOptions.builder()
+		OllamaChatOptions runtimeOptions = OllamaChatOptions.builder()
 			.internalToolExecutionEnabled(false)
 			.toolCallbacks(new TestToolCallback("tool3"), new TestToolCallback("tool4"))
 			.toolNames("tool3")
@@ -123,6 +124,27 @@ class OllamaChatRequestTests {
 	}
 
 	@Test
+	void createRequestWithPromptOllamaChatOptions() {
+		// Runtime options should override the default options.
+		OllamaChatOptions promptOptions = OllamaChatOptions.builder().temperature(0.8).topP(0.5).numGPU(2).build();
+		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+
+		var request = this.chatModel.ollamaChatRequest(prompt, true);
+
+		assertThat(request.messages()).hasSize(1);
+		assertThat(request.stream()).isTrue();
+
+		assertThat(request.model()).isEqualTo("MODEL_NAME");
+		assertThat(request.options().get("temperature")).isEqualTo(0.8);
+		assertThat(request.options().get("top_k")).isEqualTo(99); // still the default
+		// value.
+		assertThat(request.options().get("num_gpu")).isEqualTo(2);
+		assertThat(request.options().get("top_p")).isEqualTo(0.5); // new field introduced
+		// by the
+		// promptOptions.
+	}
+
+	@Test
 	public void createRequestWithPromptPortableChatOptions() {
 		// Ollama runtime options.
 		ChatOptions portablePromptOptions = ChatOptions.builder().temperature(0.9).topK(100).topP(0.6).build();
@@ -143,7 +165,7 @@ class OllamaChatRequestTests {
 	@Test
 	public void createRequestWithPromptOptionsModelOverride() {
 		// Ollama runtime options.
-		OllamaOptions promptOptions = OllamaOptions.builder().model("PROMPT_MODEL").build();
+		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
 		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
 
 		var request = this.chatModel.ollamaChatRequest(prompt, true);
@@ -155,7 +177,7 @@ class OllamaChatRequestTests {
 	public void createRequestWithDefaultOptionsModelOverride() {
 		OllamaChatModel chatModel = OllamaChatModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
+			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
 			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.build();
 
@@ -167,6 +189,29 @@ class OllamaChatRequestTests {
 
 		// Prompt options should override the default options.
 		OllamaOptions promptOptions = OllamaOptions.builder().model("PROMPT_MODEL").build();
+		var prompt2 = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+
+		request = chatModel.ollamaChatRequest(prompt2, true);
+
+		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
+	}
+
+	@Test
+	public void createRequestWithDefaultOptionsModelChatOptionsOverride() {
+		OllamaChatModel chatModel = OllamaChatModel.builder()
+			.ollamaApi(OllamaApi.builder().build())
+			.defaultOptions(OllamaChatOptions.builder().model("DEFAULT_OPTIONS_MODEL").build())
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.build();
+
+		var prompt1 = chatModel.buildRequestPrompt(new Prompt("Test message content"));
+
+		var request = chatModel.ollamaChatRequest(prompt1, true);
+
+		assertThat(request.model()).isEqualTo("DEFAULT_OPTIONS_MODEL");
+
+		// Prompt options should override the default options.
+		OllamaChatOptions promptOptions = OllamaChatOptions.builder().model("PROMPT_MODEL").build();
 		var prompt2 = chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
 
 		request = chatModel.ollamaChatRequest(prompt2, true);
