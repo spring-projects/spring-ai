@@ -26,8 +26,10 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
-import org.springframework.ai.mcp.McpClientBiPredicate;
+import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.McpClientMetadata;
+import org.springframework.ai.mcp.McpMetadata;
+import org.springframework.ai.mcp.McpServerMetadata;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -96,7 +98,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				SyncMcpToolCallbackProvider toolCallbackProvider = context.getBean(SyncMcpToolCallbackProvider.class);
 				Field field = SyncMcpToolCallbackProvider.class.getDeclaredField("toolFilter");
 				field.setAccessible(true);
-				McpClientBiPredicate toolFilter = (McpClientBiPredicate) field.get(toolCallbackProvider);
+				McpToolFilter toolFilter = (McpToolFilter) field.get(toolCallbackProvider);
 				McpSyncClient syncClient1 = mock(McpSyncClient.class);
 				var clientInfo1 = new McpSchema.Implementation("client1", "1.0.0");
 				when(syncClient1.getClientInfo()).thenReturn(clientInfo1);
@@ -107,9 +109,11 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				McpSchema.ListToolsResult listToolsResult1 = mock(McpSchema.ListToolsResult.class);
 				when(listToolsResult1.tools()).thenReturn(List.of(tool1, tool2));
 				when(syncClient1.listTools()).thenReturn(listToolsResult1);
-				assertThat(toolFilter.test(new McpClientMetadata(null, syncClient1.getClientInfo(), null), tool1))
+				assertThat(toolFilter.test(new McpMetadata(new McpClientMetadata(null, syncClient1.getClientInfo()),
+						new McpServerMetadata(null)), tool1))
 					.isFalse();
-				assertThat(toolFilter.test(new McpClientMetadata(null, syncClient1.getClientInfo(), null), tool2))
+				assertThat(toolFilter.test(new McpMetadata(new McpClientMetadata(null, syncClient1.getClientInfo()),
+						new McpServerMetadata(null)), tool2))
 					.isTrue();
 			});
 	}
@@ -124,7 +128,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				AsyncMcpToolCallbackProvider toolCallbackProvider = context.getBean(AsyncMcpToolCallbackProvider.class);
 				Field field = AsyncMcpToolCallbackProvider.class.getDeclaredField("toolFilter");
 				field.setAccessible(true);
-				McpClientBiPredicate toolFilter = (McpClientBiPredicate) field.get(toolCallbackProvider);
+				McpToolFilter toolFilter = (McpToolFilter) field.get(toolCallbackProvider);
 				McpAsyncClient asyncClient1 = mock(McpAsyncClient.class);
 				var clientInfo1 = new McpSchema.Implementation("client1", "1.0.0");
 				when(asyncClient1.getClientInfo()).thenReturn(clientInfo1);
@@ -135,9 +139,11 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				McpSchema.ListToolsResult listToolsResult1 = mock(McpSchema.ListToolsResult.class);
 				when(listToolsResult1.tools()).thenReturn(List.of(tool1, tool2));
 				when(asyncClient1.listTools()).thenReturn(Mono.just(listToolsResult1));
-				assertThat(toolFilter.test(new McpClientMetadata(null, asyncClient1.getClientInfo(), null), tool1))
+				assertThat(toolFilter.test(new McpMetadata(new McpClientMetadata(null, asyncClient1.getClientInfo()),
+						new McpServerMetadata(null)), tool1))
 					.isFalse();
-				assertThat(toolFilter.test(new McpClientMetadata(null, asyncClient1.getClientInfo(), null), tool2))
+				assertThat(toolFilter.test(new McpMetadata(new McpClientMetadata(null, asyncClient1.getClientInfo()),
+						new McpServerMetadata(null)), tool2))
 					.isTrue();
 			});
 	}
@@ -157,11 +163,12 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 	static class McpClientFilterConfiguration {
 
 		@Bean
-		McpClientBiPredicate mcpClientFilter() {
-			return new McpClientBiPredicate() {
+		McpToolFilter mcpClientFilter() {
+			return new McpToolFilter() {
 				@Override
-				public boolean test(McpClientMetadata clientMetadata, McpSchema.Tool tool) {
-					if (clientMetadata.clientInfo().name().equals("client1") && tool.name().contains("tool1")) {
+				public boolean test(McpMetadata metadata, McpSchema.Tool tool) {
+					if (metadata.mcpClientMetadata().clientInfo().name().equals("client1")
+							&& tool.name().contains("tool1")) {
 						return false;
 					}
 					return true;
