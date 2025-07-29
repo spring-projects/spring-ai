@@ -341,6 +341,23 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");
 	}
 
+	@Test
+	void shouldProvideSourceMetadataInRealResponses() {
+		String userMessageContent = "Hello, can you respond with a simple greeting?";
+		ChatResponse response = this.chatModel.call(new Prompt(userMessageContent));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).hasSize(1);
+
+		Generation generation = response.getResult();
+		assertThat(generation).isNotNull();
+		assertThat(generation.getOutput().getText()).isNotEmpty();
+
+		// Verify that source metadata is present and set to "model"
+		String source = (String) generation.getMetadata().get("source");
+		assertThat(source).isEqualTo("model");
+	}
+
 	static class MathTools {
 
 		@Tool(description = "Multiply the two numbers")

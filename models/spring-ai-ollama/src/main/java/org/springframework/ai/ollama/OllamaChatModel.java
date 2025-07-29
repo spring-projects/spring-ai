@@ -113,6 +113,12 @@ public class OllamaChatModel implements ChatModel {
 
 	private static final String METADATA_EVAL_DURATION = "eval-duration";
 
+	private static final String METADATA_SOURCE = "source";
+
+	private static final String SOURCE_MODEL = "model";
+
+	private static final String SOURCE_TOOL = "tool";
+
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
@@ -264,6 +270,7 @@ public class OllamaChatModel implements ChatModel {
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
 					generationMetadata = ChatGenerationMetadata.builder()
 						.finishReason(ollamaResponse.doneReason())
+						.metadata(METADATA_SOURCE, SOURCE_MODEL)
 						.build();
 				}
 
@@ -340,7 +347,10 @@ public class OllamaChatModel implements ChatModel {
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.builder().finishReason(chunk.doneReason()).build();
+					generationMetadata = ChatGenerationMetadata.builder()
+						.finishReason(chunk.doneReason())
+						.metadata(METADATA_SOURCE, SOURCE_MODEL)
+						.build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);
