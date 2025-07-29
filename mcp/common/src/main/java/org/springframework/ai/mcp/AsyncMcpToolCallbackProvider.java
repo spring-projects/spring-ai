@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
-import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.util.Assert;
 import reactor.core.publisher.Flux;
 
@@ -73,7 +72,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
-	private final McpClientBiPredicate toolFilter;
+	private final McpToolFilter toolFilter;
 
 	private final List<McpAsyncClient> mcpClients;
 
@@ -83,7 +82,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param toolFilter a filter to apply to each discovered tool
 	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 */
-	public AsyncMcpToolCallbackProvider(McpClientBiPredicate toolFilter, List<McpAsyncClient> mcpClients) {
+	public AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpAsyncClient> mcpClients) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		this.toolFilter = toolFilter;
@@ -108,7 +107,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param toolFilter a filter to apply to each discovered tool
 	 * @param mcpClients the MCP clients to use for discovering tools
 	 */
-	public AsyncMcpToolCallbackProvider(McpClientBiPredicate toolFilter, McpAsyncClient... mcpClients) {
+	public AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpAsyncClient... mcpClients) {
 		this(toolFilter, List.of(mcpClients));
 	}
 
@@ -146,8 +145,9 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			ToolCallback[] toolCallbacks = mcpClient.listTools()
 				.map(response -> response.tools()
 					.stream()
-					.filter(tool -> this.toolFilter.test(new McpClientMetadata(mcpClient.getClientCapabilities(),
-							mcpClient.getClientInfo(), mcpClient.initialize().block()), tool))
+					.filter(tool -> this.toolFilter.test(new McpMetadata(
+							new McpClientMetadata(mcpClient.getClientCapabilities(), mcpClient.getClientInfo()),
+							new McpServerMetadata(mcpClient.initialize().block())), tool))
 					.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
 					.toArray(ToolCallback[]::new))
 				.block();

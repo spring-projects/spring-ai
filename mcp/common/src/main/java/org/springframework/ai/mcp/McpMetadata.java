@@ -16,12 +16,10 @@
 
 package org.springframework.ai.mcp;
 
-import io.modelcontextprotocol.spec.McpSchema;
-
 /**
- * MCP client metadata record.
+ * MCP metadata record containing the client/server specific meta data.
  *
  * @author Ilayaperumal Gopinathan
  */
-public record McpClientMetadata(McpSchema.ClientCapabilities clientCapabilities, McpSchema.Implementation clientInfo) {
+public record McpMetadata(McpClientMetadata mcpClientMetadata, McpServerMetadata mcpServermetadata) {
 }
