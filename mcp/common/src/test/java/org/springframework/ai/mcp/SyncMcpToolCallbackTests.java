@@ -31,7 +31,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.content.Content;
+import org.springframework.ai.tool.definition.McpToolDefinition;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -129,6 +130,37 @@ class SyncMcpToolCallbackTests {
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.rootCause()
 			.hasMessage("Testing tool error");
+	}
+
+	@Test
+	void getToolDefinitionShouldReturnMcpToolDefinitionInstance() {
+		var clientInfo = new Implementation("spring_ai_mcp_client", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.tool.name()).thenReturn("sum");
+		when(this.tool.description()).thenReturn("Adds two numbers");
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+
+		ToolDefinition toolDefinition = callback.getToolDefinition();
+
+		assertThat(toolDefinition).isInstanceOf(McpToolDefinition.class);
+	}
+
+	@Test
+	void getToolDefinitionShouldPreserveOriginalToolNameAndClientName() {
+		var clientInfo = new Implementation("spring_ai_mcp_client", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.tool.name()).thenReturn("sum");
+		when(this.tool.description()).thenReturn("Adds two numbers");
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+
+		ToolDefinition toolDefinition = callback.getToolDefinition();
+		McpToolDefinition mcpDefinition = (McpToolDefinition) toolDefinition;
+
+		assertThat(mcpDefinition.toolName()).isEqualTo("sum");
+		assertThat(mcpDefinition.clientName()).isEqualTo("spring_ai_mcp_client");
+		assertThat(mcpDefinition.name()).isEqualTo("spring_ai_mcp_client_sum");
 	}
 
 }
