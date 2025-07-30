@@ -223,11 +223,11 @@ public class OllamaChatModel implements ChatModel {
 				Optional.ofNullable(response.evalCount()).orElse(0));
 	}
 
-	public record ModelInformation(OllamaApi.Model model, Map<String, Object> modelInfo) {
+	public record ModelInformation(OllamaApi.Model model, OllamaApi.ShowModelResponse modelInfo) {
 	}
 
 	private ModelInformation getModelInformation(OllamaApi.Model model) {
-		var modelInfo = this.chatApi.showModel(new OllamaApi.ShowModelRequest(model.name(), false)).modelInfo();
+		var modelInfo = this.chatApi.showModel(new OllamaApi.ShowModelRequest(model.name(), false));
 		return new ModelInformation(model, modelInfo);
 	}
 
