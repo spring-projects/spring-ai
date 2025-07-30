@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -30,6 +31,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -57,6 +59,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  * @see ToolCallback
  * @see McpSyncClient
  * @see Tool
@@ -65,9 +68,13 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
 
+	private static final ToolMetadata DEFAULT_TOOL_METADATA = ToolMetadata.builder().build();
+
 	private final McpSyncClient mcpClient;
 
 	private final Tool tool;
+
+	private final ToolMetadata toolMetadata;
 
 	/**
 	 * Creates a new {@code SyncMcpToolCallback} instance.
@@ -77,7 +84,14 @@ public class SyncMcpToolCallback implements ToolCallback {
 	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
 		this.mcpClient = mcpClient;
 		this.tool = tool;
-
+		McpSchema.ToolAnnotations annotations = tool.annotations();
+		Boolean returnDirect = (annotations != null) ? annotations.returnDirect() : null;
+		if (returnDirect != null) {
+			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
+		}
+		else {
+			this.toolMetadata = DEFAULT_TOOL_METADATA;
+		}
 	}
 
 	/**
@@ -139,6 +153,11 @@ public class SyncMcpToolCallback implements ToolCallback {
 	public String call(String toolArguments, ToolContext toolContext) {
 		// ToolContext is not supported by the MCP tools
 		return this.call(toolArguments);
+	}
+
+	@Override
+	public ToolMetadata getToolMetadata() {
+		return this.toolMetadata;
 	}
 
 }
