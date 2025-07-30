@@ -17,6 +17,7 @@
 package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -29,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Ilayaperumal Gopinathan
  */
-public class GoogleGenAiModelConfigurationTests {
+class GoogleGenAiModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
 
@@ -52,6 +53,8 @@ public class GoogleGenAiModelConfigurationTests {
 	}
 
 	@Test
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
 	void chatModelActivationWithVertexAi() {
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class))
