@@ -21,7 +21,7 @@
 
 	<groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-bom</artifactId>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.0.2-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
