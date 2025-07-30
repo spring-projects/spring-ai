@@ -248,7 +248,8 @@ public class McpServerAutoConfiguration {
 		}
 
 		rootsChangeConsumers.ifAvailable(consumer -> {
-			serverBuilder.rootsChangeHandler((exchange, roots) -> consumer.accept(exchange, roots));
+			serverBuilder.rootsChangeHandler((exchange, roots) -> consumer.accept((McpSyncServerExchange) exchange,
+					(List<McpSchema.Root>) roots));
 			logger.info("Registered roots change consumer");
 		});
 
