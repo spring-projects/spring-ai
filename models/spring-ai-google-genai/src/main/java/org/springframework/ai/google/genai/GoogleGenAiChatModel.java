@@ -38,6 +38,7 @@ import com.google.genai.types.GoogleSearch;
 import com.google.genai.types.Part;
 import com.google.genai.types.SafetySetting;
 import com.google.genai.types.Schema;
+import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.Tool;
 import com.google.genai.types.FinishReason;
 import io.micrometer.observation.Observation;
@@ -671,6 +672,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		if (requestOptions.getPresencePenalty() != null) {
 			configBuilder.presencePenalty(requestOptions.getPresencePenalty().floatValue());
+		}
+		if (requestOptions.getThinkingBudget() != null) {
+			configBuilder
+				.thinkingConfig(ThinkingConfig.builder().thinkingBudget(requestOptions.getThinkingBudget()).build());
 		}
 
 		// Add safety settings
