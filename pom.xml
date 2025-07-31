@@ -281,13 +281,13 @@
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
-		<jsoup.version>1.18.3</jsoup.version>
+		<jsoup.version>1.21.1</jsoup.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.2</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
-		<pdfbox.version>3.0.4</pdfbox.version>
+		<pdfbox.version>3.0.5</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<coherence.version>24.09</coherence.version>
