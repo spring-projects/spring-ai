@@ -28,7 +28,7 @@ The MCP server can be configured using the following properties under the `sprin
 | `tool-change-notification` | `true` | Enable/disable tool change notifications |
 | `prompt-change-notification` | `true` | Enable/disable prompt change notifications |
 | `transport` | `STDIO` | Transport type (`STDIO`, `WEBMVC`, or `WEBFLUX`) |
-| `sse-message-endpoint` | `"/mcp/message"` | Server-Sent Events (SSE) message endpoint for web transports |
+| `sse-message-endpoint` | `"/mcp/messages"` | Server-Sent Events (SSE) message endpoint for web transports |
 
 ## Server Types
 
@@ -84,7 +84,7 @@ spring:
     mcp:
       server:
         transport: WEBMVC
-        sse-message-endpoint: /mcp/message  # Optional, defaults to /mcp/message
+        sse-message-endpoint: /mcp/messages  # Optional, defaults to /mcp/messages
 ```
 
 Required dependencies:
@@ -109,7 +109,7 @@ spring:
     mcp:
       server:
         transport: WEBFLUX
-        sse-message-endpoint: /mcp/message  # Optional, defaults to /mcp/message
+        sse-message-endpoint: /mcp/messages  # Optional, defaults to /mcp/messages
 ```
 
 Required dependencies:
