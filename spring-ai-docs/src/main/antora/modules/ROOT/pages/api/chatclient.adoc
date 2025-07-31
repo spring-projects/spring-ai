@@ -361,12 +361,15 @@ After specifying the `call()` method on `ChatClient`, there are a few different 
 * `String content()`: returns the String content of the response
 * `ChatResponse chatResponse()`: returns the `ChatResponse` object that contains multiple generations and also metadata about the response, for example how many token were used to create the response.
 * `ChatClientResponse chatClientResponse()`: returns a `ChatClientResponse` object that contains the `ChatResponse` object and the ChatClient execution context, giving you access to additional data used during the execution of advisors (e.g. the relevant documents retrieved in a RAG flow).
+* `ResponseEntity<?> responseEntity()`: returns a `ResponseEntity` containing the full HTTP response, including status code, headers, and body. This is useful when you need access to low-level HTTP details of the response.
 * `entity()` to return a Java type
 ** `entity(ParameterizedTypeReference<T> type)`: used to return a `Collection` of entity types.
 ** `entity(Class<T> type)`:  used to return a specific entity type.
 ** `entity(StructuredOutputConverter<T> structuredOutputConverter)`: used to specify an instance of a `StructuredOutputConverter` to convert a `String` to an entity type.
 
 You can also invoke the `stream()` method instead of `call()`.
+
+NOTE: Calling the `call()` method does not actually trigger the AI model execution. Instead, it only instructs Spring AI whether to use synchronous or streaming calls. The actual AI model invocation occurs when methods such as `content()`, `chatResponse()`, and `responseEntity()` are called
 
 == stream() return values
 
