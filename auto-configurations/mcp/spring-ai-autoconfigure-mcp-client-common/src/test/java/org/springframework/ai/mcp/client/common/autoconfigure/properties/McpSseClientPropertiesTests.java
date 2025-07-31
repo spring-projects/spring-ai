@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link McpSseClientProperties}.
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 class McpSseClientPropertiesTests {
 
@@ -105,7 +107,7 @@ class McpSseClientPropertiesTests {
 	void sseParametersRecord() {
 		String url = "http://test-server:8080/events";
 		String sseUrl = "/sse";
-		McpSseClientProperties.SseParameters params = new McpSseClientProperties.SseParameters(url, sseUrl);
+		McpSseClientProperties.SseParameters params = new McpSseClientProperties.SseParameters(url, sseUrl, null);
 
 		assertThat(params.url()).isEqualTo(url);
 		assertThat(params.sseEndpoint()).isEqualTo(sseUrl);
@@ -114,7 +116,7 @@ class McpSseClientPropertiesTests {
 	@Test
 	void sseParametersRecordWithNullSseEndpoint() {
 		String url = "http://test-server:8080/events";
-		McpSseClientProperties.SseParameters params = new McpSseClientProperties.SseParameters(url, null);
+		McpSseClientProperties.SseParameters params = new McpSseClientProperties.SseParameters(url, null, null);
 
 		assertThat(params.url()).isEqualTo(url);
 		assertThat(params.sseEndpoint()).isNull();
@@ -129,7 +131,8 @@ class McpSseClientPropertiesTests {
 	void yamlConfigurationBinding() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080/events",
-					"spring.ai.mcp.client.sse.connections.server2.url=http://otherserver:8081/events")
+					"spring.ai.mcp.client.sse.connections.server2.url=http://otherserver:8081/events",
+					"spring.ai.mcp.client.sse.connections.server2.headers.Authorization=Bearer <access_token>")
 			.run(context -> {
 				McpSseClientProperties properties = context.getBean(McpSseClientProperties.class);
 				assertThat(properties.getConnections()).hasSize(2);
@@ -139,6 +142,8 @@ class McpSseClientPropertiesTests {
 				assertThat(properties.getConnections().get("server2").url())
 					.isEqualTo("http://otherserver:8081/events");
 				assertThat(properties.getConnections().get("server2").sseEndpoint()).isNull();
+				assertThat(properties.getConnections().get("server2").headers()).containsEntry("Authorization",
+						List.of("Bearer <access_token>"));
 			});
 	}
 
@@ -150,21 +155,21 @@ class McpSseClientPropertiesTests {
 
 			// Add a connection
 			connections.put("server1",
-					new McpSseClientProperties.SseParameters("http://localhost:8080/events", "/sse"));
+					new McpSseClientProperties.SseParameters("http://localhost:8080/events", "/sse", null));
 			assertThat(properties.getConnections()).hasSize(1);
 			assertThat(properties.getConnections().get("server1").url()).isEqualTo("http://localhost:8080/events");
 			assertThat(properties.getConnections().get("server1").sseEndpoint()).isEqualTo("/sse");
 
 			// Add another connection
 			connections.put("server2",
-					new McpSseClientProperties.SseParameters("http://otherserver:8081/events", null));
+					new McpSseClientProperties.SseParameters("http://otherserver:8081/events", null, null));
 			assertThat(properties.getConnections()).hasSize(2);
 			assertThat(properties.getConnections().get("server2").url()).isEqualTo("http://otherserver:8081/events");
 			assertThat(properties.getConnections().get("server2").sseEndpoint()).isNull();
 
 			// Replace a connection
 			connections.put("server1",
-					new McpSseClientProperties.SseParameters("http://newserver:8082/events", "/events"));
+					new McpSseClientProperties.SseParameters("http://newserver:8082/events", "/events", null));
 			assertThat(properties.getConnections()).hasSize(2);
 			assertThat(properties.getConnections().get("server1").url()).isEqualTo("http://newserver:8082/events");
 			assertThat(properties.getConnections().get("server1").sseEndpoint()).isEqualTo("/events");

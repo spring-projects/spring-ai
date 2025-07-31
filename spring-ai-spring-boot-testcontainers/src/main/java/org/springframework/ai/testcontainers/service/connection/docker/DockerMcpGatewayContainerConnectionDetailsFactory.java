@@ -51,7 +51,8 @@ class DockerMcpGatewayContainerConnectionDetailsFactory
 
 		@Override
 		public Map<String, McpSseClientProperties.SseParameters> getConnections() {
-			return Map.of("gateway", new McpSseClientProperties.SseParameters(getContainer().getEndpoint(), "/sse"));
+			return Map.of("gateway",
+					new McpSseClientProperties.SseParameters(getContainer().getEndpoint(), "/sse", null));
 		}
 
 	}

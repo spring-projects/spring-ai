@@ -34,6 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -98,6 +99,13 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
 			String streamableHttpEndpoint = serverParameters.getValue().endpoint() != null
 					? serverParameters.getValue().endpoint() : "/mcp";
+			var headers = serverParameters.getValue().headers();
+			if (!CollectionUtils.isEmpty(headers)) {
+				for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+					webClientBuilder = webClientBuilder.defaultHeader(entry.getKey(),
+							entry.getValue().toArray(new String[0]));
+				}
+			}
 
 			var transport = WebClientStreamableHttpTransport.builder(webClientBuilder)
 				.endpoint(streamableHttpEndpoint)

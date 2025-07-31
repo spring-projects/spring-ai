@@ -29,6 +29,7 @@ import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link StreamableHttpWebFluxTransportAutoConfiguration}.
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 
@@ -189,10 +191,43 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void customHttpHeaders() {
+		this.applicationContext
+			.withUserConfiguration(SseWebFluxTransportAutoConfigurationTests.CustomWebClientConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.server1.headers.Authorization=Bearer <access_token>")
+			.run(context -> {
+				assertThat(context.getBean(WebClient.Builder.class)).isNotNull();
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
+						List.class);
+				assertThat(transports).hasSize(1);
+
+				WebClient webClient = getWebClient((WebClientStreamableHttpTransport) transports.get(0).transport());
+				HttpHeaders defaultHeaders = getDefaultHeaders(webClient);
+				assertThat(defaultHeaders.getFirst("Authorization")).isEqualTo("Bearer <access_token>");
+			});
+	}
+
 	private String getStreamableHttpEndpoint(WebClientStreamableHttpTransport transport) {
-		Field privateField = ReflectionUtils.findField(WebClientStreamableHttpTransport.class, "endpoint");
+		return getField(transport, "endpoint", String.class);
+	}
+
+	private WebClient getWebClient(WebClientStreamableHttpTransport transport) {
+		return getField(transport, "webClient", WebClient.class);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T getField(WebClientStreamableHttpTransport transport, String fieldName, Class<T> type) {
+		Field privateField = ReflectionUtils.findField(WebClientStreamableHttpTransport.class, fieldName);
 		ReflectionUtils.makeAccessible(privateField);
-		return (String) ReflectionUtils.getField(privateField, transport);
+		return (T) ReflectionUtils.getField(privateField, transport);
+	}
+
+	private HttpHeaders getDefaultHeaders(WebClient webClient) {
+		Field privateField = ReflectionUtils.findField(webClient.getClass(), "defaultHeaders");
+		ReflectionUtils.makeAccessible(privateField);
+		return (HttpHeaders) ReflectionUtils.getField(privateField, webClient);
 	}
 
 	@Configuration

@@ -17,6 +17,8 @@
 package org.springframework.ai.mcp.client.autoconfigure;
 
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.http.HttpRequest;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link SseHttpClientTransportAutoConfiguration}.
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 public class SseHttpClientTransportAutoConfigurationTests {
 
@@ -153,10 +156,38 @@ public class SseHttpClientTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void customHttpHeaders() {
+		this.applicationContext
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.sse.connections.server1.sse-endpoint=/custom-sse",
+					"spring.ai.mcp.client.sse.connections.server1.headers.Authorization=Bearer <access_token>")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseHttpClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(transports.get(0).name()).isEqualTo("server1");
+				assertThat(transports.get(0).transport()).isInstanceOf(HttpClientSseClientTransport.class);
+
+				HttpRequest.Builder builder = getRequestBuilder(
+						(HttpClientSseClientTransport) transports.get(0).transport());
+				assertThat(builder.uri(new URI("http://localhost:8080")).build().headers().firstValue("Authorization"))
+					.hasValue("Bearer <access_token>");
+			});
+	}
+
 	private String getSseEndpoint(HttpClientSseClientTransport transport) {
-		Field privateField = ReflectionUtils.findField(HttpClientSseClientTransport.class, "sseEndpoint");
+		return getField(transport, "sseEndpoint", String.class);
+	}
+
+	private HttpRequest.Builder getRequestBuilder(HttpClientSseClientTransport transport) {
+		return getField(transport, "requestBuilder", HttpRequest.Builder.class);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T getField(HttpClientSseClientTransport transport, String fieldName, Class<T> type) {
+		Field privateField = ReflectionUtils.findField(HttpClientSseClientTransport.class, fieldName);
 		ReflectionUtils.makeAccessible(privateField);
-		return (String) ReflectionUtils.getField(privateField, transport);
+		return (T) ReflectionUtils.getField(privateField, transport);
 	}
 
 	@Configuration

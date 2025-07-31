@@ -17,6 +17,8 @@
 package org.springframework.ai.mcp.client.autoconfigure;
 
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.http.HttpRequest;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -162,10 +164,38 @@ public class StreamableHttpHttpClientTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void customHttpHeaders() {
+		this.applicationContext.withPropertyValues(
+				"spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
+				"spring.ai.mcp.client.streamable-http.connections.server1.headers.Authorization=Bearer <access_token>")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(transports.get(0).name()).isEqualTo("server1");
+				assertThat(transports.get(0).transport()).isInstanceOf(HttpClientStreamableHttpTransport.class);
+
+				HttpRequest.Builder builder = getRequestBuilder(
+						(HttpClientStreamableHttpTransport) transports.get(0).transport());
+				assertThat(builder.uri(new URI("http://localhost:8080")).build().headers().firstValue("Authorization"))
+					.hasValue("Bearer <access_token>");
+			});
+	}
+
 	private String getStreamableHttpEndpoint(HttpClientStreamableHttpTransport transport) {
-		Field privateField = ReflectionUtils.findField(HttpClientStreamableHttpTransport.class, "endpoint");
+		return getField(transport, "endpoint", String.class);
+	}
+
+	private HttpRequest.Builder getRequestBuilder(HttpClientStreamableHttpTransport transport) {
+		return getField(transport, "requestBuilder", HttpRequest.Builder.class);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T getField(HttpClientStreamableHttpTransport transport, String fieldName, Class<T> type) {
+		Field privateField = ReflectionUtils.findField(HttpClientStreamableHttpTransport.class, fieldName);
 		ReflectionUtils.makeAccessible(privateField);
-		return (String) ReflectionUtils.getField(privateField, transport);
+		return (T) ReflectionUtils.getField(privateField, transport);
 	}
 
 	@Configuration

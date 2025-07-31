@@ -36,6 +36,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -99,6 +100,13 @@ public class SseWebFluxTransportAutoConfiguration {
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
+			var headers = serverParameters.getValue().headers();
+			if (!CollectionUtils.isEmpty(headers)) {
+				for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+					webClientBuilder = webClientBuilder.defaultHeader(entry.getKey(),
+							entry.getValue().toArray(new String[0]));
+				}
+			}
 			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
 					? serverParameters.getValue().sseEndpoint() : "/sse";
 			var transport = WebFluxSseClientTransport.builder(webClientBuilder)

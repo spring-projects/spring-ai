@@ -29,6 +29,7 @@ import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link SseWebFluxTransportAutoConfiguration}.
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 public class SseWebFluxTransportAutoConfigurationTests {
 
@@ -177,10 +179,41 @@ public class SseWebFluxTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void customHttpHeaders() {
+		this.applicationContext.withUserConfiguration(CustomWebClientConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.sse.connections.server1.headers.Authorization=Bearer <access_token>")
+			.run(context -> {
+				assertThat(context.getBean(WebClient.Builder.class)).isNotNull();
+				List<NamedClientMcpTransport> transports = context.getBean("sseWebFluxClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+
+				WebClient webClient = getWebClient((WebFluxSseClientTransport) transports.get(0).transport());
+				HttpHeaders defaultHeaders = getDefaultHeaders(webClient);
+				assertThat(defaultHeaders.getFirst("Authorization")).isEqualTo("Bearer <access_token>");
+			});
+	}
+
 	private String getSseEndpoint(WebFluxSseClientTransport transport) {
-		Field privateField = ReflectionUtils.findField(WebFluxSseClientTransport.class, "sseEndpoint");
+		return getField(transport, "sseEndpoint", String.class);
+	}
+
+	private WebClient getWebClient(WebFluxSseClientTransport transport) {
+		return getField(transport, "webClient", WebClient.class);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T getField(WebFluxSseClientTransport transport, String fieldName, Class<T> type) {
+		Field privateField = ReflectionUtils.findField(WebFluxSseClientTransport.class, fieldName);
 		ReflectionUtils.makeAccessible(privateField);
-		return (String) ReflectionUtils.getField(privateField, transport);
+		return (T) ReflectionUtils.getField(privateField, transport);
+	}
+
+	private HttpHeaders getDefaultHeaders(WebClient webClient) {
+		Field privateField = ReflectionUtils.findField(webClient.getClass(), "defaultHeaders");
+		ReflectionUtils.makeAccessible(privateField);
+		return (HttpHeaders) ReflectionUtils.getField(privateField, webClient);
 	}
 
 	@Configuration
