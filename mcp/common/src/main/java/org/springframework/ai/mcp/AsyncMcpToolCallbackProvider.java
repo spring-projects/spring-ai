@@ -18,7 +18,9 @@ package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -120,6 +122,34 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 */
 	public AsyncMcpToolCallbackProvider(McpAsyncClient... mcpClients) {
 		this(List.of(mcpClients));
+	}
+
+	/**
+	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance that includes only
+	 * clients from the specified allowed servers.
+	 * <p>
+	 * This constructor:
+	 * <ol>
+	 * <li>Filters the provided MCP clients to only those matching allowed server
+	 * names</li>
+	 * <li>Retains all tools from the selected clients (no additional tool filtering)</li>
+	 * <li>Ensures no null parameters are passed</li>
+	 * <li>Maintains full asynchronous operation capability</li>
+	 * </ol>
+	 * @param mcpClients complete list of available MCP async clients
+	 * @param allowedServerNames set of server names to include (case-sensitive)
+	 * @throws IllegalArgumentException if parameters are null or empty
+	 * @since 1.1.0
+	 */
+	public AsyncMcpToolCallbackProvider(List<McpAsyncClient> mcpClients, Set<String> allowedServerNames) {
+		Assert.notNull(mcpClients, "MCP clients list must not be null");
+		Assert.notNull(allowedServerNames, "Allowed server names set must not be null");
+		Assert.notEmpty(allowedServerNames, "Allowed server names set must not be empty");
+
+		this.mcpClients = mcpClients.stream()
+			.filter(client -> allowedServerNames.contains(client.getServerInfo().name()))
+			.collect(Collectors.toList());
+		this.toolFilter = (client, tool) -> true;
 	}
 
 	/**
