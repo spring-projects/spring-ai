@@ -369,7 +369,7 @@ After specifying the `call()` method on `ChatClient`, there are a few different 
 
 You can also invoke the `stream()` method instead of `call()`.
 
-NOTE: Calling the `call()` method does not actually trigger the AI model execution. Instead, it only instructs Spring AI whether to use synchronous or streaming calls. The actual AI model invocation occurs when methods such as `content()`, `chatResponse()`, and `responseEntity()` are called
+NOTE: Calling the `call()` method does not actually trigger the AI model execution. Instead, it only instructs Spring AI whether to use synchronous or streaming calls. The actual AI model invocation occurs when methods such as `content()`, `chatResponse()`, and `responseEntity()` are called.
 
 == stream() return values
 
