@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.httpclient.autoconfigure;
 
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Auto-configuration for Server-Sent Events (SSE) HTTP client transport in the Model
@@ -96,11 +98,19 @@ public class SseHttpClientTransportAutoConfiguration {
 			String baseUrl = serverParameters.getValue().url();
 			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
 					? serverParameters.getValue().sseEndpoint() : "/sse";
-			var transport = HttpClientSseClientTransport.builder(baseUrl)
+			var transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
 				.sseEndpoint(sseEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper)
-				.build();
+				.objectMapper(objectMapper);
+			var headers = serverParameters.getValue().headers();
+			if (!CollectionUtils.isEmpty(headers)) {
+				var requestBuilder = HttpRequest.newBuilder();
+				for (Map.Entry<String, String> entry : headers.entrySet()) {
+					requestBuilder = requestBuilder.header(entry.getKey(), entry.getValue());
+				}
+				transportBuilder = transportBuilder.requestBuilder(requestBuilder);
+			}
+			var transport = transportBuilder.build();
 			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}
 
