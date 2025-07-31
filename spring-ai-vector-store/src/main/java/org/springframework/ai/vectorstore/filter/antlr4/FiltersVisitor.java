@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,22 @@ public interface FiltersVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitNinExpression(FiltersParser.NinExpressionContext ctx);
+
+	/**
+	 * Visit a parse tree produced by the {@code IsNullExpression} labeled alternative in
+	 * {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIsNullExpression(FiltersParser.IsNullExpressionContext ctx);
+
+	/**
+	 * Visit a parse tree produced by the {@code IsNotNullExpression} labeled alternative
+	 * in {@link FiltersParser#booleanExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx);
 
 	/**
 	 * Visit a parse tree produced by the {@code AndExpression} labeled alternative in
