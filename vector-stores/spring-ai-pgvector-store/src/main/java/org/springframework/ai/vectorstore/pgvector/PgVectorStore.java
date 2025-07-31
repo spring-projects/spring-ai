@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -45,6 +44,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -255,23 +255,20 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
-
-		List<List<Document>> batchedDocuments = batchDocuments(documents);
-		batchedDocuments.forEach(batchDocument -> insertOrUpdateBatch(batchDocument, documents, embeddings));
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
+		List<List<EmbeddedDocument>> batchedDocuments = batchDocuments(embeddedDocuments);
+		batchedDocuments.forEach(this::insertOrUpdateBatch);
 	}
 
-	private List<List<Document>> batchDocuments(List<Document> documents) {
-		List<List<Document>> batches = new ArrayList<>();
-		for (int i = 0; i < documents.size(); i += this.maxDocumentBatchSize) {
-			batches.add(documents.subList(i, Math.min(i + this.maxDocumentBatchSize, documents.size())));
+	private List<List<EmbeddedDocument>> batchDocuments(List<EmbeddedDocument> embeddedDocuments) {
+		List<List<EmbeddedDocument>> batches = new ArrayList<>();
+		for (int i = 0; i < embeddedDocuments.size(); i += this.maxDocumentBatchSize) {
+			batches.add(embeddedDocuments.subList(i, Math.min(i + this.maxDocumentBatchSize, embeddedDocuments.size())));
 		}
 		return batches;
 	}
 
-	private void insertOrUpdateBatch(List<Document> batch, List<Document> documents, List<float[]> embeddings) {
+	private void insertOrUpdateBatch(List<EmbeddedDocument> batch) {
 		String sql = "INSERT INTO " + getFullyQualifiedTableName()
 				+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
 				+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
@@ -281,11 +278,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
 
-				var document = batch.get(i);
+				var document = batch.get(i).document();
 				var id = convertIdToPgType(document.getId());
 				var content = document.getText();
 				var json = toJson(document.getMetadata());
-				var embedding = embeddings.get(documents.indexOf(document));
+				var embedding = batch.get(i).embedding();
 				var pGvector = new PGvector(embedding);
 
 				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, id);

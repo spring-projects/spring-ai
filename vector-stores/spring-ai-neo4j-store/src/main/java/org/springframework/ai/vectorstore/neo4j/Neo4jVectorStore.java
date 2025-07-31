@@ -31,12 +31,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -203,13 +203,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
-
-		var rows = documents.stream()
-			.map(document -> documentToRecord(document, embeddings.get(documents.indexOf(document))))
+		var rows = embeddedDocuments.stream()
+			.map(ed -> documentToRecord(ed.document(), ed.embedding()))
 			.toList();
 
 		try (var session = this.driver.session()) {

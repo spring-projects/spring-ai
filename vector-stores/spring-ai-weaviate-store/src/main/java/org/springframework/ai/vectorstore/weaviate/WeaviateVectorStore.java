@@ -49,12 +49,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.util.Assert;
@@ -195,17 +195,14 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 
-		if (CollectionUtils.isEmpty(documents)) {
+		if (CollectionUtils.isEmpty(embeddedDocuments)) {
 			return;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
-
-		List<WeaviateObject> weaviateObjects = documents.stream()
-			.map(document -> toWeaviateObject(document, documents, embeddings))
+		List<WeaviateObject> weaviateObjects = embeddedDocuments.stream()
+			.map(this::toWeaviateObject)
 			.toList();
 
 		Result<ObjectGetResponse[]> response = this.weaviateClient.batch()
@@ -242,7 +239,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		}
 	}
 
-	private WeaviateObject toWeaviateObject(Document document, List<Document> documents, List<float[]> embeddings) {
+	private WeaviateObject toWeaviateObject(EmbeddedDocument embeddedDocument) {
+		Document document = embeddedDocument.document();
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();
@@ -266,7 +264,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		return WeaviateObject.builder()
 			.className(this.options.getObjectClass())
 			.id(document.getId())
-			.vector(EmbeddingUtils.toFloatArray(embeddings.get(documents.indexOf(document))))
+			.vector(EmbeddingUtils.toFloatArray(embeddedDocument.embedding()))
 			.properties(fields)
 			.build();
 	}
