@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,7 @@ import org.springframework.util.CollectionUtils;
  * backed by {@link DeepSeekApi}.
  *
  * @author Geng Rong
+ * @author Dongha Koo
  */
 public class DeepSeekChatModel implements ChatModel {
 
@@ -338,7 +339,9 @@ public class DeepSeekChatModel implements ChatModel {
 
 		String textContent = choice.message().content();
 		String reasoningContent = choice.message().reasoningContent();
-
+		if (textContent == null && !toolCalls.isEmpty()) {
+			textContent = "__tool_call__";
+		}
 		DeepSeekAssistantMessage assistantMessage = new DeepSeekAssistantMessage(textContent, reasoningContent,
 				metadata, toolCalls);
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
