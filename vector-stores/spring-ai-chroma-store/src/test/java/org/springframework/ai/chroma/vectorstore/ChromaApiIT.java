@@ -44,7 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.json;
 
 /**
  * @author Christian Tzolov
