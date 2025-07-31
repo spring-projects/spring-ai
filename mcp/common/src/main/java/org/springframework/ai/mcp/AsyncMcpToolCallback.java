@@ -16,10 +16,15 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-import java.util.Map;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -28,6 +33,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -55,15 +62,14 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author YunKui Lu
  * @see ToolCallback
  * @see McpAsyncClient
  * @see Tool
  */
-public class AsyncMcpToolCallback implements ToolCallback {
+public class AsyncMcpToolCallback extends AbstractMcpToolCallback {
 
 	private final McpAsyncClient asyncMcpClient;
-
-	private final Tool tool;
 
 	/**
 	 * Creates a new {@code AsyncMcpToolCallback} instance.
@@ -71,8 +77,27 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 * @param tool the MCP tool definition to adapt
 	 */
 	public AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool) {
+		this(mcpClient, tool, Set.of());
+	}
+
+	/**
+	 * Creates a new {@code AsyncMcpToolCallback} instance.
+	 * @param mcpClient the MCP client to use for tool execution
+	 * @param tool the MCP tool definition to adapt
+	 * @param excludedToolContextKeys the keys that will not be sent to the MCP Server
+	 * inside the `_meta` field of
+	 * {@link io.modelcontextprotocol.spec.McpSchema.CallToolRequest}
+	 */
+	private AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool, Set<String> excludedToolContextKeys) {
+		super(tool, excludedToolContextKeys);
+
+		Assert.notNull(mcpClient, "mcpClient cannot be null");
+
 		this.asyncMcpClient = mcpClient;
-		this.tool = tool;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
@@ -105,29 +130,72 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 * <li>Converts the tool's response content to a JSON string</li>
 	 * </ol>
 	 * @param functionInput the tool input as a JSON string
+	 * @param toolContext the context for tool execution in a function calling scenario
 	 * @return the tool's response as a JSON string
 	 */
 	@Override
-	public String call(String functionInput) {
+	public String call(String functionInput, @Nullable ToolContext toolContext) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		// Note that we use the original tool name here, not the adapted one from
-		// getToolDefinition
-		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).onErrorMap(exception -> {
-			// If the tool throws an error during execution
-			throw new ToolExecutionException(this.getToolDefinition(), exception);
-		}).map(response -> {
-			if (response.isError() != null && response.isError()) {
-				throw new ToolExecutionException(this.getToolDefinition(),
-						new IllegalStateException("Error calling tool: " + response.content()));
-			}
-			return ModelOptionsUtils.toJsonString(response.content());
-		}).contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext())).block();
+
+		Map<String, Object> meta = new HashMap<>();
+		if (toolContext != null && !toolContext.getContext().isEmpty()) {
+			meta.put(DEFAULT_MCP_META_TOOL_CONTEXT_KEY, super.getAdditionalToolContextToMeta(toolContext));
+		}
+
+		return Objects
+			// Note that we use the original tool name here, not the adapted one from
+			// getToolDefinition
+			.requireNonNull(this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments, meta))
+				.onErrorMap(exception -> {
+					// If the tool throws an error during execution
+					throw new ToolExecutionException(this.getToolDefinition(), exception);
+				})
+				.map(response -> {
+					if (response.isError() != null && response.isError()) {
+						throw new ToolExecutionException(this.getToolDefinition(),
+								new IllegalStateException("Error calling tool: " + response.content()));
+					}
+					return ModelOptionsUtils.toJsonString(response.content());
+				})
+				.contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext()))
+				.block());
 	}
 
-	@Override
-	public String call(String toolArguments, ToolContext toolContext) {
-		// ToolContext is not supported by the MCP tools
-		return this.call(toolArguments);
+	public static class Builder {
+
+		private McpAsyncClient asyncMcpClient;
+
+		private Tool tool;
+
+		private Set<String> excludedToolContextKeys = new HashSet<>();
+
+		private Builder() {
+		}
+
+		public Builder asyncMcpClient(McpAsyncClient asyncMcpClient) {
+			this.asyncMcpClient = asyncMcpClient;
+			return this;
+		}
+
+		public Builder tool(Tool tool) {
+			this.tool = tool;
+			return this;
+		}
+
+		public Builder addExcludedToolContextKeys(Set<String> excludedToolContextKeys) {
+			this.excludedToolContextKeys.addAll(excludedToolContextKeys);
+			return this;
+		}
+
+		public Builder addExcludedToolContextKey(String excludedToolContextKey) {
+			this.excludedToolContextKeys.add(excludedToolContextKey);
+			return this;
+		}
+
+		public AsyncMcpToolCallback build() {
+			return new AsyncMcpToolCallback(this.asyncMcpClient, this.tool, this.excludedToolContextKeys);
+		}
+
 	}
 
 }
