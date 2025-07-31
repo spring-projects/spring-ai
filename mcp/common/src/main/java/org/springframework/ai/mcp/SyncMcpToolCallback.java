@@ -61,7 +61,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * @see McpSyncClient
  * @see Tool
  */
-public class SyncMcpToolCallback implements ToolCallback {
+public class SyncMcpToolCallback implements McpToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
 

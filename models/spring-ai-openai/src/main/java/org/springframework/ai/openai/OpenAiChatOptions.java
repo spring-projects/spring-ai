@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -228,6 +229,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -268,6 +272,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
 			.webSearchOptions(fromOptions.getWebSearchOptions())
+			.toolCallbackFilter(fromOptions.getToolCallbackFilter())
 			.build();
 	}
 
@@ -564,6 +569,16 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.webSearchOptions = webSearchOptions;
 	}
 
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -799,6 +814,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder webSearchOptions(WebSearchOptions webSearchOptions) {
 			this.options.webSearchOptions = webSearchOptions;
+			return this;
+		}
+
+		public Builder toolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+			this.options.setToolCallbackFilter(toolCallbackFilter);
 			return this;
 		}
 

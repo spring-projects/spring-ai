@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -151,6 +153,9 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	private List<VertexAiGeminiSafetySetting> safetySettings = new ArrayList<>();
+
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -178,6 +183,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setToolContext(fromOptions.getToolContext());
 		options.setLogprobs(fromOptions.getLogprobs());
 		options.setResponseLogprobs(fromOptions.getResponseLogprobs());
+		options.setToolCallbackFilter(fromOptions.getToolCallbackFilter());
 		return options;
 	}
 
@@ -356,6 +362,16 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	public boolean getResponseLogprobs() {
 		return responseLogprobs;
+	}
+
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
 	}
 
 	@Override

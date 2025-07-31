@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -156,6 +157,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -180,6 +184,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext())
+			.toolCallbackFilter(fromOptions.getToolCallbackFilter())
 			.build();
 	}
 
@@ -362,6 +367,16 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(model, frequencyPenalty, maxTokens, n, presencePenalty, responseFormat, seed, stop,
@@ -505,6 +520,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder toolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+			this.options.setToolCallbackFilter(toolCallbackFilter);
 			return this;
 		}
 

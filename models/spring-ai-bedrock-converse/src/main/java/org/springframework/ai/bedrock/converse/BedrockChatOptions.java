@@ -24,10 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -77,6 +79,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -96,6 +101,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 			.toolNames(new HashSet<>(fromOptions.getToolNames()))
 			.toolContext(new HashMap<>(fromOptions.getToolContext()))
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolCallbackFilter(fromOptions.getToolCallbackFilter())
 			.build();
 	}
 
@@ -224,6 +230,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public BedrockChatOptions copy() {
@@ -334,6 +350,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+			this.options.setToolCallbackFilter(toolCallbackFilter);
 			return this;
 		}
 

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -138,6 +139,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
+
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -327,6 +331,16 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -486,6 +500,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder toolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+			this.options.setToolCallbackFilter(toolCallbackFilter);
 			return this;
 		}
 

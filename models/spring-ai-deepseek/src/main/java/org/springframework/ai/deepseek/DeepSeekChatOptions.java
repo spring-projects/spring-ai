@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -143,7 +144,10 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Map<String, Object> toolContext = new HashMap<>();;
+	private Map<String, Object> toolContext = new HashMap<>();
+
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
 
 	public static Builder builder() {
 		return new Builder();
@@ -246,7 +250,6 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.toolChoice = toolChoice;
 	}
 
-
 	@Override
 	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
@@ -322,6 +325,16 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
+	}
+
 	@Override
 	public DeepSeekChatOptions copy() {
 		return DeepSeekChatOptions.fromOptions(this);
@@ -379,6 +392,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+				.toolCallbackFilter(fromOptions.getToolCallbackFilter())
 				.build();
 	}
 
@@ -494,6 +508,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder toolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+			this.options.setToolCallbackFilter(toolCallbackFilter);
 			return this;
 		}
 

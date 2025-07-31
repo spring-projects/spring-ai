@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -126,6 +127,9 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	private Map<String, Object> toolContext = new HashMap<>();
 	// @formatter:on
 
+	@JsonIgnore
+	private Predicate<? extends ToolCallback> toolCallbackFilter;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -146,6 +150,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext())
+			.toolCallbackFilter(fromOptions.getToolCallbackFilter())
 			.build();
 	}
 
@@ -312,6 +317,16 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
+	}
+
+	@JsonIgnore
+	public Predicate<? extends ToolCallback> getToolCallbackFilter() {
+		return this.toolCallbackFilter;
+	}
+
+	@Override
+	public void setToolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+		this.toolCallbackFilter = toolCallbackFilter;
 	}
 
 	@Override
@@ -607,6 +622,11 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder toolCallbackFilter(Predicate<? extends ToolCallback> toolCallbackFilter) {
+			this.options.setToolCallbackFilter(toolCallbackFilter);
 			return this;
 		}
 

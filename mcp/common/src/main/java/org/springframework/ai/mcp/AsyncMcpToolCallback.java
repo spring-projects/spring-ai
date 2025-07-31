@@ -59,7 +59,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * @see McpAsyncClient
  * @see Tool
  */
-public class AsyncMcpToolCallback implements ToolCallback {
+public class AsyncMcpToolCallback implements McpToolCallback {
 
 	private final McpAsyncClient asyncMcpClient;
 
