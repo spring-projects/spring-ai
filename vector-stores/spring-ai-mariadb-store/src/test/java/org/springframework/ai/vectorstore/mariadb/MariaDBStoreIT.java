@@ -122,20 +122,20 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 		);
 	}
 
-	private static boolean isSortedByDistance(List<Document> docs) {
+	private static boolean isSortedByScore(List<Document> docs) {
 
-		List<Float> distances = docs.stream().map(doc -> (Float) doc.getMetadata().get("distance")).toList();
+		List<Double> scores = docs.stream().map(Document::getScore).toList();
 
-		if (CollectionUtils.isEmpty(distances) || distances.size() == 1) {
+		if (CollectionUtils.isEmpty(scores) || scores.size() == 1) {
 			return true;
 		}
 
-		Iterator<Float> iter = distances.iterator();
-		Float current;
-		Float previous = iter.next();
+		Iterator<Double> iter = scores.iterator();
+		Double current;
+		Double previous = iter.next();
 		while (iter.hasNext()) {
 			current = iter.next();
-			if (previous > current) {
+			if (previous < current) {
 				return false;
 			}
 			previous = current;
@@ -166,7 +166,8 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2");
+				assertThat(resultDoc.getScore()).isBetween(0.0, 1.0);
 
 				// Remove all documents from the store
 				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
@@ -315,7 +316,8 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 				Document resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getText()).isEqualTo("Spring AI rocks!!");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta1", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta1");
+				assertThat(resultDoc.getScore()).isBetween(0.0, 1.0);
 
 				Document sameIdDocument = new Document(document.getId(),
 						"The World is Big and Salvation Lurks Around the Corner",
@@ -329,7 +331,8 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 				resultDoc = results.get(0);
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
-				assertThat(resultDoc.getMetadata()).containsKeys("meta2", "distance");
+				assertThat(resultDoc.getMetadata()).containsKeys("meta2");
+				assertThat(resultDoc.getScore()).isBetween(0.0, 1.0);
 
 				dropTable(context);
 			});
@@ -350,19 +353,14 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 
 				assertThat(fullResult).hasSize(3);
 
-				assertThat(isSortedByDistance(fullResult)).isTrue();
+				assertThat(isSortedByScore(fullResult)).isTrue();
 
-				List<Float> distances = fullResult.stream()
-					.map(doc -> (Float) doc.getMetadata().get("distance"))
-					.toList();
+				List<Double> scores = fullResult.stream().map(Document::getScore).toList();
 
-				float threshold = (distances.get(0) + distances.get(1)) / 2;
+				double threshold = (scores.get(0) + scores.get(1)) / 2;
 
-				List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
-					.query("Time Shelter")
-					.topK(5)
-					.similarityThreshold(1 - threshold)
-					.build());
+				List<Document> results = vectorStore.similaritySearch(
+						SearchRequest.builder().query("Time Shelter").topK(5).similarityThreshold(threshold).build());
 
 				assertThat(results).hasSize(1);
 				Document resultDoc = results.get(0);
