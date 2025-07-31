@@ -241,7 +241,7 @@ Properties for Server-Sent Events (SSE) transport are prefixed with `spring.ai.m
 |`/sse`
 |===
 
-Example configuration:
+Example configurations:
 [source,yaml]
 ----
 spring:
@@ -250,13 +250,88 @@ spring:
       client:
         sse:
           connections:
+            # Simple configuration using default /sse endpoint
+            server1:
+              url: http://localhost:8080
+            # Custom SSE endpoint
+            server2:
+              url: http://otherserver:8081
+              sse-endpoint: /custom-sse
+            # Complex URL with path and token (like MCP Hub)
+            mcp-hub:
+              url: http://localhost:3000
+              sse-endpoint: /mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01
+            # SSE endpoint with query parameters
+            api-server:
+              url: https://api.example.com
+              sse-endpoint: /v1/mcp/events?token=abc123&format=json
+----
+
+==== URL Splitting Guidelines
+
+When you have a full SSE URL, split it into base URL and endpoint path:
+
+[cols="2,2"]
+|===
+|Full URL |Configuration
+
+|`\http://localhost:3000/mcp-hub/sse/token123`
+|`url: http://localhost:3000` +
+`sse-endpoint: /mcp-hub/sse/token123`
+
+|`\https://api.service.com/v2/events?key=secret`
+|`url: https://api.service.com` +
+`sse-endpoint: /v2/events?key=secret`
+
+|`\http://localhost:8080/sse`
+|`url: http://localhost:8080` +
+`sse-endpoint: /sse` (or omit for default)
+|===
+
+==== Troubleshooting SSE Connections
+
+*404 Not Found Errors:*
+
+* Verify URL splitting: ensure the base `url` contains only the scheme, host, and port
+* Check the `sse-endpoint` starts with `/` and includes the full path and query parameters
+* Test the full URL directly in a browser or curl to confirm it's accessible
+
+=== Streamable Http Transport Properties
+
+Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client.streamable-http`:
+
+[cols="3,4,3"]
+|===
+|Property |Description | Default Value
+
+|`connections`
+|Map of named Streamable Http connection configurations
+|-
+
+|`connections.[name].url`
+|Base URL endpoint for Streamable-Http communication with the MCP server
+|-
+
+|`connections.[name].endpoint`
+|the streamable-http endpoint (as url suffix) to use for the connection
+|`/mcp`
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
             server1:
               url: http://localhost:8080
             server2:
               url: http://otherserver:8081
-              sse-endpoint: /custom-sse
+              endpoint: /custom-sse
 ----
-
 
 == Features
 
