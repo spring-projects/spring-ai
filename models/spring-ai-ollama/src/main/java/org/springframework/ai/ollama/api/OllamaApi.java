@@ -366,7 +366,7 @@ public final class OllamaApi {
 	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
 	 * @param tools List of tools the model has access to.
 	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
-	 * You can use the {@link OllamaOptions} builder to create the options then {@link OllamaOptions#toMap()} to convert the options into a map.
+	 * You can use the {@link OllamaChatOptions} builder to create the options then {@link OllamaChatOptions#toMap()} to convert the options into a map.
 	 *
 	 * @see <a href=
 	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
@@ -493,9 +493,16 @@ public final class OllamaApi {
 				return this;
 			}
 
+			@Deprecated
 			public Builder options(OllamaOptions options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
+				return this;
+			}
+
+			public Builder options(OllamaChatOptions options) {
+				Objects.requireNonNull(options, "The options can not be null.");
+				this.options = OllamaChatOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 

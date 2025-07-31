@@ -10,8 +10,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.retry.RetryCallback;
@@ -50,7 +50,7 @@ class OllamaRetryTests {
 
 		this.chatModel = OllamaChatModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+			.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 			.retryTemplate(this.retryTemplate)
 			.build();
 	}

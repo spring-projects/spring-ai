@@ -16,27 +16,19 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -49,11 +41,9 @@ import org.springframework.util.Assert;
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
- * @deprecated use OllamaChatOptions or OllamaEmbeddingOptions instead.
  */
 @JsonInclude(Include.NON_NULL)
-@Deprecated
-public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
+public class OllamaChatOptions implements ToolCallingChatOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
@@ -361,7 +351,49 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	public static OllamaOptions fromOptions(OllamaOptions fromOptions) {
+	public static OllamaChatOptions fromOptions(OllamaChatOptions fromOptions) {
+		return builder()
+				.model(fromOptions.getModel())
+				.format(fromOptions.getFormat())
+				.keepAlive(fromOptions.getKeepAlive())
+				.truncate(fromOptions.getTruncate())
+				.useNUMA(fromOptions.getUseNUMA())
+				.numCtx(fromOptions.getNumCtx())
+				.numBatch(fromOptions.getNumBatch())
+				.numGPU(fromOptions.getNumGPU())
+				.mainGPU(fromOptions.getMainGPU())
+				.lowVRAM(fromOptions.getLowVRAM())
+				.f16KV(fromOptions.getF16KV())
+				.logitsAll(fromOptions.getLogitsAll())
+				.vocabOnly(fromOptions.getVocabOnly())
+				.useMMap(fromOptions.getUseMMap())
+				.useMLock(fromOptions.getUseMLock())
+				.numThread(fromOptions.getNumThread())
+				.numKeep(fromOptions.getNumKeep())
+				.seed(fromOptions.getSeed())
+				.numPredict(fromOptions.getNumPredict())
+				.topK(fromOptions.getTopK())
+				.topP(fromOptions.getTopP())
+				.minP(fromOptions.getMinP())
+				.tfsZ(fromOptions.getTfsZ())
+				.typicalP(fromOptions.getTypicalP())
+				.repeatLastN(fromOptions.getRepeatLastN())
+				.temperature(fromOptions.getTemperature())
+				.repeatPenalty(fromOptions.getRepeatPenalty())
+				.presencePenalty(fromOptions.getPresencePenalty())
+				.frequencyPenalty(fromOptions.getFrequencyPenalty())
+				.mirostat(fromOptions.getMirostat())
+				.mirostatTau(fromOptions.getMirostatTau())
+				.mirostatEta(fromOptions.getMirostatEta())
+				.penalizeNewline(fromOptions.getPenalizeNewline())
+				.stop(fromOptions.getStop())
+				.toolNames(fromOptions.getToolNames())
+				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+				.toolCallbacks(fromOptions.getToolCallbacks())
+				.toolContext(fromOptions.getToolContext()).build();
+	}
+
+	public static OllamaChatOptions fromOptions(OllamaOptions fromOptions) {
 		return builder()
 				.model(fromOptions.getModel())
 				.format(fromOptions.getFormat())
@@ -750,12 +782,6 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@Override
 	@JsonIgnore
-	public Integer getDimensions() {
-		return null;
-	}
-
-	@Override
-	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -767,7 +793,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	/**
-	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
+	 * Convert the {@link OllamaChatOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
@@ -775,7 +801,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	@Override
-	public OllamaOptions copy() {
+	public OllamaChatOptions copy() {
 		return fromOptions(this);
 	}
 	// @formatter:on
@@ -788,7 +814,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		OllamaOptions that = (OllamaOptions) o;
+		OllamaChatOptions that = (OllamaChatOptions) o;
 		return Objects.equals(this.model, that.model) && Objects.equals(this.format, that.format)
 				&& Objects.equals(this.keepAlive, that.keepAlive) && Objects.equals(this.truncate, that.truncate)
 				&& Objects.equals(this.useNUMA, that.useNUMA) && Objects.equals(this.numCtx, that.numCtx)
@@ -825,10 +851,9 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				this.toolContext);
 	}
 
-	@Deprecated
 	public static class Builder {
 
-		private final OllamaOptions options = new OllamaOptions();
+		private final OllamaChatOptions options = new OllamaChatOptions();
 
 		public Builder model(String model) {
 			this.options.model = model;
@@ -1042,7 +1067,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			return this;
 		}
 
-		public OllamaOptions build() {
+		public OllamaChatOptions build() {
 			return this.options;
 		}
 
