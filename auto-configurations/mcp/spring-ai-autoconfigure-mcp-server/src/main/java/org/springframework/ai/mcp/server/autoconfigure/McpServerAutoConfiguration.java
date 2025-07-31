@@ -55,9 +55,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import org.springframework.web.context.support.StandardServletEnvironment;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for the Model Context Protocol (MCP)
@@ -177,7 +179,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
-			List<ToolCallbackProvider> toolCallbackProvider) {
+			List<ToolCallbackProvider> toolCallbackProvider, Environment environment) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -258,6 +260,9 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
+		if (environment instanceof StandardServletEnvironment) {
+			serverBuilder.immediateExecution(true);
+		}
 
 		return serverBuilder.build();
 	}
