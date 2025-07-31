@@ -46,6 +46,11 @@ public interface JdbcChatMemoryRepositoryDialect {
 	String getDeleteMessagesSql();
 
 	/**
+	 * Returns the SQL to delete all conversation IDs.
+	 */
+	String getDeleteAllMessageSql();
+
+	/**
 	 * Optionally, dialect can provide more advanced SQL as needed.
 	 */
 
