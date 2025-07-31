@@ -123,4 +123,107 @@ public class MariaDBFilterExpressionConverterTests {
 		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.\"country 1 2 3\"') = 'BG'");
 	}
 
+	@Test
+	public void testEmptyList() {
+		// category IN []
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("category"), new Value(List.of())));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.category') IN ()");
+	}
+
+	@Test
+	public void testSingleItemList() {
+		// status IN ["active"]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("status"), new Value(List.of("active"))));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.status') IN ('active')");
+	}
+
+	@Test
+	public void testNullValue() {
+		// description == null
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("description"), new Value(null)));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.description') = null");
+	}
+
+	@Test
+	public void testNestedJsonPath() {
+		// entity.profile.name == "EntityA"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("entity.profile.name"), new Value("EntityA")));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.entity.profile.name') = 'EntityA'");
+	}
+
+	@Test
+	public void testNumericStringValue() {
+		// id == "1"
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("id"), new Value("1")));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.id') = '1'");
+	}
+
+	@Test
+	public void testZeroValue() {
+		// count == 0
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("count"), new Value(0)));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.count') = 0");
+	}
+
+	@Test
+	public void testComplexNestedGroups() {
+		// ((fieldA >= 100 AND fieldB == "X1") OR (fieldA >= 50 AND fieldB == "Y2")) AND
+		// fieldC != "inactive"
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
+				new Group(new Expression(OR,
+						new Group(new Expression(AND, new Expression(GTE, new Key("fieldA"), new Value(100)),
+								new Expression(EQ, new Key("fieldB"), new Value("X1")))),
+						new Group(new Expression(AND, new Expression(GTE, new Key("fieldA"), new Value(50)),
+								new Expression(EQ, new Key("fieldB"), new Value("Y2")))))),
+				new Expression(NE, new Key("fieldC"), new Value("inactive"))));
+
+		assertThat(vectorExpr)
+			.isEqualTo("((JSON_VALUE(metadata, '$.fieldA') >= 100 AND JSON_VALUE(metadata, '$.fieldB') = 'X1') OR "
+					+ "(JSON_VALUE(metadata, '$.fieldA') >= 50 AND JSON_VALUE(metadata, '$.fieldB') = 'Y2')) AND "
+					+ "JSON_VALUE(metadata, '$.fieldC') != 'inactive'");
+	}
+
+	@Test
+	public void testMixedDataTypes() {
+		// active == true AND score >= 1.5 AND tags IN ["featured", "premium"] AND
+		// version == 1
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
+				new Expression(AND,
+						new Expression(AND, new Expression(EQ, new Key("active"), new Value(true)),
+								new Expression(GTE, new Key("score"), new Value(1.5))),
+						new Expression(IN, new Key("tags"), new Value(List.of("featured", "premium")))),
+				new Expression(EQ, new Key("version"), new Value(1))));
+
+		assertThat(vectorExpr)
+			.isEqualTo("JSON_VALUE(metadata, '$.active') = true AND JSON_VALUE(metadata, '$.score') >= 1.5 AND "
+					+ "JSON_VALUE(metadata, '$.tags') IN ('featured','premium') AND JSON_VALUE(metadata, '$.version') = 1");
+	}
+
+	@Test
+	public void testNinWithMixedTypes() {
+		// status NIN ["A", "B", "C"]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("status"), new Value(List.of("A", "B", "C"))));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.status') NOT IN ('A','B','C')");
+	}
+
+	@Test
+	public void testEmptyStringValue() {
+		// description != ""
+		String vectorExpr = this.converter.convertExpression(new Expression(NE, new Key("description"), new Value("")));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.description') != ''");
+	}
+
+	@Test
+	public void testArrayIndexAccess() {
+		// tags[0] == "important"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("tags[0]"), new Value("important")));
+		assertThat(vectorExpr).isEqualTo("JSON_VALUE(metadata, '$.tags[0]') = 'important'");
+	}
+
 }
