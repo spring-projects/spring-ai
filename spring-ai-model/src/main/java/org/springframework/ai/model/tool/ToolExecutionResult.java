@@ -39,6 +39,10 @@ public interface ToolExecutionResult {
 
 	String METADATA_TOOL_NAME = "toolName";
 
+	String METADATA_SOURCE = "source";
+
+	String SOURCE_TOOL = "tool";
+
 	/**
 	 * The history of messages exchanged during the conversation, including the tool
 	 * execution result.
@@ -75,6 +79,7 @@ public interface ToolExecutionResult {
 						ChatGenerationMetadata.builder()
 							.metadata(METADATA_TOOL_ID, response.id())
 							.metadata(METADATA_TOOL_NAME, response.name())
+							.metadata(METADATA_SOURCE, SOURCE_TOOL)
 							.finishReason(FINISH_REASON)
 							.build());
 				generations.add(generation);
