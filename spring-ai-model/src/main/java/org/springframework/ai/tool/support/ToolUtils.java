@@ -50,6 +50,20 @@ public final class ToolUtils {
 		return StringUtils.hasText(tool.name()) ? tool.name() : method.getName();
 	}
 
+	public static String getToolTitleFromName(String toolName) {
+		Assert.hasText(toolName, "toolName cannot be null or empty");
+		return ParsingUtils.reConcatenateCamelCase(toolName, " ");
+	}
+
+	public static String getToolTitle(Method method) {
+		Assert.notNull(method, "method cannot be null");
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
+		if (tool == null) {
+			return ParsingUtils.reConcatenateCamelCase(method.getName(), " ");
+		}
+		return StringUtils.hasText(tool.title()) ? tool.title() : method.getName();
+	}
+
 	public static String getToolDescriptionFromName(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 		return ParsingUtils.reConcatenateCamelCase(toolName, " ");
