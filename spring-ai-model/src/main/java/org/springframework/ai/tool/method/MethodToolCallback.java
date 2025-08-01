@@ -33,6 +33,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.execution.ToolParameterConversionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.lang.Nullable;
@@ -136,23 +137,28 @@ public final class MethodToolCallback implements ToolCallback {
 				return toolContext;
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
-			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
+			return buildTypedArgument(rawArgument, parameter.getParameterizedType(), parameter.getName());
 		}).toArray();
 	}
 
 	@Nullable
-	private Object buildTypedArgument(@Nullable Object value, Type type) {
+	private Object buildTypedArgument(@Nullable Object value, Type type, @Nullable String parameterName) {
 		if (value == null) {
 			return null;
 		}
 
-		if (type instanceof Class<?>) {
-			return JsonParser.toTypedObject(value, (Class<?>) type);
-		}
+		try {
+			if (type instanceof Class<?>) {
+				return JsonParser.toTypedObject(value, (Class<?>) type);
+			}
 
-		// For generic types, use the fromJson method that accepts Type
-		String json = JsonParser.toJson(value);
-		return JsonParser.fromJson(json, type);
+			// For generic types, use the fromJson method that accepts Type
+			String json = JsonParser.toJson(value);
+			return JsonParser.fromJson(json, type);
+		}
+		catch (NumberFormatException | IllegalStateException ex) {
+			throw new ToolParameterConversionException(this.toolDefinition, parameterName, type, value, ex);
+		}
 	}
 
 	@Nullable
