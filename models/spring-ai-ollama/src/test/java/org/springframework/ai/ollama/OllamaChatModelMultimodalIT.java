@@ -16,17 +16,14 @@
 
 package org.springframework.ai.ollama;
 
-import java.time.Duration;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
@@ -41,6 +38,9 @@ import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.MimeTypeUtils;
 
+import java.time.Duration;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -49,14 +49,14 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelMultimodalIT.class);
 
-	private static final String MODEL = "llava-phi3";
+	private static final String MODEL = OllamaModel.GEMMA3.getName();
 
 	@Autowired
 	private OllamaChatModel chatModel;
 
 	@Test
 	void unsupportedMediaType() {
-		var imageData = new ClassPathResource("/norway.webp");
+		var imageData = new ClassPathResource("/something.adoc");
 
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see in this picture?")
