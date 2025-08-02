@@ -116,8 +116,8 @@ public final class JsonParser {
 	 * Converts a Java object to a JSON string if it's not already a valid JSON string.
 	 */
 	public static String toJson(@Nullable Object object) {
-		if (object instanceof String && isValidJson((String) object)) {
-			return (String) object;
+		if (object instanceof String str && isValidJson(str)) {
+			return str;
 		}
 		try {
 			return OBJECT_MAPPER.writeValueAsString(object);
