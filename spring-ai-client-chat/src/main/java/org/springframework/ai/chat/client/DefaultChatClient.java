@@ -548,13 +548,10 @@ public class DefaultChatClient implements ChatClient {
 			// @formatter:off
 			return doGetObservableFluxChatResponse(this.request)
 					.mapNotNull(ChatClientResponse::chatResponse)
-					.map(r -> {
-						if (r.getResult() == null || r.getResult().getOutput() == null
-								|| r.getResult().getOutput().getText() == null) {
-							return "";
-						}
-						return r.getResult().getOutput().getText();
-					})
+					.map(r -> Optional.ofNullable(r.getResult())
+							.map(Generation::getOutput)
+							.map(AbstractMessage::getText)
+							.orElse(""))
 					.filter(StringUtils::hasLength);
 			// @formatter:on
 		}
