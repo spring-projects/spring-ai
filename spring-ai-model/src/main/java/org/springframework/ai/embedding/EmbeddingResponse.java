@@ -16,7 +16,9 @@
 
 package org.springframework.ai.embedding;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResponse;
@@ -41,8 +43,17 @@ public class EmbeddingResponse implements ModelResponse<Embedding> {
 	 * Creates a new {@link EmbeddingResponse} instance with empty metadata.
 	 * @param embeddings the embedding data.
 	 */
+
+	private final Map<String,Object> embeddingContext;
+
 	public EmbeddingResponse(List<Embedding> embeddings) {
-		this(embeddings, new EmbeddingResponseMetadata());
+		this(embeddings, new EmbeddingResponseMetadata(),new HashMap<>());
+	}
+
+	public EmbeddingResponse(List<Embedding> embeddings, EmbeddingResponseMetadata metadata,Map<String,Object> embeddingContext) {
+		this.embeddings = embeddings;
+		this.metadata = metadata;
+		this.embeddingContext=embeddingContext;
 	}
 
 	/**
@@ -53,6 +64,7 @@ public class EmbeddingResponse implements ModelResponse<Embedding> {
 	public EmbeddingResponse(List<Embedding> embeddings, EmbeddingResponseMetadata metadata) {
 		this.embeddings = embeddings;
 		this.metadata = metadata;
+		this.embeddingContext=new HashMap<>();
 	}
 
 	/**
@@ -60,6 +72,11 @@ public class EmbeddingResponse implements ModelResponse<Embedding> {
 	 */
 	public EmbeddingResponseMetadata getMetadata() {
 		return this.metadata;
+	}
+
+	@Override
+	public Map<String, Object> getContext() {
+		return embeddingContext;
 	}
 
 	@Override
@@ -95,7 +112,10 @@ public class EmbeddingResponse implements ModelResponse<Embedding> {
 
 	@Override
 	public String toString() {
-		return "EmbeddingResult{" + "data=" + this.embeddings + ", metadata=" + this.metadata + '}';
+		return "EmbeddingResponse{" +
+				"embeddings=" + embeddings +
+				", metadata=" + metadata +
+				", embeddingContext=" + embeddingContext +
+				'}';
 	}
-
 }

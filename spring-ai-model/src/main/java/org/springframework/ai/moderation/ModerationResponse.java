@@ -16,7 +16,9 @@
 
 package org.springframework.ai.moderation;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResponse;
@@ -37,6 +39,8 @@ public class ModerationResponse implements ModelResponse<Generation> {
 
 	private final Generation generations;
 
+	private final Map<String,Object> context;
+
 	public ModerationResponse(Generation generations) {
 		this(generations, new ModerationResponseMetadata());
 	}
@@ -44,7 +48,15 @@ public class ModerationResponse implements ModelResponse<Generation> {
 	public ModerationResponse(Generation generations, ModerationResponseMetadata moderationResponseMetadata) {
 		this.moderationResponseMetadata = moderationResponseMetadata;
 		this.generations = generations;
+		this.context=new HashMap<>();
 	}
+
+	public ModerationResponse(Generation generations, ModerationResponseMetadata moderationResponseMetadata,Map<String,Object> context) {
+		this.moderationResponseMetadata = moderationResponseMetadata;
+		this.generations = generations;
+		this.context=context;
+	}
+
 
 	@Override
 	public Generation getResult() {
@@ -62,9 +74,17 @@ public class ModerationResponse implements ModelResponse<Generation> {
 	}
 
 	@Override
+	public Map<String, Object> getContext() {
+		return this.context;
+	}
+
+	@Override
 	public String toString() {
-		return "ModerationResponse{" + "moderationResponseMetadata=" + this.moderationResponseMetadata
-				+ ", generations=" + this.generations + '}';
+		return "ModerationResponse{" +
+				"moderationResponseMetadata=" + moderationResponseMetadata +
+				", generations=" + generations +
+				", context=" + context +
+				'}';
 	}
 
 	@Override

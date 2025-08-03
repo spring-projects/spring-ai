@@ -16,7 +16,9 @@
 
 package org.springframework.ai.audio.transcription;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ai.model.ModelResponse;
 
@@ -33,14 +35,21 @@ public class AudioTranscriptionResponse implements ModelResponse<AudioTranscript
 
 	private final AudioTranscriptionResponseMetadata transcriptionResponseMetadata;
 
+	private final Map<String,Object> transcriptionContext;
+
 	public AudioTranscriptionResponse(AudioTranscription transcript) {
-		this(transcript, new AudioTranscriptionResponseMetadata());
+		this(transcript, new AudioTranscriptionResponseMetadata(),new HashMap<>());
+	}
+
+	public AudioTranscriptionResponse(AudioTranscription transcript,AudioTranscriptionResponseMetadata transcriptionResponseMetadata) {
+		this(transcript, new AudioTranscriptionResponseMetadata(),new HashMap<>());
 	}
 
 	public AudioTranscriptionResponse(AudioTranscription transcript,
-			AudioTranscriptionResponseMetadata transcriptionResponseMetadata) {
+			AudioTranscriptionResponseMetadata transcriptionResponseMetadata, Map<String,Object> transcriptionContext) {
 		this.transcript = transcript;
 		this.transcriptionResponseMetadata = transcriptionResponseMetadata;
+		this.transcriptionContext=transcriptionContext;
 	}
 
 	@Override
@@ -58,4 +67,17 @@ public class AudioTranscriptionResponse implements ModelResponse<AudioTranscript
 		return this.transcriptionResponseMetadata;
 	}
 
+	@Override
+	public Map<String, Object> getContext() {
+		return transcriptionContext;
+	}
+
+	@Override
+	public String toString() {
+		return "AudioTranscriptionResponse{" +
+				"transcript=" + transcript +
+				", transcriptionResponseMetadata=" + transcriptionResponseMetadata +
+				", transcriptionContext=" + transcriptionContext +
+				'}';
+	}
 }
