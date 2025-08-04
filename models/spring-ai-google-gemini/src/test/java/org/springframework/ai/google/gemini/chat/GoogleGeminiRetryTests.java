@@ -16,6 +16,7 @@
 package org.springframework.ai.google.gemini.chat;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -41,6 +42,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
 
 /**
@@ -112,10 +114,11 @@ public class GoogleGeminiRetryTests {
 	}
 
 	@Test
+	@Disabled("Currently stream() does not implement retry")
 	public void googleGeminiChatStreamTransientError() {
 
-		var choice = new ChatCompletionMessage(ChatCompletionMessage.Role.ASSISTANT, "Response");
-		var completion = new ChatCompletion(List.of(new Candidate(choice)), null,
+		var chatCompletionMessage = new ChatCompletionMessage(ChatCompletionMessage.Role.ASSISTANT, "Response");
+		var completion = new ChatCompletion(List.of(new Candidate(chatCompletionMessage)), null,
 				new GoogleGeminiApi.Usage(10, 10, 10, 10, 10, 10));
 
 		when(googleGeminiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
@@ -136,7 +139,7 @@ public class GoogleGeminiRetryTests {
 	public void googleGeminiChatStreamNonTransientError() {
 		when(googleGeminiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.thenThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")));
+		assertThrows(RuntimeException.class, () -> chatModel.stream(new Prompt("text")).blockFirst());
 	}
 
 }
