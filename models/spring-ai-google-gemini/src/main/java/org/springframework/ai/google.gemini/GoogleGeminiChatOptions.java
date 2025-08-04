@@ -227,6 +227,11 @@ public class GoogleGeminiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
 		public GoogleGeminiChatOptions build() {
 			return this.options;
 		}
