@@ -284,7 +284,7 @@
 		<jsoup.version>1.18.3</jsoup.version>
 
 		<!-- Protobuf -->
-		<protobuf-java.version>3.25.2</protobuf-java.version>
+		<protobuf-java.version>3.25.8</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
 		<pdfbox.version>3.0.4</pdfbox.version>
