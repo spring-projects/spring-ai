@@ -379,13 +379,17 @@ public class GoogleGeminiChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	private GoogleGeminiApi.ChatCompletionMessage buildAssistantMessage(AssistantMessage assistantMessage) {
+		List<GoogleGeminiApi.Part> parts = new ArrayList<>();
+		if (assistantMessage.getText() != null && !assistantMessage.getText().isEmpty()) {
+			parts.add(new GoogleGeminiApi.Part(assistantMessage.getText()));
+		}
+
 		Collection<GoogleGeminiApi.Part.FunctionCall> toolCalls = assistantMessage.hasToolCalls() ? assistantMessage
 			.getToolCalls()
 			.stream()
 			.map(call -> new GoogleGeminiApi.Part.FunctionCall(call.id(), call.name(), readJsonValue(call.arguments())))
 			.toList() : Collections.emptyList();
 
-		List<GoogleGeminiApi.Part> parts = new ArrayList<>();
 		for (GoogleGeminiApi.Part.FunctionCall call : toolCalls) {
 			parts.add(new GoogleGeminiApi.Part(call));
 		}
