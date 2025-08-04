@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,7 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.ai.chat.messages.MessageType.USER;
 
 /**
  * @author Christian Tzolov
@@ -92,6 +94,7 @@ public class ChatClientTest {
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 
 		content = join(chatClient.prompt("What's Spring AI?").stream().content());
 
@@ -100,6 +103,7 @@ public class ChatClientTest {
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 
 		// Override the default system text with prompt system
 		content = chatClient.prompt("What's Spring AI?").system("Override default system text").call().content();
@@ -108,6 +112,7 @@ public class ChatClientTest {
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Override default system text");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 
 		// Streaming
 		content = join(
@@ -117,6 +122,7 @@ public class ChatClientTest {
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Override default system text");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 	@Test
@@ -135,7 +141,9 @@ public class ChatClientTest {
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 				.param("param1", "value1")
-				.param("param2", "value2"))
+				.param("param2", "value2")
+				.metadata("metadata1", "svalue1")
+				.metadata("metadata2", "svalue2"))
 			.build();
 
 		var content = chatClient.prompt("What's Spring AI?").call().content();
@@ -145,6 +153,10 @@ public class ChatClientTest {
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text value1, value2");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("metadata1", "svalue1")
+			.containsEntry("metadata2", "svalue2");
 
 		// Streaming
 		content = join(chatClient.prompt("What's Spring AI?").stream().content());
@@ -154,6 +166,10 @@ public class ChatClientTest {
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text value1, value2");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("metadata1", "svalue1")
+			.containsEntry("metadata2", "svalue2");
 
 		// Override single default system parameter
 		content = chatClient.prompt("What's Spring AI?").system(s -> s.param("param1", "value1New")).call().content();
@@ -162,6 +178,24 @@ public class ChatClientTest {
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text value1New, value2");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("metadata1", "svalue1")
+			.containsEntry("metadata2", "svalue2");
+
+		// Override default system metadata
+		content = chatClient.prompt("What's Spring AI?")
+			.system(s -> s.metadata("metadata1", "svalue1New"))
+			.call()
+			.content();
+		assertThat(content).isEqualTo("response");
+		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(systemMessage.getText()).isEqualTo("Default system text value1, value2");
+		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("metadata1", "svalue1New")
+			.containsEntry("metadata2", "svalue2");
 
 		// streaming
 		content = join(
@@ -182,10 +216,16 @@ public class ChatClientTest {
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Override default system text value3");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("metadata1", "svalue1")
+			.containsEntry("metadata2", "svalue2");
 
 		// Streaming
 		content = join(chatClient.prompt("What's Spring AI?")
-			.system(s -> s.text("Override default system text {param3}").param("param3", "value3"))
+			.system(s -> s.text("Override default system text {param3}")
+				.param("param3", "value3")
+				.metadata("metadata3", "svalue3"))
 			.stream()
 			.content());
 
@@ -193,6 +233,11 @@ public class ChatClientTest {
 		systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("Override default system text value3");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(4)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("metadata1", "svalue1")
+			.containsEntry("metadata2", "svalue2")
+			.containsEntry("metadata3", "svalue3");
 	}
 
 	@Test
@@ -215,7 +260,9 @@ public class ChatClientTest {
 		var chatClient = ChatClient.builder(this.chatModel)
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
-						.param("param2", "value2"))
+						.param("param2", "value2")
+						.metadata("smetadata1", "svalue1")
+						.metadata("smetadata2", "svalue2"))
 				.defaultToolNames("fun1", "fun2")
 				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
@@ -225,7 +272,10 @@ public class ChatClientTest {
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
 						.media(MimeTypeUtils.IMAGE_JPEG,
-								new DefaultResourceLoader().getResource("classpath:/bikes.json")))
+								new DefaultResourceLoader().getResource("classpath:/bikes.json"))
+						.metadata("umetadata1", "udata1")
+						.metadata("umetadata2", "udata2")
+				)
 				.build();
 		// @formatter:on
 
@@ -238,12 +288,20 @@ public class ChatClientTest {
 		Message systemMessage = prompt.getInstructions().get(0);
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text value1, value2");
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("smetadata1", "svalue1")
+			.containsEntry("smetadata2", "svalue2");
 
 		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(1);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+		assertThat(userMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1")
+			.containsEntry("umetadata2", "udata2");
 
 		var fco = (ToolCallingChatOptions) prompt.getOptions();
 
@@ -260,12 +318,20 @@ public class ChatClientTest {
 		systemMessage = prompt.getInstructions().get(0);
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Default system text value1, value2");
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("smetadata1", "svalue1")
+			.containsEntry("smetadata2", "svalue2");
 
 		userMessage = (UserMessage) prompt.getInstructions().get(1);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+		assertThat(userMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1")
+			.containsEntry("umetadata2", "udata2");
 
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
@@ -290,12 +356,20 @@ public class ChatClientTest {
 		systemMessage = prompt.getInstructions().get(0);
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Mutated default system text value1, value2");
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("smetadata1", "svalue1")
+			.containsEntry("smetadata2", "svalue2");
 
 		userMessage = (UserMessage) prompt.getInstructions().get(1);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getText()).isEqualTo("Mutated default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+		assertThat(userMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1")
+			.containsEntry("umetadata2", "udata2");
 
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
@@ -312,12 +386,20 @@ public class ChatClientTest {
 		systemMessage = prompt.getInstructions().get(0);
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("Mutated default system text value1, value2");
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("smetadata1", "svalue1")
+			.containsEntry("smetadata2", "svalue2");
 
 		userMessage = (UserMessage) prompt.getInstructions().get(1);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getText()).isEqualTo("Mutated default user text value1, value2");
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+		assertThat(userMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1")
+			.containsEntry("umetadata2", "udata2");
 
 		fco = (ToolCallingChatOptions) prompt.getOptions();
 
@@ -345,7 +427,9 @@ public class ChatClientTest {
 		var chatClient = ChatClient.builder(this.chatModel)
 				.defaultSystem(s -> s.text("Default system text {param1}, {param2}")
 						.param("param1", "value1")
-						.param("param2", "value2"))
+						.param("param2", "value2")
+						.metadata("smetadata1", "svalue1")
+						.metadata("smetadata2", "svalue2"))
 				.defaultToolNames("fun1", "fun2")
 				.defaultToolCallbacks(FunctionToolCallback.builder("fun3", mockFunction)
 						.description("fun3description")
@@ -354,6 +438,8 @@ public class ChatClientTest {
 				.defaultUser(u -> u.text("Default user text {uparam1}, {uparam2}")
 						.param("uparam1", "value1")
 						.param("uparam2", "value2")
+						.metadata("umetadata1", "udata1")
+						.metadata("umetadata2", "udata2")
 						.media(MimeTypeUtils.IMAGE_JPEG,
 								new DefaultResourceLoader().getResource("classpath:/bikes.json")))
 				.build();
@@ -362,7 +448,8 @@ public class ChatClientTest {
 				.prompt()
 					.system("New default system text {param1}, {param2}")
 					.user(u -> u.param("uparam1", "userValue1")
-						.param("uparam2", "userValue2"))
+						.param("uparam2", "userValue2")
+						.metadata("umetadata2", "userData2"))
 					.toolNames("fun5")
 				.mutate().build() // mutate and build new prompt
 				.prompt().call().content();
@@ -375,12 +462,20 @@ public class ChatClientTest {
 		Message systemMessage = prompt.getInstructions().get(0);
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("New default system text value1, value2");
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("smetadata1", "svalue1")
+			.containsEntry("smetadata2", "svalue2");
 
 		UserMessage userMessage = (UserMessage) prompt.getInstructions().get(1);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text userValue1, userValue2");
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+		assertThat(userMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1")
+			.containsEntry("umetadata2", "userData2");
 
 		var tco = (ToolCallingChatOptions) prompt.getOptions();
 
@@ -393,7 +488,8 @@ public class ChatClientTest {
 					.prompt()
 						.system("New default system text {param1}, {param2}")
 						.user(u -> u.param("uparam1", "userValue1")
-							.param("uparam2", "userValue2"))
+							.param("uparam2", "userValue2")
+							.metadata("umetadata2", "userData2"))
 						.toolNames("fun5")
 					.mutate().build() // mutate and build new prompt
 					.prompt().stream().content());
@@ -406,12 +502,20 @@ public class ChatClientTest {
 		systemMessage = prompt.getInstructions().get(0);
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 		assertThat(systemMessage.getText()).isEqualTo("New default system text value1, value2");
+		assertThat(systemMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", MessageType.SYSTEM)
+			.containsEntry("smetadata1", "svalue1")
+			.containsEntry("smetadata2", "svalue2");
 
 		userMessage = (UserMessage) prompt.getInstructions().get(1);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getText()).isEqualTo("Default user text userValue1, userValue2");
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_JPEG);
+		assertThat(userMessage.getMetadata()).hasSize(3)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1")
+			.containsEntry("umetadata2", "userData2");
 
 		var tcoptions = (ToolCallingChatOptions) prompt.getOptions();
 
@@ -433,7 +537,8 @@ public class ChatClientTest {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getText()).isEqualTo("Default user text");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 
 		// Override the default system text with prompt system
 		content = chatClient.prompt().user("Override default user text").call().content();
@@ -441,7 +546,8 @@ public class ChatClientTest {
 		assertThat(content).isEqualTo("response");
 		userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getText()).isEqualTo("Override default user text");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -454,7 +560,8 @@ public class ChatClientTest {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getText()).isEqualTo("User prompt");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -467,7 +574,8 @@ public class ChatClientTest {
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getText()).isEqualTo("User prompt");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -478,15 +586,22 @@ public class ChatClientTest {
 		var media = new Media(MimeTypeUtils.IMAGE_JPEG,
 				new DefaultResourceLoader().getResource("classpath:/bikes.json"));
 
-		UserMessage message = UserMessage.builder().text("User prompt").media(List.of(media)).build();
+		UserMessage message = UserMessage.builder()
+			.text("User prompt")
+			.media(List.of(media))
+			.metadata(Map.of("umetadata1", "udata1"))
+			.build();
 		Prompt prompt = new Prompt(message);
 		assertThat(ChatClient.builder(this.chatModel).build().prompt(prompt).call().content()).isEqualTo("response");
 
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(1);
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getText()).isEqualTo("User prompt");
 		assertThat(((UserMessage) userMessage).getMedia()).hasSize(1);
+		assertThat(((UserMessage) userMessage).getMetadata()).hasSize(2)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1");
 	}
 
 	@Test
@@ -508,6 +623,7 @@ public class ChatClientTest {
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("System prompt");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 	@Test
@@ -527,7 +643,7 @@ public class ChatClientTest {
 				.build();
 
 		String response = client.prompt()
-				.user(u -> u.text("User text {music}").param("music", "Rock").media(MimeTypeUtils.IMAGE_PNG, url))
+				.user(u -> u.text("User text {music}").param("music", "Rock").media(MimeTypeUtils.IMAGE_PNG, url).metadata(Map.of("umetadata1", "udata1")))
 				.call()
 				.content();
 		// @formatter:on
@@ -541,11 +657,14 @@ public class ChatClientTest {
 
 		UserMessage userMessage = (UserMessage) this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualTo("User text Rock");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 		assertThat(userMessage.getMedia()).hasSize(1);
 		assertThat(userMessage.getMedia().iterator().next().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG);
 		assertThat(userMessage.getMedia().iterator().next().getData())
 			.isEqualTo("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
+		assertThat(userMessage.getMetadata()).hasSize(2)
+			.containsEntry("messageType", USER)
+			.containsEntry("umetadata1", "udata1");
 
 		ToolCallingChatOptions runtieOptions = (ToolCallingChatOptions) this.promptCaptor.getValue().getOptions();
 
@@ -596,7 +715,7 @@ public class ChatClientTest {
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(1);
 		var userMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(userMessage.getText()).isEqualTo("my question");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
 	}
 
 	@Test
@@ -613,7 +732,8 @@ public class ChatClientTest {
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
 		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualTo("my question");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -629,7 +749,8 @@ public class ChatClientTest {
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
 		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualTo("another question");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -646,7 +767,8 @@ public class ChatClientTest {
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
 		var userMessage = this.promptCaptor.getValue().getInstructions().get(2);
 		assertThat(userMessage.getText()).isEqualTo("another question");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -663,7 +785,8 @@ public class ChatClientTest {
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
 		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualTo("another question");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -680,6 +803,8 @@ public class ChatClientTest {
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(3);
 		var userMessage = this.promptCaptor.getValue().getInstructions().get(2);
 		assertThat(userMessage.getText()).isEqualTo("another question");
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	@Test
@@ -696,7 +821,8 @@ public class ChatClientTest {
 		assertThat(this.promptCaptor.getValue().getInstructions()).hasSize(2);
 		var userMessage = this.promptCaptor.getValue().getInstructions().get(1);
 		assertThat(userMessage.getText()).isEqualTo("another question");
-		assertThat(userMessage.getMessageType()).isEqualTo(MessageType.USER);
+		assertThat(userMessage.getMessageType()).isEqualTo(USER);
+		assertThat(userMessage.getMetadata()).hasSize(1).containsEntry("messageType", USER);
 	}
 
 	// Prompt Tests - System
@@ -716,6 +842,7 @@ public class ChatClientTest {
 		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 	@Test
@@ -733,6 +860,7 @@ public class ChatClientTest {
 		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 	@Test
@@ -750,6 +878,7 @@ public class ChatClientTest {
 		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("other instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 	@Test
@@ -772,6 +901,7 @@ public class ChatClientTest {
 		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 	@Test
@@ -789,6 +919,7 @@ public class ChatClientTest {
 		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 	@Test
@@ -811,6 +942,7 @@ public class ChatClientTest {
 		var systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 		assertThat(systemMessage.getText()).isEqualTo("other instructions");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
+		assertThat(systemMessage.getMetadata()).hasSize(1).containsEntry("messageType", MessageType.SYSTEM);
 	}
 
 }

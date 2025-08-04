@@ -134,6 +134,8 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> params = new HashMap<>();
 
+		private final Map<String, Object> metadata = new HashMap<>();
+
 		private final List<Media> media = new ArrayList<>();
 
 		@Nullable
@@ -212,6 +214,23 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
+		public PromptUserSpec metadata(Map<String, Object> metadata) {
+			Assert.notNull(metadata, "metadata cannot be null");
+			Assert.noNullElements(metadata.keySet(), "metadata keys cannot contain null elements");
+			Assert.noNullElements(metadata.values(), "metadata values cannot contain null elements");
+			this.metadata.putAll(metadata);
+			return this;
+		}
+
+		@Override
+		public PromptUserSpec metadata(String key, Object value) {
+			Assert.hasText(key, "metadata key cannot be null or empty");
+			Assert.notNull(value, "metadata value cannot be null");
+			this.metadata.put(key, value);
+			return this;
+		}
+
 		@Nullable
 		protected String text() {
 			return this.text;
@@ -225,11 +244,17 @@ public class DefaultChatClient implements ChatClient {
 			return this.media;
 		}
 
+		protected Map<String, Object> metadata() {
+			return this.metadata;
+		}
+
 	}
 
 	public static class DefaultPromptSystemSpec implements PromptSystemSpec {
 
 		private final Map<String, Object> params = new HashMap<>();
+
+		private final Map<String, Object> metadata = new HashMap<>();
 
 		@Nullable
 		private String text;
@@ -278,6 +303,23 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
+		public PromptSystemSpec metadata(Map<String, Object> metadata) {
+			Assert.notNull(metadata, "metadata cannot be null");
+			Assert.noNullElements(metadata.keySet(), "metadata keys cannot contain null elements");
+			Assert.noNullElements(metadata.values(), "metadata values cannot contain null elements");
+			this.metadata.putAll(metadata);
+			return this;
+		}
+
+		@Override
+		public PromptSystemSpec metadata(String key, Object value) {
+			Assert.hasText(key, "metadata key cannot be null or empty");
+			Assert.notNull(value, "metadata value cannot be null");
+			this.metadata.put(key, value);
+			return this;
+		}
+
 		@Nullable
 		protected String text() {
 			return this.text;
@@ -285,6 +327,10 @@ public class DefaultChatClient implements ChatClient {
 
 		protected Map<String, Object> params() {
 			return this.params;
+		}
+
+		protected Map<String, Object> metadata() {
+			return this.metadata;
 		}
 
 	}
@@ -579,7 +625,11 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> userParams = new HashMap<>();
 
+		private final Map<String, Object> userMetadata = new HashMap<>();
+
 		private final Map<String, Object> systemParams = new HashMap<>();
+
+		private final Map<String, Object> systemMetadata = new HashMap<>();
 
 		private final List<Advisor> advisors = new ArrayList<>();
 
@@ -600,22 +650,25 @@ public class DefaultChatClient implements ChatClient {
 
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
-			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.systemText, ccr.systemParams, ccr.toolCallbacks,
-					ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams,
-					ccr.observationRegistry, ccr.observationConvention, ccr.toolContext, ccr.templateRenderer);
+			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
+					ccr.systemMetadata, ccr.toolCallbacks, ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions,
+					ccr.advisors, ccr.advisorParams, ccr.observationRegistry, ccr.observationConvention,
+					ccr.toolContext, ccr.templateRenderer);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
-				Map<String, Object> userParams, @Nullable String systemText, Map<String, Object> systemParams,
-				List<ToolCallback> toolCallbacks, List<Message> messages, List<String> toolNames, List<Media> media,
-				@Nullable ChatOptions chatOptions, List<Advisor> advisors, Map<String, Object> advisorParams,
-				ObservationRegistry observationRegistry,
+				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
+				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
+				List<Message> messages, List<String> toolNames, List<Media> media, @Nullable ChatOptions chatOptions,
+				List<Advisor> advisors, Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext,
 				@Nullable TemplateRenderer templateRenderer) {
 
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
+			Assert.notNull(userMetadata, "userMetadata cannot be null");
 			Assert.notNull(systemParams, "systemParams cannot be null");
+			Assert.notNull(systemMetadata, "systemMetadata cannot be null");
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			Assert.notNull(messages, "messages cannot be null");
 			Assert.notNull(toolNames, "toolNames cannot be null");
@@ -631,8 +684,11 @@ public class DefaultChatClient implements ChatClient {
 
 			this.userText = userText;
 			this.userParams.putAll(userParams);
+			this.userMetadata.putAll(userMetadata);
+
 			this.systemText = systemText;
 			this.systemParams.putAll(systemParams);
+			this.systemMetadata.putAll(systemMetadata);
 
 			this.toolNames.addAll(toolNames);
 			this.toolCallbacks.addAll(toolCallbacks);
@@ -656,6 +712,10 @@ public class DefaultChatClient implements ChatClient {
 			return this.userParams;
 		}
 
+		public Map<String, Object> getUserMetadata() {
+			return this.userMetadata;
+		}
+
 		@Nullable
 		public String getSystemText() {
 			return this.systemText;
@@ -663,6 +723,10 @@ public class DefaultChatClient implements ChatClient {
 
 		public Map<String, Object> getSystemParams() {
 			return this.systemParams;
+		}
+
+		public Map<String, Object> getSystemMetadata() {
+			return this.systemMetadata;
 		}
 
 		@Nullable
@@ -720,12 +784,15 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			if (StringUtils.hasText(this.userText)) {
-				builder.defaultUser(
-						u -> u.text(this.userText).params(this.userParams).media(this.media.toArray(new Media[0])));
+				builder.defaultUser(u -> u.text(this.userText)
+					.params(this.userParams)
+					.media(this.media.toArray(new Media[0]))
+					.metadata(this.userMetadata));
 			}
 
 			if (StringUtils.hasText(this.systemText)) {
-				builder.defaultSystem(s -> s.text(this.systemText).params(this.systemParams));
+				builder.defaultSystem(
+						s -> s.text(this.systemText).params(this.systemParams).metadata(this.systemMetadata));
 			}
 
 			if (this.chatOptions != null) {
@@ -737,6 +804,7 @@ public class DefaultChatClient implements ChatClient {
 			return builder;
 		}
 
+		@Override
 		public ChatClientRequestSpec advisors(Consumer<ChatClient.AdvisorSpec> consumer) {
 			Assert.notNull(consumer, "consumer cannot be null");
 			var advisorSpec = new DefaultAdvisorSpec();
@@ -746,6 +814,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec advisors(Advisor... advisors) {
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.noNullElements(advisors, "advisors cannot contain null elements");
@@ -753,6 +822,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec advisors(List<Advisor> advisors) {
 			Assert.notNull(advisors, "advisors cannot be null");
 			Assert.noNullElements(advisors, "advisors cannot contain null elements");
@@ -760,6 +830,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec messages(Message... messages) {
 			Assert.notNull(messages, "messages cannot be null");
 			Assert.noNullElements(messages, "messages cannot contain null elements");
@@ -767,6 +838,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec messages(List<Message> messages) {
 			Assert.notNull(messages, "messages cannot be null");
 			Assert.noNullElements(messages, "messages cannot contain null elements");
@@ -822,6 +894,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec toolContext(Map<String, Object> toolContext) {
 			Assert.notNull(toolContext, "toolContext cannot be null");
 			Assert.noNullElements(toolContext.keySet(), "toolContext keys cannot contain null elements");
@@ -830,12 +903,14 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec system(String text) {
 			Assert.hasText(text, "text cannot be null or empty");
 			this.systemText = text;
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec system(Resource text, Charset charset) {
 			Assert.notNull(text, "text cannot be null");
 			Assert.notNull(charset, "charset cannot be null");
@@ -849,11 +924,13 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec system(Resource text) {
 			Assert.notNull(text, "text cannot be null");
 			return this.system(text, Charset.defaultCharset());
 		}
 
+		@Override
 		public ChatClientRequestSpec system(Consumer<PromptSystemSpec> consumer) {
 			Assert.notNull(consumer, "consumer cannot be null");
 
@@ -861,16 +938,18 @@ public class DefaultChatClient implements ChatClient {
 			consumer.accept(systemSpec);
 			this.systemText = StringUtils.hasText(systemSpec.text()) ? systemSpec.text() : this.systemText;
 			this.systemParams.putAll(systemSpec.params());
-
+			this.systemMetadata.putAll(systemSpec.metadata());
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec user(String text) {
 			Assert.hasText(text, "text cannot be null or empty");
 			this.userText = text;
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec user(Resource text, Charset charset) {
 			Assert.notNull(text, "text cannot be null");
 			Assert.notNull(charset, "charset cannot be null");
@@ -884,11 +963,13 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec user(Resource text) {
 			Assert.notNull(text, "text cannot be null");
 			return this.user(text, Charset.defaultCharset());
 		}
 
+		@Override
 		public ChatClientRequestSpec user(Consumer<PromptUserSpec> consumer) {
 			Assert.notNull(consumer, "consumer cannot be null");
 
@@ -897,21 +978,25 @@ public class DefaultChatClient implements ChatClient {
 			this.userText = StringUtils.hasText(us.text()) ? us.text() : this.userText;
 			this.userParams.putAll(us.params());
 			this.media.addAll(us.media());
+			this.userMetadata.putAll(us.metadata());
 			return this;
 		}
 
+		@Override
 		public ChatClientRequestSpec templateRenderer(TemplateRenderer templateRenderer) {
 			Assert.notNull(templateRenderer, "templateRenderer cannot be null");
 			this.templateRenderer = templateRenderer;
 			return this;
 		}
 
+		@Override
 		public CallResponseSpec call() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultCallResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
 					this.observationRegistry, this.observationConvention);
 		}
 
+		@Override
 		public StreamResponseSpec stream() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultStreamResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
