@@ -31,11 +31,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.AsyncHttpRequestCustomizer;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.client.transport.SyncHttpRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema;
 
 /**
@@ -58,6 +61,7 @@ import io.modelcontextprotocol.spec.McpSchema;
  * connections
  * <li>Configures ObjectMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different URLs
+ * <li>Adds a sync or async HTTP request customizer. Sync takes precedence.
  * </ul>
  *
  * @see HttpClientStreamableHttpTransport
@@ -69,6 +73,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class StreamableHttpHttpClientTransportAutoConfiguration {
+
+	private static final LogAccessor logger = new LogAccessor(StreamableHttpHttpClientTransportAutoConfiguration.class);
 
 	/**
 	 * Creates a list of HTTP client-based Streamable HTTP transports for MCP
@@ -85,11 +91,17 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	 * configurations
 	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
 	 * available
+	 * @param syncHttpRequestCustomizer provider for {@link SyncHttpRequestCustomizer} if
+	 * available
+	 * @param asyncHttpRequestCustomizer provider fo {@link AsyncHttpRequestCustomizer} if
+	 * available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> streamableHttpHttpClientTransports(
-			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<ObjectMapper> objectMapperProvider) {
+			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<ObjectMapper> objectMapperProvider,
+			ObjectProvider<SyncHttpRequestCustomizer> syncHttpRequestCustomizer,
+			ObjectProvider<AsyncHttpRequestCustomizer> asyncHttpRequestCustomizer) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
@@ -102,11 +114,22 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 			String streamableHttpEndpoint = serverParameters.getValue().endpoint() != null
 					? serverParameters.getValue().endpoint() : "/mcp";
 
-			HttpClientStreamableHttpTransport transport = HttpClientStreamableHttpTransport.builder(baseUrl)
+			HttpClientStreamableHttpTransport.Builder transportBuilder = HttpClientStreamableHttpTransport
+				.builder(baseUrl)
 				.endpoint(streamableHttpEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper)
-				.build();
+				.objectMapper(objectMapper);
+
+			asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
+			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);
+			if (asyncHttpRequestCustomizer.getIfUnique() != null && syncHttpRequestCustomizer.getIfUnique() != null) {
+				logger.warn("Found beans of type %s and %s. Using %s.".formatted(
+						AsyncHttpRequestCustomizer.class.getSimpleName(),
+						SyncHttpRequestCustomizer.class.getSimpleName(),
+						SyncHttpRequestCustomizer.class.getSimpleName()));
+			}
+
+			HttpClientStreamableHttpTransport transport = transportBuilder.build();
 
 			streamableHttpTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}
