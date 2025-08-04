@@ -18,6 +18,7 @@ package org.springframework.ai.google.gemini.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.micrometer.context.Nullable;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -37,6 +38,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -125,11 +127,13 @@ public class GoogleGeminiApi {
 
 	/**
 	 * Google Gemini Chat Completion
-	 * <a href="https://platform.google.gemini.com/api-docs/api/list-models">Models</a>
+	 * <a href="https://ai.google.dev/gemini-api/docs/models">Models</a>
 	 */
 	public enum ChatModel implements ModelDescription {
 
-		GEMINI_1_5_FLASH("gemini-1.5-flash"), GEMINI_1_5_PRO("gemini-1.5-pro"), GEMINI_1_0_PRO("gemini-1.0-pro");
+		GEMINI_1_5_FLASH("gemini-1.5-flash"), GEMINI_1_5_PRO("gemini-1.5-pro"), GEMINI_1_0_PRO("gemini-1.0-pro"),
+		GEMINI_2_5_FLASH_LITE("gemini-2.5-flash-lite"), GEMINI_2_5_FLASH("gemini-2.5-flash"),
+		GEMINI_2_5_PRO("gemini-2.5-pro");
 
 		public final String value;
 
@@ -149,9 +153,99 @@ public class GoogleGeminiApi {
 	}
 
 	@JsonInclude(Include.NON_NULL)
-	public record Part(@JsonProperty("text") String text, @JsonProperty("thought") Boolean thought) {
-		Part(String text) {
-			this(text, false);
+	public record Part(@JsonProperty("thought") Boolean thought,
+			@JsonProperty("thoughtSignature") String thoughtSignature, @JsonProperty("text") String text,
+			@JsonProperty("inlineData") Object inlineData, @JsonProperty("functionCall") FunctionCall functionCall,
+			@JsonProperty("functionResponse") FunctionResponse functionResponse,
+			@JsonProperty("fileData") Object fileData, @JsonProperty("executableCode") Object executableCode,
+			@JsonProperty("codeExecutionResult") Object codeExecutionResult,
+			@JsonProperty("videoMetadata") Object videoMetadata) {
+
+		// Enforce union type: only one of the union fields can be non-null
+		public Part(Boolean thought, String thoughtSignature, String text, Object inlineData, FunctionCall functionCall,
+				FunctionResponse functionResponse, Object fileData, Object executableCode, Object codeExecutionResult,
+				Object videoMetadata) {
+			validateUnion(text, inlineData, functionCall, functionResponse, fileData, executableCode,
+					codeExecutionResult);
+			this.thought = thought;
+			this.thoughtSignature = thoughtSignature;
+			this.text = text;
+			this.inlineData = inlineData;
+			this.functionCall = functionCall;
+			this.functionResponse = functionResponse;
+			this.fileData = fileData;
+			this.executableCode = executableCode;
+			this.codeExecutionResult = codeExecutionResult;
+			this.videoMetadata = videoMetadata;
+		}
+
+		private static void validateUnion(Object text, Object inlineData, Object functionCall, Object functionResponse,
+				Object fileData, Object executableCode, Object codeExecutionResult) {
+			int count = 0;
+			if (text != null)
+				count++;
+			if (inlineData != null)
+				count++;
+			if (functionCall != null)
+				count++;
+			if (functionResponse != null)
+				count++;
+			if (fileData != null)
+				count++;
+			if (executableCode != null)
+				count++;
+			if (codeExecutionResult != null)
+				count++;
+			if (count > 1) {
+				throw new IllegalArgumentException(
+						"Part union type violation: only one of text, inlineData, functionCall, functionResponse, fileData, executableCode, codeExecutionResult can be non-null");
+			}
+		}
+
+		public Part(String text) {
+			this(false, null, text, null, null, null, null, null, null, null);
+		}
+
+		public Part(FunctionCall functionCall) {
+			this(false, null, null, null, functionCall, null, null, null, null, null);
+		}
+
+		public Part(FunctionResponse functionResponse) {
+			this(false, null, null, null, null, functionResponse, null, null, null, null);
+		}
+
+		@JsonInclude(Include.NON_NULL)
+		public record FunctionCall(@JsonProperty("id") String id, @JsonProperty("name") String name,
+				@JsonProperty("args") Object args) {
+			public FunctionCall(String id, String name, Object args) {
+				this.id = id == null ? "explyt" + java.util.UUID.randomUUID() : id;
+				this.name = name;
+				this.args = args;
+			}
+
+			@com.fasterxml.jackson.annotation.JsonCreator
+			public static FunctionCall create(@com.fasterxml.jackson.annotation.JsonProperty("id") String id,
+					@com.fasterxml.jackson.annotation.JsonProperty("name") String name,
+					@com.fasterxml.jackson.annotation.JsonProperty("args") Object args) {
+				return new FunctionCall(id, name, args);
+			}
+		}
+
+		// https://ai.google.dev/api/caching#FunctionResponse
+		@JsonInclude(Include.NON_NULL)
+		public static record FunctionResponse(@JsonProperty("id") String id, @JsonProperty("name") String name,
+				@JsonProperty("response") Object response, @JsonProperty("willContinue") Boolean willContinue,
+				@JsonProperty("scheduling") Scheduling scheduling) {
+
+			public FunctionResponse(String id, String name, Object response) {
+				this(id, name, response, false, Scheduling.SCHEDULING_UNSPECIFIED);
+			}
+		}
+
+		public enum Scheduling {
+
+			SCHEDULING_UNSPECIFIED, SILENT, WHEN_IDLE, INTERRUPT
+
 		}
 	}
 
@@ -193,7 +287,12 @@ public class GoogleGeminiApi {
 			 * Assistant message.
 			 */
 			@JsonProperty("model")
-			ASSISTANT;
+			ASSISTANT,
+			/**
+			 * Tool message.
+			 */
+			@JsonProperty("tool")
+			TOOL;
 
 			public static Role of(MessageType messageType) {
 				if (messageType == MessageType.USER) {
@@ -201,6 +300,9 @@ public class GoogleGeminiApi {
 				}
 				else if (messageType == MessageType.ASSISTANT) {
 					return ASSISTANT;
+				}
+				else if (messageType == MessageType.TOOL) {
+					return TOOL;
 				}
 				else {
 					throw new IllegalArgumentException("Only USER and ASSISTANT roles are allowed.");
@@ -242,13 +344,14 @@ public class GoogleGeminiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(@JsonProperty("contents") List<ChatCompletionMessage> contents,
 			@JsonProperty("systemInstruction") ChatCompletionMessage systemInstruction,
-			@JsonProperty("generationConfig") GenerationConfig generationConfig) {
+			@JsonProperty("generationConfig") GenerationConfig generationConfig,
+			@Nullable @JsonProperty("tools") List<Tool> tools) {
 		public ChatCompletionRequest(Prompt prompt, GoogleGeminiChatOptions options) {
 			this(prompt.getInstructions()
 				.stream()
 				.filter(instruction -> instruction.getMessageType() != MessageType.SYSTEM)
 				.map(ChatCompletionMessage::new)
-				.toList(), ChatCompletionMessage.getSystemInstruction(prompt), GenerationConfig.of(options));
+				.toList(), ChatCompletionMessage.getSystemInstruction(prompt), GenerationConfig.of(options), null);
 			Assert.isTrue(prompt.getInstructions()
 				.stream()
 				.filter(instruction -> instruction.getMessageType() == MessageType.SYSTEM)
@@ -256,14 +359,101 @@ public class GoogleGeminiApi {
 		}
 	}
 
+	/**
+	 * Represents a tool for function calling, following Gemini's schema.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public static class Tool {
+
+		@JsonProperty("functionDeclarations")
+		private List<FunctionDeclaration> functionDeclarations;
+
+		public Tool() {
+		}
+
+		public Tool(List<FunctionDeclaration> functionDeclarations) {
+			this.functionDeclarations = functionDeclarations;
+		}
+
+		public List<FunctionDeclaration> getFunctionDeclarations() {
+			return functionDeclarations;
+		}
+
+		public void setFunctionDeclarations(List<FunctionDeclaration> functionDeclarations) {
+			this.functionDeclarations = functionDeclarations;
+		}
+
+	}
+
+	/**
+	 * Represents a function declaration for Gemini function calling. Follows OpenAPI
+	 * schema subset as required by Gemini.
+	 */
+	// https://ai.google.dev/api/caching#FunctionDeclaration
+	@JsonInclude(Include.NON_NULL)
+	public static class FunctionDeclaration {
+
+		@JsonProperty("name")
+		private String name;
+
+		@JsonProperty("description")
+		private String description;
+
+		// https://ai.google.dev/api/caching#:~:text=parametersJsonSchema
+		@JsonProperty("parametersJsonSchema")
+		private Object parameters;
+
+		public FunctionDeclaration() {
+		}
+
+		public FunctionDeclaration(String name, String description, Map<String, Object> parameters) {
+			this.name = name;
+			this.description = description;
+			this.parameters = parameters;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+
+		public void setDescription(String description) {
+			this.description = description;
+		}
+
+		public Object getParameters() {
+			return parameters;
+		}
+
+		public void setParameters(Object parameters) {
+			this.parameters = parameters;
+		}
+
+	}
+
+	// https://ai.google.dev/api/generate-content#candidate
 	@JsonInclude(Include.NON_NULL)
 	public record Candidate(@JsonProperty("content") ChatCompletionMessage content,
-			@JsonProperty("finishReason") String finishReason,
+			@JsonProperty("finishReason") FinishReason finishReason,
 			@JsonProperty("safetyRatings") List<SafetyRating> safetyRatings,
 			@JsonProperty("tokenCount") Integer tokenCount) {
 		public Candidate(ChatCompletionMessage content) {
 			this(content, null, null, null);
 		}
+	}
+
+	public enum FinishReason {
+
+		FINISH_REASON_UNSPECIFIED, STOP, MAX_TOKENS, SAFETY, RECITATION, LANGUAGE, OTHER, BLOCKLIST, PROHIBITED_CONTENT,
+		SPII, MALFORMED_FUNCTION_CALL, IMAGE_SAFETY, UNEXPECTED_TOOL_CALL
+
 	}
 
 	@JsonInclude(Include.NON_NULL)
