@@ -15,8 +15,12 @@
  */
 package org.springframework.ai.google.gemini.api;
 
+import org.springframework.ai.observation.conventions.AiProvider;
+
 public class GoogleGeminiApiConstants {
 
 	public static final String DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+
+	public static final String PROVIDER_NAME = AiProvider.GEMINI.value();
 
 }
