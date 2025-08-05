@@ -789,7 +789,7 @@ When building tools from a method, the `ToolDefinition` is automatically generat
 [source,java]
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
-ToolDefinition toolDefinition = ToolDefinition.from(method);
+ToolDefinition toolDefinition = ToolDefinitions.from(method);
 ----
 
 The `ToolDefinition` generated from a method includes the method name as the tool name, the method name as the tool description, and the JSON schema of the method input parameters. If the method is annotated with `@Tool`, the tool name and description will be taken from the annotation, if set.
