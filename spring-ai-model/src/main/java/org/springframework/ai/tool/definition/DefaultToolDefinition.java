@@ -16,7 +16,7 @@
 
 package org.springframework.ai.tool.definition;
 
-import org.springframework.ai.util.ParsingUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -26,10 +26,12 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolDefinition(String name, String description, String inputSchema) implements ToolDefinition {
+public record DefaultToolDefinition(String name, String title, String description,
+		String inputSchema) implements ToolDefinition {
 
 	public DefaultToolDefinition {
 		Assert.hasText(name, "name cannot be null or empty");
+		Assert.hasText(title, "title cannot be null or empty");
 		Assert.hasText(description, "description cannot be null or empty");
 		Assert.hasText(inputSchema, "inputSchema cannot be null or empty");
 	}
@@ -42,6 +44,8 @@ public record DefaultToolDefinition(String name, String description, String inpu
 
 		private String name;
 
+		private String title;
+
 		private String description;
 
 		private String inputSchema;
@@ -51,6 +55,11 @@ public record DefaultToolDefinition(String name, String description, String inpu
 
 		public Builder name(String name) {
 			this.name = name;
+			return this;
+		}
+
+		public Builder title(String title) {
+			this.title = title;
 			return this;
 		}
 
@@ -65,11 +74,13 @@ public record DefaultToolDefinition(String name, String description, String inpu
 		}
 
 		public ToolDefinition build() {
-			if (!StringUtils.hasText(this.description)) {
-				Assert.hasText(this.name, "toolName cannot be null or empty");
-				this.description = ParsingUtils.reConcatenateCamelCase(this.name, " ");
+			if (!StringUtils.hasText(this.title)) {
+				this.title = ToolUtils.getToolTitleFromName(this.name);
 			}
-			return new DefaultToolDefinition(this.name, this.description, this.inputSchema);
+			if (!StringUtils.hasText(this.description)) {
+				this.description = ToolUtils.getToolDescriptionFromName(this.name);
+			}
+			return new DefaultToolDefinition(this.name, this.title, this.description, this.inputSchema);
 		}
 
 	}
