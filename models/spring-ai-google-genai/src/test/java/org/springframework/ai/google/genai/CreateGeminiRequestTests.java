@@ -30,6 +30,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -297,6 +299,47 @@ public class CreateGeminiRequestTests {
 		assertThat(request.config().candidateCount().orElse(0)).isEqualTo(1);
 		assertThat(request.config().stopSequences().orElse(List.of())).containsExactly("stop1", "stop2");
 		assertThat(request.config().responseMimeType().orElse("")).isEqualTo("application/json");
+	}
+
+	@Test
+	public void createRequestWithThinkingBudget() {
+
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(12853).build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.contents()).hasSize(1);
+		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
+
+		// Verify thinkingConfig is present and contains thinkingBudget
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingBudget()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingBudget().get()).isEqualTo(12853);
+	}
+
+	@Test
+	public void createRequestWithThinkingBudgetOverride() {
+
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(10000).build())
+			.build();
+
+		// Override default thinkingBudget with prompt-specific value
+		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(
+				new Prompt("Test message content", GoogleGenAiChatOptions.builder().thinkingBudget(25000).build())));
+
+		assertThat(request.contents()).hasSize(1);
+		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
+
+		// Verify prompt-specific thinkingBudget overrides default
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingBudget()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingBudget().get()).isEqualTo(25000);
 	}
 
 }
