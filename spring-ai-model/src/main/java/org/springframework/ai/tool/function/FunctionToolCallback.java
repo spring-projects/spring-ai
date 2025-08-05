@@ -31,6 +31,7 @@ import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.ai.util.json.JsonParser;
@@ -99,7 +100,15 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
 
 		I request = JsonParser.fromJson(toolInput, this.toolInputType);
-		O response = this.toolFunction.apply(request, toolContext);
+		O response;
+
+		try {
+			response = this.toolFunction.apply(request, toolContext);
+		}
+		catch (Exception e) {
+			logger.error("Error executing tool: {}", this.toolDefinition.name(), e);
+			throw new ToolExecutionException(this.toolDefinition, e);
+		}
 
 		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
 
