@@ -24,4 +24,23 @@ class StreamHelperTest {
 		assertThat(response).isNotNull();
 	}
 
+	@Test
+	void testMultipleErrorEventsHandling() {
+		StreamHelper streamHelper = new StreamHelper();
+		AtomicReference<ChatCompletionResponseBuilder> contentBlockReference = new AtomicReference<>();
+
+		AnthropicApi.ErrorEvent firstError = new AnthropicApi.ErrorEvent(AnthropicApi.EventType.ERROR,
+				new AnthropicApi.ErrorEvent.Error("validation_error", "Invalid input"));
+		AnthropicApi.ErrorEvent secondError = new AnthropicApi.ErrorEvent(AnthropicApi.EventType.ERROR,
+				new AnthropicApi.ErrorEvent.Error("server_error", "Internal server error"));
+
+		AnthropicApi.ChatCompletionResponse response1 = streamHelper.eventToChatCompletionResponse(firstError,
+				contentBlockReference);
+		AnthropicApi.ChatCompletionResponse response2 = streamHelper.eventToChatCompletionResponse(secondError,
+				contentBlockReference);
+
+		assertThat(response1).isNotNull();
+		assertThat(response2).isNotNull();
+	}
+
 }
