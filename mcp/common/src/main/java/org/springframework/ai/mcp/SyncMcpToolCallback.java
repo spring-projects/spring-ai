@@ -20,16 +20,16 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+
+import java.util.Map;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -114,6 +114,12 @@ public class SyncMcpToolCallback implements ToolCallback {
 	 */
 	@Override
 	public String call(String functionInput) {
+		// Handle the possible null parameter situation in streaming mode.
+		if (functionInput == null || functionInput.trim().isEmpty()) {
+			logger.debug("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.", this.tool.name());
+			functionInput = "{}";
+		}
+		
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
 
 		CallToolResult response;
