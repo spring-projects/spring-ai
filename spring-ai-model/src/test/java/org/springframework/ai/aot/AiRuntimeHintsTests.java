@@ -27,10 +27,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.util.Assert;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class AiRuntimeHintsTests {
 
 	@Test
-	void discoverRelevantClasses() throws Exception {
+	void discoverRelevantClasses() {
 		var classes = AiRuntimeHints.findJsonAnnotatedClassesInPackage(TestApi.class);
 		var included = Set.of(TestApi.Bar.class, TestApi.Foo.class)
 			.stream()
@@ -38,6 +40,24 @@ class AiRuntimeHintsTests {
 			.collect(Collectors.toSet());
 		LogFactory.getLog(getClass()).info(classes);
 		Assert.state(classes.containsAll(included), "there should be all of the enumerated classes. ");
+	}
+
+	@Test
+	void verifyRecordWithJsonPropertyIncluded() {
+		var classes = AiRuntimeHints.findJsonAnnotatedClassesInPackage(TestApi.class);
+
+		// Foo record should be included due to @JsonProperty on parameter
+		var recordClass = TypeReference.of(TestApi.Foo.class.getName());
+		assertThat(classes).contains(recordClass);
+	}
+
+	@Test
+	void verifyEnumWithJsonIncludeAnnotation() {
+		var classes = AiRuntimeHints.findJsonAnnotatedClassesInPackage(TestApi.class);
+
+		// Bar enum should be included due to @JsonInclude
+		var enumClass = TypeReference.of(TestApi.Bar.class.getName());
+		assertThat(classes).contains(enumClass);
 	}
 
 	@JsonInclude
