@@ -79,7 +79,7 @@ public class RelevancyEvaluator implements Evaluator {
 
 		boolean passing = false;
 		float score = 0;
-		if (evaluationResponse != null && evaluationResponse.toLowerCase().contains("yes")) {
+		if ("yes".equalsIgnoreCase(evaluationResponse)) {
 			passing = true;
 			score = 1;
 		}
