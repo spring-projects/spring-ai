@@ -57,7 +57,7 @@ import static org.springframework.ai.chat.messages.MessageType.USER;
  * @author Thomas Vitale
  */
 @ExtendWith(MockitoExtension.class)
-public class ChatClientTest {
+public class ChatClientTests {
 
 	static Function<String, String> mockFunction = s -> s;
 
