@@ -125,6 +125,7 @@
 *** xref:api/vectordbs/hana.adoc[SAP Hana]
 *** xref:api/vectordbs/typesense.adoc[]
 *** xref:api/vectordbs/weaviate.adoc[]
+*** xref:api/vectordbs/s3-vector-store.adoc[]
 
 ** xref:observability/index.adoc[]
 
