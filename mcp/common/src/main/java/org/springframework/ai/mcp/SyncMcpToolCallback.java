@@ -116,10 +116,11 @@ public class SyncMcpToolCallback implements ToolCallback {
 	public String call(String functionInput) {
 		// Handle the possible null parameter situation in streaming mode.
 		if (functionInput == null || functionInput.trim().isEmpty()) {
-			logger.debug("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.", this.tool.name());
+			logger.debug("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.",
+					this.tool.name());
 			functionInput = "{}";
 		}
-		
+
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
 
 		CallToolResult response;
