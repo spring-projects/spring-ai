@@ -155,32 +155,23 @@ public class GoogleGeminiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Part(@JsonProperty("thought") Boolean thought,
 			@JsonProperty("thoughtSignature") String thoughtSignature, @JsonProperty("text") String text,
-			@JsonProperty("inlineData") Object inlineData, @JsonProperty("functionCall") FunctionCall functionCall,
-			@JsonProperty("functionResponse") FunctionResponse functionResponse,
-			@JsonProperty("fileData") Object fileData, @JsonProperty("executableCode") Object executableCode,
-			@JsonProperty("codeExecutionResult") Object codeExecutionResult,
-			@JsonProperty("videoMetadata") Object videoMetadata) {
+			@JsonProperty("inlineData") String inlineData, @JsonProperty("functionCall") FunctionCall functionCall,
+			@JsonProperty("functionResponse") FunctionResponse functionResponse) {
 
 		// Enforce union type: only one of the union fields can be non-null
-		public Part(Boolean thought, String thoughtSignature, String text, Object inlineData, FunctionCall functionCall,
-				FunctionResponse functionResponse, Object fileData, Object executableCode, Object codeExecutionResult,
-				Object videoMetadata) {
-			validateUnion(text, inlineData, functionCall, functionResponse, fileData, executableCode,
-					codeExecutionResult);
+		public Part(Boolean thought, String thoughtSignature, String text, String inlineData, FunctionCall functionCall,
+				FunctionResponse functionResponse) {
+			validateUnion(text, inlineData, functionCall, functionResponse);
 			this.thought = thought;
 			this.thoughtSignature = thoughtSignature;
 			this.text = text;
 			this.inlineData = inlineData;
 			this.functionCall = functionCall;
 			this.functionResponse = functionResponse;
-			this.fileData = fileData;
-			this.executableCode = executableCode;
-			this.codeExecutionResult = codeExecutionResult;
-			this.videoMetadata = videoMetadata;
 		}
 
-		private static void validateUnion(Object text, Object inlineData, Object functionCall, Object functionResponse,
-				Object fileData, Object executableCode, Object codeExecutionResult) {
+		private static void validateUnion(Object text, Object inlineData, Object functionCall,
+				Object functionResponse) {
 			int count = 0;
 			if (text != null)
 				count++;
@@ -190,12 +181,6 @@ public class GoogleGeminiApi {
 				count++;
 			if (functionResponse != null)
 				count++;
-			if (fileData != null)
-				count++;
-			if (executableCode != null)
-				count++;
-			if (codeExecutionResult != null)
-				count++;
 			if (count > 1) {
 				throw new IllegalArgumentException(
 						"Part union type violation: only one of text, inlineData, functionCall, functionResponse, fileData, executableCode, codeExecutionResult can be non-null");
@@ -203,21 +188,21 @@ public class GoogleGeminiApi {
 		}
 
 		public Part(String text) {
-			this(false, null, text, null, null, null, null, null, null, null);
+			this(false, null, text, null, null, null);
 		}
 
 		public Part(FunctionCall functionCall) {
-			this(false, null, null, null, functionCall, null, null, null, null, null);
+			this(false, null, null, null, functionCall, null);
 		}
 
 		public Part(FunctionResponse functionResponse) {
-			this(false, null, null, null, null, functionResponse, null, null, null, null);
+			this(false, null, null, null, null, functionResponse);
 		}
 
 		@JsonInclude(Include.NON_NULL)
 		public record FunctionCall(@JsonProperty("id") String id, @JsonProperty("name") String name,
-				@JsonProperty("args") Object args) {
-			public FunctionCall(String id, String name, Object args) {
+				@JsonProperty("args") Map<String, Object> args) {
+			public FunctionCall(String id, String name, Map<String, Object> args) {
 				this.id = id == null ? "explyt" + java.util.UUID.randomUUID() : id;
 				this.name = name;
 				this.args = args;
@@ -226,7 +211,7 @@ public class GoogleGeminiApi {
 			@com.fasterxml.jackson.annotation.JsonCreator
 			public static FunctionCall create(@com.fasterxml.jackson.annotation.JsonProperty("id") String id,
 					@com.fasterxml.jackson.annotation.JsonProperty("name") String name,
-					@com.fasterxml.jackson.annotation.JsonProperty("args") Object args) {
+					@com.fasterxml.jackson.annotation.JsonProperty("args") Map<String, Object> args) {
 				return new FunctionCall(id, name, args);
 			}
 		}
@@ -234,10 +219,10 @@ public class GoogleGeminiApi {
 		// https://ai.google.dev/api/caching#FunctionResponse
 		@JsonInclude(Include.NON_NULL)
 		public static record FunctionResponse(@JsonProperty("id") String id, @JsonProperty("name") String name,
-				@JsonProperty("response") Object response, @JsonProperty("willContinue") Boolean willContinue,
-				@JsonProperty("scheduling") Scheduling scheduling) {
+				@JsonProperty("response") Map<String, Object> response,
+				@JsonProperty("willContinue") Boolean willContinue, @JsonProperty("scheduling") Scheduling scheduling) {
 
-			public FunctionResponse(String id, String name, Object response) {
+			public FunctionResponse(String id, String name, Map<String, Object> response) {
 				this(id, name, response, false, Scheduling.SCHEDULING_UNSPECIFIED);
 			}
 		}
