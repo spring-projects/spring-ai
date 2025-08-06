@@ -128,6 +128,11 @@ public enum VectorStoreProvider {
 	/**
 	 * Vector store provided by simple.
 	 */
+	S3_VECTOR("s3_vector"),
+
+	/**
+	 * Vector store provided by simple.
+	 */
 	SIMPLE("simple"),
 
 	/**

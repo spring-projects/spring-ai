@@ -68,4 +68,6 @@ public final class SpringAIVectorStoreTypes {
 
 	public static final String BEDROCK_KNOWLEDGE_BASE = "bedrock-knowledge-base";
 
+	public static final String S3 = "S3";
+
 }
