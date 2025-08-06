@@ -80,4 +80,29 @@ class ToolExecutionResultTests {
 		assertThat(generations.get(1).getMetadata().getFinishReason()).isEqualTo(ToolExecutionResult.FINISH_REASON);
 	}
 
+	@Test
+	void shouldAddSourceMetadataForToolResponses() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new AssistantMessage("Hello, how can I help you?"),
+					new UserMessage("I would like to know the weather in London"),
+					new AssistantMessage("Call the weather tool"),
+					new ToolResponseMessage(List.of(new ToolResponseMessage.ToolResponse("42", "weather",
+							"The weather in London is 20 degrees Celsius")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		var generation = generations.get(0);
+
+		// Verify existing metadata fields are still present
+		assertThat((String) generation.getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME)).isEqualTo("weather");
+		assertThat((String) generation.getMetadata().get(ToolExecutionResult.METADATA_TOOL_ID)).isEqualTo("42");
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo(ToolExecutionResult.FINISH_REASON);
+
+		// Verify new source metadata is added
+		assertThat((String) generation.getMetadata().get(ToolExecutionResult.METADATA_SOURCE))
+			.isEqualTo(ToolExecutionResult.SOURCE_TOOL);
+	}
+
 }

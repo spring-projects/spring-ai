@@ -171,4 +171,32 @@ class OllamaChatModelTests {
 
 	}
 
+	@Test
+	void shouldAddSourceMetadataForModelResponses() {
+		// Create a mock OllamaApi.ChatResponse with eval counts to trigger metadata
+		// creation
+		Long evalDuration = 1000L;
+		Integer evalCount = 101;
+		Integer promptEvalCount = 808;
+		Long promptEvalDuration = 8L;
+		Long loadDuration = 100L;
+		Long totalDuration = 2000L;
+
+		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse("model", Instant.now(),
+				new OllamaApi.Message(OllamaApi.Message.Role.ASSISTANT, "Test response", null, null), "stop", true,
+				totalDuration, loadDuration, promptEvalCount, promptEvalDuration, evalCount, evalDuration);
+
+		ChatResponseMetadata metadata = OllamaChatModel.from(response, null);
+
+		// Verify that basic metadata fields are present
+		assertEquals(Duration.ofNanos(evalDuration), metadata.get("eval-duration"));
+		assertEquals(evalCount, metadata.get("eval-count"));
+
+		// Test that source metadata is NOT added by the from() method (this is handled in
+		// Generation creation)
+		// The from() method only creates response-level metadata, not generation-level
+		// metadata
+		assertNull(metadata.get("source"));
+	}
+
 }
