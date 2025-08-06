@@ -21,6 +21,8 @@ import java.util.Map;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -29,6 +31,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.util.StringUtils;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -61,6 +64,8 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
  * @see Tool
  */
 public class AsyncMcpToolCallback implements ToolCallback {
+
+	private static final Logger logger = LoggerFactory.getLogger(AsyncMcpToolCallback.class);
 
 	private final McpAsyncClient asyncMcpClient;
 
@@ -109,12 +114,19 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 * <li>Calls the tool through the MCP client asynchronously</li>
 	 * <li>Converts the tool's response content to a JSON string</li>
 	 * </ol>
-	 * @param functionInput the tool input as a JSON string
+	 * @param toolCallInput the tool input as a JSON string
 	 * @return the tool's response as a JSON string
 	 */
 	@Override
-	public String call(String functionInput) {
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
+	public String call(String toolCallInput) {
+		// Handle the possible null parameter situation in streaming mode.
+		if (!StringUtils.hasText(toolCallInput)) {
+			logger.warn("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.",
+					this.tool.name());
+			toolCallInput = "{}";
+		}
+
+		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolCallInput);
 		// Note that we use the original tool name here, not the adapted one from
 		// getToolDefinition
 		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).onErrorMap(exception -> {
