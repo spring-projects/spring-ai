@@ -404,7 +404,7 @@ class Neo4jChatMemoryRepositoryIT {
 		var conversationId = UUID.randomUUID().toString();
 
 		// 1. Save initial messages
-		var initialMessages = List.of(new UserMessage("Hello"), new AssistantMessage("Hi there"),
+		List<Message> initialMessages = List.of(new UserMessage("Hello"), new AssistantMessage("Hi there"),
 				new UserMessage("How are you?"));
 		this.chatMemoryRepository.saveAll(conversationId, initialMessages);
 
@@ -415,7 +415,7 @@ class Neo4jChatMemoryRepositoryIT {
 		// 2. Define changes
 		var messageToDelete = savedMessages.stream().filter(m -> m.getText().equals("How are you?")).findFirst().get();
 		var toDelete = List.of(messageToDelete);
-		var toAdd = List.of(new AssistantMessage("I am fine, thank you."));
+		List<Message> toAdd = List.of(new AssistantMessage("I am fine, thank you."));
 
 		// 3. Apply changes
 		this.chatMemoryRepository.refresh(conversationId, toDelete, toAdd);
