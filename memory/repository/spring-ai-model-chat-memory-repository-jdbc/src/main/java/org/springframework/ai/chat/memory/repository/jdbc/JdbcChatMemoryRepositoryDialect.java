@@ -46,6 +46,11 @@ public interface JdbcChatMemoryRepositoryDialect {
 	String getDeleteMessagesSql();
 
 	/**
+	 * Returns the SQL to delete a single message for a conversation.
+	 */
+	String getDeleteMessageSql();
+
+	/**
 	 * Optionally, dialect can provide more advanced SQL as needed.
 	 */
 
