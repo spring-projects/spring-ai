@@ -50,8 +50,8 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	int TOOL_EXECUTION_NO_LIMIT = Integer.MAX_VALUE;
 
 	/**
-	 * Default maximum number of tool execution iterations.
-	 * ref: Three strikes and you are out!
+	 * Default maximum number of tool execution iterations. ref: Three strikes and you are
+	 * out!
 	 */
 	int DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS = 3;
 
