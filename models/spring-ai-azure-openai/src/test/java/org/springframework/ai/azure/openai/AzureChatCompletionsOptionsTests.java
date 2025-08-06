@@ -166,4 +166,116 @@ public class AzureChatCompletionsOptionsTests {
 		}
 	}
 
+	@Test
+	public void createRequestWithMinimalOptions() {
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
+
+		var minimalOptions = AzureOpenAiChatOptions.builder().deploymentName("MINIMAL_MODEL").build();
+
+		var client = AzureOpenAiChatModel.builder()
+			.openAIClientBuilder(mockClient)
+			.defaultOptions(minimalOptions)
+			.build();
+
+		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message"));
+
+		assertThat(requestOptions.getModel()).isEqualTo("MINIMAL_MODEL");
+		assertThat(requestOptions.getTemperature()).isNull();
+		assertThat(requestOptions.getMaxTokens()).isNull();
+		assertThat(requestOptions.getTopP()).isNull();
+	}
+
+	@Test
+	public void createRequestWithEmptyStopList() {
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
+
+		var options = AzureOpenAiChatOptions.builder().deploymentName("TEST_MODEL").stop(List.of()).build();
+
+		var client = AzureOpenAiChatModel.builder().openAIClientBuilder(mockClient).defaultOptions(options).build();
+
+		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message"));
+
+		assertThat(requestOptions.getStop()).isEmpty();
+	}
+
+	@Test
+	public void createRequestWithEmptyLogitBias() {
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
+
+		var options = AzureOpenAiChatOptions.builder().deploymentName("TEST_MODEL").logitBias(Map.of()).build();
+
+		var client = AzureOpenAiChatModel.builder().openAIClientBuilder(mockClient).defaultOptions(options).build();
+
+		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message"));
+
+		assertThat(requestOptions.getLogitBias()).isEmpty();
+	}
+
+	@Test
+	public void createRequestWithLogprobsDisabled() {
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
+
+		var options = AzureOpenAiChatOptions.builder()
+			.deploymentName("TEST_MODEL")
+			.logprobs(false)
+			.topLogprobs(0)
+			.build();
+
+		var client = AzureOpenAiChatModel.builder().openAIClientBuilder(mockClient).defaultOptions(options).build();
+
+		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message"));
+
+		assertThat(requestOptions.isLogprobs()).isFalse();
+		assertThat(requestOptions.getTopLogprobs()).isEqualTo(0);
+	}
+
+	@Test
+	public void createRequestWithSingleStopSequence() {
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
+
+		var options = AzureOpenAiChatOptions.builder().deploymentName("SINGLE_STOP_MODEL").stop(List.of("END")).build();
+
+		var client = AzureOpenAiChatModel.builder().openAIClientBuilder(mockClient).defaultOptions(options).build();
+
+		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message"));
+
+		assertThat(requestOptions.getStop()).hasSize(1);
+		assertThat(requestOptions.getStop()).containsExactly("END");
+	}
+
+	@Test
+	public void builderPatternTest() {
+		var options = AzureOpenAiChatOptions.builder()
+			.deploymentName("BUILDER_TEST_MODEL")
+			.temperature(0.7)
+			.maxTokens(1500)
+			.build();
+
+		assertThat(options.getDeploymentName()).isEqualTo("BUILDER_TEST_MODEL");
+		assertThat(options.getTemperature()).isEqualTo(0.7);
+		assertThat(options.getMaxTokens()).isEqualTo(1500);
+	}
+
+	@ParameterizedTest
+	@MethodSource("provideResponseFormatTypes")
+	public void createRequestWithDifferentResponseFormats(Type responseFormatType, Class<?> expectedFormatClass) {
+		OpenAIClientBuilder mockClient = Mockito.mock(OpenAIClientBuilder.class);
+
+		var options = AzureOpenAiChatOptions.builder()
+			.deploymentName("FORMAT_TEST_MODEL")
+			.responseFormat(AzureOpenAiResponseFormat.builder().type(responseFormatType).build())
+			.build();
+
+		var client = AzureOpenAiChatModel.builder().openAIClientBuilder(mockClient).defaultOptions(options).build();
+
+		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message"));
+
+		assertThat(requestOptions.getResponseFormat()).isInstanceOf(expectedFormatClass);
+	}
+
+	private static Stream<Arguments> provideResponseFormatTypes() {
+		return Stream.of(Arguments.of(Type.TEXT, ChatCompletionsTextResponseFormat.class),
+				Arguments.of(Type.JSON_OBJECT, ChatCompletionsJsonResponseFormat.class));
+	}
+
 }
