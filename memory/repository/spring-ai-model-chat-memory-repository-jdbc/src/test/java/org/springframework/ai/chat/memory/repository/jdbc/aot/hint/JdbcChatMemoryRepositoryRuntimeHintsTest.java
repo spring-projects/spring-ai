@@ -34,6 +34,7 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 /**
  * @author Jonathan Leijendekker
@@ -70,6 +71,12 @@ class JdbcChatMemoryRepositoryRuntimeHintsTest {
 		this.jdbcChatMemoryRepositoryRuntimeHints.registerHints(this.hints, getClass().getClassLoader());
 
 		assertThat(RuntimeHintsPredicates.reflection().onType(DataSource.class)).accepts(this.hints);
+	}
+
+	@Test
+	void registerHintsWithNullClassLoader() {
+		assertThatNoException()
+			.isThrownBy(() -> this.jdbcChatMemoryRepositoryRuntimeHints.registerHints(this.hints, null));
 	}
 
 	private static Stream<String> getSchemaFileNames() throws IOException {
