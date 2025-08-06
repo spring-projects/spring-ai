@@ -53,15 +53,15 @@ jobs:
           OLLAMA_AUTOCONF_TESTS_ENABLED: "true"
           OLLAMA_WITH_REUSE: true
         run: |
-          mvn -s settings.xml -Pci-fast-integration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 \
+          ./mvnw -s settings.xml -Pci-fast-integration-tests -Pjavadoc -Dfailsafe.rerunFailingTestsCount=3 \
           --batch-mode --update-snapshots deploy
 
       - name: Generate Java docs
-        run: mvn javadoc:aggregate
+        run: ./mvnw --batch-mode javadoc:aggregate
 
       - name: Generate assembly
         working-directory: spring-ai-docs
-        run: mvn assembly:single
+        run: ./mvnw --batch-mode assembly:single
 
       - name: Capture project version
         run: echo PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
