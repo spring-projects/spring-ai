@@ -108,6 +108,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("presencePenalty") Double presencePenalty;
 
 	/**
+	 * Optional. Thinking budget for the thinking process.
+	 * This is part of the thinkingConfig in GenerationConfig.
+	 */
+	private @JsonProperty("thinkingBudget") Integer thinkingBudget;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -163,6 +169,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
+		options.setThinkingBudget(fromOptions.getThinkingBudget());
 		return options;
 	}
 
@@ -300,6 +307,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.presencePenalty = presencePenalty;
 	}
 
+	public Integer getThinkingBudget() {
+		return this.thinkingBudget;
+	}
+
+	public void setThinkingBudget(Integer thinkingBudget) {
+		this.thinkingBudget = thinkingBudget;
+	}
+
 	public Boolean getGoogleSearchRetrieval() {
 		return this.googleSearchRetrieval;
 	}
@@ -341,6 +356,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.candidateCount, that.candidateCount)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.thinkingBudget, that.thinkingBudget)
 				&& Objects.equals(this.maxOutputTokens, that.maxOutputTokens) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
@@ -353,20 +369,20 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
-				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
-				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
+				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
 	public String toString() {
 		return "GoogleGenAiChatOptions{" + "stopSequences=" + this.stopSequences + ", temperature=" + this.temperature
 				+ ", topP=" + this.topP + ", topK=" + this.topK + ", frequencyPenalty=" + this.frequencyPenalty
-				+ ", presencePenalty=" + this.presencePenalty + ", candidateCount=" + this.candidateCount
-				+ ", maxOutputTokens=" + this.maxOutputTokens + ", model='" + this.model + '\'' + ", responseMimeType='"
-				+ this.responseMimeType + '\'' + ", toolCallbacks=" + this.toolCallbacks + ", toolNames="
-				+ this.toolNames + ", googleSearchRetrieval=" + this.googleSearchRetrieval + ", safetySettings="
-				+ this.safetySettings + '}';
+				+ ", presencePenalty=" + this.presencePenalty + ", thinkingBudget=" + this.thinkingBudget
+				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
+				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
+				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + '}';
 	}
 
 	@Override
@@ -486,6 +502,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder thinkingBudget(Integer thinkingBudget) {
+			this.options.setThinkingBudget(thinkingBudget);
 			return this;
 		}
 
