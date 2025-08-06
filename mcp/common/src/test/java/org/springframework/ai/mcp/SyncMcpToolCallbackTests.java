@@ -31,7 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.content.Content;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -114,7 +113,7 @@ class SyncMcpToolCallbackTests {
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.cause()
 			.isInstanceOf(IllegalStateException.class)
-			.hasMessage("Error calling tool: [TextContent[audience=null, priority=null, text=Some error data]]");
+			.hasMessage("Error calling tool: [TextContent[annotations=null, text=Some error data, meta=null]]");
 	}
 
 	@Test

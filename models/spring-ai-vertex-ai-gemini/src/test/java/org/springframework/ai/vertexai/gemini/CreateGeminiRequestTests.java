@@ -86,7 +86,7 @@ public class CreateGeminiRequestTests {
 			.vertexAI(this.vertexAI)
 			.defaultOptions(VertexAiGeminiChatOptions.builder()
 				.model("DEFAULT_MODEL")
-				.frequencePenalty(.25)
+				.frequencyPenalty(.25)
 				.presencePenalty(.75)
 				.build())
 			.build();
@@ -262,6 +262,8 @@ public class CreateGeminiRequestTests {
 				.stopSequences(List.of("stop1", "stop2"))
 				.candidateCount(1)
 				.responseMimeType("application/json")
+				.responseLogprobs(true)
+				.logprobs(2)
 				.build())
 			.build();
 
@@ -280,6 +282,8 @@ public class CreateGeminiRequestTests {
 		assertThat(request.model().getGenerationConfig().getStopSequences(0)).isEqualTo("stop1");
 		assertThat(request.model().getGenerationConfig().getStopSequences(1)).isEqualTo("stop2");
 		assertThat(request.model().getGenerationConfig().getResponseMimeType()).isEqualTo("application/json");
+		assertThat(request.model().getGenerationConfig().getLogprobs()).isEqualTo(2);
+		assertThat(request.model().getGenerationConfig().getResponseLogprobs()).isEqualTo(true);
 	}
 
 }
