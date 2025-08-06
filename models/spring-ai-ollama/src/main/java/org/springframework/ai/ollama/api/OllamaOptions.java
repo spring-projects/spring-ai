@@ -44,6 +44,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sun Yuhan
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -318,6 +319,14 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	@JsonProperty("truncate")
 	private Boolean truncate;
 
+	/**
+	 * The model should think before responding, if supported.
+	 * If this value is not specified, it defaults to null, and Ollama will return
+	 * the thought process within the `content` field of the response, wrapped in `&lt;thinking&gt;` tags.
+	 */
+	@JsonProperty("think")
+	private Boolean think;
+
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
@@ -365,6 +374,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.format(fromOptions.getFormat())
 				.keepAlive(fromOptions.getKeepAlive())
 				.truncate(fromOptions.getTruncate())
+				.think(fromOptions.isThink())
 				.useNUMA(fromOptions.getUseNUMA())
 				.numCtx(fromOptions.getNumCtx())
 				.numBatch(fromOptions.getNumBatch())
@@ -705,6 +715,15 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	@Override
+	public Boolean isThink() {
+		return this.think;
+	}
+
+	public void setThink(Boolean think) {
+		this.think = think;
+	}
+
+	@Override
 	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
@@ -804,7 +823,8 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				&& Objects.equals(this.repeatPenalty, that.repeatPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
-				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
+				&& Objects.equals(this.think, that.think) && Objects.equals(this.mirostat, that.mirostat)
+				&& Objects.equals(this.mirostatTau, that.mirostatTau)
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
@@ -814,13 +834,13 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
-				this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
-				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
-				this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
-				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext);
+		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.think, this.useNUMA,
+				this.numCtx, this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll,
+				this.vocabOnly, this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict,
+				this.topK, this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature,
+				this.repeatPenalty, this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau,
+				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	public static class Builder {
@@ -849,6 +869,11 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 		public Builder truncate(Boolean truncate) {
 			this.options.truncate = truncate;
+			return this;
+		}
+
+		public Builder think(Boolean think) {
+			this.options.think = think;
 			return this;
 		}
 
