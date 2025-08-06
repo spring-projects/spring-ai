@@ -83,18 +83,16 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	private MessageChanges process(List<Message> memoryMessages, List<Message> newMessages) {
 		Set<Message> originalMessageSet = new LinkedHashSet<>(memoryMessages);
 		List<Message> uniqueNewMessages = newMessages.stream()
-				.filter(msg -> !originalMessageSet.contains(msg))
-				.toList();
-		boolean hasNewSystemMessage = uniqueNewMessages.stream()
-				.anyMatch(SystemMessage.class::isInstance);
+			.filter(msg -> !originalMessageSet.contains(msg))
+			.toList();
+		boolean hasNewSystemMessage = uniqueNewMessages.stream().anyMatch(SystemMessage.class::isInstance);
 
 		List<Message> finalMessages = new ArrayList<>();
-		if(hasNewSystemMessage) {
-			memoryMessages.stream()
-					.filter(msg -> !(msg instanceof SystemMessage))
-					.forEach(finalMessages::add);
+		if (hasNewSystemMessage) {
+			memoryMessages.stream().filter(msg -> !(msg instanceof SystemMessage)).forEach(finalMessages::add);
 			finalMessages.addAll(uniqueNewMessages);
-		} else {
+		}
+		else {
 			finalMessages.addAll(memoryMessages);
 			finalMessages.addAll(uniqueNewMessages);
 		}
@@ -106,7 +104,8 @@ public final class MessageWindowChatMemory implements ChatMemory {
 			for (Message message : finalMessages) {
 				if (message instanceof SystemMessage || removed >= messagesToRemove) {
 					trimmedMessages.add(message);
-				} else {
+				}
+				else {
 					removed++;
 				}
 			}
@@ -115,25 +114,24 @@ public final class MessageWindowChatMemory implements ChatMemory {
 
 		Set<Message> finalMessageSet = new LinkedHashSet<>(finalMessages);
 
-		List<Message> toDelete = originalMessageSet.stream()
-				.filter(m -> !finalMessageSet.contains(m))
-				.toList();
+		List<Message> toDelete = originalMessageSet.stream().filter(m -> !finalMessageSet.contains(m)).toList();
 
-		List<Message> toAdd = finalMessageSet.stream()
-				.filter(m -> !originalMessageSet.contains(m))
-				.toList();
+		List<Message> toAdd = finalMessageSet.stream().filter(m -> !originalMessageSet.contains(m)).toList();
 
 		return new MessageChanges(toDelete, toAdd);
 	}
 
 	private static class MessageChanges {
+
 		final List<Message> toDelete;
+
 		final List<Message> toAdd;
 
 		MessageChanges(List<Message> toDelete, List<Message> toAdd) {
 			this.toDelete = toDelete;
 			this.toAdd = toAdd;
 		}
+
 	}
 
 	public static Builder builder() {
