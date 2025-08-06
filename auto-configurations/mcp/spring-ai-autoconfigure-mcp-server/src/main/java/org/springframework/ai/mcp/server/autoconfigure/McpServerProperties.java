@@ -68,8 +68,6 @@ public class McpServerProperties {
 
 	/**
 	 * The version of the MCP server instance.
-	 * <p>
-	 * This version is reported to clients and used for compatibility checks.
 	 */
 	private String version = "1.0.0";
 
