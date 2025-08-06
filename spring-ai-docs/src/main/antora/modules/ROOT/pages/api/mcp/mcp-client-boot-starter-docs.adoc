@@ -62,7 +62,7 @@ The common properties are prefixed with `spring.ai.mcp.client`:
 |`true`
 
 |`name`
-|Name of the MCP client instance (used for compatibility checks)
+|Name of the MCP client instance
 |`spring-ai-mcp-client`
 
 |`version`
