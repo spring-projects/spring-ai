@@ -182,24 +182,6 @@ public interface ChatClient {
 
 	}
 
-	interface CallPromptResponseSpec {
-
-		String content();
-
-		List<String> contents();
-
-		ChatResponse chatResponse();
-
-	}
-
-	interface StreamPromptResponseSpec {
-
-		Flux<ChatResponse> chatResponse();
-
-		Flux<String> content();
-
-	}
-
 	interface ChatClientRequestSpec {
 
 		/**
