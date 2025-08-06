@@ -17,6 +17,7 @@ package org.springframework.ai.google.gemini;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +119,7 @@ public class GoogleGeminiChatModel implements ChatModel, StreamingChatModel {
 	// in case we expect a primitive or a list, we cannot really name it, so let us choose
 	// name automatically
 	// https://ai.google.dev/api/caching#FunctionResponse
-	private Object wrapInMapIfPrimitive(String value) {
+	private Map<String, Object> wrapInMapIfPrimitive(String value) {
 		if (value == null) {
 			return Map.of();
 		}
@@ -126,33 +127,27 @@ public class GoogleGeminiChatModel implements ChatModel, StreamingChatModel {
 		try {
 			// If it's a JSON object, return as-is
 			if (trimmed.startsWith("{")) {
-				return jacksonObjectMapper.readValue(trimmed, Object.class);
+				return jacksonObjectMapper.readValue(trimmed, new TypeReference<>() {
+				});
 			}
 			// If it's a JSON array, wrap in a map
 			if (trimmed.startsWith("[")) {
-				Object array = jacksonObjectMapper.readValue(trimmed, Object.class);
+				Object array = jacksonObjectMapper.readValue(trimmed, new TypeReference<>() {
+				});
 				return Map.of("value", array);
 			}
 			// Try to parse as a primitive (number, boolean, or null)
-			Object primitive = jacksonObjectMapper.readValue(trimmed, Object.class);
+			Object primitive = jacksonObjectMapper.readValue(trimmed, new TypeReference<>() {
+			});
 			if (primitive instanceof String || primitive instanceof Number || primitive instanceof Boolean
 					|| primitive == null) {
 				return primitive != null ? Map.of("value", primitive) : Map.of();
 			}
-			return primitive;
+			return Map.of("value", primitive);
 		}
 		catch (JsonProcessingException e) {
 			// Fallback: treat as plain string
 			return Map.of("value", value);
-		}
-	}
-
-	private Object readJsonValue(String value) {
-		try {
-			return jacksonObjectMapper.readValue(value, Object.class);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
 		}
 	}
 
@@ -384,11 +379,13 @@ public class GoogleGeminiChatModel implements ChatModel, StreamingChatModel {
 			parts.add(new GoogleGeminiApi.Part(assistantMessage.getText()));
 		}
 
-		Collection<GoogleGeminiApi.Part.FunctionCall> toolCalls = assistantMessage.hasToolCalls() ? assistantMessage
-			.getToolCalls()
-			.stream()
-			.map(call -> new GoogleGeminiApi.Part.FunctionCall(call.id(), call.name(), readJsonValue(call.arguments())))
-			.toList() : Collections.emptyList();
+		Collection<GoogleGeminiApi.Part.FunctionCall> toolCalls = assistantMessage.hasToolCalls()
+				? assistantMessage.getToolCalls()
+					.stream()
+					.map(call -> new GoogleGeminiApi.Part.FunctionCall(call.id(), call.name(),
+							wrapInMapIfPrimitive(call.arguments())))
+					.toList()
+				: Collections.emptyList();
 
 		for (GoogleGeminiApi.Part.FunctionCall call : toolCalls) {
 			parts.add(new GoogleGeminiApi.Part(call));
