@@ -129,4 +129,46 @@ class RedisFilterExpressionConverterTests {
 		assertThat(vectorExpr).isEqualTo("@'country 1 2 3':{BG}");
 	}
 
+	@Test
+	void testSpecialCharactersInValues() {
+		// Test values with Redis special characters that need escaping
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("description"))
+			.convertExpression(new Expression(EQ, new Key("description"), new Value("test@value{with}special|chars")));
+
+		// Should properly escape special Redis characters
+		assertThat(vectorExpr).isEqualTo("@description:{test@value{with}special|chars}");
+	}
+
+	@Test
+	void testEmptyStringValues() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("status"))
+			.convertExpression(new Expression(EQ, new Key("status"), new Value("")));
+
+		assertThat(vectorExpr).isEqualTo("@status:{}");
+	}
+
+	@Test
+	void testSingleItemInList() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("status"))
+			.convertExpression(new Expression(IN, new Key("status"), new Value(List.of("active"))));
+
+		assertThat(vectorExpr).isEqualTo("@status:{active}");
+	}
+
+	@Test
+	void testWhitespaceInFieldNames() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("value with spaces"))
+			.convertExpression(new Expression(EQ, new Key("\"value with spaces\""), new Value("test")));
+
+		assertThat(vectorExpr).isEqualTo("@\"value with spaces\":{test}");
+	}
+
+	@Test
+	void testNestedQuotedFieldNames() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("value \"with\" quotes"))
+			.convertExpression(new Expression(EQ, new Key("\"value \\\"with\\\" quotes\""), new Value("test")));
+
+		assertThat(vectorExpr).isEqualTo("@\"value \\\"with\\\" quotes\":{test}");
+	}
+
 }
