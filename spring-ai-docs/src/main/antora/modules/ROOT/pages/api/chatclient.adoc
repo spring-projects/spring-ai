@@ -379,6 +379,107 @@ After specifying the `stream()` method on `ChatClient`, there are a few options 
 * `Flux<ChatResponse> chatResponse()`: Returns a `Flux` of the `ChatResponse` object, which contains additional metadata about the response.
 * `Flux<ChatClientResponse> chatClientResponse()`: returns a `Flux` of the `ChatClientResponse` object that contains the `ChatResponse` object and the ChatClient execution context, giving you access to additional data used during the execution of advisors (e.g. the relevant documents retrieved in a RAG flow).
 
+== Message Metadata
+
+The ChatClient supports adding metadata to both user and system messages.
+Metadata provides additional context and information about messages that can be used by the AI model or downstream processing.
+
+=== Adding Metadata to User Messages
+
+You can add metadata to user messages using the `metadata()` methods:
+
+[source,java]
+----
+// Adding individual metadata key-value pairs
+String response = chatClient.prompt()
+    .user(u -> u.text("What's the weather like?")
+        .metadata("messageId", "msg-123")
+        .metadata("userId", "user-456")
+        .metadata("priority", "high"))
+    .call()
+    .content();
+
+// Adding multiple metadata entries at once
+Map<String, Object> userMetadata = Map.of(
+    "messageId", "msg-123",
+    "userId", "user-456",
+    "timestamp", System.currentTimeMillis()
+);
+
+String response = chatClient.prompt()
+    .user(u -> u.text("What's the weather like?")
+        .metadata(userMetadata))
+    .call()
+    .content();
+----
+
+=== Adding Metadata to System Messages
+
+Similarly, you can add metadata to system messages:
+
+[source,java]
+----
+// Adding metadata to system messages
+String response = chatClient.prompt()
+    .system(s -> s.text("You are a helpful assistant.")
+        .metadata("version", "1.0")
+        .metadata("model", "gpt-4"))
+    .user("Tell me a joke")
+    .call()
+    .content();
+----
+
+=== Default Metadata Support
+
+You can also configure default metadata at the ChatClient builder level:
+
+[source,java]
+----
+@Configuration
+class Config {
+    @Bean
+    ChatClient chatClient(ChatClient.Builder builder) {
+        return builder
+            .defaultSystem(s -> s.text("You are a helpful assistant")
+                .metadata("assistantType", "general")
+                .metadata("version", "1.0"))
+            .defaultUser(u -> u.text("Default user context")
+                .metadata("sessionId", "default-session"))
+            .build();
+    }
+}
+----
+
+=== Metadata Validation
+
+The ChatClient validates metadata to ensure data integrity:
+
+* Metadata keys cannot be null or empty
+* Metadata values cannot be null
+* When passing a Map, neither keys nor values can contain null elements
+
+[source,java]
+----
+// This will throw an IllegalArgumentException
+chatClient.prompt()
+    .user(u -> u.text("Hello")
+        .metadata(null, "value"))  // Invalid: null key
+    .call()
+    .content();
+
+// This will also throw an IllegalArgumentException
+chatClient.prompt()
+    .user(u -> u.text("Hello")
+        .metadata("key", null))    // Invalid: null value
+    .call()
+    .content();
+----
+
+=== Accessing Metadata
+
+The metadata is included in the generated UserMessage and SystemMessage objects and can be accessed through the message's `getMetadata()` method.
+This is particularly useful when processing messages in advisors or when examining the conversation history.
+
 == Using Defaults
 
 Creating a `ChatClient` with a default system text in an `@Configuration` class simplifies runtime code.
