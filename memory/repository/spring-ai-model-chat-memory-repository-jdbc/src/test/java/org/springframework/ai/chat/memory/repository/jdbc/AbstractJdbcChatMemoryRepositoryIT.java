@@ -186,6 +186,31 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 				"4-Fourth message");
 	}
 
+	@Test
+	void refreshConversation() {
+		var conversationId = UUID.randomUUID().toString();
+		List<Message> initialMessages = List.of(new UserMessage("Hello"), new AssistantMessage("Hi there"),
+				new UserMessage("How are you?"));
+		this.chatMemoryRepository.saveAll(conversationId, initialMessages);
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(3);
+
+		// Define changes
+		List<Message> toDelete = List.of(new UserMessage("How are you?"));
+		List<Message> toAdd = List.of(new AssistantMessage("I am fine, thank you."));
+
+		// Apply changes
+		this.chatMemoryRepository.refresh(conversationId, toDelete, toAdd);
+
+		// Verify final state
+		List<Message> finalMessages = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(finalMessages).hasSize(3);
+		assertThat(finalMessages).contains(new UserMessage("Hello"));
+		assertThat(finalMessages).contains(new AssistantMessage("Hi there"));
+		assertThat(finalMessages).contains(new AssistantMessage("I am fine, thank you."));
+		assertThat(finalMessages).doesNotContain(new UserMessage("How are you?"));
+	}
+
 	/**
 	 * Base configuration for all integration tests.
 	 */
