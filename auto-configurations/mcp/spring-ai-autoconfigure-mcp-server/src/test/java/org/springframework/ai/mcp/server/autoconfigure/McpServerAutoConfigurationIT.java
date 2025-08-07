@@ -490,6 +490,40 @@ public class McpServerAutoConfigurationIT {
 
 	}
 
+	@Test
+	void lazyInitializationConfiguration() {
+		this.contextRunner.withPropertyValues("spring.main.lazy-initialization=true").run(context -> {
+			// With lazy initialization enabled, MCP servers should still be created due
+			// to @Lazy(false)
+			assertThat(context).hasSingleBean(McpSyncServer.class);
+			assertThat(context).doesNotHaveBean(McpAsyncServer.class);
+
+			// Verify properties are properly configured even with lazy init
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getName()).isEqualTo("mcp-server");
+			assertThat(properties.getType()).isEqualTo(McpServerProperties.ServerType.SYNC);
+
+			// Verify server is properly initialized (not just created)
+			McpSyncServer server = context.getBean(McpSyncServer.class);
+			assertThat(server).isNotNull();
+		});
+	}
+
+	@Test
+	void asyncServerLazyInitializationConfiguration() {
+		this.contextRunner.withPropertyValues("spring.main.lazy-initialization=true", "spring.ai.mcp.server.type=ASYNC")
+			.run(context -> {
+				// With lazy initialization enabled, async MCP server should still be
+				// created due to @Lazy(false)
+				assertThat(context).hasSingleBean(McpAsyncServer.class);
+				assertThat(context).doesNotHaveBean(McpSyncServer.class);
+
+				// Verify server is properly initialized (not just created)
+				McpAsyncServer server = context.getBean(McpAsyncServer.class);
+				assertThat(server).isNotNull();
+			});
+	}
+
 	@Configuration
 	static class CustomTransportConfiguration {
 
