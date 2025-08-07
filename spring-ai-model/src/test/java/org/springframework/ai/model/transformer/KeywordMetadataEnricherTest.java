@@ -165,4 +165,106 @@ class KeywordMetadataEnricherTest {
 		return prompt.getContents();
 	}
 
+	@Test
+	void testApplyWithEmptyDocumentsList() {
+		List<Document> emptyDocuments = List.of();
+		KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(chatModel, 3);
+
+		keywordMetadataEnricher.apply(emptyDocuments);
+
+		verify(chatModel, never()).call(any(Prompt.class));
+	}
+
+	@Test
+	void testApplyWithSingleDocument() {
+		List<Document> documents = List.of(new Document("single content"));
+		given(chatModel.call(any(Prompt.class))).willReturn(new ChatResponse(
+				List.of(new Generation(new AssistantMessage("single, keyword, test, document, content")))));
+
+		KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(chatModel, 5);
+		keywordMetadataEnricher.apply(documents);
+
+		verify(chatModel, times(1)).call(promptCaptor.capture());
+		assertThat(documents.get(0).getMetadata()).containsEntry(EXCERPT_KEYWORDS_METADATA_KEY,
+				"single, keyword, test, document, content");
+	}
+
+	@Test
+	void testApplyWithDocumentContainingExistingMetadata() {
+		Document document = new Document("content with existing metadata");
+		document.getMetadata().put("existing_key", "existing_value");
+		List<Document> documents = List.of(document);
+		given(chatModel.call(any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("new, keywords")))));
+
+		KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(chatModel, 2);
+		keywordMetadataEnricher.apply(documents);
+
+		assertThat(documents.get(0).getMetadata()).containsEntry("existing_key", "existing_value");
+		assertThat(documents.get(0).getMetadata()).containsEntry(EXCERPT_KEYWORDS_METADATA_KEY, "new, keywords");
+	}
+
+	@Test
+	void testApplyWithEmptyStringResponse() {
+		List<Document> documents = List.of(new Document("content"));
+		given(chatModel.call(any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("")))));
+
+		KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(chatModel, 3);
+		keywordMetadataEnricher.apply(documents);
+
+		assertThat(documents.get(0).getMetadata()).containsEntry(EXCERPT_KEYWORDS_METADATA_KEY, "");
+	}
+
+	@Test
+	void testApplyWithWhitespaceOnlyResponse() {
+		List<Document> documents = List.of(new Document("content"));
+		given(chatModel.call(any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("   \n\t   ")))));
+
+		KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(chatModel, 3);
+		keywordMetadataEnricher.apply(documents);
+
+		assertThat(documents.get(0).getMetadata()).containsEntry(EXCERPT_KEYWORDS_METADATA_KEY, "   \n\t   ");
+	}
+
+	@Test
+	void testApplyOverwritesExistingKeywords() {
+		Document document = new Document("content");
+		document.getMetadata().put(EXCERPT_KEYWORDS_METADATA_KEY, "old, keywords");
+		List<Document> documents = List.of(document);
+		given(chatModel.call(any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("new, keywords")))));
+
+		KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(chatModel, 2);
+		keywordMetadataEnricher.apply(documents);
+
+		assertThat(documents.get(0).getMetadata()).containsEntry(EXCERPT_KEYWORDS_METADATA_KEY, "new, keywords");
+	}
+
+	@Test
+	void testBuilderWithBothKeywordCountAndTemplate() {
+		PromptTemplate customTemplate = new PromptTemplate(CUSTOM_TEMPLATE);
+
+		KeywordMetadataEnricher enricher = builder(chatModel).keywordCount(5).keywordsTemplate(customTemplate).build();
+
+		assertThat(enricher.getKeywordsTemplate()).isEqualTo(customTemplate);
+	}
+
+	@Test
+	void testApplyWithSpecialCharactersInContent() {
+		List<Document> documents = List.of(new Document("Content with special chars: @#$%^&*()"));
+		given(chatModel.call(any(Prompt.class))).willReturn(
+				new ChatResponse(List.of(new Generation(new AssistantMessage("special, characters, content")))));
+
+		KeywordMetadataEnricher keywordMetadataEnricher = new KeywordMetadataEnricher(chatModel, 3);
+		keywordMetadataEnricher.apply(documents);
+
+		verify(chatModel, times(1)).call(promptCaptor.capture());
+		assertThat(promptCaptor.getValue().getUserMessage().getText())
+			.contains("Content with special chars: @#$%^&*()");
+		assertThat(documents.get(0).getMetadata()).containsEntry(EXCERPT_KEYWORDS_METADATA_KEY,
+				"special, characters, content");
+	}
+
 }

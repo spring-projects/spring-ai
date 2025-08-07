@@ -47,4 +47,36 @@ class ToolRuntimeHintsTests {
 		assertThatCode(() -> toolRuntimeHints.registerHints(runtimeHints, null)).doesNotThrowAnyException();
 	}
 
+	@Test
+	void registerHintsWithCustomClassLoader() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		ToolRuntimeHints toolRuntimeHints = new ToolRuntimeHints();
+		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
+
+		toolRuntimeHints.registerHints(runtimeHints, customClassLoader);
+
+		assertThat(runtimeHints).matches(reflection().onType(DefaultToolCallResultConverter.class));
+	}
+
+	@Test
+	void registerHintsMultipleTimes() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		ToolRuntimeHints toolRuntimeHints = new ToolRuntimeHints();
+
+		toolRuntimeHints.registerHints(runtimeHints, null);
+		toolRuntimeHints.registerHints(runtimeHints, null);
+
+		assertThat(runtimeHints).matches(reflection().onType(DefaultToolCallResultConverter.class));
+	}
+
+	@Test
+	void toolRuntimeHintsInstanceCreation() {
+		assertThatCode(() -> new ToolRuntimeHints()).doesNotThrowAnyException();
+
+		ToolRuntimeHints hints1 = new ToolRuntimeHints();
+		ToolRuntimeHints hints2 = new ToolRuntimeHints();
+
+		assertThat(hints1).isNotSameAs(hints2);
+	}
+
 }
