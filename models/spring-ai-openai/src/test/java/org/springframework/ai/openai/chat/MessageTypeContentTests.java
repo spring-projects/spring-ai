@@ -196,4 +196,158 @@ public class MessageTypeContentTests {
 		return List.of(imageMedia, pdfMedia);
 	}
 
+	@Test
+	public void userMessageWithEmptyMediaList() {
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
+
+		this.chatModel.call(new Prompt(List.of(UserMessage.builder()
+			.text("test message")
+			.media(List.of()) // Empty media list
+			.build())));
+
+		validateStringContent(this.pomptCaptor.getValue());
+		assertThat(this.headersCaptor.getValue()).isEmpty();
+	}
+
+	@Test
+	public void userMessageWithEmptyText() {
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
+
+		this.chatModel.call(new Prompt(List.of(UserMessage.builder().text("").media(this.buildMediaList()).build())));
+
+		ChatCompletionRequest request = this.pomptCaptor.getValue();
+		assertThat(request.messages()).hasSize(1);
+		var userMessage = request.messages().get(0);
+		assertThat(userMessage.rawContent()).isInstanceOf(List.class);
+
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> mediaContents = (List<Map<String, Object>>) userMessage.rawContent();
+
+		// Should have empty text content plus media
+		assertThat(mediaContents).hasSize(3);
+		Map<String, Object> textContent = mediaContents.get(0);
+		assertThat(textContent.get("type")).isEqualTo("text");
+		assertThat(textContent.get("text")).isEqualTo("");
+	}
+
+	@Test
+	public void multipleMessagesWithMixedContentTypes() {
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
+
+		this.chatModel.call(
+				new Prompt(List.of(new SystemMessage("You are a helpful assistant"), new UserMessage("Simple message"),
+						UserMessage.builder().text("Message with media").media(this.buildMediaList()).build())));
+
+		ChatCompletionRequest request = this.pomptCaptor.getValue();
+		assertThat(request.messages()).hasSize(3);
+
+		// First message - system message with string content
+		var systemMessage = request.messages().get(0);
+		assertThat(systemMessage.rawContent()).isInstanceOf(String.class);
+		assertThat(systemMessage.content()).isEqualTo("You are a helpful assistant");
+
+		// Second message - user message with string content
+		var simpleUserMessage = request.messages().get(1);
+		assertThat(simpleUserMessage.rawContent()).isInstanceOf(String.class);
+		assertThat(simpleUserMessage.content()).isEqualTo("Simple message");
+
+		// Third message - user message with complex content
+		var complexUserMessage = request.messages().get(2);
+		assertThat(complexUserMessage.rawContent()).isInstanceOf(List.class);
+	}
+
+	@Test
+	public void userMessageWithSingleImageMedia() {
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
+
+		URI imageUri = URI.create("http://example.com/image.jpg");
+		Media imageMedia = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(imageUri).build();
+
+		this.chatModel.call(new Prompt(
+				List.of(UserMessage.builder().text("Describe this image").media(List.of(imageMedia)).build())));
+
+		ChatCompletionRequest request = this.pomptCaptor.getValue();
+		assertThat(request.messages()).hasSize(1);
+		var userMessage = request.messages().get(0);
+		assertThat(userMessage.rawContent()).isInstanceOf(List.class);
+
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> mediaContents = (List<Map<String, Object>>) userMessage.rawContent();
+		assertThat(mediaContents).hasSize(2);
+
+		// Text content
+		Map<String, Object> textContent = mediaContents.get(0);
+		assertThat(textContent.get("type")).isEqualTo("text");
+		assertThat(textContent.get("text")).isEqualTo("Describe this image");
+
+		// Image content
+		Map<String, Object> imageContent = mediaContents.get(1);
+		assertThat(imageContent.get("type")).isEqualTo("image_url");
+		assertThat(imageContent).containsKey("image_url");
+	}
+
+	@Test
+	public void streamWithMultipleMessagesAndMedia() {
+		given(this.openAiApi.chatCompletionStream(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(this.fluxResponse);
+
+		this.chatModel
+			.stream(new Prompt(List.of(new SystemMessage("System prompt"),
+					UserMessage.builder().text("User message with media").media(this.buildMediaList()).build())))
+			.subscribe();
+
+		ChatCompletionRequest request = this.pomptCaptor.getValue();
+		assertThat(request.messages()).hasSize(2);
+
+		// System message should be string
+		assertThat(request.messages().get(0).rawContent()).isInstanceOf(String.class);
+
+		// User message should be complex
+		assertThat(request.messages().get(1).rawContent()).isInstanceOf(List.class);
+		assertThat(this.headersCaptor.getValue()).isEmpty();
+	}
+
+	// Helper method for testing different image formats
+	private List<Media> buildImageMediaList() {
+		URI jpegUri = URI.create("http://example.com/image.jpg");
+		Media jpegMedia = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(jpegUri).build();
+
+		URI pngUri = URI.create("http://example.com/image.png");
+		Media pngMedia = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(pngUri).build();
+
+		URI webpUri = URI.create("http://example.com/image.webp");
+		Media webpMedia = Media.builder().mimeType(MimeType.valueOf("image/webp")).data(webpUri).build();
+
+		return List.of(jpegMedia, pngMedia, webpMedia);
+	}
+
+	@Test
+	public void userMessageWithMultipleImageFormats() {
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
+
+		this.chatModel.call(new Prompt(
+				List.of(UserMessage.builder().text("Compare these images").media(this.buildImageMediaList()).build())));
+
+		ChatCompletionRequest request = this.pomptCaptor.getValue();
+		assertThat(request.messages()).hasSize(1);
+		var userMessage = request.messages().get(0);
+		assertThat(userMessage.rawContent()).isInstanceOf(List.class);
+
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> mediaContents = (List<Map<String, Object>>) userMessage.rawContent();
+		assertThat(mediaContents).hasSize(4); // text + 3 images
+
+		// Verify all are image types
+		for (int i = 1; i < mediaContents.size(); i++) {
+			Map<String, Object> imageContent = mediaContents.get(i);
+			assertThat(imageContent.get("type")).isEqualTo("image_url");
+			assertThat(imageContent).containsKey("image_url");
+		}
+	}
+
 }
