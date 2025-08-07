@@ -185,4 +185,44 @@ public class OllamaEmbeddingRequestTests {
 		assertThat(ollamaRequest.input()).containsExactly("", "   ", "\t\n", "normal text", "  spaced  ");
 	}
 
+	@Test
+	public void ollamaEmbeddingRequestWithNullInput() {
+		// Test behavior when input list contains null values
+		List<String> inputsWithNull = Arrays.asList("Hello", null, "World");
+		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(inputsWithNull, null));
+		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
+
+		assertThat(ollamaRequest.input()).containsExactly("Hello", null, "World");
+		assertThat(ollamaRequest.input()).hasSize(3);
+	}
+
+	@Test
+	public void ollamaEmbeddingRequestPartialOptionsOverride() {
+		// Test that only specified options are overridden, others remain default
+		var requestOptions = OllamaOptions.builder()
+			.model("PARTIAL_OVERRIDE_MODEL")
+			.numGPU(5) // Override only numGPU, leave others as default
+			.build();
+
+		var embeddingRequest = this.embeddingModel
+			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Partial override"), requestOptions));
+		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
+
+		assertThat(ollamaRequest.model()).isEqualTo("PARTIAL_OVERRIDE_MODEL");
+		assertThat(ollamaRequest.options().get("num_gpu")).isEqualTo(5);
+		assertThat(ollamaRequest.options().get("main_gpu")).isEqualTo(11);
+		assertThat(ollamaRequest.options().get("use_mmap")).isEqualTo(true);
+	}
+
+	@Test
+	public void ollamaEmbeddingRequestWithEmptyStringInput() {
+		// Test with list containing only empty string
+		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(List.of(""), null));
+		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
+
+		assertThat(ollamaRequest.input()).hasSize(1);
+		assertThat(ollamaRequest.input().get(0)).isEmpty();
+		assertThat(ollamaRequest.model()).isEqualTo("DEFAULT_MODEL");
+	}
+
 }
