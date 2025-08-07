@@ -23,6 +23,8 @@ import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -154,6 +156,20 @@ public class OpenAiApiIT {
 		assertThatThrownBy(() -> this.openAiApi.chatCompletionStream(chatCompletionRequest).collectList().block())
 			.isInstanceOf(RuntimeException.class)
 			.hasMessageContaining("400 Bad Request from POST https://api.openai.com/v1/chat/completions");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "GPT_5", "GPT_5_2025_08_07" })
+	void chatCompletionEntityWithNewModels(OpenAiApi.ChatModel modelName) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(
+				new ChatCompletionRequest(List.of(chatCompletionMessage), modelName.getValue(), 1.0, false));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().choices()).isNotEmpty();
+		assertThat(response.getBody().choices().get(0).message().content()).isNotEmpty();
+		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
 	}
 
 }
