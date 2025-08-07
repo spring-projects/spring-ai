@@ -1684,6 +1684,28 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	@Disabled("This fails now as the FunctionToolCallback description is allowed to be empty")
+	void whenFunctionDescriptionIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.toolCallbacks(FunctionToolCallback.builder("name", input -> "hello")
+			.description(null)
+			.inputType(String.class)
+			.build())).isInstanceOf(IllegalArgumentException.class).hasMessage("Description must not be empty");
+	}
+
+	@Test
+	@Disabled("This fails now as the FunctionToolCallback description is allowed to be empty")
+	void whenFunctionDescriptionIsEmptyThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		assertThatThrownBy(() -> spec.toolCallbacks(
+				FunctionToolCallback.builder("name", input -> "hello").description("").inputType(String.class).build()))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Description must not be empty");
+	}
+
+	@Test
 	void whenFunctionThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
