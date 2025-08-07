@@ -141,4 +141,10 @@ public class CoherenceFilterExpressionConverterTests {
 		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.not(Filters.in(extractor("category"), "inactive")));
 	}
 
+	@Test
+	void testCategoryWithNumericComparison() {
+		final Expression e = new FilterExpressionTextParser().parse("categoryId >= 5");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.greaterEqual(extractor("categoryId"), 5));
+	}
+
 }
