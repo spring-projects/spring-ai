@@ -121,4 +121,142 @@ class VertexAiGeminiRuntimeHintsTests {
 		assertThat(registeredTypes.size()).isLessThanOrEqualTo(jsonAnnotatedClasses.size() + 10);
 	}
 
+	@Test
+	void verifySpecificReflectionHintTypes() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> {
+			registeredTypes.add(typeHint.getType());
+			// Verify that constructors, fields, and methods are properly registered
+			assertThat(typeHint.constructors()).isNotNull();
+			assertThat(typeHint.fields()).isNotNull();
+			assertThat(typeHint.methods()).isNotNull();
+		});
+
+		// Verify that at least the main chat options class is registered
+		assertThat(registeredTypes.contains(TypeReference.of(VertexAiGeminiChatOptions.class))).isTrue();
+	}
+
+	@Test
+	void verifyRuntimeHintsWithCustomClassLoader() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
+
+		// Should work with custom ClassLoader
+		org.assertj.core.api.Assertions
+			.assertThatCode(() -> vertexAiGeminiRuntimeHints.registerHints(runtimeHints, customClassLoader))
+			.doesNotThrowAnyException();
+
+		// Verify hints were still registered
+		assertThat(runtimeHints.reflection().typeHints().spliterator().estimateSize()).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyProxyHintsAreEmpty() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+
+		// This implementation should only register reflection hints, not proxy hints
+		assertThat(runtimeHints.proxies().jdkProxyHints().spliterator().estimateSize()).isEqualTo(0);
+	}
+
+	@Test
+	void verifySerializationHintsAreEmpty() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+
+		// This implementation should only register reflection hints, not serialization
+		// hints
+		assertThat(runtimeHints.serialization().javaSerializationHints().spliterator().estimateSize()).isEqualTo(0);
+	}
+
+	@Test
+	void verifyAllRegisteredTypesHaveValidPackage() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+
+		runtimeHints.reflection().typeHints().forEach(typeHint -> {
+			String typeName = typeHint.getType().getName();
+			// All registered types should be from expected packages
+			assertThat(typeName).satisfiesAnyOf(
+					name -> assertThat(name).startsWith("org.springframework.ai.vertexai.gemini"),
+					name -> assertThat(name).startsWith("java.lang"), // for basic types
+					name -> assertThat(name).startsWith("java.util") // for collection
+																		// types
+			);
+		});
+	}
+
+	@Test
+	void verifyHintsRegistrationPerformance() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+
+		long startTime = System.currentTimeMillis();
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+		long endTime = System.currentTimeMillis();
+
+		// Registration should be fast (less than 1 second)
+		assertThat(endTime - startTime).isLessThan(1000);
+
+		// And should have registered some hints
+		assertThat(runtimeHints.reflection().typeHints().spliterator().estimateSize()).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyHintsRegistrationWithEmptyRuntimeHints() {
+		RuntimeHints emptyRuntimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+
+		// Verify initial state
+		assertThat(emptyRuntimeHints.reflection().typeHints().spliterator().estimateSize()).isEqualTo(0);
+
+		// Register hints
+		vertexAiGeminiRuntimeHints.registerHints(emptyRuntimeHints, null);
+
+		// Verify hints were added
+		assertThat(emptyRuntimeHints.reflection().typeHints().spliterator().estimateSize()).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyJsonAnnotatedClassesContainExpectedTypes() {
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(
+				"org.springframework.ai.vertexai.gemini");
+
+		// Verify that our main configuration class is included
+		boolean containsChatOptions = jsonAnnotatedClasses.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("ChatOptions")
+					|| typeRef.getName().contains("VertexAiGemini"));
+
+		assertThat(containsChatOptions).isTrue();
+	}
+
+	@Test
+	void verifyHintsConsistencyAcrossInstances() {
+		RuntimeHints runtimeHints1 = new RuntimeHints();
+		RuntimeHints runtimeHints2 = new RuntimeHints();
+
+		VertexAiGeminiRuntimeHints hints1 = new VertexAiGeminiRuntimeHints();
+		VertexAiGeminiRuntimeHints hints2 = new VertexAiGeminiRuntimeHints();
+
+		hints1.registerHints(runtimeHints1, null);
+		hints2.registerHints(runtimeHints2, null);
+
+		// Different instances should register the same hints
+		Set<TypeReference> types1 = new HashSet<>();
+		Set<TypeReference> types2 = new HashSet<>();
+
+		runtimeHints1.reflection().typeHints().forEach(hint -> types1.add(hint.getType()));
+		runtimeHints2.reflection().typeHints().forEach(hint -> types2.add(hint.getType()));
+
+		assertThat(types1).isEqualTo(types2);
+	}
+
 }
