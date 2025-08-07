@@ -350,4 +350,60 @@ public class MessageTypeContentTests {
 		}
 	}
 
+	@Test
+	public void userMessageWithOnlyFileMedia() {
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
+
+		byte[] pdfData = "%PDF-1.7".getBytes(StandardCharsets.UTF_8);
+		Media pdfMedia = Media.builder()
+			.mimeType(MimeType.valueOf("application/pdf"))
+			.data(new ByteArrayResource(pdfData))
+			.build();
+
+		this.chatModel.call(new Prompt(
+				List.of(UserMessage.builder().text("Analyze this document").media(List.of(pdfMedia)).build())));
+
+		ChatCompletionRequest request = this.pomptCaptor.getValue();
+		assertThat(request.messages()).hasSize(1);
+		var userMessage = request.messages().get(0);
+		assertThat(userMessage.rawContent()).isInstanceOf(List.class);
+
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> mediaContents = (List<Map<String, Object>>) userMessage.rawContent();
+		assertThat(mediaContents).hasSize(2); // text + file
+
+		// Text content
+		Map<String, Object> textContent = mediaContents.get(0);
+		assertThat(textContent.get("type")).isEqualTo("text");
+		assertThat(textContent.get("text")).isEqualTo("Analyze this document");
+
+		// File content
+		Map<String, Object> fileContent = mediaContents.get(1);
+		assertThat(fileContent.get("type")).isEqualTo("file");
+		assertThat(fileContent).containsKey("file");
+	}
+
+	@Test
+	public void systemMessageWithMultipleMessages() {
+		given(this.openAiApi.chatCompletionEntity(this.pomptCaptor.capture(), this.headersCaptor.capture()))
+			.willReturn(Mockito.mock(ResponseEntity.class));
+
+		this.chatModel.call(new Prompt(List.of(new SystemMessage("First system message"),
+				new SystemMessage("Second system message"), new UserMessage("User query"))));
+
+		ChatCompletionRequest request = this.pomptCaptor.getValue();
+		assertThat(request.messages()).hasSize(3);
+
+		// All messages should have string content
+		for (int i = 0; i < 3; i++) {
+			var message = request.messages().get(i);
+			assertThat(message.rawContent()).isInstanceOf(String.class);
+		}
+
+		assertThat(request.messages().get(0).content()).isEqualTo("First system message");
+		assertThat(request.messages().get(1).content()).isEqualTo("Second system message");
+		assertThat(request.messages().get(2).content()).isEqualTo("User query");
+	}
+
 }
