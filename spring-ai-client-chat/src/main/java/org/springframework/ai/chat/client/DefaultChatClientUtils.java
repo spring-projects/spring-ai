@@ -67,7 +67,10 @@ final class DefaultChatClientUtils {
 					.build()
 					.render();
 			}
-			processedMessages.add(new SystemMessage(processedSystemText));
+			processedMessages.add(SystemMessage.builder()
+				.text(processedSystemText)
+				.metadata(inputRequest.getSystemMetadata())
+				.build());
 		}
 
 		// Messages => In the middle of the list
@@ -86,7 +89,11 @@ final class DefaultChatClientUtils {
 					.build()
 					.render();
 			}
-			processedMessages.add(UserMessage.builder().text(processedUserText).media(inputRequest.getMedia()).build());
+			processedMessages.add(UserMessage.builder()
+				.text(processedUserText)
+				.media(inputRequest.getMedia())
+				.metadata(inputRequest.getUserMetadata())
+				.build());
 		}
 
 		/*

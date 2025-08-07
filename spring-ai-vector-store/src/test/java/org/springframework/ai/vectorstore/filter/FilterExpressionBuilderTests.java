@@ -28,8 +28,11 @@ import org.springframework.ai.vectorstore.filter.Filter.Value;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NOT;
@@ -119,6 +122,124 @@ public class FilterExpressionBuilderTests {
 								new Expression(GTE, new Key("year"), new Value(2020))),
 						new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))),
 				null));
+	}
+
+	@Test
+	public void testLessThanOperators() {
+		// value < 1
+		var ltExp = this.b.lt("value", 1).build();
+		assertThat(ltExp).isEqualTo(new Expression(LT, new Key("value"), new Value(1)));
+
+		// value <= 1
+		var lteExp = this.b.lte("value", 1).build();
+		assertThat(lteExp).isEqualTo(new Expression(LTE, new Key("value"), new Value(1)));
+	}
+
+	@Test
+	public void testGreaterThanOperators() {
+		// value > 1
+		var gtExp = this.b.gt("value", 1).build();
+		assertThat(gtExp).isEqualTo(new Expression(GT, new Key("value"), new Value(1)));
+
+		// value >= 10
+		var gteExp = this.b.gte("value", 10).build();
+		assertThat(gteExp).isEqualTo(new Expression(GTE, new Key("value"), new Value(10)));
+	}
+
+	@Test
+	public void testNullValues() {
+		// status == null
+		var exp = this.b.eq("status", null).build();
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("status"), new Value(null)));
+	}
+
+	@Test
+	public void testEmptyInClause() {
+		// category IN []
+		var exp = this.b.in("category").build();
+		assertThat(exp).isEqualTo(new Expression(IN, new Key("category"), new Value(List.of())));
+	}
+
+	@Test
+	public void testSingleValueInClause() {
+		// type IN ["basic"]
+		var exp = this.b.in("type", "basic").build();
+		assertThat(exp).isEqualTo(new Expression(IN, new Key("type"), new Value(List.of("basic"))));
+	}
+
+	@Test
+	public void testComplexNestedGroups() {
+		// ((level >= 1 AND level <= 5) OR status == "special") AND (region IN ["north",
+		// "south"] OR enabled == true)
+		var exp = this.b.and(
+				this.b.or(this.b.group(this.b.and(this.b.gte("level", 1), this.b.lte("level", 5))),
+						this.b.eq("status", "special")),
+				this.b.group(this.b.or(this.b.in("region", "north", "south"), this.b.eq("enabled", true))))
+			.build();
+
+		Expression expected = new Expression(AND,
+				new Expression(OR,
+						new Group(new Expression(AND, new Expression(GTE, new Key("level"), new Value(1)),
+								new Expression(LTE, new Key("level"), new Value(5)))),
+						new Expression(EQ, new Key("status"), new Value("special"))),
+				new Group(
+						new Expression(OR, new Expression(IN, new Key("region"), new Value(List.of("north", "south"))),
+								new Expression(EQ, new Key("enabled"), new Value(true)))));
+
+		assertThat(exp).isEqualTo(expected);
+	}
+
+	@Test
+	public void testNotWithSimpleExpression() {
+		// NOT (active == true)
+		var exp = this.b.not(this.b.eq("active", true)).build();
+		assertThat(exp).isEqualTo(new Expression(NOT, new Expression(EQ, new Key("active"), new Value(true)), null));
+	}
+
+	@Test
+	public void testNotWithGroup() {
+		// NOT (level >= 3 AND region == "east")
+		var exp = this.b.not(this.b.group(this.b.and(this.b.gte("level", 3), this.b.eq("region", "east")))).build();
+
+		Expression expected = new Expression(NOT,
+				new Group(new Expression(AND, new Expression(GTE, new Key("level"), new Value(3)),
+						new Expression(EQ, new Key("region"), new Value("east")))),
+				null);
+
+		assertThat(exp).isEqualTo(expected);
+	}
+
+	@Test
+	public void testMultipleNotOperators() {
+		// NOT (NOT (active == true))
+		var exp = this.b.not(this.b.not(this.b.eq("active", true))).build();
+
+		Expression expected = new Expression(NOT,
+				new Expression(NOT, new Expression(EQ, new Key("active"), new Value(true)), null), null);
+
+		assertThat(exp).isEqualTo(expected);
+	}
+
+	@Test
+	public void testSpecialCharactersInKeys() {
+		// "item.name" == "test" AND "meta-data" != null
+		var exp = this.b.and(this.b.eq("item.name", "test"), this.b.ne("meta-data", null)).build();
+
+		Expression expected = new Expression(AND, new Expression(EQ, new Key("item.name"), new Value("test")),
+				new Expression(NE, new Key("meta-data"), new Value(null)));
+
+		assertThat(exp).isEqualTo(expected);
+	}
+
+	@Test
+	public void testEmptyStringValues() {
+		// description == "" OR label != ""
+		var exp = this.b.or(this.b.eq("description", ""), this.b.ne("label", "")).build();
+
+		Expression expected = new Expression(OR, new Expression(EQ, new Key("description"), new Value("")),
+				new Expression(NE, new Key("label"), new Value("")));
+
+		assertThat(exp).isEqualTo(expected);
 	}
 
 }

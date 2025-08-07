@@ -55,7 +55,7 @@ class BedrockTitanEmbeddingModelIT {
 	void singleEmbedding() {
 		assertThat(this.embeddingModel).isNotNull();
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
-				BedrockTitanEmbeddingOptions.builder().withInputType(InputType.TEXT).build()));
+				BedrockTitanEmbeddingOptions.builder().inputType(InputType.TEXT).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
@@ -69,7 +69,7 @@ class BedrockTitanEmbeddingModelIT {
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.call(new EmbeddingRequest(List.of(Base64.getEncoder().encodeToString(image)),
-					BedrockTitanEmbeddingOptions.builder().withInputType(InputType.IMAGE).build()));
+					BedrockTitanEmbeddingOptions.builder().inputType(InputType.IMAGE).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);

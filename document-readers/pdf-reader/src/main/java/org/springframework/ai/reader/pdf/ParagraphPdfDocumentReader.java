@@ -18,7 +18,6 @@ package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.pdfbox.pdfparser.PDFParser;

@@ -959,6 +959,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 			var responseFormatJsonSchema = new ChatCompletionsJsonSchemaResponseFormatJsonSchema(jsonSchema.getName());
 			String jsonString = ModelOptionsUtils.toJsonString(jsonSchema.getSchema());
 			responseFormatJsonSchema.setSchema(BinaryData.fromString(jsonString));
+			responseFormatJsonSchema.setStrict(jsonSchema.getStrict());
 			return new ChatCompletionsJsonSchemaResponseFormat(responseFormatJsonSchema);
 		}
 		return new ChatCompletionsTextResponseFormat();

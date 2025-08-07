@@ -27,8 +27,8 @@ jobs:
 
       - name: Release to Sonatype OSSRH
         env:
-          SONATYPE_USER: ${{ secrets.OSSRH_S01_TOKEN_USERNAME }}
-          SONATYPE_PASSWORD: ${{ secrets.OSSRH_S01_TOKEN_PASSWORD }}
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           ./mvnw -B clean install -DskipTests

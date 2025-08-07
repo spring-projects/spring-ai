@@ -55,8 +55,7 @@ public class TransformersEmbeddingModelObservationTests {
 
 	@Test
 	void observationForEmbeddingOperation() {
-
-		var options = EmbeddingOptionsBuilder.builder().withModel("bert-base-uncased").build();
+		var options = EmbeddingOptionsBuilder.builder().model("bert-base-uncased").build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
 

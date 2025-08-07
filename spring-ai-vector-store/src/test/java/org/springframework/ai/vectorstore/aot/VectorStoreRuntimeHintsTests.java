@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.aot.hint.RuntimeHints;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.resource;
 
 public class VectorStoreRuntimeHintsTests {
@@ -32,6 +33,41 @@ public class VectorStoreRuntimeHintsTests {
 		vectorStoreHints.registerHints(runtimeHints, null);
 		assertThat(runtimeHints)
 			.matches(resource().forResource("antlr4/org/springframework/ai/vectorstore/filter/antlr4/Filters.g4"));
+	}
+
+	@Test
+	void registerHintsWithNullClassLoader() {
+		var runtimeHints = new RuntimeHints();
+		var vectorStoreHints = new VectorStoreRuntimeHints();
+
+		// Should not throw exception with null ClassLoader
+		assertThatCode(() -> vectorStoreHints.registerHints(runtimeHints, null)).doesNotThrowAnyException();
+	}
+
+	@Test
+	void ensureResourceHintsAreRegistered() {
+		var runtimeHints = new RuntimeHints();
+		var vectorStoreHints = new VectorStoreRuntimeHints();
+		vectorStoreHints.registerHints(runtimeHints, null);
+
+		// Ensure the specific ANTLR resource is registered
+		assertThat(runtimeHints)
+			.matches(resource().forResource("antlr4/org/springframework/ai/vectorstore/filter/antlr4/Filters.g4"));
+	}
+
+	@Test
+	void verifyResourceHintsForDifferentPaths() {
+		var runtimeHints = new RuntimeHints();
+		var vectorStoreHints = new VectorStoreRuntimeHints();
+		vectorStoreHints.registerHints(runtimeHints, null);
+
+		// Test that the exact resource path is registered
+		assertThat(runtimeHints)
+			.matches(resource().forResource("antlr4/org/springframework/ai/vectorstore/filter/antlr4/Filters.g4"));
+
+		// Verify that similar but incorrect paths are not matched
+		assertThat(runtimeHints).doesNotMatch(resource().forResource("antlr4/Filters.g4"));
+		assertThat(runtimeHints).doesNotMatch(resource().forResource("org/springframework/ai/vectorstore/Filters.g4"));
 	}
 
 }

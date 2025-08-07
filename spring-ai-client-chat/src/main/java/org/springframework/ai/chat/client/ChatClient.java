@@ -114,6 +114,10 @@ public interface ChatClient {
 
 		PromptUserSpec media(MimeType mimeType, Resource resource);
 
+		PromptUserSpec metadata(Map<String, Object> metadata);
+
+		PromptUserSpec metadata(String k, Object v);
+
 	}
 
 	/**
@@ -130,6 +134,10 @@ public interface ChatClient {
 		PromptSystemSpec params(Map<String, Object> p);
 
 		PromptSystemSpec param(String k, Object v);
+
+		PromptSystemSpec metadata(Map<String, Object> metadata);
+
+		PromptSystemSpec metadata(String k, Object v);
 
 	}
 

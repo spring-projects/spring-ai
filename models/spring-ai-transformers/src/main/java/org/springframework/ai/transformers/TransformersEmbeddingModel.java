@@ -365,7 +365,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		return modelInputs.entrySet()
 			.stream()
 			.filter(a -> this.onnxModelInputs.contains(a.getKey()))
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 	}
 

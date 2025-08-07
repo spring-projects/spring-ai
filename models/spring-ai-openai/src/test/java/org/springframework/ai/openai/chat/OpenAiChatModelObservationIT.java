@@ -130,7 +130,7 @@ public class OpenAiChatModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			// TODO - this condition occasionall fails.
+			// TODO - this condition occasionally fails.
 			// .hasContextualNameEqualTo("chat " +
 			// OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),

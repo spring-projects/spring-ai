@@ -53,7 +53,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void contextualNameWhenModelIsDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().withModel("mistral").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embedding mistral");
@@ -71,8 +71,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void supportsOnlyEmbeddingModelObservationContext() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(
-					generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().withModel("supermodel").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("supermodel").build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
@@ -82,7 +81,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().withModel("mistral").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
@@ -95,7 +94,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	void shouldHaveLowCardinalityKeyValuesWhenDefinedAndResponse() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(generateEmbeddingRequest(
-					EmbeddingOptionsBuilder.builder().withModel("mistral").withDimensions(1492).build()))
+					EmbeddingOptionsBuilder.builder().model("mistral").dimensions(1492).build()))
 			.provider("superprovider")
 			.build();
 		observationContext.setResponse(new EmbeddingResponse(List.of(),

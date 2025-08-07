@@ -72,13 +72,7 @@ public final class UsageCalculator {
 	 * @return the boolean value to represent if it is empty.
 	 */
 	public static boolean isEmpty(Usage usage) {
-		if (usage == null) {
-			return true;
-		}
-		else if (usage != null && usage.getTotalTokens() == 0L) {
-			return true;
-		}
-		return false;
+		return usage == null || usage.getTotalTokens() == 0L;
 	}
 
 }

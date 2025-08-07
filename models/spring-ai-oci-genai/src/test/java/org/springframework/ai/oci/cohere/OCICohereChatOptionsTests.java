@@ -16,11 +16,13 @@
 
 package org.springframework.ai.oci.cohere;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.oracle.bmc.generativeaiinference.model.CohereTool;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +32,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alexandros Pappas
  */
 class OCICohereChatOptionsTests {
+
+	private OCICohereChatOptions options;
+
+	@BeforeEach
+	void setUp() {
+		options = new OCICohereChatOptions();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -53,6 +62,34 @@ class OCICohereChatOptionsTests {
 					"topK", "stop", "frequencyPenalty", "presencePenalty", "documents")
 			.containsExactly("test-model", 10, "test-compartment", "test-servingMode", "test-preambleOverride", 0.6,
 					0.6, 50, List.of("test"), 0.5, 0.5, List.of("doc1", "doc2"));
+	}
+
+	@Test
+	void testBuilderWithMinimalFields() {
+		OCICohereChatOptions options = OCICohereChatOptions.builder().model("minimal-model").build();
+
+		assertThat(options.getModel()).isEqualTo("minimal-model");
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getTemperature()).isNull();
+	}
+
+	@Test
+	void testBuilderWithNullValues() {
+		OCICohereChatOptions options = OCICohereChatOptions.builder()
+			.model(null)
+			.maxTokens(null)
+			.temperature(null)
+			.stop(null)
+			.documents(null)
+			.tools(null)
+			.build();
+
+		assertThat(options.getModel()).isNull();
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getStop()).isNull();
+		assertThat(options.getDocuments()).isNull();
+		assertThat(options.getTools()).isNull();
 	}
 
 	@Test
@@ -83,8 +120,19 @@ class OCICohereChatOptionsTests {
 	}
 
 	@Test
+	void testCopyWithNullValues() {
+		OCICohereChatOptions original = new OCICohereChatOptions();
+		OCICohereChatOptions copied = (OCICohereChatOptions) original.copy();
+
+		assertThat(copied).isNotSameAs(original).isEqualTo(original);
+		assertThat(copied.getModel()).isNull();
+		assertThat(copied.getStop()).isNull();
+		assertThat(copied.getDocuments()).isNull();
+		assertThat(copied.getTools()).isNull();
+	}
+
+	@Test
 	void testSetters() {
-		OCICohereChatOptions options = new OCICohereChatOptions();
 		options.setModel("test-model");
 		options.setMaxTokens(10);
 		options.setCompartment("test-compartment");
@@ -114,7 +162,6 @@ class OCICohereChatOptionsTests {
 
 	@Test
 	void testDefaultValues() {
-		OCICohereChatOptions options = new OCICohereChatOptions();
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getMaxTokens()).isNull();
 		assertThat(options.getCompartment()).isNull();
@@ -128,6 +175,79 @@ class OCICohereChatOptionsTests {
 		assertThat(options.getPresencePenalty()).isNull();
 		assertThat(options.getDocuments()).isNull();
 		assertThat(options.getTools()).isNull();
+	}
+
+	@Test
+	void testBoundaryValues() {
+		options.setMaxTokens(0);
+		options.setTemperature(0.0);
+		options.setTopP(0.0);
+		options.setTopK(1);
+		options.setFrequencyPenalty(0.0);
+		options.setPresencePenalty(0.0);
+
+		assertThat(options.getMaxTokens()).isEqualTo(0);
+		assertThat(options.getTemperature()).isEqualTo(0.0);
+		assertThat(options.getTopP()).isEqualTo(0.0);
+		assertThat(options.getTopK()).isEqualTo(1);
+		assertThat(options.getFrequencyPenalty()).isEqualTo(0.0);
+		assertThat(options.getPresencePenalty()).isEqualTo(0.0);
+	}
+
+	@Test
+	void testMaximumBoundaryValues() {
+		options.setMaxTokens(Integer.MAX_VALUE);
+		options.setTemperature(1.0);
+		options.setTopP(1.0);
+		options.setTopK(Integer.MAX_VALUE);
+		options.setFrequencyPenalty(1.0);
+		options.setPresencePenalty(1.0);
+
+		assertThat(options.getMaxTokens()).isEqualTo(Integer.MAX_VALUE);
+		assertThat(options.getTemperature()).isEqualTo(1.0);
+		assertThat(options.getTopP()).isEqualTo(1.0);
+		assertThat(options.getTopK()).isEqualTo(Integer.MAX_VALUE);
+		assertThat(options.getFrequencyPenalty()).isEqualTo(1.0);
+		assertThat(options.getPresencePenalty()).isEqualTo(1.0);
+	}
+
+	@Test
+	void testEmptyCollections() {
+		options.setStop(Collections.emptyList());
+		options.setDocuments(Collections.emptyList());
+		options.setTools(Collections.emptyList());
+
+		assertThat(options.getStop()).isEmpty();
+		assertThat(options.getDocuments()).isEmpty();
+		assertThat(options.getTools()).isEmpty();
+	}
+
+	@Test
+	void testMultipleSetterCalls() {
+		options.setModel("first-model");
+		options.setModel("second-model");
+		options.setMaxTokens(50);
+		options.setMaxTokens(100);
+
+		assertThat(options.getModel()).isEqualTo("second-model");
+		assertThat(options.getMaxTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void testNullSetters() {
+		// Set values first
+		options.setModel("test-model");
+		options.setMaxTokens(100);
+		options.setStop(List.of("test"));
+
+		// Then set to null
+		options.setModel(null);
+		options.setMaxTokens(null);
+		options.setStop(null);
+
+		assertThat(options.getModel()).isNull();
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getStop()).isNull();
 	}
 
 }

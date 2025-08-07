@@ -42,15 +42,11 @@ public class McpClientCommonProperties {
 
 	/**
 	 * The name of the MCP client instance.
-	 * <p>
-	 * This name is reported to clients and used for compatibility checks.
 	 */
 	private String name = "spring-ai-mcp-client";
 
 	/**
 	 * The version of the MCP client instance.
-	 * <p>
-	 * This version is reported to clients and used for compatibility checks.
 	 */
 	private String version = "1.0.0";
 

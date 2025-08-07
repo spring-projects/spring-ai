@@ -86,7 +86,7 @@ public class CreateGeminiRequestTests {
 			.vertexAI(this.vertexAI)
 			.defaultOptions(VertexAiGeminiChatOptions.builder()
 				.model("DEFAULT_MODEL")
-				.frequencePenalty(.25)
+				.frequencyPenalty(.25)
 				.presencePenalty(.75)
 				.build())
 			.build();

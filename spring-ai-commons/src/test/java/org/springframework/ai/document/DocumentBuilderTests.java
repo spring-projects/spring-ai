@@ -160,4 +160,134 @@ public class DocumentBuilderTests {
 		assertThat(document.getMetadata()).isEqualTo(metadata);
 	}
 
+	@Test
+	void testWithWhitespaceOnlyId() {
+		assertThatThrownBy(() -> this.builder.text("text").id("   ").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("id cannot be null or empty");
+	}
+
+	@Test
+	void testWithEmptyText() {
+		Document document = this.builder.text("").build();
+		assertThat(document.getText()).isEqualTo("");
+	}
+
+	@Test
+	void testOverwritingText() {
+		Document document = this.builder.text("initial text").text("final text").build();
+		assertThat(document.getText()).isEqualTo("final text");
+	}
+
+	@Test
+	void testMultipleMetadataKeyValueCalls() {
+		Document document = this.builder.text("text")
+			.metadata("key1", "value1")
+			.metadata("key2", "value2")
+			.metadata("key3", 123)
+			.build();
+
+		assertThat(document.getMetadata()).hasSize(3)
+			.containsEntry("key1", "value1")
+			.containsEntry("key2", "value2")
+			.containsEntry("key3", 123);
+	}
+
+	@Test
+	void testMetadataMapOverridesKeyValue() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("newKey", "newValue");
+
+		Document document = this.builder.text("text").metadata("oldKey", "oldValue").metadata(metadata).build();
+
+		assertThat(document.getMetadata()).hasSize(1).containsEntry("newKey", "newValue").doesNotContainKey("oldKey");
+	}
+
+	@Test
+	void testKeyValueMetadataAfterMap() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("mapKey", "mapValue");
+
+		Document document = this.builder.text("text")
+			.metadata(metadata)
+			.metadata("additionalKey", "additionalValue")
+			.build();
+
+		assertThat(document.getMetadata()).hasSize(2)
+			.containsEntry("mapKey", "mapValue")
+			.containsEntry("additionalKey", "additionalValue");
+	}
+
+	@Test
+	void testWithEmptyMetadataMap() {
+		Map<String, Object> emptyMetadata = new HashMap<>();
+
+		Document document = this.builder.text("text").metadata(emptyMetadata).build();
+
+		assertThat(document.getMetadata()).isEmpty();
+	}
+
+	@Test
+	void testOverwritingMetadataWithSameKey() {
+		Document document = this.builder.text("text")
+			.metadata("key", "firstValue")
+			.metadata("key", "secondValue")
+			.build();
+
+		assertThat(document.getMetadata()).hasSize(1).containsEntry("key", "secondValue");
+	}
+
+	@Test
+	void testWithNullMedia() {
+		Document document = this.builder.text("text").media(null).build();
+		assertThat(document.getMedia()).isNull();
+	}
+
+	@Test
+	void testIdOverridesIdGenerator() {
+		IdGenerator generator = contents -> "generated-id";
+
+		Document document = this.builder.text("text").idGenerator(generator).id("explicit-id").build();
+
+		assertThat(document.getId()).isEqualTo("explicit-id");
+	}
+
+	@Test
+	void testComplexMetadataTypes() {
+		Map<String, Object> nestedMap = new HashMap<>();
+		nestedMap.put("nested", "value");
+
+		Document document = this.builder.text("text")
+			.metadata("string", "text")
+			.metadata("integer", 42)
+			.metadata("double", 3.14)
+			.metadata("boolean", true)
+			.metadata("map", nestedMap)
+			.build();
+
+		assertThat(document.getMetadata()).hasSize(5)
+			.containsEntry("string", "text")
+			.containsEntry("integer", 42)
+			.containsEntry("double", 3.14)
+			.containsEntry("boolean", true)
+			.containsEntry("map", nestedMap);
+	}
+
+	@Test
+	void testBuilderReuse() {
+		// First document
+		Document doc1 = this.builder.text("first").id("id1").metadata("key", "value1").build();
+
+		// Reuse builder for second document
+		Document doc2 = this.builder.text("second").id("id2").metadata("key", "value2").build();
+
+		assertThat(doc1.getId()).isEqualTo("id1");
+		assertThat(doc1.getText()).isEqualTo("first");
+		assertThat(doc1.getMetadata()).containsEntry("key", "value1");
+
+		assertThat(doc2.getId()).isEqualTo("id2");
+		assertThat(doc2.getText()).isEqualTo("second");
+		assertThat(doc2.getMetadata()).containsEntry("key", "value2");
+	}
+
 }

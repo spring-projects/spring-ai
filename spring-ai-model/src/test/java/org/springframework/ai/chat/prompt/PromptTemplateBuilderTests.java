@@ -96,4 +96,101 @@ class PromptTemplateBuilderTests {
 		}
 	}
 
+	@Test
+	void builderWithWhitespaceOnlyTemplateShouldThrow() {
+		assertThatThrownBy(() -> PromptTemplate.builder().template("   ")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("template cannot be null or empty");
+	}
+
+	@Test
+	void builderWithEmptyVariablesMapShouldWork() {
+		Map<String, Object> emptyVariables = new HashMap<>();
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Status: active")
+			.variables(emptyVariables)
+			.build();
+
+		assertThat(promptTemplate.render()).isEqualTo("Status: active");
+	}
+
+	@Test
+	void builderNullVariableValueShouldWork() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("value", null);
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Result: {value}")
+			.variables(variables)
+			.build();
+
+		// Should handle null values gracefully
+		String result = promptTemplate.render();
+		assertThat(result).contains("Result:").contains(":");
+	}
+
+	@Test
+	void builderWithMultipleMissingVariablesShouldThrow() {
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Processing {item} with {type} at {level}")
+			.build();
+
+		try {
+			promptTemplate.render();
+			Assertions.fail("Expected IllegalStateException was not thrown.");
+		}
+		catch (IllegalStateException e) {
+			assertThat(e.getMessage()).contains("Not all variables were replaced in the template");
+			assertThat(e.getMessage()).contains("item", "type", "level");
+		}
+	}
+
+	@Test
+	void builderWithPartialVariablesShouldThrow() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("item", "data");
+		// Missing 'type' variable
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Processing {item} with {type}")
+			.variables(variables)
+			.build();
+
+		try {
+			promptTemplate.render();
+			Assertions.fail("Expected IllegalStateException was not thrown.");
+		}
+		catch (IllegalStateException e) {
+			assertThat(e.getMessage()).contains("Missing variable names are: [type]");
+		}
+	}
+
+	@Test
+	void builderWithCompleteVariablesShouldRender() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("item", "data");
+		variables.put("count", 42);
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Processing {item} with count {count}")
+			.variables(variables)
+			.build();
+
+		String result = promptTemplate.render();
+		assertThat(result).isEqualTo("Processing data with count 42");
+	}
+
+	@Test
+	void builderWithEmptyStringVariableShouldWork() {
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("name", "");
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Hello '{name}'!")
+			.variables(variables)
+			.build();
+
+		String result = promptTemplate.render();
+		assertThat(result).isEqualTo("Hello ''!");
+	}
+
 }
