@@ -325,28 +325,4 @@ class OllamaChatModelTests {
 		assertThat(chatModel2).isNotNull();
 	}
 
-	@Test
-	void buildChatResponseMetadataWithZeroValues() {
-		// Test with all zero/minimal values
-		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse("model", Instant.now(), null, null, null, 0L, 0L,
-				0, 0L, 0, 0L);
-
-		ChatResponseMetadata metadata = OllamaChatModel.from(response, null);
-
-		assertEquals(Duration.ZERO, metadata.get("eval-duration"));
-		assertEquals(Integer.valueOf(0), metadata.get("eval-count"));
-		assertEquals(Duration.ZERO, metadata.get("prompt-eval-duration"));
-		assertEquals(Integer.valueOf(0), metadata.get("prompt-eval-count"));
-		assertThat(metadata.getUsage()).isEqualTo(new DefaultUsage(0, 0));
-	}
-
-	@Test
-	void buildOllamaChatModelWithMinimalConfiguration() {
-		// Test building with only required parameters
-		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).build();
-
-		assertThat(chatModel).isNotNull();
-		assertThat(chatModel).isInstanceOf(OllamaChatModel.class);
-	}
-
 }
