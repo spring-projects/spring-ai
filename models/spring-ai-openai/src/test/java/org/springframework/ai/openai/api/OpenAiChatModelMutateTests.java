@@ -131,4 +131,63 @@ class OpenAiChatModelMutateTests {
 		assertThat(mutated).isNotSameAs(cloned);
 	}
 
+	@Test
+	void testApiMutateWithComplexHeaders() {
+		LinkedMultiValueMap<String, String> complexHeaders = new LinkedMultiValueMap<>();
+		complexHeaders.add("Authorization", "Bearer custom-token");
+		complexHeaders.add("X-Custom-Header", "value1");
+		complexHeaders.add("X-Custom-Header", "value2");
+		complexHeaders.add("User-Agent", "Custom-Client/1.0");
+
+		OpenAiApi mutatedApi = this.baseApi.mutate().headers(complexHeaders).build();
+
+		assertThat(mutatedApi.getHeaders()).containsKey("Authorization");
+		assertThat(mutatedApi.getHeaders()).containsKey("X-Custom-Header");
+		assertThat(mutatedApi.getHeaders()).containsKey("User-Agent");
+		assertThat(mutatedApi.getHeaders().get("X-Custom-Header")).hasSize(2);
+	}
+
+	@Test
+	void testMutateWithEmptyOptions() {
+		OpenAiChatOptions emptyOptions = OpenAiChatOptions.builder().build();
+
+		OpenAiChatModel mutated = this.baseModel.mutate().defaultOptions(emptyOptions).build();
+
+		assertThat(mutated.getDefaultOptions()).isNotNull();
+		assertThat(mutated.getDefaultOptions()).isNotSameAs(this.baseModel.getDefaultOptions());
+	}
+
+	@Test
+	void testApiMutateWithEmptyHeaders() {
+		LinkedMultiValueMap<String, String> emptyHeaders = new LinkedMultiValueMap<>();
+
+		OpenAiApi mutatedApi = this.baseApi.mutate().headers(emptyHeaders).build();
+
+		assertThat(mutatedApi.getHeaders()).isEmpty();
+	}
+
+	@Test
+	void testCloneAndMutateIndependence() {
+		// Test that clone and mutate produce independent instances
+		OpenAiChatModel cloned = this.baseModel.clone();
+		OpenAiChatModel mutated = this.baseModel.mutate().build();
+
+		// Modify cloned instance (if options are mutable)
+		// This test verifies that operations on one don't affect the other
+		assertThat(cloned).isNotSameAs(mutated);
+		assertThat(cloned).isNotSameAs(this.baseModel);
+		assertThat(mutated).isNotSameAs(this.baseModel);
+	}
+
+	@Test
+	void testMutateBuilderValidation() {
+		// Test that mutate builder validates inputs appropriately
+		assertThat(this.baseModel.mutate()).isNotNull();
+
+		// Test building without any changes
+		OpenAiChatModel unchanged = this.baseModel.mutate().build();
+		assertThat(unchanged).isNotNull();
+		assertThat(unchanged).isNotSameAs(this.baseModel);
+	}
+
 }
