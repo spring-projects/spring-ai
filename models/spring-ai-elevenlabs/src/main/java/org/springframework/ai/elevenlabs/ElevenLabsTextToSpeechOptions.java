@@ -269,8 +269,8 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 		if (!(o instanceof ElevenLabsTextToSpeechOptions that))
 			return false;
 		return Objects.equals(modelId, that.modelId) && Objects.equals(voiceId, that.voiceId)
-				&& Objects.equals(outputFormat, that.outputFormat) && Objects.equals(voiceSettings, that.voiceSettings)
-				&& Objects.equals(languageCode, that.languageCode)
+				&& Objects.equals(enableLogging, that.enableLogging) && Objects.equals(outputFormat, that.outputFormat)
+				&& Objects.equals(voiceSettings, that.voiceSettings) && Objects.equals(languageCode, that.languageCode)
 				&& Objects.equals(pronunciationDictionaryLocators, that.pronunciationDictionaryLocators)
 				&& Objects.equals(seed, that.seed) && Objects.equals(previousText, that.previousText)
 				&& Objects.equals(nextText, that.nextText)
@@ -282,7 +282,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(modelId, voiceId, outputFormat, voiceSettings, languageCode,
+		return Objects.hash(modelId, voiceId, enableLogging, outputFormat, voiceSettings, languageCode,
 				pronunciationDictionaryLocators, seed, previousText, nextText, previousRequestIds, nextRequestIds,
 				applyTextNormalization, applyLanguageTextNormalization);
 	}

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.zhipuai;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -64,6 +66,21 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 	@Override
 	public Integer getDimensions() {
 		return this.dimensions;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof ZhiPuAiEmbeddingOptions that))
+			return false;
+
+		return Objects.equals(model, that.model) && Objects.equals(dimensions, that.dimensions);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hashCode(model);
+		result = 31 * result + Objects.hashCode(dimensions);
+		return result;
 	}
 
 	public static class Builder {

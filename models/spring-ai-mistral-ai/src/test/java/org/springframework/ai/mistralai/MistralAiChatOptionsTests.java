@@ -20,12 +20,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link MistralAiChatOptions}.
@@ -210,6 +211,8 @@ class MistralAiChatOptionsTests {
 
 		assertThat(options1).isNotEqualTo(options3);
 		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+
+		EqualsVerifier.simple().forClass(MistralAiChatOptions.class).usingGetClass().verify();
 	}
 
 	@Test

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -68,6 +70,21 @@ public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof MistralAiEmbeddingOptions that))
+			return false;
+
+		return Objects.equals(model, that.model) && Objects.equals(encodingFormat, that.encodingFormat);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hashCode(model);
+		result = 31 * result + Objects.hashCode(encodingFormat);
+		return result;
 	}
 
 	public static class Builder {

@@ -23,6 +23,7 @@ import com.azure.ai.openai.models.AzureChatEnhancementConfiguration;
 import com.azure.ai.openai.models.AzureChatGroundingEnhancementConfiguration;
 import com.azure.ai.openai.models.AzureChatOCREnhancementConfiguration;
 import com.azure.ai.openai.models.ChatCompletionStreamOptions;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +34,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alexandros Pappas
  */
 class AzureOpenAiChatOptionsTests {
+
+	@Test
+	void testEqualsAndHashCode() {
+		EqualsVerifier.simple().forClass(AzureOpenAiChatOptions.class).usingGetClass().verify();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {

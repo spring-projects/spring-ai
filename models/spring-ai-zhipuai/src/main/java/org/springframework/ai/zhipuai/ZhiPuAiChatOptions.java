@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -315,134 +316,37 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
-		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
-		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
-		result = prime * result
-				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
-		result = prime * result + ((this.toolCallbacks == null) ? 0 : this.toolCallbacks.hashCode());
-		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
-		return result;
+	public final boolean equals(Object o) {
+		if (!(o instanceof ZhiPuAiChatOptions that))
+			return false;
+
+		return Objects.equals(model, that.model) && Objects.equals(maxTokens, that.maxTokens)
+				&& Objects.equals(stop, that.stop) && Objects.equals(temperature, that.temperature)
+				&& Objects.equals(topP, that.topP) && Objects.equals(tools, that.tools)
+				&& Objects.equals(toolChoice, that.toolChoice) && Objects.equals(user, that.user)
+				&& Objects.equals(requestId, that.requestId) && Objects.equals(doSample, that.doSample)
+				&& Objects.equals(toolCallbacks, that.toolCallbacks) && Objects.equals(toolNames, that.toolNames)
+				&& Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(toolContext, that.toolContext);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		ZhiPuAiChatOptions other = (ZhiPuAiChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.tools == null) {
-			if (other.tools != null) {
-				return false;
-			}
-		}
-		else if (!this.tools.equals(other.tools)) {
-			return false;
-		}
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null) {
-				return false;
-			}
-		}
-		else if (!this.toolChoice.equals(other.toolChoice)) {
-			return false;
-		}
-		if (this.user == null) {
-			if (other.user != null) {
-				return false;
-			}
-		}
-		else if (!this.user.equals(other.user)) {
-			return false;
-		}
-		if (this.requestId == null) {
-			if (other.requestId != null) {
-				return false;
-			}
-		}
-		else if (!this.requestId.equals(other.requestId)) {
-			return false;
-		}
-		if (this.doSample == null) {
-			if (other.doSample != null) {
-				return false;
-			}
-		}
-		else if (!this.doSample.equals(other.doSample)) {
-			return false;
-		}
-		if (this.internalToolExecutionEnabled == null) {
-			if (other.internalToolExecutionEnabled != null) {
-				return false;
-			}
-		}
-		else if (!this.internalToolExecutionEnabled.equals(other.internalToolExecutionEnabled)) {
-			return false;
-		}
-		if (this.toolContext == null) {
-			if (other.toolContext != null) {
-				return false;
-			}
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-		return true;
+	public int hashCode() {
+		int result = Objects.hashCode(model);
+		result = 31 * result + Objects.hashCode(maxTokens);
+		result = 31 * result + Objects.hashCode(stop);
+		result = 31 * result + Objects.hashCode(temperature);
+		result = 31 * result + Objects.hashCode(topP);
+		result = 31 * result + Objects.hashCode(tools);
+		result = 31 * result + Objects.hashCode(toolChoice);
+		result = 31 * result + Objects.hashCode(user);
+		result = 31 * result + Objects.hashCode(requestId);
+		result = 31 * result + Objects.hashCode(doSample);
+		result = 31 * result + Objects.hashCode(toolCallbacks);
+		result = 31 * result + Objects.hashCode(toolNames);
+		result = 31 * result + Objects.hashCode(internalToolExecutionEnabled);
+		result = 31 * result + Objects.hashCode(toolContext);
+		return result;
 	}
 
 	@Override

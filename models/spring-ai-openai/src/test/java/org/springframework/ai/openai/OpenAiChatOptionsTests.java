@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -309,6 +310,8 @@ class OpenAiChatOptionsTests {
 		// Test hashCode
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
 		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+
+		EqualsVerifier.simple().forClass(OpenAiChatOptions.class).usingGetClass().verify();
 	}
 
 	@Test

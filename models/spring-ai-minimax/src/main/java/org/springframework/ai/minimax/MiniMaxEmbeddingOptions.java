@@ -16,6 +16,8 @@
 
 package org.springframework.ai.minimax;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -57,6 +59,19 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof MiniMaxEmbeddingOptions that))
+			return false;
+
+		return Objects.equals(model, that.model);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(model);
 	}
 
 	public static class Builder {

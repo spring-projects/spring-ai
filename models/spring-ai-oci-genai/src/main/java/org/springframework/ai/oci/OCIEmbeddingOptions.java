@@ -16,6 +16,8 @@
 
 package org.springframework.ai.oci;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.oracle.bmc.generativeaiinference.model.EmbedTextDetails;
@@ -82,6 +84,24 @@ public class OCIEmbeddingOptions implements EmbeddingOptions {
 
 	public void setTruncate(EmbedTextDetails.Truncate truncate) {
 		this.truncate = truncate;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof OCIEmbeddingOptions that))
+			return false;
+
+		return Objects.equals(model, that.model) && Objects.equals(compartment, that.compartment)
+				&& Objects.equals(servingMode, that.servingMode) && truncate == that.truncate;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hashCode(model);
+		result = 31 * result + Objects.hashCode(compartment);
+		result = 31 * result + Objects.hashCode(servingMode);
+		result = 31 * result + Objects.hashCode(truncate);
+		return result;
 	}
 
 	public static class Builder {

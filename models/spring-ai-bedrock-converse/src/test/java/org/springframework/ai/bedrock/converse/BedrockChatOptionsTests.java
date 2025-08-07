@@ -16,10 +16,11 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +30,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sun Yuhan
  */
 class BedrockChatOptionsTests {
+
+	@Test
+	void testEqualsAndHashCode() {
+		EqualsVerifier.simple().forClass(BedrockChatOptions.class).usingGetClass().verify();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {

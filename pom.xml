@@ -323,6 +323,7 @@
 		<!-- testing dependencies -->
 		<okhttp3.version>4.12.0</okhttp3.version>
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
+		<equalsverifier.version>4.0.5</equalsverifier.version>
 
 		<!-- MCP-->
 		<mcp.sdk.version>0.11.0</mcp.sdk.version>

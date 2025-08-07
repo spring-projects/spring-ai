@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
@@ -159,6 +160,8 @@ class AnthropicChatOptionsTests {
 		assertThat(copy.getModel()).isEqualTo("modified-model");
 		assertThat(copy.getMaxTokens()).isEqualTo(200);
 		assertThat(copy.getTemperature()).isEqualTo(0.8);
+
+		EqualsVerifier.simple().forClass(AnthropicChatOptions.class).usingGetClass().verify();
 	}
 
 	@Test

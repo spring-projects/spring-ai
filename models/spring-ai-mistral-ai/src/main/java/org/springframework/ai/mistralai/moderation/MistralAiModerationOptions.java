@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mistralai.moderation;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -47,6 +49,19 @@ public class MistralAiModerationOptions implements ModerationOptions {
 
 	public void setModel(String model) {
 		this.model = model;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof MistralAiModerationOptions that))
+			return false;
+
+		return Objects.equals(model, that.model);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(model);
 	}
 
 	public static final class Builder {

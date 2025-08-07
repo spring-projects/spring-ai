@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vertexai.embedding.text;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -127,6 +129,26 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	public void setAutoTruncate(Boolean autoTruncate) {
 		this.autoTruncate = autoTruncate;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof VertexAiTextEmbeddingOptions that))
+			return false;
+
+		return Objects.equals(model, that.model) && taskType == that.taskType
+				&& Objects.equals(dimensions, that.dimensions) && Objects.equals(title, that.title)
+				&& Objects.equals(autoTruncate, that.autoTruncate);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hashCode(model);
+		result = 31 * result + Objects.hashCode(taskType);
+		result = 31 * result + Objects.hashCode(dimensions);
+		result = 31 * result + Objects.hashCode(title);
+		result = 31 * result + Objects.hashCode(autoTruncate);
+		return result;
 	}
 
 	public enum TaskType {

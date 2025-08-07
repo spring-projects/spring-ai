@@ -83,5 +83,11 @@
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-observation-test</artifactId>
 		</dependency>
+
+		<dependency>
+			<groupId>nl.jqno.equalsverifier</groupId>
+			<artifactId>equalsverifier</artifactId>
+			<version>${equalsverifier.version}</version>
+		</dependency>
 	</dependencies>
 </project>
