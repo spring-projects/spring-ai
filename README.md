@@ -23,6 +23,7 @@ You can find more details in the [Reference Documentation](https://docs.spring.i
   - [Audio Transcription](https://docs.spring.io/spring-ai/reference/api/audio/transcriptions.html)
   - [Text to Speech](https://docs.spring.io/spring-ai/reference/api/audio/speech.html)
   - [Moderation](https://docs.spring.io/spring-ai/reference/api/index.html#api/moderation)
+  - **Latest Models**: GPT-5, and other cutting-edge models for advanced AI applications.
 * Portable API support across AI providers for both synchronous and streaming options. Access to [model-specific features](https://docs.spring.io/spring-ai/reference/api/chatmodel.html#_chat_options) is also available.
 * [Structured Outputs](https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html) - Mapping of AI Model output to POJOs.
 * Support for all major [Vector Database providers](https://docs.spring.io/spring-ai/reference/api/vectordbs.html) such as *Apache Cassandra, Azure Vector Search, Chroma, Elasticsearch, Milvus, MongoDB Atlas, MariaDB, Neo4j, Oracle, PostgreSQL/PGVector, PineCone, Qdrant, Redis, and Weaviate*.
