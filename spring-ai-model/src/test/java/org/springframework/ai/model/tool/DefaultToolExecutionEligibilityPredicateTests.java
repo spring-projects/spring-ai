@@ -134,4 +134,69 @@ class DefaultToolExecutionEligibilityPredicateTests {
 		assertThat(result).isFalse();
 	}
 
+	@Test
+	void whenMultipleGenerationsWithMixedToolCalls() {
+		// Create a ToolCallingChatOptions with internal tool execution enabled
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
+
+		// Create multiple generations - some with tool calls, some without
+		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("id1", "function", "testTool", "{}");
+		AssistantMessage messageWithToolCall = new AssistantMessage("test1", Map.of(), List.of(toolCall));
+		AssistantMessage messageWithoutToolCall = new AssistantMessage("test2");
+
+		ChatResponse chatResponse = new ChatResponse(
+				List.of(new Generation(messageWithToolCall), new Generation(messageWithoutToolCall)));
+
+		// Test the predicate - should return true if any generation has tool calls
+		boolean result = this.predicate.test(options, chatResponse);
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	void whenMultipleGenerationsWithoutToolCalls() {
+		// Create a ToolCallingChatOptions with internal tool execution enabled
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
+
+		// Create multiple generations without tool calls
+		AssistantMessage message1 = new AssistantMessage("test1");
+		AssistantMessage message2 = new AssistantMessage("test2");
+
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(message1), new Generation(message2)));
+
+		// Test the predicate
+		boolean result = this.predicate.test(options, chatResponse);
+		assertThat(result).isFalse();
+	}
+
+	@Test
+	void whenAssistantMessageHasEmptyToolCallsList() {
+		// Create a ToolCallingChatOptions with internal tool execution enabled
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
+
+		// Create a ChatResponse with AssistantMessage having empty tool calls list
+		AssistantMessage assistantMessage = new AssistantMessage("test", Map.of(), List.of());
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
+
+		// Test the predicate
+		boolean result = this.predicate.test(options, chatResponse);
+		assertThat(result).isFalse();
+	}
+
+	@Test
+	void whenMultipleToolCallsPresent() {
+		// Create a ToolCallingChatOptions with internal tool execution enabled
+		ToolCallingChatOptions options = ToolCallingChatOptions.builder().internalToolExecutionEnabled(true).build();
+
+		// Create a ChatResponse with multiple tool calls
+		AssistantMessage.ToolCall toolCall1 = new AssistantMessage.ToolCall("id1", "function", "testTool1", "{}");
+		AssistantMessage.ToolCall toolCall2 = new AssistantMessage.ToolCall("id2", "function", "testTool2",
+				"{\"param\": \"value\"}");
+		AssistantMessage assistantMessage = new AssistantMessage("test", Map.of(), List.of(toolCall1, toolCall2));
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
+
+		// Test the predicate
+		boolean result = this.predicate.test(options, chatResponse);
+		assertThat(result).isTrue();
+	}
+
 }
