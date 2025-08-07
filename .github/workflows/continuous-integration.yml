@@ -62,7 +62,7 @@ jobs:
 
       - name: Generate assembly
         working-directory: spring-ai-docs
-        run: ./mvnw --batch-mode assembly:single
+        run: ../mvnw --batch-mode assembly:single
 
       - name: Capture project version
         run: echo PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
