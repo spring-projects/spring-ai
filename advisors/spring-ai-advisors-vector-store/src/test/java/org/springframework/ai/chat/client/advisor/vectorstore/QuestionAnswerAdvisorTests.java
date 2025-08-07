@@ -322,11 +322,11 @@ public class QuestionAnswerAdvisorTests {
 						.param("topic", "machine learning")
 						.param("aspect1", "performance")
 						.param("aspect2", "scalability")
-						.param("userId", "user123"))
+						.param("userId", "user1"))
 				.call()
 				.chatResponse();
 
-		var expectedQuery = "Please analyze machine learning considering performance and scalability for user user123";
+		var expectedQuery = "Please analyze machine learning considering performance and scalability for user user1";
 		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
 
 		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
