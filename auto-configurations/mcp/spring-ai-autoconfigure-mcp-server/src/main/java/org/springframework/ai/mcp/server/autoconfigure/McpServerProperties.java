@@ -60,6 +60,18 @@ public class McpServerProperties {
 	private boolean stdio = false;
 
 	/**
+	 * The transport type for web-based communication.
+	 * <p>
+	 * Supported transport types:
+	 * <ul>
+	 * <li>SSE - Server-Sent Events transport (default)</li>
+	 * <li>STREAMABLE - Streamable HTTP transport</li>
+	 * </ul>
+	 * Only relevant when stdio is disabled.
+	 */
+	private TransportType transportType = TransportType.SSE;
+
+	/**
 	 * The name of the MCP server instance.
 	 * <p>
 	 * This name is used to identify the server in logs and monitoring.
@@ -167,6 +179,23 @@ public class McpServerProperties {
 		 * Asynchronous (McpAsyncServer) server
 		 */
 		ASYNC
+
+	}
+
+	/**
+	 * Transport types supported by the MCP server for web communication.
+	 */
+	public enum TransportType {
+
+		/**
+		 * Server-Sent Events transport
+		 */
+		SSE,
+
+		/**
+		 * Streamable HTTP transport
+		 */
+		STREAMABLE
 
 	}
 
