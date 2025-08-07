@@ -331,4 +331,27 @@ class QdrantVectorStoreBuilderTests {
 		assertThat(result).isSameAs(builder);
 	}
 
+	@Test
+	void builderShouldHandleRepeatedConfigurationCalls() {
+		QdrantVectorStore.Builder builder = QdrantVectorStore.builder(this.qdrantClient, this.embeddingModel);
+
+		// Call configuration methods multiple times in different orders
+		builder.initializeSchema(true)
+			.collectionName("first")
+			.initializeSchema(false)
+			.collectionName("second")
+			.initializeSchema(true);
+
+		QdrantVectorStore vectorStore = builder.build();
+
+		// Should use the last set values
+		assertThat(vectorStore).hasFieldOrPropertyWithValue("collectionName", "second");
+		assertThat(vectorStore).hasFieldOrPropertyWithValue("initializeSchema", true);
+
+		// Verify builder can still be used after build
+		QdrantVectorStore anotherVectorStore = builder.collectionName("third").build();
+		assertThat(anotherVectorStore).hasFieldOrPropertyWithValue("collectionName", "third");
+		assertThat(anotherVectorStore).hasFieldOrPropertyWithValue("initializeSchema", true);
+	}
+
 }
