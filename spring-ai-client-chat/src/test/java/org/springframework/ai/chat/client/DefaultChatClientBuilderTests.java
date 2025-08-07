@@ -102,4 +102,61 @@ class DefaultChatClientBuilderTests {
 			.hasMessage("templateRenderer cannot be null");
 	}
 
+	@Test
+	void whenCloneBuilderThenModifyingOriginalDoesNotAffectClone() {
+		var chatModel = mock(ChatModel.class);
+		var originalBuilder = new DefaultChatClientBuilder(chatModel);
+		originalBuilder.defaultSystem("original system");
+		originalBuilder.defaultUser("original user");
+
+		var clonedBuilder = (DefaultChatClientBuilder) originalBuilder.clone();
+
+		// Modify original
+		originalBuilder.defaultSystem("modified system");
+		originalBuilder.defaultUser("modified user");
+
+		var clonedRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(clonedBuilder,
+				"defaultRequest");
+
+		assertThat(clonedRequest.getSystemText()).isEqualTo("original system");
+		assertThat(clonedRequest.getUserText()).isEqualTo("original user");
+	}
+
+	@Test
+	void whenBuildChatClientThenReturnsValidInstance() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		var chatClient = builder.build();
+
+		assertThat(chatClient).isNotNull();
+		assertThat(chatClient).isInstanceOf(DefaultChatClient.class);
+	}
+
+	@Test
+	void whenOverridingSystemPromptThenLatestValueIsUsed() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		builder.defaultSystem("first system prompt");
+		builder.defaultSystem("second system prompt");
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		assertThat(defaultRequest.getSystemText()).isEqualTo("second system prompt");
+	}
+
+	@Test
+	void whenOverridingUserPromptThenLatestValueIsUsed() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		builder.defaultUser("first user prompt");
+		builder.defaultUser("second user prompt");
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		assertThat(defaultRequest.getUserText()).isEqualTo("second user prompt");
+	}
+
 }
