@@ -44,7 +44,8 @@ public class BedrockConverseProxyChatPropertiesTests {
 
 				"spring.ai.bedrock.converse.chat.options.temperature=0.55",
 				"spring.ai.bedrock.converse.chat.options.top-p=0.56",
-				"spring.ai.bedrock.converse.chat.options.top-k=100"
+				"spring.ai.bedrock.converse.chat.options.top-k=100",
+				"spring.ai.bedrock.aws.region=us-east-1"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
@@ -67,10 +68,12 @@ public class BedrockConverseProxyChatPropertiesTests {
 		// It is enabled by default
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
+			.withPropertyValues("spring.ai.bedrock.aws.region=us-east-1")
 			.run(context -> assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty());
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=bedrock-converse")
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.model.chat=bedrock-converse", "spring.ai.bedrock.aws.region=us-east-1")
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isNotEmpty();
@@ -78,7 +81,8 @@ public class BedrockConverseProxyChatPropertiesTests {
 			});
 
 		// Explicitly disable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=none")
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.bedrock.aws.region=us-east-1")
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty();
