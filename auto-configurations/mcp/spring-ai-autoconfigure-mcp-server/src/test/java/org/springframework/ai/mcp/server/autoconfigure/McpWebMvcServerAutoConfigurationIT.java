@@ -68,4 +68,21 @@ class McpWebMvcServerAutoConfigurationIT {
 				.isEqualTo("/test"));
 	}
 
+	@Test
+	void lazyInitializationWithWebMvcCompatibility() {
+		this.contextRunner.withPropertyValues("spring.main.lazy-initialization=true").run(context -> {
+			// Even with lazy initialization, WebMvc transport should work properly
+			assertThat(context).hasSingleBean(WebMvcSseServerTransportProvider.class);
+			assertThat(context).hasSingleBean(RouterFunction.class);
+
+			// Transport provider should be properly configured
+			WebMvcSseServerTransportProvider transport = context.getBean(WebMvcSseServerTransportProvider.class);
+			assertThat(transport).isNotNull();
+
+			// Router function should be available
+			RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+			assertThat(routerFunction).isNotNull();
+		});
+	}
+
 }
