@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.s3.S3VectorFilterSearchExpressionConverter;
