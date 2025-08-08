@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -213,8 +214,9 @@ public final class JsonSchemaGenerator {
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
 		}
 
-		var nullableAnnotation = parameter.getAnnotation(Nullable.class);
-		if (nullableAnnotation != null) {
+		var nullableAnnotationPresent = Arrays.stream(parameter.getAnnotations())
+			.anyMatch(ann -> ann.annotationType().getSimpleName().equals("Nullable"));
+		if (nullableAnnotationPresent) {
 			return false;
 		}
 
