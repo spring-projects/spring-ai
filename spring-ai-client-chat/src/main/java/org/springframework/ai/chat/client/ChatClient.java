@@ -269,7 +269,7 @@ public interface ChatClient {
 	 */
 	interface Builder {
 
-		Builder defaultAdvisors(Advisor... advisor);
+		Builder defaultAdvisors(Advisor... advisors);
 
 		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);
 
