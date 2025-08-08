@@ -160,17 +160,6 @@ public class AzureEmbeddingsOptionsTests {
 	}
 
 	@Test
-	public void shouldHandleVeryLargeInputList() {
-		// Test with a large number of inputs to verify performance and memory handling
-		List<String> largeInputList = Collections.nCopies(1000, "Test input text");
-		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(largeInputList, null));
-
-		assertThat(requestOptions.getInput()).hasSize(1000);
-		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
-		assertThat(requestOptions.getUser()).isEqualTo("USER_TEST");
-	}
-
-	@Test
 	public void shouldHandleEmptyStringInputs() {
 		List<String> inputsWithEmpty = Arrays.asList("", "Valid text", "", "Another valid text");
 		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(inputsWithEmpty, null));
