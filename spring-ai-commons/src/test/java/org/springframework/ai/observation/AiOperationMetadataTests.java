@@ -63,4 +63,18 @@ class AiOperationMetadataTests {
 			.hasMessageContaining("provider cannot be null or empty");
 	}
 
+	@Test
+	void whenOperationTypeIsBlankThenThrow() {
+		assertThatThrownBy(() -> AiOperationMetadata.builder().operationType("   ").provider("doofenshmirtz").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("operationType cannot be null or empty");
+	}
+
+	@Test
+	void whenProviderIsBlankThenThrow() {
+		assertThatThrownBy(() -> AiOperationMetadata.builder().operationType("chat").provider("   ").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("provider cannot be null or empty");
+	}
+
 }
