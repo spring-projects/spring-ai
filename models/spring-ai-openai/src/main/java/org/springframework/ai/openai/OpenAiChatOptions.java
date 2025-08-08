@@ -197,6 +197,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("reasoning_effort") String reasoningEffort;
 
 	/**
+	 * verbosity: string or null
+	 * Optional - Defaults to medium
+	 * Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses.
+	 * Currently supported values are low, medium, and high.
+	 * If specified, the model will use web search to find relevant information to answer the user's question.
+	 */
+	private @JsonProperty("verbosity") String verbosity;
+
+	/**
 	 * This tool searches the web for relevant results to use in a response.
 	 */
 	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
@@ -268,6 +277,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
 			.webSearchOptions(fromOptions.getWebSearchOptions())
+			.verbosity(fromOptions.getVerbosity())
 			.build();
 	}
 
@@ -564,6 +574,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.webSearchOptions = webSearchOptions;
 	}
 
+	public String getVerbosity() {
+		return this.verbosity;
+	}
+
+	public void setVerbosity(String verbosity) {
+		this.verbosity = verbosity;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -609,7 +627,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
 				&& Objects.equals(this.metadata, other.metadata)
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
-				&& Objects.equals(this.webSearchOptions, other.webSearchOptions);
+				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
+				&& Objects.equals(this.verbosity, other.verbosity);
 	}
 
 	@Override
@@ -799,6 +818,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder webSearchOptions(WebSearchOptions webSearchOptions) {
 			this.options.webSearchOptions = webSearchOptions;
+			return this;
+		}
+
+		public Builder verbosity(String verbosity) {
+			this.options.verbosity = verbosity;
 			return this;
 		}
 

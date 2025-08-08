@@ -482,18 +482,37 @@ public class OpenAiApi {
 		GPT_5("gpt-5"),
 
 		/**
-		 * <b>GPT-5 (2025-08-07)</b> is a specific snapshot of the GPT-5 model from August
-		 * 7, 2025, providing enhanced capabilities for complex reasoning and
-		 * problem-solving tasks.
+		 * GPT-5 mini is a faster, more cost-efficient version of GPT-5. It's great for
+		 * well-defined tasks and precise prompts.
 		 * <p>
-		 * Note: GPT-5 models require temperature=1.0 (default value). Custom temperature
-		 * values are not supported and will cause errors.
+		 * Model ID: gpt-5-mini
 		 * <p>
-		 * Model ID: gpt-5-2025-08-07
-		 * <p>
-		 * See: <a href="https://platform.openai.com/docs/models/gpt-5">gpt-5</a>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-mini">gpt-5-mini</a>
 		 */
-		GPT_5_2025_08_07("gpt-5-2025-08-07"),
+		GPT_5_MINI("gpt-5-mini"),
+
+		/**
+		 * GPT-5 Nano is the fastest, cheapest version of GPT-5. It's great for
+		 * summarization and classification tasks.
+		 * <p>
+		 * Model ID: gpt-5-nano
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-nano">gpt-5-nano</a>
+		 */
+		GPT_5_NANO("gpt-5-nano"),
+
+		/**
+		 * GPT-5 Chat points to the GPT-5 snapshot currently used in ChatGPT. GPT-5
+		 * accepts both text and image inputs, and produces text outputs.
+		 * <p>
+		 * Model ID: gpt-5-chat-latest
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5-chat-latest">gpt-5-chat-latest</a>
+		 */
+		GPT_5_CHAT_LATEST("gpt-5-chat-latest"),
 
 		/**
 		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
@@ -1064,6 +1083,7 @@ public class OpenAiApi {
 	 * Currently supported values are low, medium, and high. Reducing reasoning effort can
 	 * result in faster responses and fewer tokens used on reasoning in a response.
 	 * @param webSearchOptions Options for web search.
+	 * @param verbosity Controls the verbosity of the model's response.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -1094,7 +1114,8 @@ public class OpenAiApi {
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
 			@JsonProperty("user") String user,
 			@JsonProperty("reasoning_effort") String reasoningEffort,
-			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions) {
+			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions,
+			@JsonProperty("verbosity") String verbosity)  {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -1106,7 +1127,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1120,7 +1141,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1135,7 +1156,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1151,7 +1172,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null, null, null);
+					tools, toolChoice, null, null, null, null, null);
 		}
 
 		/**
@@ -1164,7 +1185,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1177,7 +1198,7 @@ public class OpenAiApi {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions);
+			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions, this.verbosity);
 		}
 
 		/**
