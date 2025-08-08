@@ -77,7 +77,7 @@ public class OpenAiApiIT {
 				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
-				null, null, null, "low", null);
+				null, null, null, "low", null, null);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();
@@ -170,6 +170,26 @@ public class OpenAiApiIT {
 		assertThat(response.getBody().choices()).isNotEmpty();
 		assertThat(response.getBody().choices().get(0).message().content()).isNotEmpty();
 		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "GPT_5_NANO" })
+	void chatCompletionEntityWithNewModelsAndLowVerbosity(OpenAiApi.ChatModel modelName) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
+				"What is the answer to the ultimate question of life, the universe, and everything?", Role.USER);
+
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
+				modelName.getValue(), null, null, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, false, null, 1.0, null, null, null, null, null, null, null, "low");
+
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().choices()).isNotEmpty();
+		assertThat(response.getBody().choices().get(0).message().content()).isNotEmpty();
+		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
+
 	}
 
 }
