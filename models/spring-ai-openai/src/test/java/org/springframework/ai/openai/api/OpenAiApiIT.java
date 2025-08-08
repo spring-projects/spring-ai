@@ -159,7 +159,7 @@ public class OpenAiApiIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName}")
-	@EnumSource(names = { "GPT_5", "GPT_5_2025_08_07" })
+	@EnumSource(names = { "GPT_5", "GPT_5_CHAT_LATEST", "GPT_5_MINI", "GPT_5_NANO" })
 	void chatCompletionEntityWithNewModels(OpenAiApi.ChatModel modelName) {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(
