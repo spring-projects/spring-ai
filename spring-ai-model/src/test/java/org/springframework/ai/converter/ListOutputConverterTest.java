@@ -154,4 +154,28 @@ class ListOutputConverterTest {
 		assertThat(list).isNotEmpty();
 	}
 
+	@Test
+	void csvWithQuotedValues() {
+		String csvAsString = "\"quoted value\", normal, \"another quoted\"";
+		List<String> list = listOutputConverter.convert(csvAsString);
+		assertThat(list).hasSize(3);
+		assertThat(list).doesNotContainNull();
+	}
+
+	@Test
+	void csvWithEscapedQuotes() {
+		String csvAsString = "\"value with \"\"quotes\"\"\", normal, \"escaped\"";
+		List<String> list = listOutputConverter.convert(csvAsString);
+		assertThat(list).isNotEmpty();
+		assertThat(list).doesNotContainNull();
+	}
+
+	@Test
+	void csvWithOnlyWhitespace() {
+		String csvAsString = "   \t\n   ";
+		List<String> list = listOutputConverter.convert(csvAsString);
+		assertThat(list).hasSize(1);
+		assertThat(list.get(0)).isBlank();
+	}
+
 }

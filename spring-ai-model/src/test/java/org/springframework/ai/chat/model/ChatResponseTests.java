@@ -126,4 +126,10 @@ class ChatResponseTests {
 		assertThat(resultToolCall.arguments()).isEqualTo("{\"location\": \"Seoul\"}");
 	}
 
+	@Test
+	void whenEmptyGenerationsListThenReturnFalse() {
+		ChatResponse chatResponse = ChatResponse.builder().generations(List.of()).build();
+		assertThat(chatResponse.hasToolCalls()).isFalse();
+	}
+
 }
