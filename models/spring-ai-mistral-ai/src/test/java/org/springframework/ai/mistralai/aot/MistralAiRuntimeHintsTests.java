@@ -127,7 +127,7 @@ class MistralAiRuntimeHintsTests {
 		Set<TypeReference> registeredTypes = new HashSet<>();
 		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
-		// Critical API classes that must be registered for runtime
+		// Ensure critical API classes are registered for GraalVM native image reflection
 		String[] criticalClasses = { "MistralAiApi$ChatCompletionRequest", "MistralAiApi$ChatCompletionMessage",
 				"MistralAiApi$EmbeddingRequest", "MistralAiApi$EmbeddingList", "MistralAiApi$Usage" };
 
