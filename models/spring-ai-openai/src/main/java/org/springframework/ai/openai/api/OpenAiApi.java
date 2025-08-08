@@ -482,18 +482,39 @@ public class OpenAiApi {
 		GPT_5("gpt-5"),
 
 		/**
-		 * <b>GPT-5 (2025-08-07)</b> is a specific snapshot of the GPT-5 model from August
-		 * 7, 2025, providing enhanced capabilities for complex reasoning and
-		 * problem-solving tasks.
+		 * GPT-5 Chat points to the GPT-5 snapshot currently used in ChatGPT. GPT-5 is our
+		 * next-generation, high-intelligence flagship model. It accepts both text and
+		 * image inputs, and produces text outputs.
 		 * <p>
-		 * Note: GPT-5 models require temperature=1.0 (default value). Custom temperature
-		 * values are not supported and will cause errors.
+		 * Model ID: gpt-5-chat-latest
 		 * <p>
-		 * Model ID: gpt-5-2025-08-07
-		 * <p>
-		 * See: <a href="https://platform.openai.com/docs/models/gpt-5">gpt-5</a>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5-chat-latest">gpt-5-chat-latest</a>
 		 */
-		GPT_5_2025_08_07("gpt-5-2025-08-07"),
+		GPT_5_CHAT_LATEST("gpt-5-chat-latest"),
+
+		/**
+		 * GPT-5 mini is a faster, more cost-efficient version of GPT-5. It's great for
+		 * well-defined tasks and precise prompts.
+		 * <p>
+		 * Model ID: gpt-5-mini
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-mini">gpt-5-mini</a>
+		 */
+		GPT_5_MINI("gpt-5-mini"),
+
+		// add gpt-5-nano
+		/**
+		 * GPT-5 Nano is our fastest, cheapest version of GPT-5. It's great for
+		 * summarization and classification tasks.
+		 * <p>
+		 * Model ID: gpt-5-nano
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-nano">gpt-5-nano</a>
+		 */
+		GPT_5_NANO("gpt-5-nano"),
 
 		/**
 		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
