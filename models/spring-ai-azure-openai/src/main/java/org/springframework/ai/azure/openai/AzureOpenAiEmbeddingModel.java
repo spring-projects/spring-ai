@@ -24,6 +24,8 @@ import com.azure.ai.openai.models.EmbeddingItem;
 import com.azure.ai.openai.models.Embeddings;
 import com.azure.ai.openai.models.EmbeddingsOptions;
 import com.azure.ai.openai.models.EmbeddingsUsage;
+import com.azure.core.http.rest.RequestOptions;
+import com.azure.core.util.BinaryData;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,7 +142,18 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				Embeddings embeddings = this.azureOpenAiClient.getEmbeddings(azureOptions.getModel(), azureOptions);
+
+				RequestOptions requestOptions = new RequestOptions();
+
+				if (null != options.getApiVersion()) {
+					requestOptions.addQueryParam("api-version", options.getApiVersion());
+				}
+
+				Embeddings embeddings = this.azureOpenAiClient
+					.getEmbeddingsWithResponse(azureOptions.getModel(), BinaryData.fromObject(azureOptions),
+							requestOptions)
+					.getValue()
+					.toObject(Embeddings.class);
 
 				logger.debug("Embeddings retrieved");
 				var embeddingResponse = generateEmbeddingResponse(embeddings);
