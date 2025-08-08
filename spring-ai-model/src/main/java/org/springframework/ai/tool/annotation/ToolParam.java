@@ -23,9 +23,25 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a tool argument.
+ * Marks a tool argument for method-based tools.
+ * <p>
+ * This annotation can be used to specify metadata for a tool parameter, including whether
+ * it is required, a description, or a custom name to bind to.
+ * <p>
+ * When the parameter name cannot be inferred (e.g. compiled without `-parameters`), the
+ * {@code value} field can be used to manually specify the name that should match the key
+ * in the tool input map.
+ *
+ * <p>
+ * <b>Example:</b> <pre class="code">
+ * public String greet(
+ *     {@code @ToolParam(value = "user_name")} String name) {
+ *   return "Hello, " + name;
+ * }
+ * </pre>
  *
  * @author Thomas Vitale
+ * @author Dongha Koo
  * @since 1.0.0
  */
 @Target({ ElementType.PARAMETER, ElementType.FIELD, ElementType.ANNOTATION_TYPE })
@@ -42,5 +58,10 @@ public @interface ToolParam {
 	 * The description of the tool argument.
 	 */
 	String description() default "";
+
+	/**
+	 * The name of the parameter to bind to.
+	 */
+	String value() default "";
 
 }
