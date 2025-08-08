@@ -23,6 +23,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link AnthropicChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author lambochen
  */
 class AnthropicChatOptionsTests {
 
@@ -43,10 +45,13 @@ class AnthropicChatOptionsTests {
 			.topP(0.8)
 			.topK(50)
 			.metadata(new Metadata("userId_123"))
+			.toolExecutionMaxIterations(3)
 			.build();
 
-		assertThat(options).extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata")
-			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"));
+		assertThat(options)
+			.extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata",
+					"toolExecutionMaxIterations")
+			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"), 3);
 	}
 
 	@Test
@@ -60,6 +65,7 @@ class AnthropicChatOptionsTests {
 			.topK(50)
 			.metadata(new Metadata("userId_123"))
 			.toolContext(Map.of("key1", "value1"))
+			.toolExecutionMaxIterations(3)
 			.build();
 
 		AnthropicChatOptions copied = original.copy();
@@ -68,6 +74,8 @@ class AnthropicChatOptionsTests {
 		// Ensure deep copy
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
+
+		assertThat(copied.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
@@ -80,6 +88,7 @@ class AnthropicChatOptionsTests {
 		options.setTopP(0.8);
 		options.setStopSequences(List.of("stop1", "stop2"));
 		options.setMetadata(new Metadata("userId_123"));
+		options.setToolExecutionMaxIterations(3);
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getMaxTokens()).isEqualTo(100);
@@ -88,6 +97,7 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isEqualTo(0.8);
 		assertThat(options.getStopSequences()).isEqualTo(List.of("stop1", "stop2"));
 		assertThat(options.getMetadata()).isEqualTo(new Metadata("userId_123"));
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
@@ -100,6 +110,8 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getMetadata()).isNull();
+		assertThat(options.getToolExecutionMaxIterations())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
 	}
 
 	@Test

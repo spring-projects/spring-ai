@@ -37,11 +37,23 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 1.0.0
  */
 public interface ToolCallingChatOptions extends ChatOptions {
 
 	boolean DEFAULT_TOOL_EXECUTION_ENABLED = true;
+
+	/**
+	 * No limit for tool execution attempts.
+	 */
+	int TOOL_EXECUTION_NO_LIMIT = Integer.MAX_VALUE;
+
+	/**
+	 * Default maximum number of tool execution iterations. ref: Three strikes and you are
+	 * out!
+	 */
+	int DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS = 3;
 
 	/**
 	 * ToolCallbacks to be registered with the ChatModel.
@@ -77,6 +89,23 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 	/**
+	 * Get the maximum number of iteration for tool execution. If the number of iterations
+	 * exceeds the limit, an {@link ToolExecutionLimitExceededException} will be thrown.
+	 * @return the maximum number of iteration.
+	 * @see #getInternalToolExecutionEnabled()
+	 * @see ToolExecutionLimitExceededException
+	 */
+	@Nullable
+	Integer getToolExecutionMaxIterations();
+
+	/**
+	 * Set the maximum number of iteration for tool execution. If the number of iterations
+	 * exceeds the limit, an {@link ToolExecutionLimitExceededException} will be thrown.
+	 * @param toolExecutionMaxIterations the maximum number of iteration.
+	 */
+	void setToolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations);
+
+	/**
 	 * Get the configured tool context.
 	 * @return the tool context map.
 	 */
@@ -107,6 +136,21 @@ public interface ToolCallingChatOptions extends ChatOptions {
 			internalToolExecutionEnabled = DEFAULT_TOOL_EXECUTION_ENABLED;
 		}
 		return internalToolExecutionEnabled;
+	}
+
+	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int toolExecutionIterations) {
+		boolean isInternalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
+		if (!isInternalToolExecutionEnabled) {
+			return false;
+		}
+
+		if (chatOptions instanceof ToolCallingChatOptions toolCallingChatOptions
+				&& toolCallingChatOptions.getToolExecutionMaxIterations() != null) {
+			int maxIterations = toolCallingChatOptions.getToolExecutionMaxIterations();
+			return toolExecutionIterations <= maxIterations;
+		}
+
+		return DEFAULT_TOOL_EXECUTION_ENABLED;
 	}
 
 	static Set<String> mergeToolNames(Set<String> runtimeToolNames, Set<String> defaultToolNames) {
@@ -177,6 +221,13 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * by the model or if the tools should be executed directly by the caller.
 		 */
 		Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
+
+		/**
+		 * the maximum number of attempts for tool execution.
+		 * @param toolExecutionMaxIterations the maximum number of iteration.
+		 * @return the {@link ToolCallingChatOptions} Builder.
+		 */
+		Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.

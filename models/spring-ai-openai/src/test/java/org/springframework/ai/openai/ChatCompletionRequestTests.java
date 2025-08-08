@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author lambochen
  */
 class ChatCompletionRequestTests {
 
@@ -44,6 +45,7 @@ class ChatCompletionRequestTests {
 		OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder()
 			.model("DEFAULT_MODEL")
 			.internalToolExecutionEnabled(true)
+			.toolExecutionMaxIterations(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS)
 			.toolCallbacks(new TestToolCallback("tool1"), new TestToolCallback("tool2"))
 			.toolNames("tool1", "tool2")
 			.toolContext(Map.of("key1", "value1", "key2", "valueA"))
@@ -56,6 +58,7 @@ class ChatCompletionRequestTests {
 
 		OpenAiChatOptions runtimeOptions = OpenAiChatOptions.builder()
 			.internalToolExecutionEnabled(false)
+			.toolExecutionMaxIterations(10)
 			.toolCallbacks(new TestToolCallback("tool3"), new TestToolCallback("tool4"))
 			.toolNames("tool3")
 			.toolContext(Map.of("key2", "valueB"))
@@ -64,6 +67,7 @@ class ChatCompletionRequestTests {
 
 		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolExecutionMaxIterations()).isEqualTo(10);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()
