@@ -123,4 +123,38 @@ class ModelUsageMetricsGeneratorTests {
 
 	}
 
+	@Test
+	void whenZeroTokenUsageThenMetrics() {
+		var meterRegistry = new SimpleMeterRegistry();
+		var usage = new TestUsage(0, 0, 0);
+		ModelUsageMetricsGenerator.generate(usage, buildContext(), meterRegistry);
+
+		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(3);
+		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.INPUT.value())
+			.counter()
+			.count()).isEqualTo(0);
+		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.OUTPUT.value())
+			.counter()
+			.count()).isEqualTo(0);
+		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.TOTAL.value())
+			.counter()
+			.count()).isEqualTo(0);
+	}
+
+	@Test
+	void whenBothPromptAndGenerationNullThenOnlyTotalMetric() {
+		var meterRegistry = new SimpleMeterRegistry();
+		var usage = new TestUsage(null, null, 100);
+		ModelUsageMetricsGenerator.generate(usage, buildContext(), meterRegistry);
+
+		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(1);
+		assertThat(meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.TOTAL.value())
+			.counter()
+			.count()).isEqualTo(100);
+	}
+
 }

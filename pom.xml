@@ -111,6 +111,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 
@@ -179,6 +180,7 @@
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
 		<module>models/spring-ai-google-genai</module>
+		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-zhipuai</module>
 		<module>models/spring-ai-deepseek</module>
 
@@ -275,19 +277,20 @@
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.60.0</com.google.cloud.version>
+		<com.google.genai.version>1.10.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.37.0</jsonschema.version>
 		<swagger-annotations.version>2.2.25</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
-		<jsoup.version>1.18.3</jsoup.version>
+		<jsoup.version>1.21.1</jsoup.version>
 
 		<!-- Protobuf -->
-		<protobuf-java.version>3.25.2</protobuf-java.version>
+		<protobuf-java.version>3.25.8</protobuf-java.version>
 
 		<!-- readers/writer/stores dependencies-->
-		<pdfbox.version>3.0.4</pdfbox.version>
+		<pdfbox.version>3.0.5</pdfbox.version>
 		<pgvector.version>0.1.6</pgvector.version>
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<coherence.version>24.09</coherence.version>
@@ -309,7 +312,7 @@
 		<qdrant.version>1.13.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
 		<opensearch-client.version>2.23.0</opensearch-client.version>
-		<postgresql.version>42.7.5</postgresql.version>
+		<postgresql.version>42.7.7</postgresql.version>
 		<mariadb.version>3.5.3</mariadb.version>
 		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
@@ -322,7 +325,7 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.11.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>0.11.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -874,43 +877,42 @@
 			</distributionManagement>
 		</profile>
 		<profile>
-			<id>sonatype</id>
-			<properties>
-				<maven.test.skip>true</maven.test.skip>
-			</properties>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-						<configuration>
-							<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-						</configuration>
-					</plugin>
-					<plugin>
-						<groupId>org.sonatype.plugins</groupId>
-						<artifactId>nexus-staging-maven-plugin</artifactId>
-						<version>1.7.0</version>
-						<extensions>true</extensions>
-						<configuration>
-							<serverId>sonatype-new</serverId>
-							<nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-							<autoReleaseAfterClose>true</autoReleaseAfterClose>
-							<keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
+	    <id>sonatype</id>
+	    <properties>
+	        <maven.test.skip>true</maven.test.skip>
+	    </properties>
+	    <build>
+	        <plugins>
+						<plugin>
+								<groupId>org.apache.maven.plugins</groupId>
+								<artifactId>maven-gpg-plugin</artifactId>
+								<executions>
+										<execution>
+												<id>sign-artifacts</id>
+												<phase>verify</phase>
+												<goals>
+														<goal>sign</goal>
+												</goals>
+										</execution>
+								</executions>
+								<configuration>
+										<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
+								</configuration>
+						</plugin>
+	            <plugin>
+	                <groupId>org.sonatype.central</groupId>
+	                <artifactId>central-publishing-maven-plugin</artifactId>
+	                <extensions>true</extensions>
+	                <configuration>
+	                    <publishingServerId>central</publishingServerId>
+	                    <autoPublish>true</autoPublish>
+	                </configuration>
+	            </plugin>
+	        </plugins>
+	    </build>
+	</profile>
+
+
 	</profiles>
 
 	<dependencyManagement>

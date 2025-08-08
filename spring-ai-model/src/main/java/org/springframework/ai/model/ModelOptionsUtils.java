@@ -186,12 +186,12 @@ public abstract class ModelOptionsUtils {
 		targetMap.putAll(sourceMap.entrySet()
 			.stream()
 			.filter(e -> e.getValue() != null)
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 		targetMap = targetMap.entrySet()
 			.stream()
 			.filter(e -> requestFieldNames.contains(e.getKey()))
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		return ModelOptionsUtils.mapToClass(targetMap, clazz);
 	}
@@ -229,7 +229,7 @@ public abstract class ModelOptionsUtils {
 				.entrySet()
 				.stream()
 				.filter(e -> e.getValue() != null)
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

@@ -88,4 +88,55 @@ class ChatModelTests {
 		verifyNoMoreInteractions(mockClient, generation, response);
 	}
 
+	@Test
+	void generateWithEmptyStringReturnsEmptyResponse() {
+		String userMessage = "";
+		String responseMessage = "";
+
+		ChatModel mockClient = Mockito.mock(ChatModel.class);
+
+		AssistantMessage mockAssistantMessage = Mockito.mock(AssistantMessage.class);
+		given(mockAssistantMessage.getText()).willReturn(responseMessage);
+
+		Generation generation = Mockito.mock(Generation.class);
+		given(generation.getOutput()).willReturn(mockAssistantMessage);
+
+		ChatResponse response = Mockito.mock(ChatResponse.class);
+		given(response.getResult()).willReturn(generation);
+
+		doCallRealMethod().when(mockClient).call(anyString());
+		given(mockClient.call(any(Prompt.class))).willReturn(response);
+
+		String result = mockClient.call(userMessage);
+
+		assertThat(result).isEqualTo(responseMessage);
+		verify(mockClient, times(1)).call(eq(userMessage));
+		verify(mockClient, times(1)).call(isA(Prompt.class));
+	}
+
+	@Test
+	void generateWithWhitespaceOnlyStringHandlesCorrectly() {
+		String userMessage = "   \t\n   ";
+		String responseMessage = "I received whitespace input";
+
+		ChatModel mockClient = Mockito.mock(ChatModel.class);
+
+		AssistantMessage mockAssistantMessage = Mockito.mock(AssistantMessage.class);
+		given(mockAssistantMessage.getText()).willReturn(responseMessage);
+
+		Generation generation = Mockito.mock(Generation.class);
+		given(generation.getOutput()).willReturn(mockAssistantMessage);
+
+		ChatResponse response = Mockito.mock(ChatResponse.class);
+		given(response.getResult()).willReturn(generation);
+
+		doCallRealMethod().when(mockClient).call(anyString());
+		given(mockClient.call(any(Prompt.class))).willReturn(response);
+
+		String result = mockClient.call(userMessage);
+
+		assertThat(result).isEqualTo(responseMessage);
+		verify(mockClient, times(1)).call(eq(userMessage));
+	}
+
 }

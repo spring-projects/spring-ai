@@ -267,7 +267,7 @@ public class AnthropicChatModel implements ChatModel {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
 						return Flux.deferContextual((ctx) -> {
-							// TODO: factor out the tool execution logic with setting context into a uitlity.
+							// TODO: factor out the tool execution logic with setting context into a utility.
 							ToolExecutionResult toolExecutionResult;
 							try {
 								ToolCallReactiveContextHolder.setContext(ctx);

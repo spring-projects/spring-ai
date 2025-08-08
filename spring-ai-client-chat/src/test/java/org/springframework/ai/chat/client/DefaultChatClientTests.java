@@ -143,7 +143,10 @@ class DefaultChatClientTests {
 		defaultChatClientBuilder.addMessages(List.of(userMessage1, userMessage2));
 		ChatClient originalChatClient = defaultChatClientBuilder.defaultAdvisors(advisor)
 			.defaultOptions(chatOptions)
-			.defaultUser(u -> u.text("original user {userParams}").param("userParams", "user value2").media(media))
+			.defaultUser(u -> u.text("original user {userParams}")
+				.param("userParams", "user value2")
+				.media(media)
+				.metadata("userMetadata", "user data3"))
 			.defaultSystem(s -> s.text("original system {sysParams}").param("sysParams", "system value1"))
 			.defaultTemplateRenderer(templateRenderer)
 			.defaultToolNames("toolName1", "toolName2")
@@ -162,6 +165,7 @@ class DefaultChatClientTests {
 		assertThat(mutateSpec.getChatOptions()).isEqualTo(copyChatOptions);
 		assertThat(mutateSpec.getUserText()).isEqualTo("original user {userParams}");
 		assertThat(mutateSpec.getUserParams()).containsEntry("userParams", "user value2");
+		assertThat(mutateSpec.getUserMetadata()).containsEntry("userMetadata", "user data3");
 		assertThat(mutateSpec.getMedia()).hasSize(1).containsOnly(media);
 		assertThat(mutateSpec.getSystemText()).isEqualTo("original system {sysParams}");
 		assertThat(mutateSpec.getSystemParams()).containsEntry("sysParams", "system value1");
@@ -196,6 +200,7 @@ class DefaultChatClientTests {
 		assertThat(spec).isNotNull();
 		assertThat(spec.media()).isNotNull();
 		assertThat(spec.params()).isNotNull();
+		assertThat(spec.metadata()).isNotNull();
 		assertThat(spec.text()).isNull();
 	}
 
@@ -395,6 +400,66 @@ class DefaultChatClientTests {
 		assertThat(spec.params()).containsEntry("key", "value");
 	}
 
+	@Test
+	void whenUserMetadataKeyIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		assertThatThrownBy(() -> spec.metadata(null, "value")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata key cannot be null or empty");
+	}
+
+	@Test
+	void whenUserMetadataKeyIsEmptyThenThrow() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		assertThatThrownBy(() -> spec.metadata("", "value")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata key cannot be null or empty");
+	}
+
+	@Test
+	void whenUserMetadataValueIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		assertThatThrownBy(() -> spec.metadata("key", null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata value cannot be null");
+	}
+
+	@Test
+	void whenUserMetadataKeyValueThenReturn() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		spec = (DefaultChatClient.DefaultPromptUserSpec) spec.metadata("key", "value");
+		assertThat(spec.metadata()).containsEntry("key", "value");
+	}
+
+	@Test
+	void whenUserMetadataIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		assertThatThrownBy(() -> spec.metadata(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata cannot be null");
+	}
+
+	@Test
+	void whenUserMetadataMapKeyIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put(null, "value");
+		assertThatThrownBy(() -> spec.metadata(metadata)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata keys cannot contain null elements");
+	}
+
+	@Test
+	void whenUserMetadataMapValueIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", null);
+		assertThatThrownBy(() -> spec.metadata(metadata)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata values cannot contain null elements");
+	}
+
+	@Test
+	void whenUserMetadataThenReturn() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		spec = (DefaultChatClient.DefaultPromptUserSpec) spec.metadata(Map.of("key", "value"));
+		assertThat(spec.metadata()).containsEntry("key", "value");
+	}
+
 	// DefaultPromptSystemSpec
 
 	@Test
@@ -402,6 +467,7 @@ class DefaultChatClientTests {
 		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
 		assertThat(spec).isNotNull();
 		assertThat(spec.params()).isNotNull();
+		assertThat(spec.metadata()).isNotNull();
 		assertThat(spec.text()).isNull();
 	}
 
@@ -522,6 +588,66 @@ class DefaultChatClientTests {
 		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
 		spec = (DefaultChatClient.DefaultPromptSystemSpec) spec.params(Map.of("key", "value"));
 		assertThat(spec.params()).containsEntry("key", "value");
+	}
+
+	@Test
+	void whenSystemMetadataKeyIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		assertThatThrownBy(() -> spec.metadata(null, "value")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata key cannot be null or empty");
+	}
+
+	@Test
+	void whenSystemMetadataKeyIsEmptyThenThrow() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		assertThatThrownBy(() -> spec.metadata("", "value")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata key cannot be null or empty");
+	}
+
+	@Test
+	void whenSystemMetadataValueIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		assertThatThrownBy(() -> spec.metadata("key", null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata value cannot be null");
+	}
+
+	@Test
+	void whenSystemMetadataKeyValueThenReturn() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		spec = (DefaultChatClient.DefaultPromptSystemSpec) spec.metadata("key", "value");
+		assertThat(spec.metadata()).containsEntry("key", "value");
+	}
+
+	@Test
+	void whenSystemMetadataIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		assertThatThrownBy(() -> spec.metadata(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata cannot be null");
+	}
+
+	@Test
+	void whenSystemMetadataMapKeyIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put(null, "value");
+		assertThatThrownBy(() -> spec.metadata(metadata)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata keys cannot contain null elements");
+	}
+
+	@Test
+	void whenSystemMetadataMapValueIsNullThenThrow() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("key", null);
+		assertThatThrownBy(() -> spec.metadata(metadata)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metadata values cannot contain null elements");
+	}
+
+	@Test
+	void whenSystemMetadataThenReturn() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		spec = (DefaultChatClient.DefaultPromptSystemSpec) spec.metadata(Map.of("key", "value"));
+		assertThat(spec.metadata()).containsEntry("key", "value");
 	}
 
 	// DefaultAdvisorSpec
@@ -1347,15 +1473,15 @@ class DefaultChatClientTests {
 	void buildChatClientRequestSpec() {
 		ChatModel chatModel = mock(ChatModel.class);
 		DefaultChatClient.DefaultChatClientRequestSpec spec = new DefaultChatClient.DefaultChatClientRequestSpec(
-				chatModel, null, Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
-				Map.of(), ObservationRegistry.NOOP, null, Map.of(), null);
+				chatModel, null, Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(),
+				List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null);
 		assertThat(spec).isNotNull();
 	}
 
 	@Test
 	void whenChatModelIsNullThenThrow() {
-		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), null,
-				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
+		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), Map.of(),
+				null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
 				ObservationRegistry.NOOP, null, Map.of(), null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
@@ -1364,8 +1490,8 @@ class DefaultChatClientTests {
 	@Test
 	void whenObservationRegistryIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mock(ChatModel.class), null,
-				Map.of(), null, Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), null,
-				null, Map.of(), null))
+				Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null,
+				List.of(), Map.of(), null, null, Map.of(), null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}
@@ -1817,30 +1943,37 @@ class DefaultChatClientTests {
 	void whenSystemConsumerThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
-		spec = spec.system(system -> system.text("my instruction about {topic}").param("topic", "AI"));
+		spec = spec.system(system -> system.text("my instruction about {topic}")
+			.param("topic", "AI")
+			.metadata("msgId", "uuid-xxx"));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getSystemText()).isEqualTo("my instruction about {topic}");
 		assertThat(defaultSpec.getSystemParams()).containsEntry("topic", "AI");
+		assertThat(defaultSpec.getSystemMetadata()).containsEntry("msgId", "uuid-xxx");
 	}
 
 	@Test
 	void whenSystemConsumerWithExistingSystemTextThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().system("my instruction");
-		spec = spec.system(system -> system.text("my instruction about {topic}").param("topic", "AI"));
+		spec = spec.system(system -> system.text("my instruction about {topic}")
+			.param("topic", "AI")
+			.metadata("msgId", "uuid-xxx"));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getSystemText()).isEqualTo("my instruction about {topic}");
 		assertThat(defaultSpec.getSystemParams()).containsEntry("topic", "AI");
+		assertThat(defaultSpec.getSystemMetadata()).containsEntry("msgId", "uuid-xxx");
 	}
 
 	@Test
 	void whenSystemConsumerWithoutSystemTextThenReturn() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().system("my instruction about {topic}");
-		spec = spec.system(system -> system.param("topic", "AI"));
+		spec = spec.system(system -> system.param("topic", "AI").metadata("msgId", "uuid-xxx"));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getSystemText()).isEqualTo("my instruction about {topic}");
 		assertThat(defaultSpec.getSystemParams()).containsEntry("topic", "AI");
+		assertThat(defaultSpec.getSystemMetadata()).containsEntry("msgId", "uuid-xxx");
 	}
 
 	@Test
@@ -1926,11 +2059,13 @@ class DefaultChatClientTests {
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		spec = spec.user(user -> user.text("my question about {topic}")
 			.param("topic", "AI")
+			.metadata("msgId", "uuid-xxx")
 			.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("tabby-cat.png")));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getUserText()).isEqualTo("my question about {topic}");
 		assertThat(defaultSpec.getUserParams()).containsEntry("topic", "AI");
 		assertThat(defaultSpec.getMedia()).hasSize(1);
+		assertThat(defaultSpec.getUserMetadata()).containsEntry("msgId", "uuid-xxx");
 	}
 
 	@Test
@@ -1939,11 +2074,13 @@ class DefaultChatClientTests {
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("my question");
 		spec = spec.user(user -> user.text("my question about {topic}")
 			.param("topic", "AI")
+			.metadata("msgId", "uuid-xxx")
 			.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("tabby-cat.png")));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getUserText()).isEqualTo("my question about {topic}");
 		assertThat(defaultSpec.getUserParams()).containsEntry("topic", "AI");
 		assertThat(defaultSpec.getMedia()).hasSize(1);
+		assertThat(defaultSpec.getUserMetadata()).containsEntry("msgId", "uuid-xxx");
 	}
 
 	@Test
@@ -1951,14 +2088,116 @@ class DefaultChatClientTests {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("my question about {topic}");
 		spec = spec.user(user -> user.param("topic", "AI")
+			.metadata("msgId", "uuid-xxx")
 			.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("tabby-cat.png")));
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
 		assertThat(defaultSpec.getUserText()).isEqualTo("my question about {topic}");
 		assertThat(defaultSpec.getUserParams()).containsEntry("topic", "AI");
 		assertThat(defaultSpec.getMedia()).hasSize(1);
+		assertThat(defaultSpec.getUserMetadata()).containsEntry("msgId", "uuid-xxx");
 	}
 
 	record Person(String name) {
+	}
+
+	@Test
+	void whenDefaultChatClientBuilderWithObservationRegistryThenReturn() {
+		var chatModel = mock(ChatModel.class);
+		var observationRegistry = mock(ObservationRegistry.class);
+		var observationConvention = mock(ChatClientObservationConvention.class);
+
+		var builder = new DefaultChatClientBuilder(chatModel, observationRegistry, observationConvention);
+
+		assertThat(builder).isNotNull();
+	}
+
+	@Test
+	void whenPromptWithSystemUserAndOptionsThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatOptions options = ChatOptions.builder().build();
+
+		DefaultChatClient.DefaultChatClientRequestSpec spec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt()
+			.system("instructions")
+			.user("question")
+			.options(options);
+
+		assertThat(spec.getSystemText()).isEqualTo("instructions");
+		assertThat(spec.getUserText()).isEqualTo("question");
+		assertThat(spec.getChatOptions()).isEqualTo(options);
+	}
+
+	@Test
+	void whenToolNamesWithEmptyArrayThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().toolNames();
+
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		assertThat(defaultSpec.getToolNames()).isEmpty();
+	}
+
+	@Test
+	void whenUserParamsWithEmptyMapThenReturn() {
+		DefaultChatClient.DefaultPromptUserSpec spec = new DefaultChatClient.DefaultPromptUserSpec();
+		spec = (DefaultChatClient.DefaultPromptUserSpec) spec.params(Map.of());
+		assertThat(spec.params()).isEmpty();
+	}
+
+	@Test
+	void whenSystemParamsWithEmptyMapThenReturn() {
+		DefaultChatClient.DefaultPromptSystemSpec spec = new DefaultChatClient.DefaultPromptSystemSpec();
+		spec = (DefaultChatClient.DefaultPromptSystemSpec) spec.params(Map.of());
+		assertThat(spec.params()).isEmpty();
+	}
+
+	@Test
+	void whenAdvisorSpecWithMultipleParamsThenAllStored() {
+		DefaultChatClient.DefaultAdvisorSpec spec = new DefaultChatClient.DefaultAdvisorSpec();
+		spec = (DefaultChatClient.DefaultAdvisorSpec) spec.param("param1", "value1")
+			.param("param2", "value2")
+			.param("param3", "value3");
+
+		assertThat(spec.getParams()).containsEntry("param1", "value1")
+			.containsEntry("param2", "value2")
+			.containsEntry("param3", "value3");
+	}
+
+	@Test
+	void whenMessagesWithEmptyListThenReturn() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().messages(List.of());
+
+		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
+		// Messages should not be modified from original state
+		assertThat(defaultSpec.getMessages()).isNotNull();
+	}
+
+	@Test
+	void whenMutateBuilderThenReturnsSameType() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.Builder mutatedBuilder = chatClient.mutate();
+
+		assertThat(mutatedBuilder).isInstanceOf(DefaultChatClientBuilder.class);
+	}
+
+	@Test
+	void whenSystemConsumerWithNullParamValueThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+
+		assertThatThrownBy(() -> spec.system(system -> system.param("key", null)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("value cannot be null");
+	}
+
+	@Test
+	void whenUserConsumerWithNullParamValueThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+
+		assertThatThrownBy(() -> spec.user(user -> user.param("key", null)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("value cannot be null");
 	}
 
 }
