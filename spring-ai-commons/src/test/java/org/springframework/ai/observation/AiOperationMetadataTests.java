@@ -77,4 +77,12 @@ class AiOperationMetadataTests {
 			.hasMessageContaining("provider cannot be null or empty");
 	}
 
+	@Test
+	void whenBuiltWithValidValuesThenFieldsAreAccessible() {
+		var operationMetadata = AiOperationMetadata.builder().operationType("chat").provider("openai").build();
+
+		assertThat(operationMetadata.operationType()).isEqualTo("chat");
+		assertThat(operationMetadata.provider()).isEqualTo("openai");
+	}
+
 }
