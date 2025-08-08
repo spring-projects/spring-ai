@@ -162,4 +162,46 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		assertThat(result.choices()).hasSize(2);
 	}
 
+	@Test
+	public void mergeCombinesChunkFieldsCorrectly() {
+		var previous = new OpenAiApi.ChatCompletionChunk(null, null, 123456789L, "gpt-4", "default", null, null, null);
+		var current = new OpenAiApi.ChatCompletionChunk("chat-123", Collections.emptyList(), null, null, null, "fp-456",
+				"chat.completion.chunk", null);
+
+		var result = helper.merge(previous, current);
+
+		assertThat(result.id()).isEqualTo("chat-123");
+		assertThat(result.created()).isEqualTo(123456789L);
+		assertThat(result.model()).isEqualTo("gpt-4");
+		assertThat(result.systemFingerprint()).isEqualTo("fp-456");
+	}
+
+	@Test
+	public void isStreamingToolFunctionCallReturnsFalseForNullOrEmptyChunks() {
+		assertThat(helper.isStreamingToolFunctionCall(null)).isFalse();
+
+		var emptyChunk = new OpenAiApi.ChatCompletionChunk(null, Collections.emptyList(), null, null, null, null, null,
+				null);
+		assertThat(helper.isStreamingToolFunctionCall(emptyChunk)).isFalse();
+	}
+
+	@Test
+	public void isStreamingToolFunctionCall_returnsTrueForValidToolCalls() {
+		var toolCall = Mockito.mock(OpenAiApi.ChatCompletionMessage.ToolCall.class);
+		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null);
+		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, delta, null);
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
+
+		assertThat(helper.isStreamingToolFunctionCall(chunk)).isTrue();
+	}
+
+	@Test
+	public void isStreamingToolFunctionCallFinishDetectsToolCallsFinishReason() {
+		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS,
+				null, new OpenAiApi.ChatCompletionMessage(null, null), null);
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
+
+		assertThat(helper.isStreamingToolFunctionCallFinish(chunk)).isTrue();
+	}
+
 }
