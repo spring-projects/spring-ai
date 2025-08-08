@@ -165,12 +165,12 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void mergeCombinesChunkFieldsCorrectly() {
 		var previous = new OpenAiApi.ChatCompletionChunk(null, null, 123456789L, "gpt-4", "default", null, null, null);
-		var current = new OpenAiApi.ChatCompletionChunk("chat-123", Collections.emptyList(), null, null, null, "fp-456",
+		var current = new OpenAiApi.ChatCompletionChunk("chat-1", Collections.emptyList(), null, null, null, "fp-456",
 				"chat.completion.chunk", null);
 
 		var result = helper.merge(previous, current);
 
-		assertThat(result.id()).isEqualTo("chat-123");
+		assertThat(result.id()).isEqualTo("chat-1");
 		assertThat(result.created()).isEqualTo(123456789L);
 		assertThat(result.model()).isEqualTo("gpt-4");
 		assertThat(result.systemFingerprint()).isEqualTo("fp-456");
