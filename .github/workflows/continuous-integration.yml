@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - '*.*.x'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -61,7 +62,7 @@ jobs:
 
       - name: Generate assembly
         working-directory: spring-ai-docs
-        run: ./mvnw --batch-mode assembly:single
+        run: ../mvnw --batch-mode assembly:single
 
       - name: Capture project version
         run: echo PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
@@ -86,4 +87,3 @@ jobs:
           unzip spring-ai-$PROJECT_VERSION-docs.zip
           ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $PROJECT_VERSION"
           scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$PROJECT_VERSION
-  

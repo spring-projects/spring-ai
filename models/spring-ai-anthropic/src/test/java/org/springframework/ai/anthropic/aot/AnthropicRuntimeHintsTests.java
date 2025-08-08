@@ -145,4 +145,86 @@ class AnthropicRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(AnthropicApi.EventType.class))).isTrue();
 	}
 
+	@Test
+	void verifyNestedClassesAreRegistered() {
+		anthropicRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify nested classes within AnthropicApi are registered
+		assertThat(registeredTypes.contains(TypeReference.of(AnthropicApi.ChatCompletionRequest.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(AnthropicApi.AnthropicMessage.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(AnthropicApi.ContentBlock.class))).isTrue();
+	}
+
+	@Test
+	void verifyNoProxyHintsAreRegistered() {
+		anthropicRuntimeHints.registerHints(runtimeHints, null);
+
+		// This implementation should only register reflection hints, not proxy hints
+		long proxyHintCount = runtimeHints.proxies().jdkProxyHints().count();
+		assertThat(proxyHintCount).isEqualTo(0);
+	}
+
+	@Test
+	void verifyNoSerializationHintsAreRegistered() {
+		anthropicRuntimeHints.registerHints(runtimeHints, null);
+
+		// This implementation should only register reflection hints, not serialization
+		// hints
+		long serializationHintCount = runtimeHints.serialization().javaSerializationHints().count();
+		assertThat(serializationHintCount).isEqualTo(0);
+	}
+
+	@Test
+	void verifyJsonAnnotatedClassesContainExpectedTypes() {
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.anthropic");
+
+		// Verify that key API classes are found
+		boolean containsApiClass = jsonAnnotatedClasses.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("AnthropicApi")
+					|| typeRef.getName().contains("ChatCompletion") || typeRef.getName().contains("AnthropicMessage"));
+
+		assertThat(containsApiClass).isTrue();
+	}
+
+	@Test
+	void verifyConsistencyAcrossInstances() {
+		RuntimeHints hints1 = new RuntimeHints();
+		RuntimeHints hints2 = new RuntimeHints();
+
+		AnthropicRuntimeHints anthropicHints1 = new AnthropicRuntimeHints();
+		AnthropicRuntimeHints anthropicHints2 = new AnthropicRuntimeHints();
+
+		anthropicHints1.registerHints(hints1, null);
+		anthropicHints2.registerHints(hints2, null);
+
+		// Different instances should register the same hints
+		Set<TypeReference> types1 = new HashSet<>();
+		Set<TypeReference> types2 = new HashSet<>();
+
+		hints1.reflection().typeHints().forEach(hint -> types1.add(hint.getType()));
+		hints2.reflection().typeHints().forEach(hint -> types2.add(hint.getType()));
+
+		assertThat(types1).isEqualTo(types2);
+	}
+
+	@Test
+	void verifyPackageSpecificity() {
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.anthropic");
+
+		// All found classes should be from the anthropic package specifically
+		for (TypeReference classRef : jsonAnnotatedClasses) {
+			assertThat(classRef.getName()).startsWith("org.springframework.ai.anthropic");
+		}
+
+		// Should not include classes from other AI packages
+		for (TypeReference classRef : jsonAnnotatedClasses) {
+			assertThat(classRef.getName()).doesNotContain("vertexai");
+			assertThat(classRef.getName()).doesNotContain("openai");
+			assertThat(classRef.getName()).doesNotContain("ollama");
+		}
+	}
+
 }

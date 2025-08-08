@@ -469,6 +469,33 @@ public class OpenAiApi {
 		GPT_4_1("gpt-4.1"),
 
 		/**
+		 * <b>GPT-5</b> is the next-generation flagship model with enhanced capabilities
+		 * for complex reasoning and problem-solving tasks.
+		 * <p>
+		 * Note: GPT-5 models require temperature=1.0 (default value). Custom temperature
+		 * values are not supported and will cause errors.
+		 * <p>
+		 * Model ID: gpt-5
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-5">gpt-5</a>
+		 */
+		GPT_5("gpt-5"),
+
+		/**
+		 * <b>GPT-5 (2025-08-07)</b> is a specific snapshot of the GPT-5 model from August
+		 * 7, 2025, providing enhanced capabilities for complex reasoning and
+		 * problem-solving tasks.
+		 * <p>
+		 * Note: GPT-5 models require temperature=1.0 (default value). Custom temperature
+		 * values are not supported and will cause errors.
+		 * <p>
+		 * Model ID: gpt-5-2025-08-07
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-5">gpt-5</a>
+		 */
+		GPT_5_2025_08_07("gpt-5-2025-08-07"),
+
+		/**
 		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
 		 * model. It accepts both text and image inputs, and produces text outputs
 		 * (including Structured Outputs). It is considered the best model for most tasks,
