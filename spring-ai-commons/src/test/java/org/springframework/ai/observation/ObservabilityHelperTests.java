@@ -52,4 +52,20 @@ class ObservabilityHelperTests {
 		assertThat(ObservabilityHelper.concatenateStrings(List.of("a", "b"))).isEqualTo("[\"a\", \"b\"]");
 	}
 
+	@Test
+	void shouldHandleSingleEntryMap() {
+		assertThat(ObservabilityHelper.concatenateEntries(Map.of("key", "value"))).isEqualTo("[\"key\":\"value\"]");
+	}
+
+	@Test
+	void shouldHandleSingleEntryList() {
+		assertThat(ObservabilityHelper.concatenateStrings(List.of("single"))).isEqualTo("[\"single\"]");
+	}
+
+	@Test
+	void shouldHandleEmptyStringsInList() {
+		assertThat(ObservabilityHelper.concatenateStrings(List.of("", "non-empty", "")))
+			.isEqualTo("[\"\", \"non-empty\", \"\"]");
+	}
+
 }

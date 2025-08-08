@@ -118,4 +118,60 @@ class MistralAiRuntimeHintsTests {
 		assertThat(jsonAnnotatedClasses.size()).isGreaterThan(0);
 	}
 
+	@Test
+	void verifyAllCriticalApiClassesAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
+		mistralAiRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Ensure critical API classes are registered for GraalVM native image reflection
+		String[] criticalClasses = { "MistralAiApi$ChatCompletionRequest", "MistralAiApi$ChatCompletionMessage",
+				"MistralAiApi$EmbeddingRequest", "MistralAiApi$EmbeddingList", "MistralAiApi$Usage" };
+
+		for (String className : criticalClasses) {
+			assertThat(registeredTypes.stream()
+				.anyMatch(tr -> tr.getName().contains(className.replace("$", "."))
+						|| tr.getName().contains(className.replace("$", "$"))))
+				.as("Critical class %s should be registered", className)
+				.isTrue();
+		}
+	}
+
+	@Test
+	void verifyEnumTypesAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
+		mistralAiRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Enums are critical for JSON deserialization in native images
+		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.ChatModel.class)))
+			.as("ChatModel enum should be registered")
+			.isTrue();
+
+		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.EmbeddingModel.class)))
+			.as("EmbeddingModel enum should be registered")
+			.isTrue();
+	}
+
+	@Test
+	void verifyReflectionHintsIncludeConstructors() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
+		mistralAiRuntimeHints.registerHints(runtimeHints, null);
+
+		// Verify that reflection hints include constructor access
+		boolean hasConstructorHints = runtimeHints.reflection()
+			.typeHints()
+			.anyMatch(typeHint -> typeHint.constructors().findAny().isPresent() || typeHint.getMemberCategories()
+				.contains(org.springframework.aot.hint.MemberCategory.INVOKE_DECLARED_CONSTRUCTORS));
+
+		assertThat(hasConstructorHints).as("Should register constructor hints for JSON deserialization").isTrue();
+	}
+
 }

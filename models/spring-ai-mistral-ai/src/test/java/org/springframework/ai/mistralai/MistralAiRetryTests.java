@@ -178,6 +178,19 @@ public class MistralAiRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}
 
+	@Test
+	public void mistralAiChatMixedTransientAndNonTransientErrors() {
+		given(this.mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error"))
+			.willThrow(new RuntimeException("Non Transient Error"));
+
+		// Should fail immediately on non-transient error, no further retries
+		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
+
+		// Should have 1 retry attempt before hitting non-transient error
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+	}
+
 	private static class TestRetryListener implements RetryListener {
 
 		int onErrorRetryCount = 0;

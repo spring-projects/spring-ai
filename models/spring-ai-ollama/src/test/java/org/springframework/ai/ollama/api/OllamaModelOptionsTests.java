@@ -204,4 +204,42 @@ public class OllamaModelOptionsTests {
 		assertThat(options.getToolNames()).containsExactly("function1");
 	}
 
+	@Test
+	public void testEmptyOptions() {
+		var options = OllamaOptions.builder().build();
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).isEmpty();
+
+		// Verify all getters return null/empty
+		assertThat(options.getModel()).isNull();
+		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getTopK()).isNull();
+		assertThat(options.getToolNames()).isEmpty();
+		assertThat(options.getToolContext()).isEmpty();
+	}
+
+	@Test
+	public void testNullValuesNotIncludedInMap() {
+		var options = OllamaOptions.builder().model("llama2").temperature(null).topK(null).stop(null).build();
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsEntry("model", "llama2");
+		assertThat(optionsMap).doesNotContainKey("temperature");
+		assertThat(optionsMap).doesNotContainKey("top_k");
+		assertThat(optionsMap).doesNotContainKey("stop");
+	}
+
+	@Test
+	public void testZeroValuesIncludedInMap() {
+		var options = OllamaOptions.builder().temperature(0.0).topK(0).mainGPU(0).numGPU(0).seed(0).build();
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsEntry("temperature", 0.0);
+		assertThat(optionsMap).containsEntry("top_k", 0);
+		assertThat(optionsMap).containsEntry("main_gpu", 0);
+		assertThat(optionsMap).containsEntry("num_gpu", 0);
+		assertThat(optionsMap).containsEntry("seed", 0);
+	}
+
 }
