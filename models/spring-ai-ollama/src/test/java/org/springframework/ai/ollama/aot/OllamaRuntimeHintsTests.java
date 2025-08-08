@@ -150,4 +150,46 @@ class OllamaRuntimeHintsTests {
 		assertThat(nestedClassCount).isGreaterThan(0);
 	}
 
+	@Test
+	void verifyEmbeddingRelatedClassesAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify embedding-related classes are registered for reflection
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.EmbeddingsRequest.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.EmbeddingsResponse.class))).isTrue();
+
+		// Count classes related to embedding functionality
+		long embeddingClassCount = registeredTypes.stream()
+			.filter(typeRef -> typeRef.getName().toLowerCase().contains("embedding"))
+			.count();
+		assertThat(embeddingClassCount).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyHintsRegistrationWithCustomClassLoader() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+
+		// Create a custom class loader
+		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
+
+		// Should work with custom class loader
+		org.assertj.core.api.Assertions
+			.assertThatCode(() -> ollamaRuntimeHints.registerHints(runtimeHints, customClassLoader))
+			.doesNotThrowAnyException();
+
+		// Verify hints are still registered properly
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		assertThat(registeredTypes.size()).isGreaterThan(0);
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaOptions.class))).isTrue();
+	}
+
 }
