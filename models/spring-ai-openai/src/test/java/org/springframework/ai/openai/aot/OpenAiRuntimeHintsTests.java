@@ -189,4 +189,127 @@ class OpenAiRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.FunctionTool.Function.class))).isTrue();
 	}
 
+	@Test
+	void verifyPackageSpecificity() {
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.openai");
+
+		// All found classes should be from the openai package specifically
+		for (TypeReference classRef : jsonAnnotatedClasses) {
+			assertThat(classRef.getName()).startsWith("org.springframework.ai.openai");
+		}
+
+		// Should not include classes from other AI packages
+		for (TypeReference classRef : jsonAnnotatedClasses) {
+			assertThat(classRef.getName()).doesNotContain("anthropic");
+			assertThat(classRef.getName()).doesNotContain("vertexai");
+			assertThat(classRef.getName()).doesNotContain("ollama");
+		}
+	}
+
+	@Test
+	void verifyConsistencyAcrossInstances() {
+		RuntimeHints hints1 = new RuntimeHints();
+		RuntimeHints hints2 = new RuntimeHints();
+
+		OpenAiRuntimeHints openaiHints1 = new OpenAiRuntimeHints();
+		OpenAiRuntimeHints openaiHints2 = new OpenAiRuntimeHints();
+
+		openaiHints1.registerHints(hints1, null);
+		openaiHints2.registerHints(hints2, null);
+
+		// Different instances should register the same hints
+		Set<TypeReference> types1 = new HashSet<>();
+		Set<TypeReference> types2 = new HashSet<>();
+
+		hints1.reflection().typeHints().forEach(hint -> types1.add(hint.getType()));
+		hints2.reflection().typeHints().forEach(hint -> types2.add(hint.getType()));
+
+		assertThat(types1).isEqualTo(types2);
+	}
+
+	@Test
+	void verifySpecificApiClassDetails() {
+		openAiRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify critical OpenAI API classes are registered
+		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OpenAiAudioApi.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OpenAiImageApi.class))).isTrue();
+
+		// Verify important nested/inner classes
+		boolean containsChatCompletion = registeredTypes.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("ChatCompletion"));
+		assertThat(containsChatCompletion).isTrue();
+
+		boolean containsFunctionTool = registeredTypes.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("FunctionTool"));
+		assertThat(containsFunctionTool).isTrue();
+	}
+
+	@Test
+	void verifyClassLoaderIndependence() {
+		RuntimeHints hintsWithNull = new RuntimeHints();
+		RuntimeHints hintsWithClassLoader = new RuntimeHints();
+
+		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
+
+		openAiRuntimeHints.registerHints(hintsWithNull, null);
+		openAiRuntimeHints.registerHints(hintsWithClassLoader, customClassLoader);
+
+		// Both should register the same types regardless of ClassLoader
+		Set<TypeReference> typesWithNull = new HashSet<>();
+		Set<TypeReference> typesWithClassLoader = new HashSet<>();
+
+		hintsWithNull.reflection().typeHints().forEach(hint -> typesWithNull.add(hint.getType()));
+		hintsWithClassLoader.reflection().typeHints().forEach(hint -> typesWithClassLoader.add(hint.getType()));
+
+		assertThat(typesWithNull).isEqualTo(typesWithClassLoader);
+	}
+
+	@Test
+	void verifyAllApiModulesAreIncluded() {
+		openAiRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify all main OpenAI API modules are represented
+		boolean hasMainApi = registeredTypes.stream().anyMatch(typeRef -> typeRef.getName().contains("OpenAiApi"));
+		boolean hasAudioApi = registeredTypes.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("OpenAiAudioApi"));
+		boolean hasImageApi = registeredTypes.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("OpenAiImageApi"));
+		boolean hasChatOptions = registeredTypes.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("OpenAiChatOptions"));
+
+		assertThat(hasMainApi).isTrue();
+		assertThat(hasAudioApi).isTrue();
+		assertThat(hasImageApi).isTrue();
+		assertThat(hasChatOptions).isTrue();
+	}
+
+	@Test
+	void verifyJsonAnnotatedClassesContainCriticalTypes() {
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.openai");
+
+		// Verify that critical OpenAI types are found
+		boolean containsApiClass = jsonAnnotatedClasses.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("OpenAiApi") || typeRef.getName().contains("ChatCompletion")
+					|| typeRef.getName().contains("OpenAiChatOptions"));
+
+		assertThat(containsApiClass).isTrue();
+
+		// Verify audio and image API classes are found
+		boolean containsAudioApi = jsonAnnotatedClasses.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("AudioApi"));
+		boolean containsImageApi = jsonAnnotatedClasses.stream()
+			.anyMatch(typeRef -> typeRef.getName().contains("ImageApi"));
+
+		assertThat(containsAudioApi).isTrue();
+		assertThat(containsImageApi).isTrue();
+	}
+
 }
