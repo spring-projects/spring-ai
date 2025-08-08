@@ -16,9 +16,7 @@
 
 package org.springframework.ai.openai.audio.speech;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
@@ -37,6 +35,8 @@ public class SpeechResponse implements ModelResponse<Speech> {
 	private final Speech speech;
 
 	private final OpenAiAudioSpeechResponseMetadata speechResponseMetadata;
+
+	private final Map<String,Speech> context;
 
 	/**
 	 * Creates a new instance of SpeechResponse with the given speech result.
@@ -59,6 +59,13 @@ public class SpeechResponse implements ModelResponse<Speech> {
 	public SpeechResponse(Speech speech, OpenAiAudioSpeechResponseMetadata speechResponseMetadata) {
 		this.speech = speech;
 		this.speechResponseMetadata = speechResponseMetadata;
+		this.context=new HashMap<>();
+	}
+
+	public SpeechResponse(Speech speech, OpenAiAudioSpeechResponseMetadata speechResponseMetadata,Map<String,Speech> context) {
+		this.speech = speech;
+		this.speechResponseMetadata = speechResponseMetadata;
+		this.context=context;
 	}
 
 	@Override
@@ -74,6 +81,11 @@ public class SpeechResponse implements ModelResponse<Speech> {
 	@Override
 	public OpenAiAudioSpeechResponseMetadata getMetadata() {
 		return this.speechResponseMetadata;
+	}
+
+	@Override
+	public Map<String,Speech> getContext() {
+		return this.context;
 	}
 
 	@Override

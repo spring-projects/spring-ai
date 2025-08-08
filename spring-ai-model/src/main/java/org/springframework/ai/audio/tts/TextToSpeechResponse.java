@@ -16,7 +16,9 @@
 
 package org.springframework.ai.audio.tts;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResponse;
@@ -32,13 +34,16 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 
 	private final TextToSpeechResponseMetadata textToSpeechResponseMetadata;
 
+	private final Map<String,Object> textToSpeechContext;
+
 	public TextToSpeechResponse(List<Speech> results) {
-		this(results, null);
+		this(results, null,new HashMap<>());
 	}
 
-	public TextToSpeechResponse(List<Speech> results, TextToSpeechResponseMetadata textToSpeechResponseMetadata) {
+	public TextToSpeechResponse(List<Speech> results, TextToSpeechResponseMetadata textToSpeechResponseMetadata, Map<String,Object> textToSpeechContext) {
 		this.results = results;
 		this.textToSpeechResponseMetadata = textToSpeechResponseMetadata;
+		this.textToSpeechContext= textToSpeechContext;
 	}
 
 	@Override
@@ -53,6 +58,11 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 	@Override
 	public TextToSpeechResponseMetadata getMetadata() {
 		return this.textToSpeechResponseMetadata;
+	}
+
+	@Override
+	public Map<String, Object> getContext() {
+		return textToSpeechContext;
 	}
 
 	@Override
@@ -71,7 +81,10 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 
 	@Override
 	public String toString() {
-		return "TextToSpeechResponse{" + "results=" + results + '}';
+		return "TextToSpeechResponse{" +
+				"results=" + results +
+				", textToSpeechResponseMetadata=" + textToSpeechResponseMetadata +
+				", textToSpeechContext=" + textToSpeechContext +
+				'}';
 	}
-
 }

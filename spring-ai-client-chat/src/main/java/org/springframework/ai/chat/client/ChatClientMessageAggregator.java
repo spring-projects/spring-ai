@@ -46,7 +46,7 @@ public class ChatClientMessageAggregator {
 		AtomicReference<Map<String, Object>> context = new AtomicReference<>(new HashMap<>());
 
 		return new MessageAggregator().aggregate(chatClientResponses.mapNotNull(chatClientResponse -> {
-			context.get().putAll(chatClientResponse.context());
+			context.get().putAll(chatClientResponse.chatResponse().getContext());
 			return chatClientResponse.chatResponse();
 		}), aggregatedChatResponse -> {
 			ChatClientResponse aggregatedChatClientResponse = ChatClientResponse.builder()
