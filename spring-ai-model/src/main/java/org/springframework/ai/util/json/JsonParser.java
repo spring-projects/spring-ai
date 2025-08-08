@@ -137,35 +137,34 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		var javaType = ClassUtils.resolvePrimitiveIfNecessary(type);
+		String valueString = value.toString();
 
 		if (javaType == String.class) {
-			return value.toString();
+			return valueString;
 		}
 		else if (javaType == Byte.class) {
-			return Byte.parseByte(value.toString());
+			return parseByteWithContext(valueString, javaType);
 		}
 		else if (javaType == Integer.class) {
-			BigDecimal bigDecimal = new BigDecimal(value.toString());
-			return bigDecimal.intValueExact();
+			return parseIntegerWithContext(valueString, javaType);
 		}
 		else if (javaType == Short.class) {
-			return Short.parseShort(value.toString());
+			return parseShortWithContext(valueString, javaType);
 		}
 		else if (javaType == Long.class) {
-			BigDecimal bigDecimal = new BigDecimal(value.toString());
-			return bigDecimal.longValueExact();
+			return parseLongWithContext(valueString, javaType);
 		}
 		else if (javaType == Double.class) {
-			return Double.parseDouble(value.toString());
+			return parseDoubleWithContext(valueString, javaType);
 		}
 		else if (javaType == Float.class) {
-			return Float.parseFloat(value.toString());
+			return parseFloatWithContext(valueString, javaType);
 		}
 		else if (javaType == Boolean.class) {
-			return Boolean.parseBoolean(value.toString());
+			return Boolean.parseBoolean(valueString);
 		}
 		else if (javaType.isEnum()) {
-			return Enum.valueOf((Class<Enum>) javaType, value.toString());
+			return parseEnumWithContext(valueString, (Class<Enum>) javaType);
 		}
 
 		Object result = null;
@@ -184,6 +183,123 @@ public final class JsonParser {
 		}
 
 		return result;
+	}
+
+	private static Byte parseByteWithContext(String value, Class<?> targetType) {
+		try {
+			return Byte.parseByte(value);
+		}
+		catch (NumberFormatException ex) {
+			throw new NumberFormatException(buildNumberFormatMessage(value, targetType, ex));
+		}
+	}
+
+	private static Integer parseIntegerWithContext(String value, Class<?> targetType) {
+		try {
+			BigDecimal bigDecimal = new BigDecimal(value);
+			return bigDecimal.intValueExact();
+		}
+		catch (NumberFormatException ex) {
+			throw new NumberFormatException(buildNumberFormatMessage(value, targetType, ex));
+		}
+	}
+
+	private static Short parseShortWithContext(String value, Class<?> targetType) {
+		try {
+			return Short.parseShort(value);
+		}
+		catch (NumberFormatException ex) {
+			throw new NumberFormatException(buildNumberFormatMessage(value, targetType, ex));
+		}
+	}
+
+	private static Long parseLongWithContext(String value, Class<?> targetType) {
+		try {
+			BigDecimal bigDecimal = new BigDecimal(value);
+			return bigDecimal.longValueExact();
+		}
+		catch (NumberFormatException ex) {
+			throw new NumberFormatException(buildNumberFormatMessage(value, targetType, ex));
+		}
+	}
+
+	private static Double parseDoubleWithContext(String value, Class<?> targetType) {
+		try {
+			return Double.parseDouble(value);
+		}
+		catch (NumberFormatException ex) {
+			throw new NumberFormatException(buildNumberFormatMessage(value, targetType, ex));
+		}
+	}
+
+	private static Float parseFloatWithContext(String value, Class<?> targetType) {
+		try {
+			return Float.parseFloat(value);
+		}
+		catch (NumberFormatException ex) {
+			throw new NumberFormatException(buildNumberFormatMessage(value, targetType, ex));
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static Enum parseEnumWithContext(String value, Class<Enum> enumType) {
+		try {
+			return Enum.valueOf(enumType, value);
+		}
+		catch (IllegalArgumentException ex) {
+			throw new IllegalArgumentException(buildEnumFormatMessage(value, enumType, ex), ex);
+		}
+	}
+
+	private static String buildNumberFormatMessage(String value, Class<?> targetType,
+			NumberFormatException originalException) {
+		StringBuilder message = new StringBuilder("Cannot convert value to ").append(targetType.getSimpleName())
+			.append(": ");
+
+		if (value.isEmpty()) {
+			message.append("empty string provided");
+		}
+		else {
+			message.append("'").append(value).append("'");
+		}
+
+		message.append(". Expected a valid ").append(targetType.getSimpleName().toLowerCase()).append(" value");
+
+		// Only append original exception message if it's not redundant
+		if (originalException.getMessage() != null && !isRedundantErrorMessage(originalException.getMessage(), value)) {
+			message.append(". ").append(originalException.getMessage());
+		}
+
+		return message.toString();
+	}
+
+	private static boolean isRedundantErrorMessage(String errorMessage, String originalValue) {
+		return errorMessage.equalsIgnoreCase("empty string")
+				|| (originalValue.isEmpty() && errorMessage.equals("For input string: \"\""));
+	}
+
+	private static String buildEnumFormatMessage(String value, Class<Enum> enumType,
+			IllegalArgumentException originalException) {
+		StringBuilder message = new StringBuilder("Cannot convert value to ").append(enumType.getSimpleName())
+			.append(": ");
+
+		if (value.isEmpty()) {
+			message.append("empty string provided");
+		}
+		else {
+			message.append("'").append(value).append("'");
+		}
+
+		message.append(". Expected one of: ");
+		Enum[] constants = enumType.getEnumConstants();
+		for (int i = 0; i < constants.length; i++) {
+			if (i > 0) {
+				message.append(", ");
+			}
+			message.append(constants[i].name());
+		}
+
+		return message.toString();
 	}
 
 }
