@@ -267,4 +267,18 @@ class SimpleVectorStoreWithFilterTests {
 		assertThat(results.get(0).getMetadata()).containsEntry("value", 1);
 	}
 
+	@Test
+	void shouldFilterWithInCondition() {
+		Document doc1 = Document.builder().id("1").text("entry").metadata(Map.of("status", "active")).build();
+		Document doc2 = Document.builder().id("2").text("entry").metadata(Map.of("status", "inactive")).build();
+
+		vectorStore.add(List.of(doc1, doc2));
+
+		List<Document> results = vectorStore.similaritySearch(
+				SearchRequest.builder().query("entry").filterExpression("status in ['active', 'pending']").build());
+
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isEqualTo("1");
+	}
+
 }
