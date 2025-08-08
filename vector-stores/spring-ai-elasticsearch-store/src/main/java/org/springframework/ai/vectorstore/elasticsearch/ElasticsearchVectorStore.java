@@ -40,7 +40,6 @@ import org.elasticsearch.client.RestClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -48,6 +47,7 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -175,7 +175,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
 		if (!indexExists()) {
@@ -183,12 +183,9 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
-
-		for (int i = 0; i < embeddings.size(); i++) {
-			Document document = documents.get(i);
-			float[] embedding = embeddings.get(i);
+		for (EmbeddedDocument embeddedDocument : embeddedDocuments) {
+			Document document = embeddedDocument.document();
+			float[] embedding = embeddedDocument.embedding();
 			bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(this.options.getIndexName())
 				.id(document.getId())
 				.document(getDocument(document, embedding, this.options.getEmbeddingFieldName()))));
