@@ -16,6 +16,7 @@
 
 package org.springframework.ai.azure.openai;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -156,6 +157,58 @@ public class AzureEmbeddingsOptionsTests {
 		assertThat(options1.getUser()).isEqualTo("USER1");
 		assertThat(options2.getModel()).isEqualTo("MODEL2");
 		assertThat(options2.getUser()).isEqualTo("USER2");
+	}
+
+	@Test
+	public void shouldHandleVeryLargeInputList() {
+		// Test with a large number of inputs to verify performance and memory handling
+		List<String> largeInputList = Collections.nCopies(1000, "Test input text");
+		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(largeInputList, null));
+
+		assertThat(requestOptions.getInput()).hasSize(1000);
+		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
+		assertThat(requestOptions.getUser()).isEqualTo("USER_TEST");
+	}
+
+	@Test
+	public void shouldHandleEmptyStringInputs() {
+		List<String> inputsWithEmpty = Arrays.asList("", "Valid text", "", "Another valid text");
+		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(inputsWithEmpty, null));
+
+		assertThat(requestOptions.getInput()).hasSize(4);
+		assertThat(requestOptions.getInput()).containsExactly("", "Valid text", "", "Another valid text");
+	}
+
+	@Test
+	public void shouldHandleDifferentClientConfigurations() {
+		var clientWithDifferentDefaults = new AzureOpenAiEmbeddingModel(mockClient, MetadataMode.EMBED,
+				AzureOpenAiEmbeddingOptions.builder().deploymentName("DIFFERENT_DEFAULT").build());
+
+		var requestOptions = clientWithDifferentDefaults
+			.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), null));
+
+		assertThat(requestOptions.getModel()).isEqualTo("DIFFERENT_DEFAULT");
+		assertThat(requestOptions.getUser()).isNull(); // No default user set
+	}
+
+	@Test
+	public void shouldHandleWhitespaceOnlyInputs() {
+		List<String> whitespaceInputs = Arrays.asList("   ", "\t\t", "\n\n", "  valid text  ");
+		var requestOptions = client.toEmbeddingOptions(new EmbeddingRequest(whitespaceInputs, null));
+
+		assertThat(requestOptions.getInput()).hasSize(4);
+		assertThat(requestOptions.getInput()).containsExactlyElementsOf(whitespaceInputs);
+	}
+
+	@Test
+	public void shouldValidateInputListIsNotModified() {
+		List<String> originalInputs = Arrays.asList("Input 1", "Input 2", "Input 3");
+		List<String> inputsCopy = new ArrayList<>(originalInputs);
+
+		client.toEmbeddingOptions(new EmbeddingRequest(inputsCopy, null));
+
+		// Verify original list wasn't modified
+		assertThat(inputsCopy).isEqualTo(originalInputs);
 	}
 
 }

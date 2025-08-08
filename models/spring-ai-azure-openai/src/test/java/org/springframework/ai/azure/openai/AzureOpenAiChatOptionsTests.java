@@ -195,4 +195,49 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getModel()).isNull();
 	}
 
+	@Test
+	void testModelAndDeploymentNameRelationship() {
+		AzureOpenAiChatOptions options = new AzureOpenAiChatOptions();
+
+		// Test setting deployment name first
+		options.setDeploymentName("deployment-1");
+		assertThat(options.getDeploymentName()).isEqualTo("deployment-1");
+		assertThat(options.getModel()).isEqualTo("deployment-1");
+
+		// Test setting model overwrites deployment name
+		options.setModel("model-1");
+		assertThat(options.getDeploymentName()).isEqualTo("model-1");
+		assertThat(options.getModel()).isEqualTo("model-1");
+	}
+
+	@Test
+	void testResponseFormatVariations() {
+		// Test with JSON response format
+		AzureOpenAiResponseFormat jsonFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.JSON_OBJECT)
+			.build();
+
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder().responseFormat(jsonFormat).build();
+
+		assertThat(options.getResponseFormat()).isEqualTo(jsonFormat);
+		assertThat(options.getResponseFormat().getType()).isEqualTo(AzureOpenAiResponseFormat.Type.JSON_OBJECT);
+	}
+
+	@Test
+	void testEnhancementsConfiguration() {
+		AzureChatEnhancementConfiguration enhancements = new AzureChatEnhancementConfiguration();
+		AzureChatOCREnhancementConfiguration ocrConfig = new AzureChatOCREnhancementConfiguration(false);
+		AzureChatGroundingEnhancementConfiguration groundingConfig = new AzureChatGroundingEnhancementConfiguration(
+				false);
+
+		enhancements.setOcr(ocrConfig);
+		enhancements.setGrounding(groundingConfig);
+
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder().enhancements(enhancements).build();
+
+		assertThat(options.getEnhancements()).isEqualTo(enhancements);
+		assertThat(options.getEnhancements().getOcr()).isEqualTo(ocrConfig);
+		assertThat(options.getEnhancements().getGrounding()).isEqualTo(groundingConfig);
+	}
+
 }
