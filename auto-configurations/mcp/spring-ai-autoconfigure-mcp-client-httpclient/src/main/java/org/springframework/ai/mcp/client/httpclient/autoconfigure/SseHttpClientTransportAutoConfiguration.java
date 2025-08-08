@@ -92,16 +92,30 @@ public class SseHttpClientTransportAutoConfiguration {
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
 		for (Map.Entry<String, SseParameters> serverParameters : sseProperties.getConnections().entrySet()) {
+			String connectionName = serverParameters.getKey();
+			SseParameters params = serverParameters.getValue();
 
-			String baseUrl = serverParameters.getValue().url();
-			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
-					? serverParameters.getValue().sseEndpoint() : "/sse";
-			var transport = HttpClientSseClientTransport.builder(baseUrl)
-				.sseEndpoint(sseEndpoint)
-				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper)
-				.build();
-			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			String baseUrl = params.url();
+			String sseEndpoint = params.sseEndpoint() != null ? params.sseEndpoint() : "/sse";
+
+			if (baseUrl == null || baseUrl.trim().isEmpty()) {
+				throw new IllegalArgumentException("SSE connection '" + connectionName
+						+ "' requires a 'url' property. Example: url: http://localhost:3000");
+			}
+
+			try {
+				var transport = HttpClientSseClientTransport.builder(baseUrl)
+					.sseEndpoint(sseEndpoint)
+					.clientBuilder(HttpClient.newBuilder())
+					.objectMapper(objectMapper)
+					.build();
+				sseTransports.add(new NamedClientMcpTransport(connectionName, transport));
+			}
+			catch (Exception e) {
+				throw new IllegalArgumentException("Failed to create SSE transport for connection '" + connectionName
+						+ "'. Check URL splitting: url='" + baseUrl + "', sse-endpoint='" + sseEndpoint
+						+ "'. Full URL should be split as: url=http://host:port, sse-endpoint=/path/to/endpoint", e);
+			}
 		}
 
 		return sseTransports;
