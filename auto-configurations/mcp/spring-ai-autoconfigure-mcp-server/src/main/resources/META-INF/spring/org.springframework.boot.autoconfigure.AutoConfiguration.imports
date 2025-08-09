@@ -16,3 +16,6 @@
 org.springframework.ai.mcp.server.autoconfigure.McpServerAutoConfiguration
 org.springframework.ai.mcp.server.autoconfigure.McpWebFluxServerAutoConfiguration
 org.springframework.ai.mcp.server.autoconfigure.McpWebMvcServerAutoConfiguration
+org.springframework.ai.mcp.server.autoconfigure.McpWebMvcStreamableServerAutoConfiguration
+org.springframework.ai.mcp.server.autoconfigure.McpWebFluxStreamableServerAutoConfiguration
+org.springframework.ai.mcp.server.autoconfigure.McpHttpServletStreamableServerAutoConfiguration

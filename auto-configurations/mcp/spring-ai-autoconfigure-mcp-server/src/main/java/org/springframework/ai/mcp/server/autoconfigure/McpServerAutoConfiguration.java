@@ -42,6 +42,8 @@ import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
+import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
+import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolUtils;
@@ -95,7 +97,7 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * Server configuration is managed through {@link McpServerProperties} with support for:
  * <ul>
  * <li>Server identification (name, version)</li>
- * <li>Transport selection</li>
+ * <li>Transport selection (STDIO, SSE, STREAMABLE)</li>
  * <li>Change notification settings for tools, resources, and prompts</li>
  * <li>Sync/Async operation mode selection</li>
  * </ul>
@@ -108,9 +110,14 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * @see McpServerProperties
  * @see McpWebMvcServerAutoConfiguration
  * @see McpWebFluxServerAutoConfiguration
+ * @see McpWebMvcStreamableServerAutoConfiguration
+ * @see McpWebFluxStreamableServerAutoConfiguration
+ * @see McpHttpServletStreamableServerAutoConfiguration
  * @see ToolCallback
  */
-@AutoConfiguration(after = { McpWebMvcServerAutoConfiguration.class, McpWebFluxServerAutoConfiguration.class })
+@AutoConfiguration(after = { McpWebMvcServerAutoConfiguration.class, McpWebFluxServerAutoConfiguration.class,
+		McpWebMvcStreamableServerAutoConfiguration.class, McpWebFluxStreamableServerAutoConfiguration.class,
+		McpHttpServletStreamableServerAutoConfiguration.class })
 @ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
 @EnableConfigurationProperties(McpServerProperties.class)
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -172,7 +179,7 @@ public class McpServerAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public McpSyncServer mcpSyncServer(McpServerTransportProvider transportProvider,
+	public McpSyncServer mcpSyncServer(McpServerTransportProviderBase transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
 			ObjectProvider<List<SyncToolSpecification>> tools,
 			ObjectProvider<List<SyncResourceSpecification>> resources,
@@ -185,7 +192,14 @@ public class McpServerAutoConfiguration {
 				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
-		SyncSpecification serverBuilder = McpServer.sync(transportProvider).serverInfo(serverInfo);
+		SyncSpecification<?> serverBuilder;
+		if (transportProvider instanceof McpStreamableServerTransportProvider) {
+			serverBuilder = McpServer.sync((McpStreamableServerTransportProvider) transportProvider);
+		}
+		else {
+			serverBuilder = McpServer.sync((McpServerTransportProvider) transportProvider);
+		}
+		serverBuilder.serverInfo(serverInfo);
 
 		// Tools
 		if (serverProperties.getCapabilities().isTool()) {
@@ -305,7 +319,7 @@ public class McpServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public McpAsyncServer mcpAsyncServer(McpServerTransportProvider transportProvider,
+	public McpAsyncServer mcpAsyncServer(McpServerTransportProviderBase transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
 			ObjectProvider<List<AsyncToolSpecification>> tools,
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
@@ -318,7 +332,14 @@ public class McpServerAutoConfiguration {
 				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
-		AsyncSpecification serverBuilder = McpServer.async(transportProvider).serverInfo(serverInfo);
+		AsyncSpecification<?> serverBuilder;
+		if (transportProvider instanceof McpStreamableServerTransportProvider) {
+			serverBuilder = McpServer.async((McpStreamableServerTransportProvider) transportProvider);
+		}
+		else {
+			serverBuilder = McpServer.async((McpServerTransportProvider) transportProvider);
+		}
+		serverBuilder.serverInfo(serverInfo);
 
 		// Tools
 		if (serverProperties.getCapabilities().isTool()) {
