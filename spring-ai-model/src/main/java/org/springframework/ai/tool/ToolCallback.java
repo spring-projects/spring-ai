@@ -16,6 +16,9 @@
 
 package org.springframework.ai.tool;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -28,6 +31,8 @@ import org.springframework.lang.Nullable;
  * @since 1.0.0
  */
 public interface ToolCallback {
+
+	Logger logger = LoggerFactory.getLogger(ToolCallback.class);
 
 	/**
 	 * Definition used by the AI model to determine when and how to call the tool.
@@ -53,7 +58,8 @@ public interface ToolCallback {
 	 */
 	default String call(String toolInput, @Nullable ToolContext toolContext) {
 		if (toolContext != null && !toolContext.getContext().isEmpty()) {
-			throw new UnsupportedOperationException("Tool context is not supported!");
+			logger.debug(
+					"Using default implementation of ToolCallback#call(String,ToolContext) and toolContext will be ignored.");
 		}
 		return call(toolInput);
 	}
