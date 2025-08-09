@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,6 +67,10 @@ public final class McpToolUtils {
 	 * The name of tool context key used to store the MCP exchange object.
 	 */
 	public static final String TOOL_CONTEXT_MCP_EXCHANGE_KEY = "exchange";
+
+	public static final String TOOL_CONTEXT_MCP_META_KEY = "_meta";
+
+	public static final String DEFAULT_MCP_META_TOOL_CONTEXT_KEY = "ai.springframework.org/tool_context";
 
 	private McpToolUtils() {
 	}
@@ -169,22 +174,42 @@ public final class McpToolUtils {
 
 		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
 				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+		// @formatter:off
+		return McpServerFeatures.SyncToolSpecification.builder() // @formatter:on
+			.tool(tool)
+			.callHandler((exchange, request) -> {
+				try {
+					Map<String, Object> context = new HashMap<>(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange));
 
-		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
-			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
-						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
-				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					return new McpSchema.CallToolResult(List
-						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
-							false);
+					if (!CollectionUtils.isEmpty(request.meta())) {
+						// Put the `_meta` field from `CallToolRequest` into
+						// `ToolContext`, so it can be used to access fields outside the
+						// `ai.springframework.org/*` keys.
+						context.put(TOOL_CONTEXT_MCP_META_KEY, request.meta());
+
+						if (request.meta().containsKey(DEFAULT_MCP_META_TOOL_CONTEXT_KEY)) {
+							// Get the McpClient tool context from the
+							// `ai.springframework.org/tool_context` key in the `_meta`.
+							Map<String, Object> toolContext = ModelOptionsUtils
+								.objectToMap(request.meta().get(DEFAULT_MCP_META_TOOL_CONTEXT_KEY));
+							context.putAll(toolContext);
+						}
+
+					}
+
+					String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
+							new ToolContext(context));
+					if (mimeType != null && mimeType.toString().startsWith("image")) {
+						return new McpSchema.CallToolResult(List.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT),
+								null, callResult, mimeType.toString())), false);
+					}
+					return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
-			}
-			catch (Exception e) {
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
-			}
-		});
+				catch (Exception e) {
+					return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
+				}
+			})
+			.build();
 	}
 
 	/**
@@ -286,11 +311,13 @@ public final class McpToolUtils {
 			MimeType mimeType) {
 
 		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
-
-		return new AsyncToolSpecification(syncToolSpecification.tool(),
-				(exchange, map) -> Mono
-					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
-					.subscribeOn(Schedulers.boundedElastic()));
+		return AsyncToolSpecification.builder()
+			.tool(syncToolSpecification.tool())
+			.callHandler((exchange, request) -> Mono
+				.fromCallable(
+						() -> syncToolSpecification.callHandler().apply(new McpSyncServerExchange(exchange), request))
+				.subscribeOn(Schedulers.boundedElastic()))
+			.build();
 	}
 
 	/**

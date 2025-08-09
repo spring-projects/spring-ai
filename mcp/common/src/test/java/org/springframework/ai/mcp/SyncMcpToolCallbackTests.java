@@ -16,11 +16,11 @@
 
 package org.springframework.ai.mcp;
 
-import io.modelcontextprotocol.spec.McpSchema;
 import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
@@ -36,7 +36,9 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -83,7 +85,7 @@ class SyncMcpToolCallbackTests {
 	}
 
 	@Test
-	void callShouldIgnoreToolContext() {
+	void callWithToolContext() {
 		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
 		// "1.0.0"));
 
@@ -91,11 +93,19 @@ class SyncMcpToolCallbackTests {
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.syncMcpClient(this.mcpClient)
+			.tool(this.tool)
+			.addExcludedToolContextKeys("foo1")
+			.build();
 
-		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
+		String response = callback.call("{\"param\":\"value\"}",
+				new ToolContext(Map.of("foo1", "bar1", "foo2", "bar2")));
 
 		assertThat(response).isNotNull();
+		verify(this.mcpClient).callTool(argThat(callToolRequest -> callToolRequest.name().equals("testTool")
+				&& callToolRequest.arguments().equals(Map.of("param", "value"))
+				&& callToolRequest.meta().get("ai.springframework.org/tool_context").equals(Map.of("foo2", "bar2"))));
 	}
 
 	@Test
