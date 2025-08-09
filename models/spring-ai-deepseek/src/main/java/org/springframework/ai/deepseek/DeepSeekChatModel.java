@@ -446,8 +446,9 @@ public class DeepSeekChatModel implements ChatModel {
 						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
 					isPrefixAssistantMessage = true;
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, isPrefixAssistantMessage, null));
+				return List
+					.of(new ChatCompletionMessage(assistantMessage.getText(), ChatCompletionMessage.Role.ASSISTANT,
+							assistantMessage.getName(), null, toolCalls, isPrefixAssistantMessage, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;

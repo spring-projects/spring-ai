@@ -519,7 +519,7 @@ public class MiniMaxChatModel implements ChatModel {
 					}).toList();
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
+						ChatCompletionMessage.Role.ASSISTANT, assistantMessage.getName(), null, toolCalls));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
