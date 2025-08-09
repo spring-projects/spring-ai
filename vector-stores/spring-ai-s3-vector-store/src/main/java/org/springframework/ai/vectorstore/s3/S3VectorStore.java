@@ -125,7 +125,7 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		if (vector.distance() != null) {
 			metadata.put("SPRING_AI_S3_DISTANCE", vector.distance());
 		}
-		return Document.builder().metadata(DocumentUtils.fromDocument(vector.metadata()))
+		return Document.builder().metadata(metadata)
 				.text(vector.key()).build();
 	}
 
