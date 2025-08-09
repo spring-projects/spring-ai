@@ -16,12 +16,14 @@
 
 package org.springframework.ai.minimax;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.minimax.api.MiniMaxApi;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.minimax.api.MiniMaxApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,6 +34,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Alexandros Pappas
  */
 class MiniMaxChatOptionsTests {
+
+	@Test
+	void testEqualsAndHashCode() {
+		EqualsVerifier.simple().forClass(MiniMaxChatOptions.class).usingGetClass().verify();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {

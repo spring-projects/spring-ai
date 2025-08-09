@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -58,6 +60,7 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 	private @JsonProperty("temperature") Float temperature;
 
 	private @JsonProperty("timestamp_granularities") GranularityType granularityType;
+	// @formatter:on
 
 	public static Builder builder() {
 		return new Builder();
@@ -113,61 +116,24 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.prompt == null) ? 0 : this.prompt.hashCode());
-		result = prime * result + ((this.language == null) ? 0 : this.language.hashCode());
-		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
-		return result;
+	public final boolean equals(Object o) {
+		if (!(o instanceof OpenAiAudioTranscriptionOptions that))
+			return false;
+
+		return Objects.equals(model, that.model) && responseFormat == that.responseFormat
+				&& Objects.equals(prompt, that.prompt) && Objects.equals(language, that.language)
+				&& Objects.equals(temperature, that.temperature) && granularityType == that.granularityType;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		OpenAiAudioTranscriptionOptions other = (OpenAiAudioTranscriptionOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.prompt == null) {
-			if (other.prompt != null) {
-				return false;
-			}
-		}
-		else if (!this.prompt.equals(other.prompt)) {
-			return false;
-		}
-		if (this.language == null) {
-			if (other.language != null) {
-				return false;
-			}
-		}
-		else if (!this.language.equals(other.language)) {
-			return false;
-		}
-		if (this.responseFormat == null) {
-			if (other.responseFormat != null) {
-				return false;
-			}
-		}
-		else if (!this.responseFormat.equals(other.responseFormat)) {
-			return false;
-		}
-		return true;
+	public int hashCode() {
+		int result = Objects.hashCode(model);
+		result = 31 * result + Objects.hashCode(responseFormat);
+		result = 31 * result + Objects.hashCode(prompt);
+		result = 31 * result + Objects.hashCode(language);
+		result = 31 * result + Objects.hashCode(temperature);
+		result = 31 * result + Objects.hashCode(granularityType);
+		return result;
 	}
 
 	public static class Builder {
@@ -217,4 +183,5 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 		}
 
 	}
+
 }
