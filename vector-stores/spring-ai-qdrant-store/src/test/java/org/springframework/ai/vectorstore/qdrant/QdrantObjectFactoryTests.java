@@ -113,4 +113,83 @@ class QdrantObjectFactoryTests {
 		assertThat(result.get("number")).isEqualTo(1L);
 	}
 
+	@Test
+	void toObjectMapShouldHandleWhitespaceStrings() {
+		Map<String, Value> payload = Map.of("spaces", Value.newBuilder().setStringValue("   ").build(), "tabs",
+				Value.newBuilder().setStringValue("\t\t").build(), "newlines",
+				Value.newBuilder().setStringValue("\n\r\n").build(), "mixed",
+				Value.newBuilder().setStringValue(" \t\n mixed \r\n ").build());
+
+		Map<String, Object> result = QdrantObjectFactory.toObjectMap(payload);
+
+		assertThat(result).hasSize(4);
+		assertThat(result.get("spaces")).isEqualTo("   ");
+		assertThat(result.get("tabs")).isEqualTo("\t\t");
+		assertThat(result.get("newlines")).isEqualTo("\n\r\n");
+		assertThat(result.get("mixed")).isEqualTo(" \t\n mixed \r\n ");
+	}
+
+	@Test
+	void toObjectMapShouldHandleComplexFieldNames() {
+		Map<String, Value> payload = Map.of("field_with_underscores",
+				Value.newBuilder().setStringValue("value1").build(), "field-with-dashes",
+				Value.newBuilder().setStringValue("value2").build(), "field.with.dots",
+				Value.newBuilder().setStringValue("value3").build(), "FIELD_WITH_CAPS",
+				Value.newBuilder().setStringValue("value4").build(), "field1",
+				Value.newBuilder().setStringValue("value5").build());
+
+		Map<String, Object> result = QdrantObjectFactory.toObjectMap(payload);
+
+		assertThat(result).hasSize(5);
+		assertThat(result.get("field_with_underscores")).isEqualTo("value1");
+		assertThat(result.get("field-with-dashes")).isEqualTo("value2");
+		assertThat(result.get("field.with.dots")).isEqualTo("value3");
+		assertThat(result.get("FIELD_WITH_CAPS")).isEqualTo("value4");
+		assertThat(result.get("field1")).isEqualTo("value5");
+	}
+
+	@Test
+	void toObjectMapShouldHandleSingleCharacterValues() {
+		Map<String, Value> payload = Map.of("singleChar", Value.newBuilder().setStringValue("a").build(), "specialChar",
+				Value.newBuilder().setStringValue("@").build(), "digit",
+				Value.newBuilder().setStringValue("1").build());
+
+		Map<String, Object> result = QdrantObjectFactory.toObjectMap(payload);
+
+		assertThat(result).hasSize(3);
+		assertThat(result.get("singleChar")).isEqualTo("a");
+		assertThat(result.get("specialChar")).isEqualTo("@");
+		assertThat(result.get("digit")).isEqualTo("1");
+	}
+
+	@Test
+	void toObjectMapShouldHandleAllNullValues() {
+		Map<String, Value> payload = Map.of("null1", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build(),
+				"null2", Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build(), "null3",
+				Value.newBuilder().setNullValue(NullValue.NULL_VALUE).build());
+
+		Map<String, Object> result = QdrantObjectFactory.toObjectMap(payload);
+
+		assertThat(result).hasSize(3);
+		assertThat(result.get("null1")).isNull();
+		assertThat(result.get("null2")).isNull();
+		assertThat(result.get("null3")).isNull();
+		assertThat(result).containsKeys("null1", "null2", "null3");
+	}
+
+	@Test
+	void toObjectMapShouldHandleDuplicateValues() {
+		Map<String, Value> payload = Map.of("field1", Value.newBuilder().setStringValue("same").build(), "field2",
+				Value.newBuilder().setStringValue("same").build(), "field3",
+				Value.newBuilder().setIntegerValue(1).build(), "field4", Value.newBuilder().setIntegerValue(1).build());
+
+		Map<String, Object> result = QdrantObjectFactory.toObjectMap(payload);
+
+		assertThat(result).hasSize(4);
+		assertThat(result.get("field1")).isEqualTo("same");
+		assertThat(result.get("field2")).isEqualTo("same");
+		assertThat(result.get("field3")).isEqualTo(1L);
+		assertThat(result.get("field4")).isEqualTo(1L);
+	}
+
 }
