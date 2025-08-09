@@ -32,6 +32,7 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -80,6 +81,7 @@ public abstract class RetryUtils {
 	public static final RetryTemplate DEFAULT_RETRY_TEMPLATE = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(TransientAiException.class)
+		.retryOn(ResourceAccessException.class)
 		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
 		.withListener(new RetryListener() {
 
@@ -98,6 +100,7 @@ public abstract class RetryUtils {
 	public static final RetryTemplate SHORT_RETRY_TEMPLATE = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(TransientAiException.class)
+		.retryOn(ResourceAccessException.class)
 		.fixedBackoff(Duration.ofMillis(100))
 		.withListener(new RetryListener() {
 
