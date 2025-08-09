@@ -281,4 +281,62 @@ class SimpleVectorStoreWithFilterTests {
 		assertThat(results.get(0).getId()).isEqualTo("1");
 	}
 
+	@Test
+	void shouldFilterByNumericRange() {
+		List<Document> docs = Arrays.asList(
+				Document.builder().id("1").text("entity").metadata(Map.of("value", 1)).build(),
+				Document.builder().id("2").text("entity").metadata(Map.of("value", 2)).build(),
+				Document.builder().id("3").text("entity").metadata(Map.of("value", 3)).build());
+
+		vectorStore.add(docs);
+
+		List<Document> results = vectorStore.similaritySearch(
+				SearchRequest.builder().query("entity").filterExpression("value >= 1 && value <= 1").build());
+
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isEqualTo("1");
+	}
+
+	@Test
+	void shouldReturnEmptyResultsWhenNoDocumentsMatchFilter() {
+		Document doc = Document.builder().id("1").text("test").metadata(Map.of("type", "document")).build();
+
+		vectorStore.add(List.of(doc));
+
+		List<Document> results = vectorStore
+			.similaritySearch(SearchRequest.builder().query("test").filterExpression("type == 'image'").build());
+
+		assertThat(results).isEmpty();
+	}
+
+	@Test
+	void shouldFilterByBooleanValue() {
+		List<Document> docs = Arrays.asList(
+				Document.builder().id("1").text("instance").metadata(Map.of("enabled", true)).build(),
+				Document.builder().id("2").text("instance").metadata(Map.of("enabled", false)).build());
+
+		vectorStore.add(docs);
+
+		List<Document> results = vectorStore
+			.similaritySearch(SearchRequest.builder().query("instance").filterExpression("enabled == true").build());
+
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isEqualTo("1");
+	}
+
+	@Test
+	void shouldFilterByNotEqual() {
+		List<Document> docs = Arrays.asList(
+				Document.builder().id("1").text("item").metadata(Map.of("classification", "typeA")).build(),
+				Document.builder().id("2").text("item").metadata(Map.of("classification", "typeB")).build());
+
+		vectorStore.add(docs);
+
+		List<Document> results = vectorStore.similaritySearch(
+				SearchRequest.builder().query("item").filterExpression("classification != 'typeB'").build());
+
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isEqualTo("1");
+	}
+
 }
