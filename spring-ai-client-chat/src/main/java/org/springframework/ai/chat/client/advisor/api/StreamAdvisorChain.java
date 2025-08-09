@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.ChatClientResponse;
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
+ * @author YunKui Lu
  * @since 1.0.0
  */
 public interface StreamAdvisorChain extends AdvisorChain {
@@ -45,5 +46,12 @@ public interface StreamAdvisorChain extends AdvisorChain {
 	 * at the time of its creation.
 	 */
 	List<StreamAdvisor> getStreamAdvisors();
+
+	/**
+	 * Returns true if there is a next {@link StreamAdvisor} in the chain.
+	 */
+	default boolean hasNextStreamAdvisor() {
+		throw new UnsupportedOperationException("This StreamAdvisorChain does not support hasNextStreamAdvisor()");
+	}
 
 }
