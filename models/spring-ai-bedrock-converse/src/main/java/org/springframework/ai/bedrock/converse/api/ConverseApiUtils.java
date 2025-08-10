@@ -384,6 +384,26 @@ public final class ConverseApiUtils {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	public static Map<String, String> getRequestMetadata(Map<String, Object> metadata) {
+
+		if (metadata.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<String, String> result = new HashMap<>();
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+
+			if (key != null && value != null) {
+				result.put(key, value.toString());
+			}
+		}
+
+		return result;
+	}
+
 	private static Document convertMapToDocument(Map<String, Object> value) {
 		Map<String, Document> attr = value.entrySet()
 			.stream()
