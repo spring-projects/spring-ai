@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,39 @@ public class AnthropicApiIT {
 						"required": ["location", "unit"]
 					}
 					""")));
+
+	@Test
+	void chatWithPromptCacheInAssistantMessage() {
+		String assistantMessageText = "It could be either a contraction of the full title Quenta Silmarillion (\"Tale of the Silmarils\") or also a plain Genitive which "
+				+ "(as in Ancient Greek) signifies reference. This genitive is translated in English with \"about\" or \"of\" "
+				+ "constructions; the titles of the chapters in The Silmarillion are examples of this genitive in poetic English "
+				+ "(Of the Sindar, Of Men, Of the Darkening of Valinor etc), where \"of\" means \"about\" or \"concerning\". "
+				+ "In the same way, Silmarillion can be taken to mean \"Of/About the Silmarils\"";
+
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+				List.of(new ContentBlock(assistantMessageText.repeat(20), AnthropicCacheType.EPHEMERAL.cacheControl())),
+				Role.ASSISTANT);
+
+		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+				.messages(List.of(chatCompletionMessage))
+				.maxTokens(1500)
+				.temperature(0.8)
+				.stream(false)
+				.build();
+
+		AnthropicApi.Usage createdCacheToken = anthropicApi.chatCompletionEntity(chatCompletionRequest)
+				.getBody()
+				.usage();
+
+		assertThat(createdCacheToken.cacheCreationInputTokens()).isGreaterThan(0);
+		assertThat(createdCacheToken.cacheReadInputTokens()).isEqualTo(0);
+
+		AnthropicApi.Usage readCacheToken = anthropicApi.chatCompletionEntity(chatCompletionRequest).getBody().usage();
+
+		assertThat(readCacheToken.cacheCreationInputTokens()).isEqualTo(0);
+		assertThat(readCacheToken.cacheReadInputTokens()).isGreaterThan(0);
+	}
 
 	@Test
 	void chatWithPromptCache() {

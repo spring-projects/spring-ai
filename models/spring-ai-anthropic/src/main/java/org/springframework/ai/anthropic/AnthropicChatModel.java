@@ -475,19 +475,26 @@ public class AnthropicChatModel implements ChatModel {
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
-		Optional<Message> lastMessage = prompt.getInstructions()
+		List<Message> userMessagesList = prompt.getInstructions()
 				.stream()
-				.filter(message -> message.getMessageType() != MessageType.SYSTEM)
-				.findFirst();
+				.filter(message -> message.getMessageType() == MessageType.USER)
+				.toList();
+		Message lastUserMessage = userMessagesList.isEmpty() ? null : userMessagesList.get(userMessagesList.size() - 1);
+
+		List<Message> assistantMessageList = prompt.getInstructions()
+				.stream()
+				.filter(message -> message.getMessageType() == MessageType.ASSISTANT)
+				.toList();
+		Message lastAssistantMessage = assistantMessageList.isEmpty() ? null : assistantMessageList.get(assistantMessageList.size() - 1);
 
 		List<AnthropicMessage> userMessages = prompt.getInstructions()
 			.stream()
 			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
 			.map(message -> {
+				AbstractMessage abstractMessage = (AbstractMessage) message;
 				if (message.getMessageType() == MessageType.USER) {
-					AbstractMessage abstractMessage = (AbstractMessage) message;
 					List<ContentBlock> contents;
-					boolean isLastItem = lastMessage.filter(message::equals).isPresent();
+					boolean isLastItem = message.equals(lastUserMessage);
 					if (isLastItem && abstractMessage.getCache() != null) {
 						AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
 						contents = new ArrayList<>(
@@ -511,8 +518,14 @@ public class AnthropicChatModel implements ChatModel {
 				else if (message.getMessageType() == MessageType.ASSISTANT) {
 					AssistantMessage assistantMessage = (AssistantMessage) message;
 					List<ContentBlock> contentBlocks = new ArrayList<>();
+					boolean isLastItem = message.equals(lastAssistantMessage);
 					if (StringUtils.hasText(message.getText())) {
-						contentBlocks.add(new ContentBlock(message.getText()));
+						if (isLastItem && abstractMessage.getCache() != null) {
+							AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
+							contentBlocks.add(new ContentBlock(message.getText(), cacheType.cacheControl()));
+						} else {
+							contentBlocks.add(new ContentBlock(message.getText()));
+						}
 					}
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
@@ -551,6 +564,7 @@ public class AnthropicChatModel implements ChatModel {
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
+			var tool = getFunctionTools(toolDefinitions);
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 			request = ChatCompletionRequest.from(request).tools(getFunctionTools(toolDefinitions)).build();
 		}
