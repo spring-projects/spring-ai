@@ -16,12 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -43,11 +39,6 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicCacheType;
-import org.springframework.ai.chat.messages.AbstractMessage;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -429,6 +420,11 @@ public class AnthropicChatModel implements ChatModel {
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
+		Optional<Message> lastMessage = prompt.getInstructions()
+				.stream()
+				.filter(message -> message.getMessageType() != MessageType.SYSTEM)
+				.findFirst();
+
 		List<AnthropicMessage> userMessages = prompt.getInstructions()
 			.stream()
 			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
@@ -436,7 +432,8 @@ public class AnthropicChatModel implements ChatModel {
 				if (message.getMessageType() == MessageType.USER) {
 					AbstractMessage abstractMessage = (AbstractMessage) message;
 					List<ContentBlock> contents;
-					if (abstractMessage.getCache() != null) {
+					boolean isLastItem = lastMessage.filter(message::equals).isPresent();
+					if (isLastItem && abstractMessage.getCache() != null) {
 						AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
 						contents = new ArrayList<>(
 								List.of(new ContentBlock(message.getText(), cacheType.cacheControl())));
