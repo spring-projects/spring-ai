@@ -429,6 +429,9 @@ public class BedrockProxyChatModel implements ChatModel {
 		Document additionalModelRequestFields = ConverseApiUtils
 			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
 
+		Map<String, String> requestMetadata = ConverseApiUtils
+			.getRequestMetadata(prompt.getUserMessage().getMetadata());
+
 		return ConverseRequest.builder()
 			.modelId(updatedRuntimeOptions.getModel())
 			.inferenceConfig(inferenceConfiguration)
@@ -436,6 +439,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.system(systemMessages)
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
+			.requestMetadata(requestMetadata)
 			.build();
 	}
 
