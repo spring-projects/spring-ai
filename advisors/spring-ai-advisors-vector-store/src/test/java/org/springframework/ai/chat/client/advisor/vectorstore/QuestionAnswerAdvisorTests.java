@@ -151,8 +151,6 @@ public class QuestionAnswerAdvisorTests {
 
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 
-		System.out.println(systemMessage.getText());
-
 		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 				""");
