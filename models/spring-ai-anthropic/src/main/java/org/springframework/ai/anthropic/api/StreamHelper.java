@@ -159,7 +159,7 @@ public class StreamHelper {
 			}
 			else if (contentBlockStartEvent.contentBlock() instanceof ContentBlockThinking thinkingBlock) {
 				ContentBlock cb = new ContentBlock(Type.THINKING, null, null, contentBlockStartEvent.index(), null,
-						null, null, null, null, null, thinkingBlock.thinking(), null);
+						null, null, null, null, null, null, thinkingBlock.thinking(), null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else {
@@ -176,12 +176,12 @@ public class StreamHelper {
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaThinking thinking) {
 				ContentBlock cb = new ContentBlock(Type.THINKING_DELTA, null, null, contentBlockDeltaEvent.index(),
-						null, null, null, null, null, null, thinking.thinking(), null);
+						null, null, null, null, null, null,null, thinking.thinking(), null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaSignature sig) {
 				ContentBlock cb = new ContentBlock(Type.SIGNATURE_DELTA, null, null, contentBlockDeltaEvent.index(),
-						null, null, null, null, null, sig.signature(), null, null);
+						null, null, null, null, null, null, sig.signature(), null, null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else {

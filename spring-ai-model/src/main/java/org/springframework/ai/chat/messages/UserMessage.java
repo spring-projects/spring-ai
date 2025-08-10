@@ -65,7 +65,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	}
 
 	public UserMessage(String textContent, List<Media> media) {
-		this(MessageType.USER, textContent, media, Map.of());
+		this(MessageType.USER, textContent, media, Map.of(), null);
   }
  
 	@Override
@@ -99,12 +99,6 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	public List<Media> getMedia(String... dummy) {
 		return this.media;
 	}
-
-	@Override
-	public String toString() {
-		return "UserMessage{" + "content='" + getText() + '\'' + ", properties=" + this.metadata + ", messageType="
-				+ this.messageType + '}';
-  }
 
   public Builder mutate() {
 		return new Builder().text(getText()).media(List.copyOf(getMedia())).metadata(Map.copyOf(getMetadata()));

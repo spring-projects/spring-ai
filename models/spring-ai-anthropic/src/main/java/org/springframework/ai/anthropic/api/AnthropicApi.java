@@ -55,14 +55,6 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * The Anthropic API client.
@@ -777,9 +769,9 @@ public final class AnthropicApi {
 		@JsonProperty("content") String content,
 
 		// cache object
-		@JsonProperty("cache_control") CacheControl cacheControl
+		@JsonProperty("cache_control") CacheControl cacheControl,
 
-    // Thinking only
+    	// Thinking only
 		@JsonProperty("signature") String signature,
 		@JsonProperty("thinking") String thinking,
 
@@ -819,11 +811,11 @@ public final class AnthropicApi {
 		 * @param text The text of the content.
 		 */
 		public ContentBlock(String text) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		public ContentBlock(String text, CacheControl cache) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, cache null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, cache, null, null, null);
 		}
 
 		// Tool result
