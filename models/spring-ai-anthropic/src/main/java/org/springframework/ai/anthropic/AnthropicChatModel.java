@@ -476,16 +476,17 @@ public class AnthropicChatModel implements ChatModel {
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
 		List<Message> userMessagesList = prompt.getInstructions()
-				.stream()
-				.filter(message -> message.getMessageType() == MessageType.USER)
-				.toList();
+			.stream()
+			.filter(message -> message.getMessageType() == MessageType.USER)
+			.toList();
 		Message lastUserMessage = userMessagesList.isEmpty() ? null : userMessagesList.get(userMessagesList.size() - 1);
 
 		List<Message> assistantMessageList = prompt.getInstructions()
-				.stream()
-				.filter(message -> message.getMessageType() == MessageType.ASSISTANT)
-				.toList();
-		Message lastAssistantMessage = assistantMessageList.isEmpty() ? null : assistantMessageList.get(assistantMessageList.size() - 1);
+			.stream()
+			.filter(message -> message.getMessageType() == MessageType.ASSISTANT)
+			.toList();
+		Message lastAssistantMessage = assistantMessageList.isEmpty() ? null
+				: assistantMessageList.get(assistantMessageList.size() - 1);
 
 		List<AnthropicMessage> userMessages = prompt.getInstructions()
 			.stream()
@@ -523,7 +524,8 @@ public class AnthropicChatModel implements ChatModel {
 						if (isLastItem && abstractMessage.getCache() != null) {
 							AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
 							contentBlocks.add(new ContentBlock(message.getText(), cacheType.cacheControl()));
-						} else {
+						}
+						else {
 							contentBlocks.add(new ContentBlock(message.getText()));
 						}
 					}

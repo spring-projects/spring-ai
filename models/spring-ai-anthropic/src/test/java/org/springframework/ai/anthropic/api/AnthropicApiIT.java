@@ -87,16 +87,16 @@ public class AnthropicApiIT {
 				Role.ASSISTANT);
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
-				.messages(List.of(chatCompletionMessage))
-				.maxTokens(1500)
-				.temperature(0.8)
-				.stream(false)
-				.build();
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+			.messages(List.of(chatCompletionMessage))
+			.maxTokens(1500)
+			.temperature(0.8)
+			.stream(false)
+			.build();
 
 		AnthropicApi.Usage createdCacheToken = anthropicApi.chatCompletionEntity(chatCompletionRequest)
-				.getBody()
-				.usage();
+			.getBody()
+			.usage();
 
 		assertThat(createdCacheToken.cacheCreationInputTokens()).isGreaterThan(0);
 		assertThat(createdCacheToken.cacheReadInputTokens()).isEqualTo(0);

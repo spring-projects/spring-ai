@@ -176,7 +176,7 @@ public class StreamHelper {
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaThinking thinking) {
 				ContentBlock cb = new ContentBlock(Type.THINKING_DELTA, null, null, contentBlockDeltaEvent.index(),
-						null, null, null, null, null, null,null, thinking.thinking(), null);
+						null, null, null, null, null, null, null, thinking.thinking(), null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaSignature sig) {
