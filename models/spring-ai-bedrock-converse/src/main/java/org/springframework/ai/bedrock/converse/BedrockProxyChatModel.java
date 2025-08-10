@@ -22,11 +22,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -425,6 +421,8 @@ public class BedrockProxyChatModel implements ChatModel {
 		Document additionalModelRequestFields = ConverseApiUtils
 			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
 
+		HashMap<String, String> requestMetadata = new HashMap<>();
+
 		return ConverseRequest.builder()
 			.modelId(updatedRuntimeOptions.getModel())
 			.inferenceConfig(inferenceConfiguration)
@@ -432,6 +430,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.system(systemMessages)
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
+			.requestMetadata(requestMetadata)
 			.build();
 	}
 
