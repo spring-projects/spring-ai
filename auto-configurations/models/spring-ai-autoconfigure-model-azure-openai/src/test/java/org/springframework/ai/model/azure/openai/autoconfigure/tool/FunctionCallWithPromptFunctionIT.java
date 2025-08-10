@@ -45,7 +45,7 @@ public class FunctionCallWithPromptFunctionIT {
 	// @formatter:off
 				"spring.ai.azure.openai.api-key=" + System.getenv("AZURE_OPENAI_API_KEY"),
 				"spring.ai.azure.openai.endpoint=" + System.getenv("AZURE_OPENAI_ENDPOINT"))
-				// @formatter:onn
+				// @formatter:on
 		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class));
 
 	@Test
@@ -61,7 +61,7 @@ public class FunctionCallWithPromptFunctionIT {
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Use Multi-turn function calling.");
 
 				var promptOptions = AzureOpenAiChatOptions.builder()
-					.functionCallbacks(
+					.toolCallbacks(
 							List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 								.description("Get the weather in location")
 								.inputType(MockWeatherService.Request.class)

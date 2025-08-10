@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,8 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.openai.testutils.AbstractIT;
+import org.springframework.ai.template.st.StTemplateRenderer;
+import org.springframework.ai.test.CurlyBracketEscaper;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -123,7 +125,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
-				.entity(new ParameterizedTypeReference<List<String>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -138,7 +140,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -171,7 +173,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -220,7 +222,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
-						.param("format", outputConverter.getFormat()))
+						.param("format", CurlyBracketEscaper.escapeCurlyBrackets(outputConverter.getFormat())))
 				.stream()
 				.chatResponse();
 
@@ -249,7 +251,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -267,7 +269,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -287,7 +289,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -322,7 +324,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
@@ -341,7 +343,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
@@ -375,6 +377,124 @@ class OpenAiChatClientIT extends AbstractIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getMedia().get(0).getDataAsByteArray()).isNotEmpty();
 		logger.info("Response: " + response);
+	}
+
+	@Test
+	void customTemplateRendererWithCall() {
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
+
+		// @formatter:off
+		String result = ChatClient.create(this.chatModel).prompt()
+				.user(u -> u
+						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+								+ "<format>")
+						.param("format", outputConverter.getFormat()))
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.call()
+				.content();
+		// @formatter:on
+
+		assertThat(result).isNotEmpty();
+		ActorsFilms actorsFilms = outputConverter.convert(result);
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void customTemplateRendererWithCallAndAdvisor() {
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
+
+		// @formatter:off
+		String result = ChatClient.create(this.chatModel).prompt()
+				.advisors(new SimpleLoggerAdvisor())
+				.user(u -> u
+						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+								+ "<format>")
+						.param("format", outputConverter.getFormat()))
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.call()
+				.content();
+		// @formatter:on
+
+		assertThat(result).isNotEmpty();
+		ActorsFilms actorsFilms = outputConverter.convert(result);
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void customTemplateRendererWithStream() {
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
+
+		// @formatter:off
+		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
+				.prompt()
+				.options(OpenAiChatOptions.builder().streamUsage(true).build())
+				.user(u -> u
+						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+								+ "<format>")
+						.param("format", outputConverter.getFormat()))
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.stream()
+				.chatResponse();
+
+		List<ChatResponse> chatResponses = chatResponse.collectList()
+				.block()
+				.stream()
+				.toList();
+
+		String generationTextFromStream = chatResponses
+				.stream()
+				.filter(cr -> cr.getResult() != null)
+				.map(cr -> cr.getResult().getOutput().getText())
+				.collect(Collectors.joining());
+		// @formatter:on
+
+		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void customTemplateRendererWithStreamAndAdvisor() {
+		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
+
+		// @formatter:off
+		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
+				.prompt()
+				.options(OpenAiChatOptions.builder().streamUsage(true).build())
+				.advisors(new SimpleLoggerAdvisor())
+				.user(u -> u
+						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
+								+ "<format>")
+						.param("format", outputConverter.getFormat()))
+				.templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+				.stream()
+				.chatResponse();
+
+		List<ChatResponse> chatResponses = chatResponse.collectList()
+				.block()
+				.stream()
+				.toList();
+
+		String generationTextFromStream = chatResponses
+				.stream()
+				.filter(cr -> cr.getResult() != null)
+				.map(cr -> cr.getResult().getOutput().getText())
+				.collect(Collectors.joining());
+		// @formatter:on
+
+		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

@@ -32,9 +32,9 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.function.FunctionCallback;
+import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
@@ -45,7 +45,7 @@ import org.springframework.util.MimeType;
 
 /**
  * Client to perform stateless requests to an AI Model, using a fluent API.
- *
+ * <p>
  * Use {@link ChatClient#builder(ChatModel)} to prepare an instance.
  *
  * @author Mark Pollack
@@ -114,6 +114,10 @@ public interface ChatClient {
 
 		PromptUserSpec media(MimeType mimeType, Resource resource);
 
+		PromptUserSpec metadata(Map<String, Object> metadata);
+
+		PromptUserSpec metadata(String k, Object v);
+
 	}
 
 	/**
@@ -130,6 +134,10 @@ public interface ChatClient {
 		PromptSystemSpec params(Map<String, Object> p);
 
 		PromptSystemSpec param(String k, Object v);
+
+		PromptSystemSpec metadata(Map<String, Object> metadata);
+
+		PromptSystemSpec metadata(String k, Object v);
 
 	}
 
@@ -156,6 +164,8 @@ public interface ChatClient {
 		@Nullable
 		<T> T entity(Class<T> type);
 
+		ChatClientResponse chatClientResponse();
+
 		@Nullable
 		ChatResponse chatResponse();
 
@@ -171,6 +181,8 @@ public interface ChatClient {
 	}
 
 	interface StreamResponseSpec {
+
+		Flux<ChatClientResponse> chatClientResponse();
 
 		Flux<ChatResponse> chatResponse();
 
@@ -199,8 +211,8 @@ public interface ChatClient {
 	interface ChatClientRequestSpec {
 
 		/**
-		 * Return a {@code ChatClient.Builder} to create a new {@code ChatClient} whose
-		 * settings are replicated from this {@code ChatClientRequest}.
+		 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
+		 * settings are replicated from this {@link ChatClientRequest}.
 		 */
 		Builder mutate();
 
@@ -216,21 +228,15 @@ public interface ChatClient {
 
 		<T extends ChatOptions> ChatClientRequestSpec options(T options);
 
-		ChatClientRequestSpec tools(String... toolNames);
-
-		ChatClientRequestSpec tools(FunctionCallback... toolCallbacks);
-
-		ChatClientRequestSpec tools(List<ToolCallback> toolCallbacks);
+		ChatClientRequestSpec toolNames(String... toolNames);
 
 		ChatClientRequestSpec tools(Object... toolObjects);
 
-		ChatClientRequestSpec tools(ToolCallbackProvider... toolCallbackProviders);
+		ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks);
 
-		@Deprecated
-		<I, O> ChatClientRequestSpec functions(FunctionCallback... functionCallbacks);
+		ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks);
 
-		@Deprecated
-		ChatClientRequestSpec functions(String... functionBeanNames);
+		ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
 
@@ -249,6 +255,8 @@ public interface ChatClient {
 		ChatClientRequestSpec user(Resource text);
 
 		ChatClientRequestSpec user(Consumer<PromptUserSpec> consumer);
+
+		ChatClientRequestSpec templateRenderer(TemplateRenderer templateRenderer);
 
 		CallResponseSpec call();
 
@@ -285,27 +293,17 @@ public interface ChatClient {
 
 		Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer);
 
-		Builder defaultTools(String... toolNames);
+		Builder defaultTemplateRenderer(TemplateRenderer templateRenderer);
 
-		Builder defaultTools(FunctionCallback... toolCallbacks);
-
-		Builder defaultTools(List<ToolCallback> toolCallbacks);
+		Builder defaultToolNames(String... toolNames);
 
 		Builder defaultTools(Object... toolObjects);
 
-		Builder defaultTools(ToolCallbackProvider... toolCallbackProviders);
+		Builder defaultToolCallbacks(ToolCallback... toolCallbacks);
 
-		/**
-		 * @deprecated in favor of {@link #defaultTools(String...)}
-		 */
-		@Deprecated
-		Builder defaultFunctions(String... functionNames);
+		Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks);
 
-		/**
-		 * @deprecated in favor of {@link #defaultTools(Object...)}
-		 */
-		@Deprecated
-		Builder defaultFunctions(FunctionCallback... functionCallbacks);
+		Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
 

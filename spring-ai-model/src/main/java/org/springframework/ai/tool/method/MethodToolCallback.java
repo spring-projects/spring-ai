@@ -46,7 +46,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public class MethodToolCallback implements ToolCallback {
+public final class MethodToolCallback implements ToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallback.class);
 
@@ -81,12 +81,12 @@ public class MethodToolCallback implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return toolDefinition;
+		return this.toolDefinition;
 	}
 
 	@Override
 	public ToolMetadata getToolMetadata() {
-		return toolMetadata;
+		return this.toolMetadata;
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public class MethodToolCallback implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", toolDefinition.name());
+		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
 
 		validateToolContextSupport(toolContext);
 
@@ -108,17 +108,17 @@ public class MethodToolCallback implements ToolCallback {
 
 		Object result = callMethod(methodArguments);
 
-		logger.debug("Successful execution of tool: {}", toolDefinition.name());
+		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
 
-		Type returnType = toolMethod.getGenericReturnType();
+		Type returnType = this.toolMethod.getGenericReturnType();
 
-		return toolCallResultConverter.convert(result, returnType);
+		return this.toolCallResultConverter.convert(result, returnType);
 	}
 
 	private void validateToolContextSupport(@Nullable ToolContext toolContext) {
 		var isNonEmptyToolContextProvided = toolContext != null && !CollectionUtils.isEmpty(toolContext.getContext());
-		var isToolContextAcceptedByMethod = Stream.of(toolMethod.getParameterTypes())
-			.anyMatch(type -> ClassUtils.isAssignable(type, ToolContext.class));
+		var isToolContextAcceptedByMethod = Stream.of(this.toolMethod.getParameterTypes())
+			.anyMatch(type -> ClassUtils.isAssignable(ToolContext.class, type));
 		if (isToolContextAcceptedByMethod && !isNonEmptyToolContextProvided) {
 			throw new IllegalArgumentException("ToolContext is required by the method as an argument");
 		}
@@ -129,62 +129,70 @@ public class MethodToolCallback implements ToolCallback {
 		});
 	}
 
-	// Based on the implementation in MethodInvokingFunctionCallback.
+	// Based on the implementation in MethodToolCallback.
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
-		return Stream.of(toolMethod.getParameters()).map(parameter -> {
+		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
 			if (parameter.getType().isAssignableFrom(ToolContext.class)) {
 				return toolContext;
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
-			return buildTypedArgument(rawArgument, parameter.getType());
+			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
 	}
 
 	@Nullable
-	private Object buildTypedArgument(@Nullable Object value, Class<?> type) {
+	private Object buildTypedArgument(@Nullable Object value, Type type) {
 		if (value == null) {
 			return null;
 		}
-		return JsonParser.toTypedObject(value, type);
+
+		if (type instanceof Class<?>) {
+			return JsonParser.toTypedObject(value, (Class<?>) type);
+		}
+
+		// For generic types, use the fromJson method that accepts Type
+		String json = JsonParser.toJson(value);
+		return JsonParser.fromJson(json, type);
 	}
 
 	@Nullable
 	private Object callMethod(Object[] methodArguments) {
 		if (isObjectNotPublic() || isMethodNotPublic()) {
-			toolMethod.setAccessible(true);
+			this.toolMethod.setAccessible(true);
 		}
 
 		Object result;
 		try {
-			result = toolMethod.invoke(toolObject, methodArguments);
+			result = this.toolMethod.invoke(this.toolObject, methodArguments);
 		}
 		catch (IllegalAccessException ex) {
 			throw new IllegalStateException("Could not access method: " + ex.getMessage(), ex);
 		}
 		catch (InvocationTargetException ex) {
-			throw new ToolExecutionException(toolDefinition, ex.getCause());
+			throw new ToolExecutionException(this.toolDefinition, ex.getCause());
 		}
 		return result;
 	}
 
 	private boolean isObjectNotPublic() {
-		return toolObject != null && !Modifier.isPublic(toolObject.getClass().getModifiers());
+		return this.toolObject != null && !Modifier.isPublic(this.toolObject.getClass().getModifiers());
 	}
 
 	private boolean isMethodNotPublic() {
-		return !Modifier.isPublic(toolMethod.getModifiers());
+		return !Modifier.isPublic(this.toolMethod.getModifiers());
 	}
 
 	@Override
 	public String toString() {
-		return "MethodToolCallback{" + "toolDefinition=" + toolDefinition + ", toolMetadata=" + toolMetadata + '}';
+		return "MethodToolCallback{" + "toolDefinition=" + this.toolDefinition + ", toolMetadata=" + this.toolMetadata
+				+ '}';
 	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ToolDefinition toolDefinition;
 
@@ -225,8 +233,8 @@ public class MethodToolCallback implements ToolCallback {
 		}
 
 		public MethodToolCallback build() {
-			return new MethodToolCallback(toolDefinition, toolMetadata, toolMethod, toolObject,
-					toolCallResultConverter);
+			return new MethodToolCallback(this.toolDefinition, this.toolMetadata, this.toolMethod, this.toolObject,
+					this.toolCallResultConverter);
 		}
 
 	}

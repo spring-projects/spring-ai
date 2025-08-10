@@ -27,11 +27,13 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
@@ -43,6 +45,7 @@ import org.springframework.util.StringUtils;
  * A {@link ToolCallback} implementation to invoke functions as tools.
  *
  * @author Thomas Vitale
+ * @author YunKui Lu
  * @since 1.0.0
  */
 public class FunctionToolCallback<I, O> implements ToolCallback {
@@ -78,12 +81,12 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return toolDefinition;
+		return this.toolDefinition;
 	}
 
 	@Override
 	public ToolMetadata getToolMetadata() {
-		return toolMetadata;
+		return this.toolMetadata;
 	}
 
 	@Override
@@ -95,19 +98,32 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
-		logger.debug("Starting execution of tool: {}", toolDefinition.name());
+		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
 
-		I request = JsonParser.fromJson(toolInput, toolInputType);
-		O response = toolFunction.apply(request, toolContext);
+		I request = JsonParser.fromJson(toolInput, this.toolInputType);
+		O response = callMethod(request, toolContext);
 
-		logger.debug("Successful execution of tool: {}", toolDefinition.name());
+		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
 
-		return toolCallResultConverter.convert(response, null);
+		return this.toolCallResultConverter.convert(response, null);
+	}
+
+	private O callMethod(I request, @Nullable ToolContext toolContext) {
+		try {
+			return this.toolFunction.apply(request, toolContext);
+		}
+		catch (ToolExecutionException ex) {
+			throw ex;
+		}
+		catch (Exception ex) {
+			throw new ToolExecutionException(this.toolDefinition, ex);
+		}
 	}
 
 	@Override
 	public String toString() {
-		return "FunctionToolCallback{" + "toolDefinition=" + toolDefinition + ", toolMetadata=" + toolMetadata + '}';
+		return "FunctionToolCallback{" + "toolDefinition=" + this.toolDefinition + ", toolMetadata=" + this.toolMetadata
+				+ '}';
 	}
 
 	/**
@@ -146,7 +162,7 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		return builder(name, function);
 	}
 
-	public static class Builder<I, O> {
+	public static final class Builder<I, O> {
 
 		private String name;
 
@@ -201,16 +217,16 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 		}
 
 		public FunctionToolCallback<I, O> build() {
-			Assert.notNull(inputType, "inputType cannot be null");
-			var toolDefinition = ToolDefinition.builder()
-				.name(name)
-				.description(
-						StringUtils.hasText(description) ? description : ToolUtils.getToolDescriptionFromName(name))
-				.inputSchema(
-						StringUtils.hasText(inputSchema) ? inputSchema : JsonSchemaGenerator.generateForType(inputType))
+			Assert.notNull(this.inputType, "inputType cannot be null");
+			var toolDefinition = DefaultToolDefinition.builder()
+				.name(this.name)
+				.description(StringUtils.hasText(this.description) ? this.description
+						: ToolUtils.getToolDescriptionFromName(this.name))
+				.inputSchema(StringUtils.hasText(this.inputSchema) ? this.inputSchema
+						: JsonSchemaGenerator.generateForType(this.inputType))
 				.build();
-			return new FunctionToolCallback<>(toolDefinition, toolMetadata, inputType, toolFunction,
-					toolCallResultConverter);
+			return new FunctionToolCallback<>(toolDefinition, this.toolMetadata, this.inputType, this.toolFunction,
+					this.toolCallResultConverter);
 		}
 
 	}

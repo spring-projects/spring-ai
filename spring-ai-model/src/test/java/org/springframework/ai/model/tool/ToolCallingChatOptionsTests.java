@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.tool;
 
 import java.util.List;
@@ -21,9 +22,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,26 +53,6 @@ class ToolCallingChatOptionsTests {
 	@Test
 	void whenToolCallingChatOptionsAndExecutionEnabledDefault() {
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
-	void whenFunctionCallingOptionsAndExecutionEnabledTrue() {
-		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
-		options.setProxyToolCalls(false);
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
-	}
-
-	@Test
-	void whenFunctionCallingOptionsAndExecutionEnabledFalse() {
-		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
-		options.setProxyToolCalls(true);
-		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isFalse();
-	}
-
-	@Test
-	void whenFunctionCallingOptionsAndExecutionEnabledDefault() {
-		FunctionCallingOptions options = FunctionCallingOptions.builder().build();
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isTrue();
 	}
 
@@ -110,39 +90,39 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void whenMergeRuntimeAndDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
-		List<FunctionCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
+		List<ToolCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
-		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
+		assertThat(mergedToolCallbacks.get(0).getToolDefinition().name()).isEqualTo("toolA");
 	}
 
 	@Test
 	void whenMergeRuntimeAndEmptyDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
-		List<FunctionCallback> defaultToolCallbacks = List.of();
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of(new TestToolCallback("toolA"));
+		List<ToolCallback> defaultToolCallbacks = List.of();
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
-		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolA");
+		assertThat(mergedToolCallbacks.get(0).getToolDefinition().name()).isEqualTo("toolA");
 	}
 
 	@Test
 	void whenMergeEmptyRuntimeAndDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of();
-		List<FunctionCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of();
+		List<ToolCallback> defaultToolCallbacks = List.of(new TestToolCallback("toolB"));
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(1);
-		assertThat(mergedToolCallbacks.get(0).getName()).isEqualTo("toolB");
+		assertThat(mergedToolCallbacks.get(0).getToolDefinition().name()).isEqualTo("toolB");
 	}
 
 	@Test
 	void whenMergeEmptyRuntimeAndEmptyDefaultToolCallbacks() {
-		List<FunctionCallback> runtimeToolCallbacks = List.of();
-		List<FunctionCallback> defaultToolCallbacks = List.of();
-		List<FunctionCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
+		List<ToolCallback> runtimeToolCallbacks = List.of();
+		List<ToolCallback> defaultToolCallbacks = List.of();
+		List<ToolCallback> mergedToolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(runtimeToolCallbacks,
 				defaultToolCallbacks);
 		assertThat(mergedToolCallbacks).hasSize(0);
 	}
@@ -190,7 +170,7 @@ class ToolCallingChatOptionsTests {
 
 	@Test
 	void shouldEnsureUniqueToolNames() {
-		List<FunctionCallback> toolCallbacks = List.of(new TestToolCallback("toolA"), new TestToolCallback("toolA"));
+		List<ToolCallback> toolCallbacks = List.of(new TestToolCallback("toolA"), new TestToolCallback("toolA"));
 		assertThatThrownBy(() -> ToolCallingChatOptions.validateToolCallbacks(toolCallbacks))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Multiple tools with the same name (toolA)");
@@ -200,13 +180,13 @@ class ToolCallingChatOptionsTests {
 
 		private final ToolDefinition toolDefinition;
 
-		public TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+		TestToolCallback(String name) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override

@@ -116,9 +116,8 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 		var apiRequest = createRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(MistralAiApi.PROVIDER_NAME)
-			.requestOptions(embeddingRequest.getOptions())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION

@@ -50,9 +50,9 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Please have a look at the list of xref:#_neo4jvectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+Please have a look at the list of xref:#neo4jvector-properties[Configuration Properties] for the vector store to learn about the default values and configuration options.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
 The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
 
@@ -100,7 +100,7 @@ spring:
         initialize-schema: true
         database-name: neo4j
         index-name: custom-index
-        dimensions: 1536
+        embedding-dimension: 1536
         distance-type: cosine
 ----
 
@@ -124,7 +124,7 @@ Properties starting with `spring.ai.vectorstore.neo4j.*` are used to configure t
 |`spring.ai.vectorstore.neo4j.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.neo4j.database-name` | The name of the Neo4j database to use | `neo4j`
 |`spring.ai.vectorstore.neo4j.index-name` | The name of the index to store the vectors | `spring-ai-document-index`
-|`spring.ai.vectorstore.neo4j.dimensions` | The number of dimensions in the vector | `1536`
+|`spring.ai.vectorstore.neo4j.embedding-dimension` | The number of dimensions in the vector | `1536`
 |`spring.ai.vectorstore.neo4j.distance-type` | The distance function to use | `cosine`
 |`spring.ai.vectorstore.neo4j.label` | The label used for document nodes | `Document`
 |`spring.ai.vectorstore.neo4j.embedding-property` | The property name used to store embeddings | `embedding`
@@ -179,7 +179,7 @@ public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
     return Neo4jVectorStore.builder(driver, embeddingModel)
         .databaseName("neo4j")                // Optional: defaults to "neo4j"
         .distanceType(Neo4jDistanceType.COSINE) // Optional: defaults to COSINE
-        .dimensions(1536)                      // Optional: defaults to 1536
+        .embeddingDimension(1536)                      // Optional: defaults to 1536
         .label("Document")                     // Optional: defaults to "Document"
         .embeddingProperty("embedding")        // Optional: defaults to "embedding"
         .indexName("custom-index")             // Optional: defaults to "spring-ai-document-index"

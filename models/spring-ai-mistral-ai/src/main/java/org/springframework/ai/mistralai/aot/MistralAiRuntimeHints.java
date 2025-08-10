@@ -16,12 +16,13 @@
 
 package org.springframework.ai.mistralai.aot;
 
-import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+
+import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 
 /**
  * The MistralAiRuntimeHints class is responsible for registering runtime hints for
@@ -35,7 +36,8 @@ public class MistralAiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage(MistralAiApi.class)) {
+
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.mistralai")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

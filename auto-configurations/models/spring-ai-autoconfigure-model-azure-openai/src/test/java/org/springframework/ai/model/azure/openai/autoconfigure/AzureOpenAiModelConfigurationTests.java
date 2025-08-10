@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.azure.openai.autoconfigure;
 
+import com.azure.ai.openai.OpenAIClientBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -45,6 +46,7 @@ public class AzureOpenAiModelConfigurationTests {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
@@ -55,6 +57,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isEmpty();
 			});
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
@@ -70,6 +73,7 @@ public class AzureOpenAiModelConfigurationTests {
 					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
@@ -84,6 +88,7 @@ public class AzureOpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 			});
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiEmbeddingAutoConfiguration.class))
@@ -91,6 +96,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isEmpty();
 			});
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiEmbeddingAutoConfiguration.class))
@@ -98,6 +104,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 			});
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiEmbeddingAutoConfiguration.class))
@@ -107,6 +114,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
 			});
@@ -119,6 +127,7 @@ public class AzureOpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
 			});
 
@@ -127,6 +136,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiImageOptionsProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isEmpty();
 			});
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiImageAutoConfiguration.class))
@@ -134,6 +144,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiImageOptionsProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 			});
 
 		this.contextRunner.withConfiguration(AutoConfigurations.of(AzureOpenAiImageAutoConfiguration.class))
@@ -144,6 +155,7 @@ public class AzureOpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(AzureOpenAiChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
 			});
 	}
@@ -157,6 +169,7 @@ public class AzureOpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 			});
 
 		this.contextRunner
@@ -165,6 +178,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isEmpty();
 			});
 
 		this.contextRunner
@@ -173,6 +187,7 @@ public class AzureOpenAiModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 			});
 
 		this.contextRunner
@@ -185,6 +200,7 @@ public class AzureOpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(AzureOpenAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiImageModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(AzureOpenAiAudioTranscriptionModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAIClientBuilder.class)).isNotEmpty();
 			});
 	}
 

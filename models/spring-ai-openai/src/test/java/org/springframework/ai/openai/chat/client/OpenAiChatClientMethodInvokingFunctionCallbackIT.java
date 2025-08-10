@@ -29,8 +29,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
-import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.method.MethodToolCallback;
+import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -66,8 +66,8 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
@@ -91,8 +91,8 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Can turn lights on or off by room name")
 						.build())
 					.toolMethod(toolMethod)
@@ -119,8 +119,8 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
@@ -146,8 +146,8 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
@@ -175,13 +175,13 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		assertThatThrownBy(() -> ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Get the weather in location")
 						.build())
 					.toolMethod(toolMethod)
 					.toolObject(targetObject)
-					.build())				
+					.build())
 				.call()
 				.content())
 				.isInstanceOf(IllegalArgumentException.class)
@@ -199,8 +199,8 @@ class OpenAiChatClientMethodInvokingFunctionCallbackIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("Turn light on in the living room.")
-				.tools(MethodToolCallback.builder()
-					.toolDefinition(ToolDefinition.builder(toolMethod)
+				.toolCallbacks(MethodToolCallback.builder()
+					.toolDefinition(ToolDefinitions.builder(toolMethod)
 						.description("Can turn lights on in the Living Room")
 						.build())
 					.toolMethod(toolMethod)

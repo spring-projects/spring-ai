@@ -18,7 +18,7 @@ Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] fo
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -54,13 +54,36 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Enable Titan Embedding Support
 
-By default the Titan embedding model is disabled.
-To enable it set the `spring.ai.bedrock.titan.embedding.enabled` property to `true`.
-Exporting environment variable is one way to set this configuration property:
+By default, the Titan embedding model is disabled.
+To enable it, set the `spring.ai.model.embedding` property to `bedrock-titan` in your application configuration:
+
+[source,properties]
+----
+spring.ai.model.embedding=bedrock-titan
+----
+
+Alternatively, you can use Spring Expression Language (SpEL) to reference an environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    model:
+      embedding: ${AI_MODEL_EMBEDDING}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AI_MODEL_EMBEDDING=bedrock-titan
+----
+
+You can also set this property using Java system properties when starting your application:
 
 [source,shell]
 ----
-export SPRING_AI_BEDROCK_TITAN_EMBEDDING_ENABLED=true
+java -Dspring.ai.model.embedding=bedrock-titan -jar your-application.jar
 ----
 
 === Embedding Properties
@@ -129,7 +152,7 @@ spring.ai.bedrock.aws.region=eu-central-1
 spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
 spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 
-spring.ai.bedrock.titan.embedding.enabled=true
+spring.ai.model.embedding=bedrock-titan
 ----
 
 TIP: replace the `regions`, `access-key` and `secret-key` with your AWS credentials.

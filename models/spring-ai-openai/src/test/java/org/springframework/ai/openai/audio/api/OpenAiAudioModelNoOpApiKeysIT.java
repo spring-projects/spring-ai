@@ -31,6 +31,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * @author Ilayaperumal Gopinathan
+ * @author Jonghoon Park
  */
 @SpringBootTest(classes = OpenAiAudioModelNoOpApiKeysIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -41,15 +42,13 @@ public class OpenAiAudioModelNoOpApiKeysIT {
 
 	@Test
 	void checkNoOpKey() {
-		assertThatThrownBy(() -> {
-			this.audioApi
-				.createSpeech(OpenAiAudioApi.SpeechRequest.builder()
-					.model(OpenAiAudioApi.TtsModel.TTS_1_HD.getValue())
-					.input("Hello, my name is Chris and I love Spring A.I.")
-					.voice(OpenAiAudioApi.SpeechRequest.Voice.ONYX)
-					.build())
-				.getBody();
-		}).isInstanceOf(NonTransientAiException.class);
+		assertThatThrownBy(() -> this.audioApi
+			.createSpeech(OpenAiAudioApi.SpeechRequest.builder()
+				.model(OpenAiAudioApi.TtsModel.TTS_1_HD.getValue())
+				.input("Hello, my name is Chris and I love Spring A.I.")
+				.voice(OpenAiAudioApi.SpeechRequest.Voice.ONYX.getValue())
+				.build())
+			.getBody()).isInstanceOf(NonTransientAiException.class);
 	}
 
 	@SpringBootConfiguration

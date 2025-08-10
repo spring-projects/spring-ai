@@ -16,7 +16,6 @@
 
 package org.springframework.ai.image.observation;
 
-import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;
@@ -32,25 +31,14 @@ import org.springframework.util.Assert;
  */
 public class ImageModelObservationContext extends ModelObservationContext<ImagePrompt, ImageResponse> {
 
-	private final ImageOptions requestOptions;
-
-	ImageModelObservationContext(ImagePrompt imagePrompt, String provider, ImageOptions requestOptions) {
+	ImageModelObservationContext(ImagePrompt imagePrompt, String provider) {
 		super(imagePrompt,
 				AiOperationMetadata.builder().operationType(AiOperationType.IMAGE.value()).provider(provider).build());
-		Assert.notNull(requestOptions, "requestOptions cannot be null");
-		this.requestOptions = requestOptions;
+		Assert.notNull(imagePrompt.getOptions(), "image options cannot be null");
 	}
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	/**
-	 * @deprecated Use {@link #getRequest().getOptions()} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	public ImageOptions getRequestOptions() {
-		return this.requestOptions;
 	}
 
 	public String getOperationType() {
@@ -62,8 +50,6 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 		private ImagePrompt imagePrompt;
 
 		private String provider;
-
-		private ImageOptions requestOptions;
 
 		private Builder() {
 		}
@@ -78,18 +64,8 @@ public class ImageModelObservationContext extends ModelObservationContext<ImageP
 			return this;
 		}
 
-		/**
-		 * @deprecated ImageOptions are passed in the ImagePrompt object and should not be
-		 * set separately anymore.
-		 */
-		@Deprecated(forRemoval = true)
-		public Builder requestOptions(ImageOptions requestOptions) {
-			this.requestOptions = requestOptions;
-			return this;
-		}
-
 		public ImageModelObservationContext build() {
-			return new ImageModelObservationContext(this.imagePrompt, this.provider, this.requestOptions);
+			return new ImageModelObservationContext(this.imagePrompt, this.provider);
 		}
 
 	}

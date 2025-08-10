@@ -37,6 +37,7 @@ public class AnthropicPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 					"spring.ai.anthropic.base-url=TEST_BASE_URL",
+					"spring.ai.anthropic.completions-path=message-path",
 					"spring.ai.anthropic.api-key=abc123",
 					"spring.ai.anthropic.version=6666",
 					"spring.ai.anthropic.beta-version=7777",
@@ -53,6 +54,7 @@ public class AnthropicPropertiesTests {
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(connectionProperties.getVersion()).isEqualTo("6666");
 				assertThat(connectionProperties.getBetaVersion()).isEqualTo("7777");
+				assertThat(connectionProperties.getCompletionsPath()).isEqualTo("message-path");
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
@@ -100,7 +102,7 @@ public class AnthropicPropertiesTests {
 	public void chatCompletionDisabled() {
 
 		// It is enabled by default
-		new ApplicationContextRunner()
+		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
@@ -109,7 +111,8 @@ public class AnthropicPropertiesTests {
 			});
 
 		// Explicitly enable the chat auto-configuration.
-		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=anthropic")
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY", "spring.ai.model.chat=anthropic")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> {
@@ -121,9 +124,7 @@ public class AnthropicPropertiesTests {
 		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=none")
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
 					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty();
-			});
+			.run(context -> assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty());
 	}
 
 }

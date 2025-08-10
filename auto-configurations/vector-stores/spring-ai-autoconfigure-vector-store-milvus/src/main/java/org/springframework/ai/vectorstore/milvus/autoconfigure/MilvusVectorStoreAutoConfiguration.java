@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit;
 import io.micrometer.observation.ObservationRegistry;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
-
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
+
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;

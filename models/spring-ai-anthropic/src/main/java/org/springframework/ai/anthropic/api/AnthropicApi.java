@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
+import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -50,6 +54,16 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 /**
  * The Anthropic API client.
  *
@@ -57,13 +71,25 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Jihoon Kim
+ * @author Alexandros Pappas
+ * @author Jonghoon Park
+ * @author Claudio Silva Junior
+ * @author Filip Hrisafov
  * @since 1.0.0
  */
-public class AnthropicApi {
+public final class AnthropicApi {
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static final String PROVIDER_NAME = AiProvider.ANTHROPIC.value();
 
 	public static final String DEFAULT_BASE_URL = "https://api.anthropic.com";
+
+	public static final String DEFAULT_MESSAGE_COMPLETIONS_PATH = "/v1/messages";
 
 	public static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
 
@@ -81,48 +107,20 @@ public class AnthropicApi {
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
+	private final String completionsPath;
+
 	private final RestClient restClient;
 
 	private final StreamHelper streamHelper = new StreamHelper();
 
 	private final WebClient webClient;
 
-	/**
-	 * Create a new client api with DEFAULT_BASE_URL
-	 * @param anthropicApiKey Anthropic api Key.
-	 */
-	public AnthropicApi(String anthropicApiKey) {
-		this(DEFAULT_BASE_URL, anthropicApiKey);
-	}
+	private final ApiKey apiKey;
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param anthropicApiKey Anthropic api Key.
-	 */
-	public AnthropicApi(String baseUrl, String anthropicApiKey) {
-		this(baseUrl, anthropicApiKey, DEFAULT_ANTHROPIC_VERSION, RestClient.builder(), WebClient.builder(),
-				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
-	 * @param anthropicApiKey Anthropic api Key.
-	 * @param restClientBuilder RestClient builder.
-	 * @param webClientBuilder WebClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, anthropicApiKey, anthropicVersion, restClientBuilder, webClientBuilder, responseErrorHandler,
-				DEFAULT_ANTHROPIC_BETA_VERSION);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
+	 * @param completionsPath path to append to the base URL.
 	 * @param anthropicApiKey Anthropic api Key.
 	 * @param anthropicVersion Anthropic version.
 	 * @param restClientBuilder RestClient builder.
@@ -130,23 +128,27 @@ public class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	public AnthropicApi(String baseUrl, String anthropicApiKey, String anthropicVersion,
+	private AnthropicApi(String baseUrl, String completionsPath, ApiKey anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.add(HEADER_X_API_KEY, anthropicApiKey);
 			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
 			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.completionsPath = completionsPath;
+		this.apiKey = anthropicApiKey;
+
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl)
+		this.webClient = webClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(HttpStatusCode::isError,
 					resp -> resp.bodyToMono(String.class)
@@ -179,12 +181,17 @@ public class AnthropicApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
+		// @formatter:off
 		return this.restClient.post()
-			.uri("/v1/messages")
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.uri(this.completionsPath)
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			})
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletionResponse.class);
+		// @formatter:on
 	}
 
 	/**
@@ -215,9 +222,13 @@ public class AnthropicApi {
 
 		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
 
+		// @formatter:off
 		return this.webClient.post()
-			.uri("/v1/messages")
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.uri(this.completionsPath)
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			}) // @formatter:off
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -227,6 +238,9 @@ public class AnthropicApi {
 			.filter(event -> event.type() != EventType.PING)
 			// Detect if the chunk is part of a streaming function call.
 			.map(event -> {
+				
+				logger.debug("Received event: {}", event);
+
 				if (this.streamHelper.isToolUseStart(event)) {
 					isInsideTool.set(true);
 				}
@@ -251,6 +265,15 @@ public class AnthropicApi {
 			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
 	}
 
+	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
+		if (!headers.containsKey(HEADER_X_API_KEY)) {
+			String apiKeyValue = this.apiKey.getValue();
+			if (StringUtils.hasText(apiKeyValue)) {
+				headers.add(HEADER_X_API_KEY, apiKeyValue);
+			}
+		}
+	}
+
 	/**
 	 * Check the <a href="https://docs.anthropic.com/claude/docs/models-overview">Models
 	 * overview</a> and <a href=
@@ -261,12 +284,22 @@ public class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-opus-4-0 model.
+		 */
+		CLAUDE_OPUS_4("claude-opus-4-0"),
+
+		/**
+		 * The claude-sonnet-4-0 model.
+		 */
+		CLAUDE_SONNET_4("claude-sonnet-4-0"),
+
+		/**
 		 * The claude-3-7-sonnet-latest model.
 		 */
 		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
-		
+
 		/**
-		 * The claude-3-5-sonnet-20241022 model.
+		 * The claude-3-5-sonnet-latest model.
 		 */
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
 
@@ -350,6 +383,25 @@ public class AnthropicApi {
 	}
 
 	/**
+	 * The thinking type.
+	 */
+	public enum ThinkingType {
+
+		/**
+		 * Enabled thinking type.
+		 */
+		@JsonProperty("enabled")
+		ENABLED,
+
+		/**
+		 * Disabled thinking type.
+		 */
+		@JsonProperty("disabled")
+		DISABLED
+
+	}
+
+	/**
 	 * The event type of the streamed chunk.
 	 */
 	public enum EventType {
@@ -414,11 +466,8 @@ public class AnthropicApi {
 	@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockStartEvent.class, name = "content_block_start"),
 			@JsonSubTypes.Type(value = ContentBlockDeltaEvent.class, name = "content_block_delta"),
 			@JsonSubTypes.Type(value = ContentBlockStopEvent.class, name = "content_block_stop"),
-
 			@JsonSubTypes.Type(value = PingEvent.class, name = "ping"),
-
 			@JsonSubTypes.Type(value = ErrorEvent.class, name = "error"),
-
 			@JsonSubTypes.Type(value = MessageStartEvent.class, name = "message_start"),
 			@JsonSubTypes.Type(value = MessageDeltaEvent.class, name = "message_delta"),
 			@JsonSubTypes.Type(value = MessageStopEvent.class, name = "message_stop") })
@@ -470,6 +519,8 @@ public class AnthropicApi {
 	 * return tool_use content blocks that represent the model's use of those tools. You
 	 * can then run those tools using the tool input generated by the model and then
 	 * optionally return results back to the model using tool_result content blocks.
+	 * @param thinking Configuration for the model's thinking mode. When enabled, the
+	 * model can perform more in-depth reasoning before responding to a query.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -484,17 +535,18 @@ public class AnthropicApi {
 		@JsonProperty("temperature") Double temperature,
 		@JsonProperty("top_p") Double topP,
 		@JsonProperty("top_k") Integer topK,
-		@JsonProperty("tools") List<Tool> tools) {
+		@JsonProperty("tools") List<Tool> tools,
+		@JsonProperty("thinking") ThinkingConfig thinking) {
 		// @formatter:on
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
 				Double temperature, Boolean stream) {
-			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null);
+			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null);
 		}
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
 				List<String> stopSequences, Double temperature, Boolean stream) {
-			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null);
+			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null);
 		}
 
 		/**
@@ -523,6 +575,18 @@ public class AnthropicApi {
 			return new ChatCompletionRequestBuilder(request);
 		}
 
+		/**
+		 * Configuration for the model's thinking mode.
+		 *
+		 * @param type The type of thinking mode. Currently, "enabled" is supported.
+		 * @param budgetTokens The token budget available for the thinking process. Must
+		 * be ≥1024 and less than max_tokens.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ThinkingConfig(@JsonProperty("type") ThinkingType type,
+				@JsonProperty("budget_tokens") Integer budgetTokens) {
+		}
+
 	}
 
 	public static final class ChatCompletionRequestBuilder {
@@ -549,6 +613,8 @@ public class AnthropicApi {
 
 		private List<Tool> tools;
 
+		private ChatCompletionRequest.ThinkingConfig thinking;
+
 		private ChatCompletionRequestBuilder() {
 		}
 
@@ -564,71 +630,82 @@ public class AnthropicApi {
 			this.topP = request.topP;
 			this.topK = request.topK;
 			this.tools = request.tools;
+			this.thinking = request.thinking;
 		}
 
-		public ChatCompletionRequestBuilder withModel(ChatModel model) {
+		public ChatCompletionRequestBuilder model(ChatModel model) {
 			this.model = model.getValue();
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withModel(String model) {
+		public ChatCompletionRequestBuilder model(String model) {
 			this.model = model;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withMessages(List<AnthropicMessage> messages) {
+		public ChatCompletionRequestBuilder messages(List<AnthropicMessage> messages) {
 			this.messages = messages;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withSystem(String system) {
+		public ChatCompletionRequestBuilder system(String system) {
 			this.system = system;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withMaxTokens(Integer maxTokens) {
+		public ChatCompletionRequestBuilder maxTokens(Integer maxTokens) {
 			this.maxTokens = maxTokens;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withMetadata(ChatCompletionRequest.Metadata metadata) {
+		public ChatCompletionRequestBuilder metadata(ChatCompletionRequest.Metadata metadata) {
 			this.metadata = metadata;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withStopSequences(List<String> stopSequences) {
+		public ChatCompletionRequestBuilder stopSequences(List<String> stopSequences) {
 			this.stopSequences = stopSequences;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withStream(Boolean stream) {
+		public ChatCompletionRequestBuilder stream(Boolean stream) {
 			this.stream = stream;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withTemperature(Double temperature) {
+		public ChatCompletionRequestBuilder temperature(Double temperature) {
 			this.temperature = temperature;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withTopP(Double topP) {
+		public ChatCompletionRequestBuilder topP(Double topP) {
 			this.topP = topP;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withTopK(Integer topK) {
+		public ChatCompletionRequestBuilder topK(Integer topK) {
 			this.topK = topK;
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder withTools(List<Tool> tools) {
+		public ChatCompletionRequestBuilder tools(List<Tool> tools) {
 			this.tools = tools;
+			return this;
+		}
+
+		public ChatCompletionRequestBuilder thinking(ChatCompletionRequest.ThinkingConfig thinking) {
+			this.thinking = thinking;
+			return this;
+		}
+
+		public ChatCompletionRequestBuilder thinking(ThinkingType type, Integer budgetTokens) {
+			this.thinking = new ChatCompletionRequest.ThinkingConfig(type, budgetTokens);
 			return this;
 		}
 
 		public ChatCompletionRequest build() {
 			return new ChatCompletionRequest(this.model, this.messages, this.system, this.maxTokens, this.metadata,
-					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools);
+					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools, this.thinking);
 		}
 
 	}
@@ -680,6 +757,7 @@ public class AnthropicApi {
 	 * response.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlock(
 	// @formatter:off
 		@JsonProperty("type") Type type,
@@ -700,6 +778,13 @@ public class AnthropicApi {
 
 		// cache object
 		@JsonProperty("cache_control") CacheControl cacheControl
+
+    // Thinking only
+		@JsonProperty("signature") String signature,
+		@JsonProperty("thinking") String thinking,
+
+		// Redacted Thinking only
+		@JsonProperty("data") String data
 		) {
 		// @formatter:on
 
@@ -718,7 +803,7 @@ public class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Type type, Source source) {
-			this(type, source, null, null, null, null, null, null, null, null);
+			this(type, source, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -726,7 +811,7 @@ public class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Source source) {
-			this(Type.IMAGE, source, null, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -738,7 +823,7 @@ public class AnthropicApi {
 		}
 
 		public ContentBlock(String text, CacheControl cache) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, cache);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, cache null, null);
 		}
 
 		// Tool result
@@ -749,7 +834,7 @@ public class AnthropicApi {
 		 * @param content The content of the tool result.
 		 */
 		public ContentBlock(Type type, String toolUseId, String content) {
-			this(type, null, null, null, null, null, null, toolUseId, content, null);
+			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null, null);
 		}
 
 		/**
@@ -760,7 +845,7 @@ public class AnthropicApi {
 		 * @param index The index of the content block.
 		 */
 		public ContentBlock(Type type, Source source, String text, Integer index) {
-			this(type, source, text, index, null, null, null, null, null, null);
+			this(type, source, text, index, null, null, null, null, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
@@ -772,7 +857,7 @@ public class AnthropicApi {
 		 * @param input The input of the tool use.
 		 */
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
-			this(type, null, null, null, id, name, input, null, null, null);
+			this(type, null, null, null, id, name, input, null, null, null, null, null, null);
 		}
 
 		/**
@@ -805,6 +890,22 @@ public class AnthropicApi {
 			TEXT_DELTA("text_delta"),
 
 			/**
+			 * When using extended thinking with streaming enabled, you’ll receive
+			 * thinking content via thinking_delta events. These deltas correspond to the
+			 * thinking field of the thinking content blocks.
+			 */
+			@JsonProperty("thinking_delta")
+			THINKING_DELTA("thinking_delta"),
+
+			/**
+			 * For thinking content, a special signature_delta event is sent just before
+			 * the content_block_stop event. This signature is used to verify the
+			 * integrity of the thinking block.
+			 */
+			@JsonProperty("signature_delta")
+			SIGNATURE_DELTA("signature_delta"),
+
+			/**
 			 * Tool use input partial JSON delta streaming.
 			 */
 			@JsonProperty("input_json_delta")
@@ -820,7 +921,19 @@ public class AnthropicApi {
 			 * Document message.
 			 */
 			@JsonProperty("document")
-			DOCUMENT("document");
+			DOCUMENT("document"),
+
+			/**
+			 * Thinking message.
+			 */
+			@JsonProperty("thinking")
+			THINKING("thinking"),
+
+			/**
+			 * Redacted Thinking message.
+			 */
+			@JsonProperty("redacted_thinking")
+			REDACTED_THINKING("redacted_thinking");
 
 			public final String value;
 
@@ -852,7 +965,8 @@ public class AnthropicApi {
 		// @formatter:off
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
-			@JsonProperty("data") String data) {
+			@JsonProperty("data") String data,
+			@JsonProperty("url") String url) {
 			// @formatter:on
 
 			/**
@@ -861,7 +975,11 @@ public class AnthropicApi {
 			 * @param data The content data.
 			 */
 			public Source(String mediaType, String data) {
-				this("base64", mediaType, data);
+				this("base64", mediaType, data, null);
+			}
+
+			public Source(String url) {
+				this("url", null, null, url);
 			}
 
 		}
@@ -906,6 +1024,7 @@ public class AnthropicApi {
 	 * @param usage Input and output token usage.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionResponse(
 	// @formatter:off
 		@JsonProperty("id") String id,
@@ -928,6 +1047,7 @@ public class AnthropicApi {
 	 * @param outputTokens The number of output tokens which were used. completion).
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
@@ -973,8 +1093,7 @@ public class AnthropicApi {
 		  * @return True if the event is empty, false otherwise.
 		*/
 		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
+			return (this.index == null || this.id == null || this.name == null);
 		}
 
 		ToolUseAggregationEvent withIndex(Integer index) {
@@ -1028,6 +1147,7 @@ public class AnthropicApi {
 	 * @param contentBlock The content block body.
 	*/
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlockStartEvent(
 			// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1036,8 +1156,11 @@ public class AnthropicApi {
 
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
-		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
-				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text") })
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
+				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text"),
+				@JsonSubTypes.Type(value = ContentBlockThinking.class, name = "thinking")
+		})
 		public interface ContentBlockBody {
 			String type();
 		}
@@ -1050,6 +1173,7 @@ public class AnthropicApi {
 		  * @param input The tool use input.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockToolUse(
 			@JsonProperty("type") String type,
 			@JsonProperty("id") String id,
@@ -1063,10 +1187,24 @@ public class AnthropicApi {
 		  * @param text The text content.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockText(
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockBody {
 		}
+
+		/**
+		 * Thinking content block.
+		 * @param type The content block type.
+		 * @param thinking The thinking content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ContentBlockThinking(
+			@JsonProperty("type") String type,
+			@JsonProperty("thinking") String thinking,
+			@JsonProperty("signature") String signature) implements ContentBlockBody {
+		}
+		
 	}
 	// @formatter:on
 
@@ -1080,6 +1218,7 @@ public class AnthropicApi {
 	 * @param delta The content block delta body.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlockDeltaEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1089,7 +1228,10 @@ public class AnthropicApi {
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
 		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockDeltaText.class, name = "text_delta"),
-				@JsonSubTypes.Type(value = ContentBlockDeltaJson.class, name = "input_json_delta") })
+				@JsonSubTypes.Type(value = ContentBlockDeltaJson.class, name = "input_json_delta"),
+				@JsonSubTypes.Type(value = ContentBlockDeltaThinking.class, name = "thinking_delta"),
+				@JsonSubTypes.Type(value = ContentBlockDeltaSignature.class, name = "signature_delta")
+		})
 		public interface ContentBlockDeltaBody {
 			String type();
 		}
@@ -1100,6 +1242,7 @@ public class AnthropicApi {
 		 * @param text The text content.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockDeltaText(
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockDeltaBody {
@@ -1111,9 +1254,34 @@ public class AnthropicApi {
 		  * @param partialJson The partial JSON content.
 		  */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockDeltaJson(
 			@JsonProperty("type") String type,
 			@JsonProperty("partial_json") String partialJson) implements ContentBlockDeltaBody {
+		}
+
+		/**
+		 * Thinking content block delta.
+		 * @param type The content block type.
+		 * @param thinking The thinking content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ContentBlockDeltaThinking(
+			@JsonProperty("type") String type,
+			@JsonProperty("thinking") String thinking) implements ContentBlockDeltaBody {
+		}
+
+		/**
+		 * Signature content block delta.
+		 * @param type The content block type.
+		 * @param signature The signature content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ContentBlockDeltaSignature(
+			@JsonProperty("type") String type,
+			@JsonProperty("signature") String signature) implements ContentBlockDeltaBody {
 		}
 	}
 	// @formatter:on
@@ -1127,6 +1295,7 @@ public class AnthropicApi {
 	 * @param index The index of the content block.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ContentBlockStopEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1141,6 +1310,7 @@ public class AnthropicApi {
 	 * @param message The message body.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record MessageStartEvent(// @formatter:off
 		@JsonProperty("type") EventType type,
 		@JsonProperty("message") ChatCompletionResponse message) implements StreamEvent {
@@ -1155,6 +1325,7 @@ public class AnthropicApi {
 	 * @param usage The message delta usage.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record MessageDeltaEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1166,6 +1337,7 @@ public class AnthropicApi {
 		  * @param stopSequence The stop sequence.
 		  */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MessageDelta(
 			@JsonProperty("stop_reason") String stopReason,
 			@JsonProperty("stop_sequence") String stopSequence) {
@@ -1176,6 +1348,7 @@ public class AnthropicApi {
 		 * @param outputTokens The output tokens.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MessageDeltaUsage(
 			@JsonProperty("output_tokens") Integer outputTokens) {
 		}
@@ -1188,6 +1361,7 @@ public class AnthropicApi {
 	 * @param type The event type.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record MessageStopEvent(
 	//@formatter:off
 		@JsonProperty("type") EventType type) implements StreamEvent {
@@ -1204,6 +1378,7 @@ public class AnthropicApi {
 	 * @param error The error body.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ErrorEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type,
@@ -1215,6 +1390,7 @@ public class AnthropicApi {
 		 * @param message The error message.
 		*/
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Error(
 			@JsonProperty("type") String type,
 			@JsonProperty("message") String message) {
@@ -1231,10 +1407,92 @@ public class AnthropicApi {
 	 * @param type The event type.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record PingEvent(
 	// @formatter:off
 		@JsonProperty("type") EventType type) implements StreamEvent {
 	}
 	// @formatter:on
+
+	public static class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String completionsPath = DEFAULT_MESSAGE_COMPLETIONS_PATH;
+
+		private ApiKey apiKey;
+
+		private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		private String anthropicBetaFeatures = DEFAULT_ANTHROPIC_BETA_VERSION;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder completionsPath(String completionsPath) {
+			Assert.hasText(completionsPath, "completionsPath cannot be null or empty");
+			this.completionsPath = completionsPath;
+			return this;
+		}
+
+		public Builder apiKey(ApiKey apiKey) {
+			Assert.notNull(apiKey, "apiKey cannot be null");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
+			return this;
+		}
+
+		public Builder anthropicVersion(String anthropicVersion) {
+			Assert.notNull(anthropicVersion, "anthropicVersion cannot be null");
+			this.anthropicVersion = anthropicVersion;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public Builder anthropicBetaFeatures(String anthropicBetaFeatures) {
+			Assert.notNull(anthropicBetaFeatures, "anthropicBetaFeatures cannot be null");
+			this.anthropicBetaFeatures = anthropicBetaFeatures;
+			return this;
+		}
+
+		public AnthropicApi build() {
+			Assert.notNull(this.apiKey, "apiKey must be set");
+			return new AnthropicApi(this.baseUrl, this.completionsPath, this.apiKey, this.anthropicVersion,
+					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler,
+					this.anthropicBetaFeatures);
+		}
+
+	}
 
 }

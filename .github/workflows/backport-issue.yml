@@ -1,0 +1,12 @@
+name: Backport Issue
+
+on:
+  push:
+    branches:
+      - '*.x'
+
+jobs:
+  backport-issue:
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-backport-issue.yml@main
+    secrets:
+      GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}

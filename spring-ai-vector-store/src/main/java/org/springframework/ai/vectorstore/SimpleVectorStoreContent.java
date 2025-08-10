@@ -25,11 +25,11 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.content.Content;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.ai.content.Content;
 import org.springframework.util.Assert;
 
 /**
@@ -101,19 +101,6 @@ public final class SimpleVectorStoreContent implements Content {
 		this.text = text;
 		this.metadata = Map.copyOf(metadata);
 		this.embedding = Arrays.copyOf(embedding, embedding.length);
-	}
-
-	/**
-	 * Creates a new instance with an updated embedding vector.
-	 * @param embedding the new embedding vector, must not be null
-	 * @return a new instance with the updated embedding
-	 * @throws IllegalArgumentException if embedding is null or empty
-	 */
-	@Deprecated(forRemoval = true, since = "1.0.0-M7")
-	public SimpleVectorStoreContent withEmbedding(float[] embedding) {
-		Assert.notNull(embedding, "embedding must not be null");
-		Assert.isTrue(embedding.length > 0, "embedding vector must not be empty");
-		return new SimpleVectorStoreContent(this.id, this.text, this.metadata, embedding);
 	}
 
 	public String getId() {

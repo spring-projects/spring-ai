@@ -71,7 +71,7 @@ public class ElasticsearchVectorStoreOptions {
 	}
 
 	public String getEmbeddingFieldName() {
-		return embeddingFieldName;
+		return this.embeddingFieldName;
 	}
 
 	public void setEmbeddingFieldName(String embeddingFieldName) {

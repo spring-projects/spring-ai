@@ -80,7 +80,7 @@ class OpenAiUsageTests {
 
 	@Test
 	void whenPromptAndCompletionTokensDetailsIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null, null, null);
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null);
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		assertThat(usage.getTotalTokens()).isEqualTo(300);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
@@ -90,7 +90,7 @@ class OpenAiUsageTests {
 
 	@Test
 	void whenCompletionTokenDetailsIsNull() {
-		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null, null, null);
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null, null);
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		assertThat(usage.getTotalTokens()).isEqualTo(300);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
@@ -100,7 +100,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenReasoningTokensIsNull() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null), null, null);
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.completionTokenDetails().reasoningTokens()).isEqualTo(null);
@@ -109,7 +109,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenCompletionTokenDetailsIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(50, null, null, null), null, null);
+				new OpenAiApi.Usage.CompletionTokenDetails(50, null, null, null));
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.completionTokenDetails().reasoningTokens()).isEqualTo(50);
@@ -121,7 +121,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenAcceptedPredictionTokensIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null, 75, null, null), null, null);
+				new OpenAiApi.Usage.CompletionTokenDetails(null, 75, null, null));
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.completionTokenDetails().reasoningTokens()).isEqualTo(null);
@@ -133,7 +133,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenAudioTokensIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null, null, 125, null), null, null);
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, 125, null));
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.completionTokenDetails().reasoningTokens()).isEqualTo(null);
@@ -145,7 +145,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenRejectedPredictionTokensIsNull() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null), null, null);
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, null));
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.completionTokenDetails().reasoningTokens()).isEqualTo(null);
@@ -159,7 +159,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenRejectedPredictionTokensIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300, null,
-				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, 25), null, null);
+				new OpenAiApi.Usage.CompletionTokenDetails(null, null, null, 25));
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.completionTokenDetails().reasoningTokens()).isEqualTo(null);
@@ -171,7 +171,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenCacheTokensIsNull() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
-				new OpenAiApi.Usage.PromptTokensDetails(null, null), null, null, null);
+				new OpenAiApi.Usage.PromptTokensDetails(null, null), null);
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.promptTokensDetails().audioTokens()).isEqualTo(null);
@@ -181,7 +181,7 @@ class OpenAiUsageTests {
 	@Test
 	void whenCacheTokensIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
-				new OpenAiApi.Usage.PromptTokensDetails(99, 15), null, null, null);
+				new OpenAiApi.Usage.PromptTokensDetails(99, 15), null);
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.promptTokensDetails().audioTokens()).isEqualTo(99);
@@ -191,25 +191,39 @@ class OpenAiUsageTests {
 	@Test
 	void whenPromptCacheHitTokensIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
-				new OpenAiApi.Usage.PromptTokensDetails(99, 15), null, 150, null);
+				new OpenAiApi.Usage.PromptTokensDetails(99, 15), null);
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.promptTokensDetails().audioTokens()).isEqualTo(99);
 		assertThat(nativeUsage.promptTokensDetails().cachedTokens()).isEqualTo(15);
-		assertThat(nativeUsage.promptCacheHitTokens()).isEqualTo(150);
-		assertThat(nativeUsage.promptCacheMissTokens()).isNull();
 	}
 
 	@Test
 	void whenPromptCacheMissTokensIsPresent() {
 		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(100, 200, 300,
-				new OpenAiApi.Usage.PromptTokensDetails(99, 15), null, null, 80);
+				new OpenAiApi.Usage.PromptTokensDetails(99, 15), null);
 		DefaultUsage usage = getDefaultUsage(openAiUsage);
 		OpenAiApi.Usage nativeUsage = (OpenAiApi.Usage) usage.getNativeUsage();
 		assertThat(nativeUsage.promptTokensDetails().audioTokens()).isEqualTo(99);
 		assertThat(nativeUsage.promptTokensDetails().cachedTokens()).isEqualTo(15);
-		assertThat(nativeUsage.promptCacheMissTokens()).isEqualTo(80);
-		assertThat(nativeUsage.promptCacheHitTokens()).isNull();
+	}
+
+	@Test
+	void whenAllTokenCountsAreZero() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(0, 0, 0);
+		DefaultUsage usage = getDefaultUsage(openAiUsage);
+		assertThat(usage.getPromptTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokens()).isEqualTo(0);
+		assertThat(usage.getTotalTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void whenAllTokenCountsAreNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(null, null, null);
+		DefaultUsage usage = getDefaultUsage(openAiUsage);
+		assertThat(usage.getPromptTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokens()).isEqualTo(0);
+		assertThat(usage.getTotalTokens()).isEqualTo(0);
 	}
 
 }

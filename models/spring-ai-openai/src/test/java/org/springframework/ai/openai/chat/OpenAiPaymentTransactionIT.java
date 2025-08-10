@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,18 +31,15 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
@@ -64,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Thomas Vitale
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
@@ -81,13 +79,13 @@ public class OpenAiPaymentTransactionIT {
 	@ValueSource(strings = { "paymentStatus", "paymentStatuses" })
 	public void transactionPaymentStatuses(String functionName) {
 		List<TransactionStatusResponse> content = this.chatClient.prompt()
-			.advisors(new LoggingAdvisor())
-			.tools(functionName)
+			.advisors(new SimpleLoggerAdvisor())
+			.toolNames(functionName)
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
 			.call()
-			.entity(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
+			.entity(new ParameterizedTypeReference<>() {
 
 			});
 
@@ -112,8 +110,8 @@ public class OpenAiPaymentTransactionIT {
 		});
 
 		Flux<String> flux = this.chatClient.prompt()
-			.advisors(new LoggingAdvisor())
-			.tools(functionName)
+			.advisors(new SimpleLoggerAdvisor())
+			.toolNames(functionName)
 			.user(u -> u.text("""
 					What is the status of my payment transactions 001, 002 and 003?
 
@@ -138,49 +136,6 @@ public class OpenAiPaymentTransactionIT {
 	}
 
 	record TransactionStatusResponse(String id, String status) {
-
-	}
-
-	private static class LoggingAdvisor implements CallAroundAdvisor {
-
-		private final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
-
-		public String getName() {
-			return this.getClass().getSimpleName();
-		}
-
-		@Override
-		public int getOrder() {
-			return 0;
-		}
-
-		@Override
-		public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-
-			advisedRequest = this.before(advisedRequest);
-
-			AdvisedResponse advisedResponse = chain.nextAroundCall(advisedRequest);
-
-			this.observeAfter(advisedResponse);
-
-			return advisedResponse;
-		}
-
-		private AdvisedRequest before(AdvisedRequest request) {
-			logger.info("System text: \n" + request.systemText());
-			logger.info("System params: " + request.systemParams());
-			logger.info("User text: \n" + request.userText());
-			logger.info("User params:" + request.userParams());
-			logger.info("Function names: " + request.functionNames());
-
-			logger.info("Options: " + request.chatOptions().toString());
-
-			return request;
-		}
-
-		private void observeAfter(AdvisedResponse advisedResponse) {
-			logger.info("Response: " + advisedResponse.response());
-		}
 
 	}
 
@@ -245,9 +200,9 @@ public class OpenAiPaymentTransactionIT {
 		@Bean
 		@ConditionalOnMissingBean
 		ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-				List<FunctionCallback> functionCallbacks, List<ToolCallbackProvider> tcbProviders) {
+				List<ToolCallback> toolCallback, List<ToolCallbackProvider> tcbProviders) {
 
-			List<FunctionCallback> allFunctionAndToolCallbacks = new ArrayList<>(functionCallbacks);
+			List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallback);
 			tcbProviders.stream()
 				.map(pr -> List.of(pr.getToolCallbacks()))
 				.forEach(allFunctionAndToolCallbacks::addAll);

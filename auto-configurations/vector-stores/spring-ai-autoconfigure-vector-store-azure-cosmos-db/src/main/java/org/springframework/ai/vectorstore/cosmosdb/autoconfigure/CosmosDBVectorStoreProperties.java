@@ -16,6 +16,9 @@
 
 package org.springframework.ai.vectorstore.cosmosdb.autoconfigure;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -25,7 +28,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Theo van Kraay
  * @since 1.0.0
  */
-
 @ConfigurationProperties(CosmosDBVectorStoreProperties.CONFIG_PREFIX)
 public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
@@ -47,6 +49,8 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String key;
 
+	private String connectionMode;
+
 	public int getVectorStoreThroughput() {
 		return this.vectorStoreThroughput;
 	}
@@ -63,6 +67,12 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 		this.metadataFields = metadataFields;
 	}
 
+	public List<String> getMetadataFieldList() {
+		return this.metadataFields != null
+				? Arrays.stream(this.metadataFields.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList()
+				: List.of();
+	}
+
 	public String getEndpoint() {
 		return this.endpoint;
 	}
@@ -77,6 +87,14 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setKey(String key) {
 		this.key = key;
+	}
+
+	public void setConnectionMode(String connectionMode) {
+		this.connectionMode = connectionMode;
+	}
+
+	public String getConnectionMode() {
+		return this.connectionMode;
 	}
 
 	public String getDatabaseName() {

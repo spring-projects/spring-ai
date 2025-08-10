@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi;
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
-import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
@@ -65,8 +65,11 @@ public class ChromaVectorStoreAutoConfiguration {
 
 		String chromaUrl = String.format("%s:%s", connectionDetails.getHost(), connectionDetails.getPort());
 
-		var chromaApi = new ChromaApi(chromaUrl, restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				objectMapper);
+		var chromaApi = ChromaApi.builder()
+			.baseUrl(chromaUrl)
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.objectMapper(objectMapper)
+			.build();
 
 		if (StringUtils.hasText(connectionDetails.getKeyToken())) {
 			chromaApi.withKeyToken(connectionDetails.getKeyToken());
@@ -92,6 +95,8 @@ public class ChromaVectorStoreAutoConfiguration {
 			BatchingStrategy chromaBatchingStrategy) {
 		return ChromaVectorStore.builder(chromaApi, embeddingModel)
 			.collectionName(storeProperties.getCollectionName())
+			.databaseName(storeProperties.getDatabaseName())
+			.tenantName(storeProperties.getTenantName())
 			.initializeSchema(storeProperties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))

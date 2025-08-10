@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Mark Pollack
  * @author Josh Long
  * @author Arjen Poutsma
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 @ConfigurationProperties(ChatClientBuilderProperties.CONFIG_PREFIX)
@@ -37,7 +38,7 @@ public class ChatClientBuilderProperties {
 	 */
 	private boolean enabled = true;
 
-	private Observations observations = new Observations();
+	private final Observations observations = new Observations();
 
 	public Observations getObservations() {
 		return this.observations;
@@ -54,16 +55,16 @@ public class ChatClientBuilderProperties {
 	public static class Observations {
 
 		/**
-		 * Whether to include the input content in the observations.
+		 * Whether to log the prompt content in the observations.
 		 */
-		private boolean includeInput = false;
+		private boolean logPrompt = false;
 
-		public boolean isIncludeInput() {
-			return this.includeInput;
+		public boolean isLogPrompt() {
+			return this.logPrompt;
 		}
 
-		public void setIncludeInput(boolean includeCompletion) {
-			this.includeInput = includeCompletion;
+		public void setLogPrompt(boolean logPrompt) {
+			this.logPrompt = logPrompt;
 		}
 
 	}

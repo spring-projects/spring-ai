@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 package org.springframework.ai.retry;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.RetryCallback;
@@ -30,6 +32,7 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -37,6 +40,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  * provides a default RetryTemplate and a default ResponseErrorHandler.
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  * @since 0.8.1
  */
 public abstract class RetryUtils {
@@ -49,6 +53,11 @@ public abstract class RetryUtils {
 		}
 
 		@Override
+		public void handleError(URI url, HttpMethod method, @NonNull ClientHttpResponse response) throws IOException {
+			handleError(response);
+		}
+
+		@SuppressWarnings("removal")
 		public void handleError(@NonNull ClientHttpResponse response) throws IOException {
 			if (response.getStatusCode().isError()) {
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
@@ -72,6 +81,7 @@ public abstract class RetryUtils {
 	public static final RetryTemplate DEFAULT_RETRY_TEMPLATE = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(TransientAiException.class)
+		.retryOn(ResourceAccessException.class)
 		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
 		.withListener(new RetryListener() {
 
@@ -90,6 +100,7 @@ public abstract class RetryUtils {
 	public static final RetryTemplate SHORT_RETRY_TEMPLATE = RetryTemplate.builder()
 		.maxAttempts(10)
 		.retryOn(TransientAiException.class)
+		.retryOn(ResourceAccessException.class)
 		.fixedBackoff(Duration.ofMillis(100))
 		.withListener(new RetryListener() {
 

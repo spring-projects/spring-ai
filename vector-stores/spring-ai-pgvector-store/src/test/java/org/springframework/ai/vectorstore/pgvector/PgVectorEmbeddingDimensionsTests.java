@@ -58,25 +58,74 @@ public class PgVectorEmbeddingDimensionsTests {
 
 	@Test
 	public void embeddingModelDimensions() {
-		given(this.embeddingModel.dimensions()).willReturn(969);
+		int expectedDimensions = 969;
+		given(this.embeddingModel.dimensions()).willReturn(expectedDimensions);
 
 		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
-		var dim = pgVectorStore.embeddingDimensions();
+		int actualDimensions = pgVectorStore.embeddingDimensions();
 
-		assertThat(dim).isEqualTo(969);
-
+		assertThat(actualDimensions).isEqualTo(expectedDimensions);
 		verify(this.embeddingModel, only()).dimensions();
 	}
 
 	@Test
 	public void fallBackToDefaultDimensions() {
-
-		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException());
+		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException("Embedding model error"));
 
 		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
-		var dim = pgVectorStore.embeddingDimensions();
+		int actualDimensions = pgVectorStore.embeddingDimensions();
 
-		assertThat(dim).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
+		assertThat(actualDimensions).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
+		verify(this.embeddingModel, only()).dimensions();
+	}
+
+	@Test
+	public void embeddingModelReturnsZeroDimensions() {
+		given(this.embeddingModel.dimensions()).willReturn(0);
+
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
+		int actualDimensions = pgVectorStore.embeddingDimensions();
+
+		assertThat(actualDimensions).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
+		verify(this.embeddingModel, only()).dimensions();
+	}
+
+	@Test
+	public void embeddingModelReturnsNegativeDimensions() {
+		given(this.embeddingModel.dimensions()).willReturn(-5);
+
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
+		int actualDimensions = pgVectorStore.embeddingDimensions();
+
+		assertThat(actualDimensions).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
+		verify(this.embeddingModel, only()).dimensions();
+	}
+
+	@Test
+	public void explicitZeroDimensionsUsesEmbeddingModel() {
+		int embeddingModelDimensions = 768;
+		given(this.embeddingModel.dimensions()).willReturn(embeddingModelDimensions);
+
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
+			.dimensions(0)
+			.build();
+		int actualDimensions = pgVectorStore.embeddingDimensions();
+
+		assertThat(actualDimensions).isEqualTo(embeddingModelDimensions);
+		verify(this.embeddingModel, only()).dimensions();
+	}
+
+	@Test
+	public void explicitNegativeDimensionsUsesEmbeddingModel() {
+		int embeddingModelDimensions = 512;
+		given(this.embeddingModel.dimensions()).willReturn(embeddingModelDimensions);
+
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
+			.dimensions(-1)
+			.build();
+		int actualDimensions = pgVectorStore.embeddingDimensions();
+
+		assertThat(actualDimensions).isEqualTo(embeddingModelDimensions);
 		verify(this.embeddingModel, only()).dimensions();
 	}
 

@@ -17,14 +17,20 @@
 package org.springframework.ai.aot;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
+import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.aot.generate.GenerationContext;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.beans.factory.aot.BeanRegistrationAotContribution;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.core.annotation.AliasFor;
 import org.springframework.lang.Nullable;
+
+import java.lang.annotation.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -54,8 +60,14 @@ class ToolBeanRegistrationAotProcessorTests {
 		assertThat(reflection().onType(TestTools.class)).accepts(this.runtimeHints);
 	}
 
+	@Test
+	void shouldProcessEnhanceAnnotatedClass() {
+		process(TestEnhanceToolTools.class);
+		assertThat(reflection().onType(TestEnhanceToolTools.class)).accepts(this.runtimeHints);
+	}
+
 	private void process(Class<?> beanClass) {
-		when(generationContext.getRuntimeHints()).thenReturn(runtimeHints);
+		when(this.generationContext.getRuntimeHints()).thenReturn(this.runtimeHints);
 		BeanRegistrationAotContribution contribution = createContribution(beanClass);
 		if (contribution != null) {
 			contribution.applyTo(this.generationContext, mock());
@@ -82,6 +94,38 @@ class ToolBeanRegistrationAotProcessorTests {
 
 		String nonTool() {
 			return "More testing";
+		}
+
+	}
+
+	@Target({ ElementType.METHOD, ElementType.ANNOTATION_TYPE })
+	@Retention(RetentionPolicy.RUNTIME)
+	@Documented
+	@Tool
+	@Inherited
+	@interface EnhanceTool {
+
+		@AliasFor(annotation = Tool.class)
+		String name() default "";
+
+		@AliasFor(annotation = Tool.class)
+		String description() default "";
+
+		@AliasFor(annotation = Tool.class)
+		boolean returnDirect() default false;
+
+		@AliasFor(annotation = Tool.class)
+		Class<? extends ToolCallResultConverter> resultConverter() default DefaultToolCallResultConverter.class;
+
+		String enhanceValue() default "";
+
+	}
+
+	static class TestEnhanceToolTools {
+
+		@EnhanceTool
+		String testTool() {
+			return "Testing EnhanceTool";
 		}
 
 	}

@@ -16,7 +16,7 @@
 
 package org.springframework.ai.tool.definition;
 
-import org.springframework.ai.tool.util.ToolUtils;
+import org.springframework.ai.util.ParsingUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -38,7 +38,7 @@ public record DefaultToolDefinition(String name, String description, String inpu
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String name;
 
@@ -65,10 +65,11 @@ public record DefaultToolDefinition(String name, String description, String inpu
 		}
 
 		public ToolDefinition build() {
-			if (!StringUtils.hasText(description)) {
-				description = ToolUtils.getToolDescriptionFromName(name);
+			if (!StringUtils.hasText(this.description)) {
+				Assert.hasText(this.name, "toolName cannot be null or empty");
+				this.description = ParsingUtils.reConcatenateCamelCase(this.name, " ");
 			}
-			return new DefaultToolDefinition(name, description, inputSchema);
+			return new DefaultToolDefinition(this.name, this.description, this.inputSchema);
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.springframework.ai.content;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -64,6 +64,7 @@ import org.springframework.util.MimeType;
  *
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class Media {
@@ -75,7 +76,7 @@ public class Media {
 	 * media it has been passed.
 	 */
 	@Nullable
-	private String id;
+	private final String id;
 
 	private final MimeType mimeType;
 
@@ -98,19 +99,19 @@ public class Media {
 	 * <li>Square brackets
 	 * </ul>
 	 */
-	private String name;
+	private final String name;
 
 	/**
 	 * Create a new Media instance.
 	 * @param mimeType the media MIME type
-	 * @param url the URL for the media data
+	 * @param uri the URI for the media data
 	 */
-	public Media(MimeType mimeType, URL url) {
+	public Media(MimeType mimeType, URI uri) {
 		Assert.notNull(mimeType, "MimeType must not be null");
-		Assert.notNull(url, "URL must not be null");
+		Assert.notNull(uri, "URI must not be null");
 		this.mimeType = mimeType;
 		this.id = null;
-		this.data = url.toString();
+		this.data = uri.toString();
 		this.name = generateDefaultName(mimeType);
 	}
 
@@ -138,7 +139,7 @@ public class Media {
 	 * Creates a new Media builder.
 	 * @return a new Media builder instance
 	 */
-	public static final Builder builder() {
+	public static Builder builder() {
 		return new Builder();
 	}
 
@@ -148,7 +149,7 @@ public class Media {
 	 * @param data the media data
 	 * @param id the media id
 	 */
-	private Media(MimeType mimeType, Object data, String id, String name) {
+	private Media(MimeType mimeType, Object data, @Nullable String id, @Nullable String name) {
 		Assert.notNull(mimeType, "MimeType must not be null");
 		Assert.notNull(data, "Data must not be null");
 		this.mimeType = mimeType;
@@ -171,7 +172,7 @@ public class Media {
 
 	/**
 	 * Get the media data object
-	 * @return a java.net.URL.toString() or a byte[]
+	 * @return a java.net.URI.toString() or a byte[]
 	 */
 	public Object getData() {
 		return this.data;
@@ -194,6 +195,7 @@ public class Media {
 	 * Get the media id
 	 * @return the media id
 	 */
+	@Nullable
 	public String getId() {
 		return this.id;
 	}
@@ -261,14 +263,14 @@ public class Media {
 		}
 
 		/**
-		 * Sets the media data from a URL.
-		 * @param url the media URL, must not be null
+		 * Sets the media data from a URI.
+		 * @param uri the media URI, must not be null
 		 * @return the builder instance
-		 * @throws IllegalArgumentException if url is null
+		 * @throws IllegalArgumentException if URI is null
 		 */
-		public Builder data(URL url) {
-			Assert.notNull(url, "URL must not be null");
-			this.data = url.toString();
+		public Builder data(URI uri) {
+			Assert.notNull(uri, "URI must not be null");
+			this.data = uri.toString();
 			return this;
 		}
 

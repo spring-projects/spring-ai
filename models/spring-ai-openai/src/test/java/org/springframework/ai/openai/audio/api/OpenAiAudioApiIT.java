@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Jonghoon Park
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiAudioApiIT {
@@ -53,7 +54,7 @@ public class OpenAiAudioApiIT {
 			.createSpeech(SpeechRequest.builder()
 				.model(TtsModel.TTS_1_HD.getValue())
 				.input("Hello, my name is Chris and I love Spring A.I.")
-				.voice(Voice.ONYX)
+				.voice(Voice.ONYX.getValue())
 				.build())
 			.getBody();
 
@@ -62,24 +63,29 @@ public class OpenAiAudioApiIT {
 		FileCopyUtils.copy(speech, new File("target/speech.mp3"));
 
 		StructuredResponse translation = this.audioApi
-			.createTranslation(
-					TranslationRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
-					StructuredResponse.class)
+			.createTranslation(TranslationRequest.builder()
+				.model(WhisperModel.WHISPER_1.getValue())
+				.file(speech)
+				.fileName("speech.mp3")
+				.build(), StructuredResponse.class)
 			.getBody();
 
 		assertThat(translation.text().replaceAll(",", "")).isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionEnglish = this.audioApi
-			.createTranscription(
-					TranscriptionRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
-					StructuredResponse.class)
+			.createTranscription(TranscriptionRequest.builder()
+				.model(WhisperModel.WHISPER_1.getValue())
+				.file(speech)
+				.fileName("speech.mp3")
+				.build(), StructuredResponse.class)
 			.getBody();
 
 		assertThat(transcriptionEnglish.text().replaceAll(",", ""))
 			.isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionDutch = this.audioApi
-			.createTranscription(TranscriptionRequest.builder().file(speech).language("nl").build(),
+			.createTranscription(
+					TranscriptionRequest.builder().file(speech).fileName("speech.mp3").language("nl").build(),
 					StructuredResponse.class)
 			.getBody();
 

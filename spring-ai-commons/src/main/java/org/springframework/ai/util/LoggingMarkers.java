@@ -26,7 +26,7 @@ import org.slf4j.MarkerFactory;
  *
  * @author Konstantin Pavlov
  */
-public class LoggingMarkers {
+public final class LoggingMarkers {
 
 	/**
 	 * Marker used to identify log statements associated with <strong>sensitive
@@ -83,5 +83,9 @@ public class LoggingMarkers {
 	 * There are no restriction for logging such information.
 	 */
 	public static final Marker PUBLIC_DATA_MARKER = MarkerFactory.getMarker("PUBLIC");
+
+	private LoggingMarkers() {
+		// private constructor to avoid instantiation
+	}
 
 }

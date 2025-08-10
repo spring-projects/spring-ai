@@ -50,6 +50,8 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Josh Long
+ *
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -154,9 +156,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		OpenAiApi.EmbeddingRequest<List<String>> apiRequest = createRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(OpenAiApiConstants.PROVIDER_NAME)
-			.requestOptions(embeddingRequest.getOptions())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -210,10 +211,11 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.builder()
 			// Handle portable embedding options
 			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), this.defaultOptions.getModel()))
-			.dimensions(ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), defaultOptions.getDimensions()))
+			.dimensions(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getDimensions(), this.defaultOptions.getDimensions()))
 			// Handle OpenAI specific embedding options
 			.encodingFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getEncodingFormat(),
-					defaultOptions.getEncodingFormat()))
+					this.defaultOptions.getEncodingFormat()))
 			.user(ModelOptionsUtils.mergeOption(runtimeOptions.getUser(), this.defaultOptions.getUser()))
 			.build();
 

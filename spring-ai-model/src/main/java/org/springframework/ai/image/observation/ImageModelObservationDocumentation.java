@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
-import org.springframework.ai.observation.conventions.AiObservationEventNames;
 
 /**
  * Documented conventions for image model observations.
@@ -48,10 +47,6 @@ public enum ImageModelObservationDocumentation implements ObservationDocumentati
 			return HighCardinalityKeyNames.values();
 		}
 
-		@Override
-		public Observation.Event[] getEvents() {
-			return Events.values();
-		}
 	};
 
 	/**
@@ -179,35 +174,6 @@ public enum ImageModelObservationDocumentation implements ObservationDocumentati
 			@Override
 			public String asString() {
 				return AiObservationAttributes.USAGE_TOTAL_TOKENS.value();
-			}
-		},
-
-		// Content
-
-		/**
-		 * The full prompt sent to the model.
-		 */
-		PROMPT {
-			@Override
-			public String asString() {
-				return AiObservationAttributes.PROMPT.value();
-			}
-		}
-
-	}
-
-	/**
-	 * Events for image model operations.
-	 */
-	public enum Events implements Observation.Event {
-
-		/**
-		 * Content of the prompt sent to the model.
-		 */
-		CONTENT_PROMPT {
-			@Override
-			public String getName() {
-				return AiObservationEventNames.CONTENT_PROMPT.value();
 			}
 		}
 

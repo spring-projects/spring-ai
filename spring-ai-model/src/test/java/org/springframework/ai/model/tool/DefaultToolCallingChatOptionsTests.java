@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,7 +41,7 @@ class DefaultToolCallingChatOptionsTests {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
-		List<FunctionCallback> callbacks = List.of(callback1, callback2);
+		List<ToolCallback> callbacks = List.of(callback1, callback2);
 
 		options.setToolCallbacks(callbacks);
 
@@ -150,7 +149,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(c.getToolCallbacks()).isEqualTo(original.getToolCallbacks());
 			assertThat(c.getToolNames()).isEqualTo(original.getToolNames());
 			assertThat(c.getToolContext()).isEqualTo(original.getToolContext());
-			assertThat(c.isInternalToolExecutionEnabled()).isEqualTo(original.isInternalToolExecutionEnabled());
+			assertThat(c.getInternalToolExecutionEnabled()).isEqualTo(original.getInternalToolExecutionEnabled());
 			assertThat(c.getModel()).isEqualTo(original.getModel());
 			assertThat(c.getTemperature()).isEqualTo(original.getTemperature());
 		});
@@ -195,7 +194,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(o.getToolCallbacks()).containsExactly(callback);
 			assertThat(o.getToolNames()).containsExactly("tool1");
 			assertThat(o.getToolContext()).isEqualTo(context);
-			assertThat(o.isInternalToolExecutionEnabled()).isTrue();
+			assertThat(o.getInternalToolExecutionEnabled()).isTrue();
 			assertThat(o.getModel()).isEqualTo("gpt-4");
 			assertThat(o.getTemperature()).isEqualTo(0.7);
 			assertThat(o.getMaxTokens()).isEqualTo(100);
@@ -221,22 +220,53 @@ class DefaultToolCallingChatOptionsTests {
 	void deprecatedMethodsShouldWorkCorrectly() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 
-		FunctionCallback callback1 = mock(FunctionCallback.class);
+		ToolCallback callback1 = mock(ToolCallback.class);
 		ToolCallback callback2 = mock(ToolCallback.class);
-		options.setFunctionCallbacks(List.of(callback1, callback2));
-		assertThat(options.getFunctionCallbacks()).hasSize(2);
+		options.setToolCallbacks(List.of(callback1, callback2));
+		assertThat(options.getToolCallbacks()).hasSize(2);
 
 		options.setToolNames(Set.of("tool1"));
-		assertThat(options.getFunctions()).containsExactly("tool1");
+		assertThat(options.getToolNames()).containsExactly("tool1");
 
-		options.setFunctions(Set.of("function1"));
+		options.setToolNames(Set.of("function1"));
 		assertThat(options.getToolNames()).containsExactly("function1");
 
 		options.setInternalToolExecutionEnabled(true);
-		assertThat(options.getProxyToolCalls()).isFalse();
+		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
+	}
 
-		options.setProxyToolCalls(true);
-		assertThat(options.isInternalToolExecutionEnabled()).isFalse();
+	@Test
+	void defaultConstructorShouldInitializeWithEmptyCollections() {
+		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+
+		assertThat(options.getToolCallbacks()).isEmpty();
+		assertThat(options.getToolNames()).isEmpty();
+		assertThat(options.getToolContext()).isEmpty();
+		assertThat(options.getInternalToolExecutionEnabled()).isNull();
+	}
+
+	@Test
+	void builderShouldHandleEmptyCollections() {
+		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder()
+			.toolCallbacks(List.of())
+			.toolNames(Set.of())
+			.toolContext(Map.of())
+			.build();
+
+		assertThat(options.getToolCallbacks()).isEmpty();
+		assertThat(options.getToolNames()).isEmpty();
+		assertThat(options.getToolContext()).isEmpty();
+	}
+
+	@Test
+	void setInternalToolExecutionEnabledShouldAcceptNullValue() {
+		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		options.setInternalToolExecutionEnabled(true);
+		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
+
+		// Should be able to set back to null
+		options.setInternalToolExecutionEnabled(null);
+		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 	}
 
 }

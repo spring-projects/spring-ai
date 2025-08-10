@@ -19,6 +19,7 @@ package org.springframework.ai.stabilityai.api;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -197,9 +198,12 @@ public class StabilityAiApi {
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record GenerateImageResponse(@JsonProperty("result") String result,
 			@JsonProperty("artifacts") List<Artifacts> artifacts) {
 
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Artifacts(@JsonProperty("seed") long seed, @JsonProperty("base64") String base64,
 				@JsonProperty("finishReason") String finishReason) {
 

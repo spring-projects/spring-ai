@@ -20,7 +20,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.StaticToolCallbackProvider;
@@ -29,12 +28,15 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
+import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -68,7 +70,7 @@ class ToolCallingAutoConfigurationTests {
 	}
 
 	@Test
-	void resolveMultipleFuncitonAndToolCallbacks() {
+	void resolveMultipleFunctionAndToolCallbacks() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
 			.withUserConfiguration(Config.class)
 			.run(context -> {
@@ -76,25 +78,110 @@ class ToolCallingAutoConfigurationTests {
 				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
 
 				assertThat(toolCallbackResolver.resolve("getForecast")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getForecast").getName()).isEqualTo("getForecast");
+				assertThat(toolCallbackResolver.resolve("getForecast").getToolDefinition().name())
+					.isEqualTo("getForecast");
 
 				assertThat(toolCallbackResolver.resolve("getAlert")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getAlert").getName()).isEqualTo("getAlert");
+				assertThat(toolCallbackResolver.resolve("getAlert").getToolDefinition().name()).isEqualTo("getAlert");
 
 				assertThat(toolCallbackResolver.resolve("weatherFunction1")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("weatherFunction1").getName()).isEqualTo("weatherFunction1");
+				assertThat(toolCallbackResolver.resolve("weatherFunction1").getToolDefinition().name())
+					.isEqualTo("weatherFunction1");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather3")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather3").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather3").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather3");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather4")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather4").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather4").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather4");
 
 				assertThat(toolCallbackResolver.resolve("getCurrentWeather5")).isNotNull();
-				assertThat(toolCallbackResolver.resolve("getCurrentWeather5").getName())
+				assertThat(toolCallbackResolver.resolve("getCurrentWeather5").getToolDefinition().name())
 					.isEqualTo("getCurrentWeather5");
+			});
+	}
+
+	@Test
+	void resolveMissingToolCallbacks() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
+
+				assertThat(toolCallbackResolver.resolve("NonExisting")).isNull();
+			});
+	}
+
+	@Test
+	void observationFilterDefault() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> assertThat(context).doesNotHaveBean(ToolCallingContentObservationFilter.class));
+	}
+
+	@Test
+	void observationFilterEnabled() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.observations.include-content=true")
+			.withUserConfiguration(Config.class)
+			.run(context -> assertThat(context).hasSingleBean(ToolCallingContentObservationFilter.class));
+	}
+
+	@Test
+	void throwExceptionOnErrorDefault() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolExecutionExceptionProcessor = context.getBean(ToolExecutionExceptionProcessor.class);
+				assertThat(toolExecutionExceptionProcessor).isInstanceOf(DefaultToolExecutionExceptionProcessor.class);
+
+				// Test behavior instead of accessing private field
+				// Create a mock tool definition and exception
+				var toolDefinition = ToolDefinition.builder()
+					.name("testTool")
+					.description("Test tool for exception handling")
+					.inputSchema("{\"type\":\"object\",\"properties\":{\"test\":{\"type\":\"string\"}}}")
+					.build();
+				var cause = new RuntimeException("Test error");
+				var exception = new ToolExecutionException(toolDefinition, cause);
+
+				// Default behavior should not throw exception
+				String result = toolExecutionExceptionProcessor.process(exception);
+				assertThat(result).isEqualTo("Test error");
+			});
+	}
+
+	@Test
+	void throwExceptionOnErrorEnabled() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.throw-exception-on-error=true")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolExecutionExceptionProcessor = context.getBean(ToolExecutionExceptionProcessor.class);
+				assertThat(toolExecutionExceptionProcessor).isInstanceOf(DefaultToolExecutionExceptionProcessor.class);
+
+				// Test behavior instead of accessing private field
+				// Create a mock tool definition and exception
+				var toolDefinition = ToolDefinition.builder()
+					.name("testTool")
+					.description("Test tool for exception handling")
+					.inputSchema("{\"type\":\"object\",\"properties\":{\"test\":{\"type\":\"string\"}}}")
+					.build();
+				var cause = new RuntimeException("Test error");
+				var exception = new ToolExecutionException(toolDefinition, cause);
+
+				// When property is set to true, it should throw the exception
+				assertThat(toolExecutionExceptionProcessor).extracting(processor -> {
+					try {
+						processor.process(exception);
+						return "No exception thrown";
+					}
+					catch (ToolExecutionException e) {
+						return "Exception thrown";
+					}
+				}).isEqualTo("Exception thrown");
 			});
 	}
 
@@ -128,12 +215,6 @@ class ToolCallingAutoConfigurationTests {
 			return MethodToolCallbackProvider.builder().toolObjects(new WeatherService()).build();
 		}
 
-		public record Request(String location) {
-		}
-
-		public record Response(String temperature) {
-		}
-
 		@Bean
 		@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
 		public Function<Request, Response> weatherFunction1() {
@@ -141,18 +222,16 @@ class ToolCallingAutoConfigurationTests {
 		}
 
 		@Bean
-		public FunctionCallback functionCallbacks3() {
-			return FunctionCallback.builder()
-				.function("getCurrentWeather3", (Request request) -> "15.0°C")
+		public ToolCallback functionCallbacks3() {
+			return FunctionToolCallback.builder("getCurrentWeather3", (Request request) -> "15.0°C")
 				.description("Gets the weather in location")
 				.inputType(Request.class)
 				.build();
 		}
 
 		@Bean
-		public FunctionCallback functionCallbacks4() {
-			return FunctionCallback.builder()
-				.function("getCurrentWeather4", (Request request) -> "15.0°C")
+		public ToolCallback functionCallbacks4() {
+			return FunctionToolCallback.builder("getCurrentWeather4", (Request request) -> "15.0°C")
 				.description("Gets the weather in location")
 				.inputType(Request.class)
 				.build();
@@ -182,10 +261,16 @@ class ToolCallingAutoConfigurationTests {
 		public ToolCallback toolCallbacks6() {
 			var toolMethod = ReflectionUtils.findMethod(WeatherService.class, "getAlert", String.class);
 			return MethodToolCallback.builder()
-				.toolDefinition(ToolDefinition.builder(toolMethod).build())
+				.toolDefinition(ToolDefinitions.builder(toolMethod).build())
 				.toolMethod(toolMethod)
 				.toolObject(new WeatherService())
 				.build();
+		}
+
+		public record Request(String location) {
+		}
+
+		public record Response(String temperature) {
 		}
 
 	}

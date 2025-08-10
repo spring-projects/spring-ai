@@ -16,7 +16,11 @@
 
 package org.springframework.ai.vectorstore;
 
-public class SpringAIVectorStoreTypes {
+public final class SpringAIVectorStoreTypes {
+
+	private SpringAIVectorStoreTypes() {
+		// Avoids instantiation
+	}
 
 	public static final String VECTOR_STORE_PREFIX = "spring.ai.vectorstore";
 
