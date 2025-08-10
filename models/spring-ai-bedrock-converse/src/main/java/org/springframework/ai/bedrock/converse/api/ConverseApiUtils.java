@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.SdkField;
@@ -386,8 +385,7 @@ public final class ConverseApiUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Map<String, String> getRequestMetadata(Prompt prompt) {
-		Map<String, Object> metadata = prompt.getUserMessage().getMetadata();
+	public static Map<String, String> getRequestMetadata(Map<String, Object> metadata) {
 
 		if (metadata.isEmpty()) {
 			return Map.of();
