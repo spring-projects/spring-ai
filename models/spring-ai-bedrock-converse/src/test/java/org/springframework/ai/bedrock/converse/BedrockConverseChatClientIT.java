@@ -70,7 +70,9 @@ class BedrockConverseChatClientIT {
 				.system(s -> s.text(this.systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
-				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.user(u -> u.text("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+						.param("requestId", "1234")
+				)
 				.call()
 				.chatResponse();
 		// @formatter:on

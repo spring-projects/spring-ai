@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.SdkField;
@@ -382,6 +383,27 @@ public final class ConverseApiUtils {
 		else {
 			throw new IllegalArgumentException("Unsupported value type:" + value.getClass().getSimpleName());
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Map<String, String> getRequestMetadata(Prompt prompt) {
+		Map<String, Object> metadata = prompt.getUserMessage().getMetadata();
+
+		if (metadata.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<String, String> result = new HashMap<>();
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+
+			if (key != null && value != null) {
+				result.put(key, value.toString());
+			}
+		}
+
+		return result;
 	}
 
 	private static Document convertMapToDocument(Map<String, Object> value) {
