@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - '*.*.x'
   workflow_dispatch:
 
 jobs:

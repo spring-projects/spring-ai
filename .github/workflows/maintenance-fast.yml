@@ -15,9 +15,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-
-      - run: git fetch origin "$GITHUB_REF_NAME" --depth=1
+        with: { fetch-depth: 2 }  # Ensure we have at least HEAD~1 available
 
       - uses: actions/setup-java@v4
         with:
@@ -33,7 +31,10 @@ jobs:
       - name: Show commit range
         run: |
           echo "Base ref: origin/$GITHUB_REF_NAME"
-          git log --oneline "origin/$GITHUB_REF_NAME...HEAD"
+          echo "HEAD commit: $(git rev-parse HEAD)"
+          echo "HEAD~1 commit: $(git rev-parse HEAD~1 2>/dev/null || echo 'HEAD~1 not available')"
+          echo "Recent commits:"
+          git log --oneline -3 || echo "Git log failed"
 
       - name: Compute impacted modules
         id: mods
