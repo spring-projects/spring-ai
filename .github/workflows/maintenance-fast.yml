@@ -47,5 +47,11 @@ jobs:
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           MODS="${{ steps.mods.outputs.modules }}"
-          if [ -z "$MODS" ]; then MODS="."; fi
+          if [ -z "$MODS" ]; then 
+            echo "ERROR: No modules detected - git diff failed to find changes"
+            echo "This likely indicates a problem with the git diff strategy"
+            echo "Failing fast to avoid wasted resources and investigate the issue"
+            echo "Check the 'Compute impacted modules' step output for debugging info"
+            exit 1
+          fi
           ./mvnw -B -T 1C -Pintegration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
