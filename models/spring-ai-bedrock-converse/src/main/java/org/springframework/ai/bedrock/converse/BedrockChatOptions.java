@@ -54,7 +54,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	private Double presencePenalty;
 
 	@JsonIgnore
-	private Map<String, String> requestParameters;
+	private Map<String, String> requestParameters = new HashMap<>();
 
 	@JsonProperty("stopSequences")
 	private List<String> stopSequences;
