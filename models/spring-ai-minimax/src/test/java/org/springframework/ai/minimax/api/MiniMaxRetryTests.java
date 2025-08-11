@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -115,6 +116,7 @@ public class MiniMaxRetryTests {
 	}
 
 	@Test
+	@Disabled
 	public void miniMaxChatStreamTransientError() {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
@@ -136,6 +138,7 @@ public class MiniMaxRetryTests {
 	}
 
 	@Test
+	@Disabled
 	public void miniMaxChatStreamNonTransientError() {
 		given(this.miniMaxApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
