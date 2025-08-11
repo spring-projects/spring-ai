@@ -17,6 +17,7 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.openai.OpenAiModerationOptions;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -24,6 +25,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * OpenAI Moderation autoconfiguration properties.
  *
  * @author Ahmed Yousri
+ * @author lambochen
  * @since 0.9.0
  */
 @ConfigurationProperties(OpenAiModerationProperties.CONFIG_PREFIX)
@@ -37,12 +39,22 @@ public class OpenAiModerationProperties extends OpenAiParentProperties {
 	@NestedConfigurationProperty
 	private OpenAiModerationOptions options = OpenAiModerationOptions.builder().build();
 
+	private String moderationPath = OpenAiApiConstants.DEFAULT_MODERATION_PATH;
+
 	public OpenAiModerationOptions getOptions() {
 		return this.options;
 	}
 
 	public void setOptions(OpenAiModerationOptions options) {
 		this.options = options;
+	}
+
+	public String getModerationPath() {
+		return moderationPath;
+	}
+
+	public void setModerationPath(String moderationPath) {
+		this.moderationPath = moderationPath;
 	}
 
 }
