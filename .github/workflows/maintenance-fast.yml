@@ -1,0 +1,51 @@
+name: Maintenance Push – Fast
+
+on:
+  push:
+    branches: ['*.*.x']
+
+jobs:
+  fast-impacted:
+    if: contains(github.event.head_commit.message, '(cherry picked from commit')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - run: git fetch origin "$GITHUB_REF_NAME" --depth=1
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Show commit range
+        run: |
+          echo "Base ref: origin/$GITHUB_REF_NAME"
+          git log --oneline "origin/$GITHUB_REF_NAME...HEAD"
+
+      - name: Compute impacted modules
+        id: mods
+        run: |
+          MODS=$(python3 .github/scripts/test_discovery.py modules-from-diff --base "origin/$GITHUB_REF_NAME" --verbose)
+          echo "modules=$MODS" >> "$GITHUB_OUTPUT"
+
+      - name: Test affected modules with integration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          MODS="${{ steps.mods.outputs.modules }}"
+          if [ -z "$MODS" ]; then MODS="."; fi
+          ./mvnw -B -T 1C -Pintegration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
