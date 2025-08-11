@@ -57,45 +57,25 @@ class CITestDiscovery:
         try:
             # Determine the reference to diff against
             pr_base = os.environ.get('GITHUB_BASE_REF')   # PRs
-            pr_head = os.environ.get('GITHUB_HEAD_REF')   # PRs  
+            pr_head = os.environ.get('GITHUB_HEAD_HEAD')   # PRs  
             branch = os.environ.get('GITHUB_REF_NAME')    # pushes
             
-            # Prefer explicit flag if provided
-            if base_ref:
-                ref_for_diff = base_ref
+            # For maintenance branches (cherry-picks), always use single commit diff
+            if branch and branch.endswith('.x'):
+                # Maintenance branch - cherry-picks are always single commits
+                cmd = ["git", "diff", "--name-only", "HEAD~1..HEAD"]
+            elif base_ref:
+                # Explicit base reference provided - use two-dot diff for direct comparison
+                cmd = ["git", "diff", "--name-only", f"{base_ref}..HEAD"]
             elif pr_base and pr_head:
                 # PR context - compare against base branch
-                ref_for_diff = f"origin/{pr_base}"
+                cmd = ["git", "diff", "--name-only", f"origin/{pr_base}..HEAD"]
             elif pr_base:
                 # PR context fallback
-                ref_for_diff = f"origin/{pr_base}"
-            elif branch:
-                # Push context - compare against remote tracking branch
-                ref_for_diff = f"origin/{branch}"
+                cmd = ["git", "diff", "--name-only", f"origin/{pr_base}..HEAD"]
             else:
-                # Final fallback - find merge base with main
-                ref_for_diff = None
-            
-            if ref_for_diff:
-                # Compare remote tracking branch tip to HEAD (handles multi-commit pushes)
-                cmd = ["git", "diff", "--name-only", f"{ref_for_diff}...HEAD"]
-            else:
-                # Push context or other - compare with previous commit
-                # First try to find a reasonable base commit
-                merge_base_cmd = ["git", "merge-base", "HEAD", "origin/main"]
-                try:
-                    merge_base_result = subprocess.run(
-                        merge_base_cmd, 
-                        cwd=self.repo_root,
-                        capture_output=True, 
-                        text=True, 
-                        check=True
-                    )
-                    base_commit = merge_base_result.stdout.strip()
-                    cmd = ["git", "diff", "--name-only", f"{base_commit}...HEAD"]
-                except subprocess.CalledProcessError:
-                    # Fallback to last commit
-                    cmd = ["git", "diff", "--name-only", "HEAD~1..HEAD"]
+                # Final fallback - single commit diff (most reliable)
+                cmd = ["git", "diff", "--name-only", "HEAD~1..HEAD"]
             
             # Execute the git diff command
             result = subprocess.run(
@@ -189,12 +169,15 @@ class CITestDiscovery:
         pr_base = os.environ.get('GITHUB_BASE_REF')
         branch = os.environ.get('GITHUB_REF_NAME')
         
-        if pr_base:
-            return f"origin/{pr_base}"
+        # Show the actual strategy being used
+        if branch and branch.endswith('.x'):
+            return f"HEAD~1 (single commit - maintenance branch {branch})"
+        elif pr_base:
+            return f"origin/{pr_base} (PR base)"
         elif branch:
-            return f"origin/{branch}"
+            return f"HEAD~1 (single commit - branch {branch})"
         else:
-            return "origin/main (merge-base)"
+            return "HEAD~1 (single commit - fallback)"
 
 
 def modules_from_diff_cli():
