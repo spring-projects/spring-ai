@@ -251,6 +251,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 		return Objects.equals(this.model, that.model) && Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.maxTokens, that.maxTokens)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.requestParameters, that.requestParameters)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
@@ -260,8 +261,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences,
-				this.temperature, this.topK, this.topP, this.toolCallbacks, this.toolNames, this.toolContext,
+		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
+				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
+				this.toolCallbacks, this.toolNames, this.toolContext,
 				this.internalToolExecutionEnabled);
 	}
 
