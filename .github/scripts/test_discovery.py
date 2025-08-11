@@ -20,6 +20,7 @@ class CITestDiscovery:
     
     def __init__(self, repo_root: Path = Path(".")):
         self.repo_root = Path(repo_root)
+        self._last_git_command = None
         
     def modules_from_diff(self, base_ref: Optional[str] = None, verbose: bool = False) -> str:
         """Get affected modules from git diff (for GitHub Actions)"""
@@ -31,6 +32,7 @@ class CITestDiscovery:
             if verbose:
                 detected_base = base_ref if base_ref else self._detect_default_base()
                 print(f"Detected base ref: {detected_base}", file=sys.stderr)
+                print(f"Git diff strategy used: {self._get_last_git_command()}", file=sys.stderr)
                 print(f"Changed files ({len(changed_files)}):", file=sys.stderr)
                 for file in changed_files[:10]:  # Limit to first 10 for readability
                     print(f"  - {file}", file=sys.stderr)
@@ -88,6 +90,7 @@ class CITestDiscovery:
                 cmd = ["git", "diff", "--name-only", "HEAD~1..HEAD"]
             
             # Execute the git diff command
+            self._last_git_command = ' '.join(cmd)  # Store for debugging
             result = subprocess.run(
                 cmd, 
                 cwd=self.repo_root,
@@ -102,9 +105,15 @@ class CITestDiscovery:
         except subprocess.CalledProcessError as e:
             print(f"Git command failed: {e}", file=sys.stderr)
             print(f"Command: {' '.join(e.cmd) if hasattr(e, 'cmd') else 'unknown'}", file=sys.stderr)
+            print(f"Exit code: {e.returncode}", file=sys.stderr)
+            print(f"Stdout: {e.stdout if hasattr(e, 'stdout') else 'N/A'}", file=sys.stderr)
+            print(f"Stderr: {e.stderr if hasattr(e, 'stderr') else 'N/A'}", file=sys.stderr)
             return []
         except Exception as e:
             print(f"Error getting changed files: {e}", file=sys.stderr)
+            print(f"Error type: {type(e).__name__}", file=sys.stderr)
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}", file=sys.stderr)
             return []
     
     def _discover_affected_modules(self, changed_files: List[str]) -> List[str]:
@@ -188,6 +197,10 @@ class CITestDiscovery:
             return f"HEAD~1 (single commit - branch {branch})"
         else:
             return "HEAD~1 (single commit - fallback)"
+    
+    def _get_last_git_command(self) -> str:
+        """Get the last git command executed for debugging"""
+        return self._last_git_command or "No git command executed yet"
 
 
 def modules_from_diff_cli():
