@@ -1,4 +1,5 @@
 name: Deploy Docs
+run-name: ${{ github.event_name == 'workflow_dispatch' && 'Deploy Docs (Build)' || 'Deploy Docs (Dispatcher)' }}
 on:
   workflow_dispatch:
   push:
