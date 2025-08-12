@@ -62,7 +62,7 @@ class CITestDiscovery:
             pr_head = os.environ.get('GITHUB_HEAD_HEAD')   # PRs  
             branch = os.environ.get('GITHUB_REF_NAME')    # pushes
             
-            # For maintenance branches (cherry-picks), get files from the commit itself
+            # For maintenance branches (cherry-picks), always use git show HEAD regardless of base_ref
             if branch and branch.endswith('.x'):
                 # Maintenance branch - cherry-picks are single commits, just get files in this commit
                 cmd = ["git", "show", "--name-only", "--format=", "HEAD"]
