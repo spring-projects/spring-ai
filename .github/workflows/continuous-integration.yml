@@ -14,7 +14,7 @@ jobs:
   build:
     name: Build branch
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'spring-projects' }}
+    if: ${{ github.repository_owner == 'spring-projects' && !contains(github.event.head_commit.message, '(cherry picked from commit') }}
     services:
       ollama:
         image: ollama/ollama:latest
