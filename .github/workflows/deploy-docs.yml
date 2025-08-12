@@ -4,6 +4,13 @@ on:
   push:
     branches: [main, '[0-9].[0-9].x' ]
     tags: ['v[0-9].[0-9].[0-9]', 'v[0-9].[0-9].[0-9]-*']
+    paths:
+      - 'spring-ai-docs/**/*.adoc'
+      - 'spring-ai-docs/**/antora.yml'
+      - 'spring-ai-docs/**/antora-playbook.yml'
+      - 'spring-ai-docs/pom.xml'
+      - 'spring-ai-docs/src/main/javadoc/**'
+      - '.github/workflows/deploy-docs.yml'
 permissions:
   actions: write
 jobs:
