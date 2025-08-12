@@ -202,6 +202,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
 
 	/**
+	 * This extra body for support thinking outside the context of the conversation.
+	 */
+	private @JsonProperty("chat_template_kwargs")  Map<String,Object> chatTemplateKwargs;
+
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
 	 */
 	@JsonIgnore
@@ -268,6 +274,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
 			.webSearchOptions(fromOptions.getWebSearchOptions())
+			.chatTemplateKwargs(fromOptions.chatTemplateKwargs)
 			.build();
 	}
 
@@ -564,6 +571,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.webSearchOptions = webSearchOptions;
 	}
 
+	public Map<String, Object> getChatTemplateKwargs() {
+		return chatTemplateKwargs;
+	}
+
+	public void setChatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
+		this.chatTemplateKwargs = chatTemplateKwargs;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -576,7 +591,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.chatTemplateKwargs);
 	}
 
 	@Override
@@ -609,7 +624,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
 				&& Objects.equals(this.metadata, other.metadata)
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
-				&& Objects.equals(this.webSearchOptions, other.webSearchOptions);
+				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
+				&& Objects.equals(this.chatTemplateKwargs, other.chatTemplateKwargs);
 	}
 
 	@Override
@@ -799,6 +815,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder webSearchOptions(WebSearchOptions webSearchOptions) {
 			this.options.webSearchOptions = webSearchOptions;
+			return this;
+		}
+
+		public Builder chatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
+			this.options.chatTemplateKwargs = chatTemplateKwargs;
 			return this;
 		}
 
