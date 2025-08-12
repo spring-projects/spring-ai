@@ -379,8 +379,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				JsonObject metadata = new JsonObject();
 				try {
 					metadata = (JsonObject) rowRecord.get(this.metadataFieldName);
-					// inject the distance into the metadata.
-					metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					if (metadata != null) {
+						// inject the distance into the metadata.
+						metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					}
 				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
