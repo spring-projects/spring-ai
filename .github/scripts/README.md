@@ -169,4 +169,4 @@ Final module list: vector-stores/spring-ai-qdrant-store
 - **Cherry-pick Only**: Won't run on manual pushes to maintenance branches
 - **Nightly Safety Net**: Full integration test builds still run daily
 - **Error Handling**: Falls back to root compilation if module detection fails
-- **Minimal Permissions**: `contents: read` only
+- **Minimal Permissions**: `contents: read` only# Test validation for fixed git strategy
