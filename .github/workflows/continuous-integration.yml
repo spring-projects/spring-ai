@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - '*.*.x'
+    paths-ignore:
+      - 'spring-ai-docs/**'
+      - '*.md'
+      - 'docs/**'
   workflow_dispatch:
 
 jobs:
