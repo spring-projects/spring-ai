@@ -62,10 +62,10 @@ class CITestDiscovery:
             pr_head = os.environ.get('GITHUB_HEAD_HEAD')   # PRs  
             branch = os.environ.get('GITHUB_REF_NAME')    # pushes
             
-            # For maintenance branches (cherry-picks), always use git show HEAD regardless of base_ref
+            # For maintenance branches (cherry-picks), use single commit diff
             if branch and branch.endswith('.x'):
-                # Maintenance branch - cherry-picks are single commits, just get files in this commit
-                cmd = ["git", "show", "--name-only", "--format=", "HEAD"]
+                # Maintenance branch - use diff with previous commit
+                cmd = ["git", "diff", "--name-only", "HEAD~1", "HEAD"]
             elif base_ref:
                 # Explicit base reference provided - use two-dot diff for direct comparison
                 cmd = ["git", "diff", "--name-only", f"{base_ref}..HEAD"]

@@ -15,9 +15,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-
-      - run: git fetch origin "$GITHUB_REF_NAME" --depth=1
+        with: { fetch-depth: 2 }  # Need HEAD and HEAD~1 for single commit diff
 
       - uses: actions/setup-java@v4
         with:
