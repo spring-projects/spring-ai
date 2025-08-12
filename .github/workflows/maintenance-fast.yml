@@ -76,8 +76,12 @@ jobs:
           echo "$MODS"
           echo ""
           
-          # Extract just the module list (last line that isn't stderr logging)
-          MODULE_LIST=$(echo "$MODS" | grep -v "^Detected base ref:" | grep -v "^Changed files" | grep -v "^Final module list:" | tail -1)
+          # Extract just the final result (last line that looks like a module or <none>)
+          MODULE_LIST=$(echo "$MODS" | grep -E "^(vector-stores|spring-ai|models|<none>|$)" | tail -1)
+          if [ -z "$MODULE_LIST" ]; then
+            # If no clear module match, try the very last non-empty line
+            MODULE_LIST=$(echo "$MODS" | grep -v "^$" | tail -1)
+          fi
           echo "Extracted modules: '$MODULE_LIST'"
           echo "modules=$MODULE_LIST" >> "$GITHUB_OUTPUT"
 

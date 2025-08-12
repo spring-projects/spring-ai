@@ -62,20 +62,10 @@ class CITestDiscovery:
             pr_head = os.environ.get('GITHUB_HEAD_HEAD')   # PRs  
             branch = os.environ.get('GITHUB_REF_NAME')    # pushes
             
-            # For maintenance branches (cherry-picks), always use single commit diff
+            # For maintenance branches (cherry-picks), get files from the commit itself
             if branch and branch.endswith('.x'):
-                # Maintenance branch - cherry-picks are always single commits
-                # Try HEAD~1..HEAD first, fallback to different strategies if not available
-                try:
-                    # Test if HEAD~1 exists
-                    subprocess.run(["git", "rev-parse", "HEAD~1"], 
-                                 cwd=self.repo_root, check=True, capture_output=True)
-                    cmd = ["git", "diff", "--name-only", "HEAD~1..HEAD"]
-                except subprocess.CalledProcessError:
-                    # HEAD~1 not available (shallow clone), try other approaches
-                    print("HEAD~1 not available, trying alternative approaches", file=sys.stderr)
-                    # Try showing just the files in the current commit
-                    cmd = ["git", "show", "--name-only", "--format=", "HEAD"]
+                # Maintenance branch - cherry-picks are single commits, just get files in this commit
+                cmd = ["git", "show", "--name-only", "--format=", "HEAD"]
             elif base_ref:
                 # Explicit base reference provided - use two-dot diff for direct comparison
                 cmd = ["git", "diff", "--name-only", f"{base_ref}..HEAD"]
@@ -190,7 +180,7 @@ class CITestDiscovery:
         
         # Show the actual strategy being used
         if branch and branch.endswith('.x'):
-            return f"HEAD~1 (single commit - maintenance branch {branch})"
+            return f"git show HEAD (maintenance branch {branch})"
         elif pr_base:
             return f"origin/{pr_base} (PR base)"
         elif branch:
