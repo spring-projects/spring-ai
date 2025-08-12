@@ -19,12 +19,7 @@ package org.springframework.ai.vectorstore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -35,6 +30,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
@@ -62,7 +58,8 @@ class SimpleVectorStoreTests {
 		this.mockEmbeddingModel = mock(EmbeddingModel.class);
 		when(this.mockEmbeddingModel.dimensions()).thenReturn(3);
 		when(this.mockEmbeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-		when(this.mockEmbeddingModel.embed(any(Document.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		when(this.mockEmbeddingModel.embed(any(), any(), any()))
+				.thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }, new float[] { 0.1f, 0.2f, 0.3f }));
 		this.vectorStore = new SimpleVectorStore(SimpleVectorStore.builder(this.mockEmbeddingModel));
 	}
 
@@ -92,16 +89,57 @@ class SimpleVectorStoreTests {
 	}
 
 	@Test
+	void shouldAddMultipleDocsWithProvidedEmbeddings() {
+		List<EmbeddedDocument> embeddedDocs = Arrays.asList(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[] {0.1f, 0.2f, 0.3f}),
+				new EmbeddedDocument(Document.builder().id("2").text("second").build(), new float[] {0.4f, 0.5f, 0.6f})
+		);
+
+		this.vectorStore.addEmbedded(embeddedDocs);
+
+		List<Document> results = this.vectorStore.similaritySearch("first");
+		assertThat(results).hasSize(2).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
+	}
+
+	@Test
+	void shouldHandleInvalidEmbeddings() {
+		List<EmbeddedDocument> invalidEmbeddings = List.of(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[] {})
+		);
+
+		assertThatThrownBy(() -> this.vectorStore.addEmbedded(invalidEmbeddings))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("First embedding is empty.");
+
+		List<EmbeddedDocument> invalidEmbeddingsDimensions = List.of(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[] {0.1f, 0.2f, 0.3f}),
+				new EmbeddedDocument(Document.builder().id("2").text("second").build(), new float[] {0.1f, 0.2f})
+		);
+
+		assertThatThrownBy(() -> this.vectorStore.addEmbedded(invalidEmbeddingsDimensions))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Embedding at index 1 has dimension 2, expected 3.");
+
+		List<EmbeddedDocument> nanEmbeddings = List.of(
+				new EmbeddedDocument(Document.builder().id("1").text("first").build(), new float[]{Float.NaN})
+		);
+
+		assertThatThrownBy(() -> this.vectorStore.addEmbedded(nanEmbeddings))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Embedding at index 0 contains NaN or Infinite value.");
+	}
+
+	@Test
 	void shouldHandleEmptyDocumentList() {
 		assertThatThrownBy(() -> this.vectorStore.add(Collections.emptyList()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Documents list cannot be empty");
+			.hasMessage("Embedded document list cannot be empty");
 	}
 
 	@Test
 	void shouldHandleNullDocumentList() {
-		assertThatThrownBy(() -> this.vectorStore.add(null)).isInstanceOf(NullPointerException.class)
-			.hasMessage("Documents list cannot be null");
+		assertThatThrownBy(() -> this.vectorStore.add(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("The document list should not be null.");
 	}
 
 	@Test

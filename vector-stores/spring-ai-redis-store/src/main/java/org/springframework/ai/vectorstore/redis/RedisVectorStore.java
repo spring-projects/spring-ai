@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
@@ -48,7 +49,6 @@ import redis.clients.jedis.search.schemafields.VectorField.VectorAlgorithm;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -250,15 +250,13 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		try (Pipeline pipeline = this.jedis.pipelined()) {
 
-			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-					this.batchingStrategy);
-
-			for (Document document : documents) {
+			for (EmbeddedDocument ed : embeddedDocuments) {
+				Document document = ed.document();
 				var fields = new HashMap<String, Object>();
-				fields.put(this.embeddingFieldName, embeddings.get(documents.indexOf(document)));
+				fields.put(this.embeddingFieldName, ed.embedding());
 				fields.put(this.contentFieldName, document.getText());
 				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
