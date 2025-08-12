@@ -31,10 +31,7 @@ jobs:
       - name: Show commit range
         run: |
           echo "Base ref: origin/$GITHUB_REF_NAME"
-          echo "HEAD commit: $(git rev-parse HEAD)"
-          echo "HEAD~1 commit: $(git rev-parse HEAD~1 2>/dev/null || echo 'HEAD~1 not available')"
-          echo "Recent commits:"
-          git log --oneline -3 || echo "Git log failed"
+          git log --oneline "origin/$GITHUB_REF_NAME...HEAD"
 
       - name: Compute impacted modules
         id: mods
@@ -76,12 +73,8 @@ jobs:
           echo "$MODS"
           echo ""
           
-          # Extract just the final result (last line that looks like a module or <none>)
-          MODULE_LIST=$(echo "$MODS" | grep -E "^(vector-stores|spring-ai|models|<none>|$)" | tail -1)
-          if [ -z "$MODULE_LIST" ]; then
-            # If no clear module match, try the very last non-empty line
-            MODULE_LIST=$(echo "$MODS" | grep -v "^$" | tail -1)
-          fi
+          # Extract just the module list (last line that isn't stderr logging)
+          MODULE_LIST=$(echo "$MODS" | grep -v "^Detected base ref:" | grep -v "^Changed files" | grep -v "^Final module list:" | tail -1)
           echo "Extracted modules: '$MODULE_LIST'"
           echo "modules=$MODULE_LIST" >> "$GITHUB_OUTPUT"
 
