@@ -15,7 +15,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 2 }  # Ensure we have at least HEAD~1 available
+        with: { fetch-depth: 2 }  # Need HEAD and HEAD~1 for single commit diff
 
       - uses: actions/setup-java@v4
         with:
