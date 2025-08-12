@@ -180,7 +180,7 @@ class CITestDiscovery:
         
         # Show the actual strategy being used
         if branch and branch.endswith('.x'):
-            return f"git show HEAD (maintenance branch {branch})"
+            return f"git diff HEAD~1 HEAD (maintenance branch {branch})"
         elif pr_base:
             return f"origin/{pr_base} (PR base)"
         elif branch:
