@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests for {@link QdrantObjectFactory}.
  *
- * ignore: Another test text for github workflow trigger on commit.
+ * ignore: test 3 for github workflow trigger on commit.
  *
  * @author Heonwoo Kim
  */
