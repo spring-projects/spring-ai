@@ -91,4 +91,10 @@ jobs:
             echo "Check the 'Compute impacted modules' step output for debugging info"
             exit 1
           fi
-          ./mvnw -B -T 1C -Pintegration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
+          ./mvnw -B -T 1C -Pintegration-tests -DfailIfNoTests=false -pl "$MODS" verify \
+            -Dorg.slf4j.simpleLogger.log.org.testcontainers=WARN \
+            -Dorg.slf4j.simpleLogger.log.com.github.dockerjava=WARN \
+            -Dorg.slf4j.simpleLogger.log.org.testcontainers.dockerclient=ERROR \
+            -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer=WARN \
+            -Dlogging.level.org.testcontainers=WARN \
+            -Dlogging.level.com.github.dockerjava=WARN
