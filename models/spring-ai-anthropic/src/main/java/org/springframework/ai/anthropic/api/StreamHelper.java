@@ -90,16 +90,16 @@ public class StreamHelper {
 				ContentBlockToolUse cbToolUse = (ContentBlockToolUse) contentBlockStart.contentBlock();
 
 				return eventAggregator.withIndex(contentBlockStart.index())
-					.withId(cbToolUse.id())
-					.withName(cbToolUse.name())
-					.appendPartialJson(""); // CB START always has empty JSON.
+						.withId(cbToolUse.id())
+						.withName(cbToolUse.name())
+						.appendPartialJson(""); // CB START always has empty JSON.
 			}
 		}
 		else if (event.type() == EventType.CONTENT_BLOCK_DELTA) {
 			ContentBlockDeltaEvent contentBlockDelta = (ContentBlockDeltaEvent) event;
 			if (ContentBlock.Type.INPUT_JSON_DELTA.getValue().equals(contentBlockDelta.delta().type())) {
 				return eventAggregator
-					.appendPartialJson(((ContentBlockDeltaJson) contentBlockDelta.delta()).partialJson());
+						.appendPartialJson(((ContentBlockDeltaJson) contentBlockDelta.delta()).partialJson());
 			}
 		}
 		else if (event.type() == EventType.CONTENT_BLOCK_STOP) {
@@ -121,7 +121,7 @@ public class StreamHelper {
 	 * @return A ChatCompletionResponse representing the processed chunk.
 	 */
 	public ChatCompletionResponse eventToChatCompletionResponse(StreamEvent event,
-			AtomicReference<ChatCompletionResponseBuilder> contentBlockReference) {
+																AtomicReference<ChatCompletionResponseBuilder> contentBlockReference) {
 
 		// https://docs.anthropic.com/claude/reference/messages-streaming
 
@@ -131,12 +131,12 @@ public class StreamHelper {
 			MessageStartEvent messageStartEvent = (MessageStartEvent) event;
 
 			contentBlockReference.get()
-				.withType(event.type().name())
-				.withId(messageStartEvent.message().id())
-				.withRole(messageStartEvent.message().role())
-				.withModel(messageStartEvent.message().model())
-				.withUsage(messageStartEvent.message().usage())
-				.withContent(new ArrayList<>());
+					.withType(event.type().name())
+					.withId(messageStartEvent.message().id())
+					.withRole(messageStartEvent.message().role())
+					.withModel(messageStartEvent.message().model())
+					.withUsage(messageStartEvent.message().usage())
+					.withContent(new ArrayList<>());
 		}
 		else if (event.type().equals(EventType.TOOL_USE_AGGREGATE)) {
 			ToolUseAggregationEvent eventToolUseBuilder = (ToolUseAggregationEvent) event;
@@ -144,9 +144,9 @@ public class StreamHelper {
 			if (!CollectionUtils.isEmpty(eventToolUseBuilder.getToolContentBlocks())) {
 
 				List<ContentBlock> content = eventToolUseBuilder.getToolContentBlocks()
-					.stream()
-					.map(tooToUse -> new ContentBlock(Type.TOOL_USE, tooToUse.id(), tooToUse.name(), tooToUse.input()))
-					.toList();
+						.stream()
+						.map(tooToUse -> new ContentBlock(Type.TOOL_USE, tooToUse.id(), tooToUse.name(), tooToUse.input()))
+						.toList();
 				contentBlockReference.get().withContent(content);
 			}
 		}
@@ -159,7 +159,7 @@ public class StreamHelper {
 			}
 			else if (contentBlockStartEvent.contentBlock() instanceof ContentBlockThinking thinkingBlock) {
 				ContentBlock cb = new ContentBlock(Type.THINKING, null, null, contentBlockStartEvent.index(), null,
-						null, null, null, null, null, thinkingBlock.thinking(), null);
+						null, null, null, null, null, null, thinkingBlock.thinking(), null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else {
@@ -176,12 +176,12 @@ public class StreamHelper {
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaThinking thinking) {
 				ContentBlock cb = new ContentBlock(Type.THINKING_DELTA, null, null, contentBlockDeltaEvent.index(),
-						null, null, null, null, null, null, thinking.thinking(), null);
+						null, null, null, null, null, null, null, thinking.thinking(), null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaSignature sig) {
 				ContentBlock cb = new ContentBlock(Type.SIGNATURE_DELTA, null, null, contentBlockDeltaEvent.index(),
-						null, null, null, null, null, sig.signature(), null, null);
+						null, null, null, null, null, null, sig.signature(), null, null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else {
@@ -204,8 +204,10 @@ public class StreamHelper {
 			}
 
 			if (messageDeltaEvent.usage() != null) {
-				Usage totalUsage = new Usage(contentBlockReference.get().usage.inputTokens(),
-						messageDeltaEvent.usage().outputTokens());
+				var totalUsage = new Usage(contentBlockReference.get().usage.inputTokens(),
+						messageDeltaEvent.usage().outputTokens(),
+						contentBlockReference.get().usage.cacheCreationInputTokens(),
+						contentBlockReference.get().usage.cacheReadInputTokens());
 				contentBlockReference.get().withUsage(totalUsage);
 			}
 		}
@@ -214,10 +216,10 @@ public class StreamHelper {
 			// with an updated event type and general information like: model, message
 			// type, id and usage
 			contentBlockReference.get()
-				.withType(event.type().name())
-				.withContent(List.of())
-				.withStopReason(null)
-				.withStopSequence(null);
+					.withType(event.type().name())
+					.withContent(List.of())
+					.withStopReason(null)
+					.withStopSequence(null);
 		}
 		else {
 			// Any other event types that should propagate upwards without content
