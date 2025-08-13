@@ -49,7 +49,9 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * <li>A RouterFunction bean that sets up the reactive SSE endpoint</li>
  * </ul>
  * <p>
- * Required dependencies: <pre>{@code
+ * Required dependencies:
+ *
+ * <pre>{@code
  * <dependency>
  *     <groupId>io.modelcontextprotocol.sdk</groupId>
  *     <artifactId>mcp-spring-webflux</artifactId>
@@ -76,12 +78,20 @@ public class McpWebFluxServerAutoConfiguration {
 	@ConditionalOnMissingBean
 	public WebFluxSseServerTransportProvider webFluxTransport(ObjectProvider<ObjectMapper> objectMapperProvider,
 			McpServerProperties serverProperties) {
+
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-		return new WebFluxSseServerTransportProvider(objectMapper, serverProperties.getBaseUrl(),
-				serverProperties.getSseMessageEndpoint(), serverProperties.getSseEndpoint());
+
+		return WebFluxSseServerTransportProvider.builder()
+			.objectMapper(objectMapper)
+			.basePath(serverProperties.getBaseUrl())
+			.messageEndpoint(serverProperties.getSseMessageEndpoint())
+			.sseEndpoint(serverProperties.getSseEndpoint())
+			.keepAliveInterval(serverProperties.getKeepAliveInterval())
+			.build();
 	}
 
-	// Router function for SSE transport used by Spring WebFlux to start an HTTP server.
+	// Router function for SSE transport used by Spring WebFlux to start an HTTP
+	// server.
 	@Bean
 	public RouterFunction<?> webfluxMcpRouterFunction(WebFluxSseServerTransportProvider webFluxProvider) {
 		return webFluxProvider.getRouterFunction();

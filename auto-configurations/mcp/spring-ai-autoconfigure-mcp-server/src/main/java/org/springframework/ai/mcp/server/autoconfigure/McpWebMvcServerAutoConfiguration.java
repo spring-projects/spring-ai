@@ -71,9 +71,16 @@ public class McpWebMvcServerAutoConfiguration {
 	@ConditionalOnMissingBean
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
 			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerProperties serverProperties) {
+
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-		return new WebMvcSseServerTransportProvider(objectMapper, serverProperties.getBaseUrl(),
-				serverProperties.getSseMessageEndpoint(), serverProperties.getSseEndpoint());
+
+		return WebMvcSseServerTransportProvider.builder()
+			.objectMapper(objectMapper)
+			.baseUrl(serverProperties.getBaseUrl())
+			.sseEndpoint(serverProperties.getSseEndpoint())
+			.messageEndpoint(serverProperties.getSseMessageEndpoint())
+			.keepAliveInterval(serverProperties.getKeepAliveInterval())
+			.build();
 	}
 
 	@Bean
