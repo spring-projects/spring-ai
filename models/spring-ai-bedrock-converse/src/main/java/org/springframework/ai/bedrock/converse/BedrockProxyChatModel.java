@@ -38,6 +38,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
@@ -135,6 +136,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author Soby Chacko
  * @author Sun Yuhan
+ * @author lambochen
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -219,6 +221,10 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse) {
+		return this.internalCall(prompt, perviousChatResponse, 1);
+	}
+
+	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse, int iterations) {
 
 		ConverseRequest converseRequest = this.createRequest(prompt);
 
@@ -243,8 +249,8 @@ public class BedrockProxyChatModel implements ChatModel {
 				return response;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
-				&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse,
+				iterations) && chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -256,9 +262,13 @@ public class BedrockProxyChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						chatResponse);
+						chatResponse, iterations + 1);
 			}
 		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
+		}
+
 		return chatResponse;
 	}
 
@@ -312,6 +322,9 @@ public class BedrockProxyChatModel implements ChatModel {
 				.internalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
 						? runtimeOptions.getInternalToolExecutionEnabled()
 						: this.defaultOptions.getInternalToolExecutionEnabled())
+				.toolExecutionMaxIterations(
+						ModelOptionsUtils.mergeOption(runtimeOptions.getToolExecutionMaxIterations(),
+								this.defaultOptions.getToolExecutionMaxIterations()))
 				.build();
 		}
 
@@ -646,6 +659,10 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse) {
+		return this.internalStream(prompt, perviousChatResponse, 1);
+	}
+
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse, int iterations) {
 		Assert.notNull(prompt, "'prompt' must not be null");
 
 		return Flux.deferContextual(contextView -> {
@@ -678,8 +695,8 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
-						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse,
+						iterations) && chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
@@ -704,9 +721,12 @@ public class BedrockProxyChatModel implements ChatModel {
 							// Send the tool execution result back to the model.
 							return this.internalStream(
 									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse);
+									chatResponse, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
+				}
+				else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+					throw new ToolExecutionLimitExceededException(iterations);
 				}
 				else {
 					return Flux.just(chatResponse);

@@ -33,6 +33,7 @@ import static org.mockito.Mockito.mock;
  * Unit tests for {@link DefaultToolCallingChatOptions}.
  *
  * @author Thomas Vitale
+ * @author lambochen
  */
 class DefaultToolCallingChatOptionsTests {
 
@@ -140,6 +141,7 @@ class DefaultToolCallingChatOptionsTests {
 		original.setToolNames(Set.of("tool1"));
 		original.setToolContext(Map.of("key", "value"));
 		original.setInternalToolExecutionEnabled(true);
+		original.setToolExecutionMaxIterations(ToolCallingChatOptions.TOOL_EXECUTION_NO_LIMIT);
 		original.setModel("gpt-4");
 		original.setTemperature(0.7);
 
@@ -150,6 +152,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(c.getToolNames()).isEqualTo(original.getToolNames());
 			assertThat(c.getToolContext()).isEqualTo(original.getToolContext());
 			assertThat(c.getInternalToolExecutionEnabled()).isEqualTo(original.getInternalToolExecutionEnabled());
+			assertThat(c.getToolExecutionMaxIterations()).isEqualTo(original.getToolExecutionMaxIterations());
 			assertThat(c.getModel()).isEqualTo(original.getModel());
 			assertThat(c.getTemperature()).isEqualTo(original.getTemperature());
 		});
@@ -180,6 +183,7 @@ class DefaultToolCallingChatOptionsTests {
 			.toolNames(Set.of("tool1"))
 			.toolContext(context)
 			.internalToolExecutionEnabled(true)
+			.toolExecutionMaxIterations(3)
 			.model("gpt-4")
 			.temperature(0.7)
 			.maxTokens(100)
@@ -195,6 +199,7 @@ class DefaultToolCallingChatOptionsTests {
 			assertThat(o.getToolNames()).containsExactly("tool1");
 			assertThat(o.getToolContext()).isEqualTo(context);
 			assertThat(o.getInternalToolExecutionEnabled()).isTrue();
+			assertThat(o.getToolExecutionMaxIterations()).isEqualTo(3);
 			assertThat(o.getModel()).isEqualTo("gpt-4");
 			assertThat(o.getTemperature()).isEqualTo(0.7);
 			assertThat(o.getMaxTokens()).isEqualTo(100);
@@ -233,6 +238,13 @@ class DefaultToolCallingChatOptionsTests {
 
 		options.setInternalToolExecutionEnabled(true);
 		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
+
+		// default value check
+		assertThat(options.getToolExecutionMaxIterations())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
+
+		options.setToolExecutionMaxIterations(3);
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test

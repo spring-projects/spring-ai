@@ -27,6 +27,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -84,7 +85,9 @@ import org.springframework.util.MimeType;
  * @author luocongqiu
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author lambochen
  * @since 1.0.0
+ * @see ToolCallingChatOptions
  */
 public class MistralAiChatModel implements ChatModel {
 
@@ -182,6 +185,10 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalCall(prompt, previousChatResponse, 1);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		MistralAiApi.ChatCompletionRequest request = createRequest(prompt, false);
 
@@ -226,7 +233,7 @@ public class MistralAiChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -238,8 +245,11 @@ public class MistralAiChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, iterations + 1);
 			}
+		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
 		}
 
 		return response;
@@ -254,6 +264,10 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalStream(prompt, previousChatResponse, 1);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		return Flux.deferContextual(contextView -> {
 			var request = createRequest(prompt, true);
 
@@ -314,7 +328,7 @@ public class MistralAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.deferContextual((ctx) -> {
@@ -334,9 +348,11 @@ public class MistralAiChatModel implements ChatModel {
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
+									response, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
+				} else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)){
+					throw new ToolExecutionLimitExceededException(iterations);
 				}
 				else {
 					return Flux.just(response);
@@ -401,6 +417,9 @@ public class MistralAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getToolExecutionMaxIterations(),
+							this.defaultOptions.getToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -410,6 +429,7 @@ public class MistralAiChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setToolExecutionMaxIterations(this.defaultOptions.getToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
