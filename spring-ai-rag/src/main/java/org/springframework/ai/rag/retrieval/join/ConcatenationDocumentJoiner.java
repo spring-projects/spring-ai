@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.rag.retrieval.join;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,7 +33,8 @@ import org.springframework.util.Assert;
 /**
  * Combines documents retrieved based on multiple queries and from multiple data sources
  * by concatenating them into a single collection of documents. In case of duplicate
- * documents, the first occurrence is kept. The score of each document is kept as is.
+ * documents, the first occurrence is kept. The score of each document is kept as is. The
+ * result is a list of unique documents sorted by their score in descending order.
  *
  * @author Thomas Vitale
  * @since 1.0.0
@@ -54,7 +56,11 @@ public class ConcatenationDocumentJoiner implements DocumentJoiner {
 			.flatMap(List::stream)
 			.flatMap(List::stream)
 			.collect(Collectors.toMap(Document::getId, Function.identity(), (existing, duplicate) -> existing))
-			.values());
+			.values()
+			.stream()
+			.sorted(Comparator.comparingDouble((Document doc) -> doc.getScore() != null ? doc.getScore() : 0.0)
+				.reversed())
+			.toList());
 	}
 
 }

@@ -23,8 +23,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.function.FunctionCallingOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -96,25 +96,24 @@ public class ChatOptionsBuilderTests {
 	@Test
 	void shouldUpcastToChatOptions() {
 		// Given
-		FunctionCallback callback = FunctionCallback.builder()
-			.function("function1", x -> "result")
+		FunctionToolCallback callback = FunctionToolCallback.builder("function1", x -> "result")
 			.description("Test function")
 			.inputType(String.class)
 			.build();
 
-		FunctionCallingOptions functionOptions = FunctionCallingOptions.builder()
+		ToolCallingChatOptions toolCallingChatOptions = ToolCallingChatOptions.builder()
 			.model("gpt-4")
 			.maxTokens(100)
 			.temperature(0.7)
 			.topP(1.0)
 			.topK(40)
 			.stopSequences(List.of("stop1", "stop2"))
-			.functions(Set.of("function1", "function2"))
-			.functionCallbacks(List.of(callback))
+			.toolNames(Set.of("function1", "function2"))
+			.toolCallbacks(List.of(callback))
 			.build();
 
 		// When
-		ChatOptions chatOptions = functionOptions;
+		ChatOptions chatOptions = toolCallingChatOptions;
 
 		// Then
 		assertThat(chatOptions.getModel()).isEqualTo("gpt-4");
@@ -172,6 +171,75 @@ public class ChatOptionsBuilderTests {
 		// Then
 		assertThatThrownBy(() -> options.getStopSequences().add("stop3"))
 			.isInstanceOf(UnsupportedOperationException.class);
+	}
+
+	@Test
+	void shouldHandleNullStopSequences() {
+		ChatOptions options = this.builder.model("test-model").stopSequences(null).build();
+
+		assertThat(options.getStopSequences()).isNull();
+	}
+
+	@Test
+	void shouldHandleEmptyStopSequences() {
+		ChatOptions options = this.builder.model("test-model").stopSequences(List.of()).build();
+
+		assertThat(options.getStopSequences()).isEmpty();
+	}
+
+	@Test
+	void shouldHandleFrequencyAndPresencePenalties() {
+		ChatOptions options = this.builder.model("test-model").frequencyPenalty(0.5).presencePenalty(0.3).build();
+
+		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
+		assertThat(options.getPresencePenalty()).isEqualTo(0.3);
+	}
+
+	@Test
+	void shouldMaintainStopSequencesOrder() {
+		List<String> orderedSequences = List.of("first", "second", "third", "fourth");
+
+		ChatOptions options = this.builder.model("test-model").stopSequences(orderedSequences).build();
+
+		assertThat(options.getStopSequences()).containsExactly("first", "second", "third", "fourth");
+	}
+
+	@Test
+	void shouldCreateIndependentCopies() {
+		ChatOptions original = this.builder.model("test-model")
+			.stopSequences(new ArrayList<>(List.of("stop1")))
+			.build();
+
+		ChatOptions copy1 = original.copy();
+		ChatOptions copy2 = original.copy();
+
+		assertThat(copy1).isNotSameAs(copy2);
+		assertThat(copy1.getStopSequences()).isNotSameAs(copy2.getStopSequences());
+		assertThat(copy1).usingRecursiveComparison().isEqualTo(copy2);
+	}
+
+	@Test
+	void shouldHandleSpecialStringValues() {
+		ChatOptions options = this.builder.model("") // Empty string
+			.stopSequences(List.of("", "  ", "\n", "\t"))
+			.build();
+
+		assertThat(options.getModel()).isEmpty();
+		assertThat(options.getStopSequences()).containsExactly("", "  ", "\n", "\t");
+	}
+
+	@Test
+	void shouldPreserveCopyIntegrity() {
+		List<String> mutableList = new ArrayList<>(List.of("original"));
+		ChatOptions original = this.builder.model("test-model").stopSequences(mutableList).build();
+
+		// Modify the original list after building
+		mutableList.add("modified");
+
+		ChatOptions copy = original.copy();
+
+		assertThat(original.getStopSequences()).containsExactly("original");
+		assertThat(copy.getStopSequences()).containsExactly("original");
 	}
 
 }

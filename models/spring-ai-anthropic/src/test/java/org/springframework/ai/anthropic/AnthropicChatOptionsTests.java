@@ -16,14 +16,15 @@
 
 package org.springframework.ai.anthropic;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link AnthropicChatOptions}.
@@ -99,6 +100,222 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getMetadata()).isNull();
+	}
+
+	@Test
+	void testBuilderWithEmptyCollections() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.stopSequences(Collections.emptyList())
+			.toolContext(Collections.emptyMap())
+			.build();
+
+		assertThat(options.getStopSequences()).isEmpty();
+		assertThat(options.getToolContext()).isEmpty();
+	}
+
+	@Test
+	void testBuilderWithSingleElementCollections() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.stopSequences(List.of("single-stop"))
+			.toolContext(Map.of("single-key", "single-value"))
+			.build();
+
+		assertThat(options.getStopSequences()).hasSize(1).containsExactly("single-stop");
+		assertThat(options.getToolContext()).hasSize(1).containsEntry("single-key", "single-value");
+	}
+
+	@Test
+	void testCopyWithEmptyOptions() {
+		AnthropicChatOptions emptyOptions = new AnthropicChatOptions();
+		AnthropicChatOptions copiedOptions = emptyOptions.copy();
+
+		assertThat(copiedOptions).isNotSameAs(emptyOptions).isEqualTo(emptyOptions);
+		assertThat(copiedOptions.getModel()).isNull();
+		assertThat(copiedOptions.getMaxTokens()).isNull();
+		assertThat(copiedOptions.getTemperature()).isNull();
+	}
+
+	@Test
+	void testCopyMutationDoesNotAffectOriginal() {
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("original-model")
+			.maxTokens(100)
+			.temperature(0.5)
+			.stopSequences(List.of("original-stop"))
+			.toolContext(Map.of("original", "value"))
+			.build();
+
+		AnthropicChatOptions copy = original.copy();
+		copy.setModel("modified-model");
+		copy.setMaxTokens(200);
+		copy.setTemperature(0.8);
+
+		// Original should remain unchanged
+		assertThat(original.getModel()).isEqualTo("original-model");
+		assertThat(original.getMaxTokens()).isEqualTo(100);
+		assertThat(original.getTemperature()).isEqualTo(0.5);
+
+		// Copy should have new values
+		assertThat(copy.getModel()).isEqualTo("modified-model");
+		assertThat(copy.getMaxTokens()).isEqualTo(200);
+		assertThat(copy.getTemperature()).isEqualTo(0.8);
+	}
+
+	@Test
+	void testEqualsAndHashCode() {
+		AnthropicChatOptions options1 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.maxTokens(100)
+			.temperature(0.7)
+			.build();
+
+		AnthropicChatOptions options2 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.maxTokens(100)
+			.temperature(0.7)
+			.build();
+
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder()
+			.model("different-model")
+			.maxTokens(100)
+			.temperature(0.7)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+
+		assertThat(options1).isNotEqualTo(options3);
+		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+	}
+
+	@Test
+	void testChainedBuilderMethods() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model("test-model")
+			.maxTokens(150)
+			.temperature(0.6)
+			.topP(0.9)
+			.topK(40)
+			.stopSequences(List.of("stop"))
+			.metadata(new Metadata("user_456"))
+			.toolContext(Map.of("context", "value"))
+			.build();
+
+		// Verify all chained methods worked
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getMaxTokens()).isEqualTo(150);
+		assertThat(options.getTemperature()).isEqualTo(0.6);
+		assertThat(options.getTopP()).isEqualTo(0.9);
+		assertThat(options.getTopK()).isEqualTo(40);
+		assertThat(options.getStopSequences()).containsExactly("stop");
+		assertThat(options.getMetadata()).isEqualTo(new Metadata("user_456"));
+		assertThat(options.getToolContext()).containsEntry("context", "value");
+	}
+
+	@Test
+	void testSettersWithNullValues() {
+		AnthropicChatOptions options = new AnthropicChatOptions();
+
+		options.setModel(null);
+		options.setMaxTokens(null);
+		options.setTemperature(null);
+		options.setTopK(null);
+		options.setTopP(null);
+		options.setStopSequences(null);
+		options.setMetadata(null);
+		options.setToolContext(null);
+
+		assertThat(options.getModel()).isNull();
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getTopK()).isNull();
+		assertThat(options.getTopP()).isNull();
+		assertThat(options.getStopSequences()).isNull();
+		assertThat(options.getMetadata()).isNull();
+		assertThat(options.getToolContext()).isNull();
+	}
+
+	@Test
+	void testBuilderAndSetterConsistency() {
+		// Build an object using builder
+		AnthropicChatOptions builderOptions = AnthropicChatOptions.builder()
+			.model("test-model")
+			.maxTokens(100)
+			.temperature(0.7)
+			.topP(0.8)
+			.topK(50)
+			.build();
+
+		// Create equivalent object using setters
+		AnthropicChatOptions setterOptions = new AnthropicChatOptions();
+		setterOptions.setModel("test-model");
+		setterOptions.setMaxTokens(100);
+		setterOptions.setTemperature(0.7);
+		setterOptions.setTopP(0.8);
+		setterOptions.setTopK(50);
+
+		assertThat(builderOptions).isEqualTo(setterOptions);
+	}
+
+	@Test
+	void testMetadataEquality() {
+		Metadata metadata1 = new Metadata("user_123");
+		Metadata metadata2 = new Metadata("user_123");
+		Metadata metadata3 = new Metadata("user_456");
+
+		AnthropicChatOptions options1 = AnthropicChatOptions.builder().metadata(metadata1).build();
+
+		AnthropicChatOptions options2 = AnthropicChatOptions.builder().metadata(metadata2).build();
+
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder().metadata(metadata3).build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	void testZeroValues() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.maxTokens(0)
+			.temperature(0.0)
+			.topP(0.0)
+			.topK(0)
+			.build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(0);
+		assertThat(options.getTemperature()).isEqualTo(0.0);
+		assertThat(options.getTopP()).isEqualTo(0.0);
+		assertThat(options.getTopK()).isEqualTo(0);
+	}
+
+	@Test
+	void testCopyPreservesAllFields() {
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("comprehensive-model")
+			.maxTokens(500)
+			.stopSequences(List.of("stop1", "stop2", "stop3"))
+			.temperature(0.75)
+			.topP(0.85)
+			.topK(60)
+			.metadata(new Metadata("comprehensive_test"))
+			.toolContext(Map.of("key1", "value1", "key2", "value2"))
+			.build();
+
+		AnthropicChatOptions copied = original.copy();
+
+		// Verify all fields are preserved
+		assertThat(copied.getModel()).isEqualTo(original.getModel());
+		assertThat(copied.getMaxTokens()).isEqualTo(original.getMaxTokens());
+		assertThat(copied.getStopSequences()).isEqualTo(original.getStopSequences());
+		assertThat(copied.getTemperature()).isEqualTo(original.getTemperature());
+		assertThat(copied.getTopP()).isEqualTo(original.getTopP());
+		assertThat(copied.getTopK()).isEqualTo(original.getTopK());
+		assertThat(copied.getMetadata()).isEqualTo(original.getMetadata());
+		assertThat(copied.getToolContext()).isEqualTo(original.getToolContext());
+
+		// Ensure deep copy for collections
+		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
+		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
 	}
 
 }

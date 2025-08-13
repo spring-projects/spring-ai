@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.util.StringUtils;
  * Default conventions to populate observations for embedding model operations.
  *
  * @author Thomas Vitale
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class DefaultEmbeddingModelObservationConvention implements EmbeddingModelObservationConvention {
@@ -44,9 +45,9 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 
 	@Override
 	public String getContextualName(EmbeddingModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+		if (StringUtils.hasText(context.getRequest().getOptions().getModel())) {
 			return "%s %s".formatted(context.getOperationMetadata().operationType(),
-					context.getRequestOptions().getModel());
+					context.getRequest().getOptions().getModel());
 		}
 		return context.getOperationMetadata().operationType();
 	}
@@ -68,9 +69,9 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 	}
 
 	protected KeyValue requestModel(EmbeddingModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequestOptions().getModel())) {
+		if (StringUtils.hasText(context.getRequest().getOptions().getModel())) {
 			return KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-					context.getRequestOptions().getModel());
+					context.getRequest().getOptions().getModel());
 		}
 		return REQUEST_MODEL_NONE;
 	}
@@ -98,10 +99,10 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 	// Request
 
 	protected KeyValues requestEmbeddingDimension(KeyValues keyValues, EmbeddingModelObservationContext context) {
-		if (context.getRequestOptions().getDimensions() != null) {
+		if (context.getRequest().getOptions().getDimensions() != null) {
 			return keyValues
 				.and(EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS
-					.asString(), String.valueOf(context.getRequestOptions().getDimensions()));
+					.asString(), String.valueOf(context.getRequest().getOptions().getDimensions()));
 		}
 		return keyValues;
 	}

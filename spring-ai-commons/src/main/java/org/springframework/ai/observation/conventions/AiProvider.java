@@ -71,20 +71,17 @@ public enum AiProvider {
 	 */
 	MINIMAX("minimax"),
 
-	/**
-	 * AI system provided by Moonshot.
-	 */
-	MOONSHOT("moonshot"),
 
-	/**
-	 * AI system provided by Qianfan.
-	 */
-	QIANFAN("qianfan"),
 
 	/**
 	 * AI system provided by Zhipuai.
 	 */
 	ZHIPUAI("zhipuai"),
+
+	/**
+	 * AI system provided by DeepSeek.
+	 */
+	DEEPSEEK("deepseek"),
 
 	/**
 	 * AI system provided by Spring AI.
@@ -95,6 +92,11 @@ public enum AiProvider {
 	 * AI system provided by Vertex AI.
 	 */
 	VERTEX_AI("vertex_ai"),
+
+	/**
+	 * AI system provided by Vertex AI.
+	 */
+	GOOGLE_GENAI_AI("google_genai"),
 
 	/**
 	 * AI system provided by ONNX.

@@ -23,12 +23,13 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,11 +63,11 @@ class ChatCompletionRequestTests {
 		Prompt prompt = chatModel.buildRequestPrompt(new Prompt("Test message content", runtimeOptions));
 
 		assertThat(((ToolCallingChatOptions) prompt.getOptions())).isNotNull();
-		assertThat(((ToolCallingChatOptions) prompt.getOptions()).isInternalToolExecutionEnabled()).isFalse();
+		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getInternalToolExecutionEnabled()).isFalse();
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()).hasSize(2);
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolCallbacks()
 			.stream()
-			.map(FunctionCallback::getName)).containsExactlyInAnyOrder("tool3", "tool4");
+			.map(toolCallback -> toolCallback.getToolDefinition().name())).containsExactlyInAnyOrder("tool3", "tool4");
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolNames()).containsExactlyInAnyOrder("tool3");
 		assertThat(((ToolCallingChatOptions) prompt.getOptions()).getToolContext()).containsEntry("key1", "value1")
 			.containsEntry("key2", "valueB");
@@ -111,8 +112,7 @@ class ChatCompletionRequestTests {
 		var prompt = client.buildRequestPrompt(new Prompt("Test message content",
 				OpenAiChatOptions.builder()
 					.model("PROMPT_MODEL")
-					.functionCallbacks(List.of(FunctionCallback.builder()
-						.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+					.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
 						.description("Get the weather in location")
 						.inputType(MockWeatherService.Request.class)
 						.build()))
@@ -136,8 +136,7 @@ class ChatCompletionRequestTests {
 			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
 			.defaultOptions(OpenAiChatOptions.builder()
 				.model("DEFAULT_MODEL")
-				.functionCallbacks(List.of(FunctionCallback.builder()
-					.function(TOOL_FUNCTION_NAME, new MockWeatherService())
+				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build()))
@@ -156,7 +155,7 @@ class ChatCompletionRequestTests {
 
 		// Reference the default options tool by name at runtime
 		prompt = client.buildRequestPrompt(
-				new Prompt("Test message content", OpenAiChatOptions.builder().function(TOOL_FUNCTION_NAME).build()));
+				new Prompt("Test message content", OpenAiChatOptions.builder().toolNames(TOOL_FUNCTION_NAME).build()));
 		request = client.createRequest(prompt, false);
 
 		assertThat(request.tools()).hasSize(1);
@@ -167,13 +166,13 @@ class ChatCompletionRequestTests {
 
 		private final ToolDefinition toolDefinition;
 
-		public TestToolCallback(String name) {
-			this.toolDefinition = ToolDefinition.builder().name(name).inputSchema("{}").build();
+		TestToolCallback(String name) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 		}
 
 		@Override
 		public ToolDefinition getToolDefinition() {
-			return toolDefinition;
+			return this.toolDefinition;
 		}
 
 		@Override

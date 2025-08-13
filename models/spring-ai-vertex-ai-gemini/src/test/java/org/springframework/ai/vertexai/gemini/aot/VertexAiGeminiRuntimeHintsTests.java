@@ -16,17 +16,17 @@
 
 package org.springframework.ai.vertexai.gemini.aot;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatOptions;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
-import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 /**
  * @author Christian Tzolov
@@ -39,10 +39,86 @@ class VertexAiGeminiRuntimeHintsTests {
 		RuntimeHints runtimeHints = new RuntimeHints();
 		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
 		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(VertexAiGeminiChatModel.class);
+
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(
+				"org.springframework.ai.vertexai.gemini");
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
-			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
+			assertThat(registeredTypes.contains(jsonAnnotatedClass)).isTrue();
 		}
+
+		assertThat(registeredTypes.contains(TypeReference.of(VertexAiGeminiChatOptions.class))).isTrue();
+	}
+
+	@Test
+	void registerHintsWithNullClassLoader() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+
+		// Should not throw exception with null ClassLoader
+		org.assertj.core.api.Assertions
+			.assertThatCode(() -> vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null))
+			.doesNotThrowAnyException();
+	}
+
+	@Test
+	void ensureReflectionHintsAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+
+		// Ensure reflection hints are properly registered
+		assertThat(runtimeHints.reflection().typeHints().spliterator().estimateSize()).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyMultipleRegistrationCallsAreIdempotent() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+
+		// Register hints multiple times
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+		long firstCount = runtimeHints.reflection().typeHints().spliterator().estimateSize();
+
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+		long secondCount = runtimeHints.reflection().typeHints().spliterator().estimateSize();
+
+		// Should not register duplicate hints
+		assertThat(firstCount).isEqualTo(secondCount);
+	}
+
+	@Test
+	void verifyJsonAnnotatedClassesFromCorrectPackage() {
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(
+				"org.springframework.ai.vertexai.gemini");
+
+		// Ensure we found some JSON annotated classes in the expected package
+		assertThat(jsonAnnotatedClasses.spliterator().estimateSize()).isGreaterThan(0);
+
+		// Verify all found classes are from the expected package
+		for (TypeReference classRef : jsonAnnotatedClasses) {
+			assertThat(classRef.getName()).startsWith("org.springframework.ai.vertexai.gemini");
+		}
+	}
+
+	@Test
+	void verifyNoUnnecessaryHintsRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		VertexAiGeminiRuntimeHints vertexAiGeminiRuntimeHints = new VertexAiGeminiRuntimeHints();
+		vertexAiGeminiRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(
+				"org.springframework.ai.vertexai.gemini");
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Ensure we don't register significantly more types than needed
+		// Allow for some additional utility types but prevent hint bloat
+		assertThat(registeredTypes.size()).isLessThanOrEqualTo(jsonAnnotatedClasses.size() + 10);
 	}
 
 }

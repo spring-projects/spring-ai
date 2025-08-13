@@ -68,8 +68,8 @@ class PaymentStatusBeanIT {
 				ChatResponse response = chatModel
 					.call(new Prompt(List.of(new UserMessage("What's the status of my transaction with id T1001?")),
 							MistralAiChatOptions.builder()
-								.function("retrievePaymentStatus")
-								.function("retrievePaymentDate")
+								.toolNames("retrievePaymentStatus")
+								.toolNames("retrievePaymentDate")
 								.build()));
 
 				logger.info("Response: {}", response);

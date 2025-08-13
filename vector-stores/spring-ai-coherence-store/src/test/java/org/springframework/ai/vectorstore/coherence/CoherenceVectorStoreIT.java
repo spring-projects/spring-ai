@@ -281,10 +281,15 @@ public class CoherenceVectorStoreIT {
 				.similarityThreshold(similarityThreshold)
 				.build());
 
+			// Debug: print all returned document IDs and metadata
+			for (Document doc : results) {
+				System.out.println("Returned doc ID: " + doc.getId() + ", metadata: " + doc.getMetadata());
+			}
+
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(1).getId());
-			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
+			assertThat(resultDoc.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 			assertThat(resultDoc.getScore()).isGreaterThanOrEqualTo(similarityThreshold);
 
 			truncateMap(context, ((CoherenceVectorStore) vectorStore).getMapName());
@@ -297,6 +302,22 @@ public class CoherenceVectorStoreIT {
 			CoherenceVectorStore vectorStore = context.getBean(CoherenceVectorStore.class);
 			Optional<Session> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
+		});
+	}
+
+	@Test
+	public void similaritySearchReturnsMetadata() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			vectorStore.add(this.documents);
+
+			// Query that matches the first document, which has meta1
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("spring ai").topK(1).build());
+
+			assertThat(results).hasSize(1);
+			Document resultDoc = results.get(0);
+			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
 		});
 	}
 

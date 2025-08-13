@@ -69,26 +69,39 @@ public abstract class ModelOptionsUtils {
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 		.addModules(JacksonUtils.instantiateAvailableModules())
-		.build();
+		.build()
+		.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
-	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
+	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
 
 	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
-	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
+	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 
 	};
 
 	/**
-	 * Converts the given JSON string to a Map of String and Object.
+	 * Converts the given JSON string to a Map of String and Object using the default
+	 * ObjectMapper.
 	 * @param json the JSON string to convert to a Map.
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> jsonToMap(String json) {
+		return jsonToMap(json, OBJECT_MAPPER);
+	}
+
+	/**
+	 * Converts the given JSON string to a Map of String and Object using a custom
+	 * ObjectMapper.
+	 * @param json the JSON string to convert to a Map.
+	 * @param objectMapper the ObjectMapper to use for deserialization.
+	 * @return the converted Map.
+	 */
+	public static Map<String, Object> jsonToMap(String json, ObjectMapper objectMapper) {
 		try {
-			return OBJECT_MAPPER.readValue(json, MAP_TYPE_REF);
+			return objectMapper.readValue(json, MAP_TYPE_REF);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -173,12 +186,12 @@ public abstract class ModelOptionsUtils {
 		targetMap.putAll(sourceMap.entrySet()
 			.stream()
 			.filter(e -> e.getValue() != null)
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 		targetMap = targetMap.entrySet()
 			.stream()
 			.filter(e -> requestFieldNames.contains(e.getKey()))
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		return ModelOptionsUtils.mapToClass(targetMap, clazz);
 	}
@@ -216,7 +229,7 @@ public abstract class ModelOptionsUtils {
 				.entrySet()
 				.stream()
 				.filter(e -> e.getValue() != null)
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

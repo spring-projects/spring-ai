@@ -32,6 +32,6 @@ public enum SchemaType {
 	/**
 	 * Open API schema.
 	 */
-	OPEN_API_SCHEMA;
+	OPEN_API_SCHEMA
 
 }

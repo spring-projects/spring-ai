@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.prompt;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -45,7 +44,7 @@ class PromptTests {
 		// Try to render with missing value for template variable, expect exception
 		Assertions.assertThatThrownBy(() -> pt.render(model))
 			.isInstanceOf(IllegalStateException.class)
-			.hasMessage("Not all template variables were replaced. Missing variable names are [lastName]");
+			.hasMessage("Not all variables were replaced in the template. Missing variable names are: [lastName].");
 
 		pt.add("lastName", "Park"); // TODO investigate partial
 		String promptString = pt.render(model);
@@ -94,55 +93,34 @@ class PromptTests {
 	}
 
 	@Test
-	void testSingleInputVariable() {
-		String template = "This is a {foo} test";
-		PromptTemplate promptTemplate = new PromptTemplate(template);
-		Set<String> inputVariables = promptTemplate.getInputVariables();
-		assertThat(inputVariables).isNotEmpty();
-		assertThat(inputVariables).hasSize(1);
-		assertThat(inputVariables).contains("foo");
-	}
-
-	@Test
-	void testMultipleInputVariables() {
-		String template = "This {bar} is a {foo} test";
-		PromptTemplate promptTemplate = new PromptTemplate(template);
-		Set<String> inputVariables = promptTemplate.getInputVariables();
-		assertThat(inputVariables).isNotEmpty();
-		assertThat(inputVariables).hasSize(2);
-		assertThat(inputVariables).contains("foo", "bar");
-	}
-
-	@Test
-	void testMultipleInputVariablesWithRepeats() {
-		String template = "This {bar} is a {foo} test {foo}.";
-		PromptTemplate promptTemplate = new PromptTemplate(template);
-		Set<String> inputVariables = promptTemplate.getInputVariables();
-		assertThat(inputVariables).isNotEmpty();
-		assertThat(inputVariables).hasSize(2);
-		assertThat(inputVariables).contains("foo", "bar");
-	}
-
-	@Test
-	void testBadFormatOfTemplateString() {
-		String template = "This is a {foo test";
-		Assertions.assertThatThrownBy(() -> new PromptTemplate(template))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("The template string is not valid.");
-	}
-
-	@Test
 	public void testPromptCopy() {
 		String template = "Hello, {name}! Your age is {age}.";
 		Map<String, Object> model = new HashMap<>();
 		model.put("name", "Alice");
 		model.put("age", 30);
-		PromptTemplate promptTemplate = new PromptTemplate(template, model);
+		PromptTemplate promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
 		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
 
 		Prompt prompt = promptTemplate.create(model, chatOptions);
 
 		Prompt copiedPrompt = prompt.copy();
+		assertThat(prompt).isNotSameAs(copiedPrompt);
+		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
+	}
+
+	@Test
+	public void mutatePrompt() {
+		String template = "Hello, {name}! Your age is {age}.";
+		Map<String, Object> model = new HashMap<>();
+		model.put("name", "Alice");
+		model.put("age", 30);
+		PromptTemplate promptTemplate = PromptTemplate.builder().template(template).variables(model).build();
+		ChatOptions chatOptions = ChatOptions.builder().temperature(0.5).maxTokens(100).build();
+
+		Prompt prompt = promptTemplate.create(model, chatOptions);
+
+		Prompt copiedPrompt = prompt.mutate().build();
 		assertThat(prompt).isNotSameAs(copiedPrompt);
 		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
 		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());

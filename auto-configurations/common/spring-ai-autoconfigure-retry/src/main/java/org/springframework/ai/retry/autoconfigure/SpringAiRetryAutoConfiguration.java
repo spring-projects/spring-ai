@@ -41,9 +41,12 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for AI Retry.
+ * {@link AutoConfiguration Auto-configuration} for AI Retry. Provides beans for retry
+ * template and response error handling. Handles transient and non-transient exceptions
+ * based on HTTP status codes.
  *
  * @author Christian Tzolov
+ * @author SriVarshan P
  */
 @AutoConfiguration
 @ConditionalOnClass(RetryUtils.class)
@@ -63,9 +66,10 @@ public class SpringAiRetryAutoConfiguration {
 			.withListener(new RetryListener() {
 
 				@Override
-				public <T extends Object, E extends Throwable> void onError(RetryContext context,
-						RetryCallback<T, E> callback, Throwable throwable) {
-					logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
+				public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
+						Throwable throwable) {
+					logger.warn("Retry error. Retry count: {}, Exception: {}", context.getRetryCount(),
+							throwable.getMessage(), throwable);
 				}
 			})
 			.build();
@@ -84,29 +88,35 @@ public class SpringAiRetryAutoConfiguration {
 
 			@Override
 			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
-				if (response.getStatusCode().isError()) {
-					String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-					String message = String.format("%s - %s", response.getStatusCode().value(), error);
+				if (!response.getStatusCode().isError()) {
+					return;
+				}
 
-					// Explicitly configured transient codes
-					if (properties.getOnHttpCodes().contains(response.getStatusCode().value())) {
-						throw new TransientAiException(message);
-					}
+				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+				if (error == null || error.isEmpty()) {
+					error = "No response body available";
+				}
 
-					// onClientErrors - If true, do not throw a NonTransientAiException,
-					// and do not attempt retry for 4xx client error codes, false by
-					// default.
-					if (!properties.isOnClientErrors() && response.getStatusCode().is4xxClientError()) {
-						throw new NonTransientAiException(message);
-					}
+				String message = String.format("HTTP %s - %s", response.getStatusCode().value(), error);
 
-					// Explicitly configured non-transient codes
-					if (!CollectionUtils.isEmpty(properties.getExcludeOnHttpCodes())
-							&& properties.getExcludeOnHttpCodes().contains(response.getStatusCode().value())) {
-						throw new NonTransientAiException(message);
-					}
+				// Explicitly configured transient codes
+				if (properties.getOnHttpCodes().contains(response.getStatusCode().value())) {
 					throw new TransientAiException(message);
 				}
+
+				// Handle client errors (4xx)
+				if (!properties.isOnClientErrors() && response.getStatusCode().is4xxClientError()) {
+					throw new NonTransientAiException(message);
+				}
+
+				// Explicitly configured non-transient codes
+				if (!CollectionUtils.isEmpty(properties.getExcludeOnHttpCodes())
+						&& properties.getExcludeOnHttpCodes().contains(response.getStatusCode().value())) {
+					throw new NonTransientAiException(message);
+				}
+
+				// Default to transient exception
+				throw new TransientAiException(message);
 			}
 		};
 	}

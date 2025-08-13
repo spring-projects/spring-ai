@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -92,14 +93,13 @@ class EmbeddingModelMeterObservationHandlerTests {
 
 	private EmbeddingModelObservationContext generateObservationContext() {
 		return EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest())
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
-			.requestOptions(EmbeddingOptionsBuilder.builder().withModel("mistral").build())
 			.build();
 	}
 
-	private EmbeddingRequest generateEmbeddingRequest() {
-		return new EmbeddingRequest(List.of(), EmbeddingOptionsBuilder.builder().build());
+	private EmbeddingRequest generateEmbeddingRequest(EmbeddingOptions embeddingOptions) {
+		return new EmbeddingRequest(List.of(), embeddingOptions);
 	}
 
 	static class TestUsage implements Usage {

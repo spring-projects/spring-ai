@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import java.util.Objects;
  *
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
+ * @author Ricken Bazolo
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public final class CategoryScores {
@@ -51,6 +53,16 @@ public final class CategoryScores {
 
 	private final double violence;
 
+	private final double dangerousAndCriminalContent;
+
+	private final double health;
+
+	private final double financial;
+
+	private final double law;
+
+	private final double pii;
+
 	private CategoryScores(Builder builder) {
 		this.sexual = builder.sexual;
 		this.hate = builder.hate;
@@ -63,6 +75,11 @@ public final class CategoryScores {
 		this.selfHarmInstructions = builder.selfHarmInstructions;
 		this.harassmentThreatening = builder.harassmentThreatening;
 		this.violence = builder.violence;
+		this.dangerousAndCriminalContent = builder.dangerousAndCriminalContent;
+		this.health = builder.health;
+		this.financial = builder.financial;
+		this.law = builder.law;
+		this.pii = builder.pii;
 	}
 
 	public static Builder builder() {
@@ -113,6 +130,26 @@ public final class CategoryScores {
 		return this.violence;
 	}
 
+	public double getDangerousAndCriminalContent() {
+		return this.dangerousAndCriminalContent;
+	}
+
+	public double getHealth() {
+		return this.health;
+	}
+
+	public double getFinancial() {
+		return this.financial;
+	}
+
+	public double getLaw() {
+		return this.law;
+	}
+
+	public double getPii() {
+		return this.pii;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -131,14 +168,18 @@ public final class CategoryScores {
 				&& Double.compare(that.selfHarmIntent, this.selfHarmIntent) == 0
 				&& Double.compare(that.selfHarmInstructions, this.selfHarmInstructions) == 0
 				&& Double.compare(that.harassmentThreatening, this.harassmentThreatening) == 0
-				&& Double.compare(that.violence, this.violence) == 0;
+				&& Double.compare(that.violence, this.violence) == 0
+				&& Double.compare(that.dangerousAndCriminalContent, this.dangerousAndCriminalContent) == 0
+				&& Double.compare(that.health, this.health) == 0 && Double.compare(that.financial, this.financial) == 0
+				&& Double.compare(that.law, this.law) == 0 && Double.compare(that.pii, this.pii) == 0;
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.sexual, this.hate, this.harassment, this.selfHarm, this.sexualMinors,
 				this.hateThreatening, this.violenceGraphic, this.selfHarmIntent, this.selfHarmInstructions,
-				this.harassmentThreatening, this.violence);
+				this.harassmentThreatening, this.violence, this.dangerousAndCriminalContent, this.health,
+				this.financial, this.law, this.pii);
 	}
 
 	@Override
@@ -147,7 +188,9 @@ public final class CategoryScores {
 				+ ", selfHarm=" + this.selfHarm + ", sexualMinors=" + this.sexualMinors + ", hateThreatening="
 				+ this.hateThreatening + ", violenceGraphic=" + this.violenceGraphic + ", selfHarmIntent="
 				+ this.selfHarmIntent + ", selfHarmInstructions=" + this.selfHarmInstructions
-				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence + '}';
+				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence
+				+ ", dangerousAndCriminalContent=" + this.dangerousAndCriminalContent + ", health=" + this.health
+				+ ", financial=" + this.financial + ", law=" + this.law + ", pii=" + this.pii + '}';
 	}
 
 	public static class Builder {
@@ -173,6 +216,16 @@ public final class CategoryScores {
 		private double harassmentThreatening;
 
 		private double violence;
+
+		private double dangerousAndCriminalContent;
+
+		private double health;
+
+		private double financial;
+
+		private double law;
+
+		private double pii;
 
 		public Builder sexual(double sexual) {
 			this.sexual = sexual;
@@ -226,6 +279,31 @@ public final class CategoryScores {
 
 		public Builder violence(double violence) {
 			this.violence = violence;
+			return this;
+		}
+
+		public Builder dangerousAndCriminalContent(double dangerousAndCriminalContent) {
+			this.dangerousAndCriminalContent = dangerousAndCriminalContent;
+			return this;
+		}
+
+		public Builder health(double health) {
+			this.health = health;
+			return this;
+		}
+
+		public Builder financial(double financial) {
+			this.financial = financial;
+			return this;
+		}
+
+		public Builder law(double law) {
+			this.law = law;
+			return this;
+		}
+
+		public Builder pii(double pii) {
+			this.pii = pii;
 			return this;
 		}
 

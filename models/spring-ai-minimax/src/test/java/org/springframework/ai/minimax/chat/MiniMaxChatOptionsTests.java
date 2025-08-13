@@ -36,11 +36,14 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.minimax.api.MiniMaxApi;
+import org.springframework.ai.minimax.api.MockWeatherService;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Ilayaperumal Gopinathan
  */
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class MiniMaxChatOptionsTests {
@@ -58,72 +61,45 @@ public class MiniMaxChatOptionsTests {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		// markSensitiveInfo is enabled by default
-		ChatResponse response = this.chatModel.call(new Prompt(messages));
+		ChatResponse response = this.chatModel
+			.call(new Prompt(messages, MiniMaxChatOptions.builder().maskSensitiveInfo(true).build()));
 		String responseContent = response.getResult().getOutput().getText();
 
 		assertThat(responseContent).contains("133-**");
 		assertThat(responseContent).doesNotContain("133-12345678");
-
-		var chatOptions = MiniMaxChatOptions.builder().maskSensitiveInfo(false).build();
-
-		ChatResponse unmaskResponse = this.chatModel.call(new Prompt(messages, chatOptions));
-		String unmaskResponseContent = unmaskResponse.getResult().getOutput().getText();
-
-		assertThat(unmaskResponseContent).contains("133-12345678");
 	}
 
-	/**
-	 * There is a certain probability of failure, because it needs to be searched through
-	 * the network, which may cause the test to fail due to different search results. And
-	 * the search results are related to time. For example, after the start of the Paris
-	 * Paralympic Games, searching for the number of gold medals in the Paris Olympics may
-	 * be affected by the search results of the number of gold medals in the Paris
-	 * Paralympic Games with higher priority by the search engine. Even if the input is an
-	 * English question, there may be get Chinese content, because the main training
-	 * content of MiniMax and search engine are Chinese
-	 */
 	@Test
-	void testWebSearch() {
-		UserMessage userMessage = new UserMessage(
-				"How many gold medals has the United States won in total at the 2024 Olympics?");
+	void testToolCalling() {
+		UserMessage userMessage = new UserMessage("What is the weather in San Francisco?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
-
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
 			.model(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
-			.tools(functionTool)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(messages, options));
 		String responseContent = response.getResult().getOutput().getText();
 
-		assertThat(responseContent).contains("40");
+		assertThat(responseContent).contains("30");
 	}
 
-	/**
-	 * There is a certain probability of failure, because it needs to be searched through
-	 * the network, which may cause the test to fail due to different search results. And
-	 * the search results are related to time. For example, after the start of the Paris
-	 * Paralympic Games, searching for the number of gold medals in the Paris Olympics may
-	 * be affected by the search results of the number of gold medals in the Paris
-	 * Paralympic Games with higher priority by the search engine. Even if the input is an
-	 * English question, there may be get Chinese content, because the main training
-	 * content of MiniMax and search engine of MiniMax are Chinese
-	 */
 	@Test
-	void testWebSearchStream() {
-		UserMessage userMessage = new UserMessage(
-				"How many gold medals has the United States won in total at the 2024 Olympics?");
+	void testToolCallingStream() {
+		UserMessage userMessage = new UserMessage("What is the weather in Paris?");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
-
-		List<MiniMaxApi.FunctionTool> functionTool = List.of(MiniMaxApi.FunctionTool.webSearchFunctionTool());
-
 		MiniMaxChatOptions options = MiniMaxChatOptions.builder()
 			.model(org.springframework.ai.minimax.api.MiniMaxApi.ChatModel.ABAB_6_5_S_Chat.value)
-			.tools(functionTool)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, options));
@@ -137,7 +113,7 @@ public class MiniMaxChatOptionsTests {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(content).contains("40");
+		assertThat(content).contains("15");
 	}
 
 }

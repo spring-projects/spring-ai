@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,16 @@ import java.util.stream.Collectors;
 
 import reactor.core.scheduler.Scheduler;
 
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
 import org.springframework.ai.rag.generation.augmentation.QueryAugmenter;
+import org.springframework.ai.rag.postretrieval.document.DocumentPostProcessor;
 import org.springframework.ai.rag.preretrieval.query.expansion.QueryExpander;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner;
@@ -70,6 +71,8 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	private final DocumentJoiner documentJoiner;
 
+	private final List<DocumentPostProcessor> documentPostProcessors;
+
 	private final QueryAugmenter queryAugmenter;
 
 	private final TaskExecutor taskExecutor;
@@ -78,16 +81,18 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	private final int order;
 
-	public RetrievalAugmentationAdvisor(@Nullable List<QueryTransformer> queryTransformers,
+	private RetrievalAugmentationAdvisor(@Nullable List<QueryTransformer> queryTransformers,
 			@Nullable QueryExpander queryExpander, DocumentRetriever documentRetriever,
-			@Nullable DocumentJoiner documentJoiner, @Nullable QueryAugmenter queryAugmenter,
-			@Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler, @Nullable Integer order) {
+			@Nullable DocumentJoiner documentJoiner, @Nullable List<DocumentPostProcessor> documentPostProcessors,
+			@Nullable QueryAugmenter queryAugmenter, @Nullable TaskExecutor taskExecutor, @Nullable Scheduler scheduler,
+			@Nullable Integer order) {
 		Assert.notNull(documentRetriever, "documentRetriever cannot be null");
 		Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
 		this.queryTransformers = queryTransformers != null ? queryTransformers : List.of();
 		this.queryExpander = queryExpander;
 		this.documentRetriever = documentRetriever;
 		this.documentJoiner = documentJoiner != null ? documentJoiner : new ConcatenationDocumentJoiner();
+		this.documentPostProcessors = documentPostProcessors != null ? documentPostProcessors : List.of();
 		this.queryAugmenter = queryAugmenter != null ? queryAugmenter : ContextualQueryAugmenter.builder().build();
 		this.taskExecutor = taskExecutor != null ? taskExecutor : buildDefaultTaskExecutor();
 		this.scheduler = scheduler != null ? scheduler : BaseAdvisor.DEFAULT_SCHEDULER;
@@ -99,13 +104,13 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	}
 
 	@Override
-	public AdvisedRequest before(AdvisedRequest request) {
-		Map<String, Object> context = new HashMap<>(request.adviseContext());
+	public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
+		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
 		// 0. Create a query from the user text, parameters, and conversation history.
 		Query originalQuery = Query.builder()
-			.text(new PromptTemplate(request.userText(), request.userParams()).render())
-			.history(request.messages())
+			.text(chatClientRequest.prompt().getUserMessage().getText())
+			.history(chatClientRequest.prompt().getInstructions())
 			.context(context)
 			.build();
 
@@ -130,13 +135,21 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		// 4. Combine documents retrieved based on multiple queries and from multiple data
 		// sources.
 		List<Document> documents = this.documentJoiner.join(documentsForQuery);
+
+		// 5. Post-process the documents.
+		for (var documentPostProcessor : this.documentPostProcessors) {
+			documents = documentPostProcessor.process(originalQuery, documents);
+		}
 		context.put(DOCUMENT_CONTEXT, documents);
 
 		// 5. Augment user query with the document contextual data.
 		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
 
-		// 6. Update advised request with augmented prompt.
-		return AdvisedRequest.from(request).userText(augmentedQuery.text()).adviseContext(context).build();
+		// 6. Update ChatClientRequest with augmented prompt.
+		return chatClientRequest.mutate()
+			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedQuery.text()))
+			.context(context)
+			.build();
 	}
 
 	/**
@@ -149,16 +162,19 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 	}
 
 	@Override
-	public AdvisedResponse after(AdvisedResponse advisedResponse) {
+	public ChatClientResponse after(ChatClientResponse chatClientResponse, @Nullable AdvisorChain advisorChain) {
 		ChatResponse.Builder chatResponseBuilder;
-		if (advisedResponse.response() == null) {
+		if (chatClientResponse.chatResponse() == null) {
 			chatResponseBuilder = ChatResponse.builder();
 		}
 		else {
-			chatResponseBuilder = ChatResponse.builder().from(advisedResponse.response());
+			chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse());
 		}
-		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, advisedResponse.adviseContext().get(DOCUMENT_CONTEXT));
-		return new AdvisedResponse(chatResponseBuilder.build(), advisedResponse.adviseContext());
+		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, chatClientResponse.context().get(DOCUMENT_CONTEXT));
+		return ChatClientResponse.builder()
+			.chatResponse(chatResponseBuilder.build())
+			.context(chatClientResponse.context())
+			.build();
 	}
 
 	@Override
@@ -191,6 +207,8 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 		private DocumentJoiner documentJoiner;
 
+		private List<DocumentPostProcessor> documentPostProcessors;
+
 		private QueryAugmenter queryAugmenter;
 
 		private TaskExecutor taskExecutor;
@@ -203,11 +221,14 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		}
 
 		public Builder queryTransformers(List<QueryTransformer> queryTransformers) {
+			Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
 			this.queryTransformers = queryTransformers;
 			return this;
 		}
 
 		public Builder queryTransformers(QueryTransformer... queryTransformers) {
+			Assert.notNull(queryTransformers, "queryTransformers cannot be null");
+			Assert.noNullElements(queryTransformers, "queryTransformers cannot contain null elements");
 			this.queryTransformers = Arrays.asList(queryTransformers);
 			return this;
 		}
@@ -224,6 +245,19 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 		public Builder documentJoiner(DocumentJoiner documentJoiner) {
 			this.documentJoiner = documentJoiner;
+			return this;
+		}
+
+		public Builder documentPostProcessors(List<DocumentPostProcessor> documentPostProcessors) {
+			Assert.noNullElements(documentPostProcessors, "documentPostProcessors cannot contain null elements");
+			this.documentPostProcessors = documentPostProcessors;
+			return this;
+		}
+
+		public Builder documentPostProcessors(DocumentPostProcessor... documentPostProcessors) {
+			Assert.notNull(documentPostProcessors, "documentPostProcessors cannot be null");
+			Assert.noNullElements(documentPostProcessors, "documentPostProcessors cannot contain null elements");
+			this.documentPostProcessors = Arrays.asList(documentPostProcessors);
 			return this;
 		}
 
@@ -249,7 +283,8 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 		public RetrievalAugmentationAdvisor build() {
 			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.queryExpander, this.documentRetriever,
-					this.documentJoiner, this.queryAugmenter, this.taskExecutor, this.scheduler, this.order);
+					this.documentJoiner, this.documentPostProcessors, this.queryAugmenter, this.taskExecutor,
+					this.scheduler, this.order);
 		}
 
 	}

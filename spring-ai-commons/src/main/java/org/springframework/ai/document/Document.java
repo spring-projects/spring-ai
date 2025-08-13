@@ -25,9 +25,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.content.Media;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.ai.content.Media;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -247,12 +247,9 @@ public class Document {
 
 	/**
 	 * Returns the content formatter associated with this document.
-	 * @deprecated We are considering getting rid of this, please comment on
-	 * https://github.com/spring-projects/spring-ai/issues/1782
 	 * @return the current ContentFormatter instance used for formatting the document
 	 * content.
 	 */
-	@Deprecated(since = "1.0.0-M4")
 	public ContentFormatter getContentFormatter() {
 		return this.contentFormatter;
 	}

@@ -20,18 +20,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.util.Assert;
 
 /**
@@ -51,13 +55,17 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final TitanEmbeddingBedrockApi embeddingApi;
 
+	private final ObservationRegistry observationRegistry;
+
 	/**
 	 * Titan Embedding API input types. Could be either text or image (encoded in base64).
 	 */
 	private InputType inputType = InputType.TEXT;
 
-	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi) {
+	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi,
+			ObservationRegistry observationRegistry) {
 		this.embeddingApi = titanEmbeddingBedrockApi;
+		this.observationRegistry = observationRegistry;
 	}
 
 	/**
@@ -78,18 +86,51 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 		if (request.getInstructions().size() != 1) {
-			logger.warn(
-					"Titan Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
+			logger.warn("Titan Embedding does not support batch embedding. Multiple API calls will be made.");
 		}
 
 		List<Embedding> embeddings = new ArrayList<>();
 		var indexCounter = new AtomicInteger(0);
+		int tokenUsage = 0;
+
 		for (String inputContent : request.getInstructions()) {
 			var apiRequest = createTitanEmbeddingRequest(inputContent, request.getOptions());
-			TitanEmbeddingResponse response = this.embeddingApi.embedding(apiRequest);
-			embeddings.add(new Embedding(response.embedding(), indexCounter.getAndIncrement()));
+
+			try {
+				TitanEmbeddingResponse response = Observation
+					.createNotStarted("bedrock.embedding", this.observationRegistry)
+					.lowCardinalityKeyValue("model", "titan")
+					.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase())
+					.highCardinalityKeyValue("input_length", String.valueOf(inputContent.length()))
+					.observe(() -> {
+						TitanEmbeddingResponse r = this.embeddingApi.embedding(apiRequest);
+						Assert.notNull(r, "Embedding API returned null response");
+						return r;
+					});
+
+				if (response.embedding() == null || response.embedding().length == 0) {
+					logger.warn("Empty embedding vector returned for input at index {}. Skipping.", indexCounter.get());
+					continue;
+				}
+
+				embeddings.add(new Embedding(response.embedding(), indexCounter.getAndIncrement()));
+
+				if (response.inputTextTokenCount() != null) {
+					tokenUsage += response.inputTextTokenCount();
+				}
+			}
+			catch (Exception ex) {
+				logger.error("Titan API embedding failed for input at index {}: {}", indexCounter.get(),
+						summarizeInput(inputContent), ex);
+				throw ex; // Optional: Continue instead of throwing if you want partial
+							// success
+			}
 		}
-		return new EmbeddingResponse(embeddings);
+
+		EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata("",
+				getDefaultUsage(tokenUsage));
+
+		return new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 	}
 
 	private TitanEmbeddingRequest createTitanEmbeddingRequest(String inputContent, EmbeddingOptions requestOptions) {
@@ -115,6 +156,17 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 		}
 		return super.dimensions();
 
+	}
+
+	private String summarizeInput(String input) {
+		if (this.inputType == InputType.IMAGE) {
+			return "[image content omitted, length=" + input.length() + "]";
+		}
+		return input.length() > 100 ? input.substring(0, 100) + "..." : input;
+	}
+
+	private DefaultUsage getDefaultUsage(int tokens) {
+		return new DefaultUsage(tokens, 0);
 	}
 
 	public enum InputType {

@@ -40,7 +40,7 @@ class OpenAiTranscriptionModelIT extends AbstractIT {
 	private Resource audioFile;
 
 	@Test
-	void transcriptionTest() {
+	void callTest() {
 		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
 			.responseFormat(TranscriptResponseFormat.TEXT)
 			.temperature(0f)
@@ -53,7 +53,7 @@ class OpenAiTranscriptionModelIT extends AbstractIT {
 	}
 
 	@Test
-	void transcriptionTestWithOptions() {
+	void callTestWithOptions() {
 		OpenAiAudioApi.TranscriptResponseFormat responseFormat = OpenAiAudioApi.TranscriptResponseFormat.VTT;
 
 		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
@@ -67,6 +67,26 @@ class OpenAiTranscriptionModelIT extends AbstractIT {
 		AudioTranscriptionResponse response = this.transcriptionModel.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().toLowerCase().contains("fellow")).isTrue();
+	}
+
+	@Test
+	void transcribeTest() {
+		String response = this.transcriptionModel.transcribe(this.audioFile);
+		assertThat(response).isNotNull();
+		assertThat(response.toLowerCase().contains("fellow")).isTrue();
+	}
+
+	@Test
+	void transcribeTestWithOptions() {
+		OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
+			.language("en")
+			.prompt("Ask not this, but ask that")
+			.temperature(0f)
+			.responseFormat(TranscriptResponseFormat.TEXT)
+			.build();
+		String response = this.transcriptionModel.transcribe(this.audioFile, transcriptionOptions);
+		assertThat(response).isNotNull();
+		assertThat(response.toLowerCase().contains("fellow")).isTrue();
 	}
 
 }

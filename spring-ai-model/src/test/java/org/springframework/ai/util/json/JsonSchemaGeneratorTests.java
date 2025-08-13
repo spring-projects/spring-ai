@@ -30,9 +30,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.lang.Nullable;
 
@@ -153,6 +153,29 @@ class JsonSchemaGeneratorTests {
 				    },
 				    "required": [
 				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithObjectParam() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("objectParamMethod", Object.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "object": {
+				        }
+				    },
+				    "required": [
+				        "object"
 				    ],
 				    "additionalProperties": false
 				}
@@ -662,6 +685,9 @@ class JsonSchemaGeneratorTests {
 		public void simpleMethod(String name, int age) {
 		}
 
+		public void objectParamMethod(Object object) {
+		}
+
 		public void annotatedMethod(
 				@ToolParam(required = false, description = "The username of the customer") String username,
 				@ToolParam(required = true) String password) {
@@ -696,27 +722,33 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record TestData(int id, @ToolParam(description = "The special name") String name) {
+
 	}
 
 	@JsonClassDescription("Much more data")
 	record MoreTestData(int id, @Schema(description = "Even more special name") String name) {
+
 	}
 
 	record AnnotatedPerson(@ToolParam int id, @ToolParam String name,
 			@ToolParam(required = false, description = "The email of the person") String email) {
+
 	}
 
 	record JacksonPerson(@JsonProperty(required = true) int id, @JsonProperty(required = true) String name,
 			@JsonProperty String email) {
+
 	}
 
 	record OpenApiPerson(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) int id,
 			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
 			@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED,
 					description = "The email of the person") String email) {
+
 	}
 
 	record NullablePerson(int id, String name, @Nullable String email) {
+
 	}
 
 	static class Person {
@@ -728,7 +760,7 @@ class JsonSchemaGeneratorTests {
 		private String email;
 
 		public int getId() {
-			return id;
+			return this.id;
 		}
 
 		public void setId(int id) {
@@ -736,7 +768,7 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public String getName() {
-			return name;
+			return this.name;
 		}
 
 		public void setName(String name) {
@@ -744,7 +776,7 @@ class JsonSchemaGeneratorTests {
 		}
 
 		public String getEmail() {
-			return email;
+			return this.email;
 		}
 
 		public void setEmail(String email) {

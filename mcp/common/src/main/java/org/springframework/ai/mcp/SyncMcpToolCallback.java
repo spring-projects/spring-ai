@@ -16,17 +16,20 @@
 
 package org.springframework.ai.mcp;
 
-import java.util.Map;
-
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -60,6 +63,8 @@ import org.springframework.ai.tool.definition.ToolDefinition;
  */
 public class SyncMcpToolCallback implements ToolCallback {
 
+	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
+
 	private final McpSyncClient mcpClient;
 
 	private final Tool tool;
@@ -88,7 +93,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	 */
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return ToolDefinition.builder()
+		return DefaultToolDefinition.builder()
 			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
@@ -110,11 +115,22 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String functionInput) {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		// Note that we use the original tool name here, not the adapted one from
-		// getToolDefinition
-		CallToolResult response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
+
+		CallToolResult response;
+		try {
+			// Note that we use the original tool name here, not the adapted one from
+			// getToolDefinition
+			response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
+		}
+		catch (Exception ex) {
+			logger.error("Exception while tool calling: ", ex);
+			throw new ToolExecutionException(this.getToolDefinition(), ex);
+		}
+
 		if (response.isError() != null && response.isError()) {
-			throw new IllegalStateException("Error calling tool: " + response.content());
+			logger.error("Error calling tool: {}", response.content());
+			throw new ToolExecutionException(this.getToolDefinition(),
+					new IllegalStateException("Error calling tool: " + response.content()));
 		}
 		return ModelOptionsUtils.toJsonString(response.content());
 	}

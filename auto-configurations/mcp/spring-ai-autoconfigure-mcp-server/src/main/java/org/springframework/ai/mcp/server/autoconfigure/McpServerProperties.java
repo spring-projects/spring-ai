@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,10 +68,16 @@ public class McpServerProperties {
 
 	/**
 	 * The version of the MCP server instance.
-	 * <p>
-	 * This version is reported to clients and used for compatibility checks.
 	 */
 	private String version = "1.0.0";
+
+	/**
+	 * The instructions of the MCP server instance.
+	 * <p>
+	 * These instructions are used to provide guidance to the client on how to interact
+	 * with this server.
+	 */
+	private String instructions = null;
 
 	/**
 	 * Enable/disable notifications for resource changes. Only relevant for MCP servers
@@ -99,6 +106,14 @@ public class McpServerProperties {
 	private boolean promptChangeNotification = true;
 
 	/**
+	 */
+	private String baseUrl = "";
+
+	/**
+	 */
+	private String sseEndpoint = "/sse";
+
+	/**
 	 * The endpoint path for Server-Sent Events (SSE) when using web transports.
 	 * <p>
 	 * This property is only used when transport is set to WEBMVC or WEBFLUX.
@@ -115,6 +130,28 @@ public class McpServerProperties {
 	 * </ul>
 	 */
 	private ServerType type = ServerType.SYNC;
+
+	private Capabilities capabilities = new Capabilities();
+
+	/**
+	 * Sets the duration to wait for server responses before timing out requests. This
+	 * timeout applies to all requests made through the client, including tool calls,
+	 * resource access, and prompt operations.
+	 */
+	private Duration requestTimeout = Duration.ofSeconds(20);
+
+	public Duration getRequestTimeout() {
+		return this.requestTimeout;
+	}
+
+	public void setRequestTimeout(Duration requestTimeout) {
+		Assert.notNull(requestTimeout, "Request timeout must not be null");
+		this.requestTimeout = requestTimeout;
+	}
+
+	public Capabilities getCapabilities() {
+		return this.capabilities;
+	}
 
 	/**
 	 * Server types supported by the MCP server.
@@ -172,6 +209,14 @@ public class McpServerProperties {
 		this.version = version;
 	}
 
+	public String getInstructions() {
+		return this.instructions;
+	}
+
+	public void setInstructions(String instructions) {
+		this.instructions = instructions;
+	}
+
 	public boolean isResourceChangeNotification() {
 		return this.resourceChangeNotification;
 	}
@@ -196,6 +241,24 @@ public class McpServerProperties {
 		this.promptChangeNotification = promptChangeNotification;
 	}
 
+	public String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		Assert.notNull(baseUrl, "Base URL must not be null");
+		this.baseUrl = baseUrl;
+	}
+
+	public String getSseEndpoint() {
+		return this.sseEndpoint;
+	}
+
+	public void setSseEndpoint(String sseEndpoint) {
+		Assert.hasText(sseEndpoint, "SSE endpoint must not be empty");
+		this.sseEndpoint = sseEndpoint;
+	}
+
 	public String getSseMessageEndpoint() {
 		return this.sseMessageEndpoint;
 	}
@@ -216,6 +279,50 @@ public class McpServerProperties {
 
 	public Map<String, String> getToolResponseMimeType() {
 		return this.toolResponseMimeType;
+	}
+
+	public static class Capabilities {
+
+		private boolean resource = true;
+
+		private boolean tool = true;
+
+		private boolean prompt = true;
+
+		private boolean completion = true;
+
+		public boolean isResource() {
+			return this.resource;
+		}
+
+		public void setResource(boolean resource) {
+			this.resource = resource;
+		}
+
+		public boolean isTool() {
+			return this.tool;
+		}
+
+		public void setTool(boolean tool) {
+			this.tool = tool;
+		}
+
+		public boolean isPrompt() {
+			return this.prompt;
+		}
+
+		public void setPrompt(boolean prompt) {
+			this.prompt = prompt;
+		}
+
+		public boolean isCompletion() {
+			return this.completion;
+		}
+
+		public void setCompletion(boolean completion) {
+			this.completion = completion;
+		}
+
 	}
 
 }

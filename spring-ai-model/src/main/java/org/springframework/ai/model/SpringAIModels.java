@@ -16,7 +16,11 @@
 
 package org.springframework.ai.model;
 
-public class SpringAIModels {
+public final class SpringAIModels {
+
+	private SpringAIModels() {
+		// Avoids instantiation
+	}
 
 	public static final String ANTHROPIC = "anthropic";
 
@@ -34,8 +38,6 @@ public class SpringAIModels {
 
 	public static final String MISTRAL = "mistral";
 
-	public static final String MOONSHOT = "moonshot";
-
 	public static final String OCI_GENAI = "oci-genai";
 
 	public static final String OLLAMA = "ollama";
@@ -44,16 +46,16 @@ public class SpringAIModels {
 
 	public static final String POSTGRESML = "postgresml";
 
-	public static final String QIANFAN = "qianfan";
-
 	public static final String STABILITY_AI = "stabilityai";
 
 	public static final String TRANSFORMERS = "transformers";
 
 	public static final String VERTEX_AI = "vertexai";
 
-	public static final String WATSONX_AI = "watsonx";
+	public static final String GOOGLE_GEN_AI = "google-genai";
 
 	public static final String ZHIPUAI = "zhipuai";
+
+	public static final String DEEPSEEK = "deepseek";
 
 }

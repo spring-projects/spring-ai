@@ -487,7 +487,13 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 			metadata.put("distance", distance);
 
-			return new Document(id, content, metadata);
+			// @formatter:off
+			return Document.builder()
+					.id(id)
+					.text(content)
+					.metadata(metadata)
+					.score(1.0 - distance)
+					.build(); // @formatter:on
 		}
 
 		private Map<String, Object> toMap(String source) {

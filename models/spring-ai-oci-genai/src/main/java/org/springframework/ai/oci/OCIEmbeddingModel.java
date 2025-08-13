@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link org.springframework.ai.embedding.EmbeddingModel} implementation that uses the
@@ -83,13 +84,15 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
-		OCIEmbeddingOptions runtimeOptions = mergeOptions(request.getOptions(), this.options);
-		List<EmbedTextRequest> embedTextRequests = createRequests(request.getInstructions(), runtimeOptions);
+
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+
+		List<EmbedTextRequest> embedTextRequests = createRequests(embeddingRequest.getInstructions(),
+				(OCIEmbeddingOptions) embeddingRequest.getOptions());
 
 		EmbeddingModelObservationContext context = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(AiProvider.OCI_GENAI.value())
-			.requestOptions(runtimeOptions)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -156,6 +159,26 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 			}
 		}
 		return defaultOptions;
+	}
+
+	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		OCIEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OCIEmbeddingOptions.class);
+		}
+
+		// Define request options by merging runtime options and default options
+		OCIEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.options,
+				OCIEmbeddingOptions.class);
+
+		// Validate request options
+		if (!StringUtils.hasText(requestOptions.getModel())) {
+			throw new IllegalArgumentException("model cannot be null or empty");
+		}
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
 	}
 
 	private float[] toFloats(List<Float> embedding) {

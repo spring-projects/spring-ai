@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public class AnthropicApiToolIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiToolIT.class);
 
-	AnthropicApi anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
+	AnthropicApi anthropicApi = AnthropicApi.builder().apiKey(System.getenv("ANTHROPIC_API_KEY")).build();
 
 	List<Tool> tools = List.of(new Tool("getCurrentWeather",
 			"Get the weather in location. Return temperature in 30°F or 30°C format.", ModelOptionsUtils.jsonToMap("""
@@ -102,11 +102,11 @@ public class AnthropicApiToolIT {
 	private ResponseEntity<ChatCompletionResponse> doCall(List<AnthropicMessage> messageConversation) {
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-			.withModel(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
-			.withMessages(messageConversation)
-			.withMaxTokens(1500)
-			.withTemperature(0.8)
-			.withTools(this.tools)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+			.messages(messageConversation)
+			.maxTokens(1500)
+			.temperature(0.8)
+			.tools(this.tools)
 			.build();
 
 		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi.chatCompletionEntity(chatCompletionRequest);

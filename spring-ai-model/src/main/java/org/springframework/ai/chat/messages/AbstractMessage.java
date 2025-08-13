@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.core.io.Resource;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
 
@@ -49,6 +50,7 @@ public abstract class AbstractMessage implements Message {
 	/**
 	 * The content of the message.
 	 */
+	@Nullable
 	protected final String textContent;
 
 	protected String cache;
@@ -75,6 +77,7 @@ public abstract class AbstractMessage implements Message {
 		if (messageType == MessageType.SYSTEM || messageType == MessageType.USER) {
 			Assert.notNull(textContent, "Content must not be null for SYSTEM or USER messages");
 		}
+		Assert.notNull(metadata, "Metadata must not be null");
 		this.messageType = messageType;
 		this.textContent = textContent;
 		this.metadata = new HashMap<>(metadata);
@@ -88,7 +91,9 @@ public abstract class AbstractMessage implements Message {
 	 * @param metadata the metadata
 	 */
 	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> metadata) {
+		Assert.notNull(messageType, "Message type must not be null");
 		Assert.notNull(resource, "Resource must not be null");
+		Assert.notNull(metadata, "Metadata must not be null");
 		try (InputStream inputStream = resource.getInputStream()) {
 			this.textContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 		}
@@ -119,6 +124,7 @@ public abstract class AbstractMessage implements Message {
 	 * @return the content of the message
 	 */
 	@Override
+	@Nullable
 	public String getText() {
 		return this.textContent;
 	}

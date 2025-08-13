@@ -25,7 +25,10 @@ import org.springframework.ai.model.Model;
  *
  * @author Ahmed Yousri
  * @since 1.0.0-M1
+ * @deprecated Use {@link org.springframework.ai.audio.tts.TextToSpeechModel} from the
+ * core package instead. This interface will be removed in a future release.
  */
+@Deprecated
 @FunctionalInterface
 public interface SpeechModel extends Model<SpeechPrompt, SpeechResponse> {
 

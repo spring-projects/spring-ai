@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -65,6 +66,24 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 		initializeOllama(MODEL_NAME);
 	}
 
+	/**
+	 * See https://github.com/spring-projects/spring-ai/issues/2957
+	 */
+	@Test
+	void chatClientHelloWorld() {
+		this.contextRunner.run(context -> {
+
+			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+			ChatClient chatClient = ChatClient.builder(chatModel).build();
+
+			UserMessage userMessage = new UserMessage("What is 2+2");
+
+			var response = chatClient.prompt(new Prompt(userMessage)).call().content();
+			logger.info("Response: " + response);
+
+		});
+	}
+
 	@Test
 	void functionCallTest() {
 		this.contextRunner.run(context -> {
@@ -75,7 +94,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
+				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().toolNames("WeatherInfo").build()));
 
 			logger.info("Response: " + response);
 
@@ -93,7 +112,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().function("WeatherInfo").build()));
+				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().toolNames("WeatherInfo").build()));
 
 			String content = response.collectList()
 				.block()

@@ -26,7 +26,7 @@ The Java MCP implementation follows a three-layer architecture:
 |  |
 ^a| image::mcp/mcp-stack.svg[MCP Stack Architecture]
 a| * *Client/Server Layer*: The McpClient handles client-side operations while the McpServer manages server-side protocol operations. Both utilize McpSession for communication management.
-* *Session Layer (McpSession)*: Manages communication patterns and state through the DefaultMcpSession implementation.
+* *Session Layer (McpSession)*: Manages communication patterns and state through the McpClientSession and McpServerSession implementations.
 * *Transport Layer (McpTransport)*: Handles JSON-RPC message serialization and deserialization with support for multiple transport implementations.
 |===
 
@@ -75,7 +75,7 @@ a| The MCP Server is a foundational component in the Model Context Protocol (MCP
 ^a| image::mcp/java-mcp-server-architecture.jpg[Java MCP Server Architecture, width=600]
 |===
 
-For detailed implementation guidance, using the low-level MCP Client/Server APIs, refer to the link:https://modelcontextprotocol.github.io/sdk/java[MCP Java SDK documentation].
+For detailed implementation guidance, using the low-level MCP Client/Server APIs, refer to the link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK documentation].
 For simplified setup using Spring Boot, use the MCP Boot Starters described below.
 
 == Spring AI MCP Integration

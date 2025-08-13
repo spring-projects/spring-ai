@@ -16,7 +16,11 @@
 
 package org.springframework.ai.model;
 
-public class SpringAIModelProperties {
+public final class SpringAIModelProperties {
+
+	private SpringAIModelProperties() {
+		// Avoids instantiation
+	}
 
 	public static final String MODEL_PREFIX = "spring.ai.model";
 

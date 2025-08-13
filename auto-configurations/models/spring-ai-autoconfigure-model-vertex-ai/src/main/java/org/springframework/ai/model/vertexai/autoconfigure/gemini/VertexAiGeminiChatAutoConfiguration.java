@@ -25,7 +25,9 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
@@ -93,12 +95,15 @@ public class VertexAiGeminiChatAutoConfiguration {
 	public VertexAiGeminiChatModel vertexAiGeminiChat(VertexAI vertexAi, VertexAiGeminiChatProperties chatProperties,
 			ToolCallingManager toolCallingManager, ApplicationContext context, RetryTemplate retryTemplate,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention) {
+			ObjectProvider<ChatModelObservationConvention> observationConvention,
+			ObjectProvider<ToolExecutionEligibilityPredicate> vertexAiGeminiToolExecutionEligibilityPredicate) {
 
 		VertexAiGeminiChatModel chatModel = VertexAiGeminiChatModel.builder()
 			.vertexAI(vertexAi)
 			.defaultOptions(chatProperties.getOptions())
 			.toolCallingManager(toolCallingManager)
+			.toolExecutionEligibilityPredicate(vertexAiGeminiToolExecutionEligibilityPredicate
+				.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
 			.retryTemplate(retryTemplate)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
@@ -107,17 +112,5 @@ public class VertexAiGeminiChatAutoConfiguration {
 
 		return chatModel;
 	}
-
-	/**
-	 * Because of the OPEN_API_SCHEMA type, the FunctionCallbackResolver instance must
-	 * different from the other JSON schema types.
-	 */
-	// private FunctionCallbackResolver springAiFunctionManager(ApplicationContext
-	// context) {
-	// DefaultFunctionCallbackResolver manager = new DefaultFunctionCallbackResolver();
-	// manager.setSchemaType(SchemaType.OPEN_API_SCHEMA);
-	// manager.setApplicationContext(context);
-	// return manager;
-	// }
 
 }

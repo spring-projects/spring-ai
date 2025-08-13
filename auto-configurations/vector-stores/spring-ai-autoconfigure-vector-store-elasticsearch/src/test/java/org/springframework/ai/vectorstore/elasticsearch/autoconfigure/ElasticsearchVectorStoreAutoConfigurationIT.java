@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.elasticsearch.autoconfigure;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -29,14 +30,15 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
-import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStoreOptions;
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -136,7 +138,8 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 					"spring.ai.vectorstore.elasticsearch.index-name=example",
 					"spring.ai.vectorstore.elasticsearch.dimensions=1024",
 					"spring.ai.vectorstore.elasticsearch.dense-vector-indexing=true",
-					"spring.ai.vectorstore.elasticsearch.similarity=cosine")
+					"spring.ai.vectorstore.elasticsearch.similarity=cosine",
+					"spring.ai.vectorstore.elasticsearch.embedding-field-name=custom_embedding_field")
 			.run(context -> {
 				var properties = context.getBean(ElasticsearchVectorStoreProperties.class);
 				var elasticsearchVectorStore = context.getBean(ElasticsearchVectorStore.class);
@@ -146,7 +149,16 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 				assertThat(properties.getDimensions()).isEqualTo(1024);
 				assertThat(properties.getSimilarity()).isEqualTo(SimilarityFunction.cosine);
 
+				assertThat(properties.getEmbeddingFieldName()).isEqualTo("custom_embedding_field");
+
 				assertThat(elasticsearchVectorStore).isNotNull();
+
+				Field optionsField = ElasticsearchVectorStore.class.getDeclaredField("options");
+				optionsField.setAccessible(true);
+				var options = (ElasticsearchVectorStoreOptions) optionsField.get(elasticsearchVectorStore);
+
+				assertThat(options).isNotNull();
+				assertThat(options.getEmbeddingFieldName()).isEqualTo("custom_embedding_field");
 			});
 	}
 

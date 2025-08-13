@@ -88,16 +88,6 @@ public enum AdvisorObservationDocumentation implements ObservationDocumentation 
 		},
 
 		/**
-		 * Advisor type: Before, After or Around.
-		 */
-		ADVISOR_TYPE {
-			@Override
-			public String asString() {
-				return "spring.ai.advisor.type";
-			}
-		},
-
-		/**
 		 * Advisor name.
 		 */
 		ADVISOR_NAME {

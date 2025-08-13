@@ -10,20 +10,39 @@ The Azure OpenAI client offers three options to connect: using an Azure API key 
 
 === Azure API Key & Endpoint
 
-Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the https://portal.azure.com[Azure Portal].
+To access models using an API key, obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the https://portal.azure.com[Azure Portal].
 
 Spring AI defines two configuration properties:
-
 
 1. `spring.ai.azure.openai.api-key`: Set this to the value of the `API Key` obtained from Azure.
 2. `spring.ai.azure.openai.endpoint`: Set this to the endpoint URL obtained when provisioning your model in Azure.
 
-You can set these configuration properties by exporting environment variables:
+You can set these configuration properties in your `application.properties` or `application.yml` file:
 
-[source,shell]
+[source,properties]
 ----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT AZURE KEY HERE>
-export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
+spring.ai.azure.openai.api-key=<your-azure-api-key>
+spring.ai.azure.openai.endpoint=<your-azure-endpoint-url>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference custom environment variables:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    azure:
+      openai:
+        api-key: ${AZURE_OPENAI_API_KEY}
+        endpoint: ${AZURE_OPENAI_ENDPOINT}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AZURE_OPENAI_API_KEY=<your-azure-openai-api-key>
+export AZURE_OPENAI_ENDPOINT=<your-azure-openai-endpoint-url>
 ----
 
 === OpenAI Key
@@ -32,16 +51,44 @@ To authenticate with the OpenAI service (not Azure), provide an OpenAI API key. 
 
 When using this approach, set the `spring.ai.azure.openai.chat.options.deployment-name` property to the name of the https://platform.openai.com/docs/models[OpenAI model] you wish to use.
 
-[source,shell]
+In your application configuration:
+
+[source,properties]
 ----
-export SPRING_AI_AZURE_OPENAI_OPENAI_API_KEY=<INSERT OPENAI KEY HERE>
+spring.ai.azure.openai.openai-api-key=<your-azure-openai-key>
+spring.ai.azure.openai.chat.options.deployment-name=<openai-model-name>
+----
+
+Using environment variables with SpEL:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    azure:
+      openai:
+        openai-api-key: ${AZURE_OPENAI_API_KEY}
+        chat:
+          options:
+            deployment-name: ${AZURE_OPENAI_MODEL_NAME}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AZURE_OPENAI_API_KEY=<your-openai-key>
+export AZURE_OPENAI_MODEL_NAME=<openai-model-name>
 ----
 
 === Microsoft Entra ID
 
-To authenticate using Microsoft Entra ID (formerly Azure Active Directory), create a `TokenCredential` bean in your configuration.
-If this bean is available, an `OpenAIClient` instance will be created using the token credentials.
-bd
+For keyless authentication using Microsoft Entra ID (formerly Azure Active Directory), set _only_ the `spring.ai.azure.openai.endpoint` configuration property and _not_ the api-key property mentioned above.
+
+Finding only the endpoint property, your application will evaluate several different options for retrieving credentials and an `OpenAIClient` instance will be created using the token credentials.
+
+NOTE: It is no longer necessary to create a `TokenCredential` bean; it is configured for you automatically.
+
 === Deployment Name
 
 To use Azure AI applications, you need to create an Azure AI Deployment through the link:https://oai.azure.com/portal[Azure AI Portal].
@@ -67,7 +114,7 @@ This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 NOTE: The property `spring.ai.azure.openai.chat.options.model` has been renamed to `spring.ai.azure.openai.chat.options.deployment-name`.
 
 NOTE: If you decide to connect to `OpenAI` instead of `Azure OpenAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property, 
-then the `spring.ai.azure.openai.chat.options.deployment-name` is treathed as an link:https://platform.openai.com/docs/models[OpenAI model] name.
+then the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an link:https://platform.openai.com/docs/models[OpenAI model] name.
 
 ==== Access the OpenAI Model
 
@@ -77,7 +124,7 @@ For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
@@ -110,7 +157,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'spring-ai-starter-model-azure-openai'
+    implementation 'org.springframework.ai:spring-ai-starter-model-azure-openai'
 }
 ----
 ======
@@ -152,7 +199,7 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
 | spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
-With this configuration the `spring.ai.azure.openai.chat.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+With this configuration the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 | spring.ai.azure.openai.custom-headers | A map of custom headers to be included in the API requests. Each entry in the map represents a header, where the key is the header name and the value is the header value. | Empty map
 |====
 
@@ -185,10 +232,14 @@ Deployments model name to provide as part of this completions request. | gpt-4o
 | spring.ai.azure.openai.chat.options.topP | An alternative to sampling with temperature called nucleus sampling. This value causes the model to consider the results of tokens with the provided probability mass. | -
 | spring.ai.azure.openai.chat.options.logitBias | A map between GPT token IDs and bias scores that influences the probability of specific tokens appearing in a completions response. Token IDs are computed via external tokenizer tools, while bias scores reside in the range of -100 to 100 with minimum and maximum values corresponding to a full ban or exclusive selection of a token, respectively. The exact behavior of a given bias score varies by model. | -
 | spring.ai.azure.openai.chat.options.user | An identifier for the caller or end user of the operation. This may be used for tracking or rate-limiting purposes. | -
+| spring.ai.azure.openai.chat.options.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
 | spring.ai.azure.openai.chat.options.n | The number of chat completions choices that should be generated for a chat completions response. | -
 | spring.ai.azure.openai.chat.options.stop | A collection of textual sequences that will end completions generation. | -
 | spring.ai.azure.openai.chat.options.presencePenalty |  A value that influences the probability of generated tokens appearing based on their existing presence in generated text. Positive values will make tokens less likely to appear when they already exist and increase the model's likelihood to output new topics. | -
-| spring.ai.azure.openai.chat.options.responseFormat | An object specifying the format that the model must output. Using `AzureOpenAiResponseFormat.JSON` enables JSON mode, which guarantees the message the model generates is valid JSON.  Using AzureOpenAiResponseFormat.TEXT enables TEXT mode.| -
+| spring.ai.azure.openai.chat.options.responseFormat.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`.
+The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
+The `JSON_SCHEMA` type enables Structured Outputs which guarantees the model will match your supplied JSON schema. The `JSON_SCHEMA` type requires setting the `responseFormat.schema` property as well. | -
+| spring.ai.azure.openai.chat.options.responseFormat.schema | Response format JSON schema. Applicable only for `responseFormat.type=JSON_SCHEMA` | -
 | spring.ai.azure.openai.chat.options.frequencyPenalty | A value that influences the probability of generated tokens appearing based on their cumulative frequency in generated text. Positive values will make tokens less likely to appear as their frequency increases and decrease the likelihood of the model repeating the same statements verbatim. | -
 | spring.ai.azure.openai.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 |====
@@ -216,14 +267,14 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatOptions.java[AzureOpenAiChatOptions.java] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 
 == Function Calling
 
 You can register custom Java functions with the AzureOpenAiChatModel and have the model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/azure-open-ai-chat-functions.adoc[Azure OpenAI Function Calling].
+Read more about xref:api/tools.adoc[Tool Calling].
 
 == Multimodal
 
@@ -231,10 +282,10 @@ Multimodality refers to a model's ability to simultaneously understand and proce
 Presently, the Azure OpenAI `gpt-4o` model offers multimodal support.
 
 The Azure OpenAI can incorporate a list of base64-encoded images or image urls with the message.
-Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/Media.java[Media] type.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-commons/src/main/java/org/springframework/ai/content/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
 
-Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L293[OpenAiChatModelIT.java], illustrating the fusion of user text with an image using the the `GPT_4_O` model.
+Below is a code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/c9a3e66f90187ce7eae7eb78c462ec622685de6c/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java#L293[OpenAiChatModelIT.java], illustrating the fusion of user text with an image using the `GPT_4_O` model.
 
 [source,java]
 ----

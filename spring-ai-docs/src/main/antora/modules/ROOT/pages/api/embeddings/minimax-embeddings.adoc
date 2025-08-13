@@ -7,18 +7,45 @@ Spring AI supports the various AI language models from MiniMax. You can interact
 You will need to create an API with MiniMax to access MiniMax language models.
 
 Create an account at https://www.minimaxi.com/login[MiniMax registration page] and generate the token on the https://www.minimaxi.com/user-center/basic-information/interface-key[API Keys page].
-The Spring AI project defines a configuration property named `spring.ai.minimax.api-key` that you should set to the value of the `API Key` obtained from https://www.minimaxi.com/user-center/basic-information/interface-key[API Keys page].
-Exporting an environment variable is one way to set that configuration property:
 
-[source,shell]
+The Spring AI project defines a configuration property named `spring.ai.minimax.api-key` that you should set to the value of the `API Key` obtained from the API Keys page.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_MINIMAX_API_KEY=<INSERT KEY HERE>
+spring.ai.minimax.api-key=<your-minimax-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference an environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    minimax:
+      api-key: ${MINIMAX_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export MINIMAX_API_KEY=<your-minimax-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("MINIMAX_API_KEY");
 ----
 
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 

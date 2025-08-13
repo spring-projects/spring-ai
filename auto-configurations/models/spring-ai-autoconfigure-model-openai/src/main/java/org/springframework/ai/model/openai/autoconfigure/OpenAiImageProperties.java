@@ -25,12 +25,17 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * OpenAI Image autoconfiguration properties.
  *
  * @author Thomas Vitale
+ * @author lambochen
  * @since 0.8.0
  */
 @ConfigurationProperties(OpenAiImageProperties.CONFIG_PREFIX)
 public class OpenAiImageProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
+
+	public static final String DEFAULT_IMAGES_PATH = "v1/images/generations";
+
+	private String imagesPath = DEFAULT_IMAGES_PATH;
 
 	public static final String DEFAULT_IMAGE_MODEL = OpenAiImageApi.ImageModel.DALL_E_3.getValue();
 
@@ -46,6 +51,14 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiImageOptions options) {
 		this.options = options;
+	}
+
+	public String getImagesPath() {
+		return this.imagesPath;
+	}
+
+	public void setImagesPath(String imagesPath) {
+		this.imagesPath = imagesPath;
 	}
 
 }

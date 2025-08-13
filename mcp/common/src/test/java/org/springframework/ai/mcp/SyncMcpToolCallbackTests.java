@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mcp;
 
+import io.modelcontextprotocol.spec.McpSchema;
+import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -29,8 +31,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,11 +52,11 @@ class SyncMcpToolCallbackTests {
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
-		when(tool.name()).thenReturn("testTool");
-		when(tool.description()).thenReturn("Test tool description");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.tool.name()).thenReturn("testTool");
+		when(this.tool.description()).thenReturn("Test tool description");
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
 
 		var toolDefinition = callback.getToolDefinition();
 
@@ -66,11 +70,11 @@ class SyncMcpToolCallbackTests {
 		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
 		// "1.0.0"));
 
-		when(tool.name()).thenReturn("testTool");
+		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
-		when(mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
 
 		String response = callback.call("{\"param\":\"value\"}");
 
@@ -79,19 +83,51 @@ class SyncMcpToolCallbackTests {
 	}
 
 	@Test
-	void callShoulIngroeToolContext() {
+	void callShouldIgnoreToolContext() {
 		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
 		// "1.0.0"));
 
-		when(tool.name()).thenReturn("testTool");
+		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
-		when(mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(mcpClient, tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
 
 		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
 		assertThat(response).isNotNull();
+	}
+
+	@Test
+	void callShouldThrowOnError() {
+		when(this.tool.name()).thenReturn("testTool");
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(true);
+		when(callResult.content()).thenReturn(List.of(new McpSchema.TextContent("Some error data")));
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+
+		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
+			.cause()
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessage("Error calling tool: [TextContent[annotations=null, text=Some error data, meta=null]]");
+	}
+
+	@Test
+	void callShouldWrapExceptions() {
+		when(this.tool.name()).thenReturn("testTool");
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenThrow(new RuntimeException("Testing tool error"));
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+
+		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
+			.rootCause()
+			.hasMessage("Testing tool error");
 	}
 
 }

@@ -20,7 +20,6 @@ Initially, prompts were simple strings.
 Over time, they grew to include placeholders for specific inputs, like "USER:", which the AI model recognizes.
 OpenAI have introduced even more structure to prompts by categorizing multiple message strings into distinct roles before they are processed by the AI model.
 
-
 == API Overview
 
 === Prompt
@@ -34,14 +33,15 @@ This arrangement enables intricate and detailed interactions with AI models, as 
 
 Below is a truncated version of the Prompt class, with constructors and utility methods omitted for brevity:
 
-```java
+[source,java]
+----
 public class Prompt implements ModelRequest<List<Message>> {
 
     private final List<Message> messages;
 
     private ChatOptions chatOptions;
 }
-```
+----
 
 === Message
 
@@ -49,7 +49,8 @@ The `Message` interface encapsulates a `Prompt` textual content, a collection of
 
 The interface is defined as follows:
 
-```java
+[source,java]
+----
 public interface Content {
 
 	String getContent();
@@ -61,17 +62,18 @@ public interface Message extends Content {
 
 	MessageType getMessageType();
 }
-```
+----
 
 The multimodal message types implement also the `MediaContent` interface providing a list of `Media` content objects.
 
-```java
+[source,java]
+----
 public interface MediaContent extends Content {
 
 	Collection<Media> getMedia();
 
 }
-```
+----
 
 Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process. 
 The Models distinguish between message categories based on conversational roles. 
@@ -99,7 +101,8 @@ It's like a special feature in the AI, used when needed to perform specific func
 
 Roles are represented as an enumeration in Spring AI as shown below
 
-```java
+[source,java]
+----
 public enum MessageType {
 
 	USER("user"),
@@ -112,20 +115,49 @@ public enum MessageType {
 
     ...
 }
-```
+----
 
 === PromptTemplate
 
-A key component for prompt templating in Spring AI is the `PromptTemplate` class.
-This class uses the OSS https://www.stringtemplate.org/[StringTemplate] engine, developed by Terence Parr, for constructing and managing prompts.
-The `PromptTemplate` class is designed to facilitate the creation of structured prompts that are then sent to the AI model for processing
+A key component for prompt templating in Spring AI is the `PromptTemplate` class, designed to facilitate the creation of structured prompts that are then sent to the AI model for processing
 
-```java
+[source,java]
+----
 public class PromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
     // Other methods to be discussed later
 }
-```
+----
+
+This class uses the `TemplateRenderer` API to render templates. By default, Spring AI uses the `StTemplateRenderer` implementation, which is based on the open-source https://www.stringtemplate.org/[StringTemplate] engine developed by Terence Parr. Template variables are identified by the `{}` syntax, but you can configure the delimiters to use other syntax as well.
+
+[source,java]
+----
+public interface TemplateRenderer extends BiFunction<String, Map<String, Object>, String> {
+
+	@Override
+	String apply(String template, Map<String, Object> variables);
+
+}
+----
+
+Spring AI uses the `TemplateRenderer` interface to handle the actual substitution of variables into the template string.
+The default implementation uses <<StringTemplate>>.
+You can provide your own implementation of `TemplateRenderer` if you need custom logic.
+For scenarios where no template rendering is required (e.g., the template string is already complete), you can use the provided `NoOpTemplateRenderer`.
+
+.Example using a custom StringTemplate renderer with '<' and '>' delimiters
+[source,java]
+----
+PromptTemplate promptTemplate = PromptTemplate.builder()
+    .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .template("""
+            Tell me the names of 5 movies whose soundtrack was composed by <composer>.
+            """)
+    .build();
+
+String prompt = promptTemplate.render(Map.of("composer", "John Williams"));
+----
 
 The interfaces implemented by this class support different aspects of prompt creation:
 
@@ -139,7 +171,8 @@ While these interfaces might not be used extensively in many projects, they show
 
 The implemented interfaces are
 
-```java
+[source,java]
+----
 public interface PromptTemplateStringActions {
 
 	String render();
@@ -147,13 +180,14 @@ public interface PromptTemplateStringActions {
 	String render(Map<String, Object> model);
 
 }
-```
+----
 
 The method `String render()`: Renders a prompt template into a final string format without external input, suitable for templates without placeholders or dynamic content.
 
 The method `String render(Map<String, Object> model)`: Enhances rendering functionality to include dynamic content. It uses a `Map<String, Object>` where map keys are placeholder names in the prompt template, and values are the dynamic content to be inserted.
 
-```java
+[source,java]
+----
 public interface PromptTemplateMessageActions {
 
 	Message createMessage();
@@ -163,7 +197,7 @@ public interface PromptTemplateMessageActions {
 	Message createMessage(Map<String, Object> model);
 
 }
-```
+----
 
 The method `Message createMessage()`: Creates a `Message` object without additional data, used for static or predefined message content.
 
@@ -172,7 +206,8 @@ The method `Message createMessage(List<Media> mediaList)`: Creates a `Message` o
 The method `Message createMessage(Map<String, Object> model)`: Extends message creation to integrate dynamic content, accepting a `Map<String, Object>` where each entry represents a placeholder in the message template and its corresponding dynamic value.
 
 
-```java
+[source,java]
+----
 public interface PromptTemplateActions extends PromptTemplateStringActions {
 
 	Prompt create();
@@ -184,7 +219,7 @@ public interface PromptTemplateActions extends PromptTemplateStringActions {
 	Prompt create(Map<String, Object> model, ChatOptions modelOptions);
 
 }
-```
+----
 
 The method `Prompt create()`: Generates a `Prompt` object without external data inputs, ideal for static or predefined prompts.
 
@@ -198,18 +233,19 @@ The method `Prompt create(Map<String, Object> model, ChatOptions modelOptions)`:
 
 A simple example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/2-README-prompt-templating.md[AI Workshop on PromptTemplates] is shown below.
 
-```java
-
+[source,java]
+----
 PromptTemplate promptTemplate = new PromptTemplate("Tell me a {adjective} joke about {topic}");
 
 Prompt prompt = promptTemplate.create(Map.of("adjective", adjective, "topic", topic));
 
 return chatModel.call(prompt).getResult();
-```
+----
 
 Another example taken from the https://github.com/Azure-Samples/spring-ai-azure-workshop/blob/main/3-README-prompt-roles.md[AI Workshop on Roles] is shown below.
 
-```java
+[source,java]
+----
 String userText = """
     Tell me about three famous pirates from the Golden Age of Piracy and why they did.
     Write at least a sentence for each pirate.
@@ -229,28 +265,47 @@ Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", name, 
 Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 
 List<Generation> response = chatModel.call(prompt).getResults();
-
-```
+----
 
 This shows how you can build up the `Prompt` instance by using the `SystemPromptTemplate` to create a `Message` with the system role passing in placeholder values.
 The message with the role `user` is then combined with the message of the role `system` to form the prompt.
 The prompt is then passed to the ChatModel to get a generative response.
+
+=== Using a custom template renderer
+
+You can use a custom template renderer by implementing the `TemplateRenderer` interface and passing it to the `PromptTemplate` constructor. You can also keep using the default `StTemplateRenderer`, but with a custom configuration.
+
+By default, template variables are identified by the `{}` syntax. If you're planning to include JSON in your prompt, you might want to use a different syntax to avoid conflicts with JSON syntax. For example, you can use the `<` and `>` delimiters.
+
+[source,java]
+----
+PromptTemplate promptTemplate = PromptTemplate.builder()
+    .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .template("""
+            Tell me the names of 5 movies whose soundtrack was composed by <composer>.
+            """)
+    .build();
+
+String prompt = promptTemplate.render(Map.of("composer", "John Williams"));
+----
 
 === Using resources instead of raw Strings
 
 Spring AI supports the `org.springframework.core.io.Resource` abstraction, so you can put prompt data in a file that can directly be used in a `PromptTemplate`.
 For example, you can define a field in your Spring managed component to retrieve the `Resource`.
 
-```java
+[source,java]
+----
 @Value("classpath:/prompts/system-message.st")
 private Resource systemResource;
-```
+----
 
 and then pass that resource to the `SystemPromptTemplate` directly.
 
-```java
+[source,java]
+----
 SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(systemResource);
-```
+----
 
 == Prompt Engineering
 
