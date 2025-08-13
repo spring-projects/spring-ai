@@ -18,7 +18,7 @@ package org.springframework.ai.vectorstore.azure;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -325,16 +325,16 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	static Map<String, Object> parseMetadataToMutable(@Nullable String metadataJson) {
 		if (!StringUtils.hasText(metadataJson)) {
-			return new LinkedHashMap<>();
+			return new HashMap<>();
 		}
 		try {
 			Map<String, Object> parsed = JSONObject.parseObject(metadataJson, new TypeReference<Map<String, Object>>() {
 			});
-			return (parsed == null) ? new LinkedHashMap<>() : new LinkedHashMap<>(parsed);
+			return (parsed == null) ? new HashMap<>() : new HashMap<>(parsed);
 		}
 		catch (Exception ex) {
 			logger.warn("Failed to parse metadata JSON. Using empty metadata. json={}", metadataJson, ex);
-			return new LinkedHashMap<>();
+			return new HashMap<>();
 		}
 	}
 
