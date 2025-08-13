@@ -27,6 +27,7 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
@@ -187,6 +188,32 @@ public final class McpToolUtils {
 		});
 	}
 
+	public static McpStatelessServerFeatures.SyncToolSpecification toStatelessSyncToolSpecification(
+			ToolCallback toolCallback, MimeType mimeType) {
+
+		var tool = McpSchema.Tool.builder()
+			.name(toolCallback.getToolDefinition().name())
+			.description(toolCallback.getToolDefinition().description())
+			.inputSchema(toolCallback.getToolDefinition().inputSchema())
+			.build();
+
+		return new McpStatelessServerFeatures.SyncToolSpecification(tool, (mcpTransportContext, request) -> {
+			try {
+				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
+						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, mcpTransportContext)));
+				if (mimeType != null && mimeType.toString().startsWith("image")) {
+					return new McpSchema.CallToolResult(List
+						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
+							false);
+				}
+				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+			}
+			catch (Exception e) {
+				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
+			}
+		});
+	}
+
 	/**
 	 * Retrieves the MCP exchange object from the provided tool context if it exists.
 	 * @param toolContext the tool context from which to retrieve the MCP exchange
@@ -290,6 +317,18 @@ public final class McpToolUtils {
 		return new AsyncToolSpecification(syncToolSpecification.tool(),
 				(exchange, map) -> Mono
 					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
+					.subscribeOn(Schedulers.boundedElastic()));
+	}
+
+	public static McpStatelessServerFeatures.AsyncToolSpecification toStatelessAsyncToolSpecification(
+			ToolCallback toolCallback, MimeType mimeType) {
+
+		McpStatelessServerFeatures.SyncToolSpecification statelessSyncToolSpecification = toStatelessSyncToolSpecification(
+				toolCallback, mimeType);
+
+		return new McpStatelessServerFeatures.AsyncToolSpecification(statelessSyncToolSpecification.tool(),
+				(context, map) -> Mono
+					.fromCallable(() -> statelessSyncToolSpecification.callHandler().apply(context, map))
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 

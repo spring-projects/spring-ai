@@ -54,8 +54,8 @@ import static org.mockito.Mockito.when;
 
 public class McpServerAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
+			AutoConfigurations.of(McpServerAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -192,6 +192,35 @@ public class McpServerAutoConfigurationIT {
 			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
 			assertThat(tools).hasSize(1);
 		});
+	}
+
+	@Test
+	void syncToolCallbackRegistrationControl() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server..type=SYNC", "spring.ai.mcp.server..tool-callback-converter=true")
+			.run(context -> {
+				assertThat(context).hasBean("syncTools");
+			});
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=SYNC", "spring.ai.mcp.server.tool-callback-converter=false")
+			.run(context -> {
+				assertThat(context).doesNotHaveBean("syncTools");
+			});
+	}
+
+	@Test
+	void asyncToolCallbackRegistrationControl() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.tool-callback-converter=true")
+			.run(context -> {
+				assertThat(context).hasBean("asyncTools");
+			});
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.tool-callback-converter=false")
+			.run(context -> {
+				assertThat(context).doesNotHaveBean("asyncTools");
+			});
 	}
 
 	@Test
