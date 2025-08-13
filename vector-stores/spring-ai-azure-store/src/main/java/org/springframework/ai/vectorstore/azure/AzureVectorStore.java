@@ -76,6 +76,7 @@ import org.springframework.util.StringUtils;
  * @author Josh Long
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Jinwoo Lee
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 

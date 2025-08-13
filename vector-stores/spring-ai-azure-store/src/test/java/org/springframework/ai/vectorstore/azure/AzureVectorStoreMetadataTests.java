@@ -6,6 +6,11 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for {@link AzureVectorStore#parseMetadataToMutable(String)}.
+ *
+ * @author Jinwoo Lee
+ */
 class AzureVectorStoreMetadataTests {
 
 	@Test
