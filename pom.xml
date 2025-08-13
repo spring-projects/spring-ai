@@ -120,6 +120,12 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-streamable-server-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-streamable-server-webflux</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-streamable-server-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-stateless-server-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-stateless-server-webflux</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-stateless-server-webmvc</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
@@ -213,6 +219,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
+		
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-streamable-webflux</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-streamable-webmvc</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-stateless-webflux</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-stateless-webmvc</module>
 
 		<module>spring-ai-integration-tests</module>
 
@@ -325,7 +336,7 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.11.0</mcp.sdk.version>
+		<mcp.sdk.version>0.12.0-SNAPSHOT</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
