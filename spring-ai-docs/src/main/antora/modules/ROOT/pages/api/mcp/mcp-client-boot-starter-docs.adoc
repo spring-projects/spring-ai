@@ -269,7 +269,8 @@ Servers can request the list of roots from supporting clients and receive notifi
   - Tools change notifications - when the list of available server tools changes
   - Resources change notifications - when the list of available server resources changes.
   - Prompts change notifications - when the list of available server prompts changes.
-* link:https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging[*Logging Handlers*] - standardized way for servers to send structured log messages to clients. 
+  - link:https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging[*Logging Handlers*] - standardized way for servers to send structured log messages to clients. 
+  
 Clients can control logging verbosity by setting minimum log levels
 
 
@@ -297,6 +298,17 @@ public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
             // Handle sampling
             CreateMessageResult result = ...
             return result;
+        });
+
+        // Sets a custom elicitation handler for processing elicitation requests.
+				spec.elicitation((ElicitRequest request) -> {
+          // handle elicitation
+					return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));
+				});
+
+        // Adds a consumer to be notified when progress notifications are received.
+        spec.progressConsumer((ProgressNotification progress) -> {
+         // Handle progress notifications
         });
 
         // Adds a consumer to be notified when the available tools change, such as tools

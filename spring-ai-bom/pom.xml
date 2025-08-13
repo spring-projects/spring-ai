@@ -547,11 +547,47 @@
                 <version>${project.version}</version>
             </dependency>
 
-			<!-- Spring AI MCP server autoconfiguration -->
+			<!-- Spring AI MCP server autoconfigurations -->
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-streamable-server-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-streamable-server-webflux</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-streamable-server-webmvc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-stateless-server-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-stateless-server-webflux</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-stateless-server-webmvc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -1049,6 +1085,33 @@
 				<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-streamable-webflux</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-streamable-webmvc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-stateless-webflux</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-stateless-webmvc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 
 			<!-- Spring AI Spring Boot starter for Chat Memory (with the default in-memory Chat memory repository) -->
 

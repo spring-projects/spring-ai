@@ -140,6 +140,11 @@ public class McpServerProperties {
 	 */
 	private Duration requestTimeout = Duration.ofSeconds(20);
 
+	/**
+	 * The duration to keep the connection alive. Disabled by default.
+	 */
+	private Duration keepAliveInterval;
+
 	public Duration getRequestTimeout() {
 		return this.requestTimeout;
 	}
@@ -279,6 +284,14 @@ public class McpServerProperties {
 
 	public Map<String, String> getToolResponseMimeType() {
 		return this.toolResponseMimeType;
+	}
+
+	public void setKeepAliveInterval(Duration keepAliveInterval) {
+		this.keepAliveInterval = keepAliveInterval;
+	}
+
+	public Duration getKeepAliveInterval() {
+		return this.keepAliveInterval;
 	}
 
 	public static class Capabilities {
