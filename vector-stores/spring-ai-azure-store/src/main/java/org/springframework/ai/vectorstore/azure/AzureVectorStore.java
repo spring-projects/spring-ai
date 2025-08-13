@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.azure;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -239,10 +240,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 				final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
 
-				Map<String, Object> metadata = (StringUtils.hasText(entry.metadata()))
-						? JSONObject.parseObject(entry.metadata(), new TypeReference<>() {
-
-						}) : Map.of();
+				Map<String, Object> metadata = parseMetadataToMutable(entry.metadata());
 
 				metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - result.getScore());
 
@@ -323,6 +321,21 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		@SuppressWarnings("unchecked")
 		T client = (T) this.searchClient;
 		return Optional.of(client);
+	}
+
+	static Map<String, Object> parseMetadataToMutable(@Nullable String metadataJson) {
+		if (!StringUtils.hasText(metadataJson)) {
+			return new LinkedHashMap<>();
+		}
+		try {
+			Map<String, Object> parsed = JSONObject.parseObject(metadataJson, new TypeReference<Map<String, Object>>() {
+			});
+			return (parsed == null) ? new LinkedHashMap<>() : new LinkedHashMap<>(parsed);
+		}
+		catch (Exception ex) {
+			logger.warn("Failed to parse metadata JSON. Using empty metadata. json={}", metadataJson, ex);
+			return new LinkedHashMap<>();
+		}
 	}
 
 	public record MetadataField(String name, SearchFieldDataType fieldType) {
