@@ -83,7 +83,6 @@ public class CompressionQueryTransformer implements QueryTransformer {
 			.user(user -> user.text(this.promptTemplate.getTemplate())
 				.param("history", formatConversationHistory(query.history()))
 				.param("query", query.text()))
-			.options(ChatOptions.builder().build())
 			.call()
 			.content();
 
