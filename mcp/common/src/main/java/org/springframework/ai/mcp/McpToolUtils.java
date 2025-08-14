@@ -26,7 +26,6 @@ import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
@@ -170,21 +169,21 @@ public final class McpToolUtils {
 		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
 				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
 
-		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
+		return McpServerFeatures.SyncToolSpecification.builder().tool(tool).callHandler((exchange, request) -> {
 			try {
 				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					return new McpSchema.CallToolResult(List
-						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
-							false);
+					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
+					return new McpSchema.CallToolResult(
+							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
 				}
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
 			}
 			catch (Exception e) {
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
 			}
-		});
+		}).build();
 	}
 
 	/**
@@ -287,10 +286,13 @@ public final class McpToolUtils {
 
 		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
 
-		return new AsyncToolSpecification(syncToolSpecification.tool(),
-				(exchange, map) -> Mono
-					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
-					.subscribeOn(Schedulers.boundedElastic()));
+		return McpServerFeatures.AsyncToolSpecification.builder()
+			.tool(syncToolSpecification.tool())
+			.callHandler((exchange, request) -> Mono
+				.fromCallable(
+						() -> syncToolSpecification.callHandler().apply(new McpSyncServerExchange(exchange), request))
+				.subscribeOn(Schedulers.boundedElastic()))
+			.build();
 	}
 
 	/**
