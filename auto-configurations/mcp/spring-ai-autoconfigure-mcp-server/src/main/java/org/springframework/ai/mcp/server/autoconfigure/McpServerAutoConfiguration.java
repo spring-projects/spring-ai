@@ -66,8 +66,9 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * Server.
  * <p>
  * This configuration class sets up the core MCP server components with support for both
- * synchronous and asynchronous operation modes. The server type is controlled through the
- * {@code spring.ai.mcp.server.type} property, defaulting to SYNC mode.
+ * synchronous and asynchronous operation modes, including stateless variants. The server 
+ * type is controlled through the {@code spring.ai.mcp.server.type} property, defaulting 
+ * to SYNC mode.
  * <p>
  * Core features and capabilities include:
  * <ul>
@@ -81,6 +82,8 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * <li>STDIO (default): Standard input/output based communication</li>
  * <li>WebMvc: HTTP-based transport when Spring MVC is available</li>
  * <li>WebFlux: Reactive transport when Spring WebFlux is available</li>
+ * <li>Stateless WebMvc: HTTP-based stateless transport for SYNC_STATELESS mode</li>
+ * <li>Stateless WebFlux: Reactive stateless transport for ASYNC_STATELESS mode</li>
  * </ul>
  * </li>
  * </ul>
@@ -97,8 +100,12 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * <li>Server identification (name, version)</li>
  * <li>Transport selection</li>
  * <li>Change notification settings for tools, resources, and prompts</li>
- * <li>Sync/Async operation mode selection</li>
+ * <li>Sync/Async operation mode selection (including stateless variants)</li>
+ * <li>Stateless endpoint configuration</li>
  * </ul>
+ * <p>
+ * Stateless server modes (SYNC_STATELESS, ASYNC_STATELESS) provide session-free operation
+ * suitable for scenarios where state management is handled externally or not required.
  * <p>
  * WebMvc transport support is provided separately by
  * {@link McpWebMvcServerAutoConfiguration}.
@@ -144,6 +151,13 @@ public class McpServerAutoConfiguration {
 		}
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC_STATELESS")
+	public List<McpServerFeatures.SyncToolSpecification> syncToolsStateless(ObjectProvider<List<ToolCallback>> toolCalls,
+																   List<ToolCallback> toolCallbacksList, McpServerProperties serverProperties) {
+		return this.syncTools(toolCalls, toolCallbacksList, serverProperties);
 	}
 
 	private List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecifications(List<ToolCallback> tools,
@@ -269,6 +283,30 @@ public class McpServerAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC_STATELESS")
+	public McpSyncServer mcpSyncServerStateless(McpServerTransportProvider transportProvider,
+									   McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
+									   ObjectProvider<List<SyncToolSpecification>> tools,
+									   ObjectProvider<List<SyncResourceSpecification>> resources,
+									   ObjectProvider<List<SyncPromptSpecification>> prompts,
+									   ObjectProvider<List<SyncCompletionSpecification>> completions,
+									   ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
+									   List<ToolCallbackProvider> toolCallbackProvider, Environment environment) {
+		return this.mcpSyncServer(
+				transportProvider,
+				capabilitiesBuilder,
+				serverProperties,
+				tools,
+				resources,
+				prompts,
+				completions,
+				rootsChangeConsumers,
+				toolCallbackProvider,
+				environment
+		);
+	}
+
+	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
 			List<ToolCallback> toolCallbackList, McpServerProperties serverProperties) {
@@ -301,6 +339,13 @@ public class McpServerAutoConfiguration {
 				return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
 			})
 			.toList();
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC_STATELESS")
+	public List<McpServerFeatures.AsyncToolSpecification> asyncToolsStateless(ObjectProvider<List<ToolCallback>> toolCalls,
+																	 List<ToolCallback> toolCallbackList, McpServerProperties serverProperties) {
+		return this.asyncTools(toolCalls, toolCallbackList, serverProperties);
 	}
 
 	@Bean
@@ -397,6 +442,29 @@ public class McpServerAutoConfiguration {
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
 
 		return serverBuilder.build();
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC_STATELESS")
+	public McpAsyncServer mcpAsyncServerStateless(McpServerTransportProvider transportProvider,
+										 McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
+										 ObjectProvider<List<AsyncToolSpecification>> tools,
+										 ObjectProvider<List<AsyncResourceSpecification>> resources,
+										 ObjectProvider<List<AsyncPromptSpecification>> prompts,
+										 ObjectProvider<List<AsyncCompletionSpecification>> completions,
+										 ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
+										 List<ToolCallbackProvider> toolCallbackProvider) {
+		return this.mcpAsyncServer(
+				transportProvider,
+				capabilitiesBuilder,
+				serverProperties,
+				tools,
+				resources,
+				prompts,
+				completions,
+				rootsChangeConsumer,
+				toolCallbackProvider
+		);
 	}
 
 }

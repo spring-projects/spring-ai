@@ -18,12 +18,13 @@ package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
-
+import io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -32,22 +33,27 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * {@link AutoConfiguration Auto-configuration} for MCP WebFlux Server Transport.
  * <p>
  * This configuration class sets up the WebFlux-specific transport components for the MCP
- * server, providing reactive Server-Sent Events (SSE) communication through Spring
- * WebFlux. It is activated when:
+ * server, providing both reactive Server-Sent Events (SSE) and stateless HTTP
+ * communication through Spring WebFlux. It is activated when:
  * <ul>
- * <li>The WebFluxSseServerTransportProvider class is on the classpath (from
- * mcp-spring-webflux dependency)</li>
+ * <li>The WebFluxSseServerTransportProvider and WebFluxStatelessServerTransport classes
+ * are on the classpath (from mcp-spring-webflux dependency)</li>
  * <li>Spring WebFlux's RouterFunction class is available (from
  * spring-boot-starter-webflux)</li>
- * <li>The {@code spring.ai.mcp.server.transport} property is set to {@code WEBFLUX}</li>
+ * <li>STDIO transport is disabled</li>
  * </ul>
  * <p>
- * The configuration provides:
+ * The configuration provides transport beans based on server type:
  * <ul>
- * <li>A WebFluxSseServerTransportProvider bean for handling reactive SSE
- * communication</li>
- * <li>A RouterFunction bean that sets up the reactive SSE endpoint</li>
+ * <li>For ASYNC servers: WebFluxSseServerTransportProvider for reactive SSE communication</li>
+ * <li>For ASYNC_STATELESS servers: WebFluxStatelessServerTransport for stateless reactive HTTP communication</li>
+ * <li>RouterFunction beans for setting up the appropriate endpoints</li>
  * </ul>
+ * <p>
+ * Stateless transport (ASYNC_STATELESS) handles reactive HTTP requests without maintaining
+ * session state, making it suitable for scenarios where session management is handled
+ * externally or not required. It uses the {@code spring.ai.mcp.server.stateless-message-endpoint}
+ * property to configure the endpoint path.
  * <p>
  * Required dependencies: <pre>{@code
  * <dependency>
@@ -65,15 +71,17 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * @since 1.0.0
  * @see McpServerProperties
  * @see WebFluxSseServerTransportProvider
+ * @see WebFluxStatelessServerTransport
  */
 @AutoConfiguration
-@ConditionalOnClass({ WebFluxSseServerTransportProvider.class })
-@ConditionalOnMissingBean(McpServerTransportProvider.class)
+@ConditionalOnClass({ WebFluxSseServerTransportProvider.class, WebFluxStatelessServerTransport.class })
 @Conditional(McpServerStdioDisabledCondition.class)
 public class McpWebFluxServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC",
+			matchIfMissing = true)
 	public WebFluxSseServerTransportProvider webFluxTransport(ObjectProvider<ObjectMapper> objectMapperProvider,
 			McpServerProperties serverProperties) {
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
@@ -81,9 +89,29 @@ public class McpWebFluxServerAutoConfiguration {
 				serverProperties.getSseMessageEndpoint(), serverProperties.getSseEndpoint());
 	}
 
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC_STATELESS")
+	public WebFluxStatelessServerTransport webFluxStatelessTransport(ObjectProvider<ObjectMapper> objectMapperProvider,
+											 McpServerProperties serverProperties) {
+		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		return WebFluxStatelessServerTransport.builder()
+				.objectMapper(objectMapper)
+				.messageEndpoint(serverProperties.getStatelessMessageEndpoint())
+				.build();
+	}
+
 	// Router function for SSE transport used by Spring WebFlux to start an HTTP server.
 	@Bean
+	@ConditionalOnBean(WebFluxSseServerTransportProvider.class)
 	public RouterFunction<?> webfluxMcpRouterFunction(WebFluxSseServerTransportProvider webFluxProvider) {
+		return webFluxProvider.getRouterFunction();
+	}
+
+	// Router function for Stateless SSE transport used by Spring WebFlux to start an HTTP server.
+	@Bean
+	@ConditionalOnBean(WebFluxStatelessServerTransport.class)
+	public RouterFunction<?> webfluxStatelessMcpRouterFunction(WebFluxStatelessServerTransport webFluxProvider) {
 		return webFluxProvider.getRouterFunction();
 	}
 

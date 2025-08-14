@@ -105,6 +105,44 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
+	void syncStatelessConfiguration() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=SYNC_STATELESS", "spring.ai.mcp.server.name=test-server",
+					"spring.ai.mcp.server.version=2.0.0", "spring.ai.mcp.server.instructions=My Stateless MCP Server",
+					"spring.ai.mcp.server.request-timeout=30s")
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpSyncServer.class);
+				assertThat(context).doesNotHaveBean(McpAsyncServer.class);
+
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getName()).isEqualTo("test-server");
+				assertThat(properties.getVersion()).isEqualTo("2.0.0");
+				assertThat(properties.getInstructions()).isEqualTo("My Stateless MCP Server");
+				assertThat(properties.getType()).isEqualTo(McpServerProperties.ServerType.SYNC_STATELESS);
+				assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(30);
+			});
+	}
+
+	@Test
+	void asyncStatelessConfiguration() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC_STATELESS", "spring.ai.mcp.server.name=test-server",
+					"spring.ai.mcp.server.version=2.0.0", "spring.ai.mcp.server.instructions=My Async Stateless MCP Server",
+					"spring.ai.mcp.server.request-timeout=30s")
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpAsyncServer.class);
+				assertThat(context).doesNotHaveBean(McpSyncServer.class);
+
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getName()).isEqualTo("test-server");
+				assertThat(properties.getVersion()).isEqualTo("2.0.0");
+				assertThat(properties.getInstructions()).isEqualTo("My Async Stateless MCP Server");
+				assertThat(properties.getType()).isEqualTo(McpServerProperties.ServerType.ASYNC_STATELESS);
+				assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(30);
+			});
+	}
+
+	@Test
 	void syncServerInstructionsConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.instructions=Sync Server Instructions")
 			.run(context -> {
@@ -221,6 +259,26 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
+	void syncStatelessToolSpecificationConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=SYNC_STATELESS")
+			.withUserConfiguration(TestToolConfiguration.class)
+			.run(context -> {
+				List<SyncToolSpecification> tools = context.getBean("syncToolsStateless", List.class);
+				assertThat(tools).hasSize(1);
+			});
+	}
+
+	@Test
+	void asyncStatelessToolSpecificationConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC_STATELESS")
+			.withUserConfiguration(TestToolConfiguration.class)
+			.run(context -> {
+				List<AsyncToolSpecification> tools = context.getBean("asyncToolsStateless", List.class);
+				assertThat(tools).hasSize(1);
+			});
+	}
+
+	@Test
 	void customCapabilitiesBuilder() {
 		this.contextRunner.withUserConfiguration(CustomCapabilitiesConfiguration.class).run(context -> {
 			assertThat(context).hasSingleBean(McpSchema.ServerCapabilities.Builder.class);
@@ -300,12 +358,14 @@ public class McpServerAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.base-url=http://localhost:8080",
 					"spring.ai.mcp.server.sse-endpoint=/events",
-					"spring.ai.mcp.server.sse-message-endpoint=/api/mcp/message")
+					"spring.ai.mcp.server.sse-message-endpoint=/api/mcp/message",
+					"spring.ai.mcp.server.stateless-message-endpoint=/stateless/api/message")
 			.run(context -> {
 				McpServerProperties properties = context.getBean(McpServerProperties.class);
 				assertThat(properties.getBaseUrl()).isEqualTo("http://localhost:8080");
 				assertThat(properties.getSseEndpoint()).isEqualTo("/events");
 				assertThat(properties.getSseMessageEndpoint()).isEqualTo("/api/mcp/message");
+				assertThat(properties.getStatelessMessageEndpoint()).isEqualTo("/stateless/api/message");
 
 				// Verify the server is configured with the endpoints
 				McpSyncServer server = context.getBean(McpSyncServer.class);

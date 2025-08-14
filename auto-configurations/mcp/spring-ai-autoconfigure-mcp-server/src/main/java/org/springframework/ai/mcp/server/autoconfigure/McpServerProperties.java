@@ -114,6 +114,21 @@ public class McpServerProperties {
 	private String sseEndpoint = "/sse";
 
 	/**
+	 * The endpoint path (URI) for the Stateless MCP Server to respond to.
+	 * <p>
+	 * This property configures the HTTP endpoint where stateless MCP servers will accept
+	 * incoming requests. It is only used when the server type is set to SYNC_STATELESS
+	 * or ASYNC_STATELESS, and the transport layer is provided by Spring WebMVC or WebFlux.
+	 * </p>
+	 * <p>
+	 * Stateless servers do not maintain session state and handle each request independently,
+	 * making them suitable for load-balanced environments and scenarios where session
+	 * management is handled externally.
+	 * </p>
+	 */
+	private String statelessMessageEndpoint = "/stateless/message";
+
+	/**
 	 * The endpoint path for Server-Sent Events (SSE) when using web transports.
 	 * <p>
 	 * This property is only used when transport is set to WEBMVC or WEBFLUX.
@@ -126,8 +141,14 @@ public class McpServerProperties {
 	 * Supported types are:
 	 * <ul>
 	 * <li>SYNC - Standard synchronous server (default)</li>
+	 * <li>SYNC_STATELESS - Synchronous stateless server that does not require sessionId parameter</li>
 	 * <li>ASYNC - Asynchronous server</li>
+	 * <li>ASYNC_STATELESS - Asynchronous stateless server that does not require sessionId parameter</li>
 	 * </ul>
+	 * <p>
+	 * Stateless servers (SYNC_STATELESS, ASYNC_STATELESS) use dedicated stateless transport providers
+	 * that handle requests without maintaining session state, making them suitable for scenarios where
+	 * session management is not required or handled externally.
 	 */
 	private ServerType type = ServerType.SYNC;
 
@@ -164,9 +185,19 @@ public class McpServerProperties {
 		SYNC,
 
 		/**
+		 * Synchronous Stateless (McpAsyncServer) server that does NOT require sessionId parameter
+		 */
+		SYNC_STATELESS,
+
+		/**
 		 * Asynchronous (McpAsyncServer) server
 		 */
-		ASYNC
+		ASYNC,
+
+		/**
+		 * Asynchronous (McpAsyncServer) server that does NOT require sessionId parameter
+		 */
+		ASYNC_STATELESS
 
 	}
 
@@ -266,6 +297,14 @@ public class McpServerProperties {
 	public void setSseMessageEndpoint(String sseMessageEndpoint) {
 		Assert.hasText(sseMessageEndpoint, "SSE message endpoint must not be empty");
 		this.sseMessageEndpoint = sseMessageEndpoint;
+	}
+
+	public String getStatelessMessageEndpoint() {
+		return statelessMessageEndpoint;
+	}
+
+	public void setStatelessMessageEndpoint(String statelessMessageEndpoint) {
+		this.statelessMessageEndpoint = statelessMessageEndpoint;
 	}
 
 	public ServerType getType() {
