@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,6 +28,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -65,9 +67,18 @@ public class AdvisorsTests {
 		// the priority.
 		var mockAroundAdvisor1 = new MockAroundAdvisor("Advisor1", 0);
 		var mockAroundAdvisor2 = new MockAroundAdvisor("Advisor2", 1);
+		HashMap<String,Object> context=new HashMap<>();
+		context.put("key1", "value1");
+		context.put("key2", "value2");
+		context.put("aroundCallBeforeAdvisor1", "AROUND_CALL_BEFORE Advisor1");
+		context.put("aroundCallAfterAdvisor1", "AROUND_CALL_AFTER Advisor1");
+		context.put("aroundCallBeforeAdvisor2", "AROUND_CALL_BEFORE Advisor2");
+		context.put("aroundCallAfterAdvisor2", "AROUND_CALL_AFTER Advisor2");
+		context.put("lastBefore", "Advisor2");
+		context.put("lastAfter", "Advisor1");
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
-			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John")))));
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John"))),new ChatResponseMetadata(),context));
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
@@ -85,7 +96,7 @@ public class AdvisorsTests {
 
 		// AROUND
 		assertThat(mockAroundAdvisor1.chatClientResponse.chatResponse()).isNotNull();
-		assertThat(mockAroundAdvisor1.chatClientResponse.context()).containsEntry("key1", "value1")
+		assertThat(mockAroundAdvisor1.chatClientResponse.chatResponse().getContext()).containsEntry("key1", "value1")
 			.containsEntry("key2", "value2")
 			.containsEntry("aroundCallBeforeAdvisor1", "AROUND_CALL_BEFORE Advisor1")
 			.containsEntry("aroundCallAfterAdvisor1", "AROUND_CALL_AFTER Advisor1")
@@ -97,15 +108,27 @@ public class AdvisorsTests {
 		verify(this.chatModel).call(this.promptCaptor.capture());
 	}
 
+
 	@Test
 	public void streamAdvisorsContextPropagation() {
 
 		var mockAroundAdvisor1 = new MockAroundAdvisor("Advisor1", 0);
 		var mockAroundAdvisor2 = new MockAroundAdvisor("Advisor2", 1);
+		HashMap<String, Object> context = new HashMap<>();
+		context.put("key1", "value1");
+		context.put("key2", "value2");
+		context.put("aroundCallBeforeAdvisor1", "AROUND_CALL_BEFORE Advisor1");
+		context.put("aroundCallAfterAdvisor1", "AROUND_CALL_AFTER Advisor1");
+		context.put("aroundCallBeforeAdvisor2", "AROUND_CALL_BEFORE Advisor2");
+		context.put("aroundCallAfterAdvisor2", "AROUND_CALL_AFTER Advisor2");
+		context.put("lastBefore", "Advisor2");
+		context.put("lastAfter", "Advisor1");
 
 		given(this.chatModel.stream(this.promptCaptor.capture()))
-			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("Hello")))),
-					new ChatResponse(List.of(new Generation(new AssistantMessage(" John"))))));
+				.willReturn(Flux.just(
+						new ChatResponse(List.of(new Generation(new AssistantMessage("Hello"))), null, context),
+						new ChatResponse(List.of(new Generation(new AssistantMessage(" John"))), null, context)
+				));
 
 		var chatClient = ChatClient.builder(this.chatModel)
 			.defaultSystem("Default system text.")
@@ -129,7 +152,7 @@ public class AdvisorsTests {
 		assertThat(mockAroundAdvisor1.advisedChatClientResponses).isNotEmpty();
 
 		mockAroundAdvisor1.advisedChatClientResponses.stream()
-			.forEach(chatClientResponse -> assertThat(chatClientResponse.context()).containsEntry("key1", "value1")
+			.forEach(chatClientResponse -> assertThat(chatClientResponse.chatResponse().getContext()).containsEntry("key1", "value1")
 				.containsEntry("key2", "value2")
 				.containsEntry("aroundStreamBeforeAdvisor1", "AROUND_STREAM_BEFORE Advisor1")
 				.containsEntry("aroundStreamAfterAdvisor1", "AROUND_STREAM_AFTER Advisor1")
@@ -172,18 +195,25 @@ public class AdvisorsTests {
 		@Override
 		public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 			this.chatClientRequest = chatClientRequest.mutate()
-				.context(Map.of("aroundCallBefore" + getName(), "AROUND_CALL_BEFORE " + getName(), "lastBefore",
-						getName()))
-				.build();
+					.context(mergeContext(chatClientRequest.context(), Map.of(
+							"aroundCallBefore" + getName(), "AROUND_CALL_BEFORE " + getName(),
+							"lastBefore", getName())))
+					.build();
 
 			var chatClientResponse = callAdvisorChain.nextCall(this.chatClientRequest);
-
 			this.chatClientResponse = chatClientResponse.mutate()
-				.context(
-						Map.of("aroundCallAfter" + getName(), "AROUND_CALL_AFTER " + getName(), "lastAfter", getName()))
-				.build();
-
+					.context(mergeContext(chatClientResponse.chatResponse().getContext(), Map.of(
+							"aroundCallAfter" + getName(), "AROUND_CALL_AFTER " + getName(),
+							"lastAfter", getName())))
+					.build();
+			System.out.println("...."+this.chatClientResponse.chatResponse().getContext());
 			return this.chatClientResponse;
+		}
+
+		private Map<String, Object> mergeContext(Map<String, Object> original, Map<String, Object> additions) {
+			Map<String, Object> merged = new HashMap<>(original);
+			merged.putAll(additions);
+			return merged;
 		}
 
 		@Override

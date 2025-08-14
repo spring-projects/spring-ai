@@ -16,10 +16,7 @@
 
 package org.springframework.ai.chat.model;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ModelResponse;
@@ -45,25 +42,56 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 */
 	private final List<Generation> generations;
 
-	/**
-	 * Construct a new {@link ChatResponse} instance without metadata.
-	 * @param generations the {@link List} of {@link Generation} returned by the AI
-	 * provider.
-	 */
-	public ChatResponse(List<Generation> generations) {
-		this(generations, new ChatResponseMetadata());
+	public ChatResponseMetadata getChatResponseMetadata() {
+		return chatResponseMetadata;
+	}
+
+	public List<Generation> getGenerations() {
+		return generations;
 	}
 
 	/**
-	 * Construct a new {@link ChatResponse} instance.
+	 * Construct a new {@link ChatResponse} instance without metadata.
+	 *
 	 * @param generations the {@link List} of {@link Generation} returned by the AI
 	 * provider.
-	 * @param chatResponseMetadata {@link ChatResponseMetadata} containing information
-	 * about the use of the AI provider's API.
 	 */
-	public ChatResponse(List<Generation> generations, ChatResponseMetadata chatResponseMetadata) {
+	private final Map<String, Object> context;
+
+
+	/**
+	 * Constructs a new `ChatResponse` with the provided list of generations.
+	 *
+	 * @param generations the list of `Generation` objects returned by the AI provider
+	 */
+
+	public ChatResponse(List<Generation> generations) {
+		this(generations, new ChatResponseMetadata(), Map.of());
+	}
+
+
+
+	/**
+	 * Construct a new {@link ChatResponse} instance.
+	 *
+	 * @param generations          the {@link List} of {@link Generation} returned by the AI
+	 *                             provider.
+	 * @param chatResponseMetadata {@link ChatResponseMetadata} containing information
+	 *                             about the use of the AI provider's API.
+	 */
+	public ChatResponse(List<Generation> generations, ChatResponseMetadata chatResponseMetadata, Map<String, Object> context) {
 		this.chatResponseMetadata = chatResponseMetadata;
 		this.generations = List.copyOf(generations);
+		this.context = context != null ? new HashMap<>(context) : new HashMap<>();
+	}
+
+	@Override
+	public Map<String, Object> getContext() {
+		return context;
+	}
+
+	public ChatResponse(List<Generation> generations, ChatResponseMetadata chatResponseMetadata) {
+		this(generations, chatResponseMetadata, Map.of());
 	}
 
 	public static Builder builder() {
@@ -75,6 +103,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 * <p>
 	 * It is a {@link List} of {@link List lists} because the Prompt could request
 	 * multiple output {@link Generation generations}.
+	 *
 	 * @return the {@link List} of {@link Generation generated outputs}.
 	 */
 
@@ -101,6 +130,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 	public ChatResponseMetadata getMetadata() {
 		return this.chatResponseMetadata;
 	}
+
 
 	/**
 	 * Whether the model has requested the execution of a tool.
@@ -129,7 +159,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 
 	@Override
 	public String toString() {
-		return "ChatResponse [metadata=" + this.chatResponseMetadata + ", generations=" + this.generations + "]";
+		return "ChatResponse [metadata=" + this.chatResponseMetadata + ", generations=" + this.generations + ", context=" +this.context+"]";
 	}
 
 	@Override
@@ -149,11 +179,16 @@ public class ChatResponse implements ModelResponse<Generation> {
 		return Objects.hash(this.chatResponseMetadata, this.generations);
 	}
 
+
+
+
 	public static final class Builder {
 
 		private List<Generation> generations;
 
 		private ChatResponseMetadata.Builder chatResponseMetadataBuilder;
+
+		private Map<String, Object> context;
 
 		private Builder() {
 			this.chatResponseMetadataBuilder = ChatResponseMetadata.builder();
@@ -185,11 +220,15 @@ public class ChatResponse implements ModelResponse<Generation> {
 		public Builder generations(List<Generation> generations) {
 			this.generations = generations;
 			return this;
+		}
 
+		public Builder context(Map<String, Object> context) {
+			this.context = context != null ? new HashMap<>(context) : new HashMap<>();
+			return this;
 		}
 
 		public ChatResponse build() {
-			return new ChatResponse(this.generations, this.chatResponseMetadataBuilder.build());
+			return new ChatResponse(this.generations, this.chatResponseMetadataBuilder.build(), this.context);
 		}
 
 	}

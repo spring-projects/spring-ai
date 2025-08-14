@@ -17,10 +17,7 @@
 package org.springframework.ai.ollama;
 
 import java.time.Duration;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.micrometer.observation.Observation;
@@ -28,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -234,6 +232,9 @@ public class OllamaChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
+
+
+
 	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		OllamaApi.ChatRequest request = ollamaChatRequest(prompt, false);
@@ -304,6 +305,22 @@ public class OllamaChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null);
 	}
 
+	public Flux<ChatResponse> stream(ChatClientRequest chatClientRequest) {
+		Prompt prompt = chatClientRequest.prompt();
+		Prompt requestPrompt = buildRequestPrompt(prompt);
+		Flux<ChatResponse> responseFlux = this.internalStream(requestPrompt, null);
+		return responseFlux.map(chatResponse -> {
+			if (isStop(chatResponse)) {
+				return ChatResponse.builder()
+						.context(chatClientRequest.context())
+						.from(chatResponse)
+						.build();
+			}
+			return chatResponse;
+		});
+	}
+
+
 	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			OllamaApi.ChatRequest request = ollamaChatRequest(prompt, true);
@@ -337,7 +354,6 @@ public class OllamaChatModel implements ChatModel {
 				}
 
 				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
-
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
 					generationMetadata = ChatGenerationMetadata.builder().finishReason(chunk.doneReason()).build();

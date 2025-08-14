@@ -16,7 +16,9 @@
 
 package org.springframework.ai.image;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.springframework.ai.model.ModelResponse;
@@ -40,23 +42,35 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 
 	/**
 	 * Construct a new {@link ImageResponse} instance without metadata.
+	 *
 	 * @param generations the {@link List} of {@link ImageGeneration} returned by the AI
 	 * provider.
 	 */
+
+	private final Map<String, Object> context;
+
 	public ImageResponse(List<ImageGeneration> generations) {
-		this(generations, new ImageResponseMetadata());
+		this(generations, new ImageResponseMetadata(), new HashMap<>());
 	}
 
 	/**
 	 * Construct a new {@link ImageResponse} instance.
-	 * @param generations the {@link List} of {@link ImageGeneration} returned by the AI
-	 * provider.
+	 *
+	 * @param generations           the {@link List} of {@link ImageGeneration} returned by the AI
+	 *                              provider.
 	 * @param imageResponseMetadata {@link ImageResponseMetadata} containing information
-	 * about the use of the AI provider's API.
+	 *                              about the use of the AI provider's API.
 	 */
 	public ImageResponse(List<ImageGeneration> generations, ImageResponseMetadata imageResponseMetadata) {
 		this.imageResponseMetadata = imageResponseMetadata;
 		this.imageGenerations = List.copyOf(generations);
+		this.context = new HashMap<>();
+	}
+
+	public ImageResponse(List<ImageGeneration> generations, ImageResponseMetadata imageResponseMetadata, Map<String, Object> context) {
+		this.imageResponseMetadata = imageResponseMetadata;
+		this.imageGenerations = List.copyOf(generations);
+		this.context = context;
 	}
 
 	/**
@@ -64,6 +78,7 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	 * <p>
 	 * It is a {@link List} of {@link List lists} because the Prompt could request
 	 * multiple output {@link ImageGeneration generations}.
+	 *
 	 * @return the {@link List} of {@link ImageGeneration generated outputs}.
 	 */
 	@Override
@@ -92,9 +107,17 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	}
 
 	@Override
+	public Map<String,Object> getContext() {
+		return this.context;
+	}
+
+	@Override
 	public String toString() {
-		return "ImageResponse [" + "imageResponseMetadata=" + this.imageResponseMetadata + ", imageGenerations="
-				+ this.imageGenerations + "]";
+		return "ImageResponse{" +
+				"imageResponseMetadata=" + imageResponseMetadata +
+				", imageGenerations=" + imageGenerations +
+				", context=" + context +
+				'}';
 	}
 
 	@Override

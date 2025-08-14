@@ -27,23 +27,34 @@ import org.springframework.util.Assert;
  * Represents a response returned by a {@link ChatClient}.
  *
  * @param chatResponse The response returned by the AI model
- * @param context The contextual data propagated through the execution chain
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String, Object> context) {
+public record ChatClientResponse(@Nullable ChatResponse chatResponse) {
 
 	public ChatClientResponse {
-		Assert.notNull(context, "context cannot be null");
-		Assert.noNullElements(context.keySet(), "context keys cannot be null");
 	}
 
 	public ChatClientResponse copy() {
-		return new ChatClientResponse(this.chatResponse, new HashMap<>(this.context));
+		if (this.chatResponse == null) {
+			return new ChatClientResponse(null);
+		}
+		Map<String, Object> copiedContext = new HashMap<>(this.chatResponse.getContext());
+		ChatResponse copiedChatResponse = new ChatResponse(
+				this.chatResponse.getGenerations(),
+				this.chatResponse.getMetadata(),
+				copiedContext
+		);
+		return new ChatClientResponse(copiedChatResponse);
 	}
 
+
 	public Builder mutate() {
-		return new Builder().chatResponse(this.chatResponse).context(new HashMap<>(this.context));
+		Builder builder = new Builder().chatResponse(this.chatResponse);
+		if (this.chatResponse != null && this.chatResponse.getContext() != null) {
+			builder.context(new HashMap<>(this.chatResponse.getContext()));
+		}
+		return builder;
 	}
 
 	public static Builder builder() {
@@ -70,16 +81,21 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 			return this;
 		}
 
-		public Builder context(String key, Object value) {
-			Assert.notNull(key, "key cannot be null");
-			this.context.put(key, value);
-			return this;
-		}
 
+		// In Builder class
 		public ChatClientResponse build() {
-			return new ChatClientResponse(this.chatResponse, this.context);
+			if (this.chatResponse == null) {
+				return new ChatClientResponse(null);
+			}
+			Map<String, Object> mergedContext = new HashMap<>(this.chatResponse.getContext());
+			mergedContext.putAll(this.context);
+			ChatResponse newChatResponse = new ChatResponse(
+					this.chatResponse.getGenerations(),
+					this.chatResponse.getMetadata(),
+					mergedContext
+			);
+			return new ChatClientResponse(newChatResponse);
 		}
-
 	}
 
 }

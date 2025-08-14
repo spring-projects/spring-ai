@@ -16,6 +16,7 @@
 
 package org.springframework.ai.ollama;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -88,6 +90,36 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 		assertThat(responseMetadata).isNotNull();
 
 		validate(responseMetadata);
+	}
+
+	@Test
+	void observationForChatOperationUsingRequest() {
+		var options = OllamaOptions.builder()
+				.model(MODEL)
+				.frequencyPenalty(0.0)
+				.numPredict(2048)
+				.presencePenalty(0.0)
+				.stop(List.of("this-is-the-end"))
+				.temperature(0.7)
+				.topK(1)
+				.topP(1.0)
+				.build();
+		HashMap<String, Object> ctx = new HashMap<>();
+		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
+		ChatClientRequest chatClientRequest=new ChatClientRequest(prompt,ctx);
+		Flux<ChatResponse> chatResponseFlux= this.chatModel.stream(chatClientRequest);
+		List<ChatResponse> responses = chatResponseFlux.collectList().block();
+		System.out.println(responses);
+		assertThat(responses).isNotEmpty();
+		assertThat(responses).hasSizeGreaterThan(10);
+
+		String aggregatedResponse = responses.subList(0, responses.size() - 1)
+				.stream()
+				.map(r -> r.getResult().getOutput().getText())
+				.collect(Collectors.joining());
+		assertThat(aggregatedResponse).isNotEmpty();
+
+
 	}
 
 	@Test

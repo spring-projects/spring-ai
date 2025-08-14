@@ -17,6 +17,7 @@
 package org.springframework.ai.model;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Interface representing the response received from an AI model. This interface provides
@@ -48,5 +49,11 @@ public interface ModelResponse<T extends ModelResult<?>> {
 	 * @return the response metadata
 	 */
 	ResponseMetadata getMetadata();
+
+	/**
+	 * Retrieves the context of the response
+	 * @return
+	 */
+	Map<String,Object> getContext();
 
 }

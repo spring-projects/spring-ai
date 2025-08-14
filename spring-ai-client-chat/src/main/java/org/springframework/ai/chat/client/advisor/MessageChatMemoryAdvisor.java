@@ -108,7 +108,7 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+		this.chatMemory.add(this.getConversationId(chatClientResponse.chatResponse().getContext(), this.defaultConversationId),
 				assistantMessages);
 		return chatClientResponse;
 	}

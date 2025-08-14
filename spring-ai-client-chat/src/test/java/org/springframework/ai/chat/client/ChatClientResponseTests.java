@@ -16,13 +16,15 @@
 
 package org.springframework.ai.chat.client;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.model.ChatResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link ChatClientResponse}.
@@ -31,55 +33,41 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class ChatClientResponseTests {
 
-	@Test
-	void whenContextIsNullThenThrow() {
-		assertThatThrownBy(() -> new ChatClientResponse(null, null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("context cannot be null");
-
-		assertThatThrownBy(() -> ChatClientResponse.builder().chatResponse(null).context(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("context cannot be null");
-	}
-
-	@Test
-	void whenContextHasNullKeysThenThrow() {
-		Map<String, Object> context = new HashMap<>();
-		context.put(null, "something");
-		assertThatThrownBy(() -> new ChatClientResponse(null, context)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("context keys cannot be null");
-	}
 
 	@Test
 	void whenCopyThenImmutableContext() {
 		Map<String, Object> context = new HashMap<>();
 		context.put("key", "value");
-		ChatClientResponse response = ChatClientResponse.builder().chatResponse(null).context(context).build();
+		ChatResponse chatResponse=new ChatResponse(new ArrayList<>(),new ChatResponseMetadata(), context);
+		ChatClientResponse response = ChatClientResponse.builder().chatResponse(chatResponse).build();
 
 		ChatClientResponse copy = response.copy();
 
-		copy.context().put("key2", "value2");
-		assertThat(response.context()).doesNotContainKey("key2");
-		assertThat(copy.context()).containsKey("key2");
+		copy.chatResponse().getContext().put("key2", "value2");
+		assertThat(response.chatResponse().getContext()).doesNotContainKey("key2");
+		assertThat(copy.chatResponse().getContext()).containsKey("key2");
 
-		copy.context().put("key", "newValue");
-		assertThat(copy.context()).containsEntry("key", "newValue");
-		assertThat(response.context()).containsEntry("key", "value");
+		copy.chatResponse().getContext().put("key", "newValue");
+		assertThat(copy.chatResponse().getContext()).containsEntry("key", "newValue");
+		assertThat(response.chatResponse().getContext()).containsEntry("key", "value");
 	}
 
 	@Test
 	void whenMutateThenImmutableContext() {
 		Map<String, Object> context = new HashMap<>();
 		context.put("key", "value");
-		ChatClientResponse response = ChatClientResponse.builder().chatResponse(null).context(context).build();
+		ChatResponse chatResponse=new ChatResponse(new ArrayList<>(),new ChatResponseMetadata(),context);
+		ChatClientResponse response = ChatClientResponse.builder().chatResponse(chatResponse).build();
+		HashMap<String,Object> hashMap=new HashMap<>();
+		hashMap.put("key2","value");
+		ChatClientResponse copy = response.mutate().context(hashMap).build();
 
-		ChatClientResponse copy = response.mutate().context(Map.of("key2", "value2")).build();
+		assertThat(response.chatResponse().getContext()).doesNotContainKey("key2");
+		assertThat(copy.chatResponse().getContext()).containsKey("key2");
 
-		assertThat(response.context()).doesNotContainKey("key2");
-		assertThat(copy.context()).containsKey("key2");
-
-		copy.context().put("key", "newValue");
-		assertThat(copy.context()).containsEntry("key", "newValue");
-		assertThat(response.context()).containsEntry("key", "value");
+		copy.chatResponse().getContext().put("key", "newValue");
+		assertThat(copy.chatResponse().getContext()).containsEntry("key", "newValue");
+		assertThat(response.chatResponse().getContext()).containsEntry("key", "value");
 	}
 
 }
