@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -216,6 +216,13 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	@JsonProperty("reasoning_effort")
 	private String reasoningEffort;
 
+	/**
+	 * The explicit Azure AI Foundry Models API version to use for this request. latest if
+	 * not otherwise specified.
+	 */
+	@JsonIgnore
+	private String apiVersion;
+
 	@Override
 	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
@@ -288,6 +295,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
+			.apiVersion(fromOptions.getApiVersion())
 			.build();
 	}
 
@@ -482,6 +490,14 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.streamOptions = streamOptions;
 	}
 
+	public String getApiVersion() {
+		return apiVersion;
+	}
+
+	public void setApiVersion(String apiVersion) {
+		this.apiVersion = apiVersion;
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public AzureOpenAiChatOptions copy() {
@@ -512,7 +528,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.maxTokens, that.maxTokens)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
-				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP);
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.apiVersion, that.apiVersion);
 	}
 
 	@Override
@@ -521,7 +538,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.seed, this.logprobs,
 				this.topLogProbs, this.enhancements, this.streamOptions, this.reasoningEffort, this.enableStreamUsage,
 				this.toolContext, this.maxTokens, this.frequencyPenalty, this.presencePenalty, this.temperature,
-				this.topP);
+				this.topP, this.apiVersion);
 	}
 
 	public static class Builder {
@@ -661,6 +678,11 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder apiVersion(String apiVersion) {
+			this.options.setApiVersion(apiVersion);
 			return this;
 		}
 

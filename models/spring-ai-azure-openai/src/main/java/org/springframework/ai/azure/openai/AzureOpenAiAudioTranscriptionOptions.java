@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.azure.ai.openai.models.AudioTranscriptionFormat;
 import com.azure.ai.openai.models.AudioTranscriptionTimestampGranularity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -66,6 +67,12 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	private @JsonProperty("temperature") Float temperature = 0F;
 
 	private @JsonProperty("timestamp_granularities") List<GranularityType> granularityType;
+
+	/**
+	 * The explicit Azure AI Foundry Models API version to use for this request. latest if
+	 * not otherwise specified.
+	 */
+	@JsonIgnore private String apiVersion;
 
 	public static Builder builder() {
 		return new Builder();
@@ -128,6 +135,14 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		this.granularityType = granularityType;
 	}
 
+	public String getApiVersion() {
+		return apiVersion;
+	}
+
+	public void setApiVersion(String apiVersion) {
+		this.apiVersion = apiVersion;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -136,6 +151,7 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		result = prime * result + ((this.prompt == null) ? 0 : this.prompt.hashCode());
 		result = prime * result + ((this.language == null) ? 0 : this.language.hashCode());
 		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
+		result = prime * result + ((this.apiVersion == null) ? 0 : this.apiVersion.hashCode());
 		return result;
 	}
 
@@ -175,6 +191,16 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		else if (!this.language.equals(other.language)) {
 			return false;
 		}
+
+		if (this.apiVersion == null) {
+			if (other.apiVersion != null) {
+				return false;
+			}
+		}
+		else if (!this.apiVersion.equals(other.apiVersion)) {
+			return false;
+		}
+
 		if (this.responseFormat == null) {
 			return other.responseFormat == null;
 		}
@@ -299,6 +325,11 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 
 		public Builder granularityType(List<GranularityType> granularityType) {
 			this.options.granularityType = granularityType;
+			return this;
+		}
+
+		public Builder apiVersion(String apiVersion) {
+			this.options.apiVersion = apiVersion;
 			return this;
 		}
 
