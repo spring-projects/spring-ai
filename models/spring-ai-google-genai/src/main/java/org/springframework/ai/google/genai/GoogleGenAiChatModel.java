@@ -479,6 +479,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					runtimeOptions.getGoogleSearchRetrieval(), this.defaultOptions.getGoogleSearchRetrieval()));
 			requestOptions.setSafetySettings(ModelOptionsUtils.mergeOption(runtimeOptions.getSafetySettings(),
 					this.defaultOptions.getSafetySettings()));
+			requestOptions
+				.setLabels(ModelOptionsUtils.mergeOption(runtimeOptions.getLabels(), this.defaultOptions.getLabels()));
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
@@ -488,6 +490,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 			requestOptions.setGoogleSearchRetrieval(this.defaultOptions.getGoogleSearchRetrieval());
 			requestOptions.setSafetySettings(this.defaultOptions.getSafetySettings());
+			requestOptions.setLabels(this.defaultOptions.getLabels());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -679,6 +682,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (requestOptions.getThinkingBudget() != null) {
 			configBuilder
 				.thinkingConfig(ThinkingConfig.builder().thinkingBudget(requestOptions.getThinkingBudget()).build());
+		}
+		if (requestOptions.getLabels() != null && !requestOptions.getLabels().isEmpty()) {
+			configBuilder.labels(requestOptions.getLabels());
 		}
 
 		// Add safety settings
