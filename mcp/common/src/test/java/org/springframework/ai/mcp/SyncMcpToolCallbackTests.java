@@ -130,4 +130,52 @@ class SyncMcpToolCallbackTests {
 			.hasMessage("Testing tool error");
 	}
 
+	@Test
+	void callShouldHandleEmptyResponse() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.content()).thenReturn(List.of());
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		assertThat(response).isEqualTo("[]");
+	}
+
+	@Test
+	void callShouldHandleMultipleContentItems() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.content()).thenReturn(
+				List.of(new McpSchema.TextContent("First content"), new McpSchema.TextContent("Second content")));
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		assertThat(response).isNotNull();
+		assertThat(response).isEqualTo("[{\"text\":\"First content\"},{\"text\":\"Second content\"}]");
+	}
+
+	@Test
+	void callShouldHandleNonTextContent() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.content()).thenReturn(List.of(new McpSchema.ImageContent(null, "base64data", "image/png")));
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		assertThat(response).isNotNull();
+		assertThat(response).isEqualTo("[{\"data\":\"base64data\",\"mimeType\":\"image/png\"}]");
+	}
+
 }
