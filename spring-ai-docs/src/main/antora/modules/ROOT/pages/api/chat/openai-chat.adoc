@@ -181,7 +181,10 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 
 [NOTE]
 ====
-When using GPT-5 models (`gpt-5`, `gpt-5-2025-08-07`), the temperature parameter must be set to `1.0` (the default value). These models do not support custom temperature values and will return an error if any other temperature value is specified.
+When using GPT-5 models such as `gpt-5`, `gpt-5-mini`, and `gpt-5-nano`, the `temperature` parameter is not supported.
+These models are optimized for reasoning and do not use temperature.
+Specifying a temperature value will result in an error.
+In contrast, conversational models like `gpt-5-chat` do support the `temperature` parameter.
 ====
 
 NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
