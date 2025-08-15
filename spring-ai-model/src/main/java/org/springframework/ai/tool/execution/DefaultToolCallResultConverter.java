@@ -35,6 +35,7 @@ import org.springframework.lang.Nullable;
  * A default implementation of {@link ToolCallResultConverter}.
  *
  * @author Thomas Vitale
+ * @author Jemin Huh
  * @since 1.0.0
  */
 public final class DefaultToolCallResultConverter implements ToolCallResultConverter {
@@ -45,7 +46,11 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
-			return JsonParser.toJson("Done");
+			return "Done";
+		}
+		if (returnType instanceof Class<?> cls && cls.equals(String.class)) {
+			logger.debug("Tool return type is String. Returning result as is.");
+			return String.valueOf(result);
 		}
 		if (result instanceof RenderedImage) {
 			final var buf = new ByteArrayOutputStream(1024 * 4);
