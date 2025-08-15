@@ -57,6 +57,10 @@ public class OpenAiStreamFunctionCallingHelper {
 			return current;
 		}
 
+		if (current == null) {
+			return previous;
+		}
+
 		String id = (current.id() != null ? current.id() : previous.id());
 		Long created = (current.created() != null ? current.created() : previous.created());
 		String model = (current.model() != null ? current.model() : previous.model());
@@ -77,6 +81,10 @@ public class OpenAiStreamFunctionCallingHelper {
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
 		if (previous == null) {
 			return current;
+		}
+
+		if (current == null) {
+			return previous;
 		}
 
 		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
