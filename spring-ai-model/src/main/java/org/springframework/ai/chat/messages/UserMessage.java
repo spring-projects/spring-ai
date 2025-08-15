@@ -40,6 +40,17 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 
 	protected final List<Media> media;
 
+	public UserMessage(String textContent, String cache) {
+		this(MessageType.USER, textContent, new ArrayList<>(), Map.of(), cache);
+	}
+
+	public UserMessage(MessageType messageType, String textContent, Collection<Media> media,
+			Map<String, Object> metadata, String cache) {
+		super(messageType, textContent, metadata, cache);
+		Assert.notNull(media, "media data must not be null");
+		this.media = new ArrayList<>(media);
+	}
+
 	public UserMessage(String textContent) {
 		this(textContent, new ArrayList<>(), Map.of());
 	}

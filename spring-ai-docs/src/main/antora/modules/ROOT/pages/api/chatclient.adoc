@@ -683,6 +683,10 @@ xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn a
 
 Refer to the xref:ROOT:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation] guide.
 
+=== Retrieval Augmented Generation
+
+Refer to the xref:ROOT:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation] guide.
+
 === Logging
 
 The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the `ChatClient`.

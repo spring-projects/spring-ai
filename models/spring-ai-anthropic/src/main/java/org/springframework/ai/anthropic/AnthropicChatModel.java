@@ -16,12 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -42,10 +38,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.anthropic.api.AnthropicCacheType;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -256,50 +249,50 @@ public class AnthropicChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = response.flatMap(chatCompletionResponse -> {
-				AnthropicApi.Usage usage = chatCompletionResponse.usage();
-				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
-				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
-				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
+						AnthropicApi.Usage usage = chatCompletionResponse.usage();
+						Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
+						Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
+						ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
+						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 
-					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
-						return Flux.deferContextual((ctx) -> {
-							// TODO: factor out the tool execution logic with setting context into a utility.
-							ToolExecutionResult toolExecutionResult;
-							try {
-								ToolCallReactiveContextHolder.setContext(ctx);
-								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-							} finally {
-								ToolCallReactiveContextHolder.clearContext();
+							if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
+								// FIXME: bounded elastic needs to be used since tool calling
+								//  is currently only synchronous
+								return Flux.deferContextual((ctx) -> {
+									// TODO: factor out the tool execution logic with setting context into a utility.
+									ToolExecutionResult toolExecutionResult;
+									try {
+										ToolCallReactiveContextHolder.setContext(ctx);
+										toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+									} finally {
+										ToolCallReactiveContextHolder.clearContext();
+									}
+									if (toolExecutionResult.returnDirect()) {
+										// Return tool execution result directly to the client.
+										return Flux.just(ChatResponse.builder().from(chatResponse)
+												.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+												.build());
+									}
+									else {
+										// Send the tool execution result back to the model.
+										return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+												chatResponse);
+									}
+								}).subscribeOn(Schedulers.boundedElastic());
+
+							} else {
+								return Mono.empty();
 							}
-							if (toolExecutionResult.returnDirect()) {
-								// Return tool execution result directly to the client.
-								return Flux.just(ChatResponse.builder().from(chatResponse)
-									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-									.build());
-							}
-							else {
-								// Send the tool execution result back to the model.
-								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-										chatResponse);
-							}
-						}).subscribeOn(Schedulers.boundedElastic());
 
-					} else {						
-						return Mono.empty();
-					}
-
-				} else {
-					// If internal tool execution is not required, just return the chat response.
-					return Mono.just(chatResponse);
-				}
-			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+						} else {
+							// If internal tool execution is not required, just return the chat response.
+							return Mono.just(chatResponse);
+						}
+					})
+					.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
@@ -482,12 +475,35 @@ public class AnthropicChatModel implements ChatModel {
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
+		List<Message> userMessagesList = prompt.getInstructions()
+			.stream()
+			.filter(message -> message.getMessageType() == MessageType.USER)
+			.toList();
+		Message lastUserMessage = userMessagesList.isEmpty() ? null : userMessagesList.get(userMessagesList.size() - 1);
+
+		List<Message> assistantMessageList = prompt.getInstructions()
+			.stream()
+			.filter(message -> message.getMessageType() == MessageType.ASSISTANT)
+			.toList();
+		Message lastAssistantMessage = assistantMessageList.isEmpty() ? null
+				: assistantMessageList.get(assistantMessageList.size() - 1);
+
 		List<AnthropicMessage> userMessages = prompt.getInstructions()
 			.stream()
 			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
 			.map(message -> {
+				AbstractMessage abstractMessage = (AbstractMessage) message;
 				if (message.getMessageType() == MessageType.USER) {
-					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getText())));
+					List<ContentBlock> contents;
+					boolean isLastItem = message.equals(lastUserMessage);
+					if (isLastItem && abstractMessage.getCache() != null) {
+						AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
+						contents = new ArrayList<>(
+								List.of(new ContentBlock(message.getText(), cacheType.cacheControl())));
+					}
+					else {
+						contents = new ArrayList<>(List.of(new ContentBlock(message.getText())));
+					}
 					if (message instanceof UserMessage userMessage) {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
@@ -503,8 +519,15 @@ public class AnthropicChatModel implements ChatModel {
 				else if (message.getMessageType() == MessageType.ASSISTANT) {
 					AssistantMessage assistantMessage = (AssistantMessage) message;
 					List<ContentBlock> contentBlocks = new ArrayList<>();
+					boolean isLastItem = message.equals(lastAssistantMessage);
 					if (StringUtils.hasText(message.getText())) {
-						contentBlocks.add(new ContentBlock(message.getText()));
+						if (isLastItem && abstractMessage.getCache() != null) {
+							AnthropicCacheType cacheType = AnthropicCacheType.valueOf(abstractMessage.getCache());
+							contentBlocks.add(new ContentBlock(message.getText(), cacheType.cacheControl()));
+						}
+						else {
+							contentBlocks.add(new ContentBlock(message.getText()));
+						}
 					}
 					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
@@ -543,6 +566,7 @@ public class AnthropicChatModel implements ChatModel {
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
+			var tool = getFunctionTools(toolDefinitions);
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 			request = ChatCompletionRequest.from(request).tools(getFunctionTools(toolDefinitions)).build();
 		}
