@@ -454,7 +454,8 @@ public class MistralAiChatModel implements ChatModel {
 				}
 
 				return List.of(new MistralAiApi.ChatCompletionMessage(assistantMessage.getText(),
-						MistralAiApi.ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null));
+						MistralAiApi.ChatCompletionMessage.Role.ASSISTANT, assistantMessage.getName(), toolCalls,
+						null));
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
 				toolResponseMessage.getResponses()
