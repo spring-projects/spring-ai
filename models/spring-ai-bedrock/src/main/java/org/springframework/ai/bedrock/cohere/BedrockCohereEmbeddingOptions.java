@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.cohere;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -82,6 +84,21 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof BedrockCohereEmbeddingOptions that))
+			return false;
+
+		return inputType == that.inputType && truncate == that.truncate;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hashCode(inputType);
+		result = 31 * result + Objects.hashCode(truncate);
+		return result;
 	}
 
 	public static class Builder {

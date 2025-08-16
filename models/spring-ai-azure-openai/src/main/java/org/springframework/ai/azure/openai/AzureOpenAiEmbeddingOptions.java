@@ -17,6 +17,7 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -103,6 +104,24 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 
 	public void setDimensions(Integer dimensions) {
 		this.dimensions = dimensions;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof AzureOpenAiEmbeddingOptions that))
+			return false;
+
+		return Objects.equals(user, that.user) && Objects.equals(deploymentName, that.deploymentName)
+				&& Objects.equals(inputType, that.inputType) && Objects.equals(dimensions, that.dimensions);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hashCode(user);
+		result = 31 * result + Objects.hashCode(deploymentName);
+		result = 31 * result + Objects.hashCode(inputType);
+		result = 31 * result + Objects.hashCode(dimensions);
+		return result;
 	}
 
 	public com.azure.ai.openai.models.EmbeddingsOptions toAzureOptions(List<String> instructions) {

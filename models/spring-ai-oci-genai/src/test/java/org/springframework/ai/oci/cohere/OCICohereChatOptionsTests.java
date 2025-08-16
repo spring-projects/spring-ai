@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.oracle.bmc.generativeaiinference.model.CohereTool;
-import org.junit.jupiter.api.Test;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,6 +39,11 @@ class OCICohereChatOptionsTests {
 	@BeforeEach
 	void setUp() {
 		options = new OCICohereChatOptions();
+	}
+
+	@Test
+	void testEqualsAndHashCode() {
+		EqualsVerifier.simple().forClass(OCICohereChatOptions.class).usingGetClass().verify();
 	}
 
 	@Test

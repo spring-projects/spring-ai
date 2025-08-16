@@ -17,6 +17,7 @@
 package org.springframework.ai.azure.openai;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.azure.ai.openai.models.AudioTranscriptionFormat;
 import com.azure.ai.openai.models.AudioTranscriptionTimestampGranularity;
@@ -66,6 +67,7 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	private @JsonProperty("temperature") Float temperature = 0F;
 
 	private @JsonProperty("timestamp_granularities") List<GranularityType> granularityType;
+	// @formatter:on
 
 	public static Builder builder() {
 		return new Builder();
@@ -129,58 +131,26 @@ public class AzureOpenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.prompt == null) ? 0 : this.prompt.hashCode());
-		result = prime * result + ((this.language == null) ? 0 : this.language.hashCode());
-		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
-		return result;
+	public final boolean equals(Object o) {
+		if (!(o instanceof AzureOpenAiAudioTranscriptionOptions that))
+			return false;
+
+		return Objects.equals(model, that.model) && Objects.equals(deploymentName, that.deploymentName)
+				&& responseFormat == that.responseFormat && Objects.equals(prompt, that.prompt)
+				&& Objects.equals(language, that.language) && Objects.equals(temperature, that.temperature)
+				&& Objects.equals(granularityType, that.granularityType);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		AzureOpenAiAudioTranscriptionOptions other = (AzureOpenAiAudioTranscriptionOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.prompt == null) {
-			if (other.prompt != null) {
-				return false;
-			}
-		}
-		else if (!this.prompt.equals(other.prompt)) {
-			return false;
-		}
-		if (this.language == null) {
-			if (other.language != null) {
-				return false;
-			}
-		}
-		else if (!this.language.equals(other.language)) {
-			return false;
-		}
-		if (this.responseFormat == null) {
-			return other.responseFormat == null;
-		}
-		else {
-			return this.responseFormat.equals(other.responseFormat);
-		}
+	public int hashCode() {
+		int result = Objects.hashCode(model);
+		result = 31 * result + Objects.hashCode(deploymentName);
+		result = 31 * result + Objects.hashCode(responseFormat);
+		result = 31 * result + Objects.hashCode(prompt);
+		result = 31 * result + Objects.hashCode(language);
+		result = 31 * result + Objects.hashCode(temperature);
+		result = 31 * result + Objects.hashCode(granularityType);
+		return result;
 	}
 
 	public enum WhisperModel {

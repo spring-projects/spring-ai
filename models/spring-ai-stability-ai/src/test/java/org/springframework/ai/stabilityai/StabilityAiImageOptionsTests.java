@@ -16,6 +16,7 @@
 
 package org.springframework.ai.stabilityai;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.image.ImageOptions;
@@ -25,7 +26,12 @@ import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class StabilityAiImageOptionsTests {
+class StabilityAiImageOptionsTests {
+
+	@Test
+	void testEqualsAndHashCode() {
+		EqualsVerifier.simple().forClass(StabilityAiImageOptions.class).usingGetClass().verify();
+	}
 
 	@Test
 	void shouldPreferRuntimeOptionsOverDefaultOptions() {
