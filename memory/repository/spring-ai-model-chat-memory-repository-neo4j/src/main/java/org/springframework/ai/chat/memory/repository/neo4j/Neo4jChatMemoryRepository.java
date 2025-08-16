@@ -45,6 +45,7 @@ import org.springframework.util.MimeType;
  *
  * @author Enrico Rampazzo
  * @author Michael J. Simons
+ * @author Xiaotong Fan
  * @since 1.0.0
  */
 
@@ -163,6 +164,14 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 				t.run(deleteConversationStatement, Map.of("conversationId", conversationId));
 				t.commit();
 			}
+		}
+	}
+
+	@Override
+	public void deleteConversationIds() {
+		List<String> conversationIds = findConversationIds();
+		for (String conversationId : conversationIds) {
+			deleteByConversationId(conversationId);
 		}
 	}
 
