@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.httpclient.autoconfigure;
 
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import io.modelcontextprotocol.client.transport.AsyncHttpRequestCustomizer;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.client.transport.SyncHttpRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Auto-configuration for Streamable HTTP client transport in the Model Context Protocol
@@ -119,6 +121,15 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 				.endpoint(streamableHttpEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
 				.objectMapper(objectMapper);
+
+			Map<String, String> headers = serverParameters.getValue().headers();
+			if (!CollectionUtils.isEmpty(headers)) {
+				HttpRequest.Builder requestBuilder = HttpRequest.newBuilder();
+				for (Map.Entry<String, String> entry : headers.entrySet()) {
+					requestBuilder = requestBuilder.header(entry.getKey(), entry.getValue());
+				}
+				transportBuilder = transportBuilder.requestBuilder(requestBuilder);
+			}
 
 			asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
 			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);
