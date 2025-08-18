@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import reactor.core.publisher.Flux;
@@ -34,6 +35,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.util.Assert;
 
 /**
@@ -86,12 +88,15 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		List<Message> processedMessages = new ArrayList<>(memoryMessages);
 		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
 
-		// 3. Create a new request with the advised messages.
+		// 3. Ensure the System message is the first element.
+		processedMessages.sort(Comparator.comparing(m -> m.getMessageType() == MessageType.SYSTEM ? 0 : 1));
+
+		// 4. Create a new request with the advised messages.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
 			.build();
 
-		// 4. Add the new user message to the conversation memory.
+		// 5. Add the new user message to the conversation memory.
 		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
 		this.chatMemory.add(conversationId, userMessage);
 
