@@ -720,6 +720,11 @@ public class AzureOpenAiChatModel implements ChatModel {
 		mergedAzureOptions.setMaxTokens((fromAzureOptions.getMaxTokens() != null) ? fromAzureOptions.getMaxTokens()
 				: toSpringAiOptions.getMaxTokens());
 
+		if (fromAzureOptions.getMaxCompletionTokens() != null || toSpringAiOptions.getMaxCompletionTokens() != null) {
+			mergedAzureOptions.setMaxCompletionTokens((fromAzureOptions.getMaxCompletionTokens() != null)
+					? fromAzureOptions.getMaxCompletionTokens() : toSpringAiOptions.getMaxCompletionTokens());
+		}
+
 		mergedAzureOptions.setLogitBias(fromAzureOptions.getLogitBias() != null ? fromAzureOptions.getLogitBias()
 				: toSpringAiOptions.getLogitBias());
 
@@ -801,6 +806,10 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 		if (fromSpringAiOptions.getMaxTokens() != null) {
 			mergedAzureOptions.setMaxTokens(fromSpringAiOptions.getMaxTokens());
+		}
+
+		if (fromSpringAiOptions.getMaxCompletionTokens() != null) {
+			mergedAzureOptions.setMaxCompletionTokens(fromSpringAiOptions.getMaxCompletionTokens());
 		}
 
 		if (fromSpringAiOptions.getLogitBias() != null) {
@@ -893,6 +902,9 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 		if (fromOptions.getMaxTokens() != null) {
 			copyOptions.setMaxTokens(fromOptions.getMaxTokens());
+		}
+		if (fromOptions.getMaxCompletionTokens() != null) {
+			copyOptions.setMaxCompletionTokens(fromOptions.getMaxCompletionTokens());
 		}
 		if (fromOptions.getLogitBias() != null) {
 			copyOptions.setLogitBias(fromOptions.getLogitBias());
