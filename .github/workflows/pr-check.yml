@@ -8,18 +8,11 @@ on:
 jobs:
   build:
     name: Build branch
-    runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: [self-hosted, ex44]
+    container: explyt/plugin-env:v2.0.0
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
 
       - name: Run tests
         run: |

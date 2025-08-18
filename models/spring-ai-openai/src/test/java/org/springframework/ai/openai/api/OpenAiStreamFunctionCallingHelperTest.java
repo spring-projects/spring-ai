@@ -188,7 +188,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void isStreamingToolFunctionCall_returnsTrueForValidToolCalls() {
 		var toolCall = Mockito.mock(OpenAiApi.ChatCompletionMessage.ToolCall.class);
-		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null);
+		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null,
+				null, null);
 		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, delta, null);
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
 
