@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,6 +168,13 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	private Integer topLogProbs;
 
 	/*
+	 * An upper bound for the number of tokens that can be generated for a completion,
+	 * including visible output tokens and reasoning tokens.
+	 */
+	@JsonProperty("max_completion_tokens")
+	private Integer maxCompletionTokens;
+
+	/*
 	 * If provided, the configuration options for available Azure OpenAI chat
 	 * enhancements.
 	 */
@@ -266,6 +273,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.frequencyPenalty(fromOptions.getFrequencyPenalty() != null ? fromOptions.getFrequencyPenalty() : null)
 			.logitBias(fromOptions.getLogitBias())
 			.maxTokens(fromOptions.getMaxTokens())
+			.maxCompletionTokens(fromOptions.getMaxCompletionTokens())
 			.N(fromOptions.getN())
 			.presencePenalty(fromOptions.getPresencePenalty() != null ? fromOptions.getPresencePenalty() : null)
 			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
@@ -298,6 +306,14 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setMaxTokens(Integer maxTokens) {
 		this.maxTokens = maxTokens;
+	}
+
+	public Integer getMaxCompletionTokens() {
+		return this.maxCompletionTokens;
+	}
+
+	public void setMaxCompletionTokens(Integer maxCompletionTokens) {
+		this.maxCompletionTokens = maxCompletionTokens;
 	}
 
 	public Map<String, Integer> getLogitBias() {
@@ -510,6 +526,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.enableStreamUsage, that.enableStreamUsage)
 				&& Objects.equals(this.reasoningEffort, that.reasoningEffort)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.maxCompletionTokens, that.maxCompletionTokens)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP);
@@ -520,8 +537,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.logitBias, this.user, this.n, this.stop, this.deploymentName, this.responseFormat,
 				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.seed, this.logprobs,
 				this.topLogProbs, this.enhancements, this.streamOptions, this.reasoningEffort, this.enableStreamUsage,
-				this.toolContext, this.maxTokens, this.frequencyPenalty, this.presencePenalty, this.temperature,
-				this.topP);
+				this.toolContext, this.maxTokens, this.maxCompletionTokens, this.frequencyPenalty, this.presencePenalty,
+				this.temperature, this.topP);
 	}
 
 	public static class Builder {
@@ -553,6 +570,11 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder maxTokens(Integer maxTokens) {
 			this.options.maxTokens = maxTokens;
+			return this;
+		}
+
+		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
+			this.options.maxCompletionTokens = maxCompletionTokens;
 			return this;
 		}
 

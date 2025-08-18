@@ -113,12 +113,12 @@ This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 
 NOTE: The property `spring.ai.azure.openai.chat.options.model` has been renamed to `spring.ai.azure.openai.chat.options.deployment-name`.
 
-NOTE: If you decide to connect to `OpenAI` instead of `Azure OpenAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property, 
+NOTE: If you decide to connect to `OpenAI` instead of `Azure OpenAI`, by setting the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` property,
 then the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an link:https://platform.openai.com/docs/models[OpenAI model] name.
 
 ==== Access the OpenAI Model
 
-You can configure the client to use directly `OpenAI` instead of the `Azure OpenAI` deployed models. 
+You can configure the client to use directly `OpenAI` instead of the `Azure OpenAI` deployed models.
 For this you need to set the `spring.ai.azure.openai.openai-api-key=<Your OpenAI Key>` instead of `spring.ai.azure.openai.api-key=<Your Azure OpenAi Key>`.
 
 === Add Repositories and BOM
@@ -197,8 +197,8 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 
 | spring.ai.azure.openai.api-key |  The Key from Azure AI OpenAI `Keys and Endpoint` section under `Resource Management`  | -
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
-| spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
-This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
+| spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI.
+This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property.
 With this configuration the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 | spring.ai.azure.openai.custom-headers | A map of custom headers to be included in the API requests. Each entry in the map represents a header, where the key is the header name and the value is the header value. | Empty map
 |====
@@ -223,11 +223,12 @@ The prefix `spring.ai.azure.openai.chat` is the property prefix that configures 
 | spring.ai.azure.openai.chat.enabled (Removed and no longer valid) | Enable Azure OpenAI chat model.  | true
 | spring.ai.model.chat | Enable Azure OpenAI chat model.  | azure-openai
 | spring.ai.azure.openai.chat.options.deployment-name | In use with Azure, this refers to the "Deployment Name" of your model, which you can find at https://oai.azure.com/portal.
-It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself. 
-The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint. 
+It's important to note that within an Azure OpenAI deployment, the "Deployment Name" is distinct from the model itself.
+The confusion around these terms stems from the intention to make the Azure OpenAI client library compatible with the original OpenAI endpoint.
 The deployment structures offered by Azure OpenAI and Sam Altman's OpenAI differ significantly.
 Deployments model name to provide as part of this completions request. | gpt-4o
-| spring.ai.azure.openai.chat.options.maxTokens | The maximum number of tokens to generate. | -
+| spring.ai.azure.openai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.azure.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. | -
 | spring.ai.azure.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
 | spring.ai.azure.openai.chat.options.topP | An alternative to sampling with temperature called nucleus sampling. This value causes the model to consider the results of tokens with the provided probability mass. | -
 | spring.ai.azure.openai.chat.options.logitBias | A map between GPT token IDs and bias scores that influences the probability of specific tokens appearing in a completions response. Token IDs are computed via external tokenizer tools, while bias scores reside in the range of -100 to 100 with minimum and maximum values corresponding to a full ban or exclusive selection of a token, respectively. The exact behavior of a given bias score varies by model. | -
@@ -409,9 +410,9 @@ var openAIClientBuilder = new OpenAIClientBuilder()
   .endpoint(System.getenv("AZURE_OPENAI_ENDPOINT"));
 
 var openAIChatOptions = AzureOpenAiChatOptions.builder()
-  .deploymentName("gpt-4o")
+  .deploymentName("gpt-5")
   .temperature(0.4)
-  .maxTokens(200)
+  .maxCompletionTokens(200)
   .build();
 
 var chatModel = AzureOpenAiChatModel.builder()
@@ -429,4 +430,3 @@ Flux<ChatResponse> streamingResponses = chatModel.stream(
 ----
 
 NOTE: the `gpt-4o` is actually the `Deployment Name` as presented in the Azure AI Portal.
-
