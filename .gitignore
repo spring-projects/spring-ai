@@ -29,7 +29,7 @@ out
 
 vscode
 settings.json
-CLAUDE.md
+
 node
 node_modules
 package-lock.json
@@ -43,7 +43,10 @@ shell.log
 /spring-ai-spring-boot-autoconfigure/nbproject/
 /vector-stores/spring-ai-cassandra-store/nbproject/
 
+CLAUDE.md
 **/.claude/settings.local.json
 .devcontainer
 
-qodana.yaml__pycache__/
+qodana.yaml
+__pycache__/
+*.pyc
