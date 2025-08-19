@@ -98,7 +98,11 @@ public enum AiProvider {
 	/**
 	 * AI system provided by Zhipuai.
 	 */
-	ZHIPUAI("zhipuai");
+	ZHIPUAI("zhipuai"),
+	/**
+	 * AI system provided by Cohere.
+	 */
+	COHERE("cohere");
 
 	private final String value;
 

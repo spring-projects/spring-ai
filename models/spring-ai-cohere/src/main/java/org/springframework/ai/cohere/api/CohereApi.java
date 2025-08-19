@@ -34,7 +34,7 @@ import java.util.function.Predicate;
  */
 public class CohereApi {
 
-	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
+	public static final String PROVIDER_NAME = AiProvider.COHERE.value();
 
 	private static final String DEFAULT_BASE_URL = "https://api.cohere.com";
 
