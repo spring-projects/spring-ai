@@ -95,11 +95,6 @@ public class StreamableWebClientAndWebFluxServerIT {
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
 				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class));
 
-	static AtomicReference<LoggingMessageNotification> loggingNotificationRef = new AtomicReference<>();
-
-	static CountDownLatch progressLatch = new CountDownLatch(3);
-	static List<McpSchema.ProgressNotification> progressNotifications = new CopyOnWriteArrayList<>();
-
 	@Test
 	void clientServerCapabilities() {
 
@@ -185,12 +180,14 @@ public class StreamableWebClientAndWebFluxServerIT {
 									{"result":5.0,"operation":"2 + 3","timestamp":"2024-01-01T10:00:00Z"}"""));
 
 						// PROGRESS
-						assertThat(progressLatch.await(5, TimeUnit.SECONDS))
+						TestContext testContext = clientContext.getBean(TestContext.class);
+						assertThat(testContext.progressLatch.await(5, TimeUnit.SECONDS))
 							.as("Should receive progress notifications in reasonable time")
 							.isTrue();
-						assertThat(progressNotifications).hasSize(3);
+						assertThat(testContext.progressNotifications).hasSize(3);
 
-						Map<String, McpSchema.ProgressNotification> notificationMap = progressNotifications.stream()
+						Map<String, McpSchema.ProgressNotification> notificationMap = testContext.progressNotifications
+							.stream()
 							.collect(Collectors.toMap(n -> n.message(), n -> n));
 
 						// First notification should be 0.0/1.0 progress
@@ -239,7 +236,7 @@ public class StreamableWebClientAndWebFluxServerIT {
 						assertThat(completeResult.meta()).isNull();
 
 						// logging message
-						var logMessage = loggingNotificationRef.get();
+						var logMessage = testContext.loggingNotificationRef.get();
 						assertThat(logMessage).isNotNull();
 						assertThat(logMessage.level()).isEqualTo(LoggingLevel.INFO);
 						assertThat(logMessage.logger()).isEqualTo("test-logger");
@@ -430,16 +427,31 @@ public class StreamableWebClientAndWebFluxServerIT {
 
 	}
 
+	private static class TestContext {
+
+		final AtomicReference<LoggingMessageNotification> loggingNotificationRef = new AtomicReference<>();
+
+		final CountDownLatch progressLatch = new CountDownLatch(3);
+
+		final List<McpSchema.ProgressNotification> progressNotifications = new CopyOnWriteArrayList<>();
+
+	}
+
 	public static class TestMcpClientConfiguration {
 
 		@Bean
-		McpSyncClientCustomizer clientCustomizer() {
+		public TestContext testContext() {
+			return new TestContext();
+		}
+
+		@Bean
+		McpSyncClientCustomizer clientCustomizer(TestContext testContext) {
 
 			return (name, mcpClientSpec) -> {
 
 				// Add logging handler
 				mcpClientSpec = mcpClientSpec.loggingConsumer(logingMessage -> {
-					loggingNotificationRef.set(logingMessage);
+					testContext.loggingNotificationRef.set(logingMessage);
 					logger.info("MCP LOGGING: [{}] {}", logingMessage.level(), logingMessage.data());
 				});
 
@@ -465,8 +477,8 @@ public class StreamableWebClientAndWebFluxServerIT {
 
 				// Progress notification
 				mcpClientSpec.progressConsumer(progressNotification -> {
-					progressNotifications.add(progressNotification);
-					progressLatch.countDown();
+					testContext.progressNotifications.add(progressNotification);
+					testContext.progressLatch.countDown();
 				});
 			};
 		}

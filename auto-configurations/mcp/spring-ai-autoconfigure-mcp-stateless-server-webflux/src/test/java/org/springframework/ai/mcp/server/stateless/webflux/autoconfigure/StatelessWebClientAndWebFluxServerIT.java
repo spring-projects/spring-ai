@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
@@ -70,8 +68,6 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
 public class StatelessWebClientAndWebFluxServerIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(StatelessWebClientAndWebFluxServerIT.class);
 
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpStatelessServerAutoConfiguration.class,
