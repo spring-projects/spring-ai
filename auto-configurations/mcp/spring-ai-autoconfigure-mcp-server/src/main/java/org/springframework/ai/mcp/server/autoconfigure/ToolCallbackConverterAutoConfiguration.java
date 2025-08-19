@@ -28,7 +28,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
@@ -41,8 +40,6 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 @Conditional(ToolCallbackConverterCondition.class)
 public class ToolCallbackConverterAutoConfiguration {
 
-	private static final LogAccessor logger = new LogAccessor(ToolCallbackConverterAutoConfiguration.class);
-
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
@@ -50,20 +47,7 @@ public class ToolCallbackConverterAutoConfiguration {
 			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider,
 			McpServerProperties serverProperties) {
 
-		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
-
-		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
-			tools.addAll(toolCallbacksList);
-		}
-
-		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
-			.map(pr -> List.of(pr.getToolCallbacks()))
-			.flatMap(List::stream)
-			.filter(fc -> fc instanceof ToolCallback)
-			.map(fc -> (ToolCallback) fc)
-			.toList();
-
-		tools.addAll(providerToolCallbacks);
+		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbacksList, toolCallbackProvider);
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
 	}
@@ -94,22 +78,10 @@ public class ToolCallbackConverterAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbackList, List<ToolCallbackProvider> toolCallbackProvider,
+			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider,
 			McpServerProperties serverProperties) {
 
-		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
-		if (!CollectionUtils.isEmpty(toolCallbackList)) {
-			tools.addAll(toolCallbackList);
-		}
-
-		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
-			.map(pr -> List.of(pr.getToolCallbacks()))
-			.flatMap(List::stream)
-			.filter(fc -> fc instanceof ToolCallback)
-			.map(fc -> (ToolCallback) fc)
-			.toList();
-
-		tools.addAll(providerToolCallbacks);
+		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbacksList, toolCallbackProvider);
 
 		return this.toAsyncToolSpecification(tools, serverProperties);
 	}
@@ -134,6 +106,26 @@ public class ToolCallbackConverterAutoConfiguration {
 				return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
 			})
 			.toList();
+	}
+
+	private List<ToolCallback> aggregateToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
+			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider) {
+
+		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
+
+		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
+			tools.addAll(toolCallbacksList);
+		}
+
+		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
+			.map(pr -> List.of(pr.getToolCallbacks()))
+			.flatMap(List::stream)
+			.filter(fc -> fc instanceof ToolCallback)
+			.map(fc -> (ToolCallback) fc)
+			.toList();
+
+		tools.addAll(providerToolCallbacks);
+		return tools;
 	}
 
 }
