@@ -139,8 +139,11 @@ jobs:
           else
             echo "INFO: Running tests for affected modules: $MODS"
             # Build dependencies without tests, then test only the affected modules
+            echo "INFO: Phase 1 - Building dependencies (this may take a few minutes)..."
             ./mvnw -B -q -T 1C -DskipTests -pl "$MODS" -am install
+            echo "INFO: Phase 2 - Running tests for affected modules..."
             ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
+            echo "INFO: Testing complete"
           fi
 
       - name: Deploy to Artifactory (affected modules only)
