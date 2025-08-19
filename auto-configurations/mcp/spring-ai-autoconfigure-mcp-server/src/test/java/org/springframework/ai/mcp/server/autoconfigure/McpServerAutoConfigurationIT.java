@@ -75,7 +75,7 @@ public class McpServerAutoConfigurationIT {
 			assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(20);
 			assertThat(properties.getBaseUrl()).isEqualTo("");
 			assertThat(properties.getSseEndpoint()).isEqualTo("/sse");
-			assertThat(properties.getSseMessageEndpoint()).isEqualTo("/mcp/message");
+			assertThat(properties.getSseMessageEndpoint()).isEqualTo("/mcp/messages");
 
 			// Check capabilities
 			assertThat(properties.getCapabilities().isTool()).isTrue();
@@ -300,12 +300,12 @@ public class McpServerAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.base-url=http://localhost:8080",
 					"spring.ai.mcp.server.sse-endpoint=/events",
-					"spring.ai.mcp.server.sse-message-endpoint=/api/mcp/message")
+					"spring.ai.mcp.server.sse-message-endpoint=/api/mcp/messages")
 			.run(context -> {
 				McpServerProperties properties = context.getBean(McpServerProperties.class);
 				assertThat(properties.getBaseUrl()).isEqualTo("http://localhost:8080");
 				assertThat(properties.getSseEndpoint()).isEqualTo("/events");
-				assertThat(properties.getSseMessageEndpoint()).isEqualTo("/api/mcp/message");
+				assertThat(properties.getSseMessageEndpoint()).isEqualTo("/api/mcp/messages");
 
 				// Verify the server is configured with the endpoints
 				McpSyncServer server = context.getBean(McpSyncServer.class);
