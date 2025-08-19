@@ -62,9 +62,9 @@ class CITestDiscovery:
             pr_head = os.environ.get('GITHUB_HEAD_HEAD')   # PRs  
             branch = os.environ.get('GITHUB_REF_NAME')    # pushes
             
-            # For maintenance branches (cherry-picks), use single commit diff
-            if branch and branch.endswith('.x'):
-                # Maintenance branch - use diff with previous commit
+            # For maintenance branches (cherry-picks) or main branch pushes, use single commit diff
+            if (branch and branch.endswith('.x')) or (branch == 'main'):
+                # Maintenance branch or main branch - use diff with previous commit
                 cmd = ["git", "diff", "--name-only", "HEAD~1", "HEAD"]
             elif base_ref:
                 # Explicit base reference provided - use two-dot diff for direct comparison
@@ -179,8 +179,9 @@ class CITestDiscovery:
         branch = os.environ.get('GITHUB_REF_NAME')
         
         # Show the actual strategy being used
-        if branch and branch.endswith('.x'):
-            return f"git diff HEAD~1 HEAD (maintenance branch {branch})"
+        if (branch and branch.endswith('.x')) or (branch == 'main'):
+            branch_type = "maintenance" if branch.endswith('.x') else "main"
+            return f"git diff HEAD~1 HEAD ({branch_type} branch {branch})"
         elif pr_base:
             return f"origin/{pr_base} (PR base)"
         elif branch:
