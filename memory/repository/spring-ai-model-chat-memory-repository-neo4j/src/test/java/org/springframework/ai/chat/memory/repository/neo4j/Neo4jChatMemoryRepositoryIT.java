@@ -67,7 +67,7 @@ class Neo4jChatMemoryRepositoryIT {
 		.withoutAuthentication()
 		.withExposedPorts(7474, 7687);
 
-	private ChatMemoryRepository chatMemoryRepository;
+	private Neo4jChatMemoryRepository chatMemoryRepository;
 
 	private Driver driver;
 
@@ -76,8 +76,8 @@ class Neo4jChatMemoryRepositoryIT {
 	@BeforeEach
 	void setUp() {
 		this.driver = Neo4jDriverFactory.create(neo4jContainer.getBoltUrl());
-		this.config = Neo4jChatMemoryRepositoryConfig.builder().withDriver(this.driver).build();
-		this.chatMemoryRepository = new Neo4jChatMemoryRepository(this.config);
+		this.chatMemoryRepository = Neo4jChatMemoryRepository.builder().driver(driver).build();
+		this.config = chatMemoryRepository.getConfig();
 	}
 
 	@AfterEach
