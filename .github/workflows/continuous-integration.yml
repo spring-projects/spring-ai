@@ -31,7 +31,7 @@ jobs:
     if: ${{ github.repository_owner == 'spring-projects' }}
     concurrency:
       group: continuous-integration-${{ github.ref }}
-      cancel-in-progress: false  # Don't cancel running builds - let them complete
+      cancel-in-progress: true  # Skip if another build is running - next cron will trigger soon
     services:
       ollama:
         image: ollama/ollama:latest
