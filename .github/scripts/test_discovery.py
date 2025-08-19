@@ -131,13 +131,13 @@ class CITestDiscovery:
             pom_path = self.repo_root / potential_module / "pom.xml"
             
             if pom_path.exists():
+                # Never return root module to prevent full builds
+                if potential_module == ".":
+                    return None
                 # Found a module - return the relative path from repo root
                 return potential_module
         
-        # Check if it's in the root module
-        if (self.repo_root / "pom.xml").exists():
-            return "."
-        
+        # Never return root module to prevent full builds
         return None
     
     def _is_relevant_file(self, file_path: str) -> bool:
