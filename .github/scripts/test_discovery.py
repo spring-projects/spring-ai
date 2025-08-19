@@ -112,7 +112,7 @@ class CITestDiscovery:
         
         for file_path in changed_files:
             module = self._find_module_for_file(file_path)
-            if module:
+            if module and module != ".":  # Exclude root module to prevent full builds
                 modules.add(module)
         
         return sorted(list(modules))

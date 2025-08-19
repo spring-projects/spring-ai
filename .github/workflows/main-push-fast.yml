@@ -30,12 +30,6 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 2 }  # Need HEAD and HEAD~1 for single commit diff
 
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        with:
-          large-packages: false
-          docker-images: false
-
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -114,10 +108,10 @@ jobs:
             echo "INFO: No affected modules detected - running quick verification build"
             echo "This could mean no Java/build files were changed, or only docs were modified"
             echo "Running a minimal compile check to ensure the build isn't broken"
-            ./mvnw -B -T 1C compile -DfailIfNoTests=false
+            ./mvnw -B -q -T 1C compile -DfailIfNoTests=false
           else
             echo "INFO: Running tests for affected modules: $MODS"
-            ./mvnw -B -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
+            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
           fi
 
       - name: Deploy to Artifactory (affected modules only)
@@ -128,4 +122,4 @@ jobs:
         run: |
           MODS="${{ steps.mods.outputs.modules }}"
           echo "INFO: Deploying affected modules to Artifactory: $MODS"
-          ./mvnw -B -s settings.xml -DfailIfNoTests=false -pl "$MODS" -amd deploy
+          ./mvnw -B -q -s settings.xml -DfailIfNoTests=false -pl "$MODS" -amd deploy
