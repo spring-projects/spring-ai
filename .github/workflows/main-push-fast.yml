@@ -138,7 +138,9 @@ jobs:
             exit 0
           else
             echo "INFO: Running tests for affected modules: $MODS"
-            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -am -amd verify
+            # Build dependencies without tests, then test only the affected modules
+            ./mvnw -B -q -T 1C -DskipTests -pl "$MODS" -am install
+            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
           fi
 
       - name: Deploy to Artifactory (affected modules only)
