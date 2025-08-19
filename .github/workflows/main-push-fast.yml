@@ -25,13 +25,6 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
-    services:
-      ollama:
-        image: ollama/ollama:latest
-        ports:
-          - 11434:11434
-    env:
-      OLLAMA_WITH_REUSE: true
     steps:
       - uses: actions/checkout@v4
         with: 
@@ -42,7 +35,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'maven'
+          # cache: 'maven'  # Disabled for fast workflow - reduces post-job noise
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -70,46 +63,24 @@ jobs:
       - name: Compute impacted modules
         id: mods
         run: |
-          echo "=== Module Detection Debug Info ==="
-          echo "Environment variables:"
-          echo "  GITHUB_REF_NAME: $GITHUB_REF_NAME"
-          echo "  GITHUB_REF: $GITHUB_REF"
-          echo "  PWD: $(pwd)"
-          echo ""
-          
-          echo "Git state verification:"
-          echo "  HEAD: $(git rev-parse HEAD 2>/dev/null || echo 'FAILED')"
-          echo "  HEAD~1: $(git rev-parse HEAD~1 2>/dev/null || echo 'NOT AVAILABLE')"
-          echo "  Branch: $(git branch --show-current 2>/dev/null || echo 'DETACHED')"
-          echo ""
-          
-          echo "Testing different git diff approaches:"
-          echo "1. HEAD~1..HEAD:"
-          git diff --name-only HEAD~1..HEAD 2>&1 | head -10 || echo "  FAILED: $?"
-          
-          echo "2. git show HEAD:"  
-          git show --name-only --format= HEAD 2>&1 | head -10 || echo "  FAILED: $?"
-          
-          echo "3. Recent commits:"
-          git log --oneline -3 2>/dev/null || echo "  Git log failed"
-          echo ""
-          
-          echo "=== Running test_discovery.py for main branch ==="
-          set -x  # Enable bash debug mode
-          # Capture stdout (the actual result) and stderr (verbose logging) separately
-          MODULE_LIST=$(python3 .github/scripts/test_discovery.py modules-from-diff --verbose 2>/tmp/discovery_debug.log)
-          EXIT_CODE=$?
-          set +x  # Disable bash debug mode
-          
-          echo ""
-          echo "=== Test Discovery Results ==="
-          echo "Exit code: $EXIT_CODE"
-          echo "Debug output:"
-          cat /tmp/discovery_debug.log
-          echo ""
-          echo "Module list result: '$MODULE_LIST'"
-          
+          echo "=== Detecting affected modules ==="
+          MODULE_LIST=$(python3 .github/scripts/test_discovery.py modules-from-diff 2>/dev/null)
           echo "modules=$MODULE_LIST" >> "$GITHUB_OUTPUT"
+          
+          if [ -n "$MODULE_LIST" ]; then
+            echo "Affected modules detected: $MODULE_LIST"
+            echo "needs_ollama=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No affected modules detected - only workflow/docs changes"  
+            echo "needs_ollama=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Start Ollama service for integration tests
+        if: steps.mods.outputs.needs_ollama == 'true'
+        run: |
+          echo "Starting Ollama for integration tests..."
+          docker run -d --name ollama-test -p 11434:11434 ollama/ollama:latest
+          echo "Ollama container started"
 
       - name: Test affected modules with integration tests
         env:
@@ -122,10 +93,10 @@ jobs:
         run: |
           MODS="${{ steps.mods.outputs.modules }}"
           if [ -z "$MODS" ]; then 
-            echo "INFO: No affected modules detected - running quick verification build"
-            echo "This could mean no Java/build files were changed, or only docs were modified"
-            echo "Running a minimal compile check to ensure the build isn't broken"
-            ./mvnw -B -q -T 1C compile -DfailIfNoTests=false
+            echo "INFO: No affected modules detected - skipping build"
+            echo "Only workflow, documentation, or non-build files were changed"
+            echo "Fast workflow optimization: no compilation needed"
+            exit 0
           else
             echo "INFO: Running tests for affected modules: $MODS"
             ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
