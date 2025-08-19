@@ -154,4 +154,5 @@ jobs:
         run: |
           MODS="${{ steps.mods.outputs.modules }}"
           echo "INFO: Deploying affected modules to Artifactory: $MODS"
-          ./mvnw -B -q -s settings.xml -DfailIfNoTests=false -pl "$MODS" -am -amd deploy
+          # Skip tests during deploy since we already ran them
+          ./mvnw -B -q -s settings.xml -DskipTests -pl "$MODS" -amd deploy
