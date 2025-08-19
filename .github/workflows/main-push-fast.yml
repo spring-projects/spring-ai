@@ -7,6 +7,7 @@ on:
       - 'spring-ai-docs/**'
       - '*.md'
       - 'docs/**'
+      - '.github/workflows/**'
 
 jobs:
   fast-impacted:
@@ -84,20 +85,19 @@ jobs:
           
           echo "=== Running test_discovery.py for main branch ==="
           set -x  # Enable bash debug mode
-          MODS=$(python3 .github/scripts/test_discovery.py modules-from-diff --verbose 2>&1)
+          # Capture stdout (the actual result) and stderr (verbose logging) separately
+          MODULE_LIST=$(python3 .github/scripts/test_discovery.py modules-from-diff --verbose 2>/tmp/discovery_debug.log)
           EXIT_CODE=$?
           set +x  # Disable bash debug mode
           
           echo ""
           echo "=== Test Discovery Results ==="
           echo "Exit code: $EXIT_CODE"
-          echo "Output:"
-          echo "$MODS"
+          echo "Debug output:"
+          cat /tmp/discovery_debug.log
           echo ""
+          echo "Module list result: '$MODULE_LIST'"
           
-          # Extract just the module list (last line that isn't stderr logging)
-          MODULE_LIST=$(echo "$MODS" | grep -v "^Detected base ref:" | grep -v "^Changed files" | grep -v "^Final module list:" | tail -1)
-          echo "Extracted modules: '$MODULE_LIST'"
           echo "modules=$MODULE_LIST" >> "$GITHUB_OUTPUT"
 
       - name: Test affected modules with integration tests
