@@ -1,13 +1,19 @@
 name: CI/CD build
 
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - 'spring-ai-docs/**'
-      - '*.md'
-      - 'docs/**'
+  schedule:
+    # EST Working Hours (9 AM - 9 PM) - 5 builds per day (spaced 2.5+ hours apart for 90min builds)
+    - cron: '30 12 * * 1-5'  # 7:30 AM EST / 1:30 PM CET
+    - cron: '0 15 * * 1-5'   # 10:00 AM EST / 4:00 PM CET
+    - cron: '30 18 * * 1-5'  # 1:30 PM EST / 7:30 PM CET
+    - cron: '0 21 * * 1-5'   # 4:00 PM EST / 10:00 PM CET
+    - cron: '0 2 * * 2-6'    # 9:00 PM EST / 3:00 AM CET (next day)
+    # CET Working Hours (9 AM - 9 PM) - 5 builds per day (spaced 2.5+ hours apart for 90min builds)
+    - cron: '30 6 * * 1-5'   # 7:30 AM CET / 1:30 AM EST
+    - cron: '0 9 * * 1-5'    # 10:00 AM CET / 4:00 AM EST
+    - cron: '30 12 * * 1-5'  # 1:30 PM CET / 7:30 AM EST
+    - cron: '0 15 * * 1-5'   # 4:00 PM CET / 10:00 AM EST
+    - cron: '0 19 * * 1-5'   # 9:00 PM CET / 3:00 PM EST
   workflow_dispatch:
 
 jobs:
