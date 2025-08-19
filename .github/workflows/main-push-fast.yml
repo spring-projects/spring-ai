@@ -8,7 +8,7 @@ on:
       - 'spring-ai-docs/**'
       - '*.md'
       - 'docs/**'
-      - '.github/workflows/**'
+      - '.github/**'
   workflow_dispatch:
     inputs:
       commit_sha:
@@ -78,7 +78,11 @@ jobs:
         id: mods
         run: |
           echo "=== Detecting affected modules ==="
-          MODULE_LIST=$(python3 .github/scripts/test_discovery.py modules-from-diff 2>/dev/null)
+          echo "=== DEBUG: Changed files ==="
+          git diff --name-only HEAD~1..HEAD
+          echo "=== DEBUG: Running test discovery with full output ==="
+          MODULE_LIST=$(python3 .github/scripts/test_discovery.py modules-from-diff --verbose)
+          echo "=== DEBUG: Raw module list: '$MODULE_LIST' ==="
           echo "modules=$MODULE_LIST" >> "$GITHUB_OUTPUT"
           
           if [ -n "$MODULE_LIST" ]; then
