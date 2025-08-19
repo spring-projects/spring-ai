@@ -29,12 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: 
-          fetch-depth: ${{ github.event.inputs.commit_sha && 0 || 2 }}
+          fetch-depth: 0  # Always use full history for manual runs to find any commit
           
       - name: Checkout specific commit
         if: github.event.inputs.commit_sha
         run: |
-          git fetch origin ${{ github.event.inputs.commit_sha }}
+          echo "Checking out specific commit: ${{ github.event.inputs.commit_sha }}"
           git checkout ${{ github.event.inputs.commit_sha }}
 
       - uses: actions/setup-java@v4
