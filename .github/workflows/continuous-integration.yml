@@ -1,20 +1,37 @@
 name: CI/CD build
 
 on:
-  push:
-    branches:
-      - '*.*.x'
-    paths-ignore:
-      - 'spring-ai-docs/**'
-      - '*.md'
-      - 'docs/**'
+  schedule:
+    # Combined schedule covering both EST and CET working hours
+    # Morning/Early builds
+    - cron: '30 6 * * 1-5'   # 7:30 AM CET / 1:30 AM EST
+    - cron: '0 9 * * 1-5'    # 10:00 AM CET / 4:00 AM EST
+    - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM EST
+    # Midday builds
+    - cron: '0 14 * * 1-5'   # 3:00 PM CET / 9:00 AM EST
+    - cron: '30 16 * * 1-5'  # 5:30 PM CET / 11:30 AM EST
+    # Afternoon/Evening builds  
+    - cron: '0 19 * * 1-5'   # 8:00 PM CET / 2:00 PM EST
+    - cron: '30 21 * * 1-5'  # 10:30 PM CET / 4:30 PM EST
+    - cron: '0 0 * * 2-6'    # 1:00 AM CET / 7:00 PM EST (previous day)
+    - cron: '30 2 * * 2-6'   # 3:30 AM CET / 9:30 PM EST (previous day)
   workflow_dispatch:
+  # Note: If push triggers are added in the future, they should include:
+  # push:
+  #   paths-ignore:
+  #     - '.github/**'
+  #     - 'spring-ai-docs/**'
+  #     - '*.md'
+  #     - 'docs/**'
 
 jobs:
   build:
     name: Build branch
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'spring-projects' && !contains(github.event.head_commit.message, '(cherry picked from commit') }}
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    concurrency:
+      group: continuous-integration-${{ github.ref }}
+      cancel-in-progress: true  # Skip if another build is running - next cron will trigger soon
     services:
       ollama:
         image: ollama/ollama:latest
