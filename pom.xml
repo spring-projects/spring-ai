@@ -291,7 +291,7 @@
 		<com.google.genai.version>1.10.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.37.0</jsonschema.version>
-		<swagger-annotations.version>2.2.25</swagger-annotations.version>
+		<swagger-annotations.version>2.2.30</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
