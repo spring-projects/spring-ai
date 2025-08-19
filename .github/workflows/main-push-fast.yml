@@ -8,6 +8,12 @@ on:
       - '*.md'
       - 'docs/**'
       - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Specific commit SHA to test (optional - defaults to latest)'
+        required: false
+        type: string
 
 jobs:
   fast-impacted:
@@ -28,7 +34,9 @@ jobs:
       OLLAMA_WITH_REUSE: true
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 2 }  # Need HEAD and HEAD~1 for single commit diff
+        with: 
+          fetch-depth: 2  # Need HEAD and HEAD~1 for single commit diff
+          ref: ${{ github.event.inputs.commit_sha || github.sha }}
 
       - uses: actions/setup-java@v4
         with:
@@ -47,8 +55,17 @@ jobs:
 
       - name: Show commit range
         run: |
-          echo "Base ref: HEAD~1"
-          git log --oneline "HEAD~1...HEAD"
+          if [ -n "${{ github.event.inputs.commit_sha }}" ]; then
+            echo "Testing specific commit: ${{ github.event.inputs.commit_sha }}"
+            echo "Commit info:"
+            git log --oneline -1 HEAD
+            echo "Base ref: HEAD~1"
+            git log --oneline "HEAD~1...HEAD"
+          else
+            echo "Testing latest commit on main branch"
+            echo "Base ref: HEAD~1" 
+            git log --oneline "HEAD~1...HEAD"
+          fi
 
       - name: Compute impacted modules
         id: mods
