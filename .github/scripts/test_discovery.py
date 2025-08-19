@@ -112,9 +112,15 @@ class CITestDiscovery:
         
         for file_path in changed_files:
             module = self._find_module_for_file(file_path)
+            # DEBUG: Print what we're finding
+            print(f"DEBUG: file={file_path} -> module={module}", file=sys.stderr)
             if module and module != ".":  # Exclude root module to prevent full builds
                 modules.add(module)
+                print(f"DEBUG: Added module: {module}", file=sys.stderr)
+            elif module == ".":
+                print(f"DEBUG: Excluded root module for file: {file_path}", file=sys.stderr)
         
+        print(f"DEBUG: Final modules before return: {sorted(list(modules))}", file=sys.stderr)
         return sorted(list(modules))
     
     def _find_module_for_file(self, file_path: str) -> Optional[str]:
@@ -128,6 +134,9 @@ class CITestDiscovery:
         
         for i in range(len(path_parts), 0, -1):
             potential_module = '/'.join(path_parts[:i])
+            # Handle root case - empty string becomes "."
+            if not potential_module:
+                potential_module = "."
             pom_path = self.repo_root / potential_module / "pom.xml"
             
             if pom_path.exists():
