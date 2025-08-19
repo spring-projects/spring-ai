@@ -35,7 +35,20 @@ jobs:
         if: github.event.inputs.commit_sha
         run: |
           echo "Checking out specific commit: ${{ github.event.inputs.commit_sha }}"
+          # Save the latest main reference
+          LATEST_MAIN=$(git rev-parse origin/main)
+          
+          # Checkout the target commit
           git checkout ${{ github.event.inputs.commit_sha }}
+          
+          # Preserve all latest GitHub Actions scripts from main
+          echo "Using latest GitHub Actions scripts from main..."
+          # Copy all scripts from main's .github/scripts directory
+          for script in $(git ls-tree -r --name-only ${LATEST_MAIN} .github/scripts/); do
+            echo "  Updating ${script}"
+            git show ${LATEST_MAIN}:${script} > ${script}
+          done
+          # Note: The workflow itself is already from main (since that's what's running)
 
       - uses: actions/setup-java@v4
         with:
