@@ -83,7 +83,14 @@ jobs:
           
           if [ -n "$MODULE_LIST" ]; then
             echo "Affected modules detected: $MODULE_LIST"
-            echo "needs_ollama=true" >> "$GITHUB_OUTPUT"
+            # Only start Ollama if we're testing Ollama-specific modules
+            if echo "$MODULE_LIST" | grep -q "ollama"; then
+              echo "Ollama-related modules detected - Ollama service needed"
+              echo "needs_ollama=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "Non-Ollama modules detected - Ollama service not needed"
+              echo "needs_ollama=false" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "No affected modules detected - only workflow/docs changes"  
             echo "needs_ollama=false" >> "$GITHUB_OUTPUT"

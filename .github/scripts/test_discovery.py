@@ -142,11 +142,15 @@ class CITestDiscovery:
     
     def _is_relevant_file(self, file_path: str) -> bool:
         """Check if a file is relevant for module discovery"""
+        # Always exclude root pom.xml to prevent full builds
+        if file_path == 'pom.xml':
+            return False
+            
         # Include Java source and test files
         if file_path.endswith('.java'):
             return True
         
-        # Include build files
+        # Include build files (but not root pom.xml - handled above)
         if file_path.endswith('pom.xml'):
             return True
         
