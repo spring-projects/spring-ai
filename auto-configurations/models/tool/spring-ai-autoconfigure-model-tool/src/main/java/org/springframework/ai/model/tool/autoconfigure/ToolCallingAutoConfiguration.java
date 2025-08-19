@@ -23,6 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.chat.model.ToolContextCreator;
+import org.springframework.ai.model.tool.DefaultToolContextCreator;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -98,13 +101,21 @@ public class ToolCallingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	ToolContextCreator<ToolContext> toolContextCreator() {
+		return new DefaultToolContextCreator();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
+			ToolContextCreator<? extends ToolContext> toolContextCreator,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ToolCallingObservationConvention> observationConvention) {
 		var toolCallingManager = ToolCallingManager.builder()
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallbackResolver(toolCallbackResolver)
+			.toolContextCreator(toolContextCreator)
 			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
 			.build();
 
