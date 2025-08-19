@@ -1,4 +1,5 @@
 name: Main Push - Fast
+run-name: ${{ github.event.inputs.commit_sha && format('Fast Test - {0}', github.event.inputs.commit_sha) || 'Main Push - Fast' }}
 
 on:
   push:
@@ -28,8 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: 
-          fetch-depth: 2  # Need HEAD and HEAD~1 for single commit diff
-          ref: ${{ github.event.inputs.commit_sha || github.sha }}
+          fetch-depth: ${{ github.event.inputs.commit_sha && 0 || 2 }}
+          
+      - name: Checkout specific commit
+        if: github.event.inputs.commit_sha
+        run: |
+          git fetch origin ${{ github.event.inputs.commit_sha }}
+          git checkout ${{ github.event.inputs.commit_sha }}
 
       - uses: actions/setup-java@v4
         with:
@@ -49,15 +55,23 @@ jobs:
       - name: Show commit range
         run: |
           if [ -n "${{ github.event.inputs.commit_sha }}" ]; then
+            echo "🧪 MANUAL TEST RUN"
             echo "Testing specific commit: ${{ github.event.inputs.commit_sha }}"
-            echo "Commit info:"
-            git log --oneline -1 HEAD
-            echo "Base ref: HEAD~1"
-            git log --oneline "HEAD~1...HEAD"
+            echo ""
+            echo "📋 Commit Details:"
+            git log --format="  Author: %an <%ae>%n  Date: %ad%n  Message: %s" -1 HEAD
+            echo ""
+            echo "📁 Changed Files:"
+            git diff --name-only HEAD~1..HEAD | head -10
+            if [ $(git diff --name-only HEAD~1..HEAD | wc -l) -gt 10 ]; then
+              echo "  ... and $(( $(git diff --name-only HEAD~1..HEAD | wc -l) - 10 )) more files"
+            fi
           else
+            echo "🚀 AUTOMATIC BUILD"
             echo "Testing latest commit on main branch"
-            echo "Base ref: HEAD~1" 
-            git log --oneline "HEAD~1...HEAD"
+            echo ""
+            echo "📋 Commit Details:"
+            git log --format="  Author: %an <%ae>%n  Date: %ad%n  Message: %s" -1 HEAD
           fi
 
       - name: Compute impacted modules
