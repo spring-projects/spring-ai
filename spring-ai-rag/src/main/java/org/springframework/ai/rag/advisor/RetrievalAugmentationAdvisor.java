@@ -29,6 +29,7 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.SchedulerHolder;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -95,7 +96,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		this.documentPostProcessors = documentPostProcessors != null ? documentPostProcessors : List.of();
 		this.queryAugmenter = queryAugmenter != null ? queryAugmenter : ContextualQueryAugmenter.builder().build();
 		this.taskExecutor = taskExecutor != null ? taskExecutor : buildDefaultTaskExecutor();
-		this.scheduler = scheduler != null ? scheduler : BaseAdvisor.DEFAULT_SCHEDULER;
+		this.scheduler = scheduler != null ? scheduler : SchedulerHolder.DEFAULT_SCHEDULER;
 		this.order = order != null ? order : 0;
 	}
 
