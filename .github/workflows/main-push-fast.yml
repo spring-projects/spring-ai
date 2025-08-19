@@ -138,7 +138,7 @@ jobs:
             exit 0
           else
             echo "INFO: Running tests for affected modules: $MODS"
-            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
+            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -am -amd verify
           fi
 
       - name: Deploy to Artifactory (affected modules only)
@@ -149,4 +149,4 @@ jobs:
         run: |
           MODS="${{ steps.mods.outputs.modules }}"
           echo "INFO: Deploying affected modules to Artifactory: $MODS"
-          ./mvnw -B -q -s settings.xml -DfailIfNoTests=false -pl "$MODS" -amd deploy
+          ./mvnw -B -q -s settings.xml -DfailIfNoTests=false -pl "$MODS" -am -amd deploy
