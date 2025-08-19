@@ -2,18 +2,19 @@ name: CI/CD build
 
 on:
   schedule:
-    # EST Working Hours (9 AM - 9 PM) - 5 builds per day (spaced 2.5+ hours apart for 90min builds)
-    - cron: '30 12 * * 1-5'  # 7:30 AM EST / 1:30 PM CET
-    - cron: '0 15 * * 1-5'   # 10:00 AM EST / 4:00 PM CET
-    - cron: '30 18 * * 1-5'  # 1:30 PM EST / 7:30 PM CET
-    - cron: '0 21 * * 1-5'   # 4:00 PM EST / 10:00 PM CET
-    - cron: '0 2 * * 2-6'    # 9:00 PM EST / 3:00 AM CET (next day)
-    # CET Working Hours (9 AM - 9 PM) - 5 builds per day (spaced 2.5+ hours apart for 90min builds)
+    # Combined schedule covering both EST and CET working hours
+    # Morning/Early builds
     - cron: '30 6 * * 1-5'   # 7:30 AM CET / 1:30 AM EST
     - cron: '0 9 * * 1-5'    # 10:00 AM CET / 4:00 AM EST
-    - cron: '30 12 * * 1-5'  # 1:30 PM CET / 7:30 AM EST
-    - cron: '0 15 * * 1-5'   # 4:00 PM CET / 10:00 AM EST
-    - cron: '0 19 * * 1-5'   # 9:00 PM CET / 3:00 PM EST
+    - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM EST
+    # Midday builds
+    - cron: '0 14 * * 1-5'   # 3:00 PM CET / 9:00 AM EST
+    - cron: '30 16 * * 1-5'  # 5:30 PM CET / 11:30 AM EST
+    # Afternoon/Evening builds  
+    - cron: '0 19 * * 1-5'   # 8:00 PM CET / 2:00 PM EST
+    - cron: '30 21 * * 1-5'  # 10:30 PM CET / 4:30 PM EST
+    - cron: '0 0 * * 2-6'    # 1:00 AM CET / 7:00 PM EST (previous day)
+    - cron: '30 2 * * 2-6'   # 3:30 AM CET / 9:30 PM EST (previous day)
   workflow_dispatch:
 
 jobs:
