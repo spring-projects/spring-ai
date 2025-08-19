@@ -47,4 +47,6 @@ CLAUDE.md
 **/.claude/settings.local.json
 .devcontainer
 
-qodana.yaml__pycache__/
+qodana.yaml
+__pycache__/
+*.pyc
