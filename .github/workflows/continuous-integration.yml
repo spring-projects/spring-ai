@@ -16,12 +16,22 @@ on:
     - cron: '0 0 * * 2-6'    # 1:00 AM CET / 7:00 PM EST (previous day)
     - cron: '30 2 * * 2-6'   # 3:30 AM CET / 9:30 PM EST (previous day)
   workflow_dispatch:
+  # Note: If push triggers are added in the future, they should include:
+  # push:
+  #   paths-ignore:
+  #     - '.github/**'
+  #     - 'spring-ai-docs/**'
+  #     - '*.md'
+  #     - 'docs/**'
 
 jobs:
   build:
     name: Build branch
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'spring-projects' }}
+    concurrency:
+      group: continuous-integration-${{ github.ref }}
+      cancel-in-progress: false  # Don't cancel running builds - let them complete
     services:
       ollama:
         image: ollama/ollama:latest
