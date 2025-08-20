@@ -4,10 +4,16 @@ run-name: ${{ github.event.inputs.commit_sha && format('Manual Test - {0}', gith
 on:
   push:
     branches: ['*.*.x']
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Specific commit SHA to test (optional - defaults to latest)'
+        required: false
+        type: string
 
 jobs:
   fast-impacted:
-    if: contains(github.event.head_commit.message, '(cherry picked from commit')
+    if: ${{ contains(github.event.head_commit.message, '(cherry picked from commit') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
