@@ -47,6 +47,7 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -391,6 +392,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalCall(prompt, previousChatResponse, 1);
+	}
+
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -424,7 +429,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				return chatResponse;
 			}));
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -436,8 +441,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, iterations + 1);
 			}
+		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
 		}
 
 		return response;
@@ -502,6 +510,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalStream(prompt, previousChatResponse, 1);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		return Flux.deferContextual(contextView -> {
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -539,7 +551,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 				// @formatter:off
 				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
-					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
 						return Flux.deferContextual((ctx) -> {
@@ -561,6 +573,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()), response);
 							}
 						}).subscribeOn(Schedulers.boundedElastic());
+					}
+					else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+						throw new ToolExecutionLimitExceededException(iterations);
 					}
 					else {
 						return Flux.just(response);

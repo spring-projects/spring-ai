@@ -17,12 +17,13 @@
 package org.springframework.ai.mistralai;
 
 import java.util.Collections;
+import org.junit.jupiter.api.Test;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Test;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -31,6 +32,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi;
  * Tests for {@link MistralAiChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author lambochen
  */
 class MistralAiChatOptionsTests {
 
@@ -123,6 +125,30 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getRandomSeed()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
+	}
+
+	@Test
+	void testOptionsDefault() {
+		var options = new MistralAiChatOptions();
+
+		assertThat(options.getToolExecutionMaxIterations())
+			.isEqualTo(ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS);
+	}
+
+	@Test
+	void testOptionsCustom() {
+		var options = new MistralAiChatOptions();
+
+		options.setToolExecutionMaxIterations(3);
+
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
+	}
+
+	@Test
+	void testBuilder() {
+		var options = MistralAiChatOptions.builder().toolExecutionMaxIterations(3).build();
+
+		assertThat(options.getToolExecutionMaxIterations()).isEqualTo(3);
 	}
 
 	@Test
