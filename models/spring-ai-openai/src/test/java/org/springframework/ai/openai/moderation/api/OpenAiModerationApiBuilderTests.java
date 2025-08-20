@@ -171,6 +171,19 @@ class OpenAiModerationApiBuilderTests {
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 
+		@Test
+		void testBuilderMethodsReturnNewInstances() {
+			OpenAiModerationApi.Builder builder1 = OpenAiModerationApi.builder();
+			OpenAiModerationApi.Builder builder2 = builder1.apiKey(TEST_API_KEY);
+			OpenAiModerationApi.Builder builder3 = builder2.baseUrl(TEST_BASE_URL);
+
+			assertThat(builder2).isNotNull();
+			assertThat(builder3).isNotNull();
+
+			OpenAiModerationApi api = builder3.build();
+			assertThat(api).isNotNull();
+		}
+
 	}
 
 }

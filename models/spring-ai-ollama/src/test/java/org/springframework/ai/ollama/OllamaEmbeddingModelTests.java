@@ -37,6 +37,7 @@ import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 /**
@@ -113,6 +114,145 @@ public class OllamaEmbeddingModelTests {
 		assertThat(this.embeddingsRequestCaptor.getValue().options()).isEqualTo(Map.of("main_gpu", 666));
 		assertThat(this.embeddingsRequestCaptor.getValue().model()).isEqualTo("RUNTIME_MODEL");
 
+	}
+
+	@Test
+	public void singleInputEmbedding() {
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse("TEST_MODEL", List.of(new float[] { 0.1f, 0.2f, 0.3f }), 10L, 5L, 1));
+
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.defaultOptions(OllamaOptions.builder().model("TEST_MODEL").build())
+			.build();
+
+		EmbeddingResponse response = embeddingModel
+			.call(new EmbeddingRequest(List.of("Single input text"), EmbeddingOptionsBuilder.builder().build()));
+
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
+		assertThat(response.getResults().get(0).getOutput()).isEqualTo(new float[] { 0.1f, 0.2f, 0.3f });
+		assertThat(response.getMetadata().getModel()).isEqualTo("TEST_MODEL");
+
+		assertThat(this.embeddingsRequestCaptor.getValue().input()).isEqualTo(List.of("Single input text"));
+		assertThat(this.embeddingsRequestCaptor.getValue().model()).isEqualTo("TEST_MODEL");
+	}
+
+	@Test
+	public void embeddingWithNullOptions() {
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse("NULL_OPTIONS_MODEL", List.of(new float[] { 0.5f }), 5L, 2L, 1));
+
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.defaultOptions(OllamaOptions.builder().model("NULL_OPTIONS_MODEL").build())
+			.build();
+
+		EmbeddingResponse response = embeddingModel.call(new EmbeddingRequest(List.of("Null options test"), null));
+
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getMetadata().getModel()).isEqualTo("NULL_OPTIONS_MODEL");
+
+		assertThat(this.embeddingsRequestCaptor.getValue().model()).isEqualTo("NULL_OPTIONS_MODEL");
+		assertThat(this.embeddingsRequestCaptor.getValue().options()).isEqualTo(Map.of());
+	}
+
+	@Test
+	public void embeddingWithMultipleLargeInputs() {
+		List<String> largeInputs = List.of(
+				"This is a very long text input that might be used for document embedding scenarios",
+				"Another substantial piece of text content that could represent a paragraph or section",
+				"A third lengthy input to test batch processing capabilities of the embedding model");
+
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse(
+					"BATCH_MODEL", List.of(new float[] { 0.1f, 0.2f, 0.3f, 0.4f },
+							new float[] { 0.5f, 0.6f, 0.7f, 0.8f }, new float[] { 0.9f, 1.0f, 1.1f, 1.2f }),
+					150L, 75L, 3));
+
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.defaultOptions(OllamaOptions.builder().model("BATCH_MODEL").build())
+			.build();
+
+		EmbeddingResponse response = embeddingModel
+			.call(new EmbeddingRequest(largeInputs, EmbeddingOptionsBuilder.builder().build()));
+
+		assertThat(response.getResults()).hasSize(3);
+		assertThat(response.getResults().get(0).getOutput()).hasSize(4);
+		assertThat(response.getResults().get(1).getOutput()).hasSize(4);
+		assertThat(response.getResults().get(2).getOutput()).hasSize(4);
+
+		assertThat(this.embeddingsRequestCaptor.getValue().input()).isEqualTo(largeInputs);
+	}
+
+	@Test
+	public void embeddingWithCustomKeepAliveFormats() {
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse("KEEPALIVE_MODEL", List.of(new float[] { 1.0f }), 5L, 2L, 1));
+
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.defaultOptions(OllamaOptions.builder().model("KEEPALIVE_MODEL").build())
+			.build();
+
+		// Test with seconds format
+		var secondsOptions = OllamaOptions.builder().model("KEEPALIVE_MODEL").keepAlive("300s").build();
+
+		embeddingModel.call(new EmbeddingRequest(List.of("Keep alive seconds"), secondsOptions));
+		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo(Duration.ofSeconds(300));
+
+		// Test with hours format
+		var hoursOptions = OllamaOptions.builder().model("KEEPALIVE_MODEL").keepAlive("2h").build();
+
+		embeddingModel.call(new EmbeddingRequest(List.of("Keep alive hours"), hoursOptions));
+		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo(Duration.ofHours(2));
+	}
+
+	@Test
+	public void embeddingResponseMetadata() {
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse("METADATA_MODEL", List.of(new float[] { 0.1f, 0.2f }), 100L, 50L, 25));
+
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.defaultOptions(OllamaOptions.builder().model("METADATA_MODEL").build())
+			.build();
+
+		EmbeddingResponse response = embeddingModel
+			.call(new EmbeddingRequest(List.of("Metadata test"), EmbeddingOptionsBuilder.builder().build()));
+
+		assertThat(response.getMetadata().getModel()).isEqualTo("METADATA_MODEL");
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getMetadata()).isEqualTo(EmbeddingResultMetadata.EMPTY);
+	}
+
+	@Test
+	public void embeddingWithZeroLengthVectors() {
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse("ZERO_MODEL", List.of(new float[] {}), 0L, 0L, 1));
+
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.defaultOptions(OllamaOptions.builder().model("ZERO_MODEL").build())
+			.build();
+
+		EmbeddingResponse response = embeddingModel
+			.call(new EmbeddingRequest(List.of("Zero length test"), EmbeddingOptionsBuilder.builder().build()));
+
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput()).isEmpty();
+	}
+
+	@Test
+	public void builderValidation() {
+		// Test that builder requires ollamaApi
+		assertThatThrownBy(() -> OllamaEmbeddingModel.builder().build()).isInstanceOf(IllegalArgumentException.class);
+
+		// Test successful builder with minimal required parameters
+		var model = OllamaEmbeddingModel.builder().ollamaApi(this.ollamaApi).build();
+
+		assertThat(model).isNotNull();
 	}
 
 }
