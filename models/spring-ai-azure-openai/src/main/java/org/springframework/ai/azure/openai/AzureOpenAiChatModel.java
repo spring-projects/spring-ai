@@ -56,6 +56,7 @@ import com.azure.ai.openai.models.CompletionsUsage;
 import com.azure.ai.openai.models.ContentFilterResultsForPrompt;
 import com.azure.ai.openai.models.FunctionCall;
 import com.azure.ai.openai.models.ReasoningEffortValue;
+import com.azure.core.http.rest.RequestOptions;
 import com.azure.core.util.BinaryData;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -265,7 +266,16 @@ public class AzureOpenAiChatModel implements ChatModel {
 				ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
 				ChatCompletionsOptionsAccessHelper.setStream(options, false);
 
-				ChatCompletions chatCompletions = this.openAIClient.getChatCompletions(options.getModel(), options);
+				RequestOptions requestOptions = new RequestOptions();
+				if (prompt.getOptions() instanceof AzureOpenAiChatOptions azureOpenAiChatOptions
+						&& null != azureOpenAiChatOptions.getApiVersion()) {
+					requestOptions.addQueryParam("api-version", azureOpenAiChatOptions.getApiVersion());
+				}
+
+				ChatCompletions chatCompletions = this.openAIClient
+					.getChatCompletionsWithResponse(options.getModel(), BinaryData.fromObject(options), requestOptions)
+					.getValue()
+					.toObject(ChatCompletions.class);
 				ChatResponse chatResponse = toChatResponse(chatCompletions, previousChatResponse);
 				observationContext.setResponse(chatResponse);
 				return chatResponse;

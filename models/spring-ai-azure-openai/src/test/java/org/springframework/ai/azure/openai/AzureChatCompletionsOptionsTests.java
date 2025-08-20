@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,6 +70,7 @@ public class AzureChatCompletionsOptionsTests {
 			.topLogprobs(5)
 			.enhancements(mockAzureChatEnhancementConfiguration)
 			.responseFormat(AzureOpenAiResponseFormat.builder().type(Type.TEXT).build())
+			.apiVersion("preview")
 			.build();
 
 		var client = AzureOpenAiChatModel.builder()
@@ -79,6 +80,7 @@ public class AzureChatCompletionsOptionsTests {
 
 		var requestOptions = client.toAzureChatCompletionsOptions(new Prompt("Test message content"));
 
+		assertThat(client.getDefaultOptions().getApiVersion()).isEqualTo("preview");
 		assertThat(requestOptions.getMessages()).hasSize(1);
 
 		assertThat(requestOptions.getModel()).isEqualTo("DEFAULT_MODEL");
