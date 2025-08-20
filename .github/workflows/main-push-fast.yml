@@ -142,7 +142,7 @@ jobs:
             echo "INFO: Phase 1 - Building dependencies (this may take a few minutes)..."
             ./mvnw -B -q -T 1C -DskipTests -pl "$MODS" -am install
             echo "INFO: Phase 2 - Running tests for affected modules..."
-            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
+            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" verify
             echo "INFO: Testing complete"
           fi
 
@@ -155,4 +155,4 @@ jobs:
           MODS="${{ steps.mods.outputs.modules }}"
           echo "INFO: Deploying affected modules to Artifactory: $MODS"
           # Skip tests during deploy since we already ran them
-          ./mvnw -B -q -s settings.xml -DskipTests -pl "$MODS" -amd deploy
+          ./mvnw -B -q -s settings.xml -DskipTests -pl "$MODS" deploy
