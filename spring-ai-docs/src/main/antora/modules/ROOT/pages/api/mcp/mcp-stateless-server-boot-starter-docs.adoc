@@ -40,7 +40,9 @@ NOTE: Stateless servers don't support message requests to the MCP client (e.g., 
 
 == Configuration Properties
 
-All properties are prefixed with `spring.ai.mcp.server.stateless`:
+=== Common Properties
+
+All Common properties are prefixed with `spring.ai.mcp.server`:
 
 [options="header"]
 |===
@@ -56,11 +58,19 @@ All properties are prefixed with `spring.ai.mcp.server.stateless`:
 |`capabilities.prompt` |Enable/disable prompt capabilities |`true`
 |`capabilities.completion` |Enable/disable completion capabilities |`true`
 |`tool-response-mime-type` |Response MIME type per tool name |`-`
-|`mcp-endpoint` |Custom MCP endpoint path |`/mcp`
 |`request-timeout` |Request timeout duration |`20 seconds`
-|`disallow-delete` |Disallow delete operations |`false`
 |===
 
+=== Stateless Connection Properties
+
+All connection properties are prefixed with `spring.ai.mcp.server.streamable-http`:
+
+[options="header"]
+|===
+|Property |Description |Default
+|`mcp-endpoint` |Custom MCP endpoint path |`/mcp`
+|`disallow-delete` |Disallow delete operations |`false`
+|===
 
 == Features and Capabilities
 
@@ -193,16 +203,15 @@ public List<McpStatelessServerFeatures.SyncCompletionSpecification> myCompletion
 === Stateless Server Configuration
 [source,yaml]
 ----
-# Using spring-ai-starter-mcp-server-stateless-webflux
 spring:
   ai:
     mcp:
       server:
-        stateless:
-          name: stateless-mcp-server
-          version: 1.0.0
-          type: ASYNC
-          instructions: "This stateless server is optimized for cloud deployments"
+        name: stateless-mcp-server
+        version: 1.0.0
+        type: ASYNC
+        instructions: "This stateless server is optimized for cloud deployments"
+        streamable-http:          
           mcp-endpoint: /api/mcp
 ----
 
