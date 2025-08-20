@@ -4,9 +4,9 @@
 Stateless MCP servers are designed for simplified deployments where session state is not maintained between requests. 
 These servers are ideal for microservices architectures and cloud-native deployments.
 
-NOTE: They require xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[streamable-HTTP clients] to support the necessary protocols for handling these features.
+TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[Streamable-HTTP clients] to connect to the stateless servers.
 
-NOTE: Stateless servers don't support message requests to the MCP client (e.g., elicitation, sampling, ping).
+NOTE: The stateless servers don't support message requests to the MCP client (e.g., elicitation, sampling, ping).
 
 === Stateless WebMVC Server
 

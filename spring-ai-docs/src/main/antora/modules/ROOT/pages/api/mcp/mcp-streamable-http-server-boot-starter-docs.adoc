@@ -4,7 +4,7 @@
 link:https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http[Streamable-HTTP] MCP servers provide enhanced functionality with support for change notifications and persistent connections. 
 These servers, introduced with spec version link:https://modelcontextprotocol.io/specification/2025-03-26[2025-03-26], are ideal for applications that need to notify clients about dynamic changes to tools, resources, or prompts.
 
-NOTE: They require xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[streamable-HTTP clients] to support the necessary protocols for handling these features.
+TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[Streamable-HTTP clients] to connect to the Streamable-HTTP servers.
 
 === Streamable-HTTP WebMVC Server
 

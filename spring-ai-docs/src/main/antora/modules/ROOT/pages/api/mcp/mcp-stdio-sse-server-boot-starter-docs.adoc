@@ -3,6 +3,8 @@
 
 The STDIO and SSE MCP Servers support multiple transport mechanisms, each with its dedicated starter.
 
+TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_stdio_transport_properties[STDIO clients]  or xref:api/mcp/mcp-client-boot-starter-docs#_sse_transport_properties[SSE clients] to connect to the STDIO and SSE servers.
+
 === STDIO MCP Server
 
 Full MCP Server feature support with `STDIO` server transport.
@@ -102,6 +104,8 @@ All SSE properties are prefixed with `spring.ai.mcp.server`:
 |`base-url` |Optional URL prefix. For example, `base-url=/api/v1` means that the client should access the SSE endpoint at `/api/v1` + `sse-endpoint` and the message endpoint is `/api/v1` + `sse-message-endpoint` |`-`
 |`keep-alive-interval` |Connection keep-alive interval |`null` (disabled)
 |===
+
+NOTE: For backward compatibility reasons, the SSE properties do not have additional suffix (like `.sse`).
 
 == Features and Capabilities
 
@@ -356,12 +360,14 @@ spring:
         version: 1.0.0
         type: SYNC
         instructions: "This server provides weather information tools and resources"
-        sse-message-endpoint: /mcp/messages
         capabilities:
           tool: true
           resource: true
           prompt: true
           completion: true
+        # sse properties
+        sse-message-endpoint: /mcp/messages
+        keep-alive-interval: 30s
 ----
 
 === WebFlux Server Configuration
@@ -376,12 +382,14 @@ spring:
         version: 1.0.0
         type: ASYNC  # Recommended for reactive applications
         instructions: "This reactive server provides weather information tools and resources"
-        sse-message-endpoint: /mcp/messages
         capabilities:
           tool: true
           resource: true
           prompt: true
           completion: true
+        # sse properties
+        sse-message-endpoint: /mcp/messages
+        keep-alive-interval: 30s
 ----
 
 === Creating a Spring Boot Application with MCP Server
