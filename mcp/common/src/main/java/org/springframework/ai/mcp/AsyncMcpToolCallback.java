@@ -95,6 +95,10 @@ public class AsyncMcpToolCallback implements ToolCallback {
 			.build();
 	}
 
+	public Tool getTool() {
+		return this.tool;
+	}
+
 	/**
 	 * Executes the tool with the provided input asynchronously.
 	 * <p>
