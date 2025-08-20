@@ -1,5 +1,5 @@
 name: Main Push - Fast
-run-name: ${{ github.event.inputs.commit_sha && format('Manual Test - {0}', github.event.inputs.commit_sha) || format('Fast Build - {0}', split(github.event.head_commit.message, '\n')[0]) }}
+run-name: ${{ github.event.inputs.commit_sha && format('Manual Test - {0}', github.event.inputs.commit_sha) || format('Fast Build - {0}', github.sha) }}
 
 on:
   push:
