@@ -91,7 +91,7 @@ class OpenAiChatOptionsTests {
 					"streamOptions", "seed", "stop", "temperature", "topP", "tools", "toolChoice", "user",
 					"parallelToolCalls", "store", "metadata", "reasoningEffort", "internalToolExecutionEnabled",
 					"httpHeaders", "toolContext")
-			.containsExactly("test-model", 0.5, logitBias, true, 5, 100, 50, 2, outputModalities, outputAudio, 0.8,
+			.containsExactly("test-model", 0.5, logitBias, true, 5, null, 50, 2, outputModalities, outputAudio, 0.8,
 					responseFormat, streamOptions, 12345, stopSequences, 0.7, 0.9, tools, toolChoice, "test-user", true,
 					false, metadata, "medium", false, Map.of("header1", "value1"), toolContext);
 
@@ -120,8 +120,8 @@ class OpenAiChatOptionsTests {
 			.logitBias(logitBias)
 			.logprobs(true)
 			.topLogprobs(5)
-			.maxTokens(100)
-			.maxCompletionTokens(50)
+			.maxCompletionTokens(50) // Only set maxCompletionTokens to avoid validation
+										// conflict
 			.N(2)
 			.outputModalities(outputModalities)
 			.outputAudio(outputAudio)
@@ -447,6 +447,84 @@ class OpenAiChatOptionsTests {
 		// Verify copy is unchanged
 		assertThat(copied.getModel()).isEqualTo("original-model");
 		assertThat(copied.getTemperature()).isEqualTo(0.5);
+	}
+
+	@Test
+	void testMaxTokensMutualExclusivityValidation() {
+		// Test that setting maxTokens clears maxCompletionTokens
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxCompletionTokens(100)
+			.maxTokens(50) // This should clear maxCompletionTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(50);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+	}
+
+	@Test
+	void testMaxCompletionTokensMutualExclusivityValidation() {
+		// Test that setting maxCompletionTokens clears maxTokens
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxTokens(50)
+			.maxCompletionTokens(100) // This should clear maxTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void testMaxTokensWithNullDoesNotClearMaxCompletionTokens() {
+		// Test that setting maxTokens to null doesn't trigger validation
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxCompletionTokens(100)
+			.maxTokens(null) // This should not clear maxCompletionTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void testMaxCompletionTokensWithNullDoesNotClearMaxTokens() {
+		// Test that setting maxCompletionTokens to null doesn't trigger validation
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxTokens(50)
+			.maxCompletionTokens(null) // This should not clear maxTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(50);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+	}
+
+	@Test
+	void testBuilderCanSetOnlyMaxTokens() {
+		// Test that we can set only maxTokens without issues
+		OpenAiChatOptions options = OpenAiChatOptions.builder().maxTokens(100).build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(100);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+	}
+
+	@Test
+	void testBuilderCanSetOnlyMaxCompletionTokens() {
+		// Test that we can set only maxCompletionTokens without issues
+		OpenAiChatOptions options = OpenAiChatOptions.builder().maxCompletionTokens(150).build();
+
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(150);
+	}
+
+	@Test
+	void testSettersMutualExclusivityNotEnforced() {
+		// Test that direct setters do NOT enforce mutual exclusivity (only builder does)
+		OpenAiChatOptions options = new OpenAiChatOptions();
+		options.setMaxTokens(50);
+		options.setMaxCompletionTokens(100);
+
+		// Both should be set when using setters directly
+		assertThat(options.getMaxTokens()).isEqualTo(50);
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
 	}
 
 }
