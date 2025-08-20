@@ -62,9 +62,9 @@ class CITestDiscovery:
             pr_head = os.environ.get('GITHUB_HEAD_HEAD')   # PRs  
             branch = os.environ.get('GITHUB_REF_NAME')    # pushes
             
-            # For maintenance branches (cherry-picks), use single commit diff
-            if branch and branch.endswith('.x'):
-                # Maintenance branch - use diff with previous commit
+            # For maintenance branches (cherry-picks) or main branch pushes, use single commit diff
+            if (branch and branch.endswith('.x')) or (branch == 'main'):
+                # Maintenance branch or main branch - use diff with previous commit
                 cmd = ["git", "diff", "--name-only", "HEAD~1", "HEAD"]
             elif base_ref:
                 # Explicit base reference provided - use two-dot diff for direct comparison
@@ -112,9 +112,15 @@ class CITestDiscovery:
         
         for file_path in changed_files:
             module = self._find_module_for_file(file_path)
-            if module:
+            # DEBUG: Print what we're finding
+            print(f"DEBUG: file={file_path} -> module={module}", file=sys.stderr)
+            if module and module != ".":  # Exclude root module to prevent full builds
                 modules.add(module)
+                print(f"DEBUG: Added module: {module}", file=sys.stderr)
+            elif module == ".":
+                print(f"DEBUG: Excluded root module for file: {file_path}", file=sys.stderr)
         
+        print(f"DEBUG: Final modules before return: {sorted(list(modules))}", file=sys.stderr)
         return sorted(list(modules))
     
     def _find_module_for_file(self, file_path: str) -> Optional[str]:
@@ -128,25 +134,32 @@ class CITestDiscovery:
         
         for i in range(len(path_parts), 0, -1):
             potential_module = '/'.join(path_parts[:i])
+            # Handle root case - empty string becomes "."
+            if not potential_module:
+                potential_module = "."
             pom_path = self.repo_root / potential_module / "pom.xml"
             
             if pom_path.exists():
+                # Never return root module to prevent full builds
+                if potential_module == ".":
+                    return None
                 # Found a module - return the relative path from repo root
                 return potential_module
         
-        # Check if it's in the root module
-        if (self.repo_root / "pom.xml").exists():
-            return "."
-        
+        # Never return root module to prevent full builds
         return None
     
     def _is_relevant_file(self, file_path: str) -> bool:
         """Check if a file is relevant for module discovery"""
+        # Always exclude root pom.xml to prevent full builds
+        if file_path == 'pom.xml':
+            return False
+            
         # Include Java source and test files
         if file_path.endswith('.java'):
             return True
         
-        # Include build files
+        # Include build files (but not root pom.xml - handled above)
         if file_path.endswith('pom.xml'):
             return True
         
@@ -179,8 +192,9 @@ class CITestDiscovery:
         branch = os.environ.get('GITHUB_REF_NAME')
         
         # Show the actual strategy being used
-        if branch and branch.endswith('.x'):
-            return f"git diff HEAD~1 HEAD (maintenance branch {branch})"
+        if (branch and branch.endswith('.x')) or (branch == 'main'):
+            branch_type = "maintenance" if branch.endswith('.x') else "main"
+            return f"git diff HEAD~1 HEAD ({branch_type} branch {branch})"
         elif pr_base:
             return f"origin/{pr_base} (PR base)"
         elif branch:
