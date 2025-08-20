@@ -19,6 +19,8 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -91,9 +93,17 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
 			.build();
 
-		// 4. Add the new user message to the conversation memory.
+		// 4. Add user message and system message to the conversation memory: if the
+		// current conversation is the first round, or if the `systemMessage` has been
+		// updated, add both to the conversation memory.
+		SystemMessage systemMessage = chatClientRequest.prompt().getSystemMessage();
 		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.chatMemory.add(conversationId, userMessage);
+		if (CollectionUtils.isEmpty(memoryMessages) || !memoryMessages.contains(systemMessage)) {
+			this.chatMemory.add(conversationId, List.of(systemMessage, userMessage));
+		}
+		else {
+			this.chatMemory.add(conversationId, userMessage);
+		}
 
 		return processedChatClientRequest;
 	}
