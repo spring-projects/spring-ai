@@ -79,9 +79,9 @@ public final class McpToolUtils {
 
 		String input = prefix + "_" + toolName;
 
-		// Replace any character that isn't alphanumeric, underscore, or hyphen with
-		// concatenation
-		String formatted = input.replaceAll("[^a-zA-Z0-9_-]", "");
+		// Replace any character that isn't alphanumeric, underscore, hyphen, or Chinese 
+		// characters with empty string
+		String formatted = input.replaceAll("[^a-zA-Z0-9_\u4e00-\u9fa5]", "");
 
 		formatted = formatted.replaceAll("-", "_");
 
