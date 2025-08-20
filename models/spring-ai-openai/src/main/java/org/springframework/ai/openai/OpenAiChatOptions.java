@@ -30,6 +30,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -54,6 +57,8 @@ import org.springframework.util.Assert;
  */
 @JsonInclude(Include.NON_NULL)
 public class OpenAiChatOptions implements ToolCallingChatOptions {
+
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatOptions.class);
 
 	// @formatter:off
 	/**
@@ -84,13 +89,31 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 */
 	private @JsonProperty("top_logprobs") Integer topLogprobs;
 	/**
-	 * The maximum number of tokens to generate in the chat completion. The total length of input
-	 * tokens and generated tokens is limited by the model's context length.
+	 * The maximum number of tokens to generate in the chat completion.
+	 * The total length of input tokens and generated tokens is limited by the model's context length.
+	 *
+	 * <p><strong>Model-specific usage:</strong></p>
+	 * <ul>
+	 * <li><strong>Use for non-reasoning models</strong> (e.g., gpt-4o, gpt-3.5-turbo)</li>
+	 * <li><strong>Cannot be used with reasoning models</strong> (e.g., o1, o3, o4-mini series)</li>
+	 * </ul>
+	 *
+	 * <p><strong>Mutual exclusivity:</strong> This parameter cannot be used together with
+	 * {@link #maxCompletionTokens}. Setting both will result in an API error.</p>
 	 */
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
 	 * An upper bound for the number of tokens that can be generated for a completion,
 	 * including visible output tokens and reasoning tokens.
+	 *
+	 * <p><strong>Model-specific usage:</strong></p>
+	 * <ul>
+	 * <li><strong>Required for reasoning models</strong> (e.g., o1, o3, o4-mini series)</li>
+	 * <li><strong>Cannot be used with non-reasoning models</strong> (e.g., gpt-4o, gpt-3.5-turbo)</li>
+	 * </ul>
+	 *
+	 * <p><strong>Mutual exclusivity:</strong> This parameter cannot be used together with
+	 * {@link #maxTokens}. Setting both will result in an API error.</p>
 	 */
 	private @JsonProperty("max_completion_tokens") Integer maxCompletionTokens;
 	/**
@@ -678,12 +701,72 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
+		/**
+		 * Sets the maximum number of tokens to generate in the chat completion. The total
+		 * length of input tokens and generated tokens is limited by the model's context
+		 * length.
+		 *
+		 * <p>
+		 * <strong>Model-specific usage:</strong>
+		 * </p>
+		 * <ul>
+		 * <li><strong>Use for non-reasoning models</strong> (e.g., gpt-4o,
+		 * gpt-3.5-turbo)</li>
+		 * <li><strong>Cannot be used with reasoning models</strong> (e.g., o1, o3,
+		 * o4-mini series)</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * <strong>Mutual exclusivity:</strong> This parameter cannot be used together
+		 * with {@link #maxCompletionTokens(Integer)}. If both are set, the last one set
+		 * will be used and the other will be cleared with a warning.
+		 * </p>
+		 * @param maxTokens the maximum number of tokens to generate, or null to unset
+		 * @return this builder instance
+		 */
 		public Builder maxTokens(Integer maxTokens) {
+			if (maxTokens != null && this.options.maxCompletionTokens != null) {
+				logger
+					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+							+ "The previously set maxCompletionTokens ({}) will be cleared and maxTokens ({}) will be used.",
+							this.options.maxCompletionTokens, maxTokens);
+				this.options.maxCompletionTokens = null;
+			}
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
+		/**
+		 * Sets an upper bound for the number of tokens that can be generated for a
+		 * completion, including visible output tokens and reasoning tokens.
+		 *
+		 * <p>
+		 * <strong>Model-specific usage:</strong>
+		 * </p>
+		 * <ul>
+		 * <li><strong>Required for reasoning models</strong> (e.g., o1, o3, o4-mini
+		 * series)</li>
+		 * <li><strong>Cannot be used with non-reasoning models</strong> (e.g., gpt-4o,
+		 * gpt-3.5-turbo)</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * <strong>Mutual exclusivity:</strong> This parameter cannot be used together
+		 * with {@link #maxTokens(Integer)}. If both are set, the last one set will be
+		 * used and the other will be cleared with a warning.
+		 * </p>
+		 * @param maxCompletionTokens the maximum number of completion tokens to generate,
+		 * or null to unset
+		 * @return this builder instance
+		 */
 		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
+			if (maxCompletionTokens != null && this.options.maxTokens != null) {
+				logger
+					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+							+ "The previously set maxTokens ({}) will be cleared and maxCompletionTokens ({}) will be used.",
+							this.options.maxTokens, maxCompletionTokens);
+				this.options.maxTokens = null;
+			}
 			this.options.maxCompletionTokens = maxCompletionTokens;
 			return this;
 		}
