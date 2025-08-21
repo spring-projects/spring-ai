@@ -77,7 +77,7 @@ import reactor.core.publisher.Mono;
 				"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration",
 				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
 				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
-@ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
+@ConditionalOnClass({ McpSchema.class })
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerChangeNotificationProperties.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)

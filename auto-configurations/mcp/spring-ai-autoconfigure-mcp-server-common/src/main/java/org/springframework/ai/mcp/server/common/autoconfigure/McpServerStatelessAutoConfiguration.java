@@ -29,7 +29,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase;
 import org.springframework.core.env.Environment;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
@@ -55,10 +54,10 @@ import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 /**
  * @author Christian Tzolov
  */
-@AutoConfiguration(
-		afterName = { "org.springframework.ai.mcp.server.autoconfigure.StatelessToolCallbackConverterAutoConfiguration",
-				"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebFluxAutoConfiguration",
-				"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebMvcAutoConfiguration" })
+@AutoConfiguration(afterName = {
+		"org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration",
+		"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebFluxAutoConfiguration",
+		"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebMvcAutoConfiguration" })
 @ConditionalOnClass({ McpSchema.class })
 @EnableConfigurationProperties(McpServerProperties.class)
 @Conditional({ McpServerStdioDisabledCondition.class,
