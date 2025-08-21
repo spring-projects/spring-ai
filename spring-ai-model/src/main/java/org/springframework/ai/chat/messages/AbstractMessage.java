@@ -54,6 +54,11 @@ public abstract class AbstractMessage implements Message {
 	protected final String textContent;
 
 	/**
+	 * Cache field.
+	 */
+	protected String cache;
+
+	/**
 	 * Additional options for the message to influence the response, not a generative map.
 	 */
 	protected final Map<String, Object> metadata;
@@ -64,8 +69,10 @@ public abstract class AbstractMessage implements Message {
 	 * @param messageType the message type
 	 * @param textContent the text content
 	 * @param metadata the metadata
+	 * @param cache the cache
 	 */
-	protected AbstractMessage(MessageType messageType, @Nullable String textContent, Map<String, Object> metadata) {
+	protected AbstractMessage(MessageType messageType, @Nullable String textContent, Map<String, Object> metadata,
+			String cache) {
 		Assert.notNull(messageType, "Message type must not be null");
 		if (messageType == MessageType.SYSTEM || messageType == MessageType.USER) {
 			Assert.notNull(textContent, "Content must not be null for SYSTEM or USER messages");
@@ -75,6 +82,18 @@ public abstract class AbstractMessage implements Message {
 		this.textContent = textContent;
 		this.metadata = new HashMap<>(metadata);
 		this.metadata.put(MESSAGE_TYPE, messageType);
+		this.cache = cache;
+	}
+
+	/**
+	 * Create a new AbstractMessage with the given message type, text content, and
+	 * metadata.
+	 * @param messageType the message type
+	 * @param textContent the text content
+	 * @param metadata the metadata
+	 */
+	protected AbstractMessage(MessageType messageType, @Nullable String textContent, Map<String, Object> metadata) {
+		this(messageType, textContent, metadata, null);
 	}
 
 	/**
@@ -84,9 +103,19 @@ public abstract class AbstractMessage implements Message {
 	 * @param metadata the metadata
 	 */
 	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> metadata) {
-		Assert.notNull(messageType, "Message type must not be null");
+		this(messageType, resource, metadata, null);
+	}
+
+	/**
+	 * Create a new AbstractMessage with the given message type, resource, metadata, and
+	 * cache.
+	 * @param messageType the message type
+	 * @param resource the resource
+	 * @param metadata the metadata
+	 * @param cache the cache
+	 */
+	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> metadata, String cache) {
 		Assert.notNull(resource, "Resource must not be null");
-		Assert.notNull(metadata, "Metadata must not be null");
 		try (InputStream inputStream = resource.getInputStream()) {
 			this.textContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
 		}
@@ -96,6 +125,7 @@ public abstract class AbstractMessage implements Message {
 		this.messageType = messageType;
 		this.metadata = new HashMap<>(metadata);
 		this.metadata.put(MESSAGE_TYPE, messageType);
+		this.cache = cache;
 	}
 
 	/**
@@ -118,6 +148,14 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	/**
+	 * Get the cache value for this message.
+	 * @return The cache value.
+	 */
+	public String getCache() {
+		return this.cache;
+	}
+
+	/**
 	 * Get the message type of the message.
 	 * @return the message type of the message
 	 */
@@ -135,12 +173,12 @@ public abstract class AbstractMessage implements Message {
 			return false;
 		}
 		return this.messageType == that.messageType && Objects.equals(this.textContent, that.textContent)
-				&& Objects.equals(this.metadata, that.metadata);
+				&& Objects.equals(this.metadata, that.metadata) && Objects.equals(this.cache, that.cache);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.messageType, this.textContent, this.metadata);
+		return Objects.hash(this.messageType, this.textContent, this.metadata, this.cache);
 	}
 
 }
