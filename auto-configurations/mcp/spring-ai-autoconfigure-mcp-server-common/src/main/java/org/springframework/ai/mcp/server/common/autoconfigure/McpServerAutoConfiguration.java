@@ -23,11 +23,11 @@ import java.util.function.BiFunction;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
+import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -71,23 +71,44 @@ import reactor.core.publisher.Mono;
  * @since 1.0.0
  * @see McpServerProperties
  */
-@AutoConfiguration(afterName = {
-		"org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration",
-		"org.springframework.ai.mcp.server.streamable.webflux.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
-		"org.springframework.ai.mcp.server.streamable.webflux.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
-@ConditionalOnClass({ McpSchema.class, McpSyncServer.class })
+@AutoConfiguration(
+		afterName = { "org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration",
+				"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration",
+				"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration",
+				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
+				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
+@ConditionalOnClass({ McpSchema.class })
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerChangeNotificationProperties.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
+@Conditional(McpServerAutoConfiguration.NonStatlessServerCondition.class)
 public class McpServerAutoConfiguration {
 
 	private static final LogAccessor logger = new LogAccessor(McpServerAutoConfiguration.class);
 
-	public static class EnabledNonStatlessServerCondition extends AllNestedConditions {
+	public static class NonStatlessServerCondition extends AnyNestedCondition {
 
-		public EnabledNonStatlessServerCondition() {
+		public NonStatlessServerCondition() {
+			super(ConfigurationPhase.PARSE_CONFIGURATION);
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "SSE",
+				matchIfMissing = true)
+		static class SseEnabledCondition {
+
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol",
+				havingValue = "STREAMABLE", matchIfMissing = false)
+		static class StreamableEnabledCondition {
+
+		}
+
+	}
+
+	public static class EnabledSseServerCondition extends AllNestedConditions {
+
+		public EnabledSseServerCondition() {
 			super(ConfigurationPhase.PARSE_CONFIGURATION);
 		}
 
@@ -97,9 +118,29 @@ public class McpServerAutoConfiguration {
 
 		}
 
-		@ConditionalOnProperty(prefix = McpServerStreamableHttpProperties.CONFIG_PREFIX, name = "stateless",
-				havingValue = "false", matchIfMissing = true)
-		static class StatelessEnabledCondition {
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "SSE",
+				matchIfMissing = true)
+		static class SseEnabledCondition {
+
+		}
+
+	}
+
+	public static class EnabledStreamableServerCondition extends AllNestedConditions {
+
+		public EnabledStreamableServerCondition() {
+			super(ConfigurationPhase.PARSE_CONFIGURATION);
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+				matchIfMissing = true)
+		static class McpServerEnabledCondition {
+
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol",
+				havingValue = "STREAMABLE", matchIfMissing = false)
+		static class StreamableEnabledCondition {
 
 		}
 

@@ -9,10 +9,10 @@
 		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
-	<artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
+	<artifactId>spring-ai-autoconfigure-mcp-server-webmvc</artifactId>
 	<packaging>jar</packaging>
-	<name>Spring AI MCP Server Common Auto Configuration for STDIO, SSE and Streamable-HTTP</name>
-	<description>Spring AI MCP Server Common Auto Configuration for STDIO, SSE and Streamable-HTTP</description>
+	<name>Spring AI MCP Server WebMVC Auto Configuration</name>
+	<description>Spring AI MCP Server WebMVC Auto Configuration</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -23,6 +23,12 @@
 
 	<dependencies>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
@@ -36,8 +42,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
+			<groupId>io.modelcontextprotocol.sdk</groupId>
+			<artifactId>mcp-spring-webmvc</artifactId>
 			<optional>true</optional>
 		</dependency>
 

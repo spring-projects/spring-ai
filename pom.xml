@@ -119,14 +119,9 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
 
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-properties</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-sse</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-streamable-webflux</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-streamable-webmvc</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-webflux</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
@@ -223,11 +218,6 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
 		
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-streamable-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-streamable-webmvc</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-stateless-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-stateless-webmvc</module>
-
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>

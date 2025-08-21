@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
-org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration
-org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration
-org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration
+org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration
+org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration
+org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebFluxAutoConfiguration

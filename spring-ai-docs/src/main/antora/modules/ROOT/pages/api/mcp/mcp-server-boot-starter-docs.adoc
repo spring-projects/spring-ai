@@ -15,16 +15,22 @@ The MCP Server Boot Starters offer:
 * Flexible tool, resource, and prompt specification
 * Change notification capabilities
 
-== Sync/Async Server API Options
+== MCP Server Boot Starters
 
-* **Synchronous Server** - The default server type implemented using `McpSyncServer`.
-It is designed for straightforward request-response patterns in your applications.
-To enable this server type, set `spring.ai.mcp.server.type=SYNC` in your configuration.
-When activated, it automatically handles the configuration of synchronous tool specifications.
+MCP Servers support multiple protocol and transport mechanisms.
+Use the dedicated starter and the correct `spring.ai.mcp.server.protocol` property to configure your server:
 
-* **Asynchronous Server** - The asynchronous server implementation uses `McpAsyncServer` and is optimized for non-blocking operations.
-To enable this server type, configure your application with `spring.ai.mcp.server.type=ASYNC`.
-This server type automatically sets up asynchronous tool specifications with built-in Project Reactor support.
+[options="header"]
+|===
+|Server Type | Dependency | Property
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[Standard Input/Output (STDIO)] | `spring-ai-starter-mcp-server` | `spring.ai.mcp.server.stdio=true`
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webmvc_serve[SSE Spring MVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webflux_serve[SSE Spring WebFlux (Reactive)] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webmvc_server[Streamable-HTTP Spring MVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STREAMABLE`
+| xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webflux_server[Streamable-HTTP Spring WebFlux (Reactive)] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STREAMABLE`
+| xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webmvc_server[Stateless Spring MVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STATLESS`
+| xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webflux_server[Stateless Spring WebFlux (Reactive)] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STATLESS`
+|===
 
 == Server Capabilities
 
@@ -40,23 +46,28 @@ Depending on the server and transport types, MCP Servers can support various cap
 
 All capabilities are enabled by default. Disabling a capability will prevent the server from registering and exposing the corresponding features to clients.
 
-== Transport Options
+== Server Protocols
 
-MCP Servers support multiple transport mechanisms, each with its dedicated starter:
+MCP provides several protocol types including:
 
-* Standard Input/Output (STDIO) - `spring-ai-starter-mcp-server`
-* SSE Spring MVC - `spring-ai-starter-mcp-server-webmvc`
-* SSE Spring WebFlux (Reactive) - `spring-ai-starter-mcp-server-webflux`
-* Streamable-HTTP Spring MVC - `spring-ai-starter-mcp-server-streamable-webmvc`
-* Streamable-HTTP Spring WebFlux (Reactive) - `spring-ai-starter-mcp-server-streamable-webflux`
-* Stateless Spring MVC - `spring-ai-starter-mcp-server-stateless-webmvc`
-* Stateless Spring WebFlux (Reactive) - `spring-ai-starter-mcp-server-stateless-webflux`
+* xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[**STDIO**] - In process (e.g. server runs inside the host application) protocol. Communication is over standard in and standard out. To enable the `STDIO` set `spring.ai.mcp.server.stdio=true`.
+* xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webmvc_server[**SSE**] - Server-sent events protocol for real-time updates. The server operates as an independent process that can handle multiple client connections.
+* xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc[**Streamable-HTTP**] - The link:https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http[Streamable HTTP transport] allows MCP servers to operate as independent processes that can handle multiple client connections using HTTP POST and GET requests, with optional Server-Sent Events (SSE) streaming for multiple server messages. It replaces the SSE transport. To enable the `STREAMABLE` protocol, set `spring.ai.mcp.server.protocol=STREAMABLE`.
+* xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc[**Stateless**] - Stateless MCP servers are designed for simplified deployments where session state is not maintained between requests.
+They are ideal for microservices architectures and cloud-native deployments. To enable the `STATELESS` protocol, set `spring.ai.mcp.server.protocol=STATELESS`.
 
-Choose one of the following starters based on your transport and feature requirements:
+== Sync/Async Server API Options
 
-- xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[STDIO and SSE MCP Servers]
-- xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc[Streamable-HTTP MCP Servers]
-- xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc[Stateless MCP Servers]
+The MCP Server API supports imperative (e.g. synchronous) and reactive (e.g. asynchronous) programming models.
+
+* **Synchronous Server** - The default server type implemented using `McpSyncServer`.
+It is designed for straightforward request-response patterns in your applications.
+To enable this server type, set `spring.ai.mcp.server.type=SYNC` in your configuration.
+When activated, it automatically handles the configuration of synchronous tool specifications.
+
+* **Asynchronous Server** - The asynchronous server implementation uses `McpAsyncServer` and is optimized for non-blocking operations.
+To enable this server type, configure your application with `spring.ai.mcp.server.type=ASYNC`.
+This server type automatically sets up asynchronous tool specifications with built-in Project Reactor support.
 
 
 == Example Applications
