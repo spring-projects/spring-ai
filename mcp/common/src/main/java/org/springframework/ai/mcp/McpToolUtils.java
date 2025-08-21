@@ -201,7 +201,7 @@ public final class McpToolUtils {
 
 		return new McpStatelessServerFeatures.SyncToolSpecification(tool, (mcpTransportContext, request) -> {
 			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
+				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, mcpTransportContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					return new McpSchema.CallToolResult(List
