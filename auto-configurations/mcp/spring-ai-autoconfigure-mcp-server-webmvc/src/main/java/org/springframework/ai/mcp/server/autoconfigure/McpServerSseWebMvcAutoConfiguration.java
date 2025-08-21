@@ -22,7 +22,6 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -63,7 +62,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @author Christian Tzolov
  * @author Yanming Zhou
  * @since 1.0.0
- * @see McpServerProperties
+ * @see McpServerSseProperties
  * @see WebMvcSseServerTransportProvider
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
