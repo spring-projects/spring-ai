@@ -4,7 +4,7 @@
 link:https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http[Streamable-HTTP] MCP servers provide enhanced functionality with support for change notifications and persistent connections. 
 These servers, introduced with spec version link:https://modelcontextprotocol.io/specification/2025-03-26[2025-03-26], are ideal for applications that need to notify clients about dynamic changes to tools, resources, or prompts.
 
-NOTE: They require xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[streamable-HTTP clients] to support the necessary protocols for handling these features.
+TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[Streamable-HTTP clients] to connect to the Streamable-HTTP servers.
 
 === Streamable-HTTP WebMVC Server
 
@@ -36,7 +36,9 @@ NOTE: They require xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_tr
 
 == Configuration Properties
 
-All properties are prefixed with `spring.ai.mcp.server.streamable-http`:
+=== Common Properties
+
+All common properties are prefixed with `spring.ai.mcp.server`:
 
 [options="header"]
 |===
@@ -55,19 +57,29 @@ All properties are prefixed with `spring.ai.mcp.server.streamable-http`:
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
 |`tool-response-mime-type` |Response MIME type per tool name |`-`
-|`mcp-endpoint` |Custom MCP endpoint path |`/mcp`
 |`request-timeout` |Request timeout duration |`20 seconds`
+|===
+
+=== Streamable-HTTP Properties
+
+All streamable-HTTP properties are prefixed with `spring.ai.mcp.server.streamable-http`:
+
+[options="header"]
+|===
+|Property |Description |Default
+|`mcp-endpoint` |Custom MCP endpoint path |`/mcp`
 |`keep-alive-interval` |Connection keep-alive interval |`null` (disabled)
+|`disallow-delete` |Disallow delete operations |`false`
 |===
 
 == Features and Capabilities
 
 The MCP Server supports four main capability types that can be individually enabled or disabled:
 
-- **Tools** - Enable/disable tool capabilities with `spring.ai.mcp.server.streamable-http.capabilities.tool=true|false`
-- **Resources** - Enable/disable resource capabilities with `spring.ai.mcp.server.streamable-http.capabilities.resource=true|false`
-- **Prompts** - Enable/disable prompt capabilities with `spring.ai.mcp.server.streamable-http.capabilities.prompt=true|false`
-- **Completions** - Enable/disable completion capabilities with `spring.ai.mcp.server.streamable-http.capabilities.completion=true|false`
+- **Tools** - Enable/disable tool capabilities with `spring.ai.mcp.server.capabilities.tool=true|false`
+- **Resources** - Enable/disable resource capabilities with `spring.ai.mcp.server.capabilities.resource=true|false`
+- **Prompts** - Enable/disable prompt capabilities with `spring.ai.mcp.server.capabilities.prompt=true|false`
+- **Completions** - Enable/disable completion capabilities with `spring.ai.mcp.server.capabilities.completion=true|false`
 
 All capabilities are enabled by default. Disabling a capability will prevent the server from registering and exposing the corresponding features to clients.
 
@@ -307,15 +319,17 @@ NOTE: Currently, for streamable-http servers, the keep-alive mechanism is availa
 spring:
   ai:
     mcp:
-      server:
+      server:        
+        name: streamable-mcp-server
+        version: 1.0.0
+        type: SYNC
+        instructions: "This streamable server provides real-time notifications"
+        resource-change-notification: true
+        tool-change-notification: true
+        prompt-change-notification: true
         streamable-http:
-          name: streamable-mcp-server
-          version: 1.0.0
-          type: SYNC
-          instructions: "This streamable server provides real-time notifications"
-          resource-change-notification: true
-          tool-change-notification: true
-          prompt-change-notification: true
+          mcp-endpoint: /api/mcp
+          keep-alive-interval: 30s
 ----
 
 
