@@ -55,6 +55,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-vector-store-elasticsearch</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-weaviate</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
@@ -131,6 +136,14 @@
             <version>${project.parent.version}</version>
             <optional>true</optional>
         </dependency>
+
+		<!-- Elasticsearch Vector Store -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-elasticsearch-store</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
 
         <!-- Weaviate Vector Store -->
         <dependency>

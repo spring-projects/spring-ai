@@ -1,0 +1,9 @@
+services:
+  elasticsearch:
+    image: '{imageName}'
+    ports:
+      - '9200'
+    environment:
+      - ELASTIC_PASSWORD=Ym9vcCE=
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms128m -Xmx512m
