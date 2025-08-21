@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-autoconfigure-mcp-streamable-server-webmvc</artifactId>
+            <artifactId>spring-ai-autoconfigure-mcp-server-streamable-webmvc</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

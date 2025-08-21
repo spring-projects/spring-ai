@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-autoconfigure-mcp-stateless-server-webflux</artifactId>
+            <artifactId>spring-ai-autoconfigure-mcp-server-stateless-webflux</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

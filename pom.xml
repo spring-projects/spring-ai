@@ -119,13 +119,14 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
 
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-streamable-server-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-streamable-server-webflux</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-streamable-server-webmvc</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-stateless-server-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-stateless-server-webflux</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-stateless-server-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-properties</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-sse</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-streamable-webflux</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-streamable-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-webflux</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-webmvc</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>

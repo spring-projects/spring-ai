@@ -551,43 +551,43 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-sse</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-streamable-server-common</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-properties</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-streamable-server-webflux</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-streamable-webflux</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-streamable-server-webmvc</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-streamable-webmvc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-stateless-server-common</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-stateless-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-stateless-server-webflux</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-stateless-webflux</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-stateless-server-webmvc</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-stateless-webmvc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -1065,6 +1065,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-common</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
