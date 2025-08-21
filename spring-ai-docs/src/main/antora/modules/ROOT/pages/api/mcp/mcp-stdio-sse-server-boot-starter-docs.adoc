@@ -3,6 +3,8 @@
 
 The STDIO and SSE MCP Servers support multiple transport mechanisms, each with its dedicated starter.
 
+TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_stdio_transport_properties[STDIO clients]  or xref:api/mcp/mcp-client-boot-starter-docs#_sse_transport_properties[SSE clients] to connect to the STDIO and SSE servers.
+
 === STDIO MCP Server
 
 Full MCP Server feature support with `STDIO` server transport.
@@ -65,7 +67,9 @@ Due to Spring Boot's default behavior, when both `org.springframework.web.servle
 
 == Configuration Properties
 
-All properties are prefixed with `spring.ai.mcp.server`:
+=== Common Properties
+
+All Common properties are prefixed with `spring.ai.mcp.server`:
 
 [options="header"]
 |===
@@ -85,12 +89,23 @@ All properties are prefixed with `spring.ai.mcp.server`:
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
 |`tool-response-mime-type` |Optional response MIME type per tool name. For example, `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will associate the `image/png` MIME type with the `generateImage()` tool name |`-`
+|`request-timeout` |Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations |`20 seconds`
+|===
+
+=== SSE Properties
+
+All SSE properties are prefixed with `spring.ai.mcp.server`:
+
+[options="header"]
+|===
+|Property |Description |Default
 |`sse-message-endpoint` |Custom SSE message endpoint path for web transport to be used by the client to send messages |`/mcp/message`
 |`sse-endpoint` |Custom SSE endpoint path for web transport |`/sse`
 |`base-url` |Optional URL prefix. For example, `base-url=/api/v1` means that the client should access the SSE endpoint at `/api/v1` + `sse-endpoint` and the message endpoint is `/api/v1` + `sse-message-endpoint` |`-`
-|`request-timeout` |Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations |`20 seconds`
 |`keep-alive-interval` |Connection keep-alive interval |`null` (disabled)
 |===
+
+NOTE: For backward compatibility reasons, the SSE properties do not have additional suffix (like `.sse`).
 
 == Features and Capabilities
 
@@ -345,12 +360,14 @@ spring:
         version: 1.0.0
         type: SYNC
         instructions: "This server provides weather information tools and resources"
-        sse-message-endpoint: /mcp/messages
         capabilities:
           tool: true
           resource: true
           prompt: true
           completion: true
+        # sse properties
+        sse-message-endpoint: /mcp/messages
+        keep-alive-interval: 30s
 ----
 
 === WebFlux Server Configuration
@@ -365,12 +382,14 @@ spring:
         version: 1.0.0
         type: ASYNC  # Recommended for reactive applications
         instructions: "This reactive server provides weather information tools and resources"
-        sse-message-endpoint: /mcp/messages
         capabilities:
           tool: true
           resource: true
           prompt: true
           completion: true
+        # sse properties
+        sse-message-endpoint: /mcp/messages
+        keep-alive-interval: 30s
 ----
 
 === Creating a Spring Boot Application with MCP Server
