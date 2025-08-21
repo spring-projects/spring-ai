@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-autoconfigure-mcp-server-sse</artifactId>
+            <artifactId>spring-ai-autoconfigure-mcp-server-webflux</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
