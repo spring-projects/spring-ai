@@ -34,9 +34,12 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.retry.support.RetryTemplateBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,13 +63,15 @@ public class OpenAiCompatibleChatModelIT {
 			.defaultOptions(forModelName("gpt-3.5-turbo"))
 			.build());
 
-		// (26.01.2025) Disable because the Groq API is down. TODO: Re-enable when the API
-		// is back up.
-		// if (System.getenv("GROQ_API_KEY") != null) {
-		// builder.add(new OpenAiChatModel(new OpenAiApi("https://api.groq.com/openai",
-		// System.getenv("GROQ_API_KEY")),
-		// forModelName("llama3-8b-8192")));
-		// }
+		if (System.getenv("GROQ_API_KEY") != null) {
+			builder.add(OpenAiChatModel.builder()
+				.openAiApi(OpenAiApi.builder()
+					.baseUrl("https://api.groq.com/openai")
+					.apiKey(System.getenv("GROQ_API_KEY"))
+					.build()) 
+				.defaultOptions(forModelName("llama3-8b-8192"))
+				.build());
+		}
 
 		if (System.getenv("OPEN_ROUTER_API_KEY") != null) {
 			builder.add(OpenAiChatModel.builder()
