@@ -23,6 +23,8 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @see org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration
+ * @see org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration
  */
 @ConfigurationProperties(McpServerSseProperties.CONFIG_PREFIX)
 public class McpServerSseProperties {

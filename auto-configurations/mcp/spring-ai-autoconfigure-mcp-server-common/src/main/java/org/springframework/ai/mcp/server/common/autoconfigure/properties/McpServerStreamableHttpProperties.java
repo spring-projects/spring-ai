@@ -23,6 +23,10 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @see org.springframework.ai.mcp.server.stateless.webflux.autoconfigure.McpServerStatelessWebFluxAutoConfiguration
+ * @see org.springframework.ai.mcp.server.stateless.webmvc.autoconfigure.McpServerStatelessWebMvcAutoConfiguration
+ * @see org.springframework.ai.mcp.server.streamable.webflux.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration
+ * @see org.springframework.ai.mcp.server.streamable.webmvc.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration
  */
 @ConfigurationProperties(McpServerStreamableHttpProperties.CONFIG_PREFIX)
 public class McpServerStreamableHttpProperties {
