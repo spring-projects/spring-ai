@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
@@ -33,6 +35,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServ
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -123,7 +126,7 @@ public class StatelessWebClientWebFluxServerIT {
 						// TOOLS / SAMPLING / ELICITATION
 
 						// tool list
-						assertThat(mcpClient.listTools().tools()).hasSize(2);
+						assertThat(mcpClient.listTools().tools()).hasSize(3);
 						assertThat(mcpClient.listTools().tools())
 							.contains(Tool.builder().name("tool1").description("tool1 description").inputSchema("""
 									{
@@ -165,6 +168,18 @@ public class StatelessWebClientWebFluxServerIT {
 							.isObject()
 							.isEqualTo(json("""
 									{"result":5.0,"operation":"2 + 3","timestamp":"2024-01-01T10:00:00Z"}"""));
+
+						// TOOL FROM MCP TOOL UTILS
+						// Call the tool to ensure arguments are passed correctly
+						CallToolResult toUpperCaseResponse = mcpClient
+							.callTool(new McpSchema.CallToolRequest("toUpperCase", Map.of("input", "hello world")));
+						assertThat(toUpperCaseResponse).isNotNull();
+						assertThat(toUpperCaseResponse.isError()).isFalse();
+						assertThat(toUpperCaseResponse.content()).hasSize(1)
+							.first()
+							.isInstanceOf(TextContent.class)
+							.extracting("text")
+							.isEqualTo("\"HELLO WORLD\"");
 
 						// PROMPT / COMPLETION
 
@@ -254,7 +269,20 @@ public class StatelessWebClientWebFluxServerIT {
 				})
 				.build();
 
-			return List.of(tool1, tool2);
+			// Tool 3
+
+			// Using a tool with McpToolUtils
+			McpStatelessServerFeatures.SyncToolSpecification tool3 = McpToolUtils
+				.toStatelessSyncToolSpecification(FunctionToolCallback
+					.builder("toUpperCase", (ToUpperCaseRequest req, ToolContext context) -> req.input().toUpperCase())
+					.description("Sets the input string to upper case")
+					.inputType(ToUpperCaseRequest.class)
+					.build(), null);
+
+			return List.of(tool1, tool2, tool3);
+		}
+
+		record ToUpperCaseRequest(String input) {
 		}
 
 		@Bean
