@@ -22,7 +22,9 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+import org.springframework.ai.anthropic.api.AnthropicCacheType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link AnthropicChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Soby Chacko
  */
 class AnthropicChatOptionsTests {
 
@@ -469,6 +472,111 @@ class AnthropicChatOptionsTests {
 
 		assertThat(options.getModel()).isEqualTo("updated-model");
 		assertThat(options.getMaxTokens()).isEqualTo(10);
+	}
+
+	@Test
+	void testCacheControlBuilder() {
+		CacheControl cacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheControl(cacheControl)
+			.build();
+
+		assertThat(options.getCacheControl()).isEqualTo(cacheControl);
+		assertThat(options.getCacheControl().type()).isEqualTo("ephemeral");
+	}
+
+	@Test
+	void testCacheControlDefaultValue() {
+		AnthropicChatOptions options = new AnthropicChatOptions();
+		assertThat(options.getCacheControl()).isNull();
+	}
+
+	@Test
+	void testCacheControlEqualsAndHashCode() {
+		CacheControl cacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
+
+		AnthropicChatOptions options1 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheControl(cacheControl)
+			.build();
+
+		AnthropicChatOptions options2 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheControl(AnthropicCacheType.EPHEMERAL.cacheControl())
+			.build();
+
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder().model("test-model").build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+
+		assertThat(options1).isNotEqualTo(options3);
+		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+	}
+
+	@Test
+	void testCacheControlCopy() {
+		CacheControl originalCacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
+
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheControl(originalCacheControl)
+			.build();
+
+		AnthropicChatOptions copied = original.copy();
+
+		assertThat(copied).isNotSameAs(original).isEqualTo(original);
+		assertThat(copied.getCacheControl()).isEqualTo(original.getCacheControl());
+		assertThat(copied.getCacheControl()).isEqualTo(originalCacheControl);
+	}
+
+	@Test
+	void testCacheControlWithNullValue() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test-model").cacheControl(null).build();
+
+		assertThat(options.getCacheControl()).isNull();
+	}
+
+	@Test
+	void testBuilderWithAllFieldsIncludingCacheControl() {
+		CacheControl cacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model("test-model")
+			.maxTokens(100)
+			.stopSequences(List.of("stop1", "stop2"))
+			.temperature(0.7)
+			.topP(0.8)
+			.topK(50)
+			.metadata(new Metadata("userId_123"))
+			.cacheControl(cacheControl)
+			.build();
+
+		assertThat(options)
+			.extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata",
+					"cacheControl")
+			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"),
+					cacheControl);
+	}
+
+	@Test
+	void testCacheControlMutationDoesNotAffectOriginal() {
+		CacheControl originalCacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
+
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("original-model")
+			.cacheControl(originalCacheControl)
+			.build();
+
+		AnthropicChatOptions copy = original.copy();
+		copy.setCacheControl(null);
+
+		// Original should remain unchanged
+		assertThat(original.getCacheControl()).isEqualTo(originalCacheControl);
+		// Copy should have null cache control
+		assertThat(copy.getCacheControl()).isNull();
 	}
 
 }
