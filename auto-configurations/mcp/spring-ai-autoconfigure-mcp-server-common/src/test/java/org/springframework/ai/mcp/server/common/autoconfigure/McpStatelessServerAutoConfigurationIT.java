@@ -16,75 +16,67 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.server.McpAsyncServer;
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpServerTransport;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.mcp.SyncMcpToolCallback;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.server.McpStatelessAsyncServer;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncCompletionSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncCompletionSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncPromptSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessSyncServer;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.server.McpTransportContext;
+import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpStatelessServerTransport;
+import reactor.core.publisher.Mono;
 
-public class McpServerAutoConfigurationIT {
+public class McpStatelessServerAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpServerAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS")
+		.withConfiguration(AutoConfigurations.of(McpServerStatelessAutoConfiguration.class,
+				StatelessToolCallbackConverterAutoConfiguration.class))
+		.withUserConfiguration(TestStatelessTransportConfiguration.class);
 
 	@Test
 	void defaultConfiguration() {
 		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(McpSyncServer.class);
-			assertThat(context).hasSingleBean(McpServerTransportProvider.class);
-			assertThat(context.getBean(McpServerTransportProvider.class))
-				.isInstanceOf(StdioServerTransportProvider.class);
+			assertThat(context).hasSingleBean(McpStatelessSyncServer.class);
+			assertThat(context).hasSingleBean(McpStatelessServerTransport.class);
 
 			McpServerProperties properties = context.getBean(McpServerProperties.class);
 			assertThat(properties.getName()).isEqualTo("mcp-server");
 			assertThat(properties.getVersion()).isEqualTo("1.0.0");
 			assertThat(properties.getType()).isEqualTo(McpServerProperties.ApiType.SYNC);
 			assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(20);
+			// assertThat(properties.getMcpEndpoint()).isEqualTo("/mcp");
 
 			// Check capabilities
 			assertThat(properties.getCapabilities().isTool()).isTrue();
 			assertThat(properties.getCapabilities().isResource()).isTrue();
 			assertThat(properties.getCapabilities().isPrompt()).isTrue();
 			assertThat(properties.getCapabilities().isCompletion()).isTrue();
-
-			McpServerChangeNotificationProperties changeNotificationProperties = context
-				.getBean(McpServerChangeNotificationProperties.class);
-			assertThat(changeNotificationProperties.isToolChangeNotification()).isTrue();
-			assertThat(changeNotificationProperties.isResourceChangeNotification()).isTrue();
-			assertThat(changeNotificationProperties.isPromptChangeNotification()).isTrue();
-
 		});
 	}
 
@@ -95,8 +87,8 @@ public class McpServerAutoConfigurationIT {
 					"spring.ai.mcp.server.version=2.0.0", "spring.ai.mcp.server.instructions=My MCP Server",
 					"spring.ai.mcp.server.request-timeout=30s")
 			.run(context -> {
-				assertThat(context).hasSingleBean(McpAsyncServer.class);
-				assertThat(context).doesNotHaveBean(McpSyncServer.class);
+				assertThat(context).hasSingleBean(McpStatelessAsyncServer.class);
+				assertThat(context).doesNotHaveBean(McpStatelessSyncServer.class);
 
 				McpServerProperties properties = context.getBean(McpServerProperties.class);
 				assertThat(properties.getName()).isEqualTo("test-server");
@@ -108,101 +100,9 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
-	void syncServerInstructionsConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.instructions=Sync Server Instructions")
-			.run(context -> {
-				McpServerProperties properties = context.getBean(McpServerProperties.class);
-				assertThat(properties.getInstructions()).isEqualTo("Sync Server Instructions");
-
-				McpSyncServer server = context.getBean(McpSyncServer.class);
-				assertThat(server).isNotNull();
-			});
-	}
-
-	@Test
-	void transportConfiguration() {
-		this.contextRunner.withUserConfiguration(CustomTransportConfiguration.class).run(context -> {
-			assertThat(context).hasSingleBean(McpServerTransport.class);
-			assertThat(context.getBean(McpServerTransport.class)).isInstanceOf(CustomServerTransport.class);
-		});
-	}
-
-	@Test
-	void serverNotificationConfiguration() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server.tool-change-notification=false",
-					"spring.ai.mcp.server.resource-change-notification=false")
-			.run(context -> {
-				McpServerChangeNotificationProperties changeNotificationProperties = context
-					.getBean(McpServerChangeNotificationProperties.class);
-				assertThat(changeNotificationProperties.isToolChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isResourceChangeNotification()).isFalse();
-			});
-	}
-
-	// @Test
-	void invalidConfigurationThrowsException() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.version=invalid-version").run(context -> {
-			assertThat(context).hasFailed();
-			assertThat(context).getFailure()
-				.hasRootCauseInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("Invalid version format");
-		});
-	}
-
-	@Test
-	void disabledConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false").run(context -> {
-			assertThat(context).doesNotHaveBean(McpSyncServer.class);
-			assertThat(context).doesNotHaveBean(McpAsyncServer.class);
-			assertThat(context).doesNotHaveBean(McpServerTransport.class);
-		});
-	}
-
-	@Test
-	void notificationConfiguration() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server.tool-change-notification=false",
-					"spring.ai.mcp.server.resource-change-notification=false",
-					"spring.ai.mcp.server.prompt-change-notification=false")
-			.run(context -> {
-				McpServerChangeNotificationProperties changeNotificationProperties = context
-					.getBean(McpServerChangeNotificationProperties.class);
-				assertThat(changeNotificationProperties.isToolChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isResourceChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isPromptChangeNotification()).isFalse();
-			});
-	}
-
-	@Test
-	void stdioConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.stdio=true").run(context -> {
-			McpServerProperties properties = context.getBean(McpServerProperties.class);
-			assertThat(properties.isStdio()).isTrue();
-		});
-	}
-
-	@Test
-	void serverCapabilitiesConfiguration() {
-		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(McpSchema.ServerCapabilities.Builder.class);
-			McpSchema.ServerCapabilities.Builder builder = context.getBean(McpSchema.ServerCapabilities.Builder.class);
-			assertThat(builder).isNotNull();
-		});
-	}
-
-	@Test
-	void toolSpecificationConfiguration() {
-		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
-			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
-			assertThat(tools).hasSize(1);
-		});
-	}
-
-	@Test
 	void syncToolCallbackRegistrationControl() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server..type=SYNC", "spring.ai.mcp.server..tool-callback-converter=true")
+			.withPropertyValues("spring.ai.mcp.server.type=SYNC", "spring.ai.mcp.server.tool-callback-converter=true")
 			.run(context -> {
 				assertThat(context).hasBean("syncTools");
 			});
@@ -229,9 +129,47 @@ public class McpServerAutoConfigurationIT {
 	}
 
 	@Test
+	void syncServerInstructionsConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.instructions=Sync Server Instructions")
+			.run(context -> {
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getInstructions()).isEqualTo("Sync Server Instructions");
+
+				McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
+				assertThat(server).isNotNull();
+			});
+	}
+
+	@Test
+	void disabledConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false").run(context -> {
+			assertThat(context).doesNotHaveBean(McpStatelessSyncServer.class);
+			assertThat(context).doesNotHaveBean(McpStatelessAsyncServer.class);
+			assertThat(context).doesNotHaveBean(McpStatelessServerTransport.class);
+		});
+	}
+
+	@Test
+	void serverCapabilitiesConfiguration() {
+		this.contextRunner.run(context -> {
+			assertThat(context).hasSingleBean(McpSchema.ServerCapabilities.Builder.class);
+			McpSchema.ServerCapabilities.Builder builder = context.getBean(McpSchema.ServerCapabilities.Builder.class);
+			assertThat(builder).isNotNull();
+		});
+	}
+
+	@Test
+	void toolSpecificationConfiguration() {
+		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
+			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
+			assertThat(tools).hasSize(1);
+		});
+	}
+
+	@Test
 	void resourceSpecificationConfiguration() {
 		this.contextRunner.withUserConfiguration(TestResourceConfiguration.class).run(context -> {
-			McpSyncServer server = context.getBean(McpSyncServer.class);
+			McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
 			assertThat(server).isNotNull();
 		});
 	}
@@ -239,7 +177,7 @@ public class McpServerAutoConfigurationIT {
 	@Test
 	void promptSpecificationConfiguration() {
 		this.contextRunner.withUserConfiguration(TestPromptConfiguration.class).run(context -> {
-			McpSyncServer server = context.getBean(McpSyncServer.class);
+			McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
 			assertThat(server).isNotNull();
 		});
 	}
@@ -266,7 +204,7 @@ public class McpServerAutoConfigurationIT {
 	@Test
 	void rootsChangeHandlerConfiguration() {
 		this.contextRunner.withUserConfiguration(TestRootsHandlerConfiguration.class).run(context -> {
-			McpSyncServer server = context.getBean(McpSyncServer.class);
+			McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
 			assertThat(server).isNotNull();
 		});
 	}
@@ -276,7 +214,7 @@ public class McpServerAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
 			.withUserConfiguration(TestAsyncRootsHandlerConfiguration.class)
 			.run(context -> {
-				McpAsyncServer server = context.getBean(McpAsyncServer.class);
+				McpStatelessAsyncServer server = context.getBean(McpStatelessAsyncServer.class);
 				assertThat(server).isNotNull();
 			});
 	}
@@ -294,7 +232,7 @@ public class McpServerAutoConfigurationIT {
 				assertThat(properties.getCapabilities().isCompletion()).isFalse();
 
 				// Verify the server is configured with the disabled capabilities
-				McpSyncServer server = context.getBean(McpSyncServer.class);
+				McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
 				assertThat(server).isNotNull();
 			});
 	}
@@ -312,7 +250,7 @@ public class McpServerAutoConfigurationIT {
 				assertThat(tools).hasSize(1);
 
 				// The server should be properly configured with the tool
-				McpSyncServer server = context.getBean(McpSyncServer.class);
+				McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
 				assertThat(server).isNotNull();
 			});
 	}
@@ -324,7 +262,19 @@ public class McpServerAutoConfigurationIT {
 			assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(45);
 
 			// Verify the server is configured with the timeout
-			McpSyncServer server = context.getBean(McpSyncServer.class);
+			McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
+			assertThat(server).isNotNull();
+		});
+	}
+
+	@Test
+	void endpointConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.endpoint=/my-mcp").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			// assertThat(properties.getMcpEndpoint()).isEqualTo("/my-mcp");
+
+			// Verify the server is configured with the endpoints
+			McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
 			assertThat(server).isNotNull();
 		});
 	}
@@ -433,11 +383,11 @@ public class McpServerAutoConfigurationIT {
 		@Bean
 		List<SyncCompletionSpecification> testCompletions() {
 
-			BiFunction<McpSyncServerExchange, McpSchema.CompleteRequest, McpSchema.CompleteResult> completionHandler = (
-					exchange, request) -> new McpSchema.CompleteResult(
+			BiFunction<McpTransportContext, McpSchema.CompleteRequest, McpSchema.CompleteResult> completionHandler = (
+					context, request) -> new McpSchema.CompleteResult(
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
 
-			return List.of(new McpServerFeatures.SyncCompletionSpecification(
+			return List.of(new McpStatelessServerFeatures.SyncCompletionSpecification(
 					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
 		}
 
@@ -448,11 +398,11 @@ public class McpServerAutoConfigurationIT {
 
 		@Bean
 		List<AsyncCompletionSpecification> testAsyncCompletions() {
-			BiFunction<McpAsyncServerExchange, McpSchema.CompleteRequest, Mono<McpSchema.CompleteResult>> completionHandler = (
-					exchange, request) -> Mono.just(new McpSchema.CompleteResult(
+			BiFunction<McpTransportContext, McpSchema.CompleteRequest, Mono<McpSchema.CompleteResult>> completionHandler = (
+					context, request) -> Mono.just(new McpSchema.CompleteResult(
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
 
-			return List.of(new McpServerFeatures.AsyncCompletionSpecification(
+			return List.of(new McpStatelessServerFeatures.AsyncCompletionSpecification(
 					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
 		}
 
@@ -463,7 +413,7 @@ public class McpServerAutoConfigurationIT {
 
 		@Bean
 		BiConsumer<McpSyncServerExchange, List<McpSchema.Root>> rootsChangeHandler() {
-			return (exchange, roots) -> {
+			return (context, roots) -> {
 				// Test implementation
 			};
 		}
@@ -474,44 +424,22 @@ public class McpServerAutoConfigurationIT {
 	static class TestAsyncRootsHandlerConfiguration {
 
 		@Bean
-		BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>> rootsChangeHandler() {
-			return (exchange, roots) -> {
+		BiConsumer<McpTransportContext, List<McpSchema.Root>> rootsChangeHandler() {
+			return (context, roots) -> {
 				// Test implementation
 			};
 		}
 
 	}
 
-	static class CustomServerTransport implements McpServerTransport {
-
-		@Override
-		public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {
-			return Mono.empty(); // Test implementation
-		}
-
-		@Override
-		public <T> T unmarshalFrom(Object value, TypeReference<T> type) {
-			return null; // Test implementation
-		}
-
-		@Override
-		public void close() {
-			// Test implementation
-		}
-
-		@Override
-		public Mono<Void> closeGracefully() {
-			return Mono.empty(); // Test implementation
-		}
-
-	}
-
 	@Configuration
-	static class CustomTransportConfiguration {
+	static class TestStatelessTransportConfiguration {
 
 		@Bean
-		McpServerTransport customTransport() {
-			return new CustomServerTransport();
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+				matchIfMissing = true)
+		public McpStatelessServerTransport statelessTransport() {
+			return Mockito.mock(McpStatelessServerTransport.class);
 		}
 
 	}

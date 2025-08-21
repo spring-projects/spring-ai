@@ -34,16 +34,17 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
-import io.modelcontextprotocol.server.McpServerFeatures;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 
 /**
  * @author Christian Tzolov
  */
 @AutoConfiguration
 @EnableConfigurationProperties(McpServerProperties.class)
-@Conditional({ ToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition.class,
-		McpServerAutoConfiguration.NonStatlessServerCondition.class })
-public class ToolCallbackConverterAutoConfiguration {
+@Conditional({ McpServerStdioDisabledCondition.class,
+		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class,
+		StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition.class })
+public class StatelessToolCallbackConverterAutoConfiguration {
 
 	public static class ToolCallbackConverterCondition extends AllNestedConditions {
 
@@ -68,67 +69,59 @@ public class ToolCallbackConverterAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<McpServerFeatures.SyncToolSpecification> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider,
-			McpServerProperties serverProperties) {
+	public List<McpStatelessServerFeatures.SyncToolSpecification> syncTools(
+			ObjectProvider<List<ToolCallback>> toolCalls, List<ToolCallback> toolCallbackList,
+			List<ToolCallbackProvider> toolCallbackProvider, McpServerProperties serverProperties) {
 
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbacksList, toolCallbackProvider);
+		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, toolCallbackProvider);
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
 	}
 
-	private List<McpServerFeatures.SyncToolSpecification> toSyncToolSpecifications(List<ToolCallback> tools,
+	private List<McpStatelessServerFeatures.SyncToolSpecification> toSyncToolSpecifications(List<ToolCallback> tools,
 			McpServerProperties serverProperties) {
 
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
 		return tools.stream() // Key: tool name
-			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool, // Value:
-																								// the
-																								// tool
-																								// itself
-					(existing, replacement) -> existing)) // On duplicate key, keep the
-															// existing tool
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool,
+					(existing, replacement) -> existing))
 			.values()
 			.stream()
 			.map(tool -> {
 				String toolName = tool.getToolDefinition().name();
 				MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
 						? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-				return McpToolUtils.toSyncToolSpecification(tool, mimeType);
+				return McpToolUtils.toStatelessSyncToolSpecification(tool, mimeType);
 			})
 			.toList();
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpServerFeatures.AsyncToolSpecification> asyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider,
-			McpServerProperties serverProperties) {
+	public List<McpStatelessServerFeatures.AsyncToolSpecification> asyncTools(
+			ObjectProvider<List<ToolCallback>> toolCalls, List<ToolCallback> toolCallbackList,
+			List<ToolCallbackProvider> toolCallbackProvider, McpServerProperties serverProperties) {
 
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbacksList, toolCallbackProvider);
+		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, toolCallbackProvider);
 
 		return this.toAsyncToolSpecification(tools, serverProperties);
 	}
 
-	private List<McpServerFeatures.AsyncToolSpecification> toAsyncToolSpecification(List<ToolCallback> tools,
+	private List<McpStatelessServerFeatures.AsyncToolSpecification> toAsyncToolSpecification(List<ToolCallback> tools,
 			McpServerProperties serverProperties) {
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
 		return tools.stream() // Key: tool name
-			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool, // Value:
-																								// the
-																								// tool
-																								// itself
-					(existing, replacement) -> existing)) // On duplicate key, keep the
-															// existing tool
+			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool,
+					(existing, replacement) -> existing))
 			.values()
 			.stream()
 			.map(tool -> {
 				String toolName = tool.getToolDefinition().name();
 				MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
 						? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-				return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
+				return McpToolUtils.toStatelessAsyncToolSpecification(tool, mimeType);
 			})
 			.toList();
 	}
