@@ -79,8 +79,10 @@ public final class McpToolUtils {
 		String input = prefix + "_" + toolName;
 
 		// Replace any character that isn't alphanumeric, underscore, or hyphen with
-		// concatenation
-		String formatted = input.replaceAll("[^a-zA-Z0-9_-]", "");
+		// concatenation. Support Han script + CJK blocks for complete Chinese character
+		// coverage
+		String formatted = input
+			.replaceAll("[^\\p{IsHan}\\p{InCJK_Unified_Ideographs}\\p{InCJK_Compatibility_Ideographs}a-zA-Z0-9_-]", "");
 
 		formatted = formatted.replaceAll("-", "_");
 
