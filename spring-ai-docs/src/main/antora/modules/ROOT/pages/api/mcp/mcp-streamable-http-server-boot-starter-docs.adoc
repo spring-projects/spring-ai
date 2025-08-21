@@ -1,20 +1,27 @@
 
 == Streamable-HTTP MCP Servers
 
-link:https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#streamable-http[Streamable-HTTP] MCP servers provide enhanced functionality with support for change notifications and persistent connections. 
+The link:https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http[Streamable HTTP transport] allows MCP servers to operate as independent processes that can handle multiple client connections using HTTP POST and GET requests, with optional Server-Sent Events (SSE) streaming for multiple server messages. It replaces the SSE transport.
+
 These servers, introduced with spec version link:https://modelcontextprotocol.io/specification/2025-03-26[2025-03-26], are ideal for applications that need to notify clients about dynamic changes to tools, resources, or prompts.
+
+TIP: Set the `spring.ai.mcp.server.protocol=STREAMABLE` property
 
 TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[Streamable-HTTP clients] to connect to the Streamable-HTTP servers.
 
 === Streamable-HTTP WebMVC Server
 
+Use the `spring-ai-starter-mcp-server-webmvc` dependency:
+
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-mcp-server-streamable-webmvc</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
 </dependency>
 ----
+
+and set the `spring.ai.mcp.server.protocol` property to `STREAMABLE`.
 
 * Full MCP server capabilities with Spring MVC Streamable transport
 * Suppport for tools, resources, prompts, completion, logging, progression, ping, root-changes capabilities
@@ -22,13 +29,17 @@ TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transpor
 
 === Streamable-HTTP WebFlux Server
 
+Use the `spring-ai-starter-mcp-server-webflux` dependency:
+
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-mcp-server-streamable-webflux</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
 </dependency>
 ----
+
+and set the `spring.ai.mcp.server.protocol` property to `STREAMABLE`.
 
 * Reactive MCP server with WebFlux Streamable transport
 * Suppport for tools, resources, prompts, completion, logging, progression, ping, root-changes capabilities
@@ -44,6 +55,7 @@ All common properties are prefixed with `spring.ai.mcp.server`:
 |===
 |Property |Description |Default
 |`enabled` |Enable/disable the streamable MCP server |`true`
+|`protocol` |MCP server protocol | Must be set to `STREAMABLE` to enable the streamable server
 |`tool-callback-converter` |Enable/disable the conversion of Spring AI ToolCallbacks into MCP Tool specs |`true`
 |`name` |Server name for identification |`mcp-server`
 |`version` |Server version |`1.0.0`
@@ -319,7 +331,8 @@ NOTE: Currently, for streamable-http servers, the keep-alive mechanism is availa
 spring:
   ai:
     mcp:
-      server:        
+      server:
+        protocol: STREAMABLE
         name: streamable-mcp-server
         version: 1.0.0
         type: SYNC

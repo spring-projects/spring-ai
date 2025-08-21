@@ -4,18 +4,28 @@
 Stateless MCP servers are designed for simplified deployments where session state is not maintained between requests. 
 These servers are ideal for microservices architectures and cloud-native deployments.
 
+TIP: Set the `spring.ai.mcp.server.protocol=STATELESS` property
+
 TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[Streamable-HTTP clients] to connect to the stateless servers.
 
 NOTE: The stateless servers don't support message requests to the MCP client (e.g., elicitation, sampling, ping).
 
 === Stateless WebMVC Server
 
+Use the `spring-ai-starter-mcp-server-webmvc` dependency:
+
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-mcp-server-stateless-webmvc</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
 </dependency>
+----
+
+and set the `spring.ai.mcp.server.protocol` property to `STATLESS`.
+
+----
+spring.ai.mcp.server.protocol=STATLESS
 ----
 
 - Stateless operation with Spring MVC transport
@@ -25,13 +35,17 @@ NOTE: The stateless servers don't support message requests to the MCP client (e.
 
 === Stateless WebFlux Server
 
+Use the `spring-ai-starter-mcp-server-webflux` dependency:
+
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-mcp-server-stateless-webflux</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
 </dependency>
 ----
+
+and set the `spring.ai.mcp.server.protocol` property to `STATLESS`.
 
 - Reactive stateless operation with WebFlux transport
 - No session state management
@@ -48,6 +62,7 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |===
 |Property |Description |Default
 |`enabled` |Enable/disable the stateless MCP server |`true`
+|`protocol` |MCP server protocol | Must be set to `STATLESS` to enable the stateless server
 |`tool-callback-converter` |Enable/disable the conversion of Spring AI ToolCallbacks into MCP Tool specs |`true`
 |`name` |Server name for identification |`mcp-server`
 |`version` |Server version |`1.0.0`
@@ -207,6 +222,7 @@ spring:
   ai:
     mcp:
       server:
+        protocol: STATELESS
         name: stateless-mcp-server
         version: 1.0.0
         type: ASYNC
