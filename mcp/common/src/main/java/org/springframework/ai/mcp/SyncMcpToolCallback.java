@@ -100,9 +100,13 @@ public class SyncMcpToolCallback implements ToolCallback {
 			.build();
 	}
 
-	public String getOriginalToolName() {
-    	return this.tool.name();
-	}
+    /**
+     * get tool name
+     * @return the tool's name
+     */
+    public String getOriginalToolName() {
+        return this.tool.name();
+    }
 
 	/**
 	 * Executes the tool with the provided input.
