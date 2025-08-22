@@ -286,8 +286,9 @@ public class SseWebClientWebFluxServerIT {
 						""").build())
 				.callHandler((exchange, request) -> {
 
-					exchange.progressNotification(
-							new ProgressNotification("test-progress-token", 0.0, 1.0, "tool call start"));
+					var progressToken = request.progressToken();
+
+					exchange.progressNotification(new ProgressNotification(progressToken, 0.0, 1.0, "tool call start"));
 
 					exchange.ping(); // call client ping
 
@@ -301,7 +302,7 @@ public class SseWebClientWebFluxServerIT {
 					ElicitResult elicitationResult = exchange.createElicitation(elicitationRequest);
 
 					exchange.progressNotification(
-							new ProgressNotification("test-progress-token", 0.50, 1.0, "elicitation completed"));
+							new ProgressNotification(progressToken, 0.50, 1.0, "elicitation completed"));
 
 					// call sampling
 					var createMessageRequest = McpSchema.CreateMessageRequest.builder()
@@ -317,8 +318,8 @@ public class SseWebClientWebFluxServerIT {
 
 					CreateMessageResult samplingResponse = exchange.createMessage(createMessageRequest);
 
-					exchange.progressNotification(
-							new ProgressNotification("test-progress-token", 1.0, 1.0, "sampling completed"));
+					exchange
+						.progressNotification(new ProgressNotification(progressToken, 1.0, 1.0, "sampling completed"));
 
 					return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(
 							"CALL RESPONSE: " + samplingResponse.toString() + ", " + elicitationResult.toString())),
