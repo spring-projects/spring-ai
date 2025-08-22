@@ -31,6 +31,7 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Role;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -60,6 +61,7 @@ import org.springframework.util.MimeType;
  * </ul>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public final class McpToolUtils {
 
@@ -169,9 +171,15 @@ public final class McpToolUtils {
 	 */
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
+		boolean returnDirect = Optional.ofNullable(toolCallback.getToolMetadata())
+			.map(ToolMetadata::returnDirect)
+			.orElse(false);
+		McpSchema.ToolAnnotations toolAnnotations = new McpSchema.ToolAnnotations(null, null, null, null, null,
+				returnDirect);
 
 		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
-				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema(),
+				toolAnnotations);
 
 		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
 			try {
