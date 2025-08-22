@@ -19,11 +19,9 @@ package org.springframework.ai.mcp.server.autoconfigure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
-
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -67,7 +65,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @see WebMvcSseServerTransportProvider
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@EnableConfigurationProperties({ McpServerSseProperties.class })
+@EnableConfigurationProperties({ McpServerProperties.class })
 @ConditionalOnClass({ WebMvcSseServerTransportProvider.class })
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
@@ -76,16 +74,16 @@ public class McpServerSseWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
-			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerSseProperties serverProperties) {
+			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerProperties serverProperties) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		return WebMvcSseServerTransportProvider.builder()
 			.objectMapper(objectMapper)
-			.baseUrl(serverProperties.getBaseUrl())
-			.sseEndpoint(serverProperties.getSseEndpoint())
-			.messageEndpoint(serverProperties.getSseMessageEndpoint())
-			.keepAliveInterval(serverProperties.getKeepAliveInterval())
+			.baseUrl(serverProperties.getSse().getBaseUrl())
+			.sseEndpoint(serverProperties.getSse().getSseEndpoint())
+			.messageEndpoint(serverProperties.getSse().getSseMessageEndpoint())
+			.keepAliveInterval(serverProperties.getSse().getKeepAliveInterval())
 			.build();
 	}
 

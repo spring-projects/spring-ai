@@ -39,7 +39,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 /**
  * Integration tests for {@link ToolCallbackConverterAutoConfiguration} and
- * {@link ToolCallbackConverterCondition}.
+ * {@link ToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition}.
  *
  * @author Christian Tzolov
  */
