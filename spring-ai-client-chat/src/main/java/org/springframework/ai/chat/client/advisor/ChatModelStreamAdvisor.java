@@ -48,6 +48,8 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
 			StreamAdvisorChain streamAdvisorChain) {
 		Assert.notNull(chatClientRequest, "the chatClientRequest cannot be null");
+		Assert.isTrue(!streamAdvisorChain.hasNextStreamAdvisor(),
+				"ChatModelStreamAdvisor should be the last StreamAdvisor in the chain");
 
 		return this.chatModel.stream(chatClientRequest.prompt())
 			.map(chatResponse -> ChatClientResponse.builder()
