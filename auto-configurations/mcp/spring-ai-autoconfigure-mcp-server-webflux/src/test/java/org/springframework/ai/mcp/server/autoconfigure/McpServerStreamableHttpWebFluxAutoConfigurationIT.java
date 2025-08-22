@@ -63,7 +63,7 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 
 	@Test
 	void serverBaseUrlConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/test")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable.mcpEndpoint=/test")
 			.run(context -> assertThat(context.getBean(WebFluxStreamableServerTransportProvider.class))
 				.extracting("mcpEndpoint")
 				.isEqualTo("/test"));
@@ -71,7 +71,7 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 
 	@Test
 	void keepAliveIntervalConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.keep-alive-interval=PT30S")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable.keep-alive-interval=PT30S")
 			.run(context -> {
 				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
 				assertThat(context).hasSingleBean(RouterFunction.class);
@@ -80,20 +80,18 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 
 	@Test
 	void disallowDeleteConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable.disallow-delete=true").run(context -> {
+			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(RouterFunction.class);
+		});
 	}
 
 	@Test
 	void disallowDeleteFalseConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=false")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable.disallow-delete=false").run(context -> {
+			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(RouterFunction.class);
+		});
 	}
 
 	@Test
@@ -163,9 +161,9 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 	@Test
 	void allPropertiesConfiguration() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/custom-endpoint",
-					"spring.ai.mcp.server.streamable-http.keep-alive-interval=PT45S",
-					"spring.ai.mcp.server.streamable-http.disallow-delete=true")
+			.withPropertyValues("spring.ai.mcp.server.streamable.mcpEndpoint=/custom-endpoint",
+					"spring.ai.mcp.server.streamable.keep-alive-interval=PT45S",
+					"spring.ai.mcp.server.streamable.disallow-delete=true")
 			.run(context -> {
 				WebFluxStreamableServerTransportProvider provider = context
 					.getBean(WebFluxStreamableServerTransportProvider.class);

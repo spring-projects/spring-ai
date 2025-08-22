@@ -20,10 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
-
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
+import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -63,12 +62,12 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @author Christian Tzolov
  * @author Yanming Zhou
  * @since 1.0.0
- * @see McpServerSseProperties
+ * @see McpServerProperties
  * @see WebMvcSseServerTransportProvider
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@EnableConfigurationProperties(McpServerSseProperties.class)
-@ConditionalOnClass(WebMvcSseServerTransportProvider.class)
+@EnableConfigurationProperties({ McpServerProperties.class })
+@ConditionalOnClass({ WebMvcSseServerTransportProvider.class })
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
 public class McpServerSseWebMvcAutoConfiguration {
@@ -76,7 +75,7 @@ public class McpServerSseWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerSseProperties serverProperties) {
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerProperties serverProperties) {
 
 		return WebMvcSseServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))

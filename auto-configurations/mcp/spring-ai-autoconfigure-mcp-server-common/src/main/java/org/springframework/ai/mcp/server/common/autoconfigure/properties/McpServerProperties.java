@@ -97,6 +97,14 @@ public class McpServerProperties {
 
 	private ServerProtocol protocol = ServerProtocol.SSE;
 
+	private Sse sse = new Sse();
+
+	private Streamable streamable = new Streamable();
+
+	private Stateless stateless = new Stateless();
+
+	private ToolChangeNotification toolChangeNotification = new ToolChangeNotification();
+
 	/**
 	 * Sets the duration to wait for server responses before timing out requests. This
 	 * timeout applies to all requests made through the client, including tool calls,
@@ -115,6 +123,10 @@ public class McpServerProperties {
 
 	public Capabilities getCapabilities() {
 		return this.capabilities;
+	}
+
+	public void setCapabilities(Capabilities capabilities) {
+		this.capabilities = capabilities;
 	}
 
 	public enum ServerProtocol {
@@ -209,6 +221,38 @@ public class McpServerProperties {
 		this.protocol = serverMode;
 	}
 
+	public Sse getSse() {
+		return sse;
+	}
+
+	public void setSse(Sse sse) {
+		this.sse = sse;
+	}
+
+	public Streamable getStreamable() {
+		return streamable;
+	}
+
+	public void setStreamable(Streamable streamable) {
+		this.streamable = streamable;
+	}
+
+	public Stateless getStateless() {
+		return stateless;
+	}
+
+	public void setStateless(Stateless stateless) {
+		this.stateless = stateless;
+	}
+
+	public ToolChangeNotification getToolChangeNotification() {
+		return toolChangeNotification;
+	}
+
+	public void setToolChangeNotification(ToolChangeNotification toolChangeNotification) {
+		this.toolChangeNotification = toolChangeNotification;
+	}
+
 	public static class Capabilities {
 
 		private boolean resource = true;
@@ -249,6 +293,194 @@ public class McpServerProperties {
 
 		public void setCompletion(boolean completion) {
 			this.completion = completion;
+		}
+
+	}
+
+	/**
+	 * Server-Sent Events (SSE) protocol specific configuration. SSE uses two separate
+	 * endpoints: one for establishing SSE connections and another for message posting.
+	 */
+	public static class Sse {
+
+		/**
+		 * Base URL for the SSE transport.
+		 */
+		private String baseUrl = "";
+
+		/**
+		 * An SSE endpoint, for clients to establish a connection and receive messages
+		 * from the server
+		 */
+		private String sseEndpoint = "/sse";
+
+		/**
+		 * A regular HTTP POST endpoint for clients to send messages to the server.
+		 */
+		private String sseMessageEndpoint = "/mcp/message";
+
+		/**
+		 * The duration to keep the connection alive. Disabled by default.
+		 */
+		private Duration keepAliveInterval;
+
+		public String getBaseUrl() {
+			return this.baseUrl;
+		}
+
+		public void setBaseUrl(String baseUrl) {
+			Assert.notNull(baseUrl, "Base URL must not be null");
+			this.baseUrl = baseUrl;
+		}
+
+		public String getSseEndpoint() {
+			return this.sseEndpoint;
+		}
+
+		public void setSseEndpoint(String eventEndpoint) {
+			Assert.hasText(eventEndpoint, "event endpoint must not be empty");
+			this.sseEndpoint = eventEndpoint;
+		}
+
+		public String getSseMessageEndpoint() {
+			return this.sseMessageEndpoint;
+		}
+
+		public void setSseMessageEndpoint(String sseMessageEndpoint) {
+			Assert.hasText(sseMessageEndpoint, "SSE message endpoint must not be empty");
+			this.sseMessageEndpoint = sseMessageEndpoint;
+		}
+
+		public Duration getKeepAliveInterval() {
+			return this.keepAliveInterval;
+		}
+
+		public void setKeepAliveInterval(Duration keepAliveInterval) {
+			this.keepAliveInterval = keepAliveInterval;
+		}
+
+	}
+
+	/**
+	 * Streamable HTTP protocol specific configuration. Streamable uses a single endpoint
+	 * for bidirectional communication with streaming support.
+	 */
+	public static class Streamable {
+
+		/**
+		 * The MCP endpoint path for streamable HTTP communication.
+		 */
+		private String mcpEndpoint = "/mcp";
+
+		/**
+		 * The duration to keep the connection alive.
+		 */
+		private Duration keepAliveInterval;
+
+		private boolean disallowDelete;
+
+		public String getMcpEndpoint() {
+			return this.mcpEndpoint;
+		}
+
+		public void setMcpEndpoint(String mcpEndpoint) {
+			Assert.hasText(mcpEndpoint, "MCP endpoint must not be empty");
+			this.mcpEndpoint = mcpEndpoint;
+		}
+
+		public void setKeepAliveInterval(Duration keepAliveInterval) {
+			Assert.notNull(keepAliveInterval, "Keep-alive interval must not be null");
+			this.keepAliveInterval = keepAliveInterval;
+		}
+
+		public Duration getKeepAliveInterval() {
+			return this.keepAliveInterval;
+		}
+
+		public boolean isDisallowDelete() {
+			return this.disallowDelete;
+		}
+
+		public void setDisallowDelete(boolean disallowDelete) {
+			this.disallowDelete = disallowDelete;
+		}
+
+	}
+
+	/**
+	 * Stateless HTTP protocol specific configuration. Stateless uses a single endpoint
+	 * for request-response communication without maintaining connection state.
+	 */
+	public static class Stateless {
+
+		/**
+		 * The MCP endpoint path for stateless HTTP communication.
+		 */
+		private String mcpEndpoint = "/mcp";
+
+		// Getters and setters
+		public String getMcpEndpoint() {
+			return this.mcpEndpoint;
+		}
+
+		public void setMcpEndpoint(String mcpEndpoint) {
+			Assert.hasText(mcpEndpoint, "MCP endpoint must not be empty");
+			this.mcpEndpoint = mcpEndpoint;
+		}
+
+	}
+
+	public static class ToolChangeNotification {
+
+		/**
+		 * Enable/disable notifications for resource changes. Only relevant for MCP
+		 * servers with resource capabilities.
+		 * <p>
+		 * When enabled, the server will notify clients when resources are added, updated,
+		 * or removed.
+		 */
+		private boolean resourceChangeNotification = true;
+
+		/**
+		 * Enable/disable notifications for tool changes. Only relevant for MCP servers
+		 * with tool capabilities.
+		 * <p>
+		 * When enabled, the server will notify clients when tools are registered or
+		 * unregistered.
+		 */
+		private boolean toolChangeNotification = true;
+
+		/**
+		 * Enable/disable notifications for prompt changes. Only relevant for MCP servers
+		 * with prompt capabilities.
+		 * <p>
+		 * When enabled, the server will notify clients when prompt templates are
+		 * modified.
+		 */
+		private boolean promptChangeNotification = true;
+
+		public boolean isResourceChangeNotification() {
+			return this.resourceChangeNotification;
+		}
+
+		public void setResourceChangeNotification(boolean resourceChangeNotification) {
+			this.resourceChangeNotification = resourceChangeNotification;
+		}
+
+		public boolean isToolChangeNotification() {
+			return this.toolChangeNotification;
+		}
+
+		public void setToolChangeNotification(boolean toolChangeNotification) {
+			this.toolChangeNotification = toolChangeNotification;
+		}
+
+		public boolean isPromptChangeNotification() {
+			return this.promptChangeNotification;
+		}
+
+		public void setPromptChangeNotification(boolean promptChangeNotification) {
+			this.promptChangeNotification = promptChangeNotification;
 		}
 
 	}

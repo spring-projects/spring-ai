@@ -96,11 +96,15 @@ public class McpServerAutoConfigurationIT {
 			assertThat(properties.getCapabilities().isPrompt()).isTrue();
 			assertThat(properties.getCapabilities().isCompletion()).isTrue();
 
-			McpServerChangeNotificationProperties changeNotificationProperties = context
-				.getBean(McpServerChangeNotificationProperties.class);
-			assertThat(changeNotificationProperties.isToolChangeNotification()).isTrue();
-			assertThat(changeNotificationProperties.isResourceChangeNotification()).isTrue();
-			assertThat(changeNotificationProperties.isPromptChangeNotification()).isTrue();
+			// Check change notifications
+			assertThat(properties.getToolChangeNotification().isToolChangeNotification()).isTrue();
+			assertThat(properties.getToolChangeNotification().isResourceChangeNotification()).isTrue();
+			assertThat(properties.getToolChangeNotification().isPromptChangeNotification()).isTrue();
+
+			// Check default nested configurations exist
+			assertThat(properties.getSse()).isNotNull();
+			assertThat(properties.getStreamable()).isNotNull();
+			assertThat(properties.getStateless()).isNotNull();
 
 		});
 	}
@@ -122,6 +126,27 @@ public class McpServerAutoConfigurationIT {
 				assertThat(properties.getType()).isEqualTo(McpServerProperties.ApiType.ASYNC);
 				assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(30);
 			});
+	}
+
+	@Test
+	void protocolSwitchingConfiguration() {
+		// Test SSE protocol (default)
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.protocol=SSE").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getProtocol()).isEqualTo(McpServerProperties.ServerProtocol.SSE);
+		});
+
+		// Test STREAMABLE protocol
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getProtocol()).isEqualTo(McpServerProperties.ServerProtocol.STREAMABLE);
+		});
+
+		// Test STATELESS protocol
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getProtocol()).isEqualTo(McpServerProperties.ServerProtocol.STATELESS);
+		});
 	}
 
 	@Test
@@ -150,10 +175,9 @@ public class McpServerAutoConfigurationIT {
 			.withPropertyValues("spring.ai.mcp.server.tool-change-notification=false",
 					"spring.ai.mcp.server.resource-change-notification=false")
 			.run(context -> {
-				McpServerChangeNotificationProperties changeNotificationProperties = context
-					.getBean(McpServerChangeNotificationProperties.class);
-				assertThat(changeNotificationProperties.isToolChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isResourceChangeNotification()).isFalse();
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getToolChangeNotification().isToolChangeNotification()).isFalse();
+				assertThat(properties.getToolChangeNotification().isResourceChangeNotification()).isFalse();
 			});
 	}
 
@@ -183,11 +207,10 @@ public class McpServerAutoConfigurationIT {
 					"spring.ai.mcp.server.resource-change-notification=false",
 					"spring.ai.mcp.server.prompt-change-notification=false")
 			.run(context -> {
-				McpServerChangeNotificationProperties changeNotificationProperties = context
-					.getBean(McpServerChangeNotificationProperties.class);
-				assertThat(changeNotificationProperties.isToolChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isResourceChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isPromptChangeNotification()).isFalse();
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getToolChangeNotification().isToolChangeNotification()).isFalse();
+				assertThat(properties.getToolChangeNotification().isResourceChangeNotification()).isFalse();
+				assertThat(properties.getToolChangeNotification().isPromptChangeNotification()).isFalse();
 			});
 	}
 

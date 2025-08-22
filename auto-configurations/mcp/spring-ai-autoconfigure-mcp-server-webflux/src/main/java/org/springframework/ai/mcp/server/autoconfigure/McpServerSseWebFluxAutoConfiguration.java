@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
-
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
@@ -70,12 +69,12 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * @author Christian Tzolov
  * @author Yanming Zhou
  * @since 1.0.0
- * @see McpServerSseProperties
+ * @see McpServerProperties
  * @see WebFluxSseServerTransportProvider
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@EnableConfigurationProperties(McpServerSseProperties.class)
-@ConditionalOnClass(WebFluxSseServerTransportProvider.class)
+@EnableConfigurationProperties({ McpServerProperties.class })
+@ConditionalOnClass({ WebFluxSseServerTransportProvider.class })
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
 public class McpServerSseWebFluxAutoConfiguration {
@@ -83,15 +82,15 @@ public class McpServerSseWebFluxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebFluxSseServerTransportProvider webFluxTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerSseProperties serverProperties) {
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerProperties serverProperties) {
 
 		return WebFluxSseServerTransportProvider.builder()
-			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-			.basePath(serverProperties.getBaseUrl())
-			.messageEndpoint(serverProperties.getSseMessageEndpoint())
-			.sseEndpoint(serverProperties.getSseEndpoint())
-			.keepAliveInterval(serverProperties.getKeepAliveInterval())
-			.build();
+				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+				.basePath(serverProperties.getBaseUrl())
+				.messageEndpoint(serverProperties.getSseMessageEndpoint())
+				.sseEndpoint(serverProperties.getSseEndpoint())
+				.keepAliveInterval(serverProperties.getKeepAliveInterval())
+				.build();
 	}
 
 	// Router function for SSE transport used by Spring WebFlux to start an HTTP
