@@ -48,6 +48,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.SimpleVectorStoreFilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.core.io.Resource;
@@ -102,17 +103,16 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-		Objects.requireNonNull(documents, "Documents list cannot be null");
-		if (documents.isEmpty()) {
-			throw new IllegalArgumentException("Documents list cannot be empty");
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
+		if (embeddedDocuments.isEmpty()) {
+			throw new IllegalArgumentException("Embedded document list cannot be empty");
 		}
 
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
-			float[] embedding = this.embeddingModel.embed(document);
 			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(), document.getText(),
-					document.getMetadata(), embedding);
+					document.getMetadata(), ed.embedding());
 			this.store.put(document.getId(), storeContent);
 		}
 	}

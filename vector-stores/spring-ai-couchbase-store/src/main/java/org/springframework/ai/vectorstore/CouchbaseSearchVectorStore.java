@@ -37,12 +37,12 @@ import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.RetrySpec;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -133,15 +133,14 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		logger.info("Trying Add");
 		logger.info(this.bucketName);
 		logger.info(this.scopeName);
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+					document.getMetadata(), ed.embedding());
 			this.collection.upsert(document.getId(), cbDoc);
 		}
 	}

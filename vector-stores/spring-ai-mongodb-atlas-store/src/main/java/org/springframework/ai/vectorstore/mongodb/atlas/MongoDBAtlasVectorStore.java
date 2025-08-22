@@ -30,12 +30,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -257,12 +257,11 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
-		for (Document document : documents) {
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+					document.getMetadata(), ed.embedding());
 			this.mongoTemplate.save(mdbDocument, this.collectionName);
 		}
 	}

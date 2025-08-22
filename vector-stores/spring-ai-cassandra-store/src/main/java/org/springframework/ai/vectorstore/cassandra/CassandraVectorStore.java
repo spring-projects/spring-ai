@@ -68,7 +68,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -77,6 +76,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.util.Assert;
@@ -267,34 +267,32 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-		var futures = new CompletableFuture[documents.size()];
-
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
+		var futures = new CompletableFuture[embeddedDocuments.size()];
 
 		int i = 0;
-		for (Document d : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
 			futures[i++] = CompletableFuture.runAsync(() -> {
-				List<Object> primaryKeyValues = this.documentIdTranslator.apply(d.getId());
+				Document doc = ed.document();
+				List<Object> primaryKeyValues = this.documentIdTranslator.apply(doc.getId());
 
-				BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
+				BoundStatementBuilder builder = prepareAddStatement(doc.getMetadata().keySet()).boundStatementBuilder();
 				for (int k = 0; k < primaryKeyValues.size(); ++k) {
 					SchemaColumn keyColumn = this.getPrimaryKeyColumn(k);
 					builder = builder.set(keyColumn.name(), primaryKeyValues.get(k), keyColumn.javaType());
 				}
 
-				builder = builder.setString(this.schema.content(), d.getText())
+				builder = builder.setString(this.schema.content(), doc.getText())
 					.setVector(this.schema.embedding(),
-							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(documents.indexOf(d)))),
+							CqlVector.newInstance(EmbeddingUtils.toList(ed.embedding())),
 							Float.class);
 
 				for (var metadataColumn : this.schema.metadataColumns()
 					.stream()
-					.filter(mc -> d.getMetadata().containsKey(mc.name()))
+					.filter(mc -> doc.getMetadata().containsKey(mc.name()))
 					.toList()) {
 
-					builder = builder.set(metadataColumn.name(), d.getMetadata().get(metadataColumn.name()),
+					builder = builder.set(metadataColumn.name(), doc.getMetadata().get(metadataColumn.name()),
 							metadataColumn.javaType());
 				}
 				BoundStatement s = builder.build().setExecutionProfileName(DRIVER_PROFILE_UPDATES);

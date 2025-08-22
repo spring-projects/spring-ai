@@ -56,11 +56,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -226,15 +226,12 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-
-		// Batch the documents based on the batching strategy
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID
-		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
+		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = embeddedDocuments.stream().map(ed -> {
+			Document doc = ed.document();
 			String partitionKeyValue;
 
 			if ("/id".equals(this.partitionKeyPath)) {
@@ -255,7 +252,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			}
 
 			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
-					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))),
+					mapCosmosDocument(doc, ed.embedding()),
 					new PartitionKey(partitionKeyValue)); // Pair the document ID
 			// with the operation
 			return new ImmutablePair<>(doc.getId(), operation);

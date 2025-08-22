@@ -32,11 +32,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -200,12 +200,13 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
-		UploadRequest upload = new UploadRequest(documents.stream()
-			.map(document -> new UploadRequest.Embedding(document.getId(), embeddings.get(documents.indexOf(document)),
-					DOCUMENT_FIELD, document.getText(), document.getMetadata()))
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
+		UploadRequest upload = new UploadRequest(embeddedDocuments.stream()
+			.map(ed -> {
+				Document document = ed.document();
+				return new UploadRequest.Embedding(document.getId(), ed.embedding(),
+						DOCUMENT_FIELD, document.getText(), document.getMetadata());
+			})
 			.toList());
 
 		String embeddingsJson = null;

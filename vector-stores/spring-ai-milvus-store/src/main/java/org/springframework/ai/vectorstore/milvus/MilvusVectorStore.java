@@ -59,7 +59,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -68,6 +67,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.model.EmbeddedDocument;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -232,20 +232,16 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(List<Document> documents) {
-
-		Assert.notNull(documents, "Documents must not be null");
-
+	public void doAdd(List<EmbeddedDocument> embeddedDocuments) {
 		List<String> docIdArray = new ArrayList<>();
 		List<String> contentArray = new ArrayList<>();
 		List<JsonObject> metadataArray = new ArrayList<>();
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
-				this.batchingStrategy);
 
-		for (Document document : documents) {
+		for (EmbeddedDocument ed : embeddedDocuments) {
+			Document document = ed.document();
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
@@ -253,7 +249,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
-			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
+			embeddingArray.add(EmbeddingUtils.toList(ed.embedding()));
 		}
 
 		List<InsertParam.Field> fields = new ArrayList<>();
