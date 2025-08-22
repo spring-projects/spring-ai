@@ -137,7 +137,6 @@ public class StatelessWebClientWebFluxServerIT {
 						CallToolRequest toolRequest = CallToolRequest.builder()
 							.name("tool1")
 							.arguments(Map.of())
-							.progressToken("test-progress-token")
 							.build();
 
 						CallToolResult response = mcpClient.callTool(toolRequest);
