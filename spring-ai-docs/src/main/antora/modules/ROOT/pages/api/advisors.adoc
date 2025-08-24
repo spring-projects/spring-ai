@@ -435,7 +435,7 @@ public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest
 * The `StreamResponseMode`, previously part of `ResponseAdvisor`, has been removed.
 * In 1.0.0 these interfaces have been replaced:
 ** `CallAroundAdvisor` -> `CallAdvisor`, `StreamAroundAdvisor` -> `StreamAdvisor`, `CallAroundAdvisorChain` -> `CallAdvisorChain` and `StreamAroundAdvisorChain` -> `StreamAdvisorChain`. 
-** `AdvisedRequest` -> `ChatClientRequest` are `AdivsedResponse` -> `ChatClientResponse`.
+** `AdvisedRequest` -> `ChatClientRequest` and `AdivsedResponse` -> `ChatClientResponse`.
 
 === Context Map Handling
 
