@@ -165,7 +165,9 @@ public final class McpToolUtils {
 
 		SharedSyncToolSpecification sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
 
-		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(), null,
+		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(),
+				(exchange, map) -> sharedSpec.sharedHandler()
+					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map)),
 				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
 	}
 
