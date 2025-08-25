@@ -94,6 +94,121 @@ class ToolUtilsTests {
 	}
 
 	@Test
+	void prefixedToolNameShouldSupportChineseCharacters() {
+		String result = McpToolUtils.prefixedToolName("前缀", "工具名称");
+		assertThat(result).isEqualTo("前缀_工具名称");
+	}
+
+	@Test
+	void prefixedToolNameShouldSupportMixedChineseAndEnglish() {
+		String result = McpToolUtils.prefixedToolName("prefix前缀", "tool工具Name");
+		assertThat(result).isEqualTo("prefix前缀_tool工具Name");
+	}
+
+	@Test
+	void prefixedToolNameShouldRemoveSpecialCharactersButKeepChinese() {
+		String result = McpToolUtils.prefixedToolName("pre@fix前缀", "tool#工具$name");
+		assertThat(result).isEqualTo("prefix前缀_tool工具name");
+	}
+
+	@Test
+	void prefixedToolNameShouldHandleChineseWithHyphens() {
+		String result = McpToolUtils.prefixedToolName("前缀-test", "工具-name");
+		assertThat(result).isEqualTo("前缀_test_工具_name");
+	}
+
+	@Test
+	void prefixedToolNameShouldTruncateLongChineseStrings() {
+		// Create a string with Chinese characters that exceeds 64 characters
+		String longPrefix = "前缀".repeat(20); // 40 Chinese characters
+		String longToolName = "工具".repeat(20); // 40 Chinese characters
+		String result = McpToolUtils.prefixedToolName(longPrefix, longToolName);
+		assertThat(result).hasSize(64);
+		assertThat(result).endsWith("_" + "工具".repeat(20));
+	}
+
+	@Test
+	void prefixedToolNameShouldHandleChinesePunctuation() {
+		String result = McpToolUtils.prefixedToolName("前缀，测试", "工具。名称！");
+		assertThat(result).isEqualTo("前缀测试_工具名称");
+	}
+
+	@Test
+	void prefixedToolNameShouldHandleUnicodeBoundaries() {
+		// Test characters at the boundaries of the Chinese Unicode range
+		String result1 = McpToolUtils.prefixedToolName("prefix", "tool\u4e00"); // First
+																				// Chinese
+																				// character
+		assertThat(result1).isEqualTo("prefix_tool\u4e00");
+
+		String result2 = McpToolUtils.prefixedToolName("prefix", "tool\u9fa5"); // Last
+																				// Chinese
+																				// character
+		assertThat(result2).isEqualTo("prefix_tool\u9fa5");
+	}
+
+	@Test
+	void prefixedToolNameShouldExcludeNonChineseUnicodeCharacters() {
+		// Test with Japanese Hiragana (outside Chinese range)
+		String result1 = McpToolUtils.prefixedToolName("prefix", "toolあ"); // Japanese
+																			// Hiragana
+		assertThat(result1).isEqualTo("prefix_tool");
+
+		// Test with Korean characters (outside Chinese range)
+		String result2 = McpToolUtils.prefixedToolName("prefix", "tool한"); // Korean
+																			// character
+		assertThat(result2).isEqualTo("prefix_tool");
+
+		// Test with Arabic characters (outside Chinese range)
+		String result3 = McpToolUtils.prefixedToolName("prefix", "toolع"); // Arabic
+																			// character
+		assertThat(result3).isEqualTo("prefix_tool");
+	}
+
+	@Test
+	void prefixedToolNameShouldHandleEmojisAndSymbols() {
+		// Emojis and symbols should be removed
+		String result = McpToolUtils.prefixedToolName("prefix🚀", "tool工具😀name");
+		assertThat(result).isEqualTo("prefix_tool工具name");
+	}
+
+	@Test
+	void prefixedToolNameShouldPreserveNumbersWithChinese() {
+		String result = McpToolUtils.prefixedToolName("前缀123", "工具456名称");
+		assertThat(result).isEqualTo("前缀123_工具456名称");
+	}
+
+	@Test
+	void prefixedToolNameShouldSupportExtendedHanCharacters() {
+		// Test boundary character at end of CJK Unified Ideographs block
+		String result1 = McpToolUtils.prefixedToolName("prefix", "tool\u9fff"); // CJK
+																				// block
+																				// boundary
+		assertThat(result1).isEqualTo("prefix_tool\u9fff");
+
+		// Test CJK Extension A characters
+		String result2 = McpToolUtils.prefixedToolName("prefix", "tool\u3400"); // CJK Ext
+																				// A
+		assertThat(result2).isEqualTo("prefix_tool\u3400");
+	}
+
+	@Test
+	void prefixedToolNameShouldSupportCompatibilityIdeographs() {
+		// Test CJK Compatibility Ideographs
+		String result = McpToolUtils.prefixedToolName("prefix", "tool\uf900"); // Compatibility
+																				// ideograph
+		assertThat(result).isEqualTo("prefix_tool\uf900");
+	}
+
+	@Test
+	void prefixedToolNameShouldHandleAllHanScriptCharacters() {
+		// Mix of different Han character blocks: Extension A + CJK Unified +
+		// Compatibility
+		String result = McpToolUtils.prefixedToolName("前缀\u3400", "工具\u9fff名称\uf900");
+		assertThat(result).isEqualTo("前缀\u3400_工具\u9fff名称\uf900");
+	}
+
+	@Test
 	void constructorShouldBePrivate() throws Exception {
 		Constructor<McpToolUtils> constructor = McpToolUtils.class.getDeclaredConstructor();
 		assertThat(Modifier.isPrivate(constructor.getModifiers())).isTrue();

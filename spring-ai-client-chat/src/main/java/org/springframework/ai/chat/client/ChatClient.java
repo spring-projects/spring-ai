@@ -45,7 +45,7 @@ import org.springframework.util.MimeType;
 
 /**
  * Client to perform stateless requests to an AI Model, using a fluent API.
- *
+ * <p>
  * Use {@link ChatClient#builder(ChatModel)} to prepare an instance.
  *
  * @author Mark Pollack
@@ -114,6 +114,10 @@ public interface ChatClient {
 
 		PromptUserSpec media(MimeType mimeType, Resource resource);
 
+		PromptUserSpec metadata(Map<String, Object> metadata);
+
+		PromptUserSpec metadata(String k, Object v);
+
 	}
 
 	/**
@@ -130,6 +134,10 @@ public interface ChatClient {
 		PromptSystemSpec params(Map<String, Object> p);
 
 		PromptSystemSpec param(String k, Object v);
+
+		PromptSystemSpec metadata(Map<String, Object> metadata);
+
+		PromptSystemSpec metadata(String k, Object v);
 
 	}
 
@@ -203,8 +211,8 @@ public interface ChatClient {
 	interface ChatClientRequestSpec {
 
 		/**
-		 * Return a {@code ChatClient.Builder} to create a new {@code ChatClient} whose
-		 * settings are replicated from this {@code ChatClientRequest}.
+		 * Return a {@link ChatClient.Builder} to create a new {@link ChatClient} whose
+		 * settings are replicated from this {@link ChatClientRequest}.
 		 */
 		Builder mutate();
 

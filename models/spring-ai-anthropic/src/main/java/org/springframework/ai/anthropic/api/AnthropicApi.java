@@ -24,15 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
@@ -52,6 +45,16 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 /**
  * The Anthropic API client.
  *
@@ -66,6 +69,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @since 1.0.0
  */
 public final class AnthropicApi {
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
 
 	public static Builder builder() {
 		return new Builder();
@@ -222,6 +227,9 @@ public final class AnthropicApi {
 			.filter(event -> event.type() != EventType.PING)
 			// Detect if the chunk is part of a streaming function call.
 			.map(event -> {
+				
+				logger.debug("Received event: {}", event);
+
 				if (this.streamHelper.isToolUseStart(event)) {
 					isInsideTool.set(true);
 				}
@@ -1060,8 +1068,7 @@ public final class AnthropicApi {
 		  * @return True if the event is empty, false otherwise.
 		*/
 		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
+			return (this.index == null || this.id == null || this.name == null);
 		}
 
 		ToolUseAggregationEvent withIndex(Integer index) {
@@ -1124,8 +1131,11 @@ public final class AnthropicApi {
 
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
-		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
-				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text") })
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
+				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text"),
+				@JsonSubTypes.Type(value = ContentBlockThinking.class, name = "thinking")
+		})
 		public interface ContentBlockBody {
 			String type();
 		}
@@ -1157,6 +1167,19 @@ public final class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockBody {
 		}
+
+		/**
+		 * Thinking content block.
+		 * @param type The content block type.
+		 * @param thinking The thinking content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ContentBlockThinking(
+			@JsonProperty("type") String type,
+			@JsonProperty("thinking") String thinking,
+			@JsonProperty("signature") String signature) implements ContentBlockBody {
+		}
+		
 	}
 	// @formatter:on
 

@@ -150,7 +150,7 @@ public class OpenAiImageApi {
 		@JsonProperty("created") Long created,
 		@JsonProperty("data") List<Data> data) {
 	}
-	// @formatter:onn
+	// @formatter:on
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)

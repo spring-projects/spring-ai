@@ -56,6 +56,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -125,7 +126,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
-				.entity(new ParameterizedTypeReference<List<String>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -140,7 +141,7 @@ class OpenAiChatClientIT extends AbstractIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -173,7 +174,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -235,8 +236,17 @@ class OpenAiChatClientIT extends AbstractIT {
 				.stream()
 				.filter(cr -> cr.getResult() != null)
 				.map(cr -> cr.getResult().getOutput().getText())
+				.filter(text -> text != null && !text.trim().isEmpty()) // Filter out empty/null text
 				.collect(Collectors.joining());
 		// @formatter:on
+
+		// Add debugging to understand what text we're trying to parse
+		logger.debug("Aggregated streaming text: {}", generationTextFromStream);
+
+		// Ensure we have valid JSON before attempting conversion
+		if (generationTextFromStream.trim().isEmpty()) {
+			fail("Empty aggregated text from streaming response - this indicates a problem with streaming aggregation");
+		}
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
 
@@ -324,7 +334,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
@@ -343,7 +353,7 @@ class OpenAiChatClientIT extends AbstractIT {
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off

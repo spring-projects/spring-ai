@@ -150,8 +150,8 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.openai.chat.options.logitBias | Modify the likelihood of specified tokens appearing in the completion. | -
-| spring.ai.openai.chat.options.maxTokens | (Deprecated in favour of `maxCompletionTokens`) The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
-| spring.ai.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. | -
+| spring.ai.openai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. *Use for non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Cannot be used with reasoning models* (e.g., o1, o3, o4-mini series). *Mutually exclusive with maxCompletionTokens* - setting both will result in an API error. | -
+| spring.ai.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. *Required for reasoning models* (e.g., o1, o3, o4-mini series). *Cannot be used with non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Mutually exclusive with maxTokens* - setting both will result in an API error. | -
 | spring.ai.openai.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as 1 to minimize costs. | 1
 | spring.ai.openai.chat.options.store | Whether to store the output of this chat completion request for use in our model | false
 | spring.ai.openai.chat.options.metadata | Developer-defined tags and values used for filtering completions in the chat completion dashboard | empty map
@@ -179,11 +179,75 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 |====
 
+[NOTE]
+====
+When using GPT-5 models such as `gpt-5`, `gpt-5-mini`, and `gpt-5-nano`, the `temperature` parameter is not supported.
+These models are optimized for reasoning and do not use temperature.
+Specifying a temperature value will result in an error.
+In contrast, conversational models like `gpt-5-chat` do support the `temperature` parameter.
+====
+
 NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties, if set, take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.openai.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
+
+=== Token Limit Parameters: Model-Specific Usage
+
+OpenAI provides two mutually exclusive parameters for controlling token generation limits:
+
+[cols="2,3,3", stripes=even]
+|====
+| Parameter | Use Case | Compatible Models
+
+| `maxTokens` | Non-reasoning models | gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
+| `maxCompletionTokens` | Reasoning models | o1, o1-mini, o1-preview, o3, o4-mini series
+|====
+
+IMPORTANT: These parameters are **mutually exclusive**. Setting both will result in an API error from OpenAI.
+
+==== Usage Examples
+
+**For non-reasoning models (gpt-4o, gpt-3.5-turbo):**
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Explain quantum computing in simple terms.",
+        OpenAiChatOptions.builder()
+            .model("gpt-4o")
+            .maxTokens(150)  // Use maxTokens for non-reasoning models
+        .build()
+    ));
+----
+
+**For reasoning models (o1, o3 series):**
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Solve this complex math problem step by step: ...",
+        OpenAiChatOptions.builder()
+            .model("o1-preview")
+            .maxCompletionTokens(1000)  // Use maxCompletionTokens for reasoning models
+        .build()
+    ));
+----
+
+**Builder Pattern Validation:**
+The OpenAI ChatOptions builder automatically enforces mutual exclusivity with a "last-set-wins" approach:
+
+[source,java]
+----
+// This will automatically clear maxTokens and use maxCompletionTokens
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .maxTokens(100)           // Set first
+    .maxCompletionTokens(200) // This clears maxTokens and logs a warning
+    .build();
+
+// Result: maxTokens = null, maxCompletionTokens = 200
+----
 
 == Runtime Options [[chat-options]]
 
@@ -206,7 +270,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 == Function Calling
 
@@ -632,7 +696,7 @@ OpenAiApi openAiApi = OpenAiApi.builder()
     .build();
 
 // Create a chat model with the custom OpenAiApi instance
-OpenAiChatmodel chatModel = OpenAiChatModel.builder()
+OpenAiChatModel chatModel = OpenAiChatModel.builder()
     .openAiApi(openAiApi)
     .build();
 // Build the ChatClient using the custom chat model
@@ -644,4 +708,3 @@ This is useful when you need to:
 * Retrieve the API key from a secure key store
 * Rotate API keys dynamically
 * Implement custom API key selection logic
-

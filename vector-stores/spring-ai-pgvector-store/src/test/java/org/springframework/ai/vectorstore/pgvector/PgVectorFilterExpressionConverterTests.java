@@ -29,8 +29,10 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
@@ -117,6 +119,128 @@ public class PgVectorFilterExpressionConverterTests {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("$.\"country 1 2 3\" == \"BG\"");
+	}
+
+	@Test
+	public void testLT() {
+		// value < 100
+		String vectorExpr = this.converter.convertExpression(new Expression(LT, new Key("value"), new Value(100)));
+		assertThat(vectorExpr).isEqualTo("$.value < 100");
+	}
+
+	@Test
+	public void testGT() {
+		// score > 75
+		String vectorExpr = this.converter.convertExpression(new Expression(GT, new Key("score"), new Value(100)));
+		assertThat(vectorExpr).isEqualTo("$.score > 100");
+	}
+
+	@Test
+	public void testLTE() {
+		// amount <= 100.5
+		String vectorExpr = this.converter.convertExpression(new Expression(LTE, new Key("amount"), new Value(100.5)));
+		assertThat(vectorExpr).isEqualTo("$.amount <= 100.5");
+	}
+
+	@Test
+	public void testNIN() {
+		// category NOT IN ["typeA", "typeB"]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("category"), new Value(List.of("typeA", "typeB"))));
+		assertThat(vectorExpr).isEqualTo("!($.category == \"typeA\" || $.category == \"typeB\")");
+	}
+
+	@Test
+	public void testSingleValueIN() {
+		// status IN ["active"] - single value in list
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("status"), new Value(List.of("active"))));
+		assertThat(vectorExpr).isEqualTo("($.status == \"active\")");
+	}
+
+	@Test
+	public void testSingleValueNIN() {
+		// status NOT IN ["inactive"] - single value in list
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("status"), new Value(List.of("inactive"))));
+		assertThat(vectorExpr).isEqualTo("!($.status == \"inactive\")");
+	}
+
+	@Test
+	public void testNumericIN() {
+		// priority IN [1, 2, 3]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("priority"), new Value(List.of(1, 2, 3))));
+		assertThat(vectorExpr).isEqualTo("($.priority == 1 || $.priority == 2 || $.priority == 3)");
+	}
+
+	@Test
+	public void testNumericNIN() {
+		// level NOT IN [0, 10]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("level"), new Value(List.of(0, 10))));
+		assertThat(vectorExpr).isEqualTo("!($.level == 0 || $.level == 10)");
+	}
+
+	@Test
+	public void testNestedGroups() {
+		// ((score >= 80 AND type == "A") OR (score >= 90 AND type == "B")) AND status ==
+		// "valid"
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
+				new Group(new Expression(OR,
+						new Group(new Expression(AND, new Expression(GTE, new Key("score"), new Value(80)),
+								new Expression(EQ, new Key("type"), new Value("A")))),
+						new Group(new Expression(AND, new Expression(GTE, new Key("score"), new Value(90)),
+								new Expression(EQ, new Key("type"), new Value("B")))))),
+				new Expression(EQ, new Key("status"), new Value("valid"))));
+		assertThat(vectorExpr).isEqualTo(
+				"(($.score >= 80 && $.type == \"A\") || ($.score >= 90 && $.type == \"B\")) && $.status == \"valid\"");
+	}
+
+	@Test
+	public void testBooleanFalse() {
+		// active == false
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("active"), new Value(false)));
+		assertThat(vectorExpr).isEqualTo("$.active == false");
+	}
+
+	@Test
+	public void testBooleanNE() {
+		// active != true
+		String vectorExpr = this.converter.convertExpression(new Expression(NE, new Key("active"), new Value(true)));
+		assertThat(vectorExpr).isEqualTo("$.active != true");
+	}
+
+	@Test
+	public void testKeyWithDots() {
+		// "config.setting" == "value1"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("\"config.setting\""), new Value("value1")));
+		assertThat(vectorExpr).isEqualTo("$.\"config.setting\" == \"value1\"");
+	}
+
+	@Test
+	public void testEmptyString() {
+		// description == ""
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("description"), new Value("")));
+		assertThat(vectorExpr).isEqualTo("$.description == \"\"");
+	}
+
+	@Test
+	public void testNullValue() {
+		// metadata == null
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("metadata"), new Value(null)));
+		assertThat(vectorExpr).isEqualTo("$.metadata == null");
+	}
+
+	@Test
+	public void testComplexOrExpression() {
+		// state == "ready" OR state == "pending" OR state == "processing"
+		String vectorExpr = this.converter.convertExpression(new Expression(OR,
+				new Expression(OR, new Expression(EQ, new Key("state"), new Value("ready")),
+						new Expression(EQ, new Key("state"), new Value("pending"))),
+				new Expression(EQ, new Key("state"), new Value("processing"))));
+		assertThat(vectorExpr).isEqualTo("$.state == \"ready\" || $.state == \"pending\" || $.state == \"processing\"");
 	}
 
 }

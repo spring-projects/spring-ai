@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -52,8 +51,12 @@ import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
+
+import org.springframework.ai.retry.RetryUtils;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -65,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 class OllamaChatModelIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
+	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
 	private static final String ADDITIONAL_MODEL = "tinyllama";
 
@@ -253,7 +256,6 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	// Example inspired by https://ollama.com/blog/structured-outputs
 	@Test
-	@Disabled("Pending review")
 	void jsonSchemaFormatStructuredOutput() {
 		var outputConverter = new BeanOutputConverter<>(CountryInfo.class);
 		var userPromptTemplate = new PromptTemplate("""
@@ -261,10 +263,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				""");
 		Map<String, Object> model = Map.of("country", "denmark");
 		var prompt = userPromptTemplate.create(model,
-				OllamaOptions.builder()
-					.model(OllamaModel.LLAMA3_2.getName())
-					.format(outputConverter.getJsonSchemaMap())
-					.build());
+				OllamaOptions.builder().model(MODEL).format(outputConverter.getJsonSchemaMap()).build());
 
 		var chatResponse = this.chatModel.call(prompt);
 
@@ -371,6 +370,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))
 					.build())
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 

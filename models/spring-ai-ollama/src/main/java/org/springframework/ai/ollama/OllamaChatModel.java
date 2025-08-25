@@ -54,6 +54,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
@@ -65,8 +66,13 @@ import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
+
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.retry.support.RetryTemplate;
+
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -129,27 +135,32 @@ public class OllamaChatModel implements ChatModel {
 
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	private final RetryTemplate retryTemplate;
+
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		this(ollamaApi, defaultOptions, toolCallingManager, observationRegistry, modelManagementOptions,
-				new DefaultToolExecutionEligibilityPredicate());
+				new DefaultToolExecutionEligibilityPredicate(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate, RetryTemplate retryTemplate) {
+
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		Assert.notNull(modelManagementOptions, "modelManagementOptions must not be null");
 		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
+		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		this.chatApi = ollamaApi;
 		this.defaultOptions = defaultOptions;
 		this.toolCallingManager = toolCallingManager;
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(this.chatApi, modelManagementOptions);
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+		this.retryTemplate = retryTemplate;
 		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
 	}
 
@@ -237,7 +248,7 @@ public class OllamaChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				OllamaApi.ChatResponse ollamaResponse = this.chatApi.chat(request);
+				OllamaApi.ChatResponse ollamaResponse = this.retryTemplate.execute(ctx -> this.chatApi.chat(request));
 
 				List<AssistantMessage.ToolCall> toolCalls = ollamaResponse.message().toolCalls() == null ? List.of()
 						: ollamaResponse.message()
@@ -341,8 +352,14 @@ public class OllamaChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
-					return Flux.defer(() -> {
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+					return Flux.deferContextual((ctx) -> {
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						} finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
 							return Flux.just(ChatResponse.builder().from(response)
@@ -540,6 +557,8 @@ public class OllamaChatModel implements ChatModel {
 
 		private ModelManagementOptions modelManagementOptions = ModelManagementOptions.defaults();
 
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
 		private Builder() {
 		}
 
@@ -574,13 +593,20 @@ public class OllamaChatModel implements ChatModel {
 			return this;
 		}
 
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
 		public OllamaChatModel build() {
 			if (this.toolCallingManager != null) {
 				return new OllamaChatModel(this.ollamaApi, this.defaultOptions, this.toolCallingManager,
-						this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate);
+						this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate,
+						this.retryTemplate);
 			}
 			return new OllamaChatModel(this.ollamaApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
-					this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate);
+					this.observationRegistry, this.modelManagementOptions, this.toolExecutionEligibilityPredicate,
+					this.retryTemplate);
 		}
 
 	}

@@ -33,14 +33,24 @@ public final class EmbeddingOptionsBuilder {
 		return new EmbeddingOptionsBuilder();
 	}
 
-	public EmbeddingOptionsBuilder withModel(String model) {
+	public EmbeddingOptionsBuilder model(String model) {
 		this.embeddingOptions.setModel(model);
 		return this;
 	}
 
-	public EmbeddingOptionsBuilder withDimensions(Integer dimensions) {
+	@Deprecated
+	public EmbeddingOptionsBuilder withModel(String model) {
+		return model(model);
+	}
+
+	public EmbeddingOptionsBuilder dimensions(Integer dimensions) {
 		this.embeddingOptions.setDimensions(dimensions);
 		return this;
+	}
+
+	@Deprecated
+	public EmbeddingOptionsBuilder withDimensions(Integer dimensions) {
+		return dimensions(dimensions);
 	}
 
 	public EmbeddingOptions build() {

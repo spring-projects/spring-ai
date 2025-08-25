@@ -44,7 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.json;
 
 /**
  * @author Christian Tzolov
@@ -274,7 +273,7 @@ public class ChromaApiIT {
 			.hasMessage("Failed to initialize ChromaVectorStore")
 			.hasCauseInstanceOf(RuntimeException.class)
 			.hasRootCauseMessage(
-					"Collection non-existent doesn't exist and won't be created as the initializeSchema is set to false.");
+					"Collection non-existent with the tenant: SpringAiTenant and the database: SpringAiDatabase doesn't exist and won't be created as the initializeSchema is set to false.");
 	}
 
 	@Test
