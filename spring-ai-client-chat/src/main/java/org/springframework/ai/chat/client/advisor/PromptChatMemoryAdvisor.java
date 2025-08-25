@@ -155,18 +155,18 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		}
 
 		if (!assistantMessages.isEmpty()) {
-			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+			this.chatMemory.add(this.getConversationId(chatClientResponse.chatResponse().getContext(), this.defaultConversationId),
 					assistantMessages);
 
 			if (logger.isDebugEnabled()) {
 				logger.debug(
 						"[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+						this.getConversationId(chatClientResponse.chatResponse().getContext(), this.defaultConversationId),
 						assistantMessages);
 				List<Message> memoryMessages = this.chatMemory
-					.get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
+					.get(this.getConversationId(chatClientResponse.chatResponse().getContext(), this.defaultConversationId));
 				logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+						this.getConversationId(chatClientResponse.chatResponse().getContext(), this.defaultConversationId),
 						memoryMessages);
 			}
 		}

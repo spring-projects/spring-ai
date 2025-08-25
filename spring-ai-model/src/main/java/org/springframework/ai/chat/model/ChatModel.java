@@ -51,4 +51,12 @@ public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatMod
 		throw new UnsupportedOperationException("streaming is not supported");
 	}
 
+	default boolean isStop(ChatResponse chatResponse) {
+
+		return (null !=chatResponse.getResult()
+				&& null !=chatResponse.getResult().getMetadata()
+				&& null !=chatResponse.getResult().getMetadata().getFinishReason()
+				&& "stop".equals(chatResponse.getResult().getMetadata().getFinishReason()));
+	}
+
 }
