@@ -1346,6 +1346,41 @@ public class OpenAiApi {
 	} // @formatter:on
 
 	/**
+	 * Specifies the processing type used for serving the request.
+	 */
+	public enum ServiceTier {
+
+		/**
+		 * Then the request will be processed with the service tier configured in the
+		 * Project settings.
+		 */
+		AUTO("auto"),
+		/**
+		 * Then the request will be processed with the standard pricing.
+		 */
+		DEFAULT("default"),
+		/**
+		 * Then the request will be processed with the flex pricing.
+		 */
+		FLEX("flex"),
+		/**
+		 * Then the request will be processed with the priority pricing.
+		 */
+		PRIORITY("priority");
+
+		private final String value;
+
+		private ServiceTier(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return value;
+		}
+
+	}
+
+	/**
 	 * Message comprising the conversation.
 	 *
 	 * @param rawContent The contents of the message. Can be either a {@link MediaContent}
