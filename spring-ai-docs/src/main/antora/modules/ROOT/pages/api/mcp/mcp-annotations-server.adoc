@@ -1,0 +1,434 @@
+= MCP Server Annotations
+
+The MCP Server Annotations provide a declarative way to implement MCP server functionality using Java annotations. 
+These annotations simplify the creation of tools, resources, prompts, and completion handlers.
+
+== Server Annotations
+
+=== @McpTool
+
+The `@McpTool` annotation marks a method as an MCP tool implementation with automatic JSON schema generation.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class CalculatorTools {
+
+    @McpTool(name = "add", description = "Add two numbers together")
+    public int add(
+            @McpToolParam(description = "First number", required = true) int a,
+            @McpToolParam(description = "Second number", required = true) int b) {
+        return a + b;
+    }
+}
+----
+
+==== Advanced Features
+
+[source,java]
+----
+@McpTool(name = "calculate-area", 
+         description = "Calculate the area of a rectangle",
+         annotations = @McpTool.McpAnnotations(
+             title = "Rectangle Area Calculator",
+             readOnlyHint = true,
+             destructiveHint = false,
+             idempotentHint = true
+         ))
+public AreaResult calculateRectangleArea(
+        @McpToolParam(description = "Width", required = true) double width,
+        @McpToolParam(description = "Height", required = true) double height) {
+    
+    return new AreaResult(width * height, "square units");
+}
+----
+
+==== With Server Exchange
+
+Tools can access the server exchange for advanced operations:
+
+[source,java]
+----
+@McpTool(name = "process-data", description = "Process data with server context")
+public String processData(
+        McpSyncServerExchange exchange,
+        @McpToolParam(description = "Data to process", required = true) String data) {
+    
+    // Send logging notification
+    exchange.loggingNotification(LoggingMessageNotification.builder()
+        .level(LoggingLevel.INFO)
+        .data("Processing data: " + data)
+        .build());
+    
+    // Send progress notification if progress token is available
+    exchange.progressNotification(new ProgressNotification(
+        progressToken, 0.5, 1.0, "Processing..."));
+    
+    return "Processed: " + data.toUpperCase();
+}
+----
+
+==== Dynamic Schema Support
+
+Tools can accept `CallToolRequest` for runtime schema handling:
+
+[source,java]
+----
+@McpTool(name = "flexible-tool", description = "Process dynamic schema")
+public CallToolResult processDynamic(CallToolRequest request) {
+    Map<String, Object> args = request.arguments();
+    
+    // Process based on runtime schema
+    String result = "Processed " + args.size() + " arguments dynamically";
+    
+    return CallToolResult.builder()
+        .addTextContent(result)
+        .build();
+}
+----
+
+==== Progress Tracking
+
+Tools can receive progress tokens for tracking long-running operations:
+
+[source,java]
+----
+@McpTool(name = "long-task", description = "Long-running task with progress")
+public String performLongTask(
+        @McpProgressToken String progressToken,
+        @McpToolParam(description = "Task name", required = true) String taskName,
+        McpSyncServerExchange exchange) {
+    
+    if (progressToken != null) {
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 0.0, 1.0, "Starting task"));
+        
+        // Perform work...
+        
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 1.0, 1.0, "Task completed"));
+    }
+    
+    return "Task " + taskName + " completed";
+}
+----
+
+=== @McpResource
+
+The `@McpResource` annotation provides access to resources via URI templates.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class ResourceProvider {
+
+    @McpResource(
+        uri = "config://{key}", 
+        name = "Configuration", 
+        description = "Provides configuration data")
+    public String getConfig(String key) {
+        return configData.get(key);
+    }
+}
+----
+
+==== With ReadResourceResult
+
+[source,java]
+----
+@McpResource(
+    uri = "user-profile://{username}", 
+    name = "User Profile", 
+    description = "Provides user profile information")
+public ReadResourceResult getUserProfile(String username) {
+    String profileData = loadUserProfile(username);
+    
+    return new ReadResourceResult(List.of(
+        new TextResourceContents(
+            "user-profile://" + username,
+            "application/json", 
+            profileData)
+    ));
+}
+----
+
+==== With Server Exchange
+
+[source,java]
+----
+@McpResource(
+    uri = "data://{id}", 
+    name = "Data Resource", 
+    description = "Resource with server context")
+public ReadResourceResult getData(
+        McpSyncServerExchange exchange, 
+        String id) {
+    
+    exchange.loggingNotification(LoggingMessageNotification.builder()
+        .level(LoggingLevel.INFO)
+        .data("Accessing resource: " + id)
+        .build());
+    
+    String data = fetchData(id);
+    
+    return new ReadResourceResult(List.of(
+        new TextResourceContents("data://" + id, "text/plain", data)
+    ));
+}
+----
+
+=== @McpPrompt
+
+The `@McpPrompt` annotation generates prompt messages for AI interactions.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class PromptProvider {
+
+    @McpPrompt(
+        name = "greeting", 
+        description = "Generate a greeting message")
+    public GetPromptResult greeting(
+            @McpArg(name = "name", description = "User's name", required = true) 
+            String name) {
+        
+        String message = "Hello, " + name + "! How can I help you today?";
+        
+        return new GetPromptResult(
+            "Greeting",
+            List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message)))
+        );
+    }
+}
+----
+
+==== With Optional Arguments
+
+[source,java]
+----
+@McpPrompt(
+    name = "personalized-message",
+    description = "Generate a personalized message")
+public GetPromptResult personalizedMessage(
+        @McpArg(name = "name", required = true) String name,
+        @McpArg(name = "age", required = false) Integer age,
+        @McpArg(name = "interests", required = false) String interests) {
+    
+    StringBuilder message = new StringBuilder();
+    message.append("Hello, ").append(name).append("!\n\n");
+    
+    if (age != null) {
+        message.append("At ").append(age).append(" years old, ");
+        // Add age-specific content
+    }
+    
+    if (interests != null && !interests.isEmpty()) {
+        message.append("Your interest in ").append(interests);
+        // Add interest-specific content
+    }
+    
+    return new GetPromptResult(
+        "Personalized Message",
+        List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message.toString())))
+    );
+}
+----
+
+=== @McpComplete
+
+The `@McpComplete` annotation provides auto-completion functionality for prompts.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class CompletionProvider {
+
+    @McpComplete(prompt = "city-search")
+    public List<String> completeCityName(String prefix) {
+        return cities.stream()
+            .filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+            .limit(10)
+            .toList();
+    }
+}
+----
+
+==== With CompleteRequest.CompleteArgument
+
+[source,java]
+----
+@McpComplete(prompt = "travel-planner")
+public List<String> completeTravelDestination(CompleteRequest.CompleteArgument argument) {
+    String prefix = argument.value().toLowerCase();
+    String argumentName = argument.name();
+    
+    // Different completions based on argument name
+    if ("city".equals(argumentName)) {
+        return completeCities(prefix);
+    } else if ("country".equals(argumentName)) {
+        return completeCountries(prefix);
+    }
+    
+    return List.of();
+}
+----
+
+==== With CompleteResult
+
+[source,java]
+----
+@McpComplete(prompt = "code-completion")
+public CompleteResult completeCode(String prefix) {
+    List<String> completions = generateCodeCompletions(prefix);
+    
+    return new CompleteResult(
+        new CompleteResult.CompleteCompletion(
+            completions,
+            completions.size(),  // total
+            hasMoreCompletions   // hasMore flag
+        )
+    );
+}
+----
+
+== Stateless vs Stateful Implementations
+
+=== Stateful (with McpSyncServerExchange/McpAsyncServerExchange)
+
+Stateful implementations have access to the full server exchange context:
+
+[source,java]
+----
+@McpTool(name = "stateful-tool", description = "Tool with server exchange")
+public String statefulTool(
+        McpSyncServerExchange exchange,
+        @McpToolParam(description = "Input", required = true) String input) {
+    
+    // Access server exchange features
+    exchange.loggingNotification(...);
+    exchange.progressNotification(...);
+    exchange.ping();
+    
+    // Can call client methods
+    CreateMessageResult result = exchange.createMessage(...);
+    ElicitResult elicitResult = exchange.createElicitation(...);
+    
+    return "Processed with full context";
+}
+----
+
+=== Stateless (with McpTransportContext or without)
+
+Stateless implementations are simpler and don't require server exchange:
+
+[source,java]
+----
+@McpTool(name = "stateless-tool", description = "Simple stateless tool")
+public int simpleAdd(
+        @McpToolParam(description = "First number", required = true) int a,
+        @McpToolParam(description = "Second number", required = true) int b) {
+    return a + b;
+}
+
+// With transport context if needed
+@McpTool(name = "stateless-with-context", description = "Stateless with context")
+public String withContext(
+        McpTransportContext context,
+        @McpToolParam(description = "Input", required = true) String input) {
+    // Limited context access
+    return "Processed: " + input;
+}
+----
+
+== Async Support
+
+All server annotations support asynchronous implementations using Reactor:
+
+[source,java]
+----
+@Component
+public class AsyncTools {
+
+    @McpTool(name = "async-fetch", description = "Fetch data asynchronously")
+    public Mono<String> asyncFetch(
+            @McpToolParam(description = "URL", required = true) String url) {
+        
+        return Mono.fromCallable(() -> {
+            // Simulate async operation
+            return fetchFromUrl(url);
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @McpResource(uri = "async-data://{id}", name = "Async Data")
+    public Mono<ReadResourceResult> asyncResource(String id) {
+        return Mono.fromCallable(() -> {
+            String data = loadData(id);
+            return new ReadResourceResult(List.of(
+                new TextResourceContents("async-data://" + id, "text/plain", data)
+            ));
+        }).delayElements(Duration.ofMillis(100));
+    }
+}
+----
+
+== Spring Boot Integration
+
+With Spring Boot auto-configuration, annotated beans are automatically detected and registered:
+
+[source,java]
+----
+@SpringBootApplication
+public class McpServerApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(McpServerApplication.class, args);
+    }
+}
+
+@Component
+public class MyMcpTools {
+    // Your @McpTool annotated methods
+}
+
+@Component
+public class MyMcpResources {
+    // Your @McpResource annotated methods
+}
+----
+
+The auto-configuration will:
+
+1. Scan for beans with MCP annotations
+2. Create appropriate specifications
+3. Register them with the MCP server
+4. Handle both sync and async implementations based on configuration
+
+== Configuration Properties
+
+Configure the server annotation scanner:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      server:
+        type: SYNC  # or ASYNC
+        annotation-scanner:
+          enabled: true
+----
+
+== Additional Resources
+
+* xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations Overview]
+* xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]
+* xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters]
+* xref:api/mcp/mcp-server-boot-starter-docs.adoc[MCP Server Boot Starter]

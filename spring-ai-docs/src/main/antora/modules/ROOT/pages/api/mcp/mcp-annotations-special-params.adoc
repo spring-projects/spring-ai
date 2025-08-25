@@ -1,0 +1,470 @@
+= MCP Annotations Special Parameters
+
+The MCP Annotations support several special parameter types that provide additional context and functionality to annotated methods. 
+These parameters are automatically injected by the framework and are excluded from JSON schema generation.
+
+== Special Parameter Types
+
+=== McpMeta
+
+The `McpMeta` class provides access to metadata from MCP requests, notifications, and results.
+
+==== Overview
+
+* Automatically injected when used as a method parameter
+* Excluded from parameter count limits and JSON schema generation
+* Provides convenient access to metadata through the `get(String key)` method
+* If no metadata is present in the request, an empty `McpMeta` object is injected
+
+==== Usage in Tools
+
+[source,java]
+----
+@McpTool(name = "contextual-tool", description = "Tool with metadata access")
+public String processWithContext(
+        @McpToolParam(description = "Input data", required = true) String data,
+        McpMeta meta) {
+    
+    // Access metadata from the request
+    String userId = (String) meta.get("userId");
+    String sessionId = (String) meta.get("sessionId");
+    String userRole = (String) meta.get("userRole");
+    
+    // Use metadata to customize behavior
+    if ("admin".equals(userRole)) {
+        return processAsAdmin(data, userId);
+    } else {
+        return processAsUser(data, userId);
+    }
+}
+----
+
+==== Usage in Resources
+
+[source,java]
+----
+@McpResource(uri = "secure-data://{id}", name = "Secure Data")
+public ReadResourceResult getSecureData(String id, McpMeta meta) {
+    
+    String requestingUser = (String) meta.get("requestingUser");
+    String accessLevel = (String) meta.get("accessLevel");
+    
+    // Check access permissions using metadata
+    if (!"admin".equals(accessLevel)) {
+        return new ReadResourceResult(List.of(
+            new TextResourceContents("secure-data://" + id, 
+                "text/plain", "Access denied")
+        ));
+    }
+    
+    String data = loadSecureData(id);
+    return new ReadResourceResult(List.of(
+        new TextResourceContents("secure-data://" + id, 
+            "text/plain", data)
+    ));
+}
+----
+
+==== Usage in Prompts
+
+[source,java]
+----
+@McpPrompt(name = "localized-prompt", description = "Localized prompt generation")
+public GetPromptResult localizedPrompt(
+        @McpArg(name = "topic", required = true) String topic,
+        McpMeta meta) {
+    
+    String language = (String) meta.get("language");
+    String region = (String) meta.get("region");
+    
+    // Generate localized content based on metadata
+    String message = generateLocalizedMessage(topic, language, region);
+    
+    return new GetPromptResult("Localized Prompt",
+        List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message)))
+    );
+}
+----
+
+=== @McpProgressToken
+
+The `@McpProgressToken` annotation marks a parameter to receive progress tokens from MCP requests.
+
+==== Overview
+
+* Parameter type should be `String`
+* Automatically receives the progress token value from the request
+* Excluded from the generated JSON schema
+* If no progress token is present, `null` is injected
+* Used for tracking long-running operations
+
+==== Usage in Tools
+
+[source,java]
+----
+@McpTool(name = "long-operation", description = "Long-running operation with progress")
+public String performLongOperation(
+        @McpProgressToken String progressToken,
+        @McpToolParam(description = "Operation name", required = true) String operation,
+        @McpToolParam(description = "Duration in seconds", required = true) int duration,
+        McpSyncServerExchange exchange) {
+    
+    if (progressToken != null) {
+        // Send initial progress
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 0.0, 1.0, "Starting " + operation));
+        
+        // Simulate work with progress updates
+        for (int i = 1; i <= duration; i++) {
+            Thread.sleep(1000);
+            double progress = (double) i / duration;
+            
+            exchange.progressNotification(new ProgressNotification(
+                progressToken, progress, 1.0, 
+                String.format("Processing... %d%%", (int)(progress * 100))));
+        }
+    }
+    
+    return "Operation " + operation + " completed";
+}
+----
+
+==== Usage in Resources
+
+[source,java]
+----
+@McpResource(uri = "large-file://{path}", name = "Large File Resource")
+public ReadResourceResult getLargeFile(
+        @McpProgressToken String progressToken,
+        String path,
+        McpSyncServerExchange exchange) {
+    
+    File file = new File(path);
+    long fileSize = file.length();
+    
+    if (progressToken != null) {
+        // Track file reading progress
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 0.0, fileSize, "Reading file"));
+    }
+    
+    String content = readFileWithProgress(file, progressToken, exchange);
+    
+    if (progressToken != null) {
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, fileSize, fileSize, "File read complete"));
+    }
+    
+    return new ReadResourceResult(List.of(
+        new TextResourceContents("large-file://" + path, "text/plain", content)
+    ));
+}
+----
+
+=== McpSyncServerExchange / McpAsyncServerExchange
+
+Server exchange objects provide full access to server-side MCP operations.
+
+==== Overview
+
+* Provides stateful context for server operations
+* Automatically injected when used as a parameter
+* Excluded from JSON schema generation
+* Enables advanced features like logging, progress notifications, and client calls
+
+==== McpSyncServerExchange Features
+
+[source,java]
+----
+@McpTool(name = "advanced-tool", description = "Tool with full server capabilities")
+public String advancedTool(
+        McpSyncServerExchange exchange,
+        @McpToolParam(description = "Input", required = true) String input) {
+    
+    // Send logging notification
+    exchange.loggingNotification(LoggingMessageNotification.builder()
+        .level(LoggingLevel.INFO)
+        .logger("advanced-tool")
+        .data("Processing: " + input)
+        .build());
+    
+    // Ping the client
+    exchange.ping();
+    
+    // Request additional information from user
+    ElicitRequest elicitRequest = ElicitRequest.builder()
+        .message("Need additional information")
+        .requestedSchema(Map.of(
+            "type", "object",
+            "properties", Map.of(
+                "confirmation", Map.of("type", "boolean")
+            )
+        ))
+        .build();
+    
+    ElicitResult elicitResult = exchange.createElicitation(elicitRequest);
+    
+    // Request LLM sampling
+    CreateMessageRequest messageRequest = CreateMessageRequest.builder()
+        .messages(List.of(new SamplingMessage(Role.USER, 
+            new TextContent("Process: " + input))))
+        .modelPreferences(ModelPreferences.builder()
+            .hints(List.of(ModelHint.of("gpt-4")))
+            .build())
+        .build();
+    
+    CreateMessageResult samplingResult = exchange.createMessage(messageRequest);
+    
+    return "Processed with advanced features";
+}
+----
+
+==== McpAsyncServerExchange Features
+
+[source,java]
+----
+@McpTool(name = "async-advanced-tool", description = "Async tool with server capabilities")
+public Mono<String> asyncAdvancedTool(
+        McpAsyncServerExchange exchange,
+        @McpToolParam(description = "Input", required = true) String input) {
+    
+    return Mono.fromCallable(() -> {
+        // Send async logging
+        exchange.loggingNotification(LoggingMessageNotification.builder()
+            .level(LoggingLevel.INFO)
+            .data("Async processing: " + input)
+            .build());
+        
+        return "Started processing";
+    })
+    .flatMap(msg -> {
+        // Chain async operations
+        return exchange.createMessage(/* request */)
+            .map(result -> "Completed: " + result);
+    });
+}
+----
+
+=== McpTransportContext
+
+Lightweight context for stateless operations.
+
+==== Overview
+
+* Provides minimal context without full server exchange
+* Used in stateless implementations
+* Automatically injected when used as a parameter
+* Excluded from JSON schema generation
+
+==== Usage Example
+
+[source,java]
+----
+@McpTool(name = "stateless-tool", description = "Stateless tool with context")
+public String statelessTool(
+        McpTransportContext context,
+        @McpToolParam(description = "Input", required = true) String input) {
+    
+    // Limited context access
+    // Useful for transport-level operations
+    
+    return "Processed in stateless mode: " + input;
+}
+
+@McpResource(uri = "stateless://{id}", name = "Stateless Resource")
+public ReadResourceResult statelessResource(
+        McpTransportContext context,
+        String id) {
+    
+    // Access transport context if needed
+    String data = loadData(id);
+    
+    return new ReadResourceResult(List.of(
+        new TextResourceContents("stateless://" + id, "text/plain", data)
+    ));
+}
+----
+
+=== CallToolRequest
+
+Special parameter for tools that need access to the full request with dynamic schema.
+
+==== Overview
+
+* Provides access to the complete tool request
+* Enables dynamic schema handling at runtime
+* Automatically injected and excluded from schema generation
+* Useful for flexible tools that adapt to different input schemas
+
+==== Usage Examples
+
+[source,java]
+----
+@McpTool(name = "dynamic-tool", description = "Tool with dynamic schema support")
+public CallToolResult processDynamicSchema(CallToolRequest request) {
+    Map<String, Object> args = request.arguments();
+    
+    // Process based on whatever schema was provided at runtime
+    StringBuilder result = new StringBuilder("Processed:\n");
+    
+    for (Map.Entry<String, Object> entry : args.entrySet()) {
+        result.append("  ").append(entry.getKey())
+              .append(": ").append(entry.getValue()).append("\n");
+    }
+    
+    return CallToolResult.builder()
+        .addTextContent(result.toString())
+        .build();
+}
+----
+
+==== Mixed Parameters
+
+[source,java]
+----
+@McpTool(name = "hybrid-tool", description = "Tool with typed and dynamic parameters")
+public String processHybrid(
+        @McpToolParam(description = "Operation", required = true) String operation,
+        @McpToolParam(description = "Priority", required = false) Integer priority,
+        CallToolRequest request) {
+    
+    // Use typed parameters for known fields
+    String result = "Operation: " + operation;
+    if (priority != null) {
+        result += " (Priority: " + priority + ")";
+    }
+    
+    // Access additional dynamic arguments
+    Map<String, Object> allArgs = request.arguments();
+    
+    // Remove known parameters to get only additional ones
+    Map<String, Object> additionalArgs = new HashMap<>(allArgs);
+    additionalArgs.remove("operation");
+    additionalArgs.remove("priority");
+    
+    if (!additionalArgs.isEmpty()) {
+        result += " with " + additionalArgs.size() + " additional parameters";
+    }
+    
+    return result;
+}
+----
+
+==== With Progress Token
+
+[source,java]
+----
+@McpTool(name = "flexible-with-progress", description = "Flexible tool with progress")
+public CallToolResult flexibleWithProgress(
+        @McpProgressToken String progressToken,
+        CallToolRequest request,
+        McpSyncServerExchange exchange) {
+    
+    Map<String, Object> args = request.arguments();
+    
+    if (progressToken != null) {
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 0.0, 1.0, "Processing dynamic request"));
+    }
+    
+    // Process dynamic arguments
+    String result = processDynamicArgs(args);
+    
+    if (progressToken != null) {
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 1.0, 1.0, "Complete"));
+    }
+    
+    return CallToolResult.builder()
+        .addTextContent(result)
+        .build();
+}
+----
+
+== Parameter Injection Rules
+
+=== Automatic Injection
+
+The following parameters are automatically injected by the framework:
+
+1. `McpMeta` - Metadata from the request
+2. `@McpProgressToken String` - Progress token if available
+3. `McpSyncServerExchange` / `McpAsyncServerExchange` - Server exchange context
+4. `McpTransportContext` - Transport context for stateless operations
+5. `CallToolRequest` - Full tool request for dynamic schema
+
+=== Schema Generation
+
+Special parameters are excluded from JSON schema generation:
+
+* They don't appear in the tool's input schema
+* They don't count towards parameter limits
+* They're not visible to MCP clients
+
+=== Null Handling
+
+* `McpMeta` - Never null, empty object if no metadata
+* `@McpProgressToken` - Can be null if no token provided
+* Server exchanges - Never null when properly configured
+* `CallToolRequest` - Never null for tool methods
+
+== Best Practices
+
+=== Use McpMeta for Context
+
+[source,java]
+----
+@McpTool(name = "context-aware", description = "Context-aware tool")
+public String contextAware(
+        @McpToolParam(description = "Data", required = true) String data,
+        McpMeta meta) {
+    
+    // Always check for null values in metadata
+    String userId = (String) meta.get("userId");
+    if (userId == null) {
+        userId = "anonymous";
+    }
+    
+    return processForUser(data, userId);
+}
+----
+
+=== Progress Token Null Checks
+
+[source,java]
+----
+@McpTool(name = "safe-progress", description = "Safe progress handling")
+public String safeProgress(
+        @McpProgressToken String progressToken,
+        @McpToolParam(description = "Task", required = true) String task,
+        McpSyncServerExchange exchange) {
+    
+    // Always check if progress token is available
+    if (progressToken != null) {
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 0.0, 1.0, "Starting"));
+    }
+    
+    // Perform work...
+    
+    if (progressToken != null) {
+        exchange.progressNotification(new ProgressNotification(
+            progressToken, 1.0, 1.0, "Complete"));
+    }
+    
+    return "Task completed";
+}
+----
+
+=== Choose the Right Context
+
+* Use `McpSyncServerExchange` / `McpAsyncServerExchange` for stateful operations
+* Use `McpTransportContext` for simple stateless operations
+* Omit context parameters entirely for the simplest cases
+
+== Additional Resources
+
+* xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations Overview]
+* xref:api/mcp/mcp-annotations-server.adoc[Server Annotations]
+* xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]
+* xref:api/mcp/mcp-annotations-examples.adoc[Examples]

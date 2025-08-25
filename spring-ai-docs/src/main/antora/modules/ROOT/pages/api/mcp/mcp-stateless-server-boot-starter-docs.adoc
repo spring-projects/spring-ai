@@ -76,6 +76,22 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`request-timeout` |Request timeout duration |`20 seconds`
 |===
 
+=== MCP Annotations Properties
+
+MCP Server Annotations provide a declarative way to implement MCP server handlers using Java annotations.
+
+The server mcp-annotations properties are prefixed with `spring.ai.mcp.server.annotation-scanner`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP server annotations auto-scanning
+|`true`
+
+|===
+
 === Stateless Connection Properties
 
 All connection properties are prefixed with `spring.ai.mcp.server.stateless`:
