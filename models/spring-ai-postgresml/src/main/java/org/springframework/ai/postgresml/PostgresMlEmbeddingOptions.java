@@ -17,6 +17,7 @@
 package org.springframework.ai.postgresml;
 
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -107,6 +108,24 @@ public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 	@JsonIgnore
 	public Integer getDimensions() {
 		return null;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof PostgresMlEmbeddingOptions that))
+			return false;
+
+		return Objects.equals(transformer, that.transformer) && vectorType == that.vectorType
+				&& Objects.equals(kwargs, that.kwargs) && metadataMode == that.metadataMode;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hashCode(transformer);
+		result = 31 * result + Objects.hashCode(vectorType);
+		result = 31 * result + Objects.hashCode(kwargs);
+		result = 31 * result + Objects.hashCode(metadataMode);
+		return result;
 	}
 
 	public static class Builder {
