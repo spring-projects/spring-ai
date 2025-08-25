@@ -41,11 +41,16 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	protected final List<Media> media;
 
 	public UserMessage(String textContent) {
-		this(textContent, new ArrayList<>(), Map.of());
+		this(textContent, new ArrayList<>(), Map.of(), null);
 	}
 
-	private UserMessage(String textContent, Collection<Media> media, Map<String, Object> metadata) {
-		super(MessageType.USER, textContent, metadata);
+	public UserMessage(String textContent, String cache) {
+		this(textContent, new ArrayList<>(), Map.of(), cache);
+	}
+
+	private UserMessage(String textContent, Collection<Media> media, Map<String, Object> metadata,
+			@Nullable String cache) {
+		super(MessageType.USER, textContent, metadata, cache);
 		Assert.notNull(media, "media cannot be null");
 		Assert.noNullElements(media, "media cannot have null elements");
 		this.media = new ArrayList<>(media);
@@ -96,6 +101,8 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 
 		private Map<String, Object> metadata = new HashMap<>();
 
+		private String cache;
+
 		public Builder text(String textContent) {
 			this.textContent = textContent;
 			return this;
@@ -123,6 +130,11 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 			return this;
 		}
 
+		public Builder cache(String cache) {
+			this.cache = cache;
+			return this;
+		}
+
 		public UserMessage build() {
 			if (StringUtils.hasText(this.textContent) && this.resource != null) {
 				throw new IllegalArgumentException("textContent and resource cannot be set at the same time");
@@ -130,7 +142,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 			else if (this.resource != null) {
 				this.textContent = MessageUtils.readResource(this.resource);
 			}
-			return new UserMessage(this.textContent, this.media, this.metadata);
+			return new UserMessage(this.textContent, this.media, this.metadata, this.cache);
 		}
 
 	}
