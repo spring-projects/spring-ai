@@ -16,6 +16,8 @@
 
 package org.springframework.ai.azure.openai;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -596,6 +598,16 @@ public class AzureOpenAiChatModel implements ChatModel {
 				}
 				var azureAssistantMessage = new ChatRequestAssistantMessage(message.getText());
 				azureAssistantMessage.setToolCalls(toolCalls);
+				// Try to set name field if supported by Azure OpenAI SDK
+				try {
+					// Use reflection to check if setName method exists and call it
+					Method setNameMethod = azureAssistantMessage.getClass().getMethod("setName", String.class);
+					setNameMethod.invoke(azureAssistantMessage, assistantMessage.getName());
+				}
+				catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+					// Name field not supported in current Azure OpenAI SDK version
+					// This is expected behavior for some SDK versions
+				}
 				return List.of(azureAssistantMessage);
 			case TOOL:
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;

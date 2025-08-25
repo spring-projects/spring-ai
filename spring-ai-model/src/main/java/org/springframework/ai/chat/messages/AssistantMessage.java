@@ -41,6 +41,8 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	protected final List<Media> media;
 
+	private final String name;
+
 	public AssistantMessage(String content) {
 		this(content, Map.of());
 	}
@@ -55,11 +57,29 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
 			List<Media> media) {
+		this(content, properties, toolCalls, media, null);
+	}
+
+	public AssistantMessage(String content, String name) {
+		this(content, Map.of(), name);
+	}
+
+	public AssistantMessage(String content, Map<String, Object> properties, String name) {
+		this(content, properties, List.of(), name);
+	}
+
+	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls, String name) {
+		this(content, properties, toolCalls, List.of(), name);
+	}
+
+	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media,
+			String name) {
 		super(MessageType.ASSISTANT, content, properties);
 		Assert.notNull(toolCalls, "Tool calls must not be null");
 		Assert.notNull(media, "Media must not be null");
 		this.toolCalls = toolCalls;
 		this.media = media;
+		this.name = name;
 	}
 
 	public List<ToolCall> getToolCalls() {
@@ -75,6 +95,16 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		return this.media;
 	}
 
+	/**
+	 * Get the name of the assistant. This field allows the model to distinguish the name
+	 * of the assistant, making it easier for building multi-agent systems to share global
+	 * context.
+	 * @return the assistant name, or null if not set
+	 */
+	public String getName() {
+		return this.name;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -86,18 +116,19 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		if (!super.equals(o)) {
 			return false;
 		}
-		return Objects.equals(this.toolCalls, that.toolCalls) && Objects.equals(this.media, that.media);
+		return Objects.equals(this.toolCalls, that.toolCalls) && Objects.equals(this.media, that.media)
+				&& Objects.equals(this.name, that.name);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.toolCalls, this.media);
+		return Objects.hash(super.hashCode(), this.toolCalls, this.media, this.name);
 	}
 
 	@Override
 	public String toString() {
 		return "AssistantMessage [messageType=" + this.messageType + ", toolCalls=" + this.toolCalls + ", textContent="
-				+ this.textContent + ", metadata=" + this.metadata + "]";
+				+ this.textContent + ", name=" + this.name + ", metadata=" + this.metadata + "]";
 	}
 
 	public record ToolCall(String id, String type, String name, String arguments) {
