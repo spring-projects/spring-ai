@@ -92,6 +92,22 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`request-timeout` |Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations |`20 seconds`
 |===
 
+=== MCP Annotations Properties
+
+MCP Server Annotations provide a declarative way to implement MCP server handlers using Java annotations.
+
+The server mcp-annotations properties are prefixed with `spring.ai.mcp.server.annotation-scanner`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP server annotations auto-scanning
+|`true`
+
+|===
+
 === SSE Properties
 
 All SSE properties are prefixed with `spring.ai.mcp.server`:
