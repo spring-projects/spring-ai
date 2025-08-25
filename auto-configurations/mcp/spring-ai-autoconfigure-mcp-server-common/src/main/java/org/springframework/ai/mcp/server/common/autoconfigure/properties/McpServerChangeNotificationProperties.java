@@ -20,6 +20,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Christian Tzolov
+ * @see org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
  */
 @ConfigurationProperties(McpServerChangeNotificationProperties.CONFIG_PREFIX)
 public class McpServerChangeNotificationProperties {
