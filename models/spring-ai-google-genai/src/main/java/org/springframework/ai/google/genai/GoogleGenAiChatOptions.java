@@ -144,6 +144,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
+
+	@JsonIgnore
+	private Map<String, String> labels = new HashMap<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -170,6 +173,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
+		options.setLabels(fromOptions.getLabels());
 		return options;
 	}
 
@@ -332,6 +336,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.safetySettings = safetySettings;
 	}
 
+	public Map<String, String> getLabels() {
+		return this.labels;
+	}
+
+	public void setLabels(Map<String, String> labels) {
+		Assert.notNull(labels, "labels must not be null");
+		this.labels = labels;
+	}
+
 	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
@@ -363,7 +376,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
 	}
 
 	@Override
@@ -371,7 +384,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
 				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
-				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext);
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels);
 	}
 
 	@Override
@@ -382,7 +395,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
-				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + '}';
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
+				+ '}';
 	}
 
 	@Override
@@ -507,6 +521,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder thinkingBudget(Integer thinkingBudget) {
 			this.options.setThinkingBudget(thinkingBudget);
+			return this;
+		}
+
+		public Builder labels(Map<String, String> labels) {
+			Assert.notNull(labels, "labels must not be null");
+			this.options.labels = labels;
 			return this;
 		}
 
