@@ -234,6 +234,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
 
 	/**
+	 * Specifies the <a href="https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier">processing type</a> used for serving the request.
+	 */
+	private @JsonProperty("service_tier") String serviceTier;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
 	 */
 	@JsonIgnore
@@ -301,6 +306,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.reasoningEffort(fromOptions.getReasoningEffort())
 			.webSearchOptions(fromOptions.getWebSearchOptions())
 			.verbosity(fromOptions.getVerbosity())
+			.serviceTier(fromOptions.getServiceTier())
 			.build();
 	}
 
@@ -605,6 +611,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.verbosity = verbosity;
 	}
 
+	public String getServiceTier() {
+		return serviceTier;
+	}
+
+	public void setServiceTier(String serviceTier) {
+		this.serviceTier = serviceTier;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -617,7 +631,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier);
 	}
 
 	@Override
@@ -651,7 +665,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.metadata, other.metadata)
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
-				&& Objects.equals(this.verbosity, other.verbosity);
+				&& Objects.equals(this.verbosity, other.verbosity)
+				&& Objects.equals(this.serviceTier, other.serviceTier);
 	}
 
 	@Override
@@ -906,6 +921,16 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder verbosity(String verbosity) {
 			this.options.verbosity = verbosity;
+			return this;
+		}
+
+		public Builder serviceTier(String serviceTier) {
+			this.options.serviceTier = serviceTier;
+			return this;
+		}
+
+		public Builder serviceTier(OpenAiApi.ServiceTier serviceTier) {
+			this.options.serviceTier = serviceTier.getValue();
 			return this;
 		}
 
