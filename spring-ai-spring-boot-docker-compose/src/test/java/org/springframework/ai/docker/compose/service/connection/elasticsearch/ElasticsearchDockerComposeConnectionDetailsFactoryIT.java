@@ -38,7 +38,7 @@ class ElasticsearchDockerComposeConnectionDetailsFactoryIT extends AbstractDocke
 		super("elasticsearch-compose.yaml", DockerImageName.parse(getLatestElasticsearch()));
 	}
 
-	private static String getLatestElasticsearch(){
+	private static String getLatestElasticsearch() {
 		String imageName = "docker.elastic.co/elasticsearch/elasticsearch:";
 		try {
 			URL url = new URL("https://artifacts.elastic.co/releases/stack.json");
@@ -52,7 +52,9 @@ class ElasticsearchDockerComposeConnectionDetailsFactoryIT extends AbstractDocke
 			}
 		}
 		catch (IOException e) {
-			throw new RuntimeException("Failed to retrieve latest Elasticsearch version from https://artifacts.elastic.co/releases/stack.json", e);
+			throw new RuntimeException(
+					"Failed to retrieve latest Elasticsearch version from https://artifacts.elastic.co/releases/stack.json",
+					e);
 		}
 	}
 

@@ -84,6 +84,7 @@ class ElasticsearchDockerComposeConnectionDetailsFactory
 		public String getPathPrefix() {
 			return "";
 		}
+
 	}
 
 }
