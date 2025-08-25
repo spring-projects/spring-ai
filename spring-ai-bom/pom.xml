@@ -1062,6 +1062,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mcp-annotations</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 
 			<!-- Spring AI Spring Boot starter for Chat Memory (with the default in-memory Chat memory repository) -->
 

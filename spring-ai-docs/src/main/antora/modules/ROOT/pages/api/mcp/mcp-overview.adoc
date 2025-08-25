@@ -82,21 +82,55 @@ Spring AI provides MCP integration through the following Spring Boot starters:
 
 === link:mcp-server-boot-starter-docs.html[Server Starters]
 
-==== STDIO and SSE MCP Servers
-* `spring-ai-starter-mcp-server` - Core server with `STDIO` transport support
-* `spring-ai-starter-mcp-server-webmvc` - Spring MVC-based `SSE` transport implementation
-* `spring-ai-starter-mcp-server-webflux` - WebFlux-based `SSE` transport implementation
+==== STDIO
 
-==== Streamable MCP Servers
-* `spring-ai-starter-mcp-server-streamable-webmvc` - Spring MVC-based `Streamable-HTTP` server with change notifications
-* `spring-ai-starter-mcp-server-streamable-webflux` - WebFlux-based `Streamable-HTTP` server with change notifications
+[options="header"]
+|===
+|Server Type | Dependency | Property
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[Standard Input/Output (STDIO)] | `spring-ai-starter-mcp-server` | `spring.ai.mcp.server.stdio=true`
+|===
 
-==== Stateless MCP Servers
-* `spring-ai-starter-mcp-server-stateless-webmvc` - Spring MVC-based `Stateless` server for simplified deployments
-* `spring-ai-starter-mcp-server-stateless-webflux` - WebFlux-based `Stateless` server for simplified deployments
+==== WebMVC
+
+|===
+|Server Type | Dependency | Property
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webmvc_serve[SSE WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webmvc_server[Streamable-HTTP WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STREAMABLE`
+| xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webmvc_server[Stateless WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STATLESS`
+|===
+
+==== WebMVC (Reactive)
+|===
+|Server Type | Dependency | Property
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webflux_serve[SSE WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webflux_server[Streamable-HTTP WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STREAMABLE`
+| xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webflux_server[Stateless WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STATLESS`
+|===
+
+== xref:api/mcp/mcp-annotations-overview.adoc[Spring AI MCP Annotations]
+
+In addition to the programmatic MCP client & server configuration, Spring AI provides annotation-based method handling for MCP servers and clients through the xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations] module. 
+This approach simplifies the creation and registration of MCP operations using a clean, declarative programming model with Java annotations.
+
+The MCP Annotations module enables developers to:
+
+* Create MCP tools, resources, and prompts using simple annotations
+* Handle client-side notifications and requests declaratively
+* Reduce boilerplate code and improve maintainability
+* Automatically generate JSON schemas for tool parameters
+* Access special parameters and context information
+
+Key features include:   
+
+* xref:api/mcp/mcp-annotations-server.adoc[Server Annotations]: `@McpTool`, `@McpResource`, `@McpPrompt`, `@McpComplete`
+* xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]: `@McpLogging`, `@McpSampling`, `@McpElicitation`, `@McpProgress`
+* xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters]: `McpSyncServerExchange`, `McpAsyncServerExchange`, `McpTransportContext`, `McpMeta`
+* **Automatic Discovery**: Annotation scanning with configurable package inclusion/exclusion
+* **Spring Boot Integration**: Seamless integration with MCP Boot Starters
 
 == Additional Resources
 
+* xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations Documentation]
 * link:mcp-client-boot-starter-docs.html[MCP Client Boot Starters Documentation]
 * link:mcp-server-boot-starter-docs.html[MCP Server Boot Starters Documentation]
 * link:mcp-helpers.html[MCP Utilities Documentation]

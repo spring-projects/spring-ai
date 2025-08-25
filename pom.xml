@@ -221,6 +221,7 @@
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
+		<module>mcp/mcp-annotations-spring</module>
 	</modules>
 
 	<organization>
@@ -330,6 +331,7 @@
 
 		<!-- MCP-->
 		<mcp.sdk.version>0.11.3</mcp.sdk.version>
+		<mcp-annotations.version>0.3.0-SNAPSHOT</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
