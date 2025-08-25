@@ -39,7 +39,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 /**
  * Integration tests for {@link StatelessToolCallbackConverterAutoConfiguration} and
- * {@link ToolCallbackConverterCondition}.
+ * {@link StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition}.
  *
  * @author Christian Tzolov
  */

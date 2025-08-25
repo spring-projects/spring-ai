@@ -16,33 +16,17 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.server.McpAsyncServer;
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.server.*;
+import io.modelcontextprotocol.server.McpServerFeatures.*;
 import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpServerTransport;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import reactor.core.publisher.Mono;
-
 import org.springframework.ai.mcp.SyncMcpToolCallback;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -50,6 +34,11 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -79,11 +68,15 @@ public class McpServerAutoConfigurationIT {
 			assertThat(properties.getCapabilities().isPrompt()).isTrue();
 			assertThat(properties.getCapabilities().isCompletion()).isTrue();
 
-			McpServerChangeNotificationProperties changeNotificationProperties = context
-				.getBean(McpServerChangeNotificationProperties.class);
-			assertThat(changeNotificationProperties.isToolChangeNotification()).isTrue();
-			assertThat(changeNotificationProperties.isResourceChangeNotification()).isTrue();
-			assertThat(changeNotificationProperties.isPromptChangeNotification()).isTrue();
+			// Check change notifications
+			assertThat(properties.getToolChangeNotification().isToolChangeNotification()).isTrue();
+			assertThat(properties.getToolChangeNotification().isResourceChangeNotification()).isTrue();
+			assertThat(properties.getToolChangeNotification().isPromptChangeNotification()).isTrue();
+
+			// Check default nested configurations exist
+			assertThat(properties.getSse()).isNotNull();
+			assertThat(properties.getStreamable()).isNotNull();
+			assertThat(properties.getStateless()).isNotNull();
 
 		});
 	}
@@ -105,6 +98,27 @@ public class McpServerAutoConfigurationIT {
 				assertThat(properties.getType()).isEqualTo(McpServerProperties.ApiType.ASYNC);
 				assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(30);
 			});
+	}
+
+	@Test
+	void protocolSwitchingConfiguration() {
+		// Test SSE protocol (default)
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.protocol=SSE").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getProtocol()).isEqualTo(McpServerProperties.ServerProtocol.SSE);
+		});
+
+		// Test STREAMABLE protocol
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getProtocol()).isEqualTo(McpServerProperties.ServerProtocol.STREAMABLE);
+		});
+
+		// Test STATELESS protocol
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.getProtocol()).isEqualTo(McpServerProperties.ServerProtocol.STATELESS);
+		});
 	}
 
 	@Test
@@ -133,10 +147,9 @@ public class McpServerAutoConfigurationIT {
 			.withPropertyValues("spring.ai.mcp.server.tool-change-notification=false",
 					"spring.ai.mcp.server.resource-change-notification=false")
 			.run(context -> {
-				McpServerChangeNotificationProperties changeNotificationProperties = context
-					.getBean(McpServerChangeNotificationProperties.class);
-				assertThat(changeNotificationProperties.isToolChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isResourceChangeNotification()).isFalse();
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getToolChangeNotification().isToolChangeNotification()).isFalse();
+				assertThat(properties.getToolChangeNotification().isResourceChangeNotification()).isFalse();
 			});
 	}
 
@@ -166,11 +179,10 @@ public class McpServerAutoConfigurationIT {
 					"spring.ai.mcp.server.resource-change-notification=false",
 					"spring.ai.mcp.server.prompt-change-notification=false")
 			.run(context -> {
-				McpServerChangeNotificationProperties changeNotificationProperties = context
-					.getBean(McpServerChangeNotificationProperties.class);
-				assertThat(changeNotificationProperties.isToolChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isResourceChangeNotification()).isFalse();
-				assertThat(changeNotificationProperties.isPromptChangeNotification()).isFalse();
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getToolChangeNotification().isToolChangeNotification()).isFalse();
+				assertThat(properties.getToolChangeNotification().isResourceChangeNotification()).isFalse();
+				assertThat(properties.getToolChangeNotification().isPromptChangeNotification()).isFalse();
 			});
 	}
 
