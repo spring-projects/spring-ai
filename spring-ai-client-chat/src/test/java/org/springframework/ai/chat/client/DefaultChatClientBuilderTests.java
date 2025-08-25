@@ -159,4 +159,94 @@ class DefaultChatClientBuilderTests {
 		assertThat(defaultRequest.getUserText()).isEqualTo("second user prompt");
 	}
 
+	@Test
+	void whenDefaultUserStringSetThenAppliedToRequest() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		builder.defaultUser("test user prompt");
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		assertThat(defaultRequest.getUserText()).isEqualTo("test user prompt");
+	}
+
+	@Test
+	void whenDefaultSystemStringSetThenAppliedToRequest() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		builder.defaultSystem("test system prompt");
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		assertThat(defaultRequest.getSystemText()).isEqualTo("test system prompt");
+	}
+
+	@Test
+	void whenBuilderMethodChainingThenAllSettingsApplied() {
+		var chatModel = mock(ChatModel.class);
+
+		var builder = new DefaultChatClientBuilder(chatModel).defaultSystem("system prompt").defaultUser("user prompt");
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+
+		assertThat(defaultRequest.getSystemText()).isEqualTo("system prompt");
+		assertThat(defaultRequest.getUserText()).isEqualTo("user prompt");
+	}
+
+	@Test
+	void whenCloneWithAllSettingsThenAllAreCopied() {
+		var chatModel = mock(ChatModel.class);
+
+		var originalBuilder = new DefaultChatClientBuilder(chatModel).defaultSystem("system prompt")
+			.defaultUser("user prompt");
+
+		var clonedBuilder = (DefaultChatClientBuilder) originalBuilder.clone();
+		var clonedRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(clonedBuilder,
+				"defaultRequest");
+
+		assertThat(clonedRequest.getSystemText()).isEqualTo("system prompt");
+		assertThat(clonedRequest.getUserText()).isEqualTo("user prompt");
+	}
+
+	@Test
+	void whenBuilderUsedMultipleTimesThenProducesDifferentInstances() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		var client1 = builder.build();
+		var client2 = builder.build();
+
+		assertThat(client1).isNotSameAs(client2);
+		assertThat(client1).isInstanceOf(DefaultChatClient.class);
+		assertThat(client2).isInstanceOf(DefaultChatClient.class);
+	}
+
+	@Test
+	void whenDefaultUserWithTemplateVariablesThenProcessed() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		builder.defaultUser("Hello {name}, welcome to {service}!");
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		assertThat(defaultRequest.getUserText()).isEqualTo("Hello {name}, welcome to {service}!");
+	}
+
+	@Test
+	void whenMultipleSystemSettingsThenLastOneWins() {
+		var chatModel = mock(ChatModel.class);
+		var builder = new DefaultChatClientBuilder(chatModel);
+
+		builder.defaultSystem("first system message");
+		builder.defaultSystem("final system message");
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		assertThat(defaultRequest.getSystemText()).isEqualTo("final system message");
+	}
+
 }
