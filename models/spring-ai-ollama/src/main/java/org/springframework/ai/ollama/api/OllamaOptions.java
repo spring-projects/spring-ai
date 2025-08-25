@@ -351,8 +351,15 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	@JsonProperty("truncate")
 	private Boolean truncate;
 
+	/**
+	 * Think controls whether thinking/reasoning models will think before responding.
+	 */
+	@JsonProperty("think")
+	private Boolean think;
+
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
+
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -398,6 +405,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.format(fromOptions.getFormat())
 				.keepAlive(fromOptions.getKeepAlive())
 				.truncate(fromOptions.getTruncate())
+				.think(fromOptions.getThink())
 				.useNUMA(fromOptions.getUseNUMA())
 				.numCtx(fromOptions.getNumCtx())
 				.numBatch(fromOptions.getNumBatch())
@@ -825,6 +833,13 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.truncate = truncate;
 	}
 
+	public Boolean getThink() {
+		return this.think;
+	}
+	public void setThink(Boolean think) {
+		this.think = think;
+	}
+
 	@Override
 	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
@@ -910,17 +925,17 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		OllamaOptions that = (OllamaOptions) o;
 		return Objects.equals(this.model, that.model) && Objects.equals(this.format, that.format)
 				&& Objects.equals(this.keepAlive, that.keepAlive) && Objects.equals(this.truncate, that.truncate)
-				&& Objects.equals(this.useNUMA, that.useNUMA) && Objects.equals(this.numCtx, that.numCtx)
-				&& Objects.equals(this.numBatch, that.numBatch) && Objects.equals(this.numGPU, that.numGPU)
-				&& Objects.equals(this.mainGPU, that.mainGPU) && Objects.equals(this.lowVRAM, that.lowVRAM)
-				&& Objects.equals(this.f16KV, that.f16KV) && Objects.equals(this.logitsAll, that.logitsAll)
-				&& Objects.equals(this.vocabOnly, that.vocabOnly) && Objects.equals(this.useMMap, that.useMMap)
-				&& Objects.equals(this.useMLock, that.useMLock) && Objects.equals(this.numThread, that.numThread)
-				&& Objects.equals(this.numKeep, that.numKeep) && Objects.equals(this.seed, that.seed)
-				&& Objects.equals(this.numPredict, that.numPredict) && Objects.equals(this.topK, that.topK)
-				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.minP, that.minP)
-				&& Objects.equals(this.tfsZ, that.tfsZ) && Objects.equals(this.typicalP, that.typicalP)
-				&& Objects.equals(this.repeatLastN, that.repeatLastN)
+				&& Objects.equals(this.think, that.think) && Objects.equals(this.useNUMA, that.useNUMA)
+				&& Objects.equals(this.numCtx, that.numCtx) && Objects.equals(this.numBatch, that.numBatch)
+				&& Objects.equals(this.numGPU, that.numGPU) && Objects.equals(this.mainGPU, that.mainGPU)
+				&& Objects.equals(this.lowVRAM, that.lowVRAM) && Objects.equals(this.f16KV, that.f16KV)
+				&& Objects.equals(this.logitsAll, that.logitsAll) && Objects.equals(this.vocabOnly, that.vocabOnly)
+				&& Objects.equals(this.useMMap, that.useMMap) && Objects.equals(this.useMLock, that.useMLock)
+				&& Objects.equals(this.numThread, that.numThread) && Objects.equals(this.numKeep, that.numKeep)
+				&& Objects.equals(this.seed, that.seed) && Objects.equals(this.numPredict, that.numPredict)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.minP, that.minP) && Objects.equals(this.tfsZ, that.tfsZ)
+				&& Objects.equals(this.typicalP, that.typicalP) && Objects.equals(this.repeatLastN, that.repeatLastN)
 				&& Objects.equals(this.temperature, that.temperature)
 				&& Objects.equals(this.repeatPenalty, that.repeatPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
@@ -935,13 +950,13 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
-				this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
-				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
-				this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
-				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext);
+		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.think, this.useNUMA,
+				this.numCtx, this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll,
+				this.vocabOnly, this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict,
+				this.topK, this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature,
+				this.repeatPenalty, this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau,
+				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	public static class Builder {
@@ -1201,6 +1216,11 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder think(@Nullable Boolean think) {
+			this.options.setThink(think);
 			return this;
 		}
 

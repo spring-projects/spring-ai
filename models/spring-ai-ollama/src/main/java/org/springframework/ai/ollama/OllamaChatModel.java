@@ -491,6 +491,10 @@ public class OllamaChatModel implements ChatModel {
 			requestBuilder.keepAlive(requestOptions.getKeepAlive());
 		}
 
+		if (requestOptions.getThink() != null) {
+			requestBuilder.think(requestOptions.getThink());
+		}
+
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			requestBuilder.tools(this.getTools(toolDefinitions));
