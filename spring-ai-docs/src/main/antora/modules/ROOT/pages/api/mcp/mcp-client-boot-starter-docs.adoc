@@ -85,6 +85,20 @@ The common properties are prefixed with `spring.ai.mcp.client`:
 |`true`
 |===
 
+=== MCP Annotations Properties
+
+MCP Client Annotations provide a declarative way to implement MCP client handlers using Java annotations.
+The client mcp-annotations properties are prefixed with `spring.ai.mcp.client.annotation-scanner`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP client annotations auto-scanning
+|`true`
+|===
+
 === Stdio Transport Properties
 
 Properties for Standard I/O transport are prefixed with `spring.ai.mcp.client.stdio`:
@@ -367,6 +381,84 @@ The auto-configuration supports multiple transport types:
 
 The starter can configure tool callbacks that integrate with Spring AI's tool execution framework, allowing MCP tools to be used as part of AI interactions. 
 This integration is enabled by default and can be disabled by setting the `spring.ai.mcp.client.toolcallback.enabled=false` property.
+
+== MCP Client Annotations
+
+The MCP Client Boot Starter automatically detects and registers annotated methods for handling various MCP client operations:
+
+* *@McpLogging* - Handles logging message notifications from MCP servers
+* *@McpSampling* - Handles sampling requests from MCP servers for LLM completions
+* *@McpElicitation* - Handles elicitation requests to gather additional information from users
+* *@McpProgress* - Handles progress notifications for long-running operations
+* *@McpToolListChanged* - Handles notifications when the server's tool list changes
+* *@McpResourceListChanged* - Handles notifications when the server's resource list changes
+* *@McpPromptListChanged* - Handles notifications when the server's prompt list changes
+
+Example usage:
+
+[source,java]
+----
+@Component
+public class McpClientHandlers {
+
+    @McpLogging
+    public void handleLoggingMessage(LoggingMessageNotification notification) {
+        System.out.println("Received log: " + notification.level() + 
+                          " - " + notification.data());
+    }
+
+    @McpSampling
+    public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
+        // Process the request and generate a response
+        String response = generateLLMResponse(request);
+        
+        return CreateMessageResult.builder()
+            .role(Role.ASSISTANT)
+            .content(new TextContent(response))
+            .model("gpt-4")
+            .build();
+    }
+
+    @McpProgress
+    public void handleProgressNotification(ProgressNotification notification) {
+        double percentage = notification.progress() * 100;
+        System.out.println(String.format("Progress: %.2f%% - %s", 
+            percentage, notification.message()));
+    }
+
+    @McpToolListChanged
+    public void handleToolListChanged(List<McpSchema.Tool> updatedTools) {
+        System.out.println("Tool list updated: " + updatedTools.size() + " tools available");
+        // Update local tool registry
+        toolRegistry.updateTools(updatedTools);
+    }
+}
+----
+
+The annotations support both synchronous and asynchronous implementations, and can be configured for specific clients using the `clientId` parameter:
+
+[source,java]
+----
+@McpLogging(clientId = "server1")
+public void handleServer1Logs(LoggingMessageNotification notification) {
+    // Handle logs from specific server
+    logToFile("server1.log", notification);
+}
+
+@McpSampling
+public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
+    return Mono.fromCallable(() -> {
+        String response = generateLLMResponse(request);
+        return CreateMessageResult.builder()
+            .role(Role.ASSISTANT)
+            .content(new TextContent(response))
+            .model("gpt-4")
+            .build();
+    }).subscribeOn(Schedulers.boundedElastic());
+}
+----
+
+For detailed information about all available annotations and their usage patterns, see the xref:api/mcp/mcp-annotations-client.adoc[MCP Client Annotations] documentation.
 
 == Usage Example
 

@@ -24,6 +24,22 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
+import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.resource.SyncResourceListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.tool.SyncToolListChangedSpecification;
+import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification;
+import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification;
+import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
+import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
+import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
+import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
+import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
+import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpAsyncAnnotationCustomizer;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpSyncAnnotationCustomizer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -208,6 +224,20 @@ public class McpClientAutoConfiguration {
 		return new McpSyncClientConfigurer(customizerProvider.orderedStream().toList());
 	}
 
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public McpSyncClientCustomizer mcpAnnotationMcpSyncClientCustomizer(List<SyncLoggingSpecification> loggingSpecs,
+			List<SyncSamplingSpecification> samplingSpecs, List<SyncElicitationSpecification> elicitationSpecs,
+			List<SyncProgressSpecification> progressSpecs,
+			List<SyncToolListChangedSpecification> syncToolListChangedSpecifications,
+			List<SyncResourceListChangedSpecification> syncResourceListChangedSpecifications,
+			List<SyncPromptListChangedSpecification> syncPromptListChangedSpecifications) {
+		return new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs, elicitationSpecs, progressSpecs,
+				syncToolListChangedSpecifications, syncResourceListChangedSpecifications,
+				syncPromptListChangedSpecifications);
+	}
+
 	// Async client configuration
 
 	@Bean
@@ -257,6 +287,18 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	McpAsyncClientConfigurer mcpAsyncClientConfigurer(ObjectProvider<McpAsyncClientCustomizer> customizerProvider) {
 		return new McpAsyncClientConfigurer(customizerProvider.orderedStream().toList());
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public McpAsyncClientCustomizer mcpAnnotationMcpAsyncClientCustomizer(List<AsyncLoggingSpecification> loggingSpecs,
+			List<AsyncSamplingSpecification> samplingSpecs, List<AsyncElicitationSpecification> elicitationSpecs,
+			List<AsyncProgressSpecification> progressSpecs,
+			List<AsyncToolListChangedSpecification> toolListChangedSpecs,
+			List<AsyncResourceListChangedSpecification> resourceListChangedSpecs,
+			List<AsyncPromptListChangedSpecification> promptListChangedSpecs) {
+		return new McpAsyncAnnotationCustomizer(samplingSpecs, loggingSpecs, elicitationSpecs, progressSpecs,
+				toolListChangedSpecs, resourceListChangedSpecs, promptListChangedSpecs);
 	}
 
 	/**
