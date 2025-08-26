@@ -32,7 +32,23 @@ jobs:
           distribution: corretto
       - name: Publish to GitHub Packages
         run: >-
-          mvn -X -Drevision=${{ env.RELEASE_VERSION }}
+          mvn -pl
+          org.springframework.ai:spring-ai-retry,
+          org.springframework.ai:spring-ai-openai,
+          org.springframework.ai:spring-ai-ollama,
+          org.springframework.ai:spring-ai-anthropic,
+          org.springframework.ai:spring-ai-google-gemini,
+          org.springframework.ai:spring-ai-core,
+          org.springframework.ai:spring-ai-deepseek,
+          org.springframework.ai:spring-ai-mistral-ai,
+          org.springframework.ai:spring-ai-model,
+          org.springframework.ai:spring-ai-commons,
+          org.springframework.ai:spring-ai-template-st,
+          org.springframework.ai:spring-ai-vertex-ai-gemini,
+          org.springframework.ai:spring-ai-azure-openai,
+          org.springframework.ai:spring-ai-bedrock
+          -am
+          -Drevision=${{ env.RELEASE_VERSION }}
           -DaltDeploymentRepository=github::https://maven.pkg.github.com/explyt/spring-ai
           --batch-mode --settings ~/.m2/settings.xml deploy
         env:

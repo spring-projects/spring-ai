@@ -18,6 +18,7 @@ package org.springframework.ai.google.gemini.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import io.micrometer.context.Nullable;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -158,33 +159,19 @@ public class GoogleGeminiApi {
 			@JsonProperty("inlineData") String inlineData, @JsonProperty("functionCall") FunctionCall functionCall,
 			@JsonProperty("functionResponse") FunctionResponse functionResponse) {
 
-		// Enforce union type: only one of the union fields can be non-null
-		public Part(Boolean thought, String thoughtSignature, String text, String inlineData, FunctionCall functionCall,
-				FunctionResponse functionResponse) {
-			validateUnion(text, inlineData, functionCall, functionResponse);
+		// do not compact constructor unless you check that plugin works with this
+		// configuration
+		@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+		public Part(@JsonProperty("thought") Boolean thought, @JsonProperty("thoughtSignature") String thoughtSignature,
+				@JsonProperty("text") String text, @JsonProperty("inlineData") String inlineData,
+				@JsonProperty("functionCall") FunctionCall functionCall,
+				@JsonProperty("functionResponse") FunctionResponse functionResponse) {
 			this.thought = thought;
 			this.thoughtSignature = thoughtSignature;
 			this.text = text;
 			this.inlineData = inlineData;
 			this.functionCall = functionCall;
 			this.functionResponse = functionResponse;
-		}
-
-		private static void validateUnion(Object text, Object inlineData, Object functionCall,
-				Object functionResponse) {
-			int count = 0;
-			if (text != null)
-				count++;
-			if (inlineData != null)
-				count++;
-			if (functionCall != null)
-				count++;
-			if (functionResponse != null)
-				count++;
-			if (count > 1) {
-				throw new IllegalArgumentException(
-						"Part union type violation: only one of text, inlineData, functionCall, functionResponse, fileData, executableCode, codeExecutionResult can be non-null");
-			}
 		}
 
 		public Part(String text) {
