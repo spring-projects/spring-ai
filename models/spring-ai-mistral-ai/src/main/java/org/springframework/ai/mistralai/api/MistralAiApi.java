@@ -293,8 +293,7 @@ public class MistralAiApi {
 		SMALL("mistral-small-latest"),
 		PIXTRAL("pixtral-12b-2409"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
-		OPEN_CODESTRAL_MAMBA("open-codestral-mamba");
+		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
 		private final String value;
