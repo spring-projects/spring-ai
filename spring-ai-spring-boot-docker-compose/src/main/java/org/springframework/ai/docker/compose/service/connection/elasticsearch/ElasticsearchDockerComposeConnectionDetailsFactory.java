@@ -45,21 +45,21 @@ class ElasticsearchDockerComposeConnectionDetailsFactory
 
 	@Override
 	protected ElasticsearchConnectionDetails getDockerComposeConnectionDetails(DockerComposeConnectionSource source) {
-		return new ElasticsearchContainerConnectionDetails(source.getRunningService());
+		return new ElasticsearchDockerComposeConnectionDetails(source.getRunningService());
 	}
 
 	/**
 	 * {@link ElasticsearchConnectionDetails} backed by an {@code Elasticsearch}
 	 * {@link RunningService}.
 	 */
-	static class ElasticsearchContainerConnectionDetails extends DockerComposeConnectionDetails
+	static class ElasticsearchDockerComposeConnectionDetails extends DockerComposeConnectionDetails
 			implements ElasticsearchConnectionDetails {
 
 		private final ElasticsearchEnvironment environment;
 
 		private final String host;
 
-		ElasticsearchContainerConnectionDetails(RunningService service) {
+		ElasticsearchDockerComposeConnectionDetails(RunningService service) {
 			super(service);
 			this.environment = new ElasticsearchEnvironment(service.env());
 			this.host = service.host();
