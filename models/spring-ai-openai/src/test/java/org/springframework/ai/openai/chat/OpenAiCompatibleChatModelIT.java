@@ -68,7 +68,7 @@ public class OpenAiCompatibleChatModelIT {
 				.openAiApi(OpenAiApi.builder()
 					.baseUrl("https://api.groq.com/openai")
 					.apiKey(System.getenv("GROQ_API_KEY"))
-					.build()) 
+					.build())
 				.defaultOptions(forModelName("llama3-8b-8192"))
 				.build());
 		}

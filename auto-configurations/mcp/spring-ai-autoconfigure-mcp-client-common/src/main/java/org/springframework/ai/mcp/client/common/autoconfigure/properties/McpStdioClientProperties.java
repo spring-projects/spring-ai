@@ -124,7 +124,9 @@ public class McpStdioClientProperties {
 			/**
 			 * Map of environment variables for the server process.
 			 */
-			@JsonProperty("env") Map<String, String> env) {
+			@JsonProperty("env") Map<String, String> env,
+
+			@JsonProperty("returnDirect") boolean returnDirect) {
 
 		public ServerParameters toServerParameters() {
 			return ServerParameters.builder(this.command()).args(this.args()).env(this.env()).build();
