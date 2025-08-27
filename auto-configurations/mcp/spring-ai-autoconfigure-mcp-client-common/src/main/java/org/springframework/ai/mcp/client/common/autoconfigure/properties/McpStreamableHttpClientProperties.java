@@ -68,7 +68,8 @@ public class McpStreamableHttpClientProperties {
 	 * @param url the URL endpoint for Streamable Http communication with the MCP server
 	 * @param endpoint the endpoint for the MCP server
 	 */
-	public record ConnectionParameters(String url, String endpoint) {
+	public record ConnectionParameters(String url, String endpoint, boolean returnDirect) {
+
 	}
 
 }

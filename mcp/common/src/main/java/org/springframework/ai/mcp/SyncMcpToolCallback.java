@@ -17,10 +17,13 @@
 package org.springframework.ai.mcp;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import java.util.Map;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +33,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.metadata.DefaultToolMetadata;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -78,6 +83,24 @@ public class SyncMcpToolCallback implements ToolCallback {
 		this.mcpClient = mcpClient;
 		this.tool = tool;
 
+	}
+
+	/**
+	 * Returns the tool metadata for the MCP tool.
+	 * <p>
+	 * The tool metadata includes:
+	 * <ul>
+	 * <li>The tool's return direct flag from the MCP definition</li>
+	 * </ul>
+	 * @return the tool metadata
+	 */
+	@Override
+	public ToolMetadata getToolMetadata() {
+		Boolean returnDirect = Optional.ofNullable(tool.annotations())
+			.map(McpSchema.ToolAnnotations::returnDirect)
+			.orElse(false);
+
+		return DefaultToolMetadata.builder().returnDirect(returnDirect).build();
 	}
 
 	/**

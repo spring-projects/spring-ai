@@ -69,7 +69,8 @@ public class McpSseClientProperties {
 	 * @param url the URL endpoint for SSE communication with the MCP server
 	 * @param sseEndpoint the SSE endpoint for the MCP server
 	 */
-	public record SseParameters(String url, String sseEndpoint) {
+	public record SseParameters(String url, String sseEndpoint, boolean returnDirect) {
+
 	}
 
 }
