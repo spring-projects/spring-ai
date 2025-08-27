@@ -26,6 +26,7 @@ import org.springframework.core.io.Resource;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -322,6 +323,11 @@ class SystemPromptTemplateTests {
 			// Simple renderer that just appends a marker
 			// Note: This simple renderer ignores the model map for test purposes.
 			return template + " (Rendered by Custom)";
+		}
+
+		@Override
+		public Set<String> getRequiredVariables(String template) {
+			return Set.of();
 		}
 
 	}

@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * is shared between threads.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public class StTemplateRenderer implements TemplateRenderer {
@@ -108,6 +109,11 @@ public class StTemplateRenderer implements TemplateRenderer {
 			validate(st, variables);
 		}
 		return st.render();
+	}
+
+	@Override
+	public Set<String> getRequiredVariables(String template) {
+		return getInputVariables(createST(template));
 	}
 
 	private ST createST(String template) {
