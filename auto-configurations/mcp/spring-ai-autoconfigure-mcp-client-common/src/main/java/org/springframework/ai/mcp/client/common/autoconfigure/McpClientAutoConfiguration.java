@@ -36,6 +36,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -108,6 +109,7 @@ import org.springframework.util.CollectionUtils;
 @EnableConfigurationProperties(McpClientCommonProperties.class)
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
+@Import(McpCompositeClientProperties.class)
 public class McpClientAutoConfiguration {
 
 	/**
@@ -146,7 +148,7 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<McpSyncClient> mcpSyncClients(McpSyncClientConfigurer mcpSyncClientConfigurer,
-			McpClientCommonProperties commonProperties,
+			McpClientCommonProperties commonProperties, McpCompositeClientProperties mcpCompositeClientProperties,
 			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
 		List<McpSyncClient> mcpSyncClients = new ArrayList<>();
@@ -165,7 +167,11 @@ public class McpClientAutoConfiguration {
 					.requestTimeout(commonProperties.getRequestTimeout());
 
 				spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
-
+				spec.toolAnnotationsHandler(name -> {
+					// set returnDirect in client level
+					boolean returnDirect = mcpCompositeClientProperties.getReturnDirect(namedTransport.name());
+					return new McpSchema.ToolAnnotations(null, null, null, null, null, returnDirect);
+				});
 				var client = spec.build();
 
 				if (commonProperties.isInitialized()) {
@@ -213,7 +219,7 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
-			McpClientCommonProperties commonProperties,
+			McpClientCommonProperties commonProperties, McpCompositeClientProperties mcpCompositeClientProperties,
 			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
 		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
@@ -232,7 +238,11 @@ public class McpClientAutoConfiguration {
 					.requestTimeout(commonProperties.getRequestTimeout());
 
 				spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
-
+				spec.toolAnnotationsHandler(name -> {
+					// set returnDirect in client level
+					boolean returnDirect = mcpCompositeClientProperties.getReturnDirect(namedTransport.name());
+					return new McpSchema.ToolAnnotations(null, null, null, null, null, returnDirect);
+				});
 				var client = spec.build();
 
 				if (commonProperties.isInitialized()) {

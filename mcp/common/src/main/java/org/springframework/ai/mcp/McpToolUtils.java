@@ -30,7 +30,6 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Role;
@@ -203,6 +202,7 @@ public final class McpToolUtils {
 			.name(toolCallback.getToolDefinition().name())
 			.description(toolCallback.getToolDefinition().description())
 			.inputSchema(toolCallback.getToolDefinition().inputSchema())
+			.annotations(toToolAnnotations(toolCallback))
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
@@ -220,6 +220,11 @@ public final class McpToolUtils {
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
 			}
 		});
+	}
+
+	private static McpSchema.ToolAnnotations toToolAnnotations(ToolCallback toolCallback) {
+		Boolean returnDirect = toolCallback.getToolMetadata().returnDirect();
+		return new McpSchema.ToolAnnotations(null, null, null, null, null, returnDirect);
 	}
 
 	/**
