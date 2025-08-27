@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.titan;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -54,6 +56,19 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 	@JsonIgnore
 	public String getModel() {
 		return null;
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof BedrockTitanEmbeddingOptions that))
+			return false;
+
+		return inputType == that.inputType;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(inputType);
 	}
 
 	@Override

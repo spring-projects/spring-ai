@@ -376,7 +376,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
 				this.responseFormat, this.stop, this.frequencyPenalty, this.presencePenalty, this.n, this.tools,
-				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolChoice, this.toolCallbacks, this.toolNames, this.tools, this.internalToolExecutionEnabled,
+				this.toolContext);
 	}
 
 	@Override
