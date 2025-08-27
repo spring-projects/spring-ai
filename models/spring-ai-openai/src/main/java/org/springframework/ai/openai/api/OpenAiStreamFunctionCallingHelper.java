@@ -19,12 +19,17 @@ package org.springframework.ai.openai.api;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.openai.api.OpenAiApi.*;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk.ChunkChoice;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionFinishReason;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.openai.api.OpenAiApi.LogProbs;
+import org.springframework.ai.openai.api.OpenAiApi.Usage;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
