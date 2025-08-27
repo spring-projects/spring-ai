@@ -929,6 +929,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
+		public Builder serviceTier(OpenAiApi.ServiceTier serviceTier) {
+			this.options.serviceTier = serviceTier.getValue();
+			return this;
+		}
+
 		public OpenAiChatOptions build() {
 			return this.options;
 		}

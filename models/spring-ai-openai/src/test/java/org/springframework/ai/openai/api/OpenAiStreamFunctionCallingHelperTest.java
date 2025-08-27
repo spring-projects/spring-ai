@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.ai.openai.api.OpenAiApi.ServiceTier;
 
 /**
  * Unit tests for {@link OpenAiStreamFunctionCallingHelper}
@@ -36,7 +37,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void merge_whenInputIsValid() {
 		var expectedResult = new OpenAiApi.ChatCompletionChunk("id", Collections.emptyList(),
-				System.currentTimeMillis(), "model", "serviceTier", "fingerPrint", "object", null);
+				System.currentTimeMillis(), "model", "default", "fingerPrint", "object", null);
 		var previous = new OpenAiApi.ChatCompletionChunk(null, null, expectedResult.created(), expectedResult.model(),
 				expectedResult.serviceTier(), null, null, null);
 		var current = new OpenAiApi.ChatCompletionChunk(expectedResult.id(), null, null, null, null,
