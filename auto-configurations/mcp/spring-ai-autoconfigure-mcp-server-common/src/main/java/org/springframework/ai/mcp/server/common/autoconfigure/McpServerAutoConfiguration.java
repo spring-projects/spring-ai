@@ -16,21 +16,21 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
+import io.modelcontextprotocol.server.*;
+import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
+import io.modelcontextprotocol.server.McpServer.SyncSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.*;
+import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
+import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.Implementation;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
+import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
+import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
-import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -38,29 +38,12 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.support.StandardServletEnvironment;
-
-import io.modelcontextprotocol.server.McpAsyncServer;
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
-import io.modelcontextprotocol.server.McpServer.SyncSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
-import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.Implementation;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
-import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
-import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for the Model Context Protocol (MCP)
@@ -78,7 +61,7 @@ import reactor.core.publisher.Mono;
 				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
 				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
 @ConditionalOnClass({ McpSchema.class })
-@EnableConfigurationProperties({ McpServerProperties.class, McpServerChangeNotificationProperties.class })
+@EnableConfigurationProperties({ McpServerProperties.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @Conditional(McpServerAutoConfiguration.NonStatlessServerCondition.class)
@@ -163,7 +146,6 @@ public class McpServerAutoConfiguration {
 			matchIfMissing = true)
 	public McpSyncServer mcpSyncServer(McpServerTransportProviderBase transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<SyncToolSpecification>> tools,
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
@@ -187,8 +169,8 @@ public class McpServerAutoConfiguration {
 		// Tools
 		if (serverProperties.getCapabilities().isTool()) {
 			logger.info("Enable tools capabilities, notification: "
-					+ changeNotificationProperties.isToolChangeNotification());
-			capabilitiesBuilder.tools(changeNotificationProperties.isToolChangeNotification());
+					+ serverProperties.getToolChangeNotification().isToolChangeNotification());
+			capabilitiesBuilder.tools(serverProperties.getToolChangeNotification().isToolChangeNotification());
 
 			List<SyncToolSpecification> toolSpecifications = new ArrayList<>(
 					tools.stream().flatMap(List::stream).toList());
@@ -202,8 +184,9 @@ public class McpServerAutoConfiguration {
 		// Resources
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources capabilities, notification: "
-					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+					+ serverProperties.getToolChangeNotification().isResourceChangeNotification());
+			capabilitiesBuilder.resources(false,
+					serverProperties.getToolChangeNotification().isResourceChangeNotification());
 
 			List<SyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
@@ -215,8 +198,8 @@ public class McpServerAutoConfiguration {
 		// Prompts
 		if (serverProperties.getCapabilities().isPrompt()) {
 			logger.info("Enable prompts capabilities, notification: "
-					+ changeNotificationProperties.isPromptChangeNotification());
-			capabilitiesBuilder.prompts(changeNotificationProperties.isPromptChangeNotification());
+					+ serverProperties.getToolChangeNotification().isPromptChangeNotification());
+			capabilitiesBuilder.prompts(serverProperties.getToolChangeNotification().isPromptChangeNotification());
 
 			List<SyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
 			if (!CollectionUtils.isEmpty(promptSpecifications)) {
@@ -262,7 +245,6 @@ public class McpServerAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public McpAsyncServer mcpAsyncServer(McpServerTransportProviderBase transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<AsyncToolSpecification>> tools,
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
@@ -288,8 +270,8 @@ public class McpServerAutoConfiguration {
 					tools.stream().flatMap(List::stream).toList());
 
 			logger.info("Enable tools capabilities, notification: "
-					+ changeNotificationProperties.isToolChangeNotification());
-			capabilitiesBuilder.tools(changeNotificationProperties.isToolChangeNotification());
+					+ serverProperties.getToolChangeNotification().isToolChangeNotification());
+			capabilitiesBuilder.tools(serverProperties.getToolChangeNotification().isToolChangeNotification());
 
 			if (!CollectionUtils.isEmpty(toolSpecifications)) {
 				serverBuilder.tools(toolSpecifications);
@@ -300,8 +282,9 @@ public class McpServerAutoConfiguration {
 		// Resources
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources capabilities, notification: "
-					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+					+ serverProperties.getToolChangeNotification().isResourceChangeNotification());
+			capabilitiesBuilder.resources(false,
+					serverProperties.getToolChangeNotification().isResourceChangeNotification());
 
 			List<AsyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
@@ -313,8 +296,8 @@ public class McpServerAutoConfiguration {
 		// Prompts
 		if (serverProperties.getCapabilities().isPrompt()) {
 			logger.info("Enable prompts capabilities, notification: "
-					+ changeNotificationProperties.isPromptChangeNotification());
-			capabilitiesBuilder.prompts(changeNotificationProperties.isPromptChangeNotification());
+					+ serverProperties.getToolChangeNotification().isPromptChangeNotification());
+			capabilitiesBuilder.prompts(serverProperties.getToolChangeNotification().isPromptChangeNotification());
 			List<AsyncPromptSpecification> promptSpecifications = prompts.stream().flatMap(List::stream).toList();
 
 			if (!CollectionUtils.isEmpty(promptSpecifications)) {
