@@ -48,6 +48,7 @@ Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/ref
 <!-- * [Discussions](https://github.com/spring-projects/spring-ai/discussions) - Go here if you have a question, suggestion, or feedback! -->
 * [Awesome Spring AI](https://github.com/spring-ai-community/awesome-spring-ai) - A curated list of awesome resources, tools, tutorials, and projects for building generative AI applications using Spring AI
 * [Spring AI Examples](https://github.com/spring-projects/spring-ai-examples) contains example projects that explain specific features in more detail.
+* [Spring AI Community](https://github.com/spring-ai-community) - A community-driven organization for building Spring-based integrations with AI models, agents, vector databases, and more.
 
 ## Breaking changes
 
@@ -149,3 +150,7 @@ The wiki pages
 [Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and
 [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
 define the source file coding standards we use along with some IDEA editor settings we customize.
+
+## Contributing
+
+Your contributions are always welcome! Please read the [contribution guidelines](CONTRIBUTING.adoc) first.
