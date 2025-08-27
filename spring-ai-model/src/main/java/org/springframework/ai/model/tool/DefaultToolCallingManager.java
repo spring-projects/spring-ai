@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -305,7 +305,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		public DefaultToolCallingManager build() {
 			return new DefaultToolCallingManager(this.observationRegistry, this.toolCallbackResolver,
-					this.toolExecutionExceptionProcessor, taskExecutor);
+					this.toolExecutionExceptionProcessor, this.taskExecutor);
 		}
 
 	}
